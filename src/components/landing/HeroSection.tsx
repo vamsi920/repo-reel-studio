@@ -6,11 +6,48 @@ import { Input } from "@/components/ui/input";
 
 export const HeroSection = () => {
   const [repoUrl, setRepoUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
   const navigate = useNavigate();
 
+  const validateAndCleanUrl = (url: string): string | null => {
+    let cleanUrl = url.trim();
+
+    if (!cleanUrl) {
+      setUrlError("Please enter a GitHub repository URL.");
+      return null;
+    }
+
+    if (/^[\w-]+\/[\w-]+$/.test(cleanUrl)) {
+      cleanUrl = `https://github.com/${cleanUrl}`;
+    }
+
+    try {
+      const parsed = new URL(cleanUrl);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setUrlError("URL must use http or https protocol.");
+        return null;
+      }
+
+      if (parsed.hostname === "github.com" || parsed.hostname === "www.github.com") {
+        const pathParts = parsed.pathname.split("/").filter(Boolean);
+        if (pathParts.length < 2) {
+          setUrlError("Invalid GitHub repository URL. Expected format: github.com/user/repo");
+          return null;
+        }
+      }
+    } catch {
+      setUrlError("Invalid URL format.");
+      return null;
+    }
+
+    return cleanUrl;
+  };
+
   const handleGenerate = () => {
-    if (repoUrl.trim()) {
-      navigate("/processing");
+    setUrlError("");
+    const cleanedUrl = validateAndCleanUrl(repoUrl);
+    if (cleanedUrl) {
+      navigate(`/processing?repo=${encodeURIComponent(cleanedUrl)}`);
     }
   };
 
@@ -50,7 +87,10 @@ export const HeroSection = () => {
                 variant="hero"
                 placeholder="Paste GitHub URL..."
                 value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
+                onChange={(e) => {
+                  setRepoUrl(e.target.value);
+                  setUrlError("");
+                }}
                 className="flex-1 border-0 bg-transparent focus:ring-0"
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
               />
@@ -64,6 +104,11 @@ export const HeroSection = () => {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
+            {urlError && (
+              <p className="text-xs text-destructive mt-2">
+                {urlError}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground mt-3">
               Try it free • No credit card required
             </p>

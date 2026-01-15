@@ -88,11 +88,51 @@ const ProjectCard = ({ project }: { project: Project }) => {
 const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [repoUrl, setRepoUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
   const navigate = useNavigate();
 
+  const validateAndCleanUrl = (url: string): string | null => {
+    let cleanUrl = url.trim();
+    
+    // If user pasted just "username/repo", convert to full GitHub URL
+    if (/^[\w-]+\/[\w-]+$/.test(cleanUrl)) {
+      cleanUrl = `https://github.com/${cleanUrl}`;
+    }
+    
+    // Try to parse as URL
+    try {
+      const parsed = new URL(cleanUrl);
+      
+      // Ensure it's HTTPS
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setUrlError("URL must use http or https protocol");
+        return null;
+      }
+      
+      // If it's a GitHub URL, validate format
+      if (parsed.hostname === "github.com" || parsed.hostname === "www.github.com") {
+        // GitHub URLs should be like: github.com/user/repo
+        const pathParts = parsed.pathname.split("/").filter(Boolean);
+        if (pathParts.length < 2) {
+          setUrlError("Invalid GitHub repository URL. Expected format: github.com/user/repo");
+          return null;
+        }
+      }
+      
+      return cleanUrl;
+    } catch {
+      setUrlError("Invalid URL format");
+      return null;
+    }
+  };
+
   const handleGenerate = () => {
-    if (repoUrl.trim()) {
-      navigate("/processing");
+    setUrlError("");
+    const cleanedUrl = validateAndCleanUrl(repoUrl);
+    
+    if (cleanedUrl) {
+      const encodedRepo = encodeURIComponent(cleanedUrl);
+      navigate(`/processing?repo=${encodedRepo}`);
     }
   };
 
@@ -122,18 +162,29 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Input
-                  variant="hero"
-                  placeholder="Paste a GitHub repository URL..."
-                  className="flex-1"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-                />
-                <Button variant="hero" size="lg" onClick={handleGenerate}>
-                  Generate Video
-                </Button>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    variant="hero"
+                    placeholder="Paste GitHub URL or user/repo..."
+                    className="flex-1"
+                    value={repoUrl}
+                    onChange={(e) => {
+                      setRepoUrl(e.target.value);
+                      setUrlError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                  />
+                  <Button variant="hero" size="lg" onClick={handleGenerate}>
+                    Generate Video
+                  </Button>
+                </div>
+                {urlError && (
+                  <p className="text-sm text-destructive">{urlError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Examples: https://github.com/facebook/react or just facebook/react
+                </p>
               </div>
             </CardContent>
           </div>
