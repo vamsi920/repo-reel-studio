@@ -198,16 +198,13 @@ const Processing = () => {
          document.body.removeChild(a);
          URL.revokeObjectURL(url);
          
-         if (source === "fallback") {
-           setLogs((prev) => [
-             ...prev,
-             `> Gemini 2.0 unavailable, using local fallback manifest.`,
-           ]);
-         } else if (metadata) {
+         // Log token usage
+         if (metadata) {
            setLogs((prev) => [
              ...prev,
              `> Gemini response: ${(metadata.durationMs / 1000).toFixed(2)}s`,
              `> Tokens used: ${metadata.totalTokens.toLocaleString()} (prompt: ${metadata.promptTokens.toLocaleString()}, completion: ${metadata.completionTokens.toLocaleString()})`,
+             `> Segments processed: ${metadata.segmentsProcessed}`,
            ]);
          }
 
@@ -232,22 +229,32 @@ const Processing = () => {
         }
 
         // Add specific error messages for common issues
-        if (errorMessage.includes("fetch")) {
-          errorMessage =
-            "Cannot connect to ingestion server. Please ensure it's running on port 8787.";
-        } else if (
-          errorMessage.includes("NetworkError") ||
-          errorMessage.includes("Failed to fetch")
-        ) {
-          errorMessage =
-            "Network error. Check if the ingestion server is running (npm run ingest:server).";
+        if (errorMessage.includes("GEMINI_API_KEY")) {
+          setLogs((prev) => [
+            ...prev,
+            `> ❌ Error: ${errorMessage}`,
+            `> Set VITE_GEMINI_API_KEY in your .env file`,
+            `> Get a key from: https://aistudio.google.com/app/apikey`,
+          ]);
+        } else if (errorMessage.includes("fetch") || errorMessage.includes("NetworkError") || errorMessage.includes("Failed to fetch")) {
+          setLogs((prev) => [
+            ...prev,
+            `> ❌ Error: Cannot connect to ingestion server`,
+            `> Please ensure it's running: npm run ingest:server`,
+          ]);
+        } else if (errorMessage.includes("Gemini")) {
+          setLogs((prev) => [
+            ...prev,
+            `> ❌ Error: ${errorMessage}`,
+            `> Check your API key and try again.`,
+          ]);
+        } else {
+          setLogs((prev) => [
+            ...prev,
+            `> ❌ Error: ${errorMessage}`,
+            `> Please check logs and try again.`,
+          ]);
         }
-
-        setLogs((prev) => [
-          ...prev,
-          `> ❌ Error: ${errorMessage}`,
-          `> Please check the server logs or try again.`,
-        ]);
       } finally {
         if (stepTimer) {
           clearInterval(stepTimer);
