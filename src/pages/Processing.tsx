@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Terminal, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { generateVideoManifest } from "@/lib/geminiDirector";
 
 const ingestionSteps = [
   { text: "Cloning repository...", progress: 18 },
   { text: "Walking folder tree...", progress: 38 },
   { text: "Filtering source files...", progress: 58 },
   { text: "Concatenating code payload...", progress: 76 },
-  { text: "Packaging for Gemini input...", progress: 92 },
+  { text: "Packaging for Gemini 2.0 input...", progress: 80 },
+];
+
+const directorSteps = [
+  { text: "Generating director prompt...", progress: 86 },
+  { text: "Analyzing codebase structure...", progress: 90 },
+  { text: "Mapping components and features...", progress: 94 },
+  { text: "Building scene manifest (3+ min)...", progress: 97 },
+  { text: "Rendering video manifest JSON...", progress: 99 },
 ];
 
 type IngestionStats = {
@@ -26,7 +35,8 @@ const Processing = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<PhaseStatus>("idle");
+  const [phase1Status, setPhase1Status] = useState<PhaseStatus>("idle");
+  const [phase2Status, setPhase2Status] = useState<PhaseStatus>("queued");
   const [stats, setStats] = useState<IngestionStats | null>(null);
 
   const repoUrl = useMemo(() => {
@@ -41,12 +51,12 @@ const Processing = () => {
       {
         title: "Phase 1: Ingestion",
         description: "Clone and bundle repository text for Gemini 2.0.",
-        status,
+        status: phase1Status,
       },
       {
-        title: "Phase 2: Structure Mapping",
-        description: "Identify modules, flows, and data paths.",
-        status: "queued" as PhaseStatus,
+        title: "Phase 2: Director",
+        description: "Gemini 2.0 generates comprehensive video manifest (3+ min).",
+        status: phase2Status,
       },
       {
         title: "Phase 3: Storyboard Drafting",
@@ -54,35 +64,59 @@ const Processing = () => {
         status: "queued" as PhaseStatus,
       },
     ],
-    [status]
+    [phase1Status, phase2Status]
   );
+
+  const activeSteps =
+    phase2Status === "running" || phase2Status === "complete"
+      ? directorSteps
+      : ingestionSteps;
+  const overallStatus: PhaseStatus =
+    phase1Status === "error" || phase2Status === "error"
+      ? "error"
+      : phase2Status === "complete"
+        ? "complete"
+        : phase1Status === "running" || phase2Status === "running"
+          ? "running"
+          : "idle";
 
   useEffect(() => {
     if (!repoUrl) {
-      setStatus("error");
+      setPhase1Status("error");
+      setPhase2Status("queued");
       setLogs(["> Missing repository URL. Please return to the dashboard."]);
       return;
     }
 
     const controller = new AbortController();
     let stepIndex = 0;
+    let stepTimer: ReturnType<typeof setInterval> | null = null;
 
-    setStatus("running");
+    setPhase1Status("running");
+    setPhase2Status("queued");
     setLogs([`> Starting ingestion for ${repoUrl}`]);
     setProgress(6);
 
-    const advanceStep = () => {
-      if (stepIndex < ingestionSteps.length) {
-        const step = ingestionSteps[stepIndex];
-        setLogs((prev) => [...prev, `> ${step.text}`]);
-        setCurrentStep(stepIndex);
-        setProgress(step.progress);
-        stepIndex += 1;
-      }
+    const runSteps = (steps: typeof ingestionSteps) => {
+      stepIndex = 0;
+      const advanceStep = () => {
+        if (stepIndex < steps.length) {
+          const step = steps[stepIndex];
+          setLogs((prev) => [...prev, `> ${step.text}`]);
+          setCurrentStep(stepIndex);
+          setProgress(step.progress);
+          stepIndex += 1;
+        } else if (stepTimer) {
+          clearInterval(stepTimer);
+          stepTimer = null;
+        }
+      };
+
+      advanceStep();
+      stepTimer = setInterval(advanceStep, 1100);
     };
 
-    advanceStep();
-    const stepTimer = setInterval(advanceStep, 1100);
+    runSteps(ingestionSteps);
 
     const runIngestion = async () => {
       try {
@@ -129,20 +163,69 @@ const Processing = () => {
         }
 
         setStats(payload.stats);
-        setStatus("complete");
-        setProgress(100);
+        setPhase1Status("complete");
         setLogs((prev) => [
           ...prev,
           `> Ingestion complete: ${payload.stats.includedFiles} files (${payload.stats.totalBytesFormatted})`,
           `> Processing time: ${(payload.stats.durationMs / 1000).toFixed(2)}s`,
-          `> Redirecting to studio...`,
         ]);
+
+        if (stepTimer) {
+          clearInterval(stepTimer);
+          stepTimer = null;
+        }
+
+        setPhase2Status("running");
+        setLogs((prev) => [...prev, `> Starting Gemini 2.0 director pass...`]);
+        runSteps(directorSteps);
+
+         const { manifest, source, metadata } = await generateVideoManifest(
+           repoUrl,
+           payload.content || ""
+         );
+
+         sessionStorage.setItem("video-manifest", JSON.stringify(manifest));
+         
+         // Download manifest as text file
+         const manifestText = JSON.stringify(manifest, null, 2);
+         const blob = new Blob([manifestText], { type: "text/plain" });
+         const url = URL.createObjectURL(blob);
+         const a = document.createElement("a");
+         a.href = url;
+         a.download = `${repoUrl.split("/").pop()}-manifest.txt`;
+         document.body.appendChild(a);
+         a.click();
+         document.body.removeChild(a);
+         URL.revokeObjectURL(url);
+         
+         if (source === "fallback") {
+           setLogs((prev) => [
+             ...prev,
+             `> Gemini 2.0 unavailable, using local fallback manifest.`,
+           ]);
+         } else if (metadata) {
+           setLogs((prev) => [
+             ...prev,
+             `> Gemini response: ${(metadata.durationMs / 1000).toFixed(2)}s`,
+             `> Tokens used: ${metadata.totalTokens.toLocaleString()} (prompt: ${metadata.promptTokens.toLocaleString()}, completion: ${metadata.completionTokens.toLocaleString()})`,
+           ]);
+         }
+
+         setPhase2Status("complete");
+         setProgress(100);
+         setLogs((prev) => [
+           ...prev,
+           `> Director manifest ready: ${manifest.scenes.length} scenes`,
+           `> Manifest downloaded: ${repoUrl.split("/").pop()}-manifest.txt`,
+           `> Redirecting to studio...`,
+         ]);
 
         setTimeout(() => navigate("/studio"), 1200);
       } catch (error) {
         if (controller.signal.aborted) return;
-        setStatus("error");
-
+        setPhase1Status((prev) => (prev === "complete" ? prev : "error"));
+        setPhase2Status("error");
+        
         let errorMessage = "Unknown error occurred";
         if (error instanceof Error) {
           errorMessage = error.message;
@@ -166,7 +249,9 @@ const Processing = () => {
           `> Please check the server logs or try again.`,
         ]);
       } finally {
-        clearInterval(stepTimer);
+        if (stepTimer) {
+          clearInterval(stepTimer);
+        }
       }
     };
 
@@ -174,7 +259,9 @@ const Processing = () => {
 
     return () => {
       controller.abort();
-      clearInterval(stepTimer);
+      if (stepTimer) {
+        clearInterval(stepTimer);
+      }
     };
   }, [navigate, repoUrl]);
 
@@ -285,9 +372,9 @@ const Processing = () => {
 
             {/* Center content */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              {status === "complete" ? (
+              {overallStatus === "complete" ? (
                 <CheckCircle2 className="h-6 w-6 text-success mb-1" />
-              ) : status === "error" ? (
+              ) : overallStatus === "error" ? (
                 <AlertTriangle className="h-6 w-6 text-destructive mb-1" />
               ) : (
                 <Loader2 className="h-6 w-6 text-primary animate-spin mb-1" />
@@ -303,13 +390,17 @@ const Processing = () => {
         {/* Current Step */}
         <div className="text-center mb-8">
           <h2 className="text-lg font-medium mb-2">
-            {ingestionSteps[currentStep]?.text.replace("...", "") ||
+            {activeSteps[currentStep]?.text.replace("...", "") ||
               "Initializing..."}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {status === "error"
-              ? "We hit a snag during ingestion."
-              : "Phase 1 is preparing code for Gemini 2.0."}
+            {overallStatus === "error"
+              ? "We hit a snag during ingestion or the director pass."
+              : phase2Status === "running"
+                ? "Phase 2 is building comprehensive manifest with Gemini 2.0."
+                : phase2Status === "complete"
+                  ? "Director manifest ready (3+ minutes of content)."
+                  : "Phase 1 is preparing codebase for Gemini 2.0."}
           </p>
           {stats && (
             <p className="mt-2 text-xs text-muted-foreground">

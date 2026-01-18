@@ -12,7 +12,7 @@ export const HowItWorks = () => {
     {
       icon: Brain,
       title: "Analyze",
-      description: "Gemini 1.5 Pro analyzes your codebase and writes a detailed director's script for the walkthrough.",
+      description: "Gemini 3 analyzes your codebase and writes a detailed director's script for the walkthrough.",
       step: "02",
     },
     {

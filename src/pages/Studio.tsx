@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Terminal,
@@ -15,38 +15,44 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { VideoManifest, VideoScene } from "@/lib/geminiDirector";
 
-interface Scene {
-  id: string;
-  title: string;
-  narration: string;
-  file: string;
-}
-
-const mockScenes: Scene[] = [
+const mockScenes: VideoScene[] = [
   {
-    id: "1",
-    title: "Project Overview",
-    narration: "This is a modern React application built with Vite and TypeScript. The project follows a modular architecture with clear separation of concerns...",
-    file: "src/App.tsx",
+    id: 1,
+    type: "narration",
+    file_path: "src/App.tsx",
+    highlight_lines: [],
+    narration_text:
+      "This is a modern React application built with Vite and TypeScript. The project follows a modular architecture with clear separation of concerns...",
+    duration_seconds: 45,
   },
   {
-    id: "2",
-    title: "Authentication Flow",
-    narration: "The authentication system uses JWT tokens stored in HTTP-only cookies. The auth middleware intercepts all protected routes and validates the session...",
-    file: "src/auth/middleware.ts",
+    id: 2,
+    type: "code",
+    file_path: "src/auth/middleware.ts",
+    highlight_lines: [4, 7, 12, 15, 18],
+    narration_text:
+      "The authentication system uses JWT tokens stored in HTTP-only cookies. The auth middleware intercepts all protected routes and validates the session...",
+    duration_seconds: 50,
   },
   {
-    id: "3",
-    title: "Component Library",
-    narration: "The UI is built using a custom component library based on shadcn/ui. Each component is fully typed and supports both light and dark themes...",
-    file: "src/components/ui/button.tsx",
+    id: 3,
+    type: "code",
+    file_path: "src/components/ui/button.tsx",
+    highlight_lines: [1, 12, 22],
+    narration_text:
+      "The UI is built using a custom component library based on shadcn/ui. Each component is fully typed and supports both light and dark themes...",
+    duration_seconds: 45,
   },
   {
-    id: "4",
-    title: "State Management",
-    narration: "Global state is managed using React Query for server state and Zustand for client state. This provides optimal caching and real-time updates...",
-    file: "src/hooks/useStore.ts",
+    id: 4,
+    type: "code",
+    file_path: "src/hooks/useStore.ts",
+    highlight_lines: [2, 10, 24],
+    narration_text:
+      "Global state is managed using React Query for server state and Zustand for client state. This provides optimal caching and real-time updates...",
+    duration_seconds: 45,
   },
 ];
 
@@ -154,11 +160,127 @@ const FileTreeItem = ({ item, depth = 0 }: FileTreeItemProps) => {
   );
 };
 
+const buildFileTree = (
+  paths: string[],
+  fallback: FileTreeItemProps["item"][]
+): FileTreeItemProps["item"][] => {
+  const cleanPaths = paths.filter((path) => path && path !== "N/A");
+  if (!cleanPaths.length) {
+    return fallback;
+  }
+
+  const root: Record<
+    string,
+    { type: "file" | "folder"; children?: Record<string, unknown> }
+  > = {};
+
+  for (const filePath of cleanPaths) {
+    const parts = filePath.split("/").filter(Boolean);
+    let cursor = root;
+    parts.forEach((part, index) => {
+      const isFile = index === parts.length - 1;
+      if (!cursor[part]) {
+        cursor[part] = {
+          type: isFile ? "file" : "folder",
+          children: isFile ? undefined : {},
+        };
+      }
+      if (!isFile && cursor[part].children) {
+        cursor = cursor[part].children as Record<string, any>;
+      }
+    });
+  }
+
+  const toItems = (
+    node: Record<
+      string,
+      { type: "file" | "folder"; children?: Record<string, unknown> }
+    >,
+    depth = 0
+  ): FileTreeItemProps["item"][] =>
+    Object.entries(node).map(([name, value]) =>
+      value.type === "file"
+        ? { name, type: "file" }
+        : {
+            name,
+            type: "folder",
+            expanded: depth < 2,
+            children: toItems(value.children as Record<string, any>, depth + 1),
+          }
+    );
+
+  return toItems(root);
+};
+
 const Studio = () => {
   const navigate = useNavigate();
-  const [activeScene, setActiveScene] = useState(mockScenes[1]);
+  const [manifest, setManifest] = useState<VideoManifest | null>(null);
+  const scenes = useMemo(
+    () => (manifest?.scenes?.length ? manifest.scenes : mockScenes),
+    [manifest]
+  );
+  const [activeScene, setActiveScene] = useState<VideoScene>(
+    scenes[0] ?? mockScenes[0]
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
+  const totalDuration = useMemo(
+    () =>
+      scenes.reduce(
+        (sum, scene) => sum + (Number(scene.duration_seconds) || 0),
+        0
+      ),
+    [scenes]
+  );
+  const fileTree = useMemo(
+    () =>
+      buildFileTree(
+        scenes.map((scene) => scene.file_path),
+        mockFileTree
+      ),
+    [scenes]
+  );
+  const currentTime = Math.round((progress / 100) * totalDuration);
+  const repoLabel =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("repo-url") || "repo/unknown"
+      : "repo/unknown";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = sessionStorage.getItem("video-manifest");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as VideoManifest;
+      if (parsed?.scenes?.length) {
+        setManifest(parsed);
+      }
+    } catch (error) {
+      console.warn("Failed to parse video manifest from sessionStorage.", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (scenes.length && scenes[0]) {
+      setActiveScene(scenes[0]);
+    }
+  }, [scenes]);
+
+  const formatTime = (seconds: number) => {
+    const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+    const mins = Math.floor(safeSeconds / 60);
+    const secs = Math.floor(safeSeconds % 60);
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const getSceneTitle = (scene: VideoScene) => {
+    if (scene.title?.trim()) return scene.title;
+    if (scene.file_path && scene.file_path !== "N/A") {
+      const parts = scene.file_path.split("/");
+      return parts[parts.length - 1] || `Scene ${scene.id}`;
+    }
+    return `Scene ${scene.id}`;
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -174,7 +296,7 @@ const Studio = () => {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Terminal className="h-3.5 w-3.5" />
             </div>
-            <span className="font-medium text-sm">facebook/react</span>
+            <span className="font-medium text-sm">{repoLabel}</span>
           </div>
         </div>
 
@@ -195,10 +317,13 @@ const Studio = () => {
         {/* Left Panel - Script */}
         <aside className="w-72 border-r border-border bg-card flex flex-col shrink-0">
           <div className="p-4 border-b border-border">
-            <h2 className="text-sm font-semibold">Script Scenes</h2>
+            <h2 className="text-sm font-semibold">Video Manifest</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {manifest?.title || "Draft director cut"}
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {mockScenes.map((scene, index) => (
+            {scenes.map((scene, index) => (
               <Card
                 key={scene.id}
                 variant={activeScene.id === scene.id ? "elevated" : "interactive"}
@@ -212,14 +337,19 @@ const Studio = () => {
                   <span className="text-xs font-mono text-muted-foreground">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="text-sm font-medium flex-1">{scene.title}</h3>
+                  <h3 className="text-sm font-medium flex-1">
+                    {getSceneTitle(scene)}
+                  </h3>
                   <button className="text-muted-foreground hover:text-foreground">
                     <Edit3 className="h-3 w-3" />
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2 ml-5">
-                  {scene.narration}
+                  {scene.narration_text}
                 </p>
+                <div className="mt-2 ml-5 text-[10px] text-muted-foreground font-mono">
+                  {scene.duration_seconds}s
+                </div>
               </Card>
             ))}
           </div>
@@ -256,7 +386,7 @@ const Studio = () => {
 
                 {/* Current scene indicator */}
                 <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm text-xs font-medium">
-                  Scene 2: {activeScene.title}
+                  Scene {activeScene.id}: {getSceneTitle(activeScene)}
                 </div>
               </Card>
 
@@ -289,7 +419,7 @@ const Studio = () => {
                   />
                 </div>
                 <span className="text-xs font-mono text-muted-foreground w-20 text-right">
-                  1:24 / 4:30
+                  {formatTime(currentTime)} / {formatTime(totalDuration)}
                 </span>
               </div>
             </div>
@@ -300,10 +430,12 @@ const Studio = () => {
         <aside className="w-64 border-l border-border bg-card flex flex-col shrink-0">
           <div className="p-4 border-b border-border">
             <h2 className="text-sm font-semibold">Current Context</h2>
-            <p className="text-xs text-muted-foreground mt-1">{activeScene.file}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {activeScene.file_path}
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
-            {mockFileTree.map((item) => (
+            {fileTree.map((item) => (
               <FileTreeItem key={item.name} item={item} />
             ))}
           </div>

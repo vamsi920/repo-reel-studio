@@ -66,7 +66,7 @@ export const HeroSection = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-8 animate-fade-in">
             <Sparkles className="h-4 w-4" />
-            <span>Powered by Gemini 1.5 Pro</span>
+            <span>Powered by Gemini 3</span>
           </div>
 
           {/* Headline */}
