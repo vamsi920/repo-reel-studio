@@ -11,13 +11,20 @@ import {
   Play,
   Film,
   FileCode,
-  Sparkles
+  Sparkles,
+  PanelRightClose,
+  PanelRightOpen,
+  Share2,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { Button } from "@/components/ui/button";
 import { RemotionVideo } from "@/components/studio/RemotionVideo";
+import { VideoControls, SceneListSidebar } from "@/components/studio/VideoControls";
 import { mockManifest } from "@/data/mockManifest";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
+import { toast } from "@/hooks/use-toast";
 import type { VideoManifest } from "@/lib/geminiDirector";
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "rendering" | "complete" | "error";
@@ -36,6 +43,7 @@ const formatTime = () => {
 const Studio = () => {
   const navigate = useNavigate();
   const playerRef = useRef<PlayerRef>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoLabel, setRepoLabel] = useState("Loading...");
   const [phase, setPhase] = useState<LoadingPhase>("idle");
@@ -44,6 +52,13 @@ const Studio = () => {
   const [currentStep, setCurrentStep] = useState("Initializing...");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const isLoadingRef = useRef(false);
+  
+  // Player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -307,6 +322,64 @@ const Studio = () => {
     [effectiveHydratedManifest, hydratedManifest, fallbackHydratedManifest, mockHydratedManifest]
   );
   
+  // Player event handlers
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleFrameUpdate = (e: { detail: { frame: number } }) => {
+      setCurrentFrame(e.detail.frame);
+    };
+
+    player.addEventListener("play", handlePlay);
+    player.addEventListener("pause", handlePause);
+    player.addEventListener("frameupdate", handleFrameUpdate as EventListener);
+
+    return () => {
+      player.removeEventListener("play", handlePlay);
+      player.removeEventListener("pause", handlePause);
+      player.removeEventListener("frameupdate", handleFrameUpdate as EventListener);
+    };
+  }, [phase]);
+
+  // Control visibility on mouse movement
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  }, [isPlaying]);
+
+  // Player control functions
+  const handlePlayPause = useCallback(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [isPlaying]);
+
+  const handleSeek = useCallback((frame: number) => {
+    const player = playerRef.current;
+    if (!player) return;
+    player.seekTo(frame);
+    setCurrentFrame(frame);
+  }, []);
+
+  const handleSceneClick = useCallback((sceneIndex: number, frame: number) => {
+    handleSeek(frame);
+  }, [handleSeek]);
+  
   // Debug logging
   useEffect(() => {
     if (phase === "complete") {
@@ -356,7 +429,58 @@ const Studio = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   }, [hydratedManifest, manifest]);
 
+  // Current scene index
+  const currentSceneIndex = useMemo(() => {
+    if (!effectiveHydratedManifest?.scenes) return 0;
+    const index = effectiveHydratedManifest.scenes.findIndex(
+      (scene) => currentFrame >= scene.startFrame && currentFrame < scene.endFrame
+    );
+    return index === -1 ? 0 : index;
+  }, [effectiveHydratedManifest, currentFrame]);
+
   const isLoading = phase !== "complete" && phase !== "error";
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch (e.key.toLowerCase()) {
+        case " ":
+          e.preventDefault();
+          handlePlayPause();
+          break;
+        case "f":
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+          break;
+        case "arrowleft":
+          handleSeek(Math.max(0, currentFrame - 30 * 5)); // 5 seconds back
+          break;
+        case "arrowright":
+          handleSeek(Math.min(durationInFrames - 1, currentFrame + 30 * 5)); // 5 seconds forward
+          break;
+        case "m":
+          // Toggle mute handled by VideoControls
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePlayPause, handleSeek, currentFrame, durationInFrames]);
+
+  // Copy share link
+  const handleShare = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link copied!",
+      description: "Video link has been copied to clipboard.",
+    });
+  }, []);
 
   // Loading Screen Component
   const LoadingScreen = () => (
@@ -517,7 +641,7 @@ const Studio = () => {
       {isLoading && <LoadingScreen />}
 
       {/* Header */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card shrink-0 z-40">
+      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card/80 backdrop-blur-sm shrink-0 z-40">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/">
@@ -525,12 +649,17 @@ const Studio = () => {
             </Link>
           </Button>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm truncate max-w-[300px]">
-              {repoLabel}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              • {manifest?.scenes?.length || 0} scenes • {totalDuration}
-            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Film className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <span className="font-medium text-sm truncate max-w-[300px] block">
+                {repoLabel}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {manifest?.scenes?.length || 0} scenes • {totalDuration}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -542,6 +671,26 @@ const Studio = () => {
             title="Reload manifest"
           >
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleShare}
+            title="Share"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSidebar(!showSidebar)}
+            title={showSidebar ? "Hide sidebar" : "Show sidebar"}
+          >
+            {showSidebar ? (
+              <PanelRightClose className="h-4 w-4" />
+            ) : (
+              <PanelRightOpen className="h-4 w-4" />
+            )}
           </Button>
           <Button variant="outline" size="sm" className="gap-2" asChild>
             <Link to="/">
@@ -556,72 +705,39 @@ const Studio = () => {
         </div>
       </header>
 
-      {/* Video Player */}
-      <main className="flex-1 flex flex-col bg-black/95 overflow-hidden">
-        <div className="flex-1 relative w-full h-full min-h-0">
-          {(() => {
-            if (phase === "complete") {
-              // Determine which manifest to use
-              const finalManifest = effectiveHydratedManifest || mockHydratedManifest;
-              const finalInputProps = inputProps || (finalManifest ? { manifest: finalManifest } : null);
-              const finalDuration = finalManifest?.totalFrames || durationInFrames;
-              
-              if (finalInputProps && finalManifest && finalManifest.scenes?.length > 0) {
-                console.log("[Studio] Rendering player:", {
-                  scenes: finalManifest.scenes.length,
-                  totalFrames: finalDuration,
-                  usingMock: !effectiveHydratedManifest && !!mockHydratedManifest
-                });
+      {/* Main Content */}
+      <main className="flex-1 flex overflow-hidden">
+        {/* Video Player Area */}
+        <div 
+          className="flex-1 flex flex-col bg-black/95 overflow-hidden relative"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => isPlaying && setShowControls(false)}
+        >
+          <div 
+            ref={playerContainerRef}
+            className="flex-1 relative w-full h-full min-h-0"
+          >
+            {(() => {
+              if (phase === "complete") {
+                // Determine which manifest to use
+                const finalManifest = effectiveHydratedManifest || mockHydratedManifest;
+                const finalInputProps = inputProps || (finalManifest ? { manifest: finalManifest } : null);
+                const finalDuration = finalManifest?.totalFrames || durationInFrames;
                 
-                return (
-                  <div className="w-full h-full min-h-0 flex flex-col">
-                    <Player
-                      ref={playerRef}
-                      component={RemotionVideo}
-                      inputProps={finalInputProps}
-                      durationInFrames={finalDuration}
-                      compositionWidth={1920}
-                      compositionHeight={1080}
-                      fps={30}
-                      style={{ 
-                        width: "100%", 
-                        height: "100%",
-                        flex: 1,
-                        backgroundColor: "#0a0a0f",
-                        minHeight: "400px",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                      }}
-                      controls
-                      autoPlay={false}
-                      loop={false}
-                      clickToPlay
-                      doubleClickToFullscreen
-                      spaceKeyToPlayOrPause
-                      acknowledgeRemotionLicense
-                    />
-                  </div>
-                );
-              } else {
-                // Phase is complete but player can't render - show debug info and try mock
-                console.error("[Studio] Phase complete but player cannot render:", {
-                  hasInputProps: !!inputProps,
-                  hasEffectiveHydratedManifest: !!effectiveHydratedManifest,
-                  effectiveScenes: effectiveHydratedManifest?.scenes?.length || 0,
-                  hasMockHydratedManifest: !!mockHydratedManifest,
-                  mockScenes: mockHydratedManifest?.scenes?.length || 0
-                });
-                
-                // Last resort: try to render with mock manifest
-                if (mockHydratedManifest && mockHydratedManifest.scenes?.length > 0) {
-                  console.log("[Studio] Rendering with mock manifest as last resort");
+                if (finalInputProps && finalManifest && finalManifest.scenes?.length > 0) {
+                  console.log("[Studio] Rendering player:", {
+                    scenes: finalManifest.scenes.length,
+                    totalFrames: finalDuration,
+                    usingMock: !effectiveHydratedManifest && !!mockHydratedManifest
+                  });
+                  
                   return (
-                    <div className="w-full h-full min-h-0 flex flex-col">
+                    <div className="w-full h-full min-h-0 flex flex-col relative group">
                       <Player
                         ref={playerRef}
                         component={RemotionVideo}
-                        inputProps={{ manifest: mockHydratedManifest }}
-                        durationInFrames={mockHydratedManifest.totalFrames}
+                        inputProps={finalInputProps}
+                        durationInFrames={finalDuration}
                         compositionWidth={1920}
                         compositionHeight={1080}
                         fps={30}
@@ -629,10 +745,12 @@ const Studio = () => {
                           width: "100%", 
                           height: "100%",
                           flex: 1,
-                          backgroundColor: "#0a0a0a",
+                          backgroundColor: "#0a0a0f",
                           minHeight: "400px",
+                          borderRadius: "8px",
+                          overflow: "hidden",
                         }}
-                        controls
+                        controls={false}
                         autoPlay={false}
                         loop={false}
                         clickToPlay
@@ -640,25 +758,120 @@ const Studio = () => {
                         spaceKeyToPlayOrPause
                         acknowledgeRemotionLicense
                       />
+                      
+                      {/* Custom Video Controls */}
+                      <div className={`transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                        <VideoControls
+                          playerRef={playerRef}
+                          manifest={finalManifest}
+                          isPlaying={isPlaying}
+                          currentFrame={currentFrame}
+                          totalFrames={finalDuration}
+                          fps={30}
+                          onPlayPause={handlePlayPause}
+                          onSeek={handleSeek}
+                          onSceneChange={(idx) => console.log("Scene changed:", idx)}
+                        />
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Phase is complete but player can't render - show debug info and try mock
+                  console.error("[Studio] Phase complete but player cannot render:", {
+                    hasInputProps: !!inputProps,
+                    hasEffectiveHydratedManifest: !!effectiveHydratedManifest,
+                    effectiveScenes: effectiveHydratedManifest?.scenes?.length || 0,
+                    hasMockHydratedManifest: !!mockHydratedManifest,
+                    mockScenes: mockHydratedManifest?.scenes?.length || 0
+                  });
+                  
+                  // Last resort: try to render with mock manifest
+                  if (mockHydratedManifest && mockHydratedManifest.scenes?.length > 0) {
+                    console.log("[Studio] Rendering with mock manifest as last resort");
+                    return (
+                      <div className="w-full h-full min-h-0 flex flex-col relative group">
+                        <Player
+                          ref={playerRef}
+                          component={RemotionVideo}
+                          inputProps={{ manifest: mockHydratedManifest }}
+                          durationInFrames={mockHydratedManifest.totalFrames}
+                          compositionWidth={1920}
+                          compositionHeight={1080}
+                          fps={30}
+                          style={{ 
+                            width: "100%", 
+                            height: "100%",
+                            flex: 1,
+                            backgroundColor: "#0a0a0a",
+                            minHeight: "400px",
+                          }}
+                          controls={false}
+                          autoPlay={false}
+                          loop={false}
+                          clickToPlay
+                          doubleClickToFullscreen
+                          spaceKeyToPlayOrPause
+                          acknowledgeRemotionLicense
+                        />
+                        
+                        {/* Custom Video Controls */}
+                        <div className={`transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                          <VideoControls
+                            playerRef={playerRef}
+                            manifest={mockHydratedManifest}
+                            isPlaying={isPlaying}
+                            currentFrame={currentFrame}
+                            totalFrames={mockHydratedManifest.totalFrames}
+                            fps={30}
+                            onPlayPause={handlePlayPause}
+                            onSeek={handleSeek}
+                          />
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/95">
+                      <div className="text-center max-w-md px-6">
+                        <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-6" />
+                        <h2 className="text-2xl font-semibold mb-2">Player Not Ready</h2>
+                        <p className="text-muted-foreground mb-2">
+                          The video manifest could not be hydrated properly.
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-4 font-mono text-left">
+                          Debug info:<br/>
+                          Manifest: {manifest ? "✓" : "✗"} ({manifest?.scenes?.length || 0} scenes)<br/>
+                          Hydrated: {hydratedManifest ? "✓" : "✗"} ({hydratedManifest?.scenes?.length || 0} scenes)<br/>
+                          Effective: {effectiveHydratedManifest ? "✓" : "✗"} ({effectiveHydratedManifest?.scenes?.length || 0} scenes)<br/>
+                          Mock: {mockHydratedManifest ? "✓" : "✗"} ({mockHydratedManifest?.scenes?.length || 0} scenes)<br/>
+                          InputProps: {inputProps ? "✓" : "✗"}
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Button variant="outline" onClick={() => navigate("/")}>
+                            <Home className="h-4 w-4 mr-2" />
+                            Go Home
+                          </Button>
+                          <Button onClick={loadManifest}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Retry
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   );
                 }
-                
+              } else if (phase === "error") {
                 return (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/95">
                     <div className="text-center max-w-md px-6">
-                      <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-6" />
-                      <h2 className="text-2xl font-semibold mb-2">Player Not Ready</h2>
+                      <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-6" />
+                      <h2 className="text-2xl font-semibold mb-2">Failed to Load Video</h2>
                       <p className="text-muted-foreground mb-2">
-                        The video manifest could not be hydrated properly.
+                        {currentStep || "An error occurred while loading the video manifest."}
                       </p>
-                      <p className="text-sm text-muted-foreground mb-4 font-mono text-left">
-                        Debug info:<br/>
-                        Manifest: {manifest ? "✓" : "✗"} ({manifest?.scenes?.length || 0} scenes)<br/>
-                        Hydrated: {hydratedManifest ? "✓" : "✗"} ({hydratedManifest?.scenes?.length || 0} scenes)<br/>
-                        Effective: {effectiveHydratedManifest ? "✓" : "✗"} ({effectiveHydratedManifest?.scenes?.length || 0} scenes)<br/>
-                        Mock: {mockHydratedManifest ? "✓" : "✗"} ({mockHydratedManifest?.scenes?.length || 0} scenes)<br/>
-                        InputProps: {inputProps ? "✓" : "✗"}
+                      <p className="text-sm text-muted-foreground mb-6">
+                        This usually happens when the ingestion process failed or the manifest is invalid.
                       </p>
                       <div className="flex gap-3 justify-center">
                         <Button variant="outline" onClick={() => navigate("/")}>
@@ -673,46 +886,33 @@ const Studio = () => {
                     </div>
                   </div>
                 );
-              }
-            } else if (phase === "error") {
-              return (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-                  <div className="text-center max-w-md px-6">
-                    <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-6" />
-                    <h2 className="text-2xl font-semibold mb-2">Failed to Load Video</h2>
-                    <p className="text-muted-foreground mb-2">
-                      {currentStep || "An error occurred while loading the video manifest."}
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      This usually happens when the ingestion process failed or the manifest is invalid.
-                    </p>
-                    <div className="flex gap-3 justify-center">
-                      <Button variant="outline" onClick={() => navigate("/")}>
-                        <Home className="h-4 w-4 mr-2" />
-                        Go Home
-                      </Button>
-                      <Button onClick={loadManifest}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Retry
-                      </Button>
+              } else if (!isLoading && !manifest) {
+                return (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/95">
+                    <div className="text-center">
+                      <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
+                      <p className="text-muted-foreground mb-4">Loading video...</p>
                     </div>
                   </div>
-                </div>
-              );
-            } else if (!isLoading && !manifest) {
-              return (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-                  <div className="text-center">
-                    <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
-                    <p className="text-muted-foreground mb-4">Loading video...</p>
-                  </div>
-                </div>
-              );
-            }
-            
-            return null;
-          })()}
+                );
+              }
+              
+              return null;
+            })()}
+          </div>
         </div>
+
+        {/* Right Sidebar - Scene List */}
+        {showSidebar && phase === "complete" && effectiveHydratedManifest && (
+          <aside className="w-80 shrink-0 border-l border-border bg-card/50 backdrop-blur-sm">
+            <SceneListSidebar
+              manifest={effectiveHydratedManifest}
+              currentSceneIndex={currentSceneIndex}
+              onSceneClick={handleSceneClick}
+              fps={30}
+            />
+          </aside>
+        )}
       </main>
     </div>
   );
