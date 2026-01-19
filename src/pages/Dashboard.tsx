@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Clock, Play, MoreVertical, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,14 +23,18 @@ const mockProjects: Project[] = [
   { id: "6", name: "prisma/prisma", duration: "5m 22s", status: "ready" },
 ];
 
-const ProjectCard = ({ project }: { project: Project }) => {
-  const navigate = useNavigate();
-
+const ProjectCard = ({
+  project,
+  onSelect,
+}: {
+  project: Project;
+  onSelect: (project: Project) => void;
+}) => {
   return (
     <Card
       variant="interactive"
       className="group overflow-hidden"
-      onClick={() => navigate("/studio")}
+      onClick={() => onSelect(project)}
     >
       {/* Thumbnail */}
       <div className="aspect-video bg-secondary/50 relative overflow-hidden">
@@ -89,7 +93,15 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [repoUrl, setRepoUrl] = useState("");
   const [urlError, setUrlError] = useState("");
+  const activeProjectRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const defaultActiveProject = useMemo(
+    () => mockProjects.find((project) => project.status === "ready") ?? null,
+    []
+  );
+  const [activeProject, setActiveProject] = useState<Project | null>(
+    defaultActiveProject
+  );
 
   const validateAndCleanUrl = (url: string): string | null => {
     let cleanUrl = url.trim();
@@ -152,6 +164,31 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {activeProject && (
+          <Card
+            ref={activeProjectRef}
+            variant="elevated"
+            className="mb-8 overflow-hidden"
+          >
+            <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                  Current Project
+                </p>
+                <h2 className="text-xl font-semibold mt-2">
+                  {activeProject.name}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {activeProject.duration} · Ready for Phase 3
+                </p>
+              </div>
+              <Button size="lg" onClick={() => navigate("/studio")}>
+                Continue in Studio
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Quick Start */}
         <Card variant="elevated" className="mb-8 overflow-hidden">
           <div className="p-6 bg-gradient-to-r from-primary/5 to-transparent">
@@ -201,7 +238,19 @@ const Dashboard = () => {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {mockProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onSelect={(selected) => {
+                  setActiveProject(selected);
+                  requestAnimationFrame(() => {
+                    activeProjectRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  });
+                }}
+              />
             ))}
           </div>
         </div>

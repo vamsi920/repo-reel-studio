@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   CheckCircle, 
@@ -6,23 +7,64 @@ import {
   Code, 
   Terminal,
   Copy,
-  ExternalLink,
   ArrowLeft,
-  Play
+  FileJson,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import type { VideoManifest } from "@/lib/geminiDirector";
 
 const Export = () => {
-  const shareUrl = "https://repo-to-reel.app/v/abc123xyz";
-  const embedCode = `<iframe 
-  src="${shareUrl}/embed"
-  width="100%" 
-  height="400" 
-  frameborder="0"
-  allowfullscreen
-></iframe>`;
+  const [manifest, setManifest] = useState<VideoManifest | null>(null);
+  const [repoUrl, setRepoUrl] = useState("");
+
+  useEffect(() => {
+    const storedManifest = sessionStorage.getItem("video-manifest");
+    const storedUrl = sessionStorage.getItem("repo-url");
+    
+    if (storedManifest) {
+      try {
+        setManifest(JSON.parse(storedManifest));
+      } catch {
+        console.warn("Failed to parse manifest");
+      }
+    }
+    if (storedUrl) {
+      setRepoUrl(storedUrl);
+    }
+  }, []);
+
+  const repoName = (() => {
+    try {
+      const url = new URL(repoUrl);
+      const parts = url.pathname.split("/").filter(Boolean);
+      return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : repoUrl;
+    } catch {
+      return manifest?.title || "Video";
+    }
+  })();
+
+  const totalDuration = manifest?.scenes?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
+  const durationStr = `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, "0")}`;
+
+  const downloadManifest = () => {
+    if (!manifest) return;
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${repoName.replace("/", "-")}-manifest.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Downloaded!",
+      description: "Manifest JSON saved to your downloads.",
+    });
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -31,6 +73,19 @@ const Export = () => {
       description: `${label} copied to clipboard.`,
     });
   };
+
+  if (!manifest) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">No video to export</p>
+          <Button asChild>
+            <Link to="/">Create a Video</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
@@ -52,53 +107,70 @@ const Export = () => {
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-success/10 mb-4">
             <CheckCircle className="h-8 w-8 text-success" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Rendering Complete!</h1>
+          <h1 className="text-3xl font-bold mb-2">Video Ready!</h1>
           <p className="text-muted-foreground">
-            Your video is ready to share with the world.
+            Export your video manifest or view in the player.
           </p>
         </div>
 
-        {/* Video Preview */}
+        {/* Video Info */}
         <Card variant="elevated" className="mb-8 overflow-hidden">
-          <div className="aspect-video bg-secondary/30 relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="flex items-center gap-2 mb-2 justify-center">
-                  <Terminal className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">facebook/react</span>
-                </div>
-                <p className="text-sm text-muted-foreground">4:30 • 1080p</p>
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Terminal className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">{repoName}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {manifest.scenes.length} scenes • {durationStr} duration
+                </p>
               </div>
             </div>
             
-            {/* Play overlay */}
-            <button className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 hover:opacity-100 transition-opacity">
-              <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center glow-primary">
-                <Play className="h-6 w-6 text-primary-foreground ml-1" />
+            {/* Scene list preview */}
+            <div className="bg-secondary/30 rounded-lg p-4 max-h-48 overflow-y-auto">
+              <p className="text-xs text-muted-foreground mb-2">Scene breakdown:</p>
+              <div className="space-y-1">
+                {manifest.scenes.slice(0, 8).map((scene, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground w-6">{i + 1}.</span>
+                    <span className="truncate flex-1">{scene.title || scene.file_path}</span>
+                    <span className="text-muted-foreground">{scene.duration_seconds}s</span>
+                  </div>
+                ))}
+                {manifest.scenes.length > 8 && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    ...and {manifest.scenes.length - 8} more scenes
+                  </p>
+                )}
               </div>
-            </button>
+            </div>
           </div>
         </Card>
 
         {/* Export Options */}
         <div className="space-y-4">
-          {/* Download */}
+          {/* Download Manifest */}
           <Card variant="interactive" className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Download className="h-5 w-5 text-primary" />
+                  <FileJson className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Download MP4</h3>
-                  <p className="text-sm text-muted-foreground">Full quality video file</p>
+                  <h3 className="font-medium">Download Manifest</h3>
+                  <p className="text-sm text-muted-foreground">JSON file with all scene data</p>
                 </div>
               </div>
-              <Button>Download</Button>
+              <Button onClick={downloadManifest}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
             </div>
           </Card>
 
-          {/* Share Link */}
+          {/* Copy Narration */}
           <Card variant="interactive" className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -106,46 +178,43 @@ const Export = () => {
                   <Link2 className="h-5 w-5 text-processing" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Copy Share Link</h3>
-                  <p className="text-sm text-muted-foreground font-mono truncate max-w-[200px]">
-                    {shareUrl}
-                  </p>
+                  <h3 className="font-medium">Copy All Narration</h3>
+                  <p className="text-sm text-muted-foreground">Get full script text</p>
                 </div>
               </div>
-              <Button variant="secondary" onClick={() => copyToClipboard(shareUrl, "Share link")}>
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  const narration = manifest.scenes
+                    .map((s, i) => `[Scene ${i + 1}: ${s.title || s.file_path}]\n${s.narration_text}`)
+                    .join("\n\n");
+                  copyToClipboard(narration, "Narration script");
+                }}
+              >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
               </Button>
             </div>
           </Card>
 
-          {/* Embed */}
-          <Card className="overflow-hidden">
+          {/* Info Card */}
+          <Card className="overflow-hidden border-warning/30 bg-warning/5">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                  <Code className="h-5 w-5 text-warning" />
+                  <Info className="h-5 w-5 text-warning" />
                 </div>
                 <div>
-                  <CardTitle className="text-base">Embed in Notion</CardTitle>
-                  <CardDescription>Copy this code snippet to embed anywhere</CardDescription>
+                  <CardTitle className="text-base">Coming Soon: MP4 Export</CardTitle>
+                  <CardDescription>Full video rendering with Remotion</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="relative">
-                <pre className="bg-secondary/50 rounded-lg p-4 text-xs font-mono text-muted-foreground overflow-x-auto">
-                  <code>{embedCode}</code>
-                </pre>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => copyToClipboard(embedCode, "Embed code")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                MP4 export requires server-side rendering. For now, you can preview the video 
+                in the Studio player and download the manifest for later rendering.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -153,15 +222,14 @@ const Export = () => {
         {/* Footer Actions */}
         <div className="flex justify-center gap-4 mt-8">
           <Button variant="outline" asChild>
-            <Link to="/dashboard">
-              Go to Dashboard
+            <Link to="/">
+              New Video
             </Link>
           </Button>
           <Button asChild>
-            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-              Open in New Tab
-              <ExternalLink className="h-4 w-4 ml-2" />
-            </a>
+            <Link to="/studio">
+              Back to Player
+            </Link>
           </Button>
         </div>
       </div>

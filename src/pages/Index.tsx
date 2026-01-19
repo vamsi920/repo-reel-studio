@@ -41,9 +41,14 @@ const CTASection = () => (
       <p className="text-muted-foreground max-w-xl mx-auto mb-8">
         Start creating engaging onboarding videos in minutes. No video editing skills required.
       </p>
-      <Button variant="hero" size="xl" asChild>
-        <Link to="/dashboard">Get Started Free</Link>
-      </Button>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Button variant="hero" size="xl" asChild>
+          <Link to="/dashboard">Go to Dashboard</Link>
+        </Button>
+        <Button variant="outline" size="xl" asChild>
+          <Link to="/studio">Continue in Studio</Link>
+        </Button>
+      </div>
     </div>
   </section>
 );

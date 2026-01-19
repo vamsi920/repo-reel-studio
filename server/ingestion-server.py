@@ -212,7 +212,22 @@ def ingest_repository(request: IngestRequest):
         print(f"❌ Ingestion error: {error_message}")
         
         # Provide helpful error messages
-        if "not found" in error_message.lower() or "404" in error_message:
+        error_lower = error_message.lower()
+        
+        # DNS/Network resolution errors
+        if ("could not resolve host" in error_lower or 
+            "name or service not known" in error_lower or
+            "getaddrinfo failed" in error_lower or
+            "enotfound" in error_lower or
+            "dns" in error_lower and "error" in error_lower):
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "Network error - DNS resolution failed",
+                    "detail": "Cannot resolve github.com. Check your internet connection and DNS settings. If you're behind a firewall or VPN, ensure GitHub is accessible."
+                }
+            )
+        elif "not found" in error_lower or "404" in error_message:
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -220,7 +235,7 @@ def ingest_repository(request: IngestRequest):
                     "detail": "The repository doesn't exist or is private. Check the URL and access permissions."
                 }
             )
-        elif "authentication" in error_message.lower() or "401" in error_message:
+        elif "authentication" in error_lower or "401" in error_message or "403" in error_message:
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -228,20 +243,23 @@ def ingest_repository(request: IngestRequest):
                     "detail": "This repository is private. Please provide a GitHub token."
                 }
             )
-        elif "timeout" in error_message.lower():
+        elif "timeout" in error_lower or "timed out" in error_lower:
             raise HTTPException(
                 status_code=500,
                 detail={
                     "error": "Connection timeout",
-                    "detail": "The repository took too long to process. Try again or check your network."
+                    "detail": "The repository took too long to process. Try again or check your network connection."
                 }
             )
-        elif "connection" in error_message.lower():
+        elif ("connection" in error_lower or 
+              "network" in error_lower or
+              "unable to access" in error_lower or
+              "failed to connect" in error_lower):
             raise HTTPException(
                 status_code=500,
                 detail={
                     "error": "Network error",
-                    "detail": "Cannot reach GitHub. Check your internet connection."
+                    "detail": "Cannot reach GitHub. Check your internet connection and ensure GitHub is accessible."
                 }
             )
         else:
