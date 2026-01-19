@@ -16,9 +16,14 @@ type FileTreeNode = {
   children?: FileTreeNode[];
 };
 
+const CODE_VIEWPORT_HEIGHT = 520;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
 const getSceneCode = (scene: SceneWithCode): string => {
   const code = scene.code || scene.file_content || scene.fileContents || "";
-  if (code) return code;
+  if (code && code.trim().length > 0) return code;
   
   // Generate placeholder code if none exists
   return generatePlaceholderCode(scene);
@@ -514,13 +519,15 @@ export const IdeWindow = ({
   activeScene,
   previousScene,
   relativeFrame,
+  allFiles,
 }: {
   scenes: HydratedScene[];
   activeScene: HydratedScene;
   previousScene?: HydratedScene;
   relativeFrame: number;
+  allFiles?: string[];
 }) => {
-  const { height, fps } = useVideoConfig();
+  const { fps } = useVideoConfig();
 
   const isFileChange = previousScene && previousScene.file_path !== activeScene.file_path;
   const transitionDuration = Math.min(20, activeScene?.durationInFrames ?? 20);
@@ -532,20 +539,17 @@ export const IdeWindow = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }
   );
 
-  // Build file tree from all scenes
-  const allFiles = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          scenes
-            .map((scene) => scene.file_path)
-            .filter((path): path is string => Boolean(path) && path !== "N/A")
-        )
-      ),
-    [scenes]
-  );
+  // Build file tree from repository files (or scene files as fallback)
+  const allPaths = useMemo(() => {
+    const source = allFiles && allFiles.length > 0
+      ? allFiles
+      : scenes.map((scene) => scene.file_path).filter(Boolean);
+    return Array.from(
+      new Set(source.filter((path): path is string => Boolean(path) && path !== "N/A"))
+    );
+  }, [allFiles, scenes]);
   
-  const tree = useMemo(() => buildFileTree(allFiles), [allFiles]);
+  const tree = useMemo(() => buildFileTree(allPaths), [allPaths]);
   const flattenedTree = useMemo(() => flattenTree(tree), [tree]);
   
   // Get code content
@@ -554,17 +558,32 @@ export const IdeWindow = ({
   const codeToRender = currentCode || `// ${activeScene?.file_path ?? "unknown file"}`;
 
   // Calculate scroll position for highlighted lines
-  const highlightLines = activeScene?.highlight_lines ?? [];
+  const rawHighlightLines = activeScene?.highlight_lines ?? [];
   const totalLines = codeToRender.split("\n").length;
   const lineHeight = 24;
   const codePadding = 32;
-  
+
+  const highlightLines = useMemo(() => {
+    if (!rawHighlightLines.length || totalLines === 0) return [];
+    const sanitized = rawHighlightLines
+      .map((line) => (Number.isFinite(line) ? clamp(Math.round(line), 1, totalLines) : null))
+      .filter((line): line is number => line !== null);
+    if (sanitized.length === 0) return [];
+    if (sanitized.length <= 2) {
+      return [Math.min(...sanitized), Math.max(...sanitized)];
+    }
+    return Array.from(new Set(sanitized));
+  }, [rawHighlightLines, totalLines]);
+
   const highlightCenter =
     highlightLines.length > 0
       ? (Math.min(...highlightLines) + Math.max(...highlightLines)) / 2
       : Math.max(1, Math.min(15, totalLines / 2));
-  
-  const targetTranslateY = height / 2 - (highlightCenter * lineHeight + codePadding);
+
+  const codeContentHeight = totalLines * lineHeight + codePadding * 2;
+  const minTranslateY = Math.min(0, CODE_VIEWPORT_HEIGHT - codeContentHeight);
+  const targetTranslateY = CODE_VIEWPORT_HEIGHT / 2 - (highlightCenter * lineHeight + codePadding);
+  const clampedTranslateY = clamp(targetTranslateY, minTranslateY, 0);
   
   // Smooth zoom animation with spring
   const zoomSpring = spring({
@@ -578,8 +597,8 @@ export const IdeWindow = ({
   // Smooth scroll animation
   const translateY = interpolate(
     relativeFrame, 
-    [0, 25], 
-    [0, Math.min(0, targetTranslateY)], 
+    [0, 25],
+    [0, clampedTranslateY],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }
   );
 
@@ -744,7 +763,7 @@ export const IdeWindow = ({
       {/* Main Content */}
       <div style={{ 
         display: "flex", 
-        height: 520,
+        height: CODE_VIEWPORT_HEIGHT,
         background: 'linear-gradient(180deg, #1a1a1f 0%, #15151a 100%)',
       }}>
         {/* File Explorer Sidebar */}

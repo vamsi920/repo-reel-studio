@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, memo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -43,6 +43,20 @@ const formatTime = () => {
   return now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 };
 
+const MemoPlayer = memo(Player);
+
+const hashNarrationText = (scenes: VideoManifest["scenes"]) => {
+  let hash = 2166136261;
+  for (const scene of scenes) {
+    const text = scene.narration_text || "";
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+  }
+  return (hash >>> 0).toString(16);
+};
+
 const Studio = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -59,6 +73,8 @@ const Studio = () => {
   const [ttsProgress, setTtsProgress] = useState({ completed: 0, total: 0 });
   const logsEndRef = useRef<HTMLDivElement>(null);
   const isLoadingRef = useRef(false);
+  const ttsHashRef = useRef<string | null>(null);
+  const audioUrlsRef = useRef<Map<number, string>>(new Map());
   
   // Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,6 +87,10 @@ const Studio = () => {
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  useEffect(() => {
+    audioUrlsRef.current = audioUrls;
+  }, [audioUrls]);
 
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {
     const entry: LogEntry = { timestamp: formatTime(), message, type };
@@ -258,24 +278,62 @@ const Studio = () => {
         addLog(`Generating audio for ${parsed.scenes.length} scenes...`, "info");
         
         try {
-          const generatedAudioUrls = await generateAllSceneAudio(
-            parsed.scenes,
-            'en-US-Standard-D',
-            (completed, total) => {
-              setTtsProgress({ completed, total });
-              const ttsPercent = Math.floor((completed / total) * 100);
-              setProgress(90 + Math.floor(ttsPercent * 0.05)); // 90-95% for TTS
-              addLog(`Generated voice for scene ${completed}/${total}`, completed === total ? "success" : "info");
+          const narrationHash = hashNarrationText(parsed.scenes);
+          if (ttsHashRef.current === narrationHash && audioUrlsRef.current.size >= parsed.scenes.length) {
+            setTtsProgress({ completed: parsed.scenes.length, total: parsed.scenes.length });
+            addLog("Reusing existing voice audio for this manifest", "info");
+          } else {
+            const { audioUrls: generatedAudioUrls, failures } = await generateAllSceneAudio(
+              parsed.scenes,
+              'en-US-Standard-D',
+              (completed, total) => {
+                setTtsProgress({ completed, total });
+                const ttsPercent = Math.floor((completed / total) * 100);
+                setProgress(90 + Math.floor(ttsPercent * 0.05)); // 90-95% for TTS
+                addLog(`Processed voice for scene ${completed}/${total}`, completed === total ? "success" : "info");
+              }
+            );
+
+            setAudioUrls((prev) => {
+              prev.forEach((url) => URL.revokeObjectURL(url));
+              return generatedAudioUrls;
+            });
+            ttsHashRef.current = narrationHash;
+            addLog(`✓ Voice generation complete! Generated ${generatedAudioUrls.size} audio files`, "success");
+            if (failures.length > 0) {
+              addLog(`⚠️ ${failures.length} scene(s) failed TTS generation`, "warning");
+              const firstFailure = failures[0];
+              addLog(`First TTS error (scene ${firstFailure.sceneId}): ${firstFailure.error}`, "warning");
             }
-          );
-          
-          setAudioUrls(generatedAudioUrls);
-          addLog(`✓ Voice generation complete! Generated ${generatedAudioUrls.size} audio files`, "success");
+          }
         } catch (error) {
           console.error("TTS generation failed:", error);
+          const errorMsg = error instanceof Error ? error.message : "Unknown error";
           addLog("⚠️ Voice generation failed, continuing without audio", "warning");
-          addLog(`Error: ${error instanceof Error ? error.message : "Unknown error"}`, "warning");
-          // Continue without audio
+          addLog(`Error: ${errorMsg}`, "warning");
+          
+          // Provide helpful guidance based on error type
+          if (errorMsg.includes('API key') || errorMsg.includes('blocked') || errorMsg.includes('403')) {
+            addLog("", "info");
+            addLog("💡 To fix TTS:", "info");
+            addLog("  1. Get a Google Cloud TTS API key from:", "info");
+            addLog("     https://console.cloud.google.com/apis/credentials", "info");
+            addLog("  2. Enable the Text-to-Speech API in Google Cloud Console", "info");
+            addLog("  3. Add VITE_GOOGLE_TTS_API_KEY to your .env file", "info");
+            addLog("  4. Restart your dev server", "info");
+            addLog("", "info");
+          } else if (errorMsg.includes('proxy') || errorMsg.includes('404')) {
+            addLog("", "info");
+            addLog("💡 TTS proxy not available - using direct API", "info");
+            addLog("  Make sure VITE_GOOGLE_TTS_API_KEY is set in .env", "info");
+            addLog("", "info");
+          }
+          
+          // Continue without audio - video will still work
+          setAudioUrls((prev) => {
+            prev.forEach((url) => URL.revokeObjectURL(url));
+            return new Map();
+          });
         }
       } else {
         if (!GOOGLE_TTS_ENABLED) {
@@ -307,9 +365,7 @@ const Studio = () => {
         addLog("Using demo manifest", "warning");
       } else {
         // Ensure manifest state is set
-        if (!manifest || manifest !== finalManifest) {
-          setManifest(finalManifest);
-        }
+        setManifest(finalManifest);
         addLog(`Manifest: ${finalManifest.scenes.length} scenes`, "info");
       }
       
@@ -352,7 +408,7 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [addLog, manifest, user?.id, searchParams]);
+  }, [addLog, user?.id, searchParams]);
 
   useEffect(() => {
     loadManifest();
@@ -372,6 +428,17 @@ const Studio = () => {
   
   const effectiveHydratedManifest = hydratedManifest || fallbackHydratedManifest || mockHydratedManifest;
   const durationInFrames = Math.max(1, effectiveHydratedManifest?.totalFrames ?? 1);
+  const playerStyle = useMemo(
+    () => ({
+      width: "100%",
+      height: "100%",
+      backgroundColor: "#0a0a0f",
+      borderRadius: "16px",
+      overflow: "hidden",
+      boxShadow: "0 0 0 1px rgba(255,255,255,0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+    }),
+    []
+  );
 
   const inputProps = useMemo(
     () => {
@@ -853,7 +920,7 @@ const Studio = () => {
             className="relative w-full h-full flex items-center justify-center p-6"
             style={{ minHeight: 0 }}
           >
-            {phase === "complete" && effectiveHydratedManifest && effectiveHydratedManifest.scenes?.length > 0 && (
+            {phase === "complete" && inputProps && effectiveHydratedManifest && effectiveHydratedManifest.scenes?.length > 0 && (
               <div 
                 className="relative group w-full h-full flex items-center justify-center"
                 style={{ 
@@ -872,25 +939,18 @@ const Studio = () => {
                     minHeight: '400px',
                   }}
                 >
-                  <Player
-                    ref={playerRef}
-                    component={RemotionVideo}
-                    inputProps={{ manifest: effectiveHydratedManifest }}
-                    durationInFrames={effectiveHydratedManifest.totalFrames || durationInFrames}
-                    compositionWidth={1920}
-                    compositionHeight={1080}
-                    fps={30}
-                    style={{ 
-                      width: "100%", 
-                      height: "100%",
-                      backgroundColor: "#0a0a0f",
-                      borderRadius: "16px",
-                      overflow: "hidden",
-                      boxShadow: "0 0 0 1px rgba(255,255,255,0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.8)",
-                    }}
-                    controls={false}
-                    autoPlay={false}
-                    loop={false}
+                    <MemoPlayer
+                      ref={playerRef}
+                      component={RemotionVideo}
+                      inputProps={inputProps}
+                      durationInFrames={effectiveHydratedManifest.totalFrames || durationInFrames}
+                      compositionWidth={1920}
+                      compositionHeight={1080}
+                      fps={30}
+                      style={playerStyle}
+                      controls={false}
+                      autoPlay={false}
+                      loop={false}
                     clickToPlay
                     doubleClickToFullscreen
                     spaceKeyToPlayOrPause

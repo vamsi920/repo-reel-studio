@@ -116,7 +116,7 @@ export const useHydrateManifestWithTTS = (
         // Dynamic import to avoid loading TTS code when not needed
         const { generateAllSceneAudio } = await import('@/lib/googleTTS');
         
-        const urls = await generateAllSceneAudio(
+        const { audioUrls: urls } = await generateAllSceneAudio(
           manifest.scenes,
           undefined,
           (completed, total) => {

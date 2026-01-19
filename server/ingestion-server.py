@@ -6,6 +6,9 @@ Provides API endpoints for cloning and processing GitHub repositories
 
 import os
 import time
+import json
+import urllib.request
+import urllib.error
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -25,6 +28,31 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Thread pool for running sync gitingest in async context
 executor = ThreadPoolExecutor(max_workers=4)
+
+
+def load_env_file() -> None:
+    """Load key/value pairs from the repo .env file if present."""
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    env_path = os.path.join(root_dir, ".env")
+    if not os.path.exists(env_path):
+        return
+
+    try:
+        with open(env_path, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception as exc:
+        print(f"⚠️  Warning: Failed to load .env file: {exc}")
+
+
+load_env_file()
 
 
 # FastAPI app setup
@@ -70,6 +98,13 @@ class IngestResponse(BaseModel):
     repoUrl: str
     stats: IngestionStats
     content: str
+
+
+class TTSRequest(BaseModel):
+    input: dict
+    voice: dict
+    audioConfig: dict
+    apiKey: Optional[str] = None
 
 
 def format_bytes(bytes_count: int) -> str:
@@ -126,6 +161,46 @@ async def health_check():
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "gitingest_available": True
     }
+
+
+@app.post("/api/tts")
+def synthesize_tts(request: TTSRequest):
+    """Proxy Google TTS requests to avoid browser CORS issues."""
+    api_key = (
+        os.getenv("GOOGLE_TTS_API_KEY")
+        or os.getenv("VITE_GOOGLE_TTS_API_KEY")
+        or request.apiKey
+    )
+
+    if not api_key:
+        raise HTTPException(status_code=400, detail="Google TTS API key not configured")
+
+    if not isinstance(request.input, dict) or not request.input.get("text"):
+        raise HTTPException(status_code=400, detail="Missing input.text in request body")
+
+    payload = {
+        "input": request.input,
+        "voice": request.voice,
+        "audioConfig": request.audioConfig,
+    }
+
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
+    body = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=30) as response:
+            raw = response.read().decode("utf-8")
+            return json.loads(raw)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8")
+        raise HTTPException(
+            status_code=exc.code,
+            detail=f"Google TTS API error: {exc.code} - {detail}",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"TTS proxy error: {exc}")
 
 
 @app.post("/api/ingest")

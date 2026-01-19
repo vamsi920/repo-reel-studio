@@ -35,7 +35,15 @@ const AudioWithFade = ({
     }
   );
 
-  return <Audio src={src} volume={volume} />;
+  return (
+    <Audio
+      src={src}
+      volume={volume}
+      startFrom={0}
+      endAt={totalFrames}
+      loop={false}
+    />
+  );
 };
 
 const getActiveSceneIndex = (frame: number, scenes: HydratedManifest["scenes"]) => {
@@ -669,6 +677,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
               activeScene={activeScene}
               previousScene={previousScene}
               relativeFrame={relativeFrame}
+              allFiles={manifest.repo_files}
             />
           </div>
         </div>
@@ -678,11 +687,11 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
       <div
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: 96,
           left: 0,
           right: 0,
           zIndex: 25,
-          padding: '0 32px 24px',
+          padding: '0 32px 12px',
         }}
       >
         <div 
@@ -795,7 +804,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         
         return (
           <Sequence
-            key={`audio-${scene.id}-${scene.startFrame}`}
+            key={`audio-${scene.id}-${scene.startFrame}-${scene.audioUrl}`}
             from={scene.startFrame}
             durationInFrames={audioDuration}
           >

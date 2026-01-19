@@ -182,6 +182,9 @@ const Processing = () => {
       addLog(`Target repository: ${repoName}`);
       addLog(`Full URL: ${repoUrl}`);
       setProgress(5);
+      
+      // Variable to hold repository content across phases (avoids sessionStorage quota issues)
+      let repoContent: string = "";
 
       // Animate through phase 1 steps while ingestion runs
       const animateSteps = async (steps: typeof phase1Steps, startProgress: number, endProgress: number) => {
@@ -251,12 +254,36 @@ const Processing = () => {
 
         const payload = await response.json();
         
-        // Store ingested content
+        // Store ingested content (with error handling for quota limits)
         if (payload.content) {
           const contentSize = (payload.content.length / 1024).toFixed(1);
           addLog(`Received ${contentSize} KB of repository content`);
-          sessionStorage.setItem("repo-content", payload.content);
-          sessionStorage.setItem("repo-url", repoUrl);
+          
+          // Store content in memory variable (for Phase 2)
+          repoContent = payload.content;
+          
+          // Try to store in sessionStorage, but don't fail if quota is exceeded
+          try {
+            sessionStorage.setItem("repo-content", payload.content);
+            sessionStorage.setItem("repo-url", repoUrl);
+          } catch (storageError: any) {
+            // Handle quota exceeded or other storage errors gracefully
+            if (storageError?.name === 'QuotaExceededError' || 
+                storageError?.message?.includes('quota') ||
+                storageError?.message?.includes('exceeded')) {
+              const sizeMB = (payload.content.length / (1024 * 1024)).toFixed(2);
+              addLog(`⚠️  Content too large (${sizeMB} MB) for sessionStorage, skipping local storage`);
+              addLog(`   Content will be used from memory and saved to database`);
+            } else {
+              console.warn('Failed to store in sessionStorage:', storageError);
+            }
+            // Still store the URL (smaller)
+            try {
+              sessionStorage.setItem("repo-url", repoUrl);
+            } catch (e) {
+              // Ignore if even URL storage fails
+            }
+          }
         }
 
         // Save Phase 1 completion to database (optional - only if columns exist)
@@ -373,7 +400,28 @@ const Processing = () => {
       setPhase2Status("running");
       addLog("--- Starting Phase 2: Manifest Generation ---");
       
-      const repoContent = sessionStorage.getItem("repo-content") || "";
+      // Use content from memory (Phase 1), fallback to sessionStorage, then database
+      if (!repoContent) {
+        // Try sessionStorage first
+        repoContent = sessionStorage.getItem("repo-content") || "";
+        
+        // If still empty and we have a project ID, try fetching from database
+        if (!repoContent && currentProjectId && user?.id) {
+          try {
+            addLog("Loading repository content from database...");
+            const project = await projectsService.getById(currentProjectId, user.id);
+            if (project?.repo_content) {
+              repoContent = project.repo_content;
+              addLog("✓ Loaded content from database");
+            }
+          } catch (dbError) {
+            console.warn('Failed to load content from database:', dbError);
+            addLog("⚠️  Could not load content from database, using empty content");
+          }
+        }
+      }
+      
+      const fileContents = parseRepoContent(repoContent);
       let manifestWithCode: VideoManifest;
 
       if (USE_MOCK_MANIFEST) {
@@ -382,7 +430,7 @@ const Processing = () => {
         if (cancelled) return;
         
         addLog("Enriching mock manifest with code content...");
-        manifestWithCode = enrichManifestWithCode(mockManifest, repoContent);
+        manifestWithCode = enrichManifestWithCode(mockManifest, fileContents);
       } else {
         addLog("Generating manifest with Gemini AI...");
         setCurrentStep("Calling Gemini API...");
@@ -402,7 +450,7 @@ const Processing = () => {
           
           addLog("Enriching manifest with actual code content...");
           // Enrich the Gemini-generated manifest with actual code from ingestion
-          manifestWithCode = enrichManifestWithCode(geminiManifest, repoContent);
+          manifestWithCode = enrichManifestWithCode(geminiManifest, fileContents);
           
           addLog("✓ Manifest generated successfully with Gemini AI!");
           setProgress(92);
@@ -416,9 +464,16 @@ const Processing = () => {
           if (cancelled) return;
           
           addLog("Using template manifest with code content...");
-          manifestWithCode = enrichManifestWithCode(mockManifest, repoContent);
+          manifestWithCode = enrichManifestWithCode(mockManifest, fileContents);
         }
       }
+
+      addLog("Applying director's cut narrative pattern...");
+      manifestWithCode = applyDirectorsCutPattern(
+        manifestWithCode,
+        fileContents,
+        repoName
+      );
       
       if (cancelled) return;
       
@@ -478,11 +533,33 @@ const Processing = () => {
         addLog("  Manifest saved to session storage only");
       }
       
-      // Also save to session storage for immediate access
-      sessionStorage.setItem("video-manifest", JSON.stringify(manifestWithCode));
-      sessionStorage.setItem("repo-url", repoUrl);
-      if (currentProjectId) {
-        sessionStorage.setItem("project-id", currentProjectId);
+      // Also save to session storage for immediate access (with error handling)
+      try {
+        const manifestJson = JSON.stringify(manifestWithCode);
+        sessionStorage.setItem("video-manifest", manifestJson);
+        sessionStorage.setItem("repo-url", repoUrl);
+        if (currentProjectId) {
+          sessionStorage.setItem("project-id", currentProjectId);
+        }
+      } catch (storageError: any) {
+        // Handle quota exceeded gracefully
+        if (storageError?.name === 'QuotaExceededError' || 
+            storageError?.message?.includes('quota') ||
+            storageError?.message?.includes('exceeded')) {
+          addLog("⚠️  Manifest too large for sessionStorage");
+          addLog("   Manifest is saved in database and will be loaded from there");
+        } else {
+          console.warn('Failed to store manifest in sessionStorage:', storageError);
+        }
+        // Still try to store smaller items
+        try {
+          sessionStorage.setItem("repo-url", repoUrl);
+          if (currentProjectId) {
+            sessionStorage.setItem("project-id", currentProjectId);
+          }
+        } catch (e) {
+          // Ignore if even small items fail
+        }
       }
 
       setPhase2Status("complete");
@@ -773,18 +850,39 @@ const PhaseCard = ({ title, status }: { title: string; status: PhaseStatus }) =>
 );
 
 // Helper function to enrich manifest with code from ingested content
-function enrichManifestWithCode(manifest: VideoManifest, repoContent: string): VideoManifest {
-  // Parse the ingested content to extract file contents
-  const fileContents = parseRepoContent(repoContent);
+function enrichManifestWithCode(
+  manifest: VideoManifest,
+  fileContents: Record<string, string>
+): VideoManifest {
+  const repoFiles = Object.keys(fileContents);
+  const resolvedRepoFiles = repoFiles.length > 0 ? repoFiles : manifest.repo_files || [];
+  const normalizePath = (value: string) => value.replace(/^\.\/+/, "").replace(/^\/+/, "");
+  const normalizedContents = new Map<string, string>(
+    Object.entries(fileContents).map(([path, contents]) => [normalizePath(path), contents])
+  );
+
+  const lookupCode = (filePath?: string) => {
+    if (!filePath) return undefined;
+    if (fileContents[filePath]) return fileContents[filePath];
+    const normalizedPath = normalizePath(filePath);
+    if (normalizedContents.has(normalizedPath)) return normalizedContents.get(normalizedPath);
+    const suffixMatch = Object.keys(fileContents).find((path) =>
+      normalizePath(path).endsWith(`/${normalizedPath}`)
+    );
+    return suffixMatch ? fileContents[suffixMatch] : undefined;
+  };
   
   return {
     ...manifest,
+    repo_files: resolvedRepoFiles,
     scenes: manifest.scenes.map((scene) => {
       // Try to get actual code from ingested content
-      const actualCode = fileContents[scene.file_path];
+      const actualCode = lookupCode(scene.file_path);
+      const trimmedActual = actualCode?.trim();
+      const trimmedExisting = scene.code?.trim();
       
       // If we have actual code, use it; otherwise use existing code or generate placeholder
-      const code = actualCode || scene.code || generatePlaceholderCode(scene);
+      const code = trimmedActual ? actualCode : trimmedExisting ? scene.code : generatePlaceholderCode(scene);
       
       return { ...scene, code };
     }),
@@ -796,20 +894,426 @@ function parseRepoContent(content: string): Record<string, string> {
   const files: Record<string, string> = {};
   if (!content) return files;
 
-  // gitingest format: files are separated by headers like:
-  // ================================================
-  // File: path/to/file.ts
-  // ================================================
-  const filePattern = /={48,}\nFile: (.+?)\n={48,}\n([\s\S]*?)(?=\n={48,}\nFile:|$)/g;
-  let match;
+  const patterns = [
+    /={3,}\nFile:\s*(.+?)\n={3,}\n([\s\S]*?)(?=\n={3,}\nFile:|$)/g,
+    /-+\nFile:\s*(.+?)\n-+\n([\s\S]*?)(?=\n-+\nFile:|$)/g,
+    /-----\s*FILE:\s*(.+?)\s*-----\n([\s\S]*?)(?=\n-----\s*FILE:|$)/gi,
+  ];
 
-  while ((match = filePattern.exec(content)) !== null) {
-    const filePath = match[1].trim();
-    const fileContent = match[2].trim();
-    files[filePath] = fileContent;
+  const tryPattern = (pattern: RegExp) => {
+    pattern.lastIndex = 0;
+    let match;
+    let matches = 0;
+    while ((match = pattern.exec(content)) !== null) {
+      const filePath = match[1].trim();
+      const fileContent = match[2].trim();
+      if (filePath) {
+        files[filePath] = fileContent;
+        matches += 1;
+      }
+    }
+    return matches;
+  };
+
+  for (const pattern of patterns) {
+    if (tryPattern(pattern) > 0) {
+      return files;
+    }
   }
 
+  // Fallback: line-based parsing for headers like "File: path/to/file"
+  const lines = content.split(/\r?\n/);
+  let currentPath = "";
+  let buffer: string[] = [];
+  const flush = () => {
+    if (!currentPath) return;
+    files[currentPath] = buffer.join("\n").trim();
+    buffer = [];
+  };
+
+  const headerRegex = /^(?:[=-]+\s*)?file:\s*(.+?)(?:\s*[=-]+)?$/i;
+  for (const line of lines) {
+    const headerMatch = line.match(headerRegex);
+    if (headerMatch) {
+      flush();
+      currentPath = headerMatch[1].trim();
+      continue;
+    }
+    if (currentPath) {
+      buffer.push(line);
+    }
+  }
+  flush();
+
   return files;
+}
+
+function applyDirectorsCutPattern(
+  manifest: VideoManifest,
+  fileContents: Record<string, string>,
+  repoName: string
+): VideoManifest {
+  const allFiles = Object.keys(fileContents);
+  if (allFiles.length === 0) {
+    return manifest;
+  }
+
+  const safeRepoName = repoName || manifest.title || "This project";
+  const normalizeScenePath = (value: string) =>
+    value.replace(/^\.\/+/, "").replace(/^\/+/, "");
+  const sceneByPath = new Map<string, VideoScene>();
+  manifest.scenes.forEach((scene) => {
+    if (!scene.file_path) return;
+    sceneByPath.set(scene.file_path, scene);
+    sceneByPath.set(normalizeScenePath(scene.file_path), scene);
+  });
+  const getExistingScene = (path: string) =>
+    sceneByPath.get(path) || sceneByPath.get(normalizeScenePath(path));
+
+  const CODE_EXTENSIONS = new Set([
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "py",
+    "go",
+    "rs",
+    "java",
+    "kt",
+    "c",
+    "h",
+    "cpp",
+    "hpp",
+    "cs",
+    "php",
+    "rb",
+    "swift",
+    "dart",
+    "sql",
+    "graphql",
+    "gql",
+    "json",
+    "yaml",
+    "yml",
+    "toml",
+  ]);
+  const DOC_EXTENSIONS = new Set(["md", "mdx"]);
+
+  const getExtension = (path: string) => path.split(".").pop()?.toLowerCase() || "";
+  const isDocFile = (path: string) =>
+    DOC_EXTENSIONS.has(getExtension(path)) || /readme/i.test(path);
+  const isCodeFile = (path: string) =>
+    CODE_EXTENSIONS.has(getExtension(path)) || path.endsWith(".env");
+  const isConfigFile = (path: string) =>
+    /(\.env|config|settings|firebase|supabase|auth|policy|rules|docker|ci|deploy)/i.test(path);
+  const matchesAny = (path: string, patterns: RegExp[]) =>
+    patterns.some((pattern) => pattern.test(path));
+
+  const normalizeLabel = (value: string) =>
+    value
+      .replace(/[_-]+/g, " ")
+      .replace(/\.[^/.]+$/, "")
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+      .trim();
+
+  const stripMarkdown = (text: string) => {
+    const withoutFences = text.replace(/```[\s\S]*?```/g, "");
+    const withoutInline = withoutFences.replace(/`[^`]+`/g, "");
+    return withoutInline.replace(/[#>*_-]+/g, " ").replace(/\s+/g, " ").trim();
+  };
+
+  const summarizeDoc = (path?: string) => {
+    if (!path) return "";
+    const content = fileContents[path];
+    if (!content) return "";
+    const lines = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const snippet = lines.slice(0, 6).join(" ");
+    return stripMarkdown(snippet);
+  };
+
+  const entryPatterns = [
+    /(^|\/)(app|main|index)\.(t|j)sx?$/i,
+    /src\/pages\/index/i,
+    /src\/app\//i,
+    /router/i,
+    /routes/i,
+  ];
+  const brainPatterns = [
+    /ai/i,
+    /agent/i,
+    /prompt/i,
+    /model/i,
+    /llm/i,
+    /embedding/i,
+    /vector/i,
+    /rag/i,
+    /inference/i,
+    /algorithm/i,
+    /recommend/i,
+    /classifier/i,
+  ];
+  const gutsPatterns = [
+    /store/i,
+    /state/i,
+    /context/i,
+    /redux/i,
+    /zustand/i,
+    /cache/i,
+    /db/i,
+    /database/i,
+    /schema/i,
+    /query/i,
+    /service/i,
+    /api/i,
+    /supabase/i,
+    /repository/i,
+  ];
+  const infraPatterns = [
+    /auth/i,
+    /security/i,
+    /policy/i,
+    /rules/i,
+    /config/i,
+    /env/i,
+    /firebase/i,
+    /supabase/i,
+    /middleware/i,
+    /docker/i,
+    /ci/i,
+    /deploy/i,
+  ];
+
+  const docFiles = allFiles.filter(isDocFile);
+  const codeFiles = allFiles.filter(isCodeFile);
+  const entryFiles = codeFiles.filter((path) => matchesAny(path, entryPatterns));
+  const brainFiles = codeFiles.filter((path) => matchesAny(path, brainPatterns));
+  const gutsFiles = codeFiles.filter((path) => matchesAny(path, gutsPatterns));
+  const infraFiles = allFiles.filter(
+    (path) => matchesAny(path, infraPatterns) || isConfigFile(path)
+  );
+
+  const readme = docFiles.find((path) => /readme/i.test(path)) || docFiles[0];
+  const outroDoc = docFiles.find((path) => path !== readme) || readme;
+  const allCodeFallback = codeFiles.length > 0 ? codeFiles : allFiles;
+
+  const takeUnique = (
+    candidates: string[],
+    count: number,
+    used: Set<string>,
+    fallback: string[]
+  ) => {
+    const picked: string[] = [];
+    const pickFrom = (list: string[]) => {
+      for (const file of list) {
+        if (picked.length >= count) break;
+        if (used.has(file)) continue;
+        picked.push(file);
+        used.add(file);
+      }
+    };
+    pickFrom(candidates);
+    if (picked.length < count) {
+      pickFrom(fallback);
+    }
+    return picked;
+  };
+
+  const buildHighlightLines = (path?: string) => {
+    if (!path) return undefined;
+    const content = fileContents[path];
+    if (!content) return undefined;
+    const lines = content.split("\n").length;
+    const endLine = Math.min(20, Math.max(1, lines));
+    return [1, endLine] as [number, number];
+  };
+
+  const buildNarration = (section: string, filePath: string) => {
+    const baseName = filePath.split("/").pop() || filePath;
+    const summary = summarizeDoc(filePath);
+    const lower = filePath.toLowerCase();
+
+    if (section === "hook") {
+      if (isDocFile(filePath)) {
+        return summary
+          ? `${summary}`
+          : `In this quick tour, we'll explore how the application works from end to end.`;
+      }
+      return `We start at ${baseName}, the entry point that wires routing, providers, and the initial UI.`;
+    }
+
+    if (section === "brain") {
+      const focus = lower.includes("prompt")
+        ? "prompt construction"
+        : lower.includes("agent")
+        ? "agent orchestration"
+        : lower.includes("model") || lower.includes("llm")
+        ? "model invocation"
+        : lower.includes("embedding") || lower.includes("vector")
+        ? "retrieval and embeddings"
+        : "core decision logic";
+      return `Here in ${baseName} is the intelligence layer. This handles ${focus} to drive the product behavior.`;
+    }
+
+    if (section === "guts") {
+      const focus = lower.includes("schema") || lower.includes("db") || lower.includes("sql")
+        ? "data modeling and persistence"
+        : lower.includes("cache")
+        ? "caching and performance"
+        : "state and data flow";
+      return `The data pipeline lives in ${baseName}. It manages ${focus} so the UI stays fast and consistent.`;
+    }
+
+    if (section === "infra") {
+      const focus = lower.includes("auth")
+        ? "authentication and access control"
+        : lower.includes("policy") || lower.includes("rules")
+        ? "security policies"
+        : "configuration and deployment readiness";
+      return `In ${baseName}, we handle ${focus} to keep the application production-ready.`;
+    }
+
+    if (section === "outro") {
+      return summary
+        ? `${summary}`
+        : `That completes the tour: interface, intelligence, data flow, and infrastructure.`;
+    }
+
+    return `Let's look at ${baseName} to understand how this piece fits into the overall architecture.`;
+  };
+
+  const buildSceneTitle = (sectionLabel: string, filePath: string) => {
+    const baseName = filePath.split("/").pop() || filePath;
+    return `${sectionLabel}: ${normalizeLabel(baseName)}`;
+  };
+
+  const buildDurations = (totalSeconds: number, count: number) => {
+    if (count <= 0) return [];
+    const base = Math.floor(totalSeconds / count);
+    const remainder = totalSeconds - base * count;
+    return Array.from({ length: count }, (_, index) => base + (index < remainder ? 1 : 0));
+  };
+
+  const usedFiles = new Set<string>();
+  const scenes: VideoScene[] = [];
+  let sceneId = 1;
+
+  const hookFiles = [
+    ...(readme ? [readme] : []),
+    ...takeUnique(entryFiles, 1, usedFiles, allCodeFallback),
+  ].filter(Boolean);
+  const hookDurations = buildDurations(30, hookFiles.length);
+  hookFiles.forEach((filePath, index) => {
+    const existing = getExistingScene(filePath);
+    scenes.push({
+      id: sceneId++,
+      type: existing?.type || (index === 0 && isDocFile(filePath) ? "intro" : "entry"),
+      file_path: filePath,
+      highlight_lines: existing?.highlight_lines || buildHighlightLines(filePath),
+      narration_text: existing?.narration_text || buildNarration("hook", filePath),
+      duration_seconds: hookDurations[index] || 12,
+      title: existing?.title || buildSceneTitle("Hook", filePath),
+      code:
+        existing?.code ||
+        fileContents[filePath] ||
+        generatePlaceholderCode({ file_path: filePath } as VideoScene),
+    });
+  });
+
+  const brainFilesPicked = takeUnique(brainFiles, 4, usedFiles, allCodeFallback);
+  const brainDurations = buildDurations(45, brainFilesPicked.length);
+  brainFilesPicked.forEach((filePath, index) => {
+    const existing = getExistingScene(filePath);
+    scenes.push({
+      id: sceneId++,
+      type: existing?.type || "code",
+      file_path: filePath,
+      highlight_lines: existing?.highlight_lines || buildHighlightLines(filePath),
+      narration_text: existing?.narration_text || buildNarration("brain", filePath),
+      duration_seconds: brainDurations[index] || 11,
+      title: existing?.title || buildSceneTitle("Brain", filePath),
+      code:
+        existing?.code ||
+        fileContents[filePath] ||
+        generatePlaceholderCode({ file_path: filePath } as VideoScene),
+    });
+  });
+
+  const gutsFilesPicked = takeUnique(gutsFiles, 3, usedFiles, allCodeFallback);
+  const gutsDurations = buildDurations(45, gutsFilesPicked.length);
+  gutsFilesPicked.forEach((filePath, index) => {
+    const existing = getExistingScene(filePath);
+    scenes.push({
+      id: sceneId++,
+      type: existing?.type || "core",
+      file_path: filePath,
+      highlight_lines: existing?.highlight_lines || buildHighlightLines(filePath),
+      narration_text: existing?.narration_text || buildNarration("guts", filePath),
+      duration_seconds: gutsDurations[index] || 14,
+      title: existing?.title || buildSceneTitle("Guts", filePath),
+      code:
+        existing?.code ||
+        fileContents[filePath] ||
+        generatePlaceholderCode({ file_path: filePath } as VideoScene),
+    });
+  });
+
+  const infraFilesPicked = takeUnique(infraFiles, 2, usedFiles, allCodeFallback);
+  const infraDurations = buildDurations(40, infraFilesPicked.length);
+  infraFilesPicked.forEach((filePath, index) => {
+    const existing = getExistingScene(filePath);
+    scenes.push({
+      id: sceneId++,
+      type: existing?.type || "support",
+      file_path: filePath,
+      highlight_lines: existing?.highlight_lines || buildHighlightLines(filePath),
+      narration_text: existing?.narration_text || buildNarration("infra", filePath),
+      duration_seconds: infraDurations[index] || 18,
+      title: existing?.title || buildSceneTitle("Infra", filePath),
+      code:
+        existing?.code ||
+        fileContents[filePath] ||
+        generatePlaceholderCode({ file_path: filePath } as VideoScene),
+    });
+  });
+
+  if (outroDoc) {
+    const existing = getExistingScene(outroDoc);
+    scenes.push({
+      id: sceneId++,
+      type: existing?.type || "outro",
+      file_path: outroDoc,
+      highlight_lines: existing?.highlight_lines || buildHighlightLines(outroDoc),
+      narration_text: existing?.narration_text || buildNarration("outro", outroDoc),
+      duration_seconds: 20,
+      title: existing?.title || buildSceneTitle("Outro", outroDoc),
+      code:
+        existing?.code ||
+        fileContents[outroDoc] ||
+        generatePlaceholderCode({ file_path: outroDoc } as VideoScene),
+    });
+  } else if (scenes.length > 0) {
+    const lastScene = scenes[scenes.length - 1];
+    scenes.push({
+      id: sceneId++,
+      type: "summary",
+      file_path: lastScene.file_path,
+      highlight_lines: lastScene.highlight_lines,
+      narration_text: `That completes the walkthrough of the application architecture.`,
+      duration_seconds: 20,
+      title: `Outro: Summary`,
+      code: lastScene.code,
+    });
+  }
+
+  return {
+    ...manifest,
+    title: manifest.title || "Project Walkthrough",
+    repo_files: manifest.repo_files || allFiles,
+    scenes,
+  };
 }
 
 // Generate placeholder code when actual code is not available
