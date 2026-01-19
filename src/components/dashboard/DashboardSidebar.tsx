@@ -1,14 +1,16 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   FolderOpen, 
-  Users, 
-  CreditCard, 
-  Key, 
   ChevronLeft,
-  LogOut
+  LogOut,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/context/AuthContext";
+import { getUserInitials } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import iconUrl from "../../../icon.png";
 
 interface DashboardSidebarProps {
@@ -18,13 +20,25 @@ interface DashboardSidebarProps {
 
 export const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+    navigate("/");
+  };
 
   const navItems = [
     { icon: FolderOpen, label: "Projects", href: "/dashboard" },
-    { icon: Users, label: "Team Settings", href: "/dashboard/team" },
-    { icon: CreditCard, label: "Billing", href: "/dashboard/billing" },
-    { icon: Key, label: "API Keys", href: "/dashboard/api" },
   ];
+
+  const userEmail = user?.email || "";
+  const userName = user?.user_metadata?.full_name || "";
+  const userAvatar = user?.user_metadata?.avatar_url || "";
 
   return (
     <aside
@@ -51,10 +65,50 @@ export const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps)
         </button>
       </div>
 
+      {/* User Profile Section */}
+      {user && (
+        <div className={cn(
+          "p-3 border-b border-sidebar-border",
+          collapsed ? "flex justify-center" : ""
+        )}>
+          {collapsed ? (
+            <Link to="/profile">
+              <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                <AvatarImage src={userAvatar} alt={userName || userEmail} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {getUserInitials(userName, userEmail)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : (
+            <Link 
+              to="/profile" 
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors group"
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={userAvatar} alt={userName || userEmail} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {getUserInitials(userName, userEmail)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate group-hover:text-primary transition-colors">
+                  {userName || "User"}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">
+                  {userEmail}
+                </p>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.href;
+          
           return (
             <Link
               key={item.href}
@@ -75,19 +129,26 @@ export const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps)
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border">
+        {!collapsed && (
+          <Link
+            to="/profile"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors mb-2"
+          >
+            <User className="h-4 w-4 shrink-0" />
+            <span>Profile</span>
+          </Link>
+        )}
         <Button
           variant="ghost"
           size="sm"
           className={cn(
-            "w-full text-sidebar-foreground/70 hover:text-sidebar-foreground",
+            "w-full text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
             collapsed ? "justify-center" : "justify-start"
           )}
-          asChild
+          onClick={handleSignOut}
         >
-          <Link to="/">
-            <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Log out</span>}
-          </Link>
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-2">Log out</span>}
         </Button>
       </div>
     </aside>

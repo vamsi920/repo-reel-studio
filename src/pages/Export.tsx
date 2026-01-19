@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
   CheckCircle, 
   Download, 
@@ -7,37 +7,70 @@ import {
   Terminal,
   Copy,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { projectsService } from "@/lib/db";
 import type { VideoManifest } from "@/lib/geminiDirector";
 import { Player, PlayerRef } from "@remotion/player";
 import { RemotionVideo } from "@/components/studio/RemotionVideo";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 
 const Export = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const playerRef = useRef<PlayerRef>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const storedManifest = sessionStorage.getItem("video-manifest");
-    const storedUrl = sessionStorage.getItem("repo-url");
-    
-    if (storedManifest) {
-      try {
-        setManifest(JSON.parse(storedManifest));
-      } catch {
-        console.warn("Failed to parse manifest");
+    const loadManifest = async () => {
+      setIsLoading(true);
+      
+      // Try to load from Supabase first
+      const projectId = searchParams.get('project') || sessionStorage.getItem('project-id');
+      
+      if (projectId && user?.id) {
+        try {
+          const project = await projectsService.getById(projectId, user.id);
+          if (project && project.manifest && project.status === 'ready') {
+            setManifest(project.manifest as VideoManifest);
+            setRepoUrl(project.repo_url);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to load project:', error);
+        }
       }
-    }
-    if (storedUrl) {
-      setRepoUrl(storedUrl);
-    }
-  }, []);
+      
+      // Fallback to session storage
+      const storedManifest = sessionStorage.getItem("video-manifest");
+      const storedUrl = sessionStorage.getItem("repo-url");
+      
+      if (storedManifest) {
+        try {
+          setManifest(JSON.parse(storedManifest));
+        } catch {
+          console.warn("Failed to parse manifest");
+        }
+      }
+      if (storedUrl) {
+        setRepoUrl(storedUrl);
+      }
+      
+      setIsLoading(false);
+    };
+
+    loadManifest();
+  }, [searchParams, user?.id]);
 
   const repoName = (() => {
     try {
@@ -112,13 +145,24 @@ const Export = () => {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading video...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!manifest) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">No video to export</p>
           <Button asChild>
-            <Link to="/">Create a Video</Link>
+            <Link to="/dashboard">Go to Dashboard</Link>
           </Button>
         </div>
       </div>

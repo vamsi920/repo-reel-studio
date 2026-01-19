@@ -2,6 +2,42 @@ import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, Easing, sp
 import { IdeWindow } from "@/components/studio/IdeWindow";
 import type { HydratedManifest } from "@/hooks/useHydrateManifest";
 
+/**
+ * Audio component with fade in/out effects
+ */
+const AudioWithFade = ({
+  src,
+  fadeInFrames,
+  fadeOutFrames,
+  totalFrames,
+}: {
+  src: string;
+  fadeInFrames: number;
+  fadeOutFrames: number;
+  totalFrames: number;
+}) => {
+  const frame = useCurrentFrame();
+  
+  // Calculate volume with fade in and fade out
+  const volume = interpolate(
+    frame,
+    [
+      0,                    // Start: volume 0
+      fadeInFrames,         // After fade in: volume 1
+      totalFrames - fadeOutFrames, // Before fade out: volume 1
+      totalFrames,          // End: volume 0
+    ],
+    [0, 1, 1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.ease,
+    }
+  );
+
+  return <Audio src={src} volume={volume} />;
+};
+
 const getActiveSceneIndex = (frame: number, scenes: HydratedManifest["scenes"]) => {
   const index = scenes.findIndex(
     (scene) => frame >= scene.startFrame && frame < scene.endFrame
@@ -681,7 +717,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
                 left: 0,
                 right: 0,
                 height: 3,
-                background: `linear-gradient(90deg, 
+                backgroundImage: `linear-gradient(90deg, 
                   transparent 0%, 
                   rgba(139, 92, 246, ${0.6 + glowPulse * 0.2}) ${50 + Math.sin(frame / 30) * 20}%, 
                   rgba(236, 72, 153, 0.4) ${70 + Math.cos(frame / 25) * 15}%,
@@ -748,18 +784,30 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         }}
       />
 
-      {/* Audio sequences - only render if audioUrl exists and is valid */}
-      {scenes.map((scene) => (
-        <Sequence
-          key={`audio-${scene.id}-${scene.startFrame}`}
-          from={scene.startFrame}
-          durationInFrames={scene.durationInFrames}
-        >
-          {scene.audioUrl && !scene.audioUrl.includes('mock') ? (
-            <Audio src={scene.audioUrl} />
-          ) : null}
-        </Sequence>
-      ))}
+      {/* Audio sequences with fade in/out effects */}
+      {scenes.map((scene) => {
+        if (!scene.audioUrl || scene.audioUrl.includes('mock')) {
+          return null;
+        }
+
+        const audioDuration = scene.durationInFrames;
+        const fadeFrames = Math.min(9, Math.max(3, Math.floor(audioDuration * 0.1))); // 0.1s fade at 30fps = 3 frames, max 9 frames
+        
+        return (
+          <Sequence
+            key={`audio-${scene.id}-${scene.startFrame}`}
+            from={scene.startFrame}
+            durationInFrames={audioDuration}
+          >
+            <AudioWithFade
+              src={scene.audioUrl}
+              fadeInFrames={fadeFrames}
+              fadeOutFrames={fadeFrames}
+              totalFrames={audioDuration}
+            />
+          </Sequence>
+        );
+      })}
     </AbsoluteFill>
   );
 };

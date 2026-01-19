@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   ArrowLeft, 
   Download, 
@@ -14,6 +14,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Share2,
+  Volume2,
 } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { Button } from "@/components/ui/button";
@@ -22,10 +23,14 @@ import { VideoControls, SceneListSidebar } from "@/components/studio/VideoContro
 import { mockManifest } from "@/data/mockManifest";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { projectsService } from "@/lib/db";
 import type { VideoManifest } from "@/lib/geminiDirector";
+import { generateAllSceneAudio } from "@/lib/googleTTS";
+import { GOOGLE_TTS_ENABLED } from "@/env";
 import iconUrl from "../../icon.png";
 
-type LoadingPhase = "idle" | "loading" | "hydrating" | "rendering" | "complete" | "error";
+type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
 
 interface LogEntry {
   timestamp: string;
@@ -40,6 +45,8 @@ const formatTime = () => {
 
 const Studio = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const playerRef = useRef<PlayerRef>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
@@ -48,6 +55,8 @@ const Studio = () => {
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentStep, setCurrentStep] = useState("Initializing...");
+  const [audioUrls, setAudioUrls] = useState<Map<number, string>>(new Map());
+  const [ttsProgress, setTtsProgress] = useState({ completed: 0, total: 0 });
   const logsEndRef = useRef<HTMLDivElement>(null);
   const isLoadingRef = useRef(false);
   
@@ -90,91 +99,129 @@ const Studio = () => {
     setProgress(10);
     
     try {
-      addLog("Checking session storage for manifest...", "info");
-      const storedManifest = sessionStorage.getItem("video-manifest");
-      const storedUrl = sessionStorage.getItem("repo-url");
-      
-      // Clear any previous error markers
-      sessionStorage.removeItem("processing-error");
-      
-      await new Promise(r => setTimeout(r, 200));
-      setProgress(20);
+      // Get project ID from URL params or session storage
+      const projectIdFromUrl = searchParams.get('project');
+      const projectIdFromStorage = sessionStorage.getItem('project-id');
+      const projectId = projectIdFromUrl || projectIdFromStorage;
 
       let parsed: VideoManifest | null = null;
-      
-      if (storedManifest) {
-        addLog("Found stored manifest, parsing...", "info");
-        setCurrentStep("Parsing manifest data...");
+      let repoUrl = sessionStorage.getItem("repo-url") || "";
+
+      // Try to load from Supabase first
+      if (projectId && user?.id) {
+        addLog("Loading project from database...", "info");
+        setCurrentStep("Fetching project data...");
+        setProgress(20);
         
         try {
-          parsed = JSON.parse(storedManifest) as VideoManifest;
-        } catch (parseError) {
-          console.error("[Studio] Failed to parse manifest, using mock:", parseError);
-          parsed = mockManifest;
+          const project = await projectsService.getById(projectId, user.id);
+          
+          if (project && project.manifest && project.status === 'ready') {
+            addLog("Project found in database", "success");
+            parsed = project.manifest as VideoManifest;
+            repoUrl = project.repo_url;
+            setRepoLabel(project.repo_name);
+            
+            // Update session storage for compatibility
+            sessionStorage.setItem("video-manifest", JSON.stringify(parsed));
+            sessionStorage.setItem("repo-url", repoUrl);
+            sessionStorage.setItem("project-id", project.id);
+          } else if (project && project.manifest && project.status === 'processing') {
+            // Project is processing but has manifest - use it (might be from previous run)
+            addLog("Project found (status: processing)", "info");
+            addLog("Using manifest from database...", "info");
+            parsed = project.manifest as VideoManifest;
+            repoUrl = project.repo_url;
+            setRepoLabel(project.repo_name);
+            
+            // Update session storage for compatibility
+            sessionStorage.setItem("video-manifest", JSON.stringify(parsed));
+            sessionStorage.setItem("repo-url", repoUrl);
+            sessionStorage.setItem("project-id", project.id);
+          } else if (project && project.status === 'processing') {
+            // Project is processing but no manifest yet - check session storage
+            addLog("Project is still processing...", "warning");
+            addLog("Checking session storage for manifest...", "info");
+            // Don't return yet - let it fall through to session storage check
+          } else if (project && project.status === 'error') {
+            addLog("Project processing failed", "error");
+            addLog("Please go back and retry", "error");
+            setPhase("error");
+            setCurrentStep("Processing failed");
+            setProgress(0);
+            isLoadingRef.current = false;
+            return;
+          }
+        } catch (error) {
+          console.error("[Studio] Failed to load from database:", error);
+          addLog("Could not load from database, trying session storage...", "warning");
         }
-        
-        await new Promise(r => setTimeout(r, 300));
-        setProgress(35);
-        
-        // Validate manifest structure - use mock if invalid
-        if (!parsed || !parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
-          console.warn("[Studio] Invalid manifest structure, using mock:", parsed);
-          parsed = mockManifest;
-        }
-        
-        addLog(`Manifest loaded: "${parsed.title || "Untitled"}"`, "success");
-        addLog(`Found ${parsed.scenes.length} scenes`, "info");
-        
-        // Set manifest state BEFORE continuing
-        setManifest(parsed);
-        setRepoLabel(storedUrl || parsed.title || "Video Preview");
-        
-        // Log scene details
-        setCurrentStep("Analyzing scenes...");
-        setProgress(45);
-        await new Promise(r => setTimeout(r, 200));
-        
-        const sceneTypes = parsed.scenes.reduce((acc, s) => {
-          acc[s.type] = (acc[s.type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        Object.entries(sceneTypes).forEach(([type, count]) => {
-          addLog(`  - ${type}: ${count} scene(s)`, "info");
-        });
-        
-        setProgress(55);
-      } else {
-        // Check if there was a processing error (no manifest means ingestion likely failed)
-        const repoContent = sessionStorage.getItem("repo-content");
-        const processingError = sessionStorage.getItem("processing-error");
-        const storedUrl = sessionStorage.getItem("repo-url");
-        
-        if (processingError || (!repoContent && storedUrl)) {
-          // Ingestion failed - show error
-          addLog("No manifest found - ingestion may have failed", "error");
-          addLog("Please go back and retry the ingestion process", "error");
-          setPhase("error");
-          setCurrentStep("Ingestion failed");
-          setProgress(0);
-          isLoadingRef.current = false;
-          return;
-        }
-        
-        addLog("No stored manifest found", "warning");
-        addLog("Loading demo content...", "info");
-        setCurrentStep("Loading demo manifest...");
-        
-        await new Promise(r => setTimeout(r, 400));
-        setProgress(40);
-        
-        parsed = mockManifest;
-        parsed = mockManifest;
-        setManifest(mockManifest);
-        setRepoLabel(mockManifest.title);
-        addLog(`Demo manifest loaded: ${mockManifest.scenes.length} scenes`, "success");
-        setProgress(55);
       }
+
+      // Fallback to session storage if not found in database
+      if (!parsed) {
+        addLog("Checking session storage...", "info");
+        const storedManifest = sessionStorage.getItem("video-manifest");
+        
+        if (storedManifest) {
+          addLog("Found stored manifest, parsing...", "info");
+          setCurrentStep("Parsing manifest data...");
+          
+          try {
+            parsed = JSON.parse(storedManifest) as VideoManifest;
+            if (!repoUrl) {
+              repoUrl = sessionStorage.getItem("repo-url") || "";
+            }
+          } catch (parseError) {
+            console.error("[Studio] Failed to parse manifest:", parseError);
+            addLog("Failed to parse manifest", "error");
+            setPhase("error");
+            setCurrentStep("Invalid manifest");
+            setProgress(0);
+            isLoadingRef.current = false;
+            return;
+          }
+        }
+      }
+
+      // Validate manifest
+      if (!parsed || !parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
+        addLog("No valid manifest found", "error");
+        addLog("Please go back and create a new video", "error");
+        setPhase("error");
+        setCurrentStep("No manifest available");
+        setProgress(0);
+        isLoadingRef.current = false;
+        return;
+      }
+
+      await new Promise(r => setTimeout(r, 300));
+      setProgress(35);
+      
+      addLog(`Manifest loaded: "${parsed.title || "Untitled"}"`, "success");
+      addLog(`Found ${parsed.scenes.length} scenes`, "info");
+      
+      // Set manifest state
+      setManifest(parsed);
+      if (!repoLabel || repoLabel === "Loading...") {
+        setRepoLabel(repoUrl || parsed.title || "Video Preview");
+      }
+      
+      // Log scene details
+      setCurrentStep("Analyzing scenes...");
+      setProgress(45);
+      await new Promise(r => setTimeout(r, 200));
+      
+      const sceneTypes = parsed.scenes.reduce((acc, s) => {
+        acc[s.type] = (acc[s.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      Object.entries(sceneTypes).forEach(([type, count]) => {
+        addLog(`  - ${type}: ${count} scene(s)`, "info");
+      });
+      
+      setProgress(55);
       
       // Ensure parsed is set (should be set by now)
       if (!parsed) {
@@ -203,7 +250,40 @@ const Studio = () => {
       await new Promise(r => setTimeout(r, 200));
       setProgress(90);
 
-      // Phase 3: Rendering
+      // Phase 3: Generating Voice (TTS)
+      if (GOOGLE_TTS_ENABLED && parsed && parsed.scenes && parsed.scenes.length > 0) {
+        setPhase("generating-voice");
+        setCurrentStep("Generating voice narration...");
+        addLog("Starting voice generation with Google TTS...", "info");
+        addLog(`Generating audio for ${parsed.scenes.length} scenes...`, "info");
+        
+        try {
+          const generatedAudioUrls = await generateAllSceneAudio(
+            parsed.scenes,
+            'en-US-Standard-D',
+            (completed, total) => {
+              setTtsProgress({ completed, total });
+              const ttsPercent = Math.floor((completed / total) * 100);
+              setProgress(90 + Math.floor(ttsPercent * 0.05)); // 90-95% for TTS
+              addLog(`Generated voice for scene ${completed}/${total}`, completed === total ? "success" : "info");
+            }
+          );
+          
+          setAudioUrls(generatedAudioUrls);
+          addLog(`✓ Voice generation complete! Generated ${generatedAudioUrls.size} audio files`, "success");
+        } catch (error) {
+          console.error("TTS generation failed:", error);
+          addLog("⚠️ Voice generation failed, continuing without audio", "warning");
+          addLog(`Error: ${error instanceof Error ? error.message : "Unknown error"}`, "warning");
+          // Continue without audio
+        }
+      } else {
+        if (!GOOGLE_TTS_ENABLED) {
+          addLog("Google TTS not enabled, skipping voice generation", "info");
+        }
+      }
+
+      // Phase 4: Rendering
       setPhase("rendering");
       setCurrentStep("Initializing Remotion player...");
       addLog("Setting up video renderer...", "info");
@@ -272,21 +352,23 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [addLog, manifest]);
+  }, [addLog, manifest, user?.id, searchParams]);
 
   useEffect(() => {
     loadManifest();
   }, [loadManifest]);
 
-  const hydratedManifest = useHydrateManifest(manifest);
+  const hydratedManifest = useHydrateManifest(manifest, 30, audioUrls);
   
   // Fallback to mock manifest if we have no manifest at all
   const fallbackHydratedManifest = useHydrateManifest(
-    !manifest ? mockManifest : null
+    !manifest ? mockManifest : null,
+    30,
+    audioUrls
   );
   
   // Always ensure we have a hydrated manifest - use mock if needed
-  const mockHydratedManifest = useHydrateManifest(mockManifest);
+  const mockHydratedManifest = useHydrateManifest(mockManifest, 30, audioUrls);
   
   const effectiveHydratedManifest = hydratedManifest || fallbackHydratedManifest || mockHydratedManifest;
   const durationInFrames = Math.max(1, effectiveHydratedManifest?.totalFrames ?? 1);
@@ -528,7 +610,7 @@ const Studio = () => {
         </div>
 
         {/* Phase indicators */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-6">
           <PhaseCard 
             icon={FileCode}
             title="Load" 
@@ -538,6 +620,11 @@ const Studio = () => {
             icon={Sparkles}
             title="Hydrate" 
             status={phase === "hydrating" ? "running" : progress >= 90 ? "complete" : "idle"} 
+          />
+          <PhaseCard 
+            icon={Volume2}
+            title="Voice" 
+            status={phase === "generating-voice" ? "running" : progress >= 95 ? "complete" : progress >= 90 ? "idle" : "idle"} 
           />
           <PhaseCard 
             icon={Play}
@@ -573,11 +660,57 @@ const Studio = () => {
           </div>
         </div>
 
+        {/* TTS Generation Animation */}
+        {phase === "generating-voice" && ttsProgress.total > 0 && (
+          <div className="mb-6 space-y-4">
+            {/* Voice Icon with Pulse */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-purple-500/10 border-2 border-primary/30">
+                  <Volume2 className="h-10 w-10 text-primary animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            {/* Scene Progress */}
+            <div className="text-center">
+              <p className="text-sm font-medium text-primary mb-2">
+                Generating voice for scene {ttsProgress.completed}/{ttsProgress.total}
+              </p>
+              <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-300 ease-out"
+                  style={{ width: `${(ttsProgress.completed / ttsProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Sound Wave Bars */}
+            <div className="flex items-end justify-center gap-1.5 h-12">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 bg-gradient-to-t from-primary to-purple-500 rounded-full"
+                  style={{
+                    animation: `sound-wave ${0.4 + i * 0.1}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.1}s`,
+                    minHeight: '8px',
+                    maxHeight: '48px',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Current Step */}
         <div className="text-center mb-6">
           <h3 className="text-base font-medium mb-1">{currentStep}</h3>
           <p className="text-sm text-muted-foreground">
-            {phase === "complete" ? "Click anywhere on the video to play" : "Building your code walkthrough..."}
+            {phase === "complete" ? "Click anywhere on the video to play" : 
+             phase === "generating-voice" ? "Creating professional voice narration..." :
+             "Building your code walkthrough..."}
           </p>
         </div>
 

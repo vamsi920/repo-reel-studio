@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
+import { Loader2, CheckCircle2, AlertTriangle, RefreshCw, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mockManifest } from "@/data/mockManifest";
+import { useAuth } from "@/context/AuthContext";
+import { projectsService, extractRepoName } from "@/lib/db";
+import { generateManifestWithGemini } from "@/lib/geminiDirector";
+import { USE_MOCK_MANIFEST } from "@/env";
+import { toast } from "@/hooks/use-toast";
+import type { VideoManifest, VideoScene } from "@/lib/types";
 import iconUrl from "../../icon.png";
 
 const phase1Steps = [
@@ -35,12 +41,14 @@ const formatTime = () => {
 const Processing = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [phase1Status, setPhase1Status] = useState<PhaseStatus>("idle");
   const [phase2Status, setPhase2Status] = useState<PhaseStatus>("idle");
   const [retryKey, setRetryKey] = useState(0);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
   // Auto-scroll logs
@@ -90,6 +98,84 @@ const Processing = () => {
     }
 
     const runProcessing = async () => {
+      // Note: Processing can work without auth, but projects won't be saved to DB
+      if (!user?.id) {
+        addLog("INFO: Not authenticated - project will not be saved to database");
+        addLog("  → Sign in to save projects and access Studio");
+      }
+
+      // Create project in Supabase
+      let currentProjectId: string | null = null;
+      
+      // Try to create project in database (only if authenticated)
+      if (user?.id) {
+        // Verify database connection first
+        try {
+          addLog("Checking database connection...");
+          const connectionCheck = await projectsService.checkConnection();
+          if (!connectionCheck.connected) {
+            throw new Error(connectionCheck.error || 'Database connection failed');
+          }
+          addLog("✓ Database connection verified");
+        } catch (checkError: any) {
+          addLog(`WARNING: Database check failed: ${checkError.message}`);
+          addLog(`  → This might mean the 'projects' table doesn't exist yet`);
+          addLog(`  → Please run the SQL schema from supabase-schema.sql in Supabase Dashboard`);
+          addLog(`  → See DATABASE_SETUP.md for instructions`);
+          addLog(`  → Continuing without database save...`);
+        }
+        try {
+          addLog("Creating project in database...");
+          const repoNameFromUrl = extractRepoName(repoUrl);
+          const project = await projectsService.create({
+            user_id: user.id,
+            repo_url: repoUrl,
+            repo_name: repoNameFromUrl,
+            title: `${repoNameFromUrl} - Video Walkthrough`,
+            status: 'processing',
+            manifest: null,
+            duration_seconds: null,
+          });
+          currentProjectId = project.id;
+          setProjectId(project.id);
+          sessionStorage.setItem('project-id', project.id);
+          addLog(`✓ Project created successfully: ${project.id.substring(0, 8)}...`);
+        } catch (error: any) {
+          console.error('Failed to create project:', error);
+          const errorMessage = error?.message || error?.error_description || 'Unknown error';
+          const errorCode = error?.code || error?.status || '';
+          const errorHint = error?.hint || '';
+          
+          addLog(`ERROR: Could not create project in database`);
+          addLog(`  Error: ${errorMessage}`);
+          if (errorCode) {
+            addLog(`  Code: ${errorCode}`);
+          }
+          if (errorHint) {
+            addLog(`  Hint: ${errorHint}`);
+          }
+          
+          // Check for common issues and provide helpful messages
+          if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+            addLog(`  → SOLUTION: Run the SQL schema in Supabase Dashboard`);
+            addLog(`  → File: supabase-schema.sql`);
+          } else if (errorMessage.includes('permission denied') || errorMessage.includes('RLS') || errorMessage.includes('policy')) {
+            addLog(`  → SOLUTION: Check Row Level Security policies`);
+            addLog(`  → Make sure RLS policies are created (see supabase-schema.sql)`);
+          } else if (errorMessage.includes('JWT') || errorMessage.includes('token') || errorMessage.includes('auth')) {
+            addLog(`  → SOLUTION: Authentication issue - please sign in again`);
+          } else if (errorMessage.includes('null value') || errorMessage.includes('violates')) {
+            addLog(`  → SOLUTION: Check that all required fields are provided`);
+          }
+          
+          addLog(`  → Continuing without database save...`);
+          // Continue processing even if DB save fails
+        }
+      } else {
+        addLog("WARNING: User not authenticated - skipping database save");
+        addLog("  → Sign in to save projects to your account");
+      }
+
       // ===== PHASE 1: INGESTION =====
       setPhase1Status("running");
       addLog(`Starting video generation pipeline...`);
@@ -173,11 +259,45 @@ const Processing = () => {
           sessionStorage.setItem("repo-url", repoUrl);
         }
 
+        // Save Phase 1 completion to database (optional - only if columns exist)
+        if (currentProjectId && user?.id && payload.content && payload.stats) {
+          try {
+            // Try to save Phase 1 data, but don't fail if columns don't exist
+            await projectsService.update(currentProjectId, user.id, {
+              repo_content: payload.content,
+              ingestion_stats: {
+                includedFiles: payload.stats.includedFiles || 0,
+                skippedFiles: payload.stats.skippedFiles || 0,
+                totalBytes: payload.stats.totalBytes || 0,
+                totalBytesFormatted: payload.stats.totalBytesFormatted || '0 B',
+                durationMs: payload.stats.durationMs || 0,
+              },
+              phase1_completed_at: new Date().toISOString(),
+            } as any); // Use 'as any' to allow optional fields
+            addLog("✓ Phase 1 data saved to database");
+          } catch (error: any) {
+            console.error('Failed to save Phase 1 data:', error);
+            // If it's a column error, try without the new fields
+            if (error?.code === 'PGRST204' || error?.message?.includes('column')) {
+              try {
+                // Fallback: only update basic fields
+                await projectsService.update(currentProjectId, user.id, {
+                  status: 'processing',
+                });
+                addLog("✓ Project status updated (some fields not available)");
+              } catch (fallbackError) {
+                // Ignore fallback errors
+              }
+            }
+            // Continue even if save fails
+          }
+        }
+
         setPhase1Status("complete");
         setProgress(60);
         addLog(`Phase 1 complete: ${payload.stats?.totalBytesFormatted || "unknown size"} processed`);
         if (payload.stats) {
-          addLog(`  Files processed: ${payload.stats.totalFiles || 0}`);
+          addLog(`  Files processed: ${payload.stats.includedFiles || 0} included, ${payload.stats.skippedFiles || 0} skipped`);
         }
 
       } catch (error) {
@@ -228,7 +348,14 @@ const Processing = () => {
           addLog("You can retry after fixing network issues.");
           setPhase1Status("error");
           setProgress(0);
-          // Store error marker for Studio page
+          // Update project status to error
+          if (currentProjectId && user?.id) {
+            try {
+              await projectsService.update(currentProjectId, user.id, { status: 'error' });
+            } catch (err) {
+              console.error('Failed to update project status:', err);
+            }
+          }
           sessionStorage.setItem("processing-error", "true");
           return; // Stop processing on network errors
         }
@@ -245,37 +372,124 @@ const Processing = () => {
       // ===== PHASE 2: MANIFEST =====
       setPhase2Status("running");
       addLog("--- Starting Phase 2: Manifest Generation ---");
-      addLog("Using pre-built manifest template (AI generation skipped)");
-
-      await animateSteps(phase2Steps, 60, 92);
-
-      if (cancelled) return;
-
-      // Prepare final manifest with code content from ingestion
-      addLog("Enriching manifest with code content...");
+      
       const repoContent = sessionStorage.getItem("repo-content") || "";
-      const manifestWithCode = enrichManifestWithCode(mockManifest, repoContent);
+      let manifestWithCode: VideoManifest;
+
+      if (USE_MOCK_MANIFEST) {
+        addLog("Using mock manifest (USE_MOCK_MANIFEST=true)");
+        await animateSteps(phase2Steps, 60, 92);
+        if (cancelled) return;
+        
+        addLog("Enriching mock manifest with code content...");
+        manifestWithCode = enrichManifestWithCode(mockManifest, repoContent);
+      } else {
+        addLog("Generating manifest with Gemini AI...");
+        setCurrentStep("Calling Gemini API...");
+        setProgress(65);
+        
+        try {
+          // Generate manifest with Gemini
+          addLog("Analyzing repository structure...");
+          await new Promise(r => setTimeout(r, 500));
+          setProgress(70);
+          
+          addLog("Creating video script with AI...");
+          const geminiManifest = await generateManifestWithGemini(repoUrl, repoName, repoContent);
+          
+          await new Promise(r => setTimeout(r, 500));
+          setProgress(85);
+          
+          addLog("Enriching manifest with actual code content...");
+          // Enrich the Gemini-generated manifest with actual code from ingestion
+          manifestWithCode = enrichManifestWithCode(geminiManifest, repoContent);
+          
+          addLog("✓ Manifest generated successfully with Gemini AI!");
+          setProgress(92);
+        } catch (error) {
+          console.error('Gemini manifest generation failed:', error);
+          addLog("⚠️  WARNING: Gemini generation failed, falling back to template");
+          addLog(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          
+          // Fallback to mock manifest
+          await animateSteps(phase2Steps, 60, 92);
+          if (cancelled) return;
+          
+          addLog("Using template manifest with code content...");
+          manifestWithCode = enrichManifestWithCode(mockManifest, repoContent);
+        }
+      }
+      
+      if (cancelled) return;
       
       // Log scene details
       addLog(`Total scenes created: ${manifestWithCode.scenes.length}`);
       const totalDuration = manifestWithCode.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
       addLog(`Estimated video duration: ${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}`);
       
-      addLog("Saving manifest to session storage...");
+      // Save to Supabase
+      if (currentProjectId && user?.id) {
+        addLog("Saving manifest to database...");
+        try {
+          // First try with all fields including optional ones
+          await projectsService.update(currentProjectId, user.id, {
+            status: 'ready',
+            manifest: manifestWithCode,
+            duration_seconds: totalDuration,
+            phase2_completed_at: new Date().toISOString(),
+          } as any); // Use 'as any' to allow optional fields
+          addLog("✓ Project saved successfully to database!");
+          addLog("✓ Project is now available in your Dashboard!");
+        } catch (error: any) {
+          console.error('Failed to save project:', error);
+          const errorMessage = error?.message || error?.error_description || 'Unknown error';
+          const errorCode = error?.code || '';
+          
+          // If it's a column error, try without the optional fields
+          if (errorCode === 'PGRST204' || errorMessage?.includes('column') || errorMessage?.includes('phase2_completed_at')) {
+            addLog("Attempting to save without optional fields...", "info");
+            try {
+              // Fallback: only update essential fields
+              await projectsService.update(currentProjectId, user.id, {
+                status: 'ready',
+                manifest: manifestWithCode,
+                duration_seconds: totalDuration,
+              });
+              addLog("✓ Project saved successfully (without optional fields)!");
+              addLog("✓ Project is now available in your Dashboard!");
+            } catch (fallbackError: any) {
+              addLog(`WARNING: Could not update project in database`);
+              addLog(`  Error: ${fallbackError?.message || errorMessage}`);
+              addLog(`  → Manifest is ready and saved to session storage`);
+              addLog(`  → You can still use Studio, but project won't appear in Dashboard`);
+            }
+          } else {
+            addLog(`WARNING: Could not update project in database`);
+            addLog(`  Error: ${errorMessage}`);
+            if (errorCode) {
+              addLog(`  Code: ${errorCode}`);
+            }
+            addLog(`  → Manifest is ready and saved to session storage`);
+            addLog(`  → You can still use Studio, but project won't appear in Dashboard`);
+          }
+        }
+      } else if (!currentProjectId) {
+        addLog("WARNING: No project ID - skipping database save");
+        addLog("  Manifest saved to session storage only");
+      }
+      
+      // Also save to session storage for immediate access
       sessionStorage.setItem("video-manifest", JSON.stringify(manifestWithCode));
+      sessionStorage.setItem("repo-url", repoUrl);
+      if (currentProjectId) {
+        sessionStorage.setItem("project-id", currentProjectId);
+      }
 
       setPhase2Status("complete");
       setProgress(100);
       addLog("Phase 2 complete: Manifest ready");
       addLog("--- All phases complete ---");
-      addLog("Launching GitFlick Studio...");
-
-      // Navigate to studio
-      setTimeout(() => {
-        if (!cancelled) {
-          navigate("/studio");
-        }
-      }, 1000);
+      addLog("Your video is ready! Click 'Continue to Studio' to start editing.");
     };
 
     runProcessing();
@@ -284,7 +498,7 @@ const Processing = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [navigate, repoUrl, repoName, addLog, retryKey]);
+  }, [navigate, repoUrl, repoName, addLog, retryKey, user?.id]);
 
   const overallStatus: PhaseStatus =
     phase1Status === "error" ? "error" :
@@ -456,7 +670,91 @@ const Processing = () => {
             </div>
           </div>
         )}
+
+        {/* Success Actions - Continue to Studio */}
+        {overallStatus === "complete" && <CompletionActions repoName={repoName} />}
       </div>
+    </div>
+  );
+};
+
+// Completion screen with auth-aware CTA
+const CompletionActions = ({ repoName }: { repoName: string }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center mt-6">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 mt-6">
+      {/* Success message */}
+      <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Sparkles className="h-5 w-5 text-success shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-medium text-success mb-1">Video Generated Successfully!</h3>
+            <p className="text-sm text-muted-foreground">
+              Your code walkthrough video for <span className="font-medium">{repoName}</span> is ready to preview.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Auth-aware CTA */}
+      {isAuthenticated ? (
+        <Button 
+          size="lg"
+          className="w-full"
+          onClick={() => navigate("/studio")}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Continue to Studio
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground text-center">
+            Sign in to access the Studio and edit your video
+          </p>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              asChild
+            >
+              <Link to="/login" state={{ from: '/studio' }}>
+                Sign In
+              </Link>
+            </Button>
+            <Button 
+              className="flex-1"
+              asChild
+            >
+              <Link to="/signup" state={{ from: '/studio' }}>
+                Create Account
+              </Link>
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Free forever • No credit card required
+          </p>
+        </div>
+      )}
+
+      {/* Secondary action */}
+      <Button 
+        variant="ghost" 
+        size="sm"
+        className="text-muted-foreground"
+        onClick={() => navigate("/")}
+      >
+        Generate Another Video
+      </Button>
     </div>
   );
 };
@@ -475,14 +773,19 @@ const PhaseCard = ({ title, status }: { title: string; status: PhaseStatus }) =>
 );
 
 // Helper function to enrich manifest with code from ingested content
-function enrichManifestWithCode(manifest: typeof mockManifest, repoContent: string) {
+function enrichManifestWithCode(manifest: VideoManifest, repoContent: string): VideoManifest {
   // Parse the ingested content to extract file contents
   const fileContents = parseRepoContent(repoContent);
   
   return {
     ...manifest,
     scenes: manifest.scenes.map((scene) => {
-      const code = fileContents[scene.file_path] || generatePlaceholderCode(scene);
+      // Try to get actual code from ingested content
+      const actualCode = fileContents[scene.file_path];
+      
+      // If we have actual code, use it; otherwise use existing code or generate placeholder
+      const code = actualCode || scene.code || generatePlaceholderCode(scene);
+      
       return { ...scene, code };
     }),
   };
@@ -510,7 +813,7 @@ function parseRepoContent(content: string): Record<string, string> {
 }
 
 // Generate placeholder code when actual code is not available
-function generatePlaceholderCode(scene: typeof mockManifest.scenes[0]): string {
+function generatePlaceholderCode(scene: VideoScene): string {
   const filePath = scene.file_path || "unknown";
   const title = scene.title || "Code Section";
   
