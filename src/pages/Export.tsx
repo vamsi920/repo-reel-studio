@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   CheckCircle, 
   Download, 
   Link2, 
-  Code, 
   Terminal,
   Copy,
   ArrowLeft,
-  FileJson,
-  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import type { VideoManifest } from "@/lib/geminiDirector";
+import { Player, PlayerRef } from "@remotion/player";
+import { RemotionVideo } from "@/components/studio/RemotionVideo";
+import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 
 const Export = () => {
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const playerRef = useRef<PlayerRef>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedManifest = sessionStorage.getItem("video-manifest");
@@ -48,22 +51,57 @@ const Export = () => {
 
   const totalDuration = manifest?.scenes?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
   const durationStr = `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, "0")}`;
+  const hydratedManifest = useHydrateManifest(manifest, 30);
 
-  const downloadManifest = () => {
-    if (!manifest) return;
-    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${repoName.replace("/", "-")}-manifest.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Downloaded!",
-      description: "Manifest JSON saved to your downloads.",
-    });
+  const downloadVideo = () => {
+    if (!hydratedManifest || isRecording) return;
+    const canvas = playerContainerRef.current?.querySelector("canvas");
+    if (!canvas || typeof canvas.captureStream !== "function") {
+      toast({
+        title: "Download unavailable",
+        description: "Video capture is not supported in this browser.",
+      });
+      return;
+    }
+
+    const stream = canvas.captureStream(30);
+    const preferredType = "video/webm;codecs=vp9";
+    const mimeType = MediaRecorder.isTypeSupported(preferredType) ? preferredType : "video/webm";
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks: BlobPart[] = [];
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${repoName.replace("/", "-")}-video.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setIsRecording(false);
+      toast({
+        title: "Downloaded!",
+        description: "Video saved to your downloads.",
+      });
+    };
+
+    setIsRecording(true);
+    playerRef.current?.seekTo(0);
+    recorder.start();
+    playerRef.current?.play();
+
+    const totalFrames = hydratedManifest.totalFrames || 1;
+    const durationMs = Math.ceil((totalFrames / 30) * 1000);
+    window.setTimeout(() => {
+      recorder.stop();
+      playerRef.current?.pause();
+    }, durationMs + 500);
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -109,7 +147,7 @@ const Export = () => {
           </div>
           <h1 className="text-3xl font-bold mb-2">Video Ready!</h1>
           <p className="text-muted-foreground">
-            Export your video manifest or view in the player.
+            Download your generated walkthrough video.
           </p>
         </div>
 
@@ -151,21 +189,21 @@ const Export = () => {
 
         {/* Export Options */}
         <div className="space-y-4">
-          {/* Download Manifest */}
+          {/* Download Video */}
           <Card variant="interactive" className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileJson className="h-5 w-5 text-primary" />
+                  <Download className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Download Manifest</h3>
-                  <p className="text-sm text-muted-foreground">JSON file with all scene data</p>
+                  <h3 className="font-medium">Download Video</h3>
+                  <p className="text-sm text-muted-foreground">WebM export generated from the player</p>
                 </div>
               </div>
-              <Button onClick={downloadManifest}>
+              <Button onClick={downloadVideo} disabled={!hydratedManifest || isRecording}>
                 <Download className="h-4 w-4 mr-2" />
-                Download
+                {isRecording ? "Recording..." : "Download"}
               </Button>
             </div>
           </Card>
@@ -197,26 +235,31 @@ const Export = () => {
             </div>
           </Card>
 
-          {/* Info Card */}
-          <Card className="overflow-hidden border-warning/30 bg-warning/5">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                  <Info className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Coming Soon: MP4 Export</CardTitle>
-                  <CardDescription>Full video rendering with Remotion</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                MP4 export requires server-side rendering. For now, you can preview the video 
-                in the Studio player and download the manifest for later rendering.
-              </p>
-            </CardContent>
-          </Card>
+          <div
+            ref={playerContainerRef}
+            className="sr-only"
+            aria-hidden="true"
+          >
+            {hydratedManifest && (
+              <Player
+                ref={playerRef}
+                component={RemotionVideo}
+                inputProps={{ manifest: hydratedManifest }}
+                durationInFrames={hydratedManifest.totalFrames || 1}
+                compositionWidth={1920}
+                compositionHeight={1080}
+                fps={30}
+                style={{ width: 1920, height: 1080 }}
+                controls={false}
+                autoPlay={false}
+                loop={false}
+                clickToPlay={false}
+                doubleClickToFullscreen={false}
+                spaceKeyToPlayOrPause={false}
+                acknowledgeRemotionLicense
+              />
+            )}
+          </div>
         </div>
 
         {/* Footer Actions */}

@@ -1,4 +1,4 @@
-# 🎬 Repo-to-Reel Studio
+# 🎬 GitFlick Studio
 
 > Transform GitHub repositories into engaging video content using AI
 

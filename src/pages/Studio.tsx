@@ -9,14 +9,11 @@ import {
   CheckCircle2, 
   AlertTriangle,
   Play,
-  Film,
   FileCode,
   Sparkles,
   PanelRightClose,
   PanelRightOpen,
   Share2,
-  Copy,
-  ExternalLink,
 } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { Button } from "@/components/ui/button";
@@ -26,6 +23,7 @@ import { mockManifest } from "@/data/mockManifest";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 import { toast } from "@/hooks/use-toast";
 import type { VideoManifest } from "@/lib/geminiDirector";
+import iconUrl from "../../icon.png";
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "rendering" | "complete" | "error";
 
@@ -510,12 +508,12 @@ const Studio = () => {
       <div className="relative z-10 w-full max-w-lg mx-auto px-4">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Film className="h-6 w-6" />
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/10 border border-primary/20 shadow-lg shadow-primary/10">
+              <img src={iconUrl} alt="GitFlick" className="h-10 w-10 object-contain" />
             </div>
             <div>
-              <span className="font-semibold text-lg block">Repo-to-Reel</span>
+              <span className="font-bold text-xl block bg-gradient-to-r from-white to-white/80 bg-clip-text">GitFlick</span>
               <span className="text-xs text-muted-foreground">Video Studio</span>
             </div>
           </div>
@@ -649,8 +647,8 @@ const Studio = () => {
             </Link>
           </Button>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Film className="h-4 w-4 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/10 border border-primary/20">
+              <img src={iconUrl} alt="GitFlick" className="h-6 w-6 object-contain" />
             </div>
             <div>
               <span className="font-medium text-sm truncate max-w-[300px] block">
@@ -706,205 +704,136 @@ const Studio = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden">
+      <main
+        className="flex-1 flex overflow-hidden min-h-0"
+        style={{ height: "calc(100vh - 56px)" }}
+      >
         {/* Video Player Area */}
         <div 
-          className="flex-1 flex flex-col bg-black/95 overflow-hidden relative"
+          className="flex-1 min-w-0 flex items-center justify-center bg-gradient-to-b from-black via-zinc-950 to-black relative"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => isPlaying && setShowControls(false)}
+          style={{ minHeight: 0 }}
         >
           <div 
             ref={playerContainerRef}
-            className="flex-1 relative w-full h-full min-h-0"
+            className="relative w-full h-full flex items-center justify-center p-6"
+            style={{ minHeight: 0 }}
           >
-            {(() => {
-              if (phase === "complete") {
-                // Determine which manifest to use
-                const finalManifest = effectiveHydratedManifest || mockHydratedManifest;
-                const finalInputProps = inputProps || (finalManifest ? { manifest: finalManifest } : null);
-                const finalDuration = finalManifest?.totalFrames || durationInFrames;
+            {phase === "complete" && effectiveHydratedManifest && effectiveHydratedManifest.scenes?.length > 0 && (
+              <div 
+                className="relative group w-full h-full flex items-center justify-center"
+                style={{ 
+                  maxWidth: showSidebar
+                    ? "min(1400px, calc(100vw - 360px))"
+                    : "min(1400px, 100vw)",
+                  maxHeight: "100%",
+                }}
+              >
+                <div 
+                  className="relative w-full"
+                  style={{ 
+                    aspectRatio: '16 / 9',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    minHeight: '400px',
+                  }}
+                >
+                  <Player
+                    ref={playerRef}
+                    component={RemotionVideo}
+                    inputProps={{ manifest: effectiveHydratedManifest }}
+                    durationInFrames={effectiveHydratedManifest.totalFrames || durationInFrames}
+                    compositionWidth={1920}
+                    compositionHeight={1080}
+                    fps={30}
+                    style={{ 
+                      width: "100%", 
+                      height: "100%",
+                      backgroundColor: "#0a0a0f",
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                      boxShadow: "0 0 0 1px rgba(255,255,255,0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                    }}
+                    controls={false}
+                    autoPlay={false}
+                    loop={false}
+                    clickToPlay
+                    doubleClickToFullscreen
+                    spaceKeyToPlayOrPause
+                    acknowledgeRemotionLicense
+                  />
                 
-                if (finalInputProps && finalManifest && finalManifest.scenes?.length > 0) {
-                  console.log("[Studio] Rendering player:", {
-                    scenes: finalManifest.scenes.length,
-                    totalFrames: finalDuration,
-                    usingMock: !effectiveHydratedManifest && !!mockHydratedManifest
-                  });
-                  
-                  return (
-                    <div className="w-full h-full min-h-0 flex flex-col relative group">
-                      <Player
-                        ref={playerRef}
-                        component={RemotionVideo}
-                        inputProps={finalInputProps}
-                        durationInFrames={finalDuration}
-                        compositionWidth={1920}
-                        compositionHeight={1080}
-                        fps={30}
-                        style={{ 
-                          width: "100%", 
-                          height: "100%",
-                          flex: 1,
-                          backgroundColor: "#0a0a0f",
-                          minHeight: "400px",
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                        }}
-                        controls={false}
-                        autoPlay={false}
-                        loop={false}
-                        clickToPlay
-                        doubleClickToFullscreen
-                        spaceKeyToPlayOrPause
-                        acknowledgeRemotionLicense
-                      />
-                      
-                      {/* Custom Video Controls */}
-                      <div className={`transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-                        <VideoControls
-                          playerRef={playerRef}
-                          manifest={finalManifest}
-                          isPlaying={isPlaying}
-                          currentFrame={currentFrame}
-                          totalFrames={finalDuration}
-                          fps={30}
-                          onPlayPause={handlePlayPause}
-                          onSeek={handleSeek}
-                          onSceneChange={(idx) => console.log("Scene changed:", idx)}
-                        />
-                      </div>
-                    </div>
-                  );
-                } else {
-                  // Phase is complete but player can't render - show debug info and try mock
-                  console.error("[Studio] Phase complete but player cannot render:", {
-                    hasInputProps: !!inputProps,
-                    hasEffectiveHydratedManifest: !!effectiveHydratedManifest,
-                    effectiveScenes: effectiveHydratedManifest?.scenes?.length || 0,
-                    hasMockHydratedManifest: !!mockHydratedManifest,
-                    mockScenes: mockHydratedManifest?.scenes?.length || 0
-                  });
-                  
-                  // Last resort: try to render with mock manifest
-                  if (mockHydratedManifest && mockHydratedManifest.scenes?.length > 0) {
-                    console.log("[Studio] Rendering with mock manifest as last resort");
-                    return (
-                      <div className="w-full h-full min-h-0 flex flex-col relative group">
-                        <Player
-                          ref={playerRef}
-                          component={RemotionVideo}
-                          inputProps={{ manifest: mockHydratedManifest }}
-                          durationInFrames={mockHydratedManifest.totalFrames}
-                          compositionWidth={1920}
-                          compositionHeight={1080}
-                          fps={30}
-                          style={{ 
-                            width: "100%", 
-                            height: "100%",
-                            flex: 1,
-                            backgroundColor: "#0a0a0a",
-                            minHeight: "400px",
-                          }}
-                          controls={false}
-                          autoPlay={false}
-                          loop={false}
-                          clickToPlay
-                          doubleClickToFullscreen
-                          spaceKeyToPlayOrPause
-                          acknowledgeRemotionLicense
-                        />
-                        
-                        {/* Custom Video Controls */}
-                        <div className={`transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-                          <VideoControls
-                            playerRef={playerRef}
-                            manifest={mockHydratedManifest}
-                            isPlaying={isPlaying}
-                            currentFrame={currentFrame}
-                            totalFrames={mockHydratedManifest.totalFrames}
-                            fps={30}
-                            onPlayPause={handlePlayPause}
-                            onSeek={handleSeek}
-                          />
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-                      <div className="text-center max-w-md px-6">
-                        <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-6" />
-                        <h2 className="text-2xl font-semibold mb-2">Player Not Ready</h2>
-                        <p className="text-muted-foreground mb-2">
-                          The video manifest could not be hydrated properly.
-                        </p>
-                        <p className="text-sm text-muted-foreground mb-4 font-mono text-left">
-                          Debug info:<br/>
-                          Manifest: {manifest ? "✓" : "✗"} ({manifest?.scenes?.length || 0} scenes)<br/>
-                          Hydrated: {hydratedManifest ? "✓" : "✗"} ({hydratedManifest?.scenes?.length || 0} scenes)<br/>
-                          Effective: {effectiveHydratedManifest ? "✓" : "✗"} ({effectiveHydratedManifest?.scenes?.length || 0} scenes)<br/>
-                          Mock: {mockHydratedManifest ? "✓" : "✗"} ({mockHydratedManifest?.scenes?.length || 0} scenes)<br/>
-                          InputProps: {inputProps ? "✓" : "✗"}
-                        </p>
-                        <div className="flex gap-3 justify-center">
-                          <Button variant="outline" onClick={() => navigate("/")}>
-                            <Home className="h-4 w-4 mr-2" />
-                            Go Home
-                          </Button>
-                          <Button onClick={loadManifest}>
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Retry
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-              } else if (phase === "error") {
-                return (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-                    <div className="text-center max-w-md px-6">
-                      <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-6" />
-                      <h2 className="text-2xl font-semibold mb-2">Failed to Load Video</h2>
-                      <p className="text-muted-foreground mb-2">
-                        {currentStep || "An error occurred while loading the video manifest."}
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        This usually happens when the ingestion process failed or the manifest is invalid.
-                      </p>
-                      <div className="flex gap-3 justify-center">
-                        <Button variant="outline" onClick={() => navigate("/")}>
-                          <Home className="h-4 w-4 mr-2" />
-                          Go Home
-                        </Button>
-                        <Button onClick={loadManifest}>
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Retry
-                        </Button>
-                      </div>
-                    </div>
+                  {/* Custom Video Controls */}
+                  <div className={`absolute inset-0 transition-opacity duration-300 rounded-2xl overflow-hidden ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                    <VideoControls
+                      playerRef={playerRef}
+                      manifest={effectiveHydratedManifest}
+                      isPlaying={isPlaying}
+                      currentFrame={currentFrame}
+                      totalFrames={effectiveHydratedManifest.totalFrames || durationInFrames}
+                      fps={30}
+                      onPlayPause={handlePlayPause}
+                      onSeek={handleSeek}
+                      onSceneChange={(idx) => console.log("Scene changed:", idx)}
+                    />
                   </div>
-                );
-              } else if (!isLoading && !manifest) {
-                return (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/95">
-                    <div className="text-center">
-                      <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
-                      <p className="text-muted-foreground mb-4">Loading video...</p>
-                    </div>
+                </div>
+              </div>
+            )}
+
+            {phase === "error" && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/95">
+                <div className="text-center max-w-md px-6">
+                  <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-6" />
+                  <h2 className="text-2xl font-semibold mb-2">Failed to Load Video</h2>
+                  <p className="text-muted-foreground mb-2">
+                    {currentStep || "An error occurred while loading the video manifest."}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    This usually happens when the ingestion process failed or the manifest is invalid.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button variant="outline" onClick={() => navigate("/")}>
+                      <Home className="h-4 w-4 mr-2" />
+                      Go Home
+                    </Button>
+                    <Button onClick={loadManifest}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry
+                    </Button>
                   </div>
-                );
-              }
-              
-              return null;
-            })()}
+                </div>
+              </div>
+            )}
+
+            {!isLoading && phase === "complete" && (!effectiveHydratedManifest || !effectiveHydratedManifest.scenes?.length) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/95">
+                <div className="text-center max-w-md px-6">
+                  <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-6" />
+                  <h2 className="text-2xl font-semibold mb-2">Player Not Ready</h2>
+                  <p className="text-muted-foreground mb-4">
+                    The video manifest could not be loaded properly.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button variant="outline" onClick={() => navigate("/")}>
+                      <Home className="h-4 w-4 mr-2" />
+                      Go Home
+                    </Button>
+                    <Button onClick={loadManifest}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Sidebar - Scene List */}
         {showSidebar && phase === "complete" && effectiveHydratedManifest && (
-          <aside className="w-80 shrink-0 border-l border-border bg-card/50 backdrop-blur-sm">
+          <aside className="w-80 shrink-0 border-l border-border bg-card/50 backdrop-blur-sm h-full overflow-y-auto">
             <SceneListSidebar
               manifest={effectiveHydratedManifest}
               currentSceneIndex={currentSceneIndex}

@@ -1,4 +1,4 @@
-# Repo-to-Reel Studio - Setup Guide
+# GitFlick Studio - Setup Guide
 
 ## Quick Start
 

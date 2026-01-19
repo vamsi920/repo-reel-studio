@@ -285,7 +285,7 @@ export const VideoControls = ({
     <TooltipProvider>
       <div
         ref={controlsRef}
-        className="absolute inset-0 flex flex-col justify-end opacity-0 hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+        className="absolute inset-0 flex flex-col justify-end transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/20 to-transparent rounded-xl pointer-events-auto"
       >
         {/* Top overlay - Title and Actions */}
         <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between bg-gradient-to-b from-black/60 to-transparent">

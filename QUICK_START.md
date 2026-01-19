@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide - Repo-to-Reel Studio
+# 🚀 Quick Start Guide - GitFlick Studio
 
 ## ✅ Prerequisites Check
 
@@ -41,7 +41,7 @@ npm run ingest:server
 **Expected Output:**
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  🚀 Repo-to-Reel Ingestion Server v2.0                      ║
+║  🚀 GitFlick Ingestion Server v2.0                          ║
 ║  Powered by gitingest library                                ║
 ║  Running on http://localhost:8787                          ║
 ╚══════════════════════════════════════════════════════════════╝

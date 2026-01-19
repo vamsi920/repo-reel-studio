@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test script for verifying ingestion server
-echo "🧪 Testing Repo-to-Reel Ingestion Server"
+echo "🧪 Testing GitFlick Ingestion Server"
 echo "========================================"
 echo ""
 

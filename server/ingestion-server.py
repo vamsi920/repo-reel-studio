@@ -29,7 +29,7 @@ executor = ThreadPoolExecutor(max_workers=4)
 
 # FastAPI app setup
 app = FastAPI(
-    title="Repo-to-Reel Ingestion Server",
+    title="GitFlick Ingestion Server",
     description="Repository ingestion service powered by gitingest",
     version="2.0.0"
 )
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     
     print(f"""
 ╔══════════════════════════════════════════════════════════════╗
-║  🚀 Repo-to-Reel Ingestion Server v2.0                      ║
+║  🚀 GitFlick Ingestion Server v2.0                          ║
 ║  Powered by gitingest library                                ║
 ║  Running on http://localhost:{port}                        ║
 ╚══════════════════════════════════════════════════════════════╝

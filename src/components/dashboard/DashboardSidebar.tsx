@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
-  Terminal, 
   FolderOpen, 
   Users, 
   CreditCard, 
@@ -10,6 +9,7 @@ import {
   LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import iconUrl from "../../../icon.png";
 
 interface DashboardSidebarProps {
   collapsed?: boolean;
@@ -36,11 +36,11 @@ export const DashboardSidebar = ({ collapsed, onToggle }: DashboardSidebarProps)
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-            <Terminal className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+            <img src={iconUrl} alt="GitFlick" className="h-5 w-5" />
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sidebar-foreground">Repo-to-Reel</span>
+            <span className="font-semibold text-sidebar-foreground">GitFlick</span>
           )}
         </Link>
         <button

@@ -3,19 +3,24 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { DemoMockup } from "@/components/landing/DemoMockup";
-import { Terminal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import iconUrl from "../../icon.png";
 
 const Footer = () => (
   <footer className="py-12 border-t border-border">
     <div className="container mx-auto px-4">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Terminal className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <img src={iconUrl} alt="GitFlick" className="h-5 w-5" />
           </div>
-          <span className="font-semibold text-foreground">Repo-to-Reel</span>
+          <div className="leading-tight">
+            <span className="font-semibold text-foreground block">GitFlick</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Repo to Reel
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
           <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
@@ -24,7 +29,7 @@ const Footer = () => (
           <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
         </div>
         <p className="text-sm text-muted-foreground">
-          © 2026 Repo-to-Reel. All rights reserved.
+          © 2026 GitFlick. All rights reserved.
         </p>
       </div>
     </div>

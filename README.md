@@ -1,45 +1,86 @@
-# Repo-to-Reel Studio
+# GitFlick
+Repo to Reel
 
-Transform GitHub repositories into video content using Gemini 2.0.
-
-## Quick Start
-
-```bash
-# 1. Install dependencies (one time)
-npm install
-npm run ingest:install
-
-# 2. Add your Gemini API key
-cp .env.example .env
-# Edit .env and add your API key from https://makersuite.google.com/app/apikey
-
-# 3. Start everything with ONE command
-npm start
-```
-
-Open http://localhost:8080 and paste a GitHub URL!
-
-## What it does
-
-- **Phase 1:** Ingests repository using [gitingest](https://github.com/coderamp-labs/gitingest)
-- **Phase 2:** Gemini 2.0 generates video manifest with auth flow & database schema
-- Downloads manifest as `.txt` file automatically
-- Runs both servers (backend + frontend) in one terminal
-
-## Test it
-
-1. Go to Dashboard
-2. Paste a GitHub URL (e.g., `facebook/react`)
-3. Click "Generate Video"
-4. Watch Phase 1 & 2 complete
-5. Manifest downloads automatically
-
-## Requirements
-
-- **Gemini API Key** - Get free key at https://makersuite.google.com/app/apikey
-- Node.js 18+
-- Python 3.8+
+Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
 
 ---
 
-Powered by [gitingest](https://github.com/coderamp-labs/gitingest) & Gemini 2.0
+## At a glance
+
+| Input | Output | Stack | Runs with |
+| --- | --- | --- | --- |
+| GitHub URL or `user/repo` | Video manifest + studio preview | Vite + React + Remotion + FastAPI | Node 18+ + Python 3.8+ |
+
+## What GitFlick does
+
+- Ingests a public GitHub repository and builds a structured content map.
+- Generates a scene-by-scene video manifest with Gemini 2.0.
+- Launches a visual Studio to preview, tweak, and export your video assets.
+
+## How it works
+
+```
+Paste GitHub URL
+      |
+      v
+Ingestion Server (gitingest)
+      |
+      v
+Gemini 2.0 Manifest Builder
+      |
+      v
+Studio Preview + Export
+```
+
+## Quick start
+
+```bash
+# 1. Install dependencies
+npm install
+npm run ingest:install
+
+# 2. Configure Gemini
+cp .env.example .env
+# Add GEMINI_API_KEY in .env
+
+# 3. Run everything
+npm start
+```
+
+Open http://localhost:8080 and paste a GitHub URL.
+
+## Project structure
+
+```
+repo-reel-studio/
+  server/               # Ingestion API + gitingest
+  src/                  # React UI + Studio
+  public/               # Static assets
+  README.md             # You are here
+```
+
+## Configuration
+
+| Variable | Description |
+| --- | --- |
+| `GEMINI_API_KEY` | Gemini API key used for manifest generation |
+
+## API surface (ingestion)
+
+- `POST /api/ingest` with JSON body: `{ "repoUrl": "https://github.com/user/repo" }`
+- Response: `{ summary, tree, content, repoUrl }`
+
+## Troubleshooting
+
+- Missing repository URL: ensure the URL is public and formatted as `github.com/user/repo`.
+- Private repos: not yet supported without tokens.
+- Timeouts on large repos: try smaller repos first, then scale up.
+
+## Notes
+
+- Phase 1 uses [gitingest](https://github.com/coderamp-labs/gitingest) for ingestion.
+- Phase 2 uses Gemini 2.0 to synthesize the video manifest.
+
+---
+
+GitFlick: Repo to Reel.

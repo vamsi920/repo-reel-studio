@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { Terminal, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import iconUrl from "../../icon.png";
 
 export const Navbar = () => {
   const location = useLocation();
@@ -19,11 +20,16 @@ export const Navbar = () => {
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-              <Terminal className="h-4 w-4" />
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+              <img src={iconUrl} alt="GitFlick" className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-foreground">Repo-to-Reel</span>
+            <div className="leading-tight">
+              <span className="font-semibold text-foreground block">GitFlick</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Repo to Reel
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

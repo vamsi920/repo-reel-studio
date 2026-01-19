@@ -744,7 +744,7 @@ export const IdeWindow = ({
       {/* Main Content */}
       <div style={{ 
         display: "flex", 
-        height: 620,
+        height: 520,
         background: 'linear-gradient(180deg, #1a1a1f 0%, #15151a 100%)',
       }}>
         {/* File Explorer Sidebar */}
@@ -780,7 +780,7 @@ export const IdeWindow = ({
             Explorer
           </div>
           
-          <div style={{ height: 550, overflowY: "auto", paddingRight: 4 }}>
+          <div style={{ height: 450, overflowY: "auto", paddingRight: 4 }}>
             {tree.length > 0 ? (
               <FileTree 
                 nodes={tree} 

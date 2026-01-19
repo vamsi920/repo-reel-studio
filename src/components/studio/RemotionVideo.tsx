@@ -517,28 +517,28 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
       <div
         style={{
           position: 'absolute',
-          top: 32,
+          top: 20,
           left: '50%',
           transform: `translateX(-50%) translateY(${badgeY}px) scale(${badgeScale})`,
           zIndex: 30,
           opacity: subtitleOpacity,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
         }}
       >
         {/* Scene counter */}
         <div
           style={{
-            padding: '8px 16px',
-            borderRadius: 8,
+            padding: '6px 12px',
+            borderRadius: 6,
             background: 'rgba(0, 0, 0, 0.6)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             backdropFilter: 'blur(8px)',
           }}
         >
           <span style={{
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 600,
             color: 'rgba(255, 255, 255, 0.7)',
             fontFamily: 'system-ui, sans-serif',
@@ -550,7 +550,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         {/* Scene title badge */}
         <div
           style={{
-            padding: '10px 28px',
+            padding: '8px 20px',
             borderRadius: 9999,
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.35) 0%, rgba(168, 85, 247, 0.25) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.5)',
@@ -563,7 +563,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
           }}
         >
           <span style={{ 
-            fontSize: 14, 
+            fontSize: 12, 
             fontWeight: 700, 
             color: '#e9d5ff', 
             fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -584,7 +584,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '90px 64px 200px 64px',
+          padding: '80px 48px 160px 48px',
           opacity: contentOpacity,
           transform: `
             scale(${contentScale * kenBurnsZoom}) 
@@ -596,7 +596,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         <div
           style={{
             width: '100%',
-            maxWidth: 1400,
+            maxWidth: 1200,
             position: 'relative',
           }}
         >
@@ -646,12 +646,12 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
           left: 0,
           right: 0,
           zIndex: 25,
-          padding: '0 32px 50px',
+          padding: '0 32px 24px',
         }}
       >
         <div 
           style={{ 
-            maxWidth: 1100, 
+            maxWidth: 1000, 
             margin: '0 auto',
             opacity: subtitleOpacity,
             transform: `translateY(${subtitleY}px)`,
@@ -661,8 +661,8 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
             style={{
               background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.92) 0%, rgba(20, 20, 30, 0.95) 100%)',
               backdropFilter: 'blur(24px)',
-              borderRadius: 24,
-              padding: '24px 36px',
+              borderRadius: 16,
+              padding: '16px 28px',
               border: '1px solid rgba(139, 92, 246, 0.25)',
               boxShadow: `
                 0 24px 80px rgba(0, 0, 0, 0.6), 
@@ -716,15 +716,14 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
             <p
               style={{
                 color: '#f8fafc',
-                fontSize: 21,
-                lineHeight: 1.75,
+                fontSize: 18,
+                lineHeight: 1.6,
                 textAlign: 'center',
                 margin: 0,
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                 fontWeight: 400,
                 letterSpacing: '-0.01em',
                 textShadow: '0 2px 12px rgba(0, 0, 0, 0.4)',
-                paddingTop: 8,
               }}
             >
               {activeScene?.narration_text || ""}

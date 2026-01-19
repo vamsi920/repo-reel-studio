@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Terminal, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mockManifest } from "@/data/mockManifest";
+import iconUrl from "../../icon.png";
 
 const phase1Steps = [
   { text: "Initializing ingestion pipeline...", duration: 400 },
@@ -267,7 +268,7 @@ const Processing = () => {
       setProgress(100);
       addLog("Phase 2 complete: Manifest ready");
       addLog("--- All phases complete ---");
-      addLog("Launching Repo-to-Reel Studio...");
+      addLog("Launching GitFlick Studio...");
 
       // Navigate to studio
       setTimeout(() => {
@@ -318,10 +319,10 @@ const Processing = () => {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Terminal className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
             </div>
-            <span className="font-semibold text-lg">Repo-to-Reel</span>
+            <span className="font-semibold text-lg">GitFlick</span>
           </div>
         </div>
 
