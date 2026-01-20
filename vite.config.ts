@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readFileSync, existsSync } from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +32,28 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: "resolve-ts-extensions",
+      enforce: "pre",
+      resolveId(id, importer) {
+        // Handle @/ imports without extensions
+        if (id.startsWith("@/") && !id.match(/\.(ts|tsx|js|jsx|mjs|mts)$/)) {
+          const filePath = path.resolve(__dirname, id.replace("@/", "src/"));
+          const extensions = [".ts", ".tsx", ".js", ".jsx"];
+          
+          for (const ext of extensions) {
+            const fullPath = filePath + ext;
+            if (existsSync(fullPath)) {
+              return fullPath;
+            }
+          }
+        }
+        return null;
+      },
+    },
+  ],
   resolve: {
     alias: [
       {
