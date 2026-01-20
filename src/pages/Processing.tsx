@@ -207,7 +207,12 @@ const Processing = () => {
       // Run actual ingestion
       try {
         // Use environment variable for API URL, fallback to proxy in dev
-        const ingestUrl = `${API_URL}/ingest`;
+        // Backend endpoint is /api/ingest
+        // If API_URL is "/api" (dev proxy), use it directly
+        // If API_URL is a full URL (production), append /api/ingest
+        const ingestUrl = API_URL === "/api" 
+          ? `${API_URL}/ingest` 
+          : `${API_URL}/api/ingest`;
         addLog(`Sending POST request to ${ingestUrl}...`);
         const startTime = Date.now();
         
