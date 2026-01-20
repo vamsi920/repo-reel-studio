@@ -12,6 +12,20 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+// Root endpoint
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "repo-ingestion-server",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      ingest: "/api/ingest",
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
   res.json({

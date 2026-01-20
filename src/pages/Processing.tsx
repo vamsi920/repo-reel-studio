@@ -206,11 +206,10 @@ const Processing = () => {
 
       // Run actual ingestion
       try {
-        addLog("Sending POST request to /api/ingest...");
-        const startTime = Date.now();
-        
         // Use environment variable for API URL, fallback to proxy in dev
         const ingestUrl = `${API_URL}/ingest`;
+        addLog(`Sending POST request to ${ingestUrl}...`);
+        const startTime = Date.now();
         
         const response = await fetch(ingestUrl, {
           method: "POST",
@@ -233,7 +232,16 @@ const Processing = () => {
             errorBody = await response.json();
           } catch {
             // If JSON parsing fails, use status text
-            errorBody = { error: `Server error (${response.status})`, detail: response.statusText };
+            const text = await response.text();
+            errorBody = { 
+              error: `Server error (${response.status})`, 
+              detail: response.statusText || text || "Unknown error",
+              url: ingestUrl,
+            };
+          }
+          // Add URL to error for debugging
+          if (!errorBody.url) {
+            errorBody.url = ingestUrl;
           }
           
           // Handle FastAPI error format (detail can be object or string)
@@ -249,9 +257,20 @@ const Processing = () => {
             }
           }
           
+          // Add helpful message for 404 errors
+          if (response.status === 404) {
+            if (API_URL === "/api") {
+              errorMsg = "API endpoint not found (404)";
+              errorDetail = `The frontend is trying to use the proxy (${ingestUrl}), but this only works in development. In production, you need to set VITE_API_URL=https://repo-reel-backend.fly.dev in your Netlify environment variables.`;
+            } else {
+              errorDetail = `Endpoint ${ingestUrl} returned 404. Check that the backend is running and the URL is correct.`;
+            }
+          }
+          
           const error = new Error(errorMsg);
           (error as any).detail = errorDetail;
           (error as any).errorBody = errorBody;
+          (error as any).url = ingestUrl;
           throw error;
         }
 
@@ -353,6 +372,19 @@ const Processing = () => {
         addLog(`ERROR: Ingestion failed - ${errorMsg}`);
         if (errorDetail) {
           addLog(`  Details: ${errorDetail}`);
+        }
+        // Show URL if available
+        if ((error as any).url) {
+          addLog(`  Attempted URL: ${(error as any).url}`);
+        }
+        // Show helpful message for 404 with proxy
+        if (errorMsg.includes("404") && API_URL === "/api") {
+          addLog("");
+          addLog("💡 SOLUTION: Set VITE_API_URL in Netlify", "info");
+          addLog("  1. Go to Netlify Dashboard → Site Settings → Environment Variables", "info");
+          addLog("  2. Add: VITE_API_URL=https://repo-reel-backend.fly.dev", "info");
+          addLog("  3. Redeploy your site", "info");
+          addLog("");
         }
         
         // Check if it's a network/DNS error
