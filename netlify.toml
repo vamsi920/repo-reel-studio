@@ -5,6 +5,8 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
+  # Ensure proper module resolution
+  NODE_OPTIONS = "--experimental-specifier-resolution=node"
 
 [[redirects]]
   from = "/*"

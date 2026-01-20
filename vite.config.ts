@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -30,23 +33,33 @@ export default defineConfig({
   },
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-    extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
+    alias: [
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src"),
+      },
+    ],
+    extensions: [".tsx", ".ts", ".jsx", ".js", ".mjs", ".mts", ".json"],
+    dedupe: ["react", "react-dom"],
   },
   build: {
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
+    // Ensure all files are included
     rollupOptions: {
       output: {
         manualChunks: undefined,
       },
     },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Ensure proper module resolution during build
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
   },
   optimizeDeps: {
     include: ["@supabase/supabase-js"],
+    // Force pre-bundling of dependencies
+    force: false,
   },
 });
