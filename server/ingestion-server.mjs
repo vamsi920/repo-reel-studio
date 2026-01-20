@@ -252,6 +252,10 @@ app.post("/api/ingest", async (req, res) => {
 });
 
 const port = Number(process.env.PORT || 8787);
-app.listen(port, () => {
-  console.log(`Ingestion server running on http://localhost:${port}`);
+const host = process.env.HOST || "0.0.0.0"; // Bind to all interfaces for Fly.io
+
+app.listen(port, host, () => {
+  console.log(`Ingestion server running on http://${host}:${port}`);
+  console.log(`Health check available at http://${host}:${port}/api/health`);
+  console.log(`Ingest endpoint available at http://${host}:${port}/api/ingest`);
 });
