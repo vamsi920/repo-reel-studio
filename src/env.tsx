@@ -11,5 +11,8 @@ export const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta
 export const GOOGLE_TTS_API_KEY = import.meta.env.VITE_GOOGLE_TTS_API_KEY || "";
 export const GOOGLE_TTS_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_TTS_API_KEY);
 
+// API Configuration
+export const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 // Feature Flags
 export const USE_MOCK_MANIFEST = import.meta.env.VITE_USE_MOCK_MANIFEST === "true";

@@ -6,7 +6,7 @@ import { mockManifest } from "@/data/mockManifest";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService, extractRepoName } from "@/lib/db";
 import { generateManifestWithGemini } from "@/lib/geminiDirector";
-import { USE_MOCK_MANIFEST } from "@/env";
+import { USE_MOCK_MANIFEST, API_URL } from "@/env";
 import { toast } from "@/hooks/use-toast";
 import type { VideoManifest, VideoScene } from "@/lib/types";
 import iconUrl from "../../icon.png";
@@ -209,7 +209,10 @@ const Processing = () => {
         addLog("Sending POST request to /api/ingest...");
         const startTime = Date.now();
         
-        const response = await fetch("/api/ingest", {
+        // Use environment variable for API URL, fallback to proxy in dev
+        const ingestUrl = `${API_URL}/ingest`;
+        
+        const response = await fetch(ingestUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ repoUrl }),
