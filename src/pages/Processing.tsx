@@ -227,17 +227,28 @@ const Processing = () => {
         addLog(`Server response received in ${duration}s`);
 
         if (!response.ok) {
+          // Clone response to read body multiple times if needed
+          const responseClone = response.clone();
           let errorBody: any = {};
           try {
             errorBody = await response.json();
           } catch {
-            // If JSON parsing fails, use status text
-            const text = await response.text();
-            errorBody = { 
-              error: `Server error (${response.status})`, 
-              detail: response.statusText || text || "Unknown error",
-              url: ingestUrl,
-            };
+            // If JSON parsing fails, try reading as text from clone
+            try {
+              const text = await responseClone.text();
+              errorBody = { 
+                error: `Server error (${response.status})`, 
+                detail: response.statusText || text || "Unknown error",
+                url: ingestUrl,
+              };
+            } catch {
+              // If both fail, use status text only
+              errorBody = { 
+                error: `Server error (${response.status})`, 
+                detail: response.statusText || "Unknown error",
+                url: ingestUrl,
+              };
+            }
           }
           // Add URL to error for debugging
           if (!errorBody.url) {

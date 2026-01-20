@@ -19,12 +19,10 @@ primary_region = "iad"
 
 [[http_service.checks]]
   grace_period = "1s"
-  interval = "15s"
+  interval = "10s"
   method = "GET"
-  timeout = "2s"
+  timeout = "3s"
   path = "/api/health"
-  protocol = "http"
-  tls_skip_verify = false
 
 [[vm]]
   cpu_kind = "shared"

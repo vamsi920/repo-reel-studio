@@ -9,8 +9,23 @@ import crypto from "crypto";
 
 const app = express();
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    detail: err.message || 'Unknown error',
+  });
+});
 
 // Root endpoint
 app.get("/", (_req, res) => {
@@ -26,9 +41,9 @@ app.get("/", (_req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint - must respond quickly
 app.get("/api/health", (_req, res) => {
-  res.json({
+  res.status(200).json({
     status: "ok",
     service: "repo-ingestion-server",
     timestamp: new Date().toISOString(),
@@ -136,41 +151,43 @@ const formatBytes = (bytes) => {
 };
 
 app.post("/api/ingest", async (req, res) => {
-  console.log(`\n📥 Ingestion request received for: ${req.body?.repoUrl}`);
-
-  const { repoUrl, branch, token } = req.body ?? {};
-
-  if (!repoUrl || typeof repoUrl !== "string") {
-    return res.status(400).json({ error: "repoUrl is required" });
-  }
-
-  let parsedUrl;
+  let tempDir;
   try {
-    parsedUrl = new URL(repoUrl);
-  } catch (error) {
-    return res.status(400).json({
-      error: "Invalid URL format",
-      detail:
-        "The provided URL is not valid. Expected format: https://github.com/user/repo",
-    });
-  }
+    console.log(`\n📥 Ingestion request received for: ${req.body?.repoUrl}`);
 
-  if (!["https:", "http:"].includes(parsedUrl.protocol)) {
-    return res.status(400).json({
-      error: "Invalid protocol",
-      detail: "URL must use http or https protocol",
-    });
-  }
+    const { repoUrl, branch, token } = req.body ?? {};
 
-  console.log(`✓ URL validated: ${repoUrl}`);
+    if (!repoUrl || typeof repoUrl !== "string") {
+      return res.status(400).json({ error: "repoUrl is required" });
+    }
 
-  const tempDir = await fs.promises.mkdtemp(
-    path.join(os.tmpdir(), "repo-ingest-")
-  );
-  const repoDir = path.join(tempDir, crypto.randomUUID());
-  const startTime = Date.now();
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(repoUrl);
+    } catch (error) {
+      return res.status(400).json({
+        error: "Invalid URL format",
+        detail:
+          "The provided URL is not valid. Expected format: https://github.com/user/repo",
+      });
+    }
 
-  try {
+    if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+      return res.status(400).json({
+        error: "Invalid protocol",
+        detail: "URL must use http or https protocol",
+      });
+    }
+
+    console.log(`✓ URL validated: ${repoUrl}`);
+
+    tempDir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "repo-ingest-")
+    );
+    const repoDir = path.join(tempDir, crypto.randomUUID());
+    const startTime = Date.now();
+
+    try {
     await fs.promises.mkdir(repoDir, { recursive: true });
     await git.clone({
       fs,
@@ -256,20 +273,94 @@ app.post("/api/ingest", async (req, res) => {
       detail = "Cannot reach GitHub. Check your internet connection.";
     }
 
-    res.status(500).json({
-      error: errorMessage,
-      detail,
-    });
-  } finally {
-    await fs.promises.rm(tempDir, { recursive: true, force: true });
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: errorMessage,
+          detail,
+        });
+      }
+    } finally {
+      // Always clean up temp directory
+      try {
+        if (tempDir) {
+          await fs.promises.rm(tempDir, { recursive: true, force: true });
+        }
+      } catch (cleanupError) {
+        console.error("Cleanup error (non-fatal):", cleanupError);
+      }
+    }
+  } catch (outerError) {
+    // Catch any unexpected errors outside the main try block
+    console.error("Unexpected error in route handler:", outerError);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: "Internal server error",
+        detail: outerError instanceof Error ? outerError.message : "An unexpected error occurred",
+      });
+    }
+    // Clean up temp directory if it was created
+    try {
+      if (tempDir) {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
+    } catch (cleanupError) {
+      console.error("Cleanup error (non-fatal):", cleanupError);
+    }
   }
 });
 
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0"; // Bind to all interfaces for Fly.io
 
-app.listen(port, host, () => {
-  console.log(`Ingestion server running on http://${host}:${port}`);
-  console.log(`Health check available at http://${host}:${port}/api/health`);
-  console.log(`Ingest endpoint available at http://${host}:${port}/api/ingest`);
+// Catch unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit, just log
+});
+
+// Catch uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit immediately, let the server try to handle it
+});
+
+const server = app.listen(port, host, () => {
+  console.log(`✅ Ingestion server running on http://${host}:${port}`);
+  console.log(`✅ Health check: http://${host}:${port}/api/health`);
+  console.log(`✅ Ingest endpoint: http://${host}:${port}/api/ingest`);
+  console.log(`✅ Process PID: ${process.pid}`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use`);
+    process.exit(1);
+  } else {
+    // Don't exit on other errors, let it retry
+    console.error('Server error (non-fatal):', error.message);
+  }
+});
+
+// Keep process alive
+server.on('listening', () => {
+  console.log('✅ Server is listening and ready to accept connections');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
