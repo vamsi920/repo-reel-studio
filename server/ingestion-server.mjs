@@ -15,7 +15,18 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+// CORS configuration - allow all origins for Railway deployment
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+}));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
 app.use(express.json({ limit: "1mb" }));
 
 // Global error handler
@@ -154,10 +165,13 @@ app.post("/api/ingest", async (req, res) => {
   let tempDir;
   try {
     console.log(`\n📥 Ingestion request received for: ${req.body?.repoUrl}`);
+    console.log(`📍 Request origin: ${req.headers.origin || 'unknown'}`);
+    console.log(`📍 Request headers:`, JSON.stringify(req.headers, null, 2));
 
     const { repoUrl, branch, token } = req.body ?? {};
 
     if (!repoUrl || typeof repoUrl !== "string") {
+      console.log(`❌ Missing repoUrl in request`);
       return res.status(400).json({ error: "repoUrl is required" });
     }
 
@@ -188,8 +202,14 @@ app.post("/api/ingest", async (req, res) => {
     const startTime = Date.now();
 
     try {
+    console.log(`📁 Creating temp directory: ${repoDir}`);
     await fs.promises.mkdir(repoDir, { recursive: true });
-    await git.clone({
+    
+    console.log(`🔄 Starting git clone for: ${repoUrl}`);
+    
+    // Add timeout for git clone (60 seconds)
+    const cloneTimeout = 60000;
+    const clonePromise = git.clone({
       fs,
       http,
       dir: repoDir,
@@ -204,6 +224,15 @@ app.post("/api/ingest", async (req, res) => {
           })
         : undefined,
     });
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Git clone timeout after 60 seconds"));
+      }, cloneTimeout);
+    });
+    
+    await Promise.race([clonePromise, timeoutPromise]);
+    console.log(`✓ Git clone completed successfully`);
 
     const files = await walkFiles(repoDir);
     const maxTotalBytes = Number(
@@ -238,6 +267,10 @@ app.post("/api/ingest", async (req, res) => {
     console.log(`  - Total size: ${formatBytes(totalBytes)}`);
     console.log(`  - Duration: ${(durationMs / 1000).toFixed(2)}s\n`);
 
+    // Ensure CORS headers are set before sending response
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
     res.json({
       repoUrl,
       stats: {
@@ -274,6 +307,9 @@ app.post("/api/ingest", async (req, res) => {
     }
 
       if (!res.headersSent) {
+        // Ensure CORS headers are set even for errors
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.status(500).json({
           error: errorMessage,
           detail,
@@ -292,7 +328,11 @@ app.post("/api/ingest", async (req, res) => {
   } catch (outerError) {
     // Catch any unexpected errors outside the main try block
     console.error("Unexpected error in route handler:", outerError);
+    console.error("Stack trace:", outerError instanceof Error ? outerError.stack : 'No stack trace');
     if (!res.headersSent) {
+      // Ensure CORS headers are set even for unexpected errors
+      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.status(500).json({
         error: "Internal server error",
         detail: outerError instanceof Error ? outerError.message : "An unexpected error occurred",
@@ -309,8 +349,9 @@ app.post("/api/ingest", async (req, res) => {
   }
 });
 
-const port = Number(process.env.PORT || 8787);
-const host = process.env.HOST || "0.0.0.0"; // Bind to all interfaces for Fly.io
+// Railway provides PORT environment variable, default to 8080 for local dev
+const port = Number(process.env.PORT || 8080);
+const host = process.env.HOST || "0.0.0.0"; // Bind to all interfaces
 
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
