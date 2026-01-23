@@ -15,17 +15,63 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration - allow all origins for Railway deployment
-app.use(cors({
-  origin: true, // Allow all origins
+// CORS configuration - allow specific origins
+const allowedOrigins = [
+  'https://gitflick.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:3000',
+];
+
+// Helper function to get allowed origin from request
+const getAllowedOrigin = (req) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    return origin;
+  }
+  // Allow requests with no origin (like mobile apps, Postman, curl)
+  if (!origin) {
+    return '*';
+  }
+  return null; // Disallowed origin
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+  methods: ['POST', 'OPTIONS', 'GET'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
-}));
+  maxAge: 86400, // 24 hours
+};
 
-// Handle preflight requests explicitly
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly with proper response
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.status(204).end(); // No Content for OPTIONS
+  } else {
+    res.status(403).end(); // Forbidden for disallowed origins
+  }
+});
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -268,8 +314,13 @@ app.post("/api/ingest", async (req, res) => {
     console.log(`  - Duration: ${(durationMs / 1000).toFixed(2)}s\n`);
 
     // Ensure CORS headers are set before sending response
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    const allowedOrigin = getAllowedOrigin(req);
+    if (allowedOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
     
     res.json({
       repoUrl,
@@ -308,8 +359,13 @@ app.post("/api/ingest", async (req, res) => {
 
       if (!res.headersSent) {
         // Ensure CORS headers are set even for errors
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        const allowedOrigin = getAllowedOrigin(req);
+        if (allowedOrigin) {
+          res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        }
         res.status(500).json({
           error: errorMessage,
           detail,
@@ -331,8 +387,13 @@ app.post("/api/ingest", async (req, res) => {
     console.error("Stack trace:", outerError instanceof Error ? outerError.stack : 'No stack trace');
     if (!res.headersSent) {
       // Ensure CORS headers are set even for unexpected errors
-      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      const allowedOrigin = getAllowedOrigin(req);
+      if (allowedOrigin) {
+        res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      }
       res.status(500).json({
         error: "Internal server error",
         detail: outerError instanceof Error ? outerError.message : "An unexpected error occurred",
