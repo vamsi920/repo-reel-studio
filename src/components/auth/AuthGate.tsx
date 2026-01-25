@@ -93,11 +93,6 @@ export const AuthGate = ({
               Sign In
             </Link>
           </Button>
-          <Button variant="outline" size="lg" className="w-full" asChild>
-            <Link to="/signup" state={{ from: location.pathname }}>
-              Create Free Account
-            </Link>
-          </Button>
         </div>
 
         <p className="text-xs text-muted-foreground text-center">

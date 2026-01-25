@@ -77,9 +77,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email,
         password,
         options: {
-          data: {
-            full_name: fullName,
-          },
+          data: { full_name: fullName },
+          // Use current origin so verify link redirects to your hosted app, not localhost
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       return { error: error as Error | null };

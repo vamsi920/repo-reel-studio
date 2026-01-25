@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Mail, ArrowLeft } from 'lucide-react';
 import iconUrl from '../../icon.png';
@@ -137,14 +137,6 @@ const Login = () => {
             </form>
           </CardContent>
 
-          <CardFooter className="flex flex-col space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:underline font-medium">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
         </Card>
 
         {/* Terms */}

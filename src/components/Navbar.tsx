@@ -146,7 +146,7 @@ export const Navbar = () => {
                   <Link to="/login">Login</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/signup">Get Started</Link>
+                  <Link to="/login">Get Started</Link>
                 </Button>
               </>
             )}
@@ -230,7 +230,7 @@ export const Navbar = () => {
                       <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                     </Button>
                     <Button size="sm" className="mx-2" asChild>
-                      <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
                     </Button>
                   </>
                 )}

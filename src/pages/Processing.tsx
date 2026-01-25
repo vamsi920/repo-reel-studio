@@ -898,25 +898,11 @@ const CompletionActions = ({ repoName, projectId }: { repoName: string; projectI
           <p className="text-sm text-muted-foreground text-center">
             Sign in to access the Studio and edit your video
           </p>
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              className="flex-1"
-              asChild
-            >
-              <Link to="/login" state={{ from: '/studio' }}>
-                Sign In
-              </Link>
-            </Button>
-            <Button 
-              className="flex-1"
-              asChild
-            >
-              <Link to="/signup" state={{ from: '/studio' }}>
-                Create Account
-              </Link>
-            </Button>
-          </div>
+          <Button size="lg" className="w-full" asChild>
+            <Link to="/login" state={{ from: '/studio' }}>
+              Sign In
+            </Link>
+          </Button>
           <p className="text-xs text-muted-foreground text-center">
             Free forever • No credit card required
           </p>

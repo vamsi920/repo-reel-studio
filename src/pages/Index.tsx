@@ -108,8 +108,8 @@ const CTASection = () => {
           ) : (
             <>
               <Button variant="hero" size="xl" className="gap-2 bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/25" asChild>
-                <Link to="/signup">
-                  Start Creating Free
+                <Link to="/login">
+                  Sign In
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
