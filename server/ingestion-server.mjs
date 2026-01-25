@@ -6,6 +6,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import crypto from "crypto";
+import { Readable } from "stream";
+import { x as tarExtract } from "tar";
 
 const app = express();
 
@@ -171,14 +173,13 @@ const ALLOWED_EXTS = new Set([
   ".gql",
 ]);
 
-const DEFAULT_MAX_TOTAL_BYTES = 12 * 1024 * 1024;
-const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024;
+// Lightweight defaults for Render (512MB RAM): cap early to avoid OOM/panic
+const DEFAULT_MAX_TOTAL_BYTES = 6 * 1024 * 1024;   // 6 MB
+const DEFAULT_MAX_FILE_BYTES = 512 * 1024;         // 512 KB
+const DEFAULT_MAX_FILES = 120;
 
-const readTextFile = async (filePath) => {
+const readTextFile = async (filePath, maxFileBytes) => {
   const stat = await fs.promises.stat(filePath);
-  const maxFileBytes = Number(
-    process.env.INGEST_MAX_FILE_BYTES || DEFAULT_MAX_FILE_BYTES
-  );
   if (stat.size > maxFileBytes) {
     return { skipped: true, reason: "file_too_large", bytes: stat.size };
   }
@@ -186,39 +187,62 @@ const readTextFile = async (filePath) => {
   return { skipped: false, content, bytes: Buffer.byteLength(content, "utf8") };
 };
 
-const walkFiles = async (rootDir) => {
-  const entries = [];
-  let fileCount = 0;
+/**
+ * Walk and read in one pass; stop as soon as we hit maxFiles or maxBytes.
+ * Keeps memory and CPU low on Render—never materializes a full file list.
+ */
+async function walkAndRead(rootDir, opts) {
+  const maxFiles = opts.maxFiles || DEFAULT_MAX_FILES;
+  const maxBytes = opts.maxBytes || opts.maxTotalBytes || DEFAULT_MAX_TOTAL_BYTES;
+  const maxFileBytes = opts.maxFileBytes || DEFAULT_MAX_FILE_BYTES;
+  const state = { chunks: [], totalBytes: 0, includedFiles: 0, skippedFiles: 0, stop: false };
 
   const visit = async (currentDir) => {
-    const dirEntries = await fs.promises.readdir(currentDir, {
-      withFileTypes: true,
-    });
-    for (const entry of dirEntries) {
-      const fullPath = path.join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        if (IGNORE_DIRS.has(entry.name)) {
+    if (state.stop) return;
+    const entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
+    for (const e of entries) {
+      if (state.stop) return;
+      const full = path.join(currentDir, e.name);
+      if (e.isDirectory()) {
+        if (IGNORE_DIRS.has(e.name)) continue;
+        await visit(full);
+      } else if (e.isFile()) {
+        if (!ALLOWED_EXTS.has(path.extname(e.name).toLowerCase())) continue;
+        const result = await readTextFile(full, maxFileBytes);
+        if (result.skipped) {
+          state.skippedFiles++;
           continue;
         }
-        await visit(fullPath);
-      } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if (ALLOWED_EXTS.has(ext)) {
-          entries.push(fullPath);
-          fileCount++;
-          // Log progress every 50 files for large repos
-          if (fileCount % 50 === 0) {
-            console.log(`  📄 Found ${fileCount} files so far...`);
-          }
+        if (state.totalBytes + result.bytes > maxBytes || state.includedFiles >= maxFiles) {
+          state.skippedFiles++;
+          state.stop = true;
+          return;
         }
+        state.chunks.push(`\n\n----- FILE: ${path.relative(rootDir, full)} -----\n${result.content}`);
+        state.totalBytes += result.bytes;
+        state.includedFiles++;
       }
     }
   };
 
   await visit(rootDir);
-  console.log(`✓ Found ${fileCount} total files to process`);
-  return entries;
-};
+  return { chunks: state.chunks, includedFiles: state.includedFiles, skippedFiles: state.skippedFiles, totalBytes: state.totalBytes };
+}
+
+/** Fetch GitHub archive (tar.gz) and stream-extract to dir. Tar auto-detects gzip. No git, minimal memory. */
+async function fetchGitHubArchive(owner, repo, branch, destDir) {
+  const url = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/refs/heads/${encodeURIComponent(branch)}.tar.gz`;
+  const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "GitFlick-Ingest/1.0" } });
+  if (!res.ok) throw new Error(`Archive ${res.status}`);
+  await fs.promises.mkdir(destDir, { recursive: true });
+  const src = Readable.fromWeb(res.body);
+  const extract = tarExtract({ cwd: destDir, strip: 1 });
+  src.pipe(extract);
+  await new Promise((resolve, reject) => {
+    extract.on("close", resolve);
+    extract.on("error", reject);
+  });
+}
 
 const formatBytes = (bytes) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -230,11 +254,9 @@ const formatBytes = (bytes) => {
 app.post("/api/ingest", async (req, res) => {
   let tempDir;
   try {
-    console.log(`\n📥 Ingestion request received for: ${req.body?.repoUrl}`);
-    console.log(`📍 Request origin: ${req.headers.origin || 'unknown'}`);
-    console.log(`📍 Request headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`📥 Ingest: ${req.body?.repoUrl}`);
 
-    const { repoUrl, branch, token } = req.body ?? {};
+    const { repoUrl, token } = req.body ?? {};
 
     if (!repoUrl || typeof repoUrl !== "string") {
       console.log(`❌ Missing repoUrl in request`);
@@ -261,176 +283,99 @@ app.post("/api/ingest", async (req, res) => {
 
     console.log(`✓ URL validated: ${repoUrl}`);
 
-    tempDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "repo-ingest-")
-    );
-    const repoDir = path.join(tempDir, crypto.randomUUID());
+    tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "repo-ingest-"));
+    const repoDir = path.join(tempDir, "src");
     const startTime = Date.now();
 
-    try {
-    console.log(`📁 Creating temp directory: ${repoDir}`);
-    await fs.promises.mkdir(repoDir, { recursive: true });
-    
-    console.log(`🔄 Starting git clone for: ${repoUrl}`);
-    const cloneStartTime = Date.now();
-    
-    // Increased timeout for cloud deploys (120s) - network can be slower than local
-    const cloneTimeout = 120000; // 2 minutes
-    let cloneProgress = 0;
-    
-    // Progress tracking
-    const progressInterval = setInterval(() => {
-      const elapsed = ((Date.now() - cloneStartTime) / 1000).toFixed(1);
-      console.log(`⏳ Git clone in progress... (${elapsed}s elapsed)`);
-    }, 10000); // Log every 10 seconds
-    
-    try {
+    const branch = (req.body?.branch || "main").replace(/^refs\/heads\//, "");
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const isGitHub = parsedUrl.hostname === "github.com" && pathParts.length >= 2;
+    const [owner, repoRaw] = isGitHub ? [pathParts[0], (pathParts[1] || "").replace(/\.git$/, "")] : [null, null];
+    const useArchive = isGitHub && process.env.INGEST_USE_ARCHIVE !== "false";
+
+    const maxFiles = Number(process.env.INGEST_MAX_FILES || DEFAULT_MAX_FILES);
+    const maxBytes = Number(process.env.INGEST_MAX_TOTAL_BYTES || DEFAULT_MAX_TOTAL_BYTES);
+    const maxFileBytes = Number(process.env.INGEST_MAX_FILE_BYTES || DEFAULT_MAX_FILE_BYTES);
+
+    const doGitClone = async () => {
+      const cloneTimeout = 90000; // 90s for Render; fail faster on huge repos
       const clonePromise = git.clone({
-        fs,
-        http,
-        dir: repoDir,
-        url: repoUrl,
-        ref: branch || undefined,
-        singleBranch: true,
-        depth: 1, // Shallow clone - only latest commit
-        noCheckout: false, // We need the files
-        onAuth: token
-          ? () => ({
-              username: token,
-              password: "x-oauth-basic",
-            })
-          : undefined,
-        corsProxy: undefined, // GitHub doesn't need CORS proxy
+        fs, http, dir: repoDir, url: repoUrl, ref: branch || undefined,
+        singleBranch: true, depth: 1, noCheckout: false,
+        onAuth: token ? () => ({ username: token, password: "x-oauth-basic" }) : undefined,
+        corsProxy: undefined,
       });
-      
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          clearInterval(progressInterval);
-          reject(new Error("Git clone timeout after 120 seconds. Network may be slow or repository is too large."));
-        }, cloneTimeout);
-      });
-      
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Git clone timeout. Repo may be too large or network slow.")), cloneTimeout)
+      );
       await Promise.race([clonePromise, timeoutPromise]);
-      clearInterval(progressInterval);
-      
-      const cloneDuration = ((Date.now() - cloneStartTime) / 1000).toFixed(2);
-      console.log(`✓ Git clone completed successfully in ${cloneDuration}s`);
-    } catch (cloneError) {
-      clearInterval(progressInterval);
-      throw cloneError;
-    }
+    };
 
-    console.log(`📂 Scanning repository files...`);
-    const files = await walkFiles(repoDir);
-    
-    if (files.length === 0) {
-      throw new Error("No files found in repository. Make sure the repository contains supported file types.");
-    }
-    
-    const maxTotalBytes = Number(
-      process.env.INGEST_MAX_TOTAL_BYTES || DEFAULT_MAX_TOTAL_BYTES
-    );
-    const chunks = [];
-    let totalBytes = 0;
-    let includedFiles = 0;
-    let skippedFiles = 0;
-
-    console.log(`📝 Processing ${files.length} files...`);
-    const processStartTime = Date.now();
-    
-    // Process files in batches for better performance
-    for (let i = 0; i < files.length; i++) {
-      const filePath = files[i];
-      const relativePath = path.relative(repoDir, filePath);
-      
-      // Log progress every 20 files
-      if (i > 0 && i % 20 === 0) {
-        const elapsed = ((Date.now() - processStartTime) / 1000).toFixed(1);
-        console.log(`  ⚡ Processed ${i}/${files.length} files (${elapsed}s)...`);
+    try {
+      if (useArchive && owner && repoRaw) {
+        try {
+          const t0 = Date.now();
+          await fetchGitHubArchive(owner, repoRaw, branch, repoDir);
+          console.log(`✓ Archive extracted in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+        } catch (archErr) {
+          console.warn(`Archive failed (${archErr.message}), using git clone`);
+          await fs.promises.rm(repoDir, { recursive: true, force: true }).catch(() => {});
+          await fs.promises.mkdir(repoDir, { recursive: true });
+          await doGitClone();
+        }
+      } else {
+        await fs.promises.mkdir(repoDir, { recursive: true });
+        await doGitClone();
       }
-      
-      const result = await readTextFile(filePath);
-      if (result.skipped) {
-        skippedFiles += 1;
-        continue;
+
+      const { chunks, includedFiles, skippedFiles, totalBytes } = await walkAndRead(repoDir, {
+        maxFiles, maxBytes: maxBytes, maxFileBytes,
+      });
+      if (includedFiles === 0) {
+        throw new Error("No files found in repository. Make sure the repository contains supported file types.");
       }
-      if (totalBytes + result.bytes > maxTotalBytes) {
-        skippedFiles += 1;
-        continue;
+
+      const durationMs = Date.now() - startTime;
+      console.log(`✓ Ingestion: ${includedFiles} files, ${formatBytes(totalBytes)}, ${(durationMs / 1000).toFixed(1)}s`);
+
+      const allowedOrigin = getAllowedOrigin(req);
+      if (allowedOrigin) {
+        res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
       }
-      chunks.push(`\n\n----- FILE: ${relativePath} -----\n${result.content}`);
-      totalBytes += result.bytes;
-      includedFiles += 1;
-    }
-    
-    const processDuration = ((Date.now() - processStartTime) / 1000).toFixed(2);
-    console.log(`✓ File processing completed in ${processDuration}s`);
-
-    const durationMs = Date.now() - startTime;
-
-    console.log(`✓ Ingestion complete:`);
-    console.log(`  - Files included: ${includedFiles}`);
-    console.log(`  - Files skipped: ${skippedFiles}`);
-    console.log(`  - Total size: ${formatBytes(totalBytes)}`);
-    console.log(`  - Duration: ${(durationMs / 1000).toFixed(2)}s\n`);
-
-    // Ensure CORS headers are set before sending response
-    const allowedOrigin = getAllowedOrigin(req);
-    if (allowedOrigin) {
-      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    }
-    
-    res.json({
-      repoUrl,
-      stats: {
-        includedFiles,
-        skippedFiles,
-        totalBytes,
-        totalBytesFormatted: formatBytes(totalBytes),
-        durationMs,
-      },
-      content: chunks.join(""),
-    });
-  } catch (error) {
-    console.error("Ingestion error:", error);
-
-    let errorMessage = "Ingestion failed";
-    let detail = error instanceof Error ? error.message : String(error);
-
-    // Provide more helpful error messages
-    if (detail.includes("not found") || detail.includes("404")) {
-      errorMessage = "Repository not found";
-      detail =
-        "The repository doesn't exist or is private. Check the URL and access permissions.";
-    } else if (detail.includes("authentication") || detail.includes("401")) {
-      errorMessage = "Authentication required";
-      detail =
-        "This repository is private. Authentication is not yet supported.";
-    } else if (detail.includes("timeout")) {
-      errorMessage = "Connection timeout";
-      detail =
-        "The repository took too long to clone. This can happen on some hosting due to slower network speeds. Try again, or the repository might be too large.";
-    } else if (detail.includes("ENOTFOUND")) {
-      errorMessage = "Network error";
-      detail = "Cannot reach GitHub. Check your internet connection.";
-    }
-
+      res.json({
+        repoUrl,
+        stats: { includedFiles, skippedFiles, totalBytes, totalBytesFormatted: formatBytes(totalBytes), durationMs },
+        content: chunks.join(""),
+      });
+    } catch (error) {
+      console.error("Ingestion error:", error);
+      let errorMessage = "Ingestion failed";
+      let detail = error instanceof Error ? error.message : String(error);
+      if (detail.includes("not found") || detail.includes("404")) {
+        errorMessage = "Repository not found";
+        detail = "The repository doesn't exist or is private. Check the URL and access permissions.";
+      } else if (detail.includes("authentication") || detail.includes("401")) {
+        errorMessage = "Authentication required";
+        detail = "This repository is private. Authentication is not yet supported.";
+      } else if (detail.includes("timeout")) {
+        errorMessage = "Connection timeout";
+        detail = "The repository took too long to clone. Try again or use a smaller repo.";
+      } else if (detail.includes("ENOTFOUND")) {
+        errorMessage = "Network error";
+        detail = "Cannot reach GitHub. Check your internet connection.";
+      }
       if (!res.headersSent) {
-        // Ensure CORS headers are set even for errors
         const allowedOrigin = getAllowedOrigin(req);
         if (allowedOrigin) {
-          res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-          res.setHeader('Access-Control-Allow-Credentials', 'true');
-          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+          res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
+          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
         }
-        res.status(500).json({
-          error: errorMessage,
-          detail,
-        });
+        res.status(500).json({ error: errorMessage, detail });
       }
     } finally {
       // Always clean up temp directory
