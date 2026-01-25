@@ -11,6 +11,10 @@ Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
 | --- | --- | --- | --- |
 | GitHub URL or `user/repo` | Video manifest + studio preview | Vite + React + Remotion + FastAPI | Node 18+ + Python 3.8+ |
 
+### Demo video
+
+**[▶ Live demo](https://gitflick.netlify.app/studio?project=4600de3d-947b-4df6-b5fa-1bcf81ac058a)** — See GitFlick Studio in action.
+
 ## What GitFlick does
 
 - Ingests a public GitHub repository and builds a structured content map.
