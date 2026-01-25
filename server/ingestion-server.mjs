@@ -274,7 +274,7 @@ app.post("/api/ingest", async (req, res) => {
     console.log(`🔄 Starting git clone for: ${repoUrl}`);
     const cloneStartTime = Date.now();
     
-    // Increased timeout for Railway (120 seconds) - Railway network can be slower
+    // Increased timeout for cloud deploys (120s) - network can be slower than local
     const cloneTimeout = 120000; // 2 minutes
     let cloneProgress = 0;
     
@@ -300,14 +300,13 @@ app.post("/api/ingest", async (req, res) => {
               password: "x-oauth-basic",
             })
           : undefined,
-        // Add corsProxy for Railway if needed (GitHub allows CORS)
         corsProxy: undefined, // GitHub doesn't need CORS proxy
       });
       
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           clearInterval(progressInterval);
-          reject(new Error("Git clone timeout after 120 seconds. Railway network may be slow or repository is too large."));
+          reject(new Error("Git clone timeout after 120 seconds. Network may be slow or repository is too large."));
         }, cloneTimeout);
       });
       
@@ -413,7 +412,7 @@ app.post("/api/ingest", async (req, res) => {
     } else if (detail.includes("timeout")) {
       errorMessage = "Connection timeout";
       detail =
-        "The repository took too long to clone. This can happen on Railway's free tier due to slower network speeds. Try again, or the repository might be too large.";
+        "The repository took too long to clone. This can happen on some hosting due to slower network speeds. Try again, or the repository might be too large.";
     } else if (detail.includes("ENOTFOUND")) {
       errorMessage = "Network error";
       detail = "Cannot reach GitHub. Check your internet connection.";
@@ -472,7 +471,7 @@ app.post("/api/ingest", async (req, res) => {
   }
 });
 
-// Railway provides PORT environment variable, default to 8080 for local dev
+// PORT from environment (Render, Fly, etc.), default 8080 for local dev
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0"; // Bind to all interfaces
 
