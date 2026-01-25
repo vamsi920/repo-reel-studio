@@ -67,6 +67,7 @@ const Studio = () => {
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoLabel, setRepoLabel] = useState("Loading...");
   const [phase, setPhase] = useState<LoadingPhase>("idle");
+  const [projectIdState, setProjectIdState] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentStep, setCurrentStep] = useState("Initializing...");
@@ -124,6 +125,7 @@ const Studio = () => {
       const projectIdFromUrl = searchParams.get('project');
       const projectIdFromStorage = sessionStorage.getItem('project-id');
       const projectId = projectIdFromUrl || projectIdFromStorage;
+      if (projectId) setProjectIdState(projectId);
 
       let parsed: VideoManifest | null = null;
       let repoUrl = sessionStorage.getItem("repo-url") || "";
@@ -423,6 +425,13 @@ const Studio = () => {
   useEffect(() => {
     loadManifest();
   }, [loadManifest]);
+
+  // When we have projectId (e.g. from sessionStorage) but URL has no ?project=, replace URL so it's shareable
+  useEffect(() => {
+    if (!projectIdState || phase !== "complete") return;
+    if (searchParams.get("project") === projectIdState) return;
+    navigate(`/studio?project=${projectIdState}`, { replace: true });
+  }, [projectIdState, phase, searchParams, navigate]);
 
   const hydratedManifest = useHydrateManifest(manifest, 30, audioUrls);
   
@@ -930,7 +939,7 @@ const Studio = () => {
             )}
             {isDownloadingVideo ? "Exporting…" : "Download"}
           </Button>
-          <Button size="sm" className="gap-2" onClick={() => navigate("/export")}>
+          <Button size="sm" className="gap-2" onClick={() => navigate(projectIdState ? `/export?project=${projectIdState}` : "/export")}>
             <Download className="h-3.5 w-3.5" />
             Export
           </Button>

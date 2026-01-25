@@ -849,14 +849,14 @@ const Processing = () => {
         )}
 
         {/* Success Actions - Continue to Studio */}
-        {overallStatus === "complete" && <CompletionActions repoName={repoName} />}
+        {overallStatus === "complete" && <CompletionActions repoName={repoName} projectId={projectId} />}
       </div>
     </div>
   );
 };
 
 // Completion screen with auth-aware CTA
-const CompletionActions = ({ repoName }: { repoName: string }) => {
+const CompletionActions = ({ repoName, projectId }: { repoName: string; projectId?: string | null }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -888,7 +888,7 @@ const CompletionActions = ({ repoName }: { repoName: string }) => {
         <Button 
           size="lg"
           className="w-full"
-          onClick={() => navigate("/studio")}
+          onClick={() => navigate(projectId ? `/studio?project=${projectId}` : "/studio")}
         >
           <Play className="h-4 w-4 mr-2" />
           Continue to Studio
