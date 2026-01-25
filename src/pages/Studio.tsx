@@ -22,6 +22,7 @@ import { RemotionVideo } from "@/components/studio/RemotionVideo";
 import { VideoControls, SceneListSidebar } from "@/components/studio/VideoControls";
 import { mockManifest } from "@/data/mockManifest";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
+import { useDownloadVideo } from "@/hooks/useDownloadVideo";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService } from "@/lib/db";
@@ -270,8 +271,17 @@ const Studio = () => {
       await new Promise(r => setTimeout(r, 200));
       setProgress(90);
 
-      // Phase 3: Generating Voice (TTS)
-      if (GOOGLE_TTS_ENABLED && parsed && parsed.scenes && parsed.scenes.length > 0) {
+      // Phase 3: Generating Voice (TTS) — skip if manifest has stored audio (Supabase)
+      const hasStoredAudio = parsed?.scenes?.some((s) => s.audioUrl);
+      if (hasStoredAudio && parsed?.scenes) {
+        const stored = new Map<number, string>();
+        for (const s of parsed.scenes) {
+          if (s.audioUrl) stored.set(s.id, s.audioUrl);
+        }
+        setAudioUrls(stored);
+        setTtsProgress({ completed: stored.size, total: parsed.scenes.length });
+        addLog("Using stored audio from project", "info");
+      } else if (GOOGLE_TTS_ENABLED && parsed && parsed.scenes && parsed.scenes.length > 0) {
         setPhase("generating-voice");
         setCurrentStep("Generating voice narration...");
         addLog("Starting voice generation with Google TTS...", "info");
@@ -439,6 +449,14 @@ const Studio = () => {
     }),
     []
   );
+
+  const { downloadVideo, isExporting: isDownloadingVideo, statusMessage: downloadStatusMessage } = useDownloadVideo({
+    playerContainerRef,
+    playerRef,
+    totalFrames: durationInFrames,
+    fps: 30,
+    fileName: repoLabel || "video",
+  });
 
   const inputProps = useMemo(
     () => {
@@ -620,14 +638,16 @@ const Studio = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handlePlayPause, handleSeek, currentFrame, durationInFrames]);
 
-  // Copy share link
+  // Copy share link (unique /v/:id when project is from DB)
   const handleShare = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href);
+    const projectId = sessionStorage.getItem("project-id") || searchParams.get("project");
+    const url = projectId ? `${window.location.origin}/v/${projectId}` : window.location.href;
+    navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
       description: "Video link has been copied to clipboard.",
     });
-  }, []);
+  }, [searchParams]);
 
   // Loading Screen Component
   const LoadingScreen = () => (
@@ -896,6 +916,20 @@ const Studio = () => {
               New Video
             </Link>
           </Button>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={downloadVideo}
+            disabled={phase !== "complete" || isDownloadingVideo}
+            title={downloadStatusMessage || undefined}
+          >
+            {isDownloadingVideo ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {isDownloadingVideo ? "Exporting…" : "Download"}
+          </Button>
           <Button size="sm" className="gap-2" onClick={() => navigate("/export")}>
             <Download className="h-3.5 w-3.5" />
             Export
@@ -969,6 +1003,8 @@ const Studio = () => {
                       onPlayPause={handlePlayPause}
                       onSeek={handleSeek}
                       onSceneChange={(idx) => console.log("Scene changed:", idx)}
+                      onDownloadVideo={downloadVideo}
+                      isDownloadingVideo={isDownloadingVideo}
                     />
                   </div>
                 </div>

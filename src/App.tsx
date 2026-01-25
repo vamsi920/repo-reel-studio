@@ -18,6 +18,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
+import Watch from "./pages/Watch";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,21 @@ const App = () => (
             
             {/* Phase 1: Processing can be done without login (great UX!) */}
             <Route path="/processing" element={<Processing />} />
-            
+
+            {/* Unique video URL: /v/:videoId — fetch from Supabase, player only. Auth required. */}
+            <Route
+              path="/v/:videoId"
+              element={
+                <AuthGate
+                  title="Sign in to watch this video"
+                  message="Sign in to watch this video. Each video is private to your account."
+                  featureName="Watch"
+                >
+                  <Watch />
+                </AuthGate>
+              }
+            />
+
             {/* Protected routes - require authentication */}
             <Route 
               path="/dashboard" 

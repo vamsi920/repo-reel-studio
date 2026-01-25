@@ -8,6 +8,8 @@ export interface VideoScene {
   duration_seconds: number;
   title: string;
   code?: string;
+  /** Persisted URL for TTS audio (Supabase Storage). Set when audio is uploaded. */
+  audioUrl?: string;
   // Hydrated properties (added by useHydrateManifest)
   startFrame?: number;
   endFrame?: number;

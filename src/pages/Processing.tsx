@@ -6,7 +6,9 @@ import { mockManifest } from "@/data/mockManifest";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService, extractRepoName } from "@/lib/db";
 import { generateManifestWithGemini } from "@/lib/geminiDirector";
-import { USE_MOCK_MANIFEST, API_URL } from "@/env";
+import { generateAllSceneAudio } from "@/lib/googleTTS";
+import { supabase } from "@/lib/supabase";
+import { USE_MOCK_MANIFEST, API_URL, GOOGLE_TTS_ENABLED } from "@/env";
 import { toast } from "@/hooks/use-toast";
 import type { VideoManifest, VideoScene } from "@/lib/types";
 import iconUrl from "../../icon.png";
@@ -102,6 +104,21 @@ const Processing = () => {
       if (!user?.id) {
         addLog("INFO: Not authenticated - project will not be saved to database");
         addLog("  → Sign in to save projects and access Studio");
+      }
+
+      // Reuse: if user has a ready project for this repo, redirect (unless ?force=1)
+      if (user?.id) {
+        const force = new URLSearchParams(location.search).get("force") === "1";
+        if (!force) {
+          try {
+            const existing = await projectsService.getByRepoUrl(repoUrl, user.id);
+            if (existing?.status === "ready" && existing.manifest) {
+              addLog("Found existing video for this repo. Redirecting...");
+              navigate(`/studio?project=${existing.id}`);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
       }
 
       // Create project in Supabase
@@ -207,11 +224,9 @@ const Processing = () => {
       // Run actual ingestion
       try {
         // Use environment variable for API URL, fallback to proxy in dev
-        // Backend endpoint is /api/ingest
-        // If API_URL is "/api" (dev proxy), use it directly
-        // If API_URL is a full URL (production), append /api/ingest
-        const ingestUrl = API_URL === "/api" 
-          ? `${API_URL}/ingest` 
+        // Backend endpoint is /api/ingest. API_URL has no trailing slash (see env.tsx).
+        const ingestUrl = API_URL === "/api"
+          ? "/api/ingest"
           : `${API_URL}/api/ingest`;
         addLog(`Sending POST request to ${ingestUrl}...`);
         const startTime = Date.now();
@@ -532,7 +547,41 @@ const Processing = () => {
       addLog(`Total scenes created: ${manifestWithCode.scenes.length}`);
       const totalDuration = manifestWithCode.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
       addLog(`Estimated video duration: ${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}`);
-      
+
+      // TTS + upload audio to Supabase Storage (per-user cache for /v and Studio)
+      if (GOOGLE_TTS_ENABLED && currentProjectId && user?.id && !cancelled) {
+        addLog("Generating voice and uploading to storage...");
+        try {
+          const { audioUrls: genUrls } = await generateAllSceneAudio(manifestWithCode.scenes, "en-US-Standard-D");
+          let uploaded = 0;
+          for (const [sceneId, blobUrl] of genUrls) {
+            if (cancelled) break;
+            try {
+              const res = await fetch(blobUrl);
+              const blob = await res.blob();
+              URL.revokeObjectURL(blobUrl);
+              const path = `${currentProjectId}/${sceneId}.mp3`;
+              const { error } = await supabase.storage.from("project-audio").upload(path, blob, { contentType: "audio/mpeg", upsert: true });
+              if (error) {
+                addLog(`Warning: could not upload audio scene ${sceneId}: ${error.message}`);
+                continue;
+              }
+              const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
+              const scene = manifestWithCode.scenes.find((s) => s.id === sceneId);
+              if (scene) {
+                scene.audioUrl = data.publicUrl;
+                uploaded++;
+              }
+            } catch (e) {
+              addLog(`Warning: upload failed for scene ${sceneId}`);
+            }
+          }
+          addLog(`Uploaded ${uploaded} audio files to storage`);
+        } catch (e) {
+          addLog(`Voice/storage skipped: ${e instanceof Error ? e.message : "error"}`);
+        }
+      }
+
       // Save to Supabase
       if (currentProjectId && user?.id) {
         addLog("Saving manifest to database...");
@@ -626,7 +675,7 @@ const Processing = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [navigate, repoUrl, repoName, addLog, retryKey, user?.id]);
+  }, [navigate, repoUrl, repoName, addLog, retryKey, user?.id, location.search]);
 
   const overallStatus: PhaseStatus =
     phase1Status === "error" ? "error" :

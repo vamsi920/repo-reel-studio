@@ -162,14 +162,25 @@ const Dashboard = () => {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setUrlError("");
     const cleanedUrl = validateAndCleanUrl(repoUrl);
-    
-    if (cleanedUrl && user?.id) {
-      const encodedRepo = encodeURIComponent(cleanedUrl);
-      navigate(`/processing?repo=${encodedRepo}`);
+    if (!cleanedUrl) return;
+
+    if (user?.id) {
+      try {
+        const existing = await projectsService.getByRepoUrl(cleanedUrl, user.id);
+        if (existing?.status === "ready" && existing.manifest) {
+          navigate(`/studio?project=${existing.id}`);
+          toast({ title: "Using existing video", description: "You already have a video for this repo." });
+          return;
+        }
+      } catch {
+        // On error, proceed to processing
+      }
     }
+
+    navigate(`/processing?repo=${encodeURIComponent(cleanedUrl)}`);
   };
 
   const handleProjectSelect = (project: Project) => {

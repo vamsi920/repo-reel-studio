@@ -11,6 +11,9 @@ import {
   Settings,
   Share2,
   Download,
+  Film,
+  FileJson,
+  Loader2,
   SkipBack,
   SkipForward,
   ChevronLeft,
@@ -48,6 +51,9 @@ interface VideoControlsProps {
   onPlayPause: () => void;
   onSeek: (frame: number) => void;
   onSceneChange?: (sceneIndex: number) => void;
+  /** Download video (WebM or MP4); when provided, Download becomes a dropdown with Video + Manifest */
+  onDownloadVideo?: () => void;
+  isDownloadingVideo?: boolean;
 }
 
 const formatTime = (seconds: number): string => {
@@ -66,6 +72,8 @@ export const VideoControls = ({
   onPlayPause,
   onSeek,
   onSceneChange,
+  onDownloadVideo,
+  isDownloadingVideo = false,
 }: VideoControlsProps) => {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -315,19 +323,58 @@ export const VideoControls = ({
               <TooltipContent>Share</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/10"
-                  onClick={handleDownload}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download Manifest</TooltipContent>
-            </Tooltip>
+            {onDownloadVideo ? (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/10"
+                          disabled={isDownloadingVideo}
+                        >
+                          {isDownloadingVideo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Download video or manifest</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    onClick={onDownloadVideo}
+                    disabled={isDownloadingVideo}
+                  >
+                    <Film className="h-4 w-4 mr-2" />
+                    Download Video
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownload}>
+                    <FileJson className="h-4 w-4 mr-2" />
+                    Download Manifest (JSON)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/10"
+                    onClick={handleDownload}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download Manifest</TooltipContent>
+              </Tooltip>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

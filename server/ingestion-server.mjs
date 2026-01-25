@@ -15,13 +15,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration - allow specific origins
-const allowedOrigins = [
+// CORS configuration - allow specific origins (dev + production)
+const BASE_ORIGINS = [
   'https://gitflick.netlify.app',
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:3000',
 ];
+// Optional: CORS_ORIGINS env (comma-separated) for Render/deploy
+const EXTRA = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const allowedOrigins = [...BASE_ORIGINS, ...EXTRA];
 
 // Helper function to get allowed origin from request
 const getAllowedOrigin = (req) => {
@@ -57,31 +63,38 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly with proper response
+// Handle preflight OPTIONS explicitly (backup if cors doesn't; avoid double-send)
 app.options('*', (req, res) => {
+  if (res.headersSent) return;
   const origin = req.headers.origin;
-  
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
-    res.status(204).end(); // No Content for OPTIONS
-  } else {
-    res.status(403).end(); // Forbidden for disallowed origins
   }
+  res.status(origin && allowedOrigins.includes(origin) ? 204 : 403).end();
 });
 
 app.use(express.json({ limit: "1mb" }));
 
-// Global error handler
+// Global error handler — must set CORS or browser reports "No Access-Control-Allow-Origin"
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    detail: err.message || 'Unknown error',
-  });
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  }
+  if (!res.headersSent) {
+    res.status(500).json({
+      error: 'Internal server error',
+      detail: err.message || 'Unknown error',
+    });
+  }
 });
 
 // Root endpoint
@@ -175,6 +188,7 @@ const readTextFile = async (filePath) => {
 
 const walkFiles = async (rootDir) => {
   const entries = [];
+  let fileCount = 0;
 
   const visit = async (currentDir) => {
     const dirEntries = await fs.promises.readdir(currentDir, {
@@ -191,12 +205,18 @@ const walkFiles = async (rootDir) => {
         const ext = path.extname(entry.name).toLowerCase();
         if (ALLOWED_EXTS.has(ext)) {
           entries.push(fullPath);
+          fileCount++;
+          // Log progress every 50 files for large repos
+          if (fileCount % 50 === 0) {
+            console.log(`  📄 Found ${fileCount} files so far...`);
+          }
         }
       }
     }
   };
 
   await visit(rootDir);
+  console.log(`✓ Found ${fileCount} total files to process`);
   return entries;
 };
 
@@ -252,35 +272,62 @@ app.post("/api/ingest", async (req, res) => {
     await fs.promises.mkdir(repoDir, { recursive: true });
     
     console.log(`🔄 Starting git clone for: ${repoUrl}`);
+    const cloneStartTime = Date.now();
     
-    // Add timeout for git clone (60 seconds)
-    const cloneTimeout = 60000;
-    const clonePromise = git.clone({
-      fs,
-      http,
-      dir: repoDir,
-      url: repoUrl,
-      ref: branch || undefined,
-      singleBranch: true,
-      depth: 1,
-      onAuth: token
-        ? () => ({
-            username: token,
-            password: "x-oauth-basic",
-          })
-        : undefined,
-    });
+    // Increased timeout for Railway (120 seconds) - Railway network can be slower
+    const cloneTimeout = 120000; // 2 minutes
+    let cloneProgress = 0;
     
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Git clone timeout after 60 seconds"));
-      }, cloneTimeout);
-    });
+    // Progress tracking
+    const progressInterval = setInterval(() => {
+      const elapsed = ((Date.now() - cloneStartTime) / 1000).toFixed(1);
+      console.log(`⏳ Git clone in progress... (${elapsed}s elapsed)`);
+    }, 10000); // Log every 10 seconds
     
-    await Promise.race([clonePromise, timeoutPromise]);
-    console.log(`✓ Git clone completed successfully`);
+    try {
+      const clonePromise = git.clone({
+        fs,
+        http,
+        dir: repoDir,
+        url: repoUrl,
+        ref: branch || undefined,
+        singleBranch: true,
+        depth: 1, // Shallow clone - only latest commit
+        noCheckout: false, // We need the files
+        onAuth: token
+          ? () => ({
+              username: token,
+              password: "x-oauth-basic",
+            })
+          : undefined,
+        // Add corsProxy for Railway if needed (GitHub allows CORS)
+        corsProxy: undefined, // GitHub doesn't need CORS proxy
+      });
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          clearInterval(progressInterval);
+          reject(new Error("Git clone timeout after 120 seconds. Railway network may be slow or repository is too large."));
+        }, cloneTimeout);
+      });
+      
+      await Promise.race([clonePromise, timeoutPromise]);
+      clearInterval(progressInterval);
+      
+      const cloneDuration = ((Date.now() - cloneStartTime) / 1000).toFixed(2);
+      console.log(`✓ Git clone completed successfully in ${cloneDuration}s`);
+    } catch (cloneError) {
+      clearInterval(progressInterval);
+      throw cloneError;
+    }
 
+    console.log(`📂 Scanning repository files...`);
     const files = await walkFiles(repoDir);
+    
+    if (files.length === 0) {
+      throw new Error("No files found in repository. Make sure the repository contains supported file types.");
+    }
+    
     const maxTotalBytes = Number(
       process.env.INGEST_MAX_TOTAL_BYTES || DEFAULT_MAX_TOTAL_BYTES
     );
@@ -289,8 +336,20 @@ app.post("/api/ingest", async (req, res) => {
     let includedFiles = 0;
     let skippedFiles = 0;
 
-    for (const filePath of files) {
+    console.log(`📝 Processing ${files.length} files...`);
+    const processStartTime = Date.now();
+    
+    // Process files in batches for better performance
+    for (let i = 0; i < files.length; i++) {
+      const filePath = files[i];
       const relativePath = path.relative(repoDir, filePath);
+      
+      // Log progress every 20 files
+      if (i > 0 && i % 20 === 0) {
+        const elapsed = ((Date.now() - processStartTime) / 1000).toFixed(1);
+        console.log(`  ⚡ Processed ${i}/${files.length} files (${elapsed}s)...`);
+      }
+      
       const result = await readTextFile(filePath);
       if (result.skipped) {
         skippedFiles += 1;
@@ -304,6 +363,9 @@ app.post("/api/ingest", async (req, res) => {
       totalBytes += result.bytes;
       includedFiles += 1;
     }
+    
+    const processDuration = ((Date.now() - processStartTime) / 1000).toFixed(2);
+    console.log(`✓ File processing completed in ${processDuration}s`);
 
     const durationMs = Date.now() - startTime;
 
@@ -351,7 +413,7 @@ app.post("/api/ingest", async (req, res) => {
     } else if (detail.includes("timeout")) {
       errorMessage = "Connection timeout";
       detail =
-        "The repository took too long to clone. Try again or check your network.";
+        "The repository took too long to clone. This can happen on Railway's free tier due to slower network speeds. Try again, or the repository might be too large.";
     } else if (detail.includes("ENOTFOUND")) {
       errorMessage = "Network error";
       detail = "Cannot reach GitHub. Check your internet connection.";

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { 
   CheckCircle, 
@@ -18,6 +18,7 @@ import type { VideoManifest } from "@/lib/geminiDirector";
 import { Player, PlayerRef } from "@remotion/player";
 import { RemotionVideo } from "@/components/studio/RemotionVideo";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
+import { useDownloadVideo } from "@/hooks/useDownloadVideo";
 
 const Export = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +26,6 @@ const Export = () => {
   const { user } = useAuth();
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const playerRef = useRef<PlayerRef>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -84,58 +84,24 @@ const Export = () => {
 
   const totalDuration = manifest?.scenes?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
   const durationStr = `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, "0")}`;
-  const hydratedManifest = useHydrateManifest(manifest, 30);
 
-  const downloadVideo = () => {
-    if (!hydratedManifest || isRecording) return;
-    const canvas = playerContainerRef.current?.querySelector("canvas");
-    if (!canvas || typeof canvas.captureStream !== "function") {
-      toast({
-        title: "Download unavailable",
-        description: "Video capture is not supported in this browser.",
-      });
-      return;
+  const audioMap = useMemo(() => {
+    if (!manifest?.scenes) return new Map<number, string>();
+    const m = new Map<number, string>();
+    for (const s of manifest.scenes) {
+      if (s.audioUrl) m.set(s.id, s.audioUrl);
     }
+    return m;
+  }, [manifest?.scenes]);
+  const hydratedManifest = useHydrateManifest(manifest, 30, audioMap);
 
-    const stream = canvas.captureStream(30);
-    const preferredType = "video/webm;codecs=vp9";
-    const mimeType = MediaRecorder.isTypeSupported(preferredType) ? preferredType : "video/webm";
-    const recorder = new MediaRecorder(stream, { mimeType });
-    const chunks: BlobPart[] = [];
-
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) chunks.push(event.data);
-    };
-
-    recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${repoName.replace("/", "-")}-video.webm`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setIsRecording(false);
-      toast({
-        title: "Downloaded!",
-        description: "Video saved to your downloads.",
-      });
-    };
-
-    setIsRecording(true);
-    playerRef.current?.seekTo(0);
-    recorder.start();
-    playerRef.current?.play();
-
-    const totalFrames = hydratedManifest.totalFrames || 1;
-    const durationMs = Math.ceil((totalFrames / 30) * 1000);
-    window.setTimeout(() => {
-      recorder.stop();
-      playerRef.current?.pause();
-    }, durationMs + 500);
-  };
+  const { downloadVideo, isExporting, statusMessage } = useDownloadVideo({
+    playerContainerRef,
+    playerRef,
+    totalFrames: hydratedManifest?.totalFrames || 1,
+    fps: 30,
+    fileName: repoName,
+  });
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -242,15 +208,89 @@ const Export = () => {
                 </div>
                 <div>
                   <h3 className="font-medium">Download Video</h3>
-                  <p className="text-sm text-muted-foreground">WebM export generated from the player</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isExporting ? "Recording in background…" : "WebM or MP4 (depends on browser)"}
+                  </p>
                 </div>
               </div>
-              <Button onClick={downloadVideo} disabled={!hydratedManifest || isRecording}>
+              <Button onClick={downloadVideo} disabled={!hydratedManifest || isExporting}>
                 <Download className="h-4 w-4 mr-2" />
-                {isRecording ? "Recording..." : "Download"}
+                {isExporting ? "Exporting…" : "Download"}
               </Button>
             </div>
+            {isExporting && statusMessage && (
+              <p className="text-xs text-muted-foreground mt-3" aria-live="polite">
+                {statusMessage}
+              </p>
+            )}
+            {/* Hidden player for background recording: off-screen but full size so the canvas is laid out and capturable */}
+            <div
+              ref={playerContainerRef}
+              aria-hidden="true"
+              style={{
+                position: "fixed",
+                left: -9999,
+                top: 0,
+                width: 1920,
+                height: 1080,
+                opacity: 0,
+                pointerEvents: "none",
+                zIndex: -1,
+                overflow: "hidden",
+              }}
+            >
+              {hydratedManifest && (
+                <Player
+                  ref={playerRef}
+                  component={RemotionVideo}
+                  inputProps={{ manifest: hydratedManifest }}
+                  durationInFrames={hydratedManifest.totalFrames || 1}
+                  compositionWidth={1920}
+                  compositionHeight={1080}
+                  fps={30}
+                  style={{ width: 1920, height: 1080 }}
+                  controls={false}
+                  autoPlay={false}
+                  loop={false}
+                  clickToPlay={false}
+                  doubleClickToFullscreen={false}
+                  spaceKeyToPlayOrPause={false}
+                  acknowledgeRemotionLicense
+                />
+              )}
+            </div>
           </Card>
+
+          {/* Copy video link (unique /v/:id) */}
+          {(searchParams.get("project") || sessionStorage.getItem("project-id")) && (
+            <Card variant="interactive" className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Link2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Copy video link</h3>
+                    <p className="text-sm text-muted-foreground">Share this link to watch the video (sign-in required)</p>
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const pid = searchParams.get("project") || sessionStorage.getItem("project-id");
+                    const url = pid ? `${window.location.origin}/v/${pid}` : "";
+                    if (url) {
+                      navigator.clipboard.writeText(url);
+                      toast({ title: "Copied!", description: "Video link copied to clipboard." });
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy link
+                </Button>
+              </div>
+            </Card>
+          )}
 
           {/* Copy Narration */}
           <Card variant="interactive" className="p-4">
@@ -279,31 +319,6 @@ const Export = () => {
             </div>
           </Card>
 
-          <div
-            ref={playerContainerRef}
-            className="sr-only"
-            aria-hidden="true"
-          >
-            {hydratedManifest && (
-              <Player
-                ref={playerRef}
-                component={RemotionVideo}
-                inputProps={{ manifest: hydratedManifest }}
-                durationInFrames={hydratedManifest.totalFrames || 1}
-                compositionWidth={1920}
-                compositionHeight={1080}
-                fps={30}
-                style={{ width: 1920, height: 1080 }}
-                controls={false}
-                autoPlay={false}
-                loop={false}
-                clickToPlay={false}
-                doubleClickToFullscreen={false}
-                spaceKeyToPlayOrPause={false}
-                acknowledgeRemotionLicense
-              />
-            )}
-          </div>
         </div>
 
         {/* Footer Actions */}

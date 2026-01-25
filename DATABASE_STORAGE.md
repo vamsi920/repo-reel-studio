@@ -3,6 +3,8 @@
 ## Overview
 
 All user activity is now stored in the Supabase database, including:
+- **TTS audio** in Supabase Storage (`project-audio` bucket) for reuse in Studio and `/v/:videoId`
+- **Unique video URLs**: each project has a watch link `/v/{project_id}` (auth required, owner-only)
 - Repository URLs and ingestion results
 - Generated manifests
 - Processing timestamps and statistics
@@ -106,3 +108,11 @@ Projects are automatically shown in the Dashboard:
 - Data saved to sessionStorage as fallback
 - User sees clear error messages in logs
 - Projects still work even if DB save fails
+
+## Supabase Storage (TTS audio)
+
+Run `supabase-storage-migration.sql` in the Supabase SQL Editor to create the `project-audio` bucket and policies. When TTS is enabled, Processing uploads scene audio to `project-audio/{project_id}/{scene_id}.mp3` and saves `scene.audioUrl` in the manifest. Studio and `/v/:videoId` use these URLs so audio is not re-generated.
+
+## Caching: same repo
+
+For the same user and repo URL, a **ready** project is reused: Dashboard and Processing redirect to Studio instead of re-running ingestion. Use `?force=1` on the Processing URL to bypass and create a new project.
