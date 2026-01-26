@@ -40,12 +40,6 @@ export const Navbar = () => {
     });
   };
 
-  const navLinks = [
-    { label: "Features", href: "#features", onClick: () => handleComingSoon("Features page") },
-    { label: "Pricing", href: "#pricing", onClick: () => handleComingSoon("Pricing") },
-    { label: "Docs", href: "#docs", onClick: () => handleComingSoon("Documentation") },
-  ];
-
   const userEmail = user?.email || "";
   const userName = user?.user_metadata?.full_name || "";
   const userAvatar = user?.user_metadata?.avatar_url || "";
@@ -67,20 +61,6 @@ export const Navbar = () => {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          {isLanding && (
-            <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <button
-                  key={link.label}
-                  onClick={link.onClick}
-                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
@@ -165,20 +145,7 @@ export const Navbar = () => {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-2">
-              {isLanding &&
-                navLinks.map((link) => (
-                  <button
-                    key={link.label}
-                    onClick={() => {
-                      link.onClick?.();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground text-left"
-                  >
-                    {link.label}
-                  </button>
-                ))}
-              <div className="flex flex-col gap-2 pt-2 border-t border-border mt-2">
+              <div className="flex flex-col gap-2">
                 {isLoading ? (
                   <div className="h-10 bg-muted animate-pulse rounded-md mx-4" />
                 ) : isAuthenticated && user ? (

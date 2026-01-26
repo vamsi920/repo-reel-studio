@@ -2,7 +2,7 @@ import { Sparkles, Zap, Brain, Cpu } from "lucide-react";
 
 export const SocialProof = () => {
   const features = [
-    { icon: Brain, label: "Gemini 3 Pro", desc: "Latest AI Model" },
+    { icon: Brain, label: "Advanced AI", desc: "Intelligent Analysis" },
     { icon: Zap, label: "30 FPS", desc: "Smooth Rendering" },
     { icon: Cpu, label: "Real-time", desc: "Instant Processing" },
     { icon: Sparkles, label: "AI Narration", desc: "Smart Scripts" },
@@ -15,7 +15,7 @@ export const SocialProof = () => {
       
       <div className="container mx-auto px-4 relative">
         <div className="flex flex-col items-center">
-          {/* Hackathon Badge */}
+          {/* Feature Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-cyan-500/20 border border-primary/30 mb-6">
             <div className="relative">
               <Sparkles className="h-4 w-4 text-primary animate-pulse" />
@@ -24,7 +24,7 @@ export const SocialProof = () => {
               </div>
             </div>
             <span className="text-sm font-medium bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
-              Built for Google AI Hackathon 2025
+              Built for Modern Developers
             </span>
           </div>
 

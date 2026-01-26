@@ -1,6 +1,16 @@
-import { Play, Code2, Mic, Layers, Wand2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Play, Code2, Mic, Layers, Wand2, Pause } from "lucide-react";
+import { Player, PlayerRef } from "@remotion/player";
+import { RemotionVideo } from "@/components/studio/RemotionVideo";
+import { useHydrateManifest } from "@/hooks/useHydrateManifest";
+import { demoVideoManifest } from "@/data/demoVideoManifest";
 
 export const DemoMockup = () => {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const playerRef = useRef<PlayerRef>(null);
+  
+  // Hydrate the demo manifest
+  const hydratedManifest = useHydrateManifest(demoVideoManifest, 30);
   const capabilities = [
     {
       icon: Code2,
@@ -10,7 +20,7 @@ export const DemoMockup = () => {
     {
       icon: Mic,
       title: "AI Narration",
-      desc: "Gemini 3 writes engaging explanations",
+      desc: "Intelligent AI writes engaging explanations",
     },
     {
       icon: Layers,
@@ -80,46 +90,77 @@ export const DemoMockup = () => {
                 </div>
               </div>
 
-              {/* Video Content Area */}
-              <div className="aspect-video bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center relative">
-                {/* Code preview background */}
-                <div className="absolute inset-0">
-                  <pre className="text-xs text-slate-700 p-8 font-mono leading-relaxed">
-{`// Your code comes alive
-export async function generateVideo(repo) {
-  const analysis = await gemini.analyze(repo);
-  const script = await gemini.writeScript(analysis);
-  const scenes = await createScenes(script);
-  
-  return renderVideo(scenes);
-}
-
-// AI-powered narration
-const narration = gemini.generateNarration({
-  style: "professional",
-  tone: "engaging",
-  audience: "developers"
-});`}
-                  </pre>
-                </div>
-
-                {/* Play button overlay */}
-                <div className="relative z-10 flex flex-col items-center gap-4">
-                  <button className="h-20 w-20 rounded-full bg-gradient-to-r from-primary to-cyan-500 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/25 group">
-                    <Play className="h-8 w-8 text-white ml-1 group-hover:scale-110 transition-transform" />
-                  </button>
-                  <p className="text-slate-600 text-sm font-medium">
-                    See GitFlick in action
-                  </p>
-                </div>
+              {/* Video Content Area - Real Remotion Player */}
+              <div className="aspect-video bg-black relative overflow-hidden group">
+                {hydratedManifest ? (
+                  <>
+                    <Player
+                      ref={playerRef}
+                      component={RemotionVideo}
+                      inputProps={{ manifest: hydratedManifest }}
+                      durationInFrames={hydratedManifest.totalFrames || 1}
+                      compositionWidth={1920}
+                      compositionHeight={1080}
+                      fps={30}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      controls={false}
+                      autoPlay={isPlaying}
+                      loop={true}
+                      clickToPlay={false}
+                      doubleClickToFullscreen={false}
+                      spaceKeyToPlayOrPause={false}
+                      acknowledgeRemotionLicense
+                    />
+                    
+                    {/* Pause overlay when playing */}
+                    {isPlaying && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none z-10" />
+                    )}
+                    
+                    {/* Play/Pause overlay button */}
+                    <button
+                      onClick={() => {
+                        if (playerRef.current) {
+                          if (isPlaying) {
+                            playerRef.current.pause();
+                          } else {
+                            playerRef.current.play();
+                          }
+                          setIsPlaying(!isPlaying);
+                        }
+                      }}
+                      className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all z-20 ${
+                        isPlaying 
+                          ? "bg-black/40 border-white/20 opacity-0 group-hover:opacity-100 hover:bg-black/60 hover:scale-110" 
+                          : "bg-black/70 border-white/30 opacity-100 hover:bg-black/80 hover:scale-110"
+                      }`}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-7 w-7 text-white ml-0.5" />
+                      ) : (
+                        <Play className="h-7 w-7 text-white ml-1" />
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+                    <div className="text-center">
+                      <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-slate-600 text-sm">Loading demo video...</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Decorative elements */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-sm">
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 shadow-sm z-10">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs text-slate-600">Live Preview</span>
+                  <span className="text-xs text-white/90">Live Demo</span>
                 </div>
                 
-                <div className="absolute bottom-4 right-4 text-xs text-slate-500 font-mono">
+                <div className="absolute bottom-4 right-4 text-xs text-white/70 font-mono z-10">
                   1080p • 30 FPS
                 </div>
               </div>

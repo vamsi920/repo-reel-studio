@@ -12,8 +12,8 @@ export const HowItWorks = () => {
     },
     {
       icon: Brain,
-      title: "Analyze with Gemini 3",
-      description: "Google's most powerful AI model analyzes your codebase, identifies key components, and crafts an engaging director's script.",
+      title: "AI Analysis",
+      description: "Advanced AI analyzes your codebase, identifies key components, and crafts an engaging director's script with intelligent narration.",
       step: "02",
       color: "from-primary to-cyan-500",
       highlight: true,
@@ -69,7 +69,7 @@ export const HowItWorks = () => {
                   {step.title}
                   {step.highlight && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-normal">
-                      Gemini 3
+                      AI-Powered
                     </span>
                   )}
                 </CardTitle>
@@ -91,7 +91,7 @@ export const HowItWorks = () => {
           ))}
         </div>
 
-        {/* Gemini Highlight Box */}
+        {/* AI Highlight Box */}
         <div className="max-w-3xl mx-auto mt-16">
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan-500 to-rose-400 rounded-2xl blur opacity-25" />
@@ -104,11 +104,11 @@ export const HowItWorks = () => {
                 </div>
                 <div className="text-center md:text-left">
                   <h3 className="text-xl font-bold mb-2 flex items-center gap-2 justify-center md:justify-start">
-                    <span>Powered by Gemini 3 Pro</span>
+                    <span>Intelligent AI Analysis</span>
                     <Sparkles className="h-5 w-5 text-yellow-500" />
                   </h3>
                   <p className="text-muted-foreground">
-                    GitFlick leverages Google's most advanced multimodal AI to understand code context, 
+                    GitFlick leverages cutting-edge AI to understand code context, 
                     generate intelligent narration scripts, and create engaging video content that actually 
                     explains your codebase - not just shows it.
                   </p>

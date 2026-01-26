@@ -14,6 +14,15 @@ export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: Mous
   const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  const handleTryDemo = () => {
+    setRepoUrl("vercel/next.js");
+    setUrlError("");
+    // Auto-submit after a brief delay for UX
+    setTimeout(() => {
+      navigate(`/processing?repo=${encodeURIComponent("https://github.com/vercel/next.js")}`);
+    }, 300);
+  };
+
   const onCardMouseMove = (e: React.MouseEvent) => {
     if (!cardRef.current) return;
     const r = cardRef.current.getBoundingClientRect();
@@ -100,7 +109,7 @@ export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: Mous
 
       <div className="container relative mx-auto px-4 py-20 md:py-32">
         <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-          {/* Gemini Badge - Prominent */}
+          {/* AI Badge - Prominent */}
           <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-100 via-cyan-50 to-amber-50 border border-blue-200/60 text-sm mb-8 animate-fade-in backdrop-blur-sm">
             <div className="relative flex items-center gap-2">
               <div className="relative">
@@ -110,13 +119,13 @@ export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: Mous
                 </div>
               </div>
               <span className="font-bold bg-gradient-to-r from-primary via-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                Powered by Gemini 3 Pro
+                Powered by Advanced AI
               </span>
             </div>
             <div className="h-4 w-px bg-slate-300" />
             <span className="text-slate-600 flex items-center gap-1">
               <Zap className="h-3.5 w-3.5 text-amber-500" />
-              Google's Most Advanced AI
+              Intelligent Code Analysis
             </span>
           </div>
 
@@ -146,7 +155,7 @@ export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: Mous
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-4 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-            Stop writing stale documentation. Let <span className="text-primary font-semibold">Gemini 3</span> analyze your codebase and generate a 
+            Stop writing stale documentation. Let <span className="text-primary font-semibold">advanced AI</span> analyze your codebase and generate a 
             <span className="text-foreground font-medium"> beautiful architectural walkthrough</span> in seconds.
           </p>
 
@@ -221,17 +230,28 @@ export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: Mous
                 {urlError}
               </p>
             )}
-            <p className="text-sm text-muted-foreground mt-4 flex items-center justify-center gap-4">
-              <span className="flex items-center gap-1">
-                <span className="text-green-500">✓</span> Free to use
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="text-green-500">✓</span> No signup required for demo
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="text-green-500">✓</span> Instant results
-              </span>
-            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTryDemo}
+                className="gap-2"
+              >
+                <Play className="h-3.5 w-3.5" />
+                Try with Sample Repo
+              </Button>
+              <p className="text-sm text-muted-foreground flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <span className="text-green-500">✓</span> Free to use
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-green-500">✓</span> No signup required
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-green-500">✓</span> Instant results
+                </span>
+              </p>
+            </div>
           </div>
         </div>
       </div>

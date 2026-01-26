@@ -9,7 +9,7 @@ export const mockManifest: VideoManifest = {
       file_path: "README.md",
       highlight_lines: [1, 15],
       narration_text:
-        "Sous Chef is a revolutionary AI-powered autonomous cooking companion built for the AWS AI Agent Global Hackathon 2025. This React Native mobile application transforms your existing groceries into personalized, nutritious meal plans using Amazon Bedrock's generative AI capabilities.",
+        "Sous Chef is a revolutionary AI-powered autonomous cooking companion. This React Native mobile application transforms your existing groceries into personalized, nutritious meal plans using advanced generative AI capabilities.",
       duration_seconds: 15,
       title: "Introduction to Sous Chef",
       code: `# Sous Chef 🧑‍🍳
@@ -797,7 +797,7 @@ export default app;`,
 
 ---
 
-Built with ❤️ for AWS AI Agent Global Hackathon 2025
+Built with ❤️ for modern developers
 `,
     },
   ],

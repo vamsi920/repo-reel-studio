@@ -2,22 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProof } from "@/components/landing/SocialProof";
+import { ProblemStatement } from "@/components/landing/ProblemStatement";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { ImpactMetrics } from "@/components/landing/ImpactMetrics";
 import { DemoMockup } from "@/components/landing/DemoMockup";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import iconUrl from "../../icon.png";
 
 const Footer = () => {
-  const handleComingSoon = (feature: string) => {
-    toast({
-      title: "Coming Soon",
-      description: `${feature} is coming soon!`,
-    });
-  };
-
   return (
     <footer className="py-12 border-t border-border">
       <div className="container mx-auto px-4">
@@ -34,30 +28,18 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <button 
-              onClick={() => handleComingSoon("Privacy Policy")} 
+            <Link
+              to="/privacy"
               className="hover:text-foreground transition-colors"
             >
               Privacy
-            </button>
-            <button 
-              onClick={() => handleComingSoon("Terms of Service")} 
+            </Link>
+            <Link
+              to="/terms"
               className="hover:text-foreground transition-colors"
             >
               Terms
-            </button>
-            <button 
-              onClick={() => handleComingSoon("Twitter")} 
-              className="hover:text-foreground transition-colors"
-            >
-              Twitter
-            </button>
-            <button 
-              onClick={() => handleComingSoon("GitHub")} 
-              className="hover:text-foreground transition-colors"
-            >
-              GitHub
-            </button>
+            </Link>
           </div>
           <p className="text-sm text-muted-foreground">
             © 2026 GitFlick. All rights reserved.
@@ -78,10 +60,10 @@ const CTASection = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-blue-400/25 via-rose-400/20 to-cyan-400/25 rounded-full blur-3xl opacity-40" />
       
       <div className="container relative mx-auto px-4 text-center">
-        {/* Hackathon reminder */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 border border-amber-300/60 text-sm mb-6">
-          <span className="text-amber-600">🏆</span>
-          <span className="text-amber-800 font-medium">Google AI Hackathon 2025 Project</span>
+        {/* Feature Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 via-cyan-500/10 to-rose-500/10 border border-primary/20 text-sm mb-6">
+          <span className="text-primary">✨</span>
+          <span className="text-foreground font-medium">Next-Gen Developer Tools</span>
         </div>
         
         <h2 className="text-3xl md:text-5xl font-bold mb-4">
@@ -91,8 +73,8 @@ const CTASection = () => {
           </span>
           ?
         </h2>
-        <p className="text-muted-foreground max-w-xl mx-auto mb-8 text-lg">
-          Experience the future of developer documentation. Let Gemini 3 create stunning video walkthroughs of your code.
+          <p className="text-muted-foreground max-w-xl mx-auto mb-8 text-lg">
+          Experience the future of developer documentation. AI-powered analysis creates stunning video walkthroughs of your code in seconds.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           {isAuthenticated ? (
@@ -127,7 +109,7 @@ const CTASection = () => {
             <span className="text-green-500">✓</span> No credit card
           </span>
           <span className="flex items-center gap-1">
-            <span className="text-green-500">✓</span> Powered by Gemini 3
+            <span className="text-green-500">✓</span> AI-Powered
           </span>
         </div>
       </div>
@@ -189,7 +171,9 @@ const Index = () => {
         />
         <HeroSection mousePos={mousePos} />
         <SocialProof />
+        <ProblemStatement />
         <HowItWorks />
+        <ImpactMetrics />
         <DemoMockup />
         <CTASection />
       </main>
