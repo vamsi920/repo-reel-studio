@@ -1,13 +1,30 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Sparkles, Play, Zap, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export const HeroSection = () => {
+type MousePos = { x: number; y: number };
+
+export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: MousePos }) => {
   const [repoUrl, setRepoUrl] = useState("");
   const [urlError, setUrlError] = useState("");
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const onCardMouseMove = (e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const r = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    setTilt({
+      x: Math.max(-8, Math.min(8, -x * 16)),
+      y: Math.max(-8, Math.min(8, y * 16)),
+    });
+  };
+
+  const onCardMouseLeave = () => setTilt({ x: 0, y: 0 });
 
   const validateAndCleanUrl = (url: string): string | null => {
     let cleanUrl = url.trim();
@@ -53,6 +70,14 @@ export const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+      {/* Cursor-following spotlight overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle 40vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(139,92,246,0.12) 0%, transparent 50%), radial-gradient(circle 35vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(236,72,153,0.06) 0%, transparent 50%)`,
+        }}
+      />
+
       {/* Background Effects - More colorful */}
       <div className="absolute inset-0 bg-grid opacity-20" />
       <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-cyan-500/5" />
@@ -138,7 +163,16 @@ export const HeroSection = () => {
               {/* Glow effect behind input */}
               <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 via-purple-500/50 to-cyan-500/50 rounded-2xl blur-lg opacity-30" />
               
-              <div className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl bg-card/80 border border-border/50 backdrop-blur-sm">
+              <div
+                ref={cardRef}
+                onMouseMove={onCardMouseMove}
+                onMouseLeave={onCardMouseLeave}
+                className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl bg-card/80 border border-border/50 backdrop-blur-sm transition-transform duration-200 ease-out"
+                style={{
+                  transformStyle: "preserve-3d",
+                  transform: `perspective(800px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
+                }}
+              >
                 <div className="flex-1 flex items-center gap-2 px-2">
                   <Github className="h-5 w-5 text-muted-foreground shrink-0" />
                   <Input

@@ -6,6 +6,7 @@ import { mockManifest } from "@/data/mockManifest";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService, extractRepoName } from "@/lib/db";
 import { generateManifestWithGemini } from "@/lib/geminiDirector";
+import { parseRepoContent } from "@/lib/parseRepoContent";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
 import { supabase } from "@/lib/supabase";
 import { USE_MOCK_MANIFEST, API_URL, GOOGLE_TTS_ENABLED } from "@/env";
@@ -947,91 +948,59 @@ function enrichManifestWithCode(
     Object.entries(fileContents).map(([path, contents]) => [normalizePath(path), contents])
   );
 
-  const lookupCode = (filePath?: string) => {
+  const lookupCode = (filePath?: string): string | undefined => {
     if (!filePath) return undefined;
+    // 1) Exact match
     if (fileContents[filePath]) return fileContents[filePath];
     const normalizedPath = normalizePath(filePath);
+    // 2) Normalized path
     if (normalizedContents.has(normalizedPath)) return normalizedContents.get(normalizedPath);
+    // 3) Suffix match: path ends with /normalizedPath
     const suffixMatch = Object.keys(fileContents).find((path) =>
       normalizePath(path).endsWith(`/${normalizedPath}`)
     );
-    return suffixMatch ? fileContents[suffixMatch] : undefined;
+    if (suffixMatch) return fileContents[suffixMatch];
+    // 4) Basename match: exactly one file with same basename
+    const base = normalizedPath.split("/").pop() || "";
+    if (base) {
+      const basenameMatches = Object.keys(fileContents).filter(
+        (path) => normalizePath(path).split("/").pop() === base
+      );
+      if (basenameMatches.length === 1) return fileContents[basenameMatches[0]];
+    }
+    // 5) Contains match (last resort): normalizedPath substring of key or vice versa, unique
+    const containsMatches = Object.keys(fileContents).filter(
+      (path) => {
+        const np = normalizePath(path);
+        return np.includes(normalizedPath) || normalizedPath.includes(np);
+      }
+    );
+    if (containsMatches.length === 1) return fileContents[containsMatches[0]];
+    return undefined;
   };
-  
+
   return {
     ...manifest,
     repo_files: resolvedRepoFiles,
     scenes: manifest.scenes.map((scene) => {
-      // Try to get actual code from ingested content
       const actualCode = lookupCode(scene.file_path);
       const trimmedActual = actualCode?.trim();
       const trimmedExisting = scene.code?.trim();
-      
-      // If we have actual code, use it; otherwise use existing code or generate placeholder
-      const code = trimmedActual ? actualCode : trimmedExisting ? scene.code : generatePlaceholderCode(scene);
-      
-      return { ...scene, code };
+
+      const usePlaceholder = !trimmedActual && !trimmedExisting;
+      const code = trimmedActual
+        ? actualCode
+        : trimmedExisting
+          ? scene.code
+          : generatePlaceholderCode(scene);
+
+      return {
+        ...scene,
+        code,
+        ...(usePlaceholder ? { highlight_lines: [1, 5] as [number, number] } : {}),
+      };
     }),
   };
-}
-
-// Parse gitingest output format to extract file contents
-function parseRepoContent(content: string): Record<string, string> {
-  const files: Record<string, string> = {};
-  if (!content) return files;
-
-  const patterns = [
-    /={3,}\nFile:\s*(.+?)\n={3,}\n([\s\S]*?)(?=\n={3,}\nFile:|$)/g,
-    /-+\nFile:\s*(.+?)\n-+\n([\s\S]*?)(?=\n-+\nFile:|$)/g,
-    /-----\s*FILE:\s*(.+?)\s*-----\n([\s\S]*?)(?=\n-----\s*FILE:|$)/gi,
-  ];
-
-  const tryPattern = (pattern: RegExp) => {
-    pattern.lastIndex = 0;
-    let match;
-    let matches = 0;
-    while ((match = pattern.exec(content)) !== null) {
-      const filePath = match[1].trim();
-      const fileContent = match[2].trim();
-      if (filePath) {
-        files[filePath] = fileContent;
-        matches += 1;
-      }
-    }
-    return matches;
-  };
-
-  for (const pattern of patterns) {
-    if (tryPattern(pattern) > 0) {
-      return files;
-    }
-  }
-
-  // Fallback: line-based parsing for headers like "File: path/to/file"
-  const lines = content.split(/\r?\n/);
-  let currentPath = "";
-  let buffer: string[] = [];
-  const flush = () => {
-    if (!currentPath) return;
-    files[currentPath] = buffer.join("\n").trim();
-    buffer = [];
-  };
-
-  const headerRegex = /^(?:[=-]+\s*)?file:\s*(.+?)(?:\s*[=-]+)?$/i;
-  for (const line of lines) {
-    const headerMatch = line.match(headerRegex);
-    if (headerMatch) {
-      flush();
-      currentPath = headerMatch[1].trim();
-      continue;
-    }
-    if (currentPath) {
-      buffer.push(line);
-    }
-  }
-  flush();
-
-  return files;
 }
 
 function applyDirectorsCutPattern(
@@ -1041,6 +1010,21 @@ function applyDirectorsCutPattern(
 ): VideoManifest {
   const allFiles = Object.keys(fileContents);
   if (allFiles.length === 0) {
+    return manifest;
+  }
+
+  // Prefer Gemini's manifest when it already has a good structure (3-min explainer style)
+  const hasIntro = (manifest.scenes || []).some((s) =>
+    /intro|overview/i.test(String(s.type || ""))
+  );
+  const hasOutro = (manifest.scenes || []).some((s) =>
+    /summary|outro/i.test(String(s.type || ""))
+  );
+  if (
+    (manifest.scenes?.length ?? 0) >= 10 &&
+    hasIntro &&
+    hasOutro
+  ) {
     return manifest;
   }
 
@@ -1224,50 +1208,50 @@ function applyDirectorsCutPattern(
     if (section === "hook") {
       if (isDocFile(filePath)) {
         return summary
-          ? `${summary}`
-          : `In this quick tour, we'll explore how the application works from end to end.`;
+          ? `${summary} In this tour we'll go from high-level overview into core modules, then data and infrastructure, so you see how everything fits together.`
+          : `In this quick tour we'll explore how the application works from end to end. We start with the big picture, then drill into the main modules one by one, and wrap up with how it all connects.`;
       }
-      return `We start at ${baseName}, the entry point that wires routing, providers, and the initial UI.`;
+      return `We start at ${baseName}, the entry point that wires routing, providers, and the initial UI. From here we'll go deeper into the core logic, then the data layer, and finally the infrastructure that keeps it running.`;
     }
 
     if (section === "brain") {
       const focus = lower.includes("prompt")
-        ? "prompt construction"
+        ? "prompt construction and how instructions are built for the model"
         : lower.includes("agent")
-        ? "agent orchestration"
+        ? "agent orchestration and decision flow"
         : lower.includes("model") || lower.includes("llm")
-        ? "model invocation"
+        ? "model invocation and API integration"
         : lower.includes("embedding") || lower.includes("vector")
-        ? "retrieval and embeddings"
-        : "core decision logic";
-      return `Here in ${baseName} is the intelligence layer. This handles ${focus} to drive the product behavior.`;
+        ? "retrieval, embeddings, and semantic search"
+        : "core decision logic and algorithms";
+      return `Here in ${baseName} is the intelligence layer. This file handles ${focus}. It drives the main product behavior and connects to the rest of the stack.`;
     }
 
     if (section === "guts") {
       const focus = lower.includes("schema") || lower.includes("db") || lower.includes("sql")
-        ? "data modeling and persistence"
+        ? "data modeling, queries, and persistence"
         : lower.includes("cache")
-        ? "caching and performance"
-        : "state and data flow";
-      return `The data pipeline lives in ${baseName}. It manages ${focus} so the UI stays fast and consistent.`;
+        ? "caching, performance, and avoiding redundant work"
+        : "state, data flow, and how the UI stays in sync with the backend";
+      return `The data pipeline lives in ${baseName}. It manages ${focus}. This is how the app stays fast and consistent as users interact with it.`;
     }
 
     if (section === "infra") {
       const focus = lower.includes("auth")
-        ? "authentication and access control"
+        ? "authentication, sessions, and access control"
         : lower.includes("policy") || lower.includes("rules")
-        ? "security policies"
-        : "configuration and deployment readiness";
-      return `In ${baseName}, we handle ${focus} to keep the application production-ready.`;
+        ? "security policies and permissions"
+        : "configuration, environment, and deployment";
+      return `In ${baseName}, we handle ${focus}. These pieces keep the application secure, configurable, and production-ready.`;
     }
 
     if (section === "outro") {
       return summary
-        ? `${summary}`
-        : `That completes the tour: interface, intelligence, data flow, and infrastructure.`;
+        ? `${summary} That wraps up the tour: we covered the entry point, core logic, data flow, and infrastructure.`
+        : `That completes the tour. We went from the high-level overview into the core modules, the data layer, and the infrastructure. You should now have a clear picture of how the pieces fit together.`;
     }
 
-    return `Let's look at ${baseName} to understand how this piece fits into the overall architecture.`;
+    return `Let's look at ${baseName} to understand how this piece fits into the overall architecture. It sits between the layers we've seen and ties them together.`;
   };
 
   const buildSceneTitle = (sectionLabel: string, filePath: string) => {

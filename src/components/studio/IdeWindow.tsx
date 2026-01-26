@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { interpolate, useVideoConfig, Easing, spring } from "remotion";
+import { interpolate, Easing } from "remotion";
 import { Highlight, themes } from "prism-react-renderer";
 import type { HydratedScene } from "@/hooks/useHydrateManifest";
 
@@ -16,141 +16,55 @@ type FileTreeNode = {
   children?: FileTreeNode[];
 };
 
+/** Path segments (folder paths) to expand when collapsing the tree to the active file. */
+function pathToExpandedSet(activePath: string): Set<string> {
+  const parts = activePath.split("/").filter(Boolean);
+  const set = new Set<string>();
+  let acc = "";
+  for (let i = 0; i < parts.length - 1; i++) {
+    acc = acc ? `${acc}/${parts[i]}` : parts[i];
+    set.add(acc);
+  }
+  return set;
+}
+
 const CODE_VIEWPORT_HEIGHT = 520;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
+const PLACEHOLDER_HINTS = [
+  "Code content for:",
+  "Implementation details",
+  "This file is part of the codebase walkthrough",
+];
+
+function looksLikePlaceholder(code: string): boolean {
+  return PLACEHOLDER_HINTS.some((h) => code.includes(h));
+}
+
 const getSceneCode = (scene: SceneWithCode): string => {
-  const code = scene.code || scene.file_content || scene.fileContents || "";
-  if (code && code.trim().length > 0) return code;
-  
-  // Generate placeholder code if none exists
-  return generatePlaceholderCode(scene);
+  const raw = scene.code || scene.file_content || scene.fileContents || "";
+  const code = raw.trim();
+  if (code.length > 0 && !looksLikePlaceholder(code)) return raw;
+
+  // Explicit fallback when file not found or we detect placeholder — avoid "explaining" dummy snippets
+  const path = scene.file_path || "unknown";
+  return `// File not found: ${path}\n// The narrator is describing this file.`;
 };
 
-const generatePlaceholderCode = (scene: SceneWithCode): string => {
-  const filePath = scene.file_path || "unknown.ts";
-  const title = scene.title || "Code Section";
-  
-  if (filePath.endsWith(".md")) {
-    return `# ${title}
-
-${scene.narration_text?.slice(0, 200) || "Documentation content..."}
-
-## Overview
-
-This section covers the key aspects of the codebase.
-The implementation follows best practices for maintainability.
-
-## Key Points
-
-- Well-structured architecture
-- Clean separation of concerns  
-- Type-safe implementations
-`;
-  }
-
-  if (filePath.endsWith(".tsx") || filePath.endsWith(".jsx")) {
-    return `// ${filePath}
-// ${title}
-
-import React, { useState, useEffect } from 'react';
-
-/**
- * ${title}
- * ${scene.narration_text?.slice(0, 80) || "Component implementation"}
- */
-export const Component = () => {
-  const [state, setState] = useState(null);
-  
-  useEffect(() => {
-    // Initialize component
-    initializeData();
-    
-    return () => {
-      // Cleanup on unmount
-    };
-  }, []);
-
-  const handleAction = async () => {
-    try {
-      await performAction();
-      updateState();
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  return (
-    <div className="container">
-      <Header title="${title}" />
-      <Content data={state} />
-      <ActionButton onPress={handleAction} />
-    </div>
-  );
-};
-
-export default Component;
-`;
-  }
-
-  if (filePath.endsWith(".ts") || filePath.endsWith(".js")) {
-    return `// ${filePath}
-// ${title}
-
-/**
- * ${scene.narration_text?.slice(0, 80) || "Module implementation"}
- */
-
-// Configuration
-const config = {
-  apiEndpoint: process.env.API_URL,
-  timeout: 30000,
-  retries: 3,
-};
-
-// Main functionality
-export async function execute(params) {
-  // Validate input
-  validateParams(params);
-  
-  // Process data
-  const processed = await processData(params.data);
-  
-  // Apply business logic
-  const result = applyLogic(processed);
-  
-  return formatResponse(result);
+function getModuleLabel(scene: HydratedScene | undefined): string {
+  if (!scene) return "Module";
+  const t = (scene.type ?? "").toLowerCase();
+  if (/entry|intro|overview/.test(t)) return "Entry";
+  if (/core|feature|code|brain/.test(t)) return "Core";
+  if (/guts|support|data|schema|api|service/.test(t)) return "Data";
+  if (/infra|auth|config|deploy/.test(t)) return "Infra";
+  if (/summary|outro|conclusion|wrap_up/.test(t)) return "Summary";
+  const seg = (scene.file_path ?? "").split("/")[0];
+  if (seg) return seg.charAt(0).toUpperCase() + seg.slice(1);
+  return "Module";
 }
-
-// Helper functions
-function validateParams(params) {
-  if (!params.data) {
-    throw new Error('Missing required data');
-  }
-}
-
-async function processData(data) {
-  // Transform and validate data
-  return { ...data, processed: true };
-}
-
-export default { execute, config };
-`;
-  }
-
-  return `// ${filePath}
-// ${title}
-
-/*
- * ${scene.narration_text?.slice(0, 120) || "Implementation details"}
- */
-
-// Code content for: ${scene.file_path}
-// This file is part of the codebase walkthrough
-`;
-};
 
 const getLanguageFromPath = (path: string): string => {
   const extension = path.split(".").pop()?.toLowerCase() || "";
@@ -227,6 +141,7 @@ const buildFileTree = (paths: string[]): FileTreeNode[] => {
           ? {
               name: entry.name,
               type: "folder" as const,
+              path: entry.path,
               children: toTree(entry.children ?? {}),
             }
           : {
@@ -263,7 +178,110 @@ const getFileIcon = (fileName: string) => {
   return iconMap[ext || ''] || { color: '#6b7280', icon: '📄' };
 };
 
-// File Tree Component with animations
+const MODULE_CHIPS = ["Entry", "Core", "Data", "Infra", "Summary"];
+
+/** Overview card for intro/overview scenes instead of the full IDE. */
+const OverviewCard = ({
+  title,
+  filePath,
+  relativeFrame,
+}: {
+  title: string;
+  filePath?: string;
+  relativeFrame: number;
+}) => {
+  const opacity = interpolate(relativeFrame, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const y = interpolate(relativeFrame, [0, 12], [16, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 48,
+        opacity,
+      }}
+    >
+      <h2
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: "#6d28d9",
+          margin: "0 0 24px",
+          fontFamily: "system-ui, sans-serif",
+          textAlign: "center",
+          transform: `translateY(${y}px)`,
+        }}
+      >
+        {title || "Project Overview"}
+      </h2>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          justifyContent: "center",
+          maxWidth: 520,
+        }}
+      >
+        {MODULE_CHIPS.map((label, i) => {
+          const chipOpacity = interpolate(
+            relativeFrame - 4 - i * 2,
+            [0, 8],
+            [0, 1],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+          );
+          return (
+            <span
+              key={label}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 10,
+                background: "rgba(139, 92, 246, 0.12)",
+                border: "1px solid rgba(139, 92, 246, 0.25)",
+                color: "#6d28d9",
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                opacity: chipOpacity,
+              }}
+            >
+              {label}
+            </span>
+          );
+        })}
+      </div>
+      {filePath && (
+        <p
+          style={{
+            marginTop: 20,
+            fontSize: 11,
+            color: "rgba(148, 163, 184, 0.9)",
+            fontFamily: "'JetBrains Mono', monospace",
+            maxWidth: 400,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {filePath}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// File Tree Component with animations and collapse-to-active-path
 const FileTree = ({
   nodes,
   activePath,
@@ -274,6 +292,7 @@ const FileTree = ({
   relativeFrame: number;
 }) => {
   const activeRef = useRef<HTMLDivElement | null>(null);
+  const expandedPaths = useMemo(() => pathToExpandedSet(activePath), [activePath]);
 
   useEffect(() => {
     if (!activeRef.current) return;
@@ -283,7 +302,9 @@ const FileTree = ({
   const renderNodes = (items: FileTreeNode[], depth = 0): React.ReactNode[] =>
     items.map((item, itemIndex) => {
       const isActive = item.path === activePath;
-      const paddingLeft = depth * 14 + 10;
+      const isFolder = item.type === "folder";
+      const isExpanded = isFolder && expandedPaths.has(item.path ?? "");
+      const paddingLeft = depth * 16 + 10;
       const fileIcon = item.type === 'file' ? getFileIcon(item.name) : null;
       
       // Staggered animation for file tree items
@@ -322,16 +343,16 @@ const FileTree = ({
               fontSize: 12,
               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               backgroundColor: isActive 
-                ? "rgba(139, 92, 246, 0.25)" 
+                ? "rgba(139, 92, 246, 0.12)" 
                 : "transparent",
-              color: isActive ? "#e9d5ff" : "#9ca3af",
+              color: isActive ? "#6d28d9" : "#64748b",
               cursor: "default",
               border: isActive 
-                ? "1px solid rgba(139, 92, 246, 0.4)" 
+                ? "1px solid rgba(139, 92, 246, 0.3)" 
                 : "1px solid transparent",
               fontWeight: isActive ? 600 : 400,
               boxShadow: isActive 
-                ? "0 4px 20px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)" 
+                ? "0 2px 12px rgba(139, 92, 246, 0.15)" 
                 : "none",
               position: 'relative',
               overflow: 'hidden',
@@ -343,35 +364,57 @@ const FileTree = ({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent)',
+                  background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.08), transparent)',
                   pointerEvents: 'none',
                 }}
               />
             )}
             
             {item.type === "folder" ? (
-              <FolderIcon isOpen={true} />
+              <>
+                <span
+                  style={{
+                    width: 12,
+                    height: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: isExpanded ? "#7c3aed" : "#64748b",
+                    fontSize: 10,
+                    flexShrink: 0,
+                  }}
+                >
+                  {isExpanded ? "▼" : "▶"}
+                </span>
+                <FolderIcon isOpen={isExpanded} />
+              </>
             ) : fileIcon ? (
-              <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 4,
-                  backgroundColor: `${fileIcon.color}20`,
-                  border: `1px solid ${fileIcon.color}40`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 8,
-                  fontWeight: 700,
-                  color: fileIcon.color,
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}
-              >
-                {fileIcon.icon}
-              </div>
+              <>
+                <span style={{ width: 12, flexShrink: 0 }} />
+                <div
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                    backgroundColor: `${fileIcon.color}20`,
+                    border: `1px solid ${fileIcon.color}40`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 8,
+                    fontWeight: 700,
+                    color: fileIcon.color,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
+                  {fileIcon.icon}
+                </div>
+              </>
             ) : (
-              <FileIcon />
+              <>
+                <span style={{ width: 12, flexShrink: 0 }} />
+                <FileIcon />
+              </>
             )}
             <span style={{ 
               overflow: "hidden", 
@@ -397,7 +440,7 @@ const FileTree = ({
               />
             )}
           </div>
-          {item.type === "folder" && item.children && (
+          {item.type === "folder" && item.children && isExpanded && (
             <div>{renderNodes(item.children, depth + 1)}</div>
           )}
         </div>
@@ -455,7 +498,7 @@ const Minimap = ({
         right: 16,
         width: 40,
         height: minimapHeight,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.06)',
         borderRadius: 4,
         border: '1px solid rgba(139, 92, 246, 0.2)',
         overflow: 'hidden',
@@ -470,7 +513,7 @@ const Minimap = ({
             right: 2,
             top: Math.min(...highlightLines) * lineHeight,
             height: (Math.max(...highlightLines) - Math.min(...highlightLines) + 1) * lineHeight,
-            backgroundColor: 'rgba(139, 92, 246, 0.4)',
+            backgroundColor: 'rgba(139, 92, 246, 0.25)',
             borderRadius: 2,
           }}
         />
@@ -484,11 +527,53 @@ const Minimap = ({
           right: 0,
           top: currentScrollPosition * minimapHeight,
           height: 20,
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          backgroundColor: 'rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(0, 0, 0, 0.12)',
           borderRadius: 2,
         }}
       />
+    </div>
+  );
+};
+
+/** Module badge shown when switching files (e.g. "Core", "Data", "src"). */
+const ModuleLabel = ({
+  label,
+  relativeFrame,
+  visibleFrames,
+}: {
+  label: string;
+  relativeFrame: number;
+  visibleFrames: number;
+}) => {
+  const opacity = interpolate(
+    relativeFrame,
+    [0, 10, Math.max(10, visibleFrames - 15), visibleFrames],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  if (relativeFrame >= visibleFrames) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        right: 72,
+        zIndex: 20,
+        padding: "6px 14px",
+        borderRadius: 8,
+        background: "rgba(139, 92, 246, 0.15)",
+        border: "1px solid rgba(139, 92, 246, 0.25)",
+        fontSize: 11,
+        fontWeight: 600,
+        color: "#6d28d9",
+        fontFamily: "system-ui, sans-serif",
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        opacity,
+      }}
+    >
+      {label}
     </div>
   );
 };
@@ -503,10 +588,10 @@ const BlinkingCursor = ({ relativeFrame }: { relativeFrame: number }) => {
         display: 'inline-block',
         width: 2,
         height: 16,
-        backgroundColor: '#8b5cf6',
+        backgroundColor: '#7c3aed',
         marginLeft: 2,
         opacity: blinkPhase === 0 ? 1 : 0,
-        boxShadow: '0 0 8px rgba(139, 92, 246, 0.8)',
+        boxShadow: '0 0 6px rgba(139, 92, 246, 0.5)',
         borderRadius: 1,
       }}
     />
@@ -527,8 +612,7 @@ export const IdeWindow = ({
   relativeFrame: number;
   allFiles?: string[];
 }) => {
-  const { fps } = useVideoConfig();
-
+  const isIntroOrOverview = /^(intro|overview)$/i.test(activeScene?.type ?? "");
   const isFileChange = previousScene && previousScene.file_path !== activeScene.file_path;
   const transitionDuration = Math.min(20, activeScene?.durationInFrames ?? 20);
   
@@ -585,14 +669,8 @@ export const IdeWindow = ({
   const targetTranslateY = CODE_VIEWPORT_HEIGHT / 2 - (highlightCenter * lineHeight + codePadding);
   const clampedTranslateY = clamp(targetTranslateY, minTranslateY, 0);
   
-  // Smooth zoom animation with spring
-  const zoomSpring = spring({
-    frame: relativeFrame,
-    fps,
-    config: { damping: 20, stiffness: 80, mass: 0.8 },
-  });
-  
-  const zoomProgress = interpolate(zoomSpring, [0, 1], [1, 1.12]);
+  // No code zoom (plan: remove unnecessary zoom)
+  const zoomProgress = 1;
   
   // Smooth scroll animation
   const translateY = interpolate(
@@ -602,12 +680,10 @@ export const IdeWindow = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }
   );
 
-  // File transition animations - 3D rotation effect
-  const rotationY = interpolate(transitionProgress, [0, 1], [-15, 0], { easing: Easing.out(Easing.cubic) });
-  const incomingScale = interpolate(transitionProgress, [0, 1], [0.95, 1]);
+  // File transition animations - slide + fade (scale removed per plan)
+  const incomingTranslateX = interpolate(transitionProgress, [0, 1], [80, 0], { easing: Easing.out(Easing.cubic) });
   const incomingOpacity = interpolate(transitionProgress, [0, 0.3, 1], [0, 0.5, 1]);
-  const outgoingRotationY = interpolate(transitionProgress, [0, 1], [0, 15]);
-  const outgoingScale = interpolate(transitionProgress, [0, 1], [1, 0.95]);
+  const outgoingTranslateX = interpolate(transitionProgress, [0, 1], [0, -80], { easing: Easing.out(Easing.cubic) });
   const outgoingOpacity = interpolate(transitionProgress, [0, 0.7, 1], [1, 0.5, 0]);
 
   // Window glow pulse
@@ -631,12 +707,12 @@ export const IdeWindow = ({
         width: "100%",
         maxWidth: 1400,
         borderRadius: 24,
-        backgroundColor: "#1a1a1f",
+        backgroundColor: "#f8fafc",
         boxShadow: `
-          0 40px 80px -16px rgba(0, 0, 0, 0.7),
+          0 40px 80px -16px rgba(0, 0, 0, 0.12),
           0 0 0 1px rgba(139, 92, 246, ${0.15 * glowPulse}),
           0 0 80px rgba(139, 92, 246, ${0.1 * glowPulse}),
-          inset 0 1px 0 rgba(255, 255, 255, 0.06)
+          inset 0 1px 0 rgba(255, 255, 255, 0.8)
         `,
         border: `1px solid rgba(139, 92, 246, ${0.2 * glowPulse})`,
         overflow: "hidden",
@@ -672,8 +748,8 @@ export const IdeWindow = ({
           alignItems: "center",
           gap: 12,
           padding: "14px 22px",
-          borderBottom: "1px solid rgba(139, 92, 246, 0.12)",
-          background: "linear-gradient(180deg, #252530 0%, #1f1f2a 100%)",
+          borderBottom: "1px solid rgba(0, 0, 0, 0.06)",
+          background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
           position: 'relative',
         }}
       >
@@ -708,7 +784,7 @@ export const IdeWindow = ({
         {/* File path with typing effect */}
         <div style={{ 
           fontSize: 13, 
-          color: "#e9d5ff", 
+          color: "#334155", 
           marginLeft: 16,
           fontWeight: 500,
           fontFamily: "'JetBrains Mono', monospace",
@@ -722,7 +798,7 @@ export const IdeWindow = ({
             borderRadius: 4,
             backgroundColor: 'rgba(139, 92, 246, 0.15)',
             fontSize: 10,
-            color: '#a78bfa',
+            color: '#6d28d9',
           }}>
             {getLanguageFromPath(activeScene?.file_path || '').toUpperCase()}
           </span>
@@ -737,10 +813,10 @@ export const IdeWindow = ({
           <div style={{
             padding: '5px 12px',
             borderRadius: 8,
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15))',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(168, 85, 247, 0.1))',
+            border: '1px solid rgba(139, 92, 246, 0.2)',
             fontSize: 10,
-            color: '#c4b5fd',
+            color: '#6d28d9',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
@@ -764,14 +840,22 @@ export const IdeWindow = ({
       <div style={{ 
         display: "flex", 
         height: CODE_VIEWPORT_HEIGHT,
-        background: 'linear-gradient(180deg, #1a1a1f 0%, #15151a 100%)',
+        background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)',
       }}>
+        {isIntroOrOverview ? (
+          <OverviewCard
+            title={activeScene?.title ?? "Project Overview"}
+            filePath={activeScene?.file_path}
+            relativeFrame={relativeFrame}
+          />
+        ) : (
+          <>
         {/* File Explorer Sidebar */}
         <aside
           style={{
             width: 280,
-            borderRight: "1px solid rgba(139, 92, 246, 0.1)",
-            background: "linear-gradient(180deg, #1a1b20 0%, #15151a 100%)",
+            borderRight: "1px solid rgba(0, 0, 0, 0.06)",
+            background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
             padding: "16px 10px",
             overflow: "hidden",
             position: 'relative',
@@ -822,7 +906,13 @@ export const IdeWindow = ({
             highlightLines={highlightLines}
             currentScrollPosition={Math.abs(translateY) / (totalLines * lineHeight)}
           />
-          
+          {isFileChange && relativeFrame < 45 && (
+            <ModuleLabel
+              label={getModuleLabel(activeScene)}
+              relativeFrame={relativeFrame}
+              visibleFrames={45}
+            />
+          )}
           <div
             style={{
               position: "absolute",
@@ -835,16 +925,14 @@ export const IdeWindow = ({
             <div style={{ position: "absolute", inset: 0, padding: "24px 32px" }}>
               {isFileChange && relativeFrame < transitionDuration ? (
                 <>
-                  {/* Outgoing code - 3D rotation */}
+                  {/* Outgoing code - slide left */}
                   <div
                     style={{
                       position: "absolute",
                       inset: 0,
                       padding: "24px 32px",
-                      transform: `rotateY(${outgoingRotationY}deg) scale(${outgoingScale})`,
-                      transformOrigin: 'center center',
+                      transform: `translateX(${outgoingTranslateX}px)`,
                       opacity: outgoingOpacity,
-                      backfaceVisibility: 'hidden',
                     }}
                   >
                     <CodeBlock
@@ -855,16 +943,14 @@ export const IdeWindow = ({
                       isExiting={true}
                     />
                   </div>
-                  {/* Incoming code - 3D rotation */}
+                  {/* Incoming code - slide in from right */}
                   <div
                     style={{
                       position: "absolute",
                       inset: 0,
                       padding: "24px 32px",
-                      transform: `rotateY(${rotationY}deg) scale(${incomingScale})`,
-                      transformOrigin: 'center center',
+                      transform: `translateX(${incomingTranslateX}px)`,
                       opacity: incomingOpacity,
-                      backfaceVisibility: 'hidden',
                     }}
                   >
                     <CodeBlock
@@ -895,7 +981,7 @@ export const IdeWindow = ({
               bottom: 0,
               right: 0,
               width: 80,
-              background: "linear-gradient(to left, #1a1a1f, transparent)",
+              background: "linear-gradient(to left, #ffffff, transparent)",
               pointerEvents: "none",
             }}
           />
@@ -906,7 +992,7 @@ export const IdeWindow = ({
               right: 0,
               bottom: 0,
               height: 60,
-              background: "linear-gradient(to top, #1a1a1f, transparent)",
+              background: "linear-gradient(to top, #ffffff, transparent)",
               pointerEvents: "none",
             }}
           />
@@ -917,11 +1003,13 @@ export const IdeWindow = ({
               right: 0,
               top: 0,
               height: 30,
-              background: "linear-gradient(to bottom, #1a1a1f, transparent)",
+              background: "linear-gradient(to bottom, #ffffff, transparent)",
               pointerEvents: "none",
             }}
           />
         </div>
+          </>
+        )}
       </div>
 
       {/* Enhanced Status Bar */}
@@ -931,8 +1019,8 @@ export const IdeWindow = ({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 22px",
-          borderTop: "1px solid rgba(139, 92, 246, 0.1)",
-          background: "linear-gradient(180deg, #1f1f2a 0%, #1a1a1f 100%)",
+          borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+          background: "linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%)",
           fontSize: 11,
           color: "#9ca3af",
           fontFamily: 'system-ui, sans-serif',
@@ -943,15 +1031,15 @@ export const IdeWindow = ({
             display: 'flex', 
             alignItems: 'center', 
             gap: 8,
-            color: '#e9d5ff',
+            color: '#475569',
             fontWeight: 500,
           }}>
             <span style={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              backgroundColor: '#8b5cf6',
-              boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
+              backgroundColor: '#7c3aed',
+              boxShadow: '0 0 6px rgba(139, 92, 246, 0.4)',
             }} />
             Scene {scenes.findIndex((scene) => scene === activeScene) + 1} of {scenes.length}
           </div>
@@ -991,14 +1079,14 @@ export const IdeWindow = ({
           display: 'flex', 
           alignItems: 'center', 
           gap: 8,
-          color: '#a78bfa',
+          color: '#6d28d9',
           fontWeight: 500,
         }}>
           <span style={{
             padding: '3px 10px',
             borderRadius: 6,
-            background: 'rgba(139, 92, 246, 0.15)',
-            border: '1px solid rgba(139, 92, 246, 0.2)',
+            background: 'rgba(139, 92, 246, 0.1)',
+            border: '1px solid rgba(139, 92, 246, 0.18)',
             fontSize: 10,
           }}>
             {getLanguageFromPath(activeScene?.file_path || '')}
@@ -1074,33 +1162,68 @@ const CodeBlock = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
+  // Focus arrow: animates in over ~10 frames when we have highlighted lines
+  const focusArrowOpacity = interpolate(relativeFrame, [0, 10], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   return (
     <div style={{ position: 'relative' }}>
       {/* Spotlight glow behind highlighted lines */}
       {expandedLines && expandedLines.size > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            left: -20,
-            right: -20,
-            top: (Math.min(...Array.from(expandedLines)) - 1) * 24,
-            height: expandedLines.size * 24 + 16,
-            background: `radial-gradient(ellipse at center, rgba(139, 92, 246, ${0.15 * spotlightIntensity}) 0%, transparent 70%)`,
-            filter: 'blur(20px)',
-            pointerEvents: 'none',
-            transform: 'translateY(-8px)',
-          }}
-        />
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              left: -20,
+              right: -20,
+              top: (Math.min(...Array.from(expandedLines)) - 1) * 24,
+              height: expandedLines.size * 24 + 16,
+              background: `radial-gradient(ellipse at center, rgba(139, 92, 246, ${0.15 * spotlightIntensity}) 0%, transparent 70%)`,
+              filter: 'blur(20px)',
+              pointerEvents: 'none',
+              transform: 'translateY(-8px)',
+            }}
+          />
+          {/* Vertical accent line from first to last highlighted line */}
+          <div
+            style={{
+              position: 'absolute',
+              left: -2,
+              top: (Math.min(...Array.from(expandedLines)) - 1) * 24 + 4,
+              width: 3,
+              height: expandedLines.size * 24 - 4,
+              background: `linear-gradient(180deg, rgba(139, 92, 246, ${0.9 * spotlightIntensity}), rgba(139, 92, 246, ${0.5 * spotlightIntensity}))`,
+              borderRadius: 2,
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Focus arrow pointing at the first highlighted line */}
+          <div
+            style={{
+              position: 'absolute',
+              left: -26,
+              top: (Math.min(...Array.from(expandedLines)) - 1) * 24 + 6,
+              opacity: focusArrowOpacity * spotlightIntensity,
+              pointerEvents: 'none',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" fill="rgba(139, 92, 246, 0.2)" stroke="#7c3aed" />
+            </svg>
+          </div>
+        </>
       )}
       
-      <Highlight theme={themes.vsDark} code={code} language={language}>
+      <Highlight theme={themes.vsLight} code={code} language={language}>
         {({ tokens, getLineProps, getTokenProps }) => (
           <pre
             style={{
               fontSize: 14,
               lineHeight: "24px",
               fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-              color: "rgba(255, 255, 255, 0.95)",
+              color: "rgba(0, 0, 0, 0.9)",
               margin: 0,
               padding: 0,
               background: "transparent",
@@ -1108,7 +1231,7 @@ const CodeBlock = ({
           >
             {tokens.map((line, index) => {
               const lineNumber = index + 1;
-              const isHighlighted = expandedLines === null || expandedLines.has(lineNumber);
+              const isHighlighted = expandedLines != null && expandedLines.has(lineNumber);
               const { opacity, x } = getLineAnimation(index, isHighlighted);
               
               return (
@@ -1121,7 +1244,7 @@ const CodeBlock = ({
                     opacity: isHighlighted ? opacity : opacity * 0.3,
                     transform: `translateX(${x}px)`,
                     backgroundColor: isHighlighted 
-                      ? `rgba(139, 92, 246, ${0.12 * spotlightIntensity})` 
+                      ? `rgba(139, 92, 246, ${0.08 * spotlightIntensity})` 
                       : "transparent",
                     padding: "3px 0",
                     borderRadius: 6,
@@ -1129,7 +1252,7 @@ const CodeBlock = ({
                     paddingLeft: isHighlighted ? 12 : 0,
                     paddingRight: isHighlighted ? 12 : 0,
                     borderLeft: isHighlighted 
-                      ? `4px solid rgba(139, 92, 246, ${0.7 * spotlightIntensity})` 
+                      ? `4px solid rgba(139, 92, 246, ${0.5 * spotlightIntensity})` 
                       : "4px solid transparent",
                     transition: 'background-color 0.3s ease',
                   }}
@@ -1139,8 +1262,8 @@ const CodeBlock = ({
                       width: 48,
                       textAlign: "right",
                       color: isHighlighted 
-                        ? `rgba(196, 181, 253, ${0.7 * spotlightIntensity})` 
-                        : "rgba(255, 255, 255, 0.2)",
+                        ? "#6d28d9" 
+                        : "rgba(0, 0, 0, 0.35)",
                       userSelect: "none",
                       flexShrink: 0,
                       fontWeight: isHighlighted ? 600 : 400,

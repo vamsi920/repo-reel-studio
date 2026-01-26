@@ -47,7 +47,7 @@ export const DemoMockup = () => {
           {capabilities.map((cap) => (
             <div
               key={cap.title}
-              className="group p-5 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300"
+              className="group p-5 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
             >
               <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <cap.icon className="h-6 w-6 text-primary" />
@@ -81,10 +81,10 @@ export const DemoMockup = () => {
               </div>
 
               {/* Video Content Area */}
-              <div className="aspect-video bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 flex items-center justify-center relative">
+              <div className="aspect-video bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 flex items-center justify-center relative">
                 {/* Code preview background */}
-                <div className="absolute inset-0 opacity-20">
-                  <pre className="text-xs text-primary/50 p-8 font-mono leading-relaxed">
+                <div className="absolute inset-0">
+                  <pre className="text-xs text-slate-700 p-8 font-mono leading-relaxed">
 {`// Your code comes alive
 export async function generateVideo(repo) {
   const analysis = await gemini.analyze(repo);
@@ -108,18 +108,18 @@ const narration = gemini.generateNarration({
                   <button className="h-20 w-20 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/30 group">
                     <Play className="h-8 w-8 text-white ml-1 group-hover:scale-110 transition-transform" />
                   </button>
-                  <p className="text-white/70 text-sm font-medium">
+                  <p className="text-slate-600 text-sm font-medium">
                     See GitFlick in action
                   </p>
                 </div>
 
                 {/* Decorative elements */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10">
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-sm">
                   <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs text-white/70">Live Preview</span>
+                  <span className="text-xs text-slate-600">Live Preview</span>
                 </div>
                 
-                <div className="absolute bottom-4 right-4 text-xs text-white/50 font-mono">
+                <div className="absolute bottom-4 right-4 text-xs text-slate-500 font-mono">
                   1080p • 30 FPS
                 </div>
               </div>

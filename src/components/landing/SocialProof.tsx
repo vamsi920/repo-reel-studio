@@ -33,7 +33,7 @@ export const SocialProof = () => {
             {features.map((feature) => (
               <div
                 key={feature.label}
-                className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 group"
+                className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 group"
               >
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-cyan-500/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-cyan-500/30 transition-colors">
                   <feature.icon className="h-4 w-4 text-primary" />

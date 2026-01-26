@@ -51,7 +51,7 @@ export const HowItWorks = () => {
             <Card
               key={step.title}
               variant="interactive"
-              className={`group relative overflow-hidden ${step.highlight ? 'ring-2 ring-primary/30' : ''}`}
+              className={`group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/20 ${step.highlight ? 'ring-2 ring-primary/30' : ''}`}
             >
               {/* Gradient background on hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />

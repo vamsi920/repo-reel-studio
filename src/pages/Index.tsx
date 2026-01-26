@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProof } from "@/components/landing/SocialProof";
@@ -135,11 +136,31 @@ const CTASection = () => {
 };
 
 const Index = () => {
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const lastMoveRef = useRef(0);
+
+  const onMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const now = Date.now();
+    if (now - lastMoveRef.current < 40) return;
+    lastMoveRef.current = now;
+    setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main>
-        <HeroSection />
+      <main
+        className="relative overflow-hidden"
+        onMouseMove={onMouseMove}
+      >
+        {/* Full-page subtle cursor-following glow for HowItWorks, DemoMockup, CTA */}
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            background: `radial-gradient(circle 55vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(139,92,246,0.04) 0%, transparent 50%)`,
+          }}
+        />
+        <HeroSection mousePos={mousePos} />
         <SocialProof />
         <HowItWorks />
         <DemoMockup />

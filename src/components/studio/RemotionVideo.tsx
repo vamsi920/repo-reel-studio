@@ -53,32 +53,6 @@ const getActiveSceneIndex = (frame: number, scenes: HydratedManifest["scenes"]) 
   return index === -1 ? 0 : index;
 };
 
-// Easing functions for smooth animations
-const smoothEase = (t: number) => {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-};
-
-// Get zoom config based on scene type
-const getSceneZoomConfig = (sceneType: string) => {
-  switch (sceneType) {
-    case "intro":
-      return { startZoom: 0.95, endZoom: 1.05, panX: 0, panY: -20 };
-    case "overview":
-      return { startZoom: 1.0, endZoom: 1.08, panX: 10, panY: 0 };
-    case "entry":
-      return { startZoom: 1.02, endZoom: 1.1, panX: -5, panY: 10 };
-    case "code_walkthrough":
-    case "function_deep_dive":
-      return { startZoom: 1.0, endZoom: 1.15, panX: 0, panY: 15 };
-    case "architecture":
-      return { startZoom: 1.1, endZoom: 1.0, panX: -10, panY: -10 };
-    case "conclusion":
-      return { startZoom: 1.05, endZoom: 0.98, panX: 0, panY: -15 };
-    default:
-      return { startZoom: 1.0, endZoom: 1.08, panX: 5, panY: 5 };
-  }
-};
-
 // Animated particle component
 const AnimatedParticle = ({ 
   index, 
@@ -234,23 +208,20 @@ const SceneTransition = ({
   const transitionInDuration = 20;
   const transitionOutDuration = 15;
   
-  // Entry transition
+  // Entry transition: fade only (no zoom)
   if (relativeFrame < transitionInDuration) {
     const progress = relativeFrame / transitionInDuration;
     
-    if (transitionType === "zoom") {
-      const blur = interpolate(progress, [0, 1], [10, 0]);
-      const scale = interpolate(progress, [0, 1], [1.1, 1], {
+    if (transitionType === "fade" || transitionType === "zoom") {
+      const overlayOpacity = interpolate(progress, [0, 1], [0.18, 0], {
         easing: Easing.out(Easing.cubic),
       });
-      
       return (
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backdropFilter: `blur(${blur}px)`,
-            transform: `scale(${scale})`,
+            background: `rgba(10, 10, 15, ${overlayOpacity})`,
             pointerEvents: 'none',
             zIndex: 100,
           }}
@@ -387,36 +358,6 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
   const fadeInEnd = Math.min(fadeFrames, safeDuration);
   const fadeOutStart = Math.max(safeDuration - fadeFrames, fadeInEnd);
   
-  // Get zoom config for scene type
-  const zoomConfig = getSceneZoomConfig(activeScene?.type || "code");
-  
-  // Ken Burns effect - slow zoom with pan
-  const kenBurnsZoom = interpolate(
-    relativeFrame,
-    [0, safeDuration],
-    [zoomConfig.startZoom, zoomConfig.endZoom],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: smoothEase }
-  );
-  
-  const kenBurnsPanX = interpolate(
-    relativeFrame,
-    [0, safeDuration],
-    [0, zoomConfig.panX],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: smoothEase }
-  );
-  
-  const kenBurnsPanY = interpolate(
-    relativeFrame,
-    [0, safeDuration],
-    [0, zoomConfig.panY],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: smoothEase }
-  );
-
-  // Subtle camera shake for energy
-  const shakeIntensity = 0.5;
-  const shakeX = Math.sin(frame * 0.1) * shakeIntensity + Math.sin(frame * 0.23) * shakeIntensity * 0.5;
-  const shakeY = Math.cos(frame * 0.13) * shakeIntensity + Math.cos(frame * 0.19) * shakeIntensity * 0.5;
-  
   // Subtitle animations
   const subtitleOpacity = interpolate(
     relativeFrame,
@@ -549,12 +490,12 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         }}
       />
 
-      {/* Scene transition effect */}
+      {/* Scene transition effect (fade only, no zoom) */}
       <SceneTransition 
         frame={frame}
         sceneStartFrame={activeScene?.startFrame ?? 0}
         sceneDuration={safeDuration}
-        transitionType={isFirstScene ? "zoom" : (sceneIndex % 3 === 0 ? "glitch" : "zoom")}
+        transitionType="fade"
       />
 
       {/* Scene Badge with scene number */}
@@ -620,7 +561,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
         </div>
       </div>
 
-      {/* Main content with Ken Burns effect */}
+      {/* Main content */}
       <div
         style={{
           position: 'absolute',
@@ -630,10 +571,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
           justifyContent: 'center',
           padding: '80px 48px 160px 48px',
           opacity: contentOpacity,
-          transform: `
-            scale(${contentScale * kenBurnsZoom}) 
-            translate(${kenBurnsPanX + shakeX}px, ${kenBurnsPanY + shakeY}px)
-          `,
+          transform: `scale(${contentScale})`,
           transformOrigin: 'center center',
         }}
       >
