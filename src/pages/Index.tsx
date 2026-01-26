@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProof } from "@/components/landing/SocialProof";
@@ -75,18 +75,18 @@ const CTASection = () => {
     <section id="pricing" className="py-24 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-primary/20 via-purple-500/20 to-cyan-500/20 rounded-full blur-3xl opacity-30" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-blue-400/25 via-rose-400/20 to-cyan-400/25 rounded-full blur-3xl opacity-40" />
       
       <div className="container relative mx-auto px-4 text-center">
         {/* Hackathon reminder */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 text-sm mb-6">
-          <span className="text-yellow-500">🏆</span>
-          <span className="text-yellow-200/90 font-medium">Google AI Hackathon 2025 Project</span>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 border border-amber-300/60 text-sm mb-6">
+          <span className="text-amber-600">🏆</span>
+          <span className="text-amber-800 font-medium">Google AI Hackathon 2025 Project</span>
         </div>
         
         <h2 className="text-3xl md:text-5xl font-bold mb-4">
           Ready to transform your{" "}
-          <span className="bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary via-cyan-500 to-rose-500 bg-clip-text text-transparent">
             codebase
           </span>
           ?
@@ -97,7 +97,7 @@ const CTASection = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           {isAuthenticated ? (
             <>
-              <Button variant="hero" size="xl" className="gap-2 bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/25" asChild>
+              <Button variant="hero" size="xl" className="gap-2 bg-gradient-to-r from-primary to-cyan-500 shadow-lg shadow-primary/20" asChild>
                 <Link to="/dashboard">
                   Go to Dashboard
                 </Link>
@@ -108,7 +108,7 @@ const CTASection = () => {
             </>
           ) : (
             <>
-              <Button variant="hero" size="xl" className="gap-2 bg-gradient-to-r from-primary to-purple-500 shadow-lg shadow-primary/25" asChild>
+              <Button variant="hero" size="xl" className="gap-2 bg-gradient-to-r from-primary to-cyan-500 shadow-lg shadow-primary/20" asChild>
                 <Link to="/login">
                   Sign In
                 </Link>
@@ -135,16 +135,37 @@ const CTASection = () => {
   );
 };
 
+const LERP = 0.1;
+
 const Index = () => {
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-  const lastMoveRef = useRef(0);
+  const targetRef = useRef({ x: 0.5, y: 0.5 });
 
   const onMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const now = Date.now();
-    if (now - lastMoveRef.current < 40) return;
-    lastMoveRef.current = now;
-    setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+    targetRef.current = {
+      x: e.clientX / window.innerWidth,
+      y: e.clientY / window.innerHeight,
+    };
   };
+
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      setMousePos((p) => {
+        const t = targetRef.current;
+        const x = p.x + (t.x - p.x) * LERP;
+        const y = p.y + (t.y - p.y) * LERP;
+        return { x, y };
+      });
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const { x, y } = mousePos;
+  const xp = x * 100;
+  const yp = y * 100;
 
   return (
     <div className="min-h-screen bg-background">
@@ -153,11 +174,17 @@ const Index = () => {
         className="relative overflow-hidden"
         onMouseMove={onMouseMove}
       >
-        {/* Full-page subtle cursor-following glow for HowItWorks, DemoMockup, CTA */}
+        {/* Multi-color cursor-following glow – cyan, amber, rose, indigo, blue */}
         <div
-          className="absolute inset-0 pointer-events-none z-0"
+          className="absolute inset-0 pointer-events-none z-0 transition-opacity duration-300"
           style={{
-            background: `radial-gradient(circle 55vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(139,92,246,0.04) 0%, transparent 50%)`,
+            background: `
+              radial-gradient(circle 70vmax at ${xp}% ${yp}%, rgba(34,211,238,0.07) 0%, transparent 50%),
+              radial-gradient(circle 55vmax at ${xp}% ${yp}%, rgba(251,146,60,0.06) 0%, transparent 50%),
+              radial-gradient(circle 45vmax at ${xp}% ${yp}%, rgba(236,72,153,0.065) 0%, transparent 50%),
+              radial-gradient(circle 38vmax at ${xp}% ${yp}%, rgba(99,102,241,0.07) 0%, transparent 50%),
+              radial-gradient(circle 50vmax at ${xp}% ${yp}%, rgba(59,130,246,0.055) 0%, transparent 50%)
+            `,
           }}
         />
         <HeroSection mousePos={mousePos} />

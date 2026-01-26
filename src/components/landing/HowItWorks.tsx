@@ -15,7 +15,7 @@ export const HowItWorks = () => {
       title: "Analyze with Gemini 3",
       description: "Google's most powerful AI model analyzes your codebase, identifies key components, and crafts an engaging director's script.",
       step: "02",
-      color: "from-primary to-purple-500",
+      color: "from-primary to-cyan-500",
       highlight: true,
     },
     {
@@ -94,11 +94,11 @@ export const HowItWorks = () => {
         {/* Gemini Highlight Box */}
         <div className="max-w-3xl mx-auto mt-16">
           <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-cyan-500 rounded-2xl blur opacity-20" />
-            <div className="relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan-500 to-rose-400 rounded-2xl blur opacity-25" />
+            <div className="relative bg-card/90 backdrop-blur-sm border border-border/50 rounded-2xl p-6 md:p-8">
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="flex-shrink-0">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center">
                     <Brain className="h-8 w-8 text-white" />
                   </div>
                 </div>

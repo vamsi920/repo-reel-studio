@@ -62,7 +62,7 @@ export const DemoMockup = () => {
         <div className="max-w-4xl mx-auto">
           <div className="relative">
             {/* Glow effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-2xl opacity-50" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/25 via-cyan-400/25 to-rose-400/20 rounded-3xl blur-2xl opacity-60" />
             
             {/* Video Frame */}
             <div className="relative bg-card rounded-2xl border border-border overflow-hidden shadow-2xl">
@@ -105,7 +105,7 @@ const narration = gemini.generateNarration({
 
                 {/* Play button overlay */}
                 <div className="relative z-10 flex flex-col items-center gap-4">
-                  <button className="h-20 w-20 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/30 group">
+                  <button className="h-20 w-20 rounded-full bg-gradient-to-r from-primary to-cyan-500 flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-primary/25 group">
                     <Play className="h-8 w-8 text-white ml-1 group-hover:scale-110 transition-transform" />
                   </button>
                   <p className="text-slate-600 text-sm font-medium">

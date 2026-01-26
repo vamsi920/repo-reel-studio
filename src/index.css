@@ -6,56 +6,56 @@
 
 @layer base {
   :root {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    /* Light theme – white backgrounds, dark text for readability */
+    --background: 0 0% 99%;
+    --foreground: 222 47% 11%;
 
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 258 90% 66%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 10% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 240 10% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 25% 32%;
 
-    --accent: 258 90% 66%;
+    --accent: 199 89% 48%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 10% 20%;
-    --input: 240 10% 20%;
-    --ring: 258 90% 66%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens for GitFlick */
-    --glow-primary: 258 90% 66%;
-    --glow-secondary: 190 100% 50%;
-    --surface-elevated: 240 10% 8%;
-    --surface-overlay: 240 10% 12%;
-    --text-primary: 0 0% 98%;
-    --text-secondary: 0 0% 75%;
-    --text-tertiary: 0 0% 55%;
-    --success: 142 76% 45%;
+    --glow-primary: 217 91% 60%;
+    --glow-secondary: 199 89% 48%;
+    --surface-elevated: 0 0% 100%;
+    --surface-overlay: 210 40% 98%;
+    --text-primary: 222 47% 11%;
+    --text-secondary: 215 25% 32%;
+    --text-tertiary: 215 16% 47%;
+    --success: 142 76% 40%;
     --warning: 38 92% 50%;
-    --processing: 190 100% 50%;
+    --processing: 199 89% 48%;
 
-    --sidebar-background: 240 10% 4%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 258 90% 66%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 10% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 258 90% 66%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
@@ -134,9 +134,9 @@
   }
 
   .glass {
-    background: hsl(var(--surface-elevated) / 0.6);
+    background: hsl(var(--surface-elevated) / 0.92);
     backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--border) / 0.5);
+    border: 1px solid hsl(var(--border) / 0.9);
   }
 
   .animate-pulse-glow {
@@ -153,8 +153,8 @@
 
   .bg-grid {
     background-image: 
-      linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+      linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 
@@ -484,9 +484,10 @@
   transition: opacity 0.3s ease;
 }
 
-/* Progress bar styling */
+/* Progress bar styling – light-theme friendly */
 .progress-bar-track {
-  @apply relative h-1 bg-white/20 rounded-full cursor-pointer overflow-hidden;
+  @apply relative h-1 rounded-full cursor-pointer overflow-hidden;
+  background: hsl(var(--muted-foreground) / 0.25);
   transition: height 0.15s ease;
 }
 
@@ -496,12 +497,13 @@
 
 .progress-bar-fill {
   @apply absolute top-0 left-0 h-full rounded-full;
-  background: linear-gradient(90deg, hsl(var(--primary)), #a855f7);
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--glow-secondary)));
   transition: width 0.1s linear;
 }
 
 .progress-bar-scrubber {
-  @apply absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg;
+  @apply absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg;
+  background: hsl(var(--primary));
   transform: translateX(-50%) translateY(-50%);
   transition: transform 0.15s ease;
 }
@@ -510,15 +512,17 @@
   transform: translateX(-50%) translateY(-50%) scale(1.2);
 }
 
-/* Scene marker styling */
+/* Scene marker styling – light-theme friendly */
 .scene-marker {
-  @apply absolute w-0.5 h-2 bg-white/40 rounded-full;
+  @apply absolute w-0.5 h-2 rounded-full;
+  background: hsl(var(--muted-foreground) / 0.5);
   transform: translateX(-50%);
   transition: all 0.15s ease;
 }
 
 .scene-marker:hover {
-  @apply h-3 bg-primary;
+  @apply h-3;
+  background: hsl(var(--primary));
 }
 
 /* Sidebar animations */
