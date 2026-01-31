@@ -1,4 +1,5 @@
 # GitFlick
+
 Repo to Reel
 
 Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
@@ -7,8 +8,8 @@ Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
 
 ## At a glance
 
-| Input | Output | Stack | Runs with |
-| --- | --- | --- | --- |
+| Input                     | Output                          | Stack                             | Runs with              |
+| ------------------------- | ------------------------------- | --------------------------------- | ---------------------- |
 | GitHub URL or `user/repo` | Video manifest + studio preview | Vite + React + Remotion + FastAPI | Node 18+ + Python 3.8+ |
 
 ### Demo video
@@ -18,7 +19,7 @@ Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
 ## What GitFlick does
 
 - Ingests a public GitHub repository and builds a structured content map.
-- Generates a scene-by-scene video manifest with Gemini 2.0.
+- Generates a scene-by-scene video manifest with Gemini 3.0.
 - Launches a visual Studio to preview, tweak, and export your video assets.
 
 ## How it works
@@ -30,7 +31,7 @@ Paste GitHub URL
 Ingestion Server (gitingest)
       |
       v
-Gemini 2.0 Manifest Builder
+Gemini 3.0 Manifest Builder
       |
       v
 Studio Preview + Export
@@ -65,8 +66,8 @@ repo-reel-studio/
 
 ## Configuration
 
-| Variable | Description |
-| --- | --- |
+| Variable         | Description                                 |
+| ---------------- | ------------------------------------------- |
 | `GEMINI_API_KEY` | Gemini API key used for manifest generation |
 
 ## API surface (ingestion)
@@ -83,7 +84,7 @@ repo-reel-studio/
 ## Notes
 
 - Phase 1 uses [gitingest](https://github.com/coderamp-labs/gitingest) for ingestion.
-- Phase 2 uses Gemini 2.0 to synthesize the video manifest.
+- Phase 2 uses Gemini 3.0 to synthesize the video manifest.
 
 ---
 

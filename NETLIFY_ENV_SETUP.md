@@ -5,28 +5,33 @@
 Make sure these are set in your Netlify dashboard (Site settings → Environment variables):
 
 ### Backend API URL
+
 ```
 VITE_API_URL=https://repo-reel-backend.fly.dev
 ```
 
 ### Supabase Configuration
+
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_KEY=your_supabase_anon_key
 ```
 
 ### Gemini AI (Optional)
+
 ```
 VITE_GEMINI_API_KEY=your_gemini_api_key
-VITE_GEMINI_MODEL=gemini-2.0-flash
+VITE_GEMINI_MODEL=gemini-3.0-flash
 ```
 
 ### Google TTS (Optional)
+
 ```
 VITE_GOOGLE_TTS_API_KEY=your_google_tts_api_key
 ```
 
 ### Feature Flags (Optional)
+
 ```
 VITE_USE_MOCK_MANIFEST=false
 ```
