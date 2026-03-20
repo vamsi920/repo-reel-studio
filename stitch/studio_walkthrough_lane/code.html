@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GitFlick Studio - Walkthrough Lane</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800&amp;family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#3a4a5f",
+                        "on-tertiary-container": "#00302b",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-container": "#002469",
+                        "surface-variant": "#2d3449",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-container": "#171f33",
+                        "on-primary": "#002a78",
+                        "primary": "#b4c5ff",
+                        "on-surface-variant": "#c1c6d7",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-primary-fixed": "#00174b",
+                        "tertiary": "#6bd8cb",
+                        "outline": "#8b90a0",
+                        "on-background": "#dae2fd",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#003732",
+                        "tertiary-container": "#29a195",
+                        "surface-tint": "#b4c5ff",
+                        "error-container": "#93000a",
+                        "primary-container": "#618bff",
+                        "surface-dim": "#0b1326",
+                        "on-error": "#690005",
+                        "inverse-primary": "#0053db",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-container": "#a9bad3",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "background": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-fixed": "#00201d",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-fixed": "#89f5e7",
+                        "surface-container-highest": "#2d3449",
+                        "secondary": "#b7c8e1",
+                        "on-secondary": "#213145",
+                        "inverse-on-surface": "#283044",
+                        "surface-bright": "#31394d",
+                        "inverse-surface": "#dae2fd",
+                        "outline-variant": "#414755",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface": "#0b1326"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "code": ["JetBrains Mono"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { background-color: #0b1326; color: #dae2fd; font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(45, 52, 73, 0.6); backdrop-filter: blur(20px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#0b1326]/80 backdrop-blur-md dark:bg-[#0b1326]/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex justify-between items-center px-8 h-16 w-full max-w-none">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-[#dae2fd] dark:text-[#dae2fd] tracking-tighter font-headline">GitFlick</span>
+<nav class="hidden md:flex gap-6 font-manrope text-sm font-medium tracking-wide">
+<a class="text-blue-500 border-b-2 border-blue-500 pb-4 -mb-4 transition-all duration-200" href="#">Walkthrough</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Graph</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Q&amp;A</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Agent Ops</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2 mr-4">
+<button class="p-2 text-[#c1c6d7] hover:bg-[#171f33] rounded-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+</button>
+<button class="p-2 text-[#c1c6d7] hover:bg-[#171f33] rounded-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-[#c1c6d7] hover:bg-[#171f33] rounded-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+<button class="px-4 py-2 rounded-xl bg-surface-container-highest text-primary font-medium hover:bg-[#171f33] transition-all active:scale-95 text-sm">Share</button>
+<button class="px-5 py-2 rounded-xl bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-bold hover:opacity-90 transition-all active:scale-95 text-sm">Export Video</button>
+</div>
+</header>
+<!-- Side Navigation Bar (Anchored for Project Context) -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-[#131b2e] dark:bg-[#131b2e] flex flex-col h-full pt-20 pb-6 px-4">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="movie_filter" style="font-variation-settings: 'FILL' 1;">movie_filter</span>
+</div>
+<div>
+<h2 class="font-manrope font-bold text-[#dae2fd] text-sm">Project Alpha</h2>
+<p class="text-[10px] text-outline uppercase tracking-wider">v1.0.4-stable</p>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-[10px] font-code text-primary">main</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-[10px] font-code text-tertiary">active</span>
+</div>
+</div>
+<div class="space-y-1 flex-1 overflow-y-auto no-scrollbar">
+<div class="px-2 pb-2">
+<p class="text-[10px] text-outline font-bold uppercase tracking-widest mb-2">Workspace</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#c1c6d7] hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="dashboard">dashboard</span>
+<span class="font-inter text-[13px] leading-none">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-blue-600/20 to-transparent text-blue-400 border-l-4 border-blue-500 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="movie_filter" style="font-variation-settings: 'FILL' 1;">movie_filter</span>
+<span class="font-inter text-[13px] leading-none font-medium">Scenes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="folder_open">folder_open</span>
+<span class="font-inter text-[13px] leading-none">Assets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+<span class="font-inter text-[13px] leading-none">History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="tune">tune</span>
+<span class="font-inter text-[13px] leading-none">Settings</span>
+</a>
+</div>
+<div class="mt-auto space-y-1 pt-4 border-t border-outline-variant/20">
+<button class="w-full mb-4 py-2.5 rounded-xl bg-surface-container-high border border-outline-variant/10 text-[#dae2fd] text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                New Scene
+            </button>
+<a class="flex items-center gap-3 px-3 py-2 text-[#c1c6d7] opacity-70 hover:opacity-100 transition-all" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="menu_book">menu_book</span>
+<span class="font-inter text-[13px] leading-none">Documentation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#c1c6d7] opacity-70 hover:opacity-100 transition-all" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="contact_support">contact_support</span>
+<span class="font-inter text-[13px] leading-none">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pl-64 pt-16 h-screen flex flex-col overflow-hidden">
+<!-- Header Strip for Workspace -->
+<div class="px-8 py-4 bg-surface-container-low flex justify-between items-center">
+<div class="flex flex-col">
+<h1 class="font-headline text-lg font-bold text-on-surface">Walkthrough Lane</h1>
+<p class="text-xs text-on-surface-variant font-body">Sky/Cyan Accent Workflow • Last updated: 2m ago</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-surface-container-highest px-3 py-1.5 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(107,216,203,0.6)]"></span>
+<span class="text-xs font-label text-on-surface-variant">Live Sync Enabled</span>
+</div>
+</div>
+</div>
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Rail: Scene List -->
+<div class="w-80 bg-surface-container-low border-r border-outline-variant/10 flex flex-col">
+<div class="p-4 flex items-center justify-between border-b border-outline-variant/5">
+<span class="text-xs font-bold uppercase tracking-widest text-outline">Scenes (4)</span>
+<div class="flex gap-1">
+<button class="p-1 hover:bg-surface-bright rounded text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="low_priority">low_priority</span>
+</button>
+<button class="p-1 hover:bg-surface-bright rounded text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="add_box">add_box</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
+<!-- Scene Item Active -->
+<div class="p-4 rounded-xl bg-surface-container border-l-4 border-primary relative group cursor-pointer transition-all duration-200">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-code text-primary opacity-60">01</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h3 class="text-sm font-bold text-on-surface leading-snug">Architecture Overview</h3>
+<div class="mt-3 flex items-center gap-3">
+<span class="flex items-center gap-1 text-[10px] text-outline font-code">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 00:45
+                            </span>
+</div>
+</div>
+<!-- Scene Item 2 -->
+<div class="p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 cursor-pointer border-l-4 border-transparent group">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-code text-outline opacity-40">02</span>
+<span class="material-symbols-outlined text-error text-sm" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant leading-snug group-hover:text-on-surface">Auth Flow Logic</h3>
+<div class="mt-3 flex items-center gap-3">
+<span class="flex items-center gap-1 text-[10px] text-outline font-code">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 01:12
+                            </span>
+</div>
+</div>
+<!-- Scene Item 3 -->
+<div class="p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 cursor-pointer border-l-4 border-transparent group">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-code text-outline opacity-40">03</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="error_outline">error_outline</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant leading-snug group-hover:text-on-surface">Database Sharding</h3>
+<div class="mt-3 flex items-center gap-3">
+<span class="flex items-center gap-1 text-[10px] text-outline font-code">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 00:58
+                            </span>
+</div>
+</div>
+<!-- Scene Item 4 -->
+<div class="p-4 rounded-xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 cursor-pointer border-l-4 border-transparent group">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-code text-outline opacity-40">04</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h3 class="text-sm font-medium text-on-surface-variant leading-snug group-hover:text-on-surface">API Gateway V2</h3>
+<div class="mt-3 flex items-center gap-3">
+<span class="flex items-center gap-1 text-[10px] text-outline font-code">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 02:15
+                            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Canvas: Video Player -->
+<div class="flex-1 bg-surface-container-lowest p-6 flex flex-col gap-6">
+<!-- Video Player Shell -->
+<div class="flex-1 relative rounded-2xl overflow-hidden bg-black shadow-2xl group">
+<img alt="System Architecture Diagram" class="w-full h-full object-cover opacity-60" data-alt="Digital technical architecture diagram with glowing cyan nodes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcl_mbL_wuv1YP-is-omiyvhpH9oV7vu_zUgyAjY3UIOQn0bkZbwYnpwP_HFcsJWTkGM8smxaa58lATVMl7jZ-P_INPq8AP6Ec_o3KvSYBKR8Glp7lDh4t4DmdywEnDhZciysJ6aRVdvvvIJYrKNm0ttcTmQzr6B61mh4s3X3r7LWNUdB8_rBLJIDn_FzhRzBjB0ZOliKdPBnHNWPxvoWLkNyrrDkUv225wQ-bzXfpBSiOgpW75R2xfQrfhNzh3yizAtOfR56uIRIX"/>
+<!-- Overlay Playback UI -->
+<div class="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-4">
+<button class="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/40 transition-all">
+<span class="material-symbols-outlined text-3xl" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex flex-col">
+<span class="text-xs font-code text-primary-fixed-dim">SCENE 01 / 04</span>
+<span class="text-sm font-bold text-on-surface">Architecture Overview</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs font-code text-on-surface-variant">00:12 / 00:45</span>
+<button class="p-2 text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="fullscreen">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- Timeline -->
+<div class="relative w-full h-1.5 bg-surface-container-highest/50 rounded-full overflow-hidden cursor-pointer group/seek">
+<div class="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-cyan-400 w-[26%] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+<div class="absolute top-0 left-[26%] h-full w-2.5 bg-white shadow-xl -translate-x-1/2 opacity-0 group-hover/seek:opacity-100 transition-opacity"></div>
+</div>
+</div>
+</div>
+<!-- Scene Marker Ribbon -->
+<div class="flex gap-1 h-2 w-full">
+<div class="h-full flex-1 bg-primary rounded-full"></div>
+<div class="h-full flex-1 bg-surface-container-highest/30 rounded-full"></div>
+<div class="h-full flex-1 bg-surface-container-highest/30 rounded-full"></div>
+<div class="h-full flex-[2] bg-surface-container-highest/30 rounded-full"></div>
+</div>
+</div>
+<!-- Right Panel: Editor & Metadata -->
+<div class="w-96 bg-surface-container border-l border-outline-variant/10 flex flex-col">
+<div class="p-5 flex flex-col gap-6 h-full overflow-y-auto no-scrollbar">
+<!-- File Reference -->
+<section>
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest mb-3 block">Source Reference</label>
+<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/5 flex items-center justify-between">
+<div class="flex items-center gap-3 overflow-hidden">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="data_object">data_object</span>
+<div class="truncate">
+<p class="text-xs font-code text-on-surface truncate">api-gateway-v2.ts</p>
+<p class="text-[10px] text-outline">Line Range: 12-45</p>
+</div>
+</div>
+<button class="text-primary hover:underline text-[10px] font-bold">Open</button>
+</div>
+</section>
+<!-- Voice Selector -->
+<section>
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest mb-3 block">Voice Agent</label>
+<div class="relative">
+<button class="w-full p-3 rounded-xl bg-surface-container-high border border-outline-variant/10 flex items-center justify-between hover:bg-surface-bright transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full bg-tertiary-container/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-sm" data-icon="record_voice_over" style="font-variation-settings: 'FILL' 1;">record_voice_over</span>
+</div>
+<span class="text-xs font-medium text-on-surface">Alex (Neural - Neutral)</span>
+</div>
+<span class="material-symbols-outlined text-sm text-outline" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</section>
+<!-- Narration Editor -->
+<section class="flex-1 flex flex-col">
+<label class="text-[10px] font-bold text-outline uppercase tracking-widest mb-3 block">Narration Script</label>
+<div class="flex-1 p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/10 relative">
+<textarea class="w-full h-full bg-transparent border-none focus:ring-0 text-sm font-body text-on-surface-variant leading-relaxed resize-none" placeholder="Enter narration text...">First, we'll look at the core structure of the API Gateway. Notice how the traffic is routed through the central middleware on line 12. This ensures all tokens are validated before reaching the internal microservices...</textarea>
+<div class="absolute bottom-4 right-4 text-[10px] font-code text-outline">
+                                245 characters
+                            </div>
+</div>
+<div class="mt-4 flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-surface-container-highest text-xs font-bold text-on-surface hover:bg-surface-bright transition-all">Preview Audio</button>
+<button class="px-4 py-2 rounded-lg bg-tertiary/20 text-tertiary text-xs font-bold hover:bg-tertiary/30 transition-all">Sync Visuals</button>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Activity Strip -->
+<footer class="fixed bottom-0 left-64 right-0 h-10 bg-[#0b1326] dark:bg-[#0b1326] border-t border-[#171f33] shadow-[0_-4px_12px_rgba(0,0,0,0.2)] flex items-center justify-start px-4 z-50">
+<div class="flex items-center gap-6 overflow-x-auto no-scrollbar w-full">
+<div class="text-blue-400 font-bold bg-[#171f33] px-3 h-full flex items-center gap-2 cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+<span class="font-jetbrains-mono text-[10px] uppercase tracking-widest">Voice generation in progress...</span>
+</div>
+<div class="text-[#414755] px-3 h-full flex items-center gap-2 cursor-pointer hover:text-[#dae2fd] transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+<span class="font-jetbrains-mono text-[10px] uppercase tracking-widest">Scene 3 assets validated</span>
+</div>
+<div class="text-[#414755] px-3 h-full flex items-center gap-2 cursor-pointer hover:text-[#dae2fd] transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="warning">warning</span>
+<span class="font-jetbrains-mono text-[10px] uppercase tracking-widest">Low resolution detected in Asset 2</span>
+</div>
+</div>
+<div class="ml-auto flex items-center gap-2 text-outline">
+<span class="font-jetbrains-mono text-[10px]">CPU 12%</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-jetbrains-mono text-[10px]">MEM 1.2GB</span>
+</div>
+</footer>
+</main>
+</body></html>

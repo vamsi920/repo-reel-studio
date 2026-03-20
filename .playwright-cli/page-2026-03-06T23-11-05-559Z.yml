@@ -1,0 +1,371 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - link "GitFlick GitFlick Repo to Reel" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - img "GitFlick" [ref=e9]
+          - generic [ref=e10]:
+            - generic [ref=e11]: GitFlick
+            - text: Repo to Reel
+        - generic [ref=e12]:
+          - link "Login" [ref=e13] [cursor=pointer]:
+            - /url: /login
+          - link "Get Started" [ref=e14] [cursor=pointer]:
+            - /url: /login
+    - main [ref=e15]:
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - img [ref=e27]
+              - img [ref=e30]
+            - generic [ref=e32]: Powered by Advanced AI
+          - generic [ref=e34]:
+            - img [ref=e35]
+            - text: Intelligent Code Analysis
+        - heading "Transform Any Repository Into a Stunning Video" [level=1] [ref=e37]:
+          - text: Transform Any
+          - img [ref=e39]
+          - text: Repository Into a
+          - generic [ref=e42]:
+            - text: Stunning Video
+            - img [ref=e43]
+        - paragraph [ref=e45]: Stop writing stale documentation. Let advanced AI analyze your codebase and generate a beautiful architectural walkthrough in seconds.
+        - generic [ref=e46]:
+          - generic [ref=e49]: Real-time processing
+          - generic [ref=e51]:
+            - img [ref=e52]
+            - generic [ref=e54]: 30 FPS smooth playback
+          - generic [ref=e56]:
+            - img [ref=e57]
+            - generic [ref=e59]: AI-generated narration
+        - generic [ref=e60]:
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - textbox "Paste GitHub URL or username/repo..." [ref=e68]
+            - button "Generate Video" [ref=e69] [cursor=pointer]:
+              - text: Generate Video
+              - img
+          - generic [ref=e70]:
+            - button "Try with Sample Repo" [ref=e71] [cursor=pointer]:
+              - img
+              - text: Try with Sample Repo
+            - button "Upload Code Folder" [ref=e72] [cursor=pointer]:
+              - img
+              - text: Upload Code Folder
+            - paragraph [ref=e73]:
+              - generic [ref=e74]:
+                - generic [ref=e75]: ✓
+                - text: Free to use
+              - generic [ref=e76]:
+                - generic [ref=e77]: ✓
+                - text: No signup required
+              - generic [ref=e78]:
+                - generic [ref=e79]: ✓
+                - text: Drag & drop
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - img [ref=e86]
+            - img [ref=e89]
+          - generic [ref=e91]: Built for Modern Developers
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - generic [ref=e105]:
+              - generic [ref=e106]: Advanced AI
+              - text: Intelligent Analysis
+          - generic [ref=e107]:
+            - img [ref=e109]
+            - generic [ref=e111]:
+              - generic [ref=e112]: 30 FPS
+              - text: Smooth Rendering
+          - generic [ref=e113]:
+            - img [ref=e115]
+            - generic [ref=e118]:
+              - generic [ref=e119]: Real-time
+              - text: Instant Processing
+          - generic [ref=e120]:
+            - img [ref=e122]
+            - generic [ref=e124]:
+              - generic [ref=e125]: AI Narration
+              - text: Smart Scripts
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - generic [ref=e131]: ⚠️
+            - generic [ref=e132]: The Problem We're Solving
+          - heading "Developer Documentation is Broken" [level=2] [ref=e133]
+          - paragraph [ref=e134]: Traditional documentation fails developers. We're fixing it with AI-powered video walkthroughs.
+        - generic [ref=e135]:
+          - generic [ref=e137]:
+            - img [ref=e139]
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - heading "Stale Documentation" [level=3] [ref=e144]
+                - generic [ref=e145]:
+                  - generic [ref=e146]: 73% of developers
+                  - generic [ref=e147]: find documentation outdated
+              - paragraph [ref=e148]: READMEs get outdated the moment code changes. Developers skip them entirely.
+          - generic [ref=e150]:
+            - img [ref=e152]
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - heading "Time-Consuming Onboarding" [level=3] [ref=e157]
+                - generic [ref=e158]:
+                  - generic [ref=e159]: 5+ hours
+                  - generic [ref=e160]: average onboarding time
+              - paragraph [ref=e161]: New team members spend hours reading code to understand architecture.
+          - generic [ref=e163]:
+            - img [ref=e165]
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - heading "Knowledge Gaps" [level=3] [ref=e172]
+                - generic [ref=e173]:
+                  - generic [ref=e174]: 60% of projects
+                  - generic [ref=e175]: lack clear architecture docs
+              - paragraph [ref=e176]: Critical architectural decisions are lost in code comments or forgotten.
+          - generic [ref=e178]:
+            - img [ref=e180]
+            - generic [ref=e183]:
+              - generic [ref=e184]:
+                - heading "Low Engagement" [level=3] [ref=e185]
+                - generic [ref=e186]:
+                  - generic [ref=e187]: 3x more engaging
+                  - generic [ref=e188]: video vs. text content
+              - paragraph [ref=e189]: Text-based docs are boring. Developers prefer visual, interactive content.
+        - generic [ref=e191]:
+          - generic [ref=e192]: 💡
+          - generic [ref=e193]:
+            - paragraph [ref=e194]: GitFlick solves this
+            - paragraph [ref=e195]: Turn any repository into an engaging video walkthrough in under 60 seconds
+      - generic [ref=e198]:
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - img [ref=e201]
+            - generic [ref=e203]: Simple 3-Step Process
+          - heading "How GitFlick Works" [level=2] [ref=e204]
+          - paragraph [ref=e205]: From repository to video in under 60 seconds
+        - generic [ref=e206]:
+          - generic [ref=e207] [cursor=pointer]:
+            - generic [ref=e209]: "01"
+            - generic [ref=e210]:
+              - img [ref=e212]
+              - heading "Ingest" [level=3] [ref=e216]
+            - paragraph [ref=e218]: Paste any GitHub URL. We instantly clone and map your entire repository structure, understanding file relationships and architecture.
+            - img [ref=e220]
+          - generic [ref=e222] [cursor=pointer]:
+            - generic [ref=e224]: "02"
+            - generic [ref=e225]:
+              - img [ref=e227]
+              - heading "AI Analysis AI-Powered" [level=3] [ref=e237]:
+                - text: AI Analysis
+                - generic [ref=e238]: AI-Powered
+            - paragraph [ref=e240]: Advanced AI analyzes your codebase, identifies key components, and crafts an engaging director's script with intelligent narration.
+            - img [ref=e242]
+          - generic [ref=e244] [cursor=pointer]:
+            - generic [ref=e246]: "03"
+            - generic [ref=e247]:
+              - img [ref=e249]
+              - heading "Render" [level=3] [ref=e251]
+            - paragraph [ref=e253]: Watch as your code transforms into a professionally narrated video walkthrough with syntax highlighting and smooth animations.
+        - generic [ref=e258]:
+          - img [ref=e261]
+          - generic [ref=e271]:
+            - heading "Intelligent AI Analysis" [level=3] [ref=e272]:
+              - generic [ref=e273]: Intelligent AI Analysis
+              - img [ref=e274]
+            - paragraph [ref=e276]: GitFlick leverages cutting-edge AI to understand code context, generate intelligent narration scripts, and create engaging video content that actually explains your codebase - not just shows it.
+      - generic [ref=e279]:
+        - generic [ref=e280]:
+          - heading "Real Impact" [level=2] [ref=e281]
+          - paragraph [ref=e282]: See how GitFlick transforms developer onboarding and documentation
+        - generic [ref=e283]:
+          - generic [ref=e286]:
+            - img [ref=e288]
+            - generic [ref=e291]: 60 seconds
+            - generic [ref=e292]: To generate a video
+            - generic [ref=e293]: From repo URL to video preview
+          - generic [ref=e296]:
+            - img [ref=e298]
+            - generic [ref=e301]: 5x faster
+            - generic [ref=e302]: Onboarding speed
+            - generic [ref=e303]: Video walkthroughs vs. reading code
+          - generic [ref=e306]:
+            - img [ref=e308]
+            - generic [ref=e310]: 100%
+            - generic [ref=e311]: AI-powered
+            - generic [ref=e312]: Advanced AI analyzes and narrates
+          - generic [ref=e315]:
+            - img [ref=e317]
+            - generic [ref=e322]: 3x more
+            - generic [ref=e323]: Engagement
+            - generic [ref=e324]: Developers prefer video content
+      - generic [ref=e327]:
+        - generic [ref=e328]:
+          - heading "Everything You Need to Create Amazing Videos" [level=2] [ref=e329]
+          - paragraph [ref=e330]: Our AI-powered platform handles everything from code analysis to video rendering
+        - generic [ref=e331]:
+          - generic [ref=e332]:
+            - img [ref=e334]
+            - heading "Syntax Highlighting" [level=3] [ref=e338]
+            - paragraph [ref=e339]: Beautiful code display with language detection
+          - generic [ref=e340]:
+            - img [ref=e342]
+            - heading "AI Narration" [level=3] [ref=e345]
+            - paragraph [ref=e346]: Intelligent AI writes engaging explanations
+          - generic [ref=e347]:
+            - img [ref=e349]
+            - heading "Scene Management" [level=3] [ref=e353]
+            - paragraph [ref=e354]: Automatic scene generation from code structure
+          - generic [ref=e355]:
+            - img [ref=e357]
+            - heading "Smart Editing" [level=3] [ref=e360]
+            - paragraph [ref=e361]: Fine-tune your video in the Studio
+        - generic [ref=e365]:
+          - generic [ref=e372]: gitflick.app/studio/your-repo
+          - generic [ref=e373]:
+            - generic [ref=e377]:
+              - generic [ref=e379]: </>
+              - generic [ref=e380]: let
+              - generic [ref=e381]: =>
+              - generic [ref=e382]: ()
+              - generic [ref=e383]: </>
+              - generic [ref=e384]: let
+              - generic [ref=e385]: =>
+              - generic [ref=e386]: ()
+              - generic [ref=e387]: </>
+              - generic [ref=e388]: let
+              - generic [ref=e389]: =>
+              - generic [ref=e390]: ()
+              - generic [ref=e391]: </>
+              - generic [ref=e392]: let
+              - generic [ref=e393]: =>
+              - generic [ref=e593]:
+                - generic [ref=e595]: 1 / 6
+                - generic [ref=e596]: Scene 1
+              - generic [ref=e436]:
+                - generic [ref=e438]:
+                  - generic [ref=e443]:
+                    - generic [ref=e444]: MARKDOWN
+                    - generic [ref=e445]: README.md
+                  - generic [ref=e448]: Live
+                - generic [ref=e450]:
+                  - complementary [ref=e451]:
+                    - generic [ref=e452]:
+                      - img [ref=e453]
+                      - text: Explorer
+                    - generic [ref=e456]:
+                      - generic [ref=e458]:
+                        - generic [ref=e459]: ▶
+                        - img [ref=e460]
+                        - generic [ref=e462]: src
+                      - generic [ref=e464]:
+                        - generic [ref=e465]: "{}"
+                        - generic [ref=e466]: package.json
+                      - generic [ref=e468]:
+                        - generic [ref=e469]: MD
+                        - generic [ref=e470]: README.md
+                  - generic [ref=e478]:
+                    - generic:
+                      - img
+                    - generic [ref=e479]:
+                      - generic [ref=e480]:
+                        - generic [ref=e481]: "1"
+                        - generic [ref=e482]: "# GitFlick Demo"
+                      - generic [ref=e484]: "2"
+                      - generic [ref=e486]:
+                        - generic [ref=e487]: "3"
+                        - generic [ref=e488]: A modern React component library built with TypeScript and Tailwind CSS.
+                      - generic [ref=e490]: "4"
+                      - generic [ref=e492]:
+                        - generic [ref=e493]: "5"
+                        - generic [ref=e494]: "## Features"
+                      - generic [ref=e496]: "6"
+                      - generic [ref=e498]:
+                        - generic [ref=e499]: "7"
+                        - generic [ref=e500]: "- 🎨 Beautiful, accessible components"
+                      - generic [ref=e501]:
+                        - generic [ref=e502]: "8"
+                        - generic [ref=e503]: "- ⚡ Lightning-fast performance"
+                      - generic [ref=e504]:
+                        - generic [ref=e505]: "9"
+                        - generic [ref=e506]: "- 📱 Fully responsive design"
+                      - generic [ref=e507]:
+                        - generic [ref=e508]: "10"
+                        - generic [ref=e509]: "- 🎯 TypeScript support"
+                      - generic [ref=e510]:
+                        - generic [ref=e511]: "11"
+                        - generic [ref=e512]: "- 🌈 Customizable themes"
+                      - generic [ref=e514]: "12"
+                      - generic [ref=e516]:
+                        - generic [ref=e517]: "13"
+                        - generic [ref=e518]: "## Quick Start"
+                      - generic [ref=e520]: "14"
+                      - generic [ref=e522]:
+                        - generic [ref=e523]: "15"
+                        - generic [ref=e524]: "```bash"
+                      - generic [ref=e525]:
+                        - generic [ref=e526]: "16"
+                        - generic [ref=e527]: npm install @gitflick/components
+                      - generic [ref=e528]:
+                        - generic [ref=e529]: "17"
+                        - generic [ref=e530]: "```"
+                - generic [ref=e531]:
+                  - generic [ref=e532]:
+                    - generic [ref=e533]: Scene 1 of 6
+                    - generic [ref=e536]:
+                      - img [ref=e537]
+                      - text: 5 files
+                    - generic [ref=e540]:
+                      - img [ref=e541]
+                      - text: Ln 1, Col 1
+                  - generic [ref=e543]:
+                    - generic [ref=e544]: markdown
+                    - generic [ref=e545]: UTF-8
+              - generic [ref=e548]:
+                - generic [ref=e550]: intro
+                - paragraph [ref=e551]: This demo showcases how we transform any GitHub repository into an engaging video walkthrough.
+            - button [ref=e552] [cursor=pointer]:
+              - img [ref=e553]
+            - generic [ref=e558]: Live Demo
+            - generic [ref=e559]: 1080p • 30 FPS
+      - generic [ref=e565]:
+        - generic [ref=e566]:
+          - generic [ref=e567]: ✨
+          - generic [ref=e568]: Next-Gen Developer Tools
+        - heading "Ready to transform your codebase?" [level=2] [ref=e569]
+        - paragraph [ref=e570]: Experience the future of developer documentation. AI-powered analysis creates stunning video walkthroughs of your code in seconds.
+        - generic [ref=e571]:
+          - link "Sign In" [ref=e572] [cursor=pointer]:
+            - /url: /login
+          - link "Sign In" [ref=e573] [cursor=pointer]:
+            - /url: /login
+        - generic [ref=e574]:
+          - generic [ref=e575]:
+            - generic [ref=e576]: ✓
+            - text: 100% Free
+          - generic [ref=e577]:
+            - generic [ref=e578]: ✓
+            - text: No credit card
+          - generic [ref=e579]:
+            - generic [ref=e580]: ✓
+            - text: AI-Powered
+    - contentinfo [ref=e581]:
+      - generic [ref=e583]:
+        - generic [ref=e584]:
+          - img "GitFlick" [ref=e586]
+          - generic [ref=e587]:
+            - generic [ref=e588]: GitFlick
+            - text: Repo to Reel
+        - generic [ref=e589]:
+          - link "Privacy" [ref=e590] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=e591] [cursor=pointer]:
+            - /url: /terms
+        - paragraph [ref=e592]: © 2026 GitFlick. All rights reserved.

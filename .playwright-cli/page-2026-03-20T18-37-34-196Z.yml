@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e8]:
+    - generic [ref=e10]:
+      - img "GitFlick" [ref=e12]
+      - generic [ref=e13]: GitFlick
+    - generic [ref=e14]:
+      - paragraph [ref=e15]: Processing Repository
+      - heading "octocat/Hello-World" [level=2] [ref=e16]
+    - generic [ref=e17]:
+      - generic [ref=e19]: "Phase 1: Ingestion"
+      - generic [ref=e23]: "Phase 2: Manifest"
+    - generic [ref=e27]:
+      - img [ref=e28]
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e35]: 11%
+    - generic [ref=e37]:
+      - heading "Initializing ingestion pipeline..." [level=3] [ref=e38]: Initializing ingestion pipeline...
+      - paragraph [ref=e43]: Fetching and parsing repository...
+    - generic [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e52]: processing.log
+        - generic [ref=e53]: 9 entries
+      - generic [ref=e54]:
+        - generic [ref=e55]: "[14:37:34] INFO: Not authenticated - project will not be saved to database"
+        - generic [ref=e56]: "[14:37:34] → Sign in to save projects and access Studio"
+        - generic [ref=e57]: "[14:37:34] WARNING: User not authenticated - skipping database save"
+        - generic [ref=e58]: "[14:37:34] → Sign in to save projects to your account"
+        - generic [ref=e59]: "[14:37:34] Starting video generation pipeline..."
+        - generic [ref=e60]: "[14:37:34] Target repository: octocat/Hello-World"
+        - generic [ref=e61]: "[14:37:34] Full URL: https://github.com/octocat/Hello-World"
+        - generic [ref=e62]: "[14:37:34] Initializing ingestion pipeline..."
+        - generic [ref=e63]: "[14:37:34] Sending POST request to /api/ingest..."
+    - generic [ref=e65]:
+      - generic [ref=e66]: What Happens Now
+      - heading "Processing in stages" [level=3] [ref=e67]
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]: 1. Ingest repo content
+          - generic [ref=e71]: Fetch files and build the initial project context.
+        - generic [ref=e72]:
+          - generic [ref=e73]: 2. Build structure
+          - generic [ref=e74]: Map the codebase into graph-backed architecture signals.
+        - generic [ref=e75]:
+          - generic [ref=e76]: 3. Plan the walkthrough
+          - generic [ref=e77]: Turn that structure into a clean scene plan for Studio.

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GitFlick | Processing Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800&amp;family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#b4c5ff",
+              "on-tertiary-fixed-variant": "#005049",
+              "outline": "#8b90a0",
+              "surface": "#0b1326",
+              "surface-container-high": "#222a3d",
+              "on-tertiary-fixed": "#00201d",
+              "error-container": "#93000a",
+              "surface-container-lowest": "#060e20",
+              "tertiary": "#6bd8cb",
+              "secondary-container": "#3a4a5f",
+              "tertiary-container": "#29a195",
+              "inverse-primary": "#0053db",
+              "on-primary-fixed-variant": "#003ea8",
+              "primary-fixed": "#dbe1ff",
+              "inverse-surface": "#dae2fd",
+              "outline-variant": "#414755",
+              "on-tertiary": "#003732",
+              "on-background": "#dae2fd",
+              "surface-container-low": "#131b2e",
+              "surface-container-highest": "#2d3449",
+              "tertiary-fixed-dim": "#6bd8cb",
+              "on-surface": "#dae2fd",
+              "on-secondary-fixed": "#0b1c30",
+              "surface-dim": "#0b1326",
+              "on-secondary": "#213145",
+              "error": "#ffb4ab",
+              "secondary-fixed-dim": "#b7c8e1",
+              "surface-bright": "#31394d",
+              "inverse-on-surface": "#283044",
+              "primary": "#b4c5ff",
+              "surface-tint": "#b4c5ff",
+              "on-surface-variant": "#c1c6d7",
+              "background": "#0b1326",
+              "on-tertiary-container": "#00302b",
+              "primary-container": "#618bff",
+              "surface-variant": "#2d3449",
+              "on-primary-fixed": "#00174b",
+              "on-primary-container": "#002469",
+              "on-secondary-container": "#a9bad3",
+              "on-primary": "#002a78",
+              "on-error-container": "#ffdad6",
+              "on-secondary-fixed-variant": "#38485d",
+              "tertiary-fixed": "#89f5e7",
+              "on-error": "#690005",
+              "secondary": "#b7c8e1",
+              "surface-container": "#171f33",
+              "secondary-fixed": "#d3e4fe"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"],
+              "mono": ["JetBrains Mono"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(45, 52, 73, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #414755; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container/30">
+<!-- Top Navigation Anchor -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 w-full max-w-none bg-[#0b1326]/80 backdrop-blur-md dark:bg-[#0b1326]/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] font-manrope text-sm font-medium tracking-wide tonal-shift no-border">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-[#dae2fd] dark:text-[#dae2fd] tracking-tighter">GitFlick</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer active:scale-95">Walkthrough</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer active:scale-95">Graph</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer active:scale-95">Q&amp;A</a>
+<a class="text-blue-500 border-b-2 border-blue-500 pb-4 -mb-4 transition-all duration-200 cursor-pointer active:scale-95">Agent Ops</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container-highest px-3 py-1.5 rounded-xl gap-2 cursor-pointer hover:bg-[#171f33] transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="search">search</span>
+<span class="text-xs opacity-60">Cmd + K</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer" data-icon="settings">settings</span>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Abstract circular user avatar pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGkwezN_HyGkOtbj3Ry3da3bVXTJqjsynP2u6uIuQawbPryBkq1w_CdjNOAEUWo6NptrX1okz9B7nxy898WuRmkoMX1QPNNooUCXADHlpFPewp1iVGpQCw11R6x1PMEcaQkg27Ste854JplgJtmYUQkLw0Z4fspxtC87l9lN2IxlxVR3n_8paRGVkd-CC8amEKuFf9Im0iFML6VeTpCL1QMHtwLcIqV03O9BC2iRwlrKqnxc_AGRw10tjXMYqzKLWhJLamQ4hCKdNZ"/>
+</div>
+</div>
+</nav>
+<!-- Side Navigation Anchor -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-[#131b2e] flex flex-col pt-20 pb-6 px-4 no-border shadow-inner font-inter text-[13px] leading-none">
+<div class="px-3 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h3 class="font-manrope font-bold text-[#dae2fd]">Project Alpha</h3>
+<p class="text-[10px] text-on-surface-variant opacity-60 mt-1 uppercase tracking-widest">v1.0.4-stable</p>
+</div>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="movie_filter">movie_filter</span>
+<span>Scenes</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="folder_open">folder_open</span>
+<span>Assets</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 bg-gradient-to-r from-blue-600/20 to-transparent text-blue-400 border-l-4 border-blue-500 transition-all duration-300 rounded-r-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="history">history</span>
+<span>History</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="tune">tune</span>
+<span>Settings</span>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-outline-variant/10 space-y-1">
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="menu_book">menu_book</span>
+<span>Documentation</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined text-[20px]" data-icon="contact_support">contact_support</span>
+<span>Support</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-8 pb-12">
+<header class="flex justify-between items-end mb-10">
+<div>
+<h1 class="text-4xl font-headline font-extrabold tracking-tight mb-2">Processing Workspace</h1>
+<p class="text-on-surface-variant font-body">Deployment pipeline for <span class="text-primary font-mono text-xs bg-primary/10 px-2 py-0.5 rounded">alpha-v1-production</span></p>
+</div>
+<div class="flex gap-3">
+<div class="bg-surface-container flex flex-col px-5 py-3 rounded-xl min-w-[140px] relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary-container"></div>
+<span class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant/60">Status</span>
+<span class="text-lg font-headline font-bold text-primary">COMPLETE</span>
+</div>
+<div class="bg-surface-container flex flex-col px-5 py-3 rounded-xl min-w-[140px] relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-tertiary to-tertiary-container"></div>
+<span class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant/60">Duration</span>
+<span class="text-lg font-headline font-bold text-on-surface">12m 44s</span>
+</div>
+<div class="bg-surface-container flex flex-col px-5 py-3 rounded-xl min-w-[140px] relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-error to-error-container"></div>
+<span class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant/60">Analyzed</span>
+<span class="text-lg font-headline font-bold text-on-surface">1,248 Files</span>
+</div>
+</div>
+</header>
+<div class="grid grid-cols-12 gap-8 items-start">
+<!-- Phase Tracking Column -->
+<div class="col-span-12 lg:col-span-7 space-y-6">
+<!-- Phase 1: Ingestion -->
+<section class="bg-surface-container-low rounded-xl p-6 relative">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary" data-icon="cloud_download">cloud_download</span>
+</div>
+<div>
+<h2 class="text-xl font-headline font-bold">Phase 1: Ingestion</h2>
+<p class="text-sm text-on-surface-variant">Source code analysis and dependency resolution</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-3xl" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high transition-all hover:bg-surface-bright">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Cloning Repository</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">0.4s</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high transition-all hover:bg-surface-bright">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Indexing Metadata</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">2.8s</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high transition-all hover:bg-surface-bright">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Recursive Node Resolution</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">41s</span>
+</div>
+</div>
+</section>
+<!-- Phase 2: Manifest Generation -->
+<section class="bg-surface-container-low rounded-xl p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-48 h-48 bg-primary/5 blur-[80px]"></div>
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h2 class="text-xl font-headline font-bold">Phase 2: Manifest Generation</h2>
+<p class="text-sm text-on-surface-variant">Semantic graph construction and schema validation</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-3xl" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high transition-all hover:bg-surface-bright">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Generating Scene Logic</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">1m 12s</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high transition-all hover:bg-surface-bright">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Assembling Asset Registry</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">18s</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-high border border-primary/20 shadow-[0_0_20px_rgba(180,197,255,0.05)]">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="done">done</span>
+<div class="flex-1">
+<p class="text-sm font-medium">Final Optimization Pass</p>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+<span class="text-xs font-mono text-tertiary">10m 32s</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Terminal and Success Panel -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+<!-- Success Panel (Glassmorphism) -->
+<div class="glass-panel rounded-xl p-8 border border-white/5 shadow-2xl relative overflow-hidden group">
+<div class="absolute -top-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-[60px] group-hover:bg-primary/30 transition-all duration-700"></div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full bg-tertiary/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-tertiary text-4xl" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<h3 class="text-2xl font-headline font-extrabold mb-3">Processing Ready</h3>
+<p class="text-on-surface-variant text-sm mb-8 px-6">Your repository manifest has been successfully generated and is ready for creative direction.</p>
+<button class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold rounded-xl flex items-center justify-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                            Continue to Studio
+                            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Log Terminal -->
+<div class="bg-surface-container-lowest rounded-xl flex flex-col overflow-hidden h-[400px] border border-outline-variant/10">
+<div class="px-4 py-3 bg-surface-container-low flex justify-between items-center">
+<div class="flex gap-1.5">
+<div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+<div class="w-3 h-3 rounded-full bg-emerald-500/50"></div>
+</div>
+<span class="text-[10px] font-mono opacity-40 uppercase tracking-widest">stdout / logs</span>
+<span class="material-symbols-outlined text-xs opacity-40" data-icon="content_copy">content_copy</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed text-on-surface-variant/80">
+<div class="mb-1"><span class="text-primary/60">[09:21:04]</span> <span class="text-tertiary">INFO:</span> Initializing GitFlick Core Engine v1.0.4...</div>
+<div class="mb-1"><span class="text-primary/60">[09:21:05]</span> <span class="text-tertiary">INFO:</span> Authenticating with decentralized manifest layer...</div>
+<div class="mb-1"><span class="text-primary/60">[09:21:08]</span> <span class="text-primary">DEBUG:</span> Analyzing dependency tree for @gitflick/runtime...</div>
+<div class="mb-1"><span class="text-primary/60">[09:21:12]</span> <span class="text-on-surface/40">WARN:</span> Deprecated API usage found in 'legacy_parser.js'</div>
+<div class="mb-1"><span class="text-primary/60">[09:21:44]</span> <span class="text-tertiary">SUCCESS:</span> Ingestion phase completed (1,248 files indexed).</div>
+<div class="mb-1"><span class="text-primary/60">[09:21:45]</span> <span class="text-tertiary">INFO:</span> Starting Manifest Generation Phase...</div>
+<div class="mb-1"><span class="text-primary/60">[09:23:02]</span> <span class="text-primary">DEBUG:</span> Building semantic graph nodes...</div>
+<div class="mb-1"><span class="text-primary/60">[09:23:15]</span> <span class="text-on-surface/40">TRACE:</span> Mapping 45,000+ relationships...</div>
+<div class="mb-1"><span class="text-primary/60">[09:32:04]</span> <span class="text-tertiary">INFO:</span> Running final validation schemas...</div>
+<div class="mb-1"><span class="text-primary/60">[09:33:48]</span> <span class="text-tertiary font-bold">SUCCESS:</span> All phases complete. Artifacts ready at /dist/manifest.json</div>
+<div class="mb-1 animate-pulse"><span class="text-primary/60">[09:33:49]</span> <span class="text-on-surface">_</span></div>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="bg-surface-container rounded-xl p-4 flex justify-between items-center">
+<span class="text-xs text-on-surface-variant font-medium">Export Raw Logs</span>
+<button class="bg-surface-container-highest px-4 py-2 rounded-lg text-xs font-bold hover:bg-surface-bright transition-colors">
+                        Download JSON
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB Suppression: FAB not rendered as this is a processing screen -->
+</body></html>

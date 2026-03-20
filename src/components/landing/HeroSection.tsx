@@ -1,258 +1,305 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Play, Zap, Github } from "lucide-react";
+import {
+  ArrowRight,
+  FolderOpen,
+  Link2,
+  MessageSquareText,
+  Network,
+  Upload,
+  WandSparkles,
+  Workflow,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  buildFolderUploadPayload,
+  clearFolderUploadSession,
+  loadFolderUploadSession,
+  resolveRepoSourceFromInput,
+  saveFolderUploadSession,
+  type FolderUploadPayload,
+} from "@/lib/projectSource";
+import { cn } from "@/lib/utils";
 
-type MousePos = { x: number; y: number };
+const LANES = [
+  {
+    id: "walkthrough",
+    title: "Walkthrough",
+    description: "A clean scene-by-scene code tour.",
+    icon: Workflow,
+    accent: "bg-sky-300/12 text-sky-200",
+  },
+  {
+    id: "graph",
+    title: "Graph",
+    description: "Dependency context without the noise.",
+    icon: Network,
+    accent: "bg-emerald-300/12 text-emerald-200",
+  },
+  {
+    id: "qa",
+    title: "Repo Q&A",
+    description: "Ask focused questions against saved repo context.",
+    icon: MessageSquareText,
+    accent: "bg-indigo-300/12 text-indigo-200",
+  },
+  {
+    id: "agent-ops",
+    title: "Agent Ops",
+    description: "Run and monitor workflow automation.",
+    icon: WandSparkles,
+    accent: "bg-amber-300/12 text-amber-200",
+  },
+] as const;
 
-export const HeroSection = ({ mousePos = { x: 0.5, y: 0.5 } }: { mousePos?: MousePos }) => {
-  const [repoUrl, setRepoUrl] = useState("");
-  const [urlError, setUrlError] = useState("");
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [cardSpotlight, setCardSpotlight] = useState({ x: 0.5, y: 0.5 });
-  const cardRef = useRef<HTMLDivElement>(null);
+const METRICS = [
+  { value: "Fast", label: "Repository intake" },
+  { value: "Clear", label: "Guided walkthroughs" },
+  { value: "Private", label: "Workspace access" },
+];
+
+export const HeroSection = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [repoInput, setRepoInput] = useState("");
+  const [quickStartError, setQuickStartError] = useState("");
+  const [uploadedFolder, setUploadedFolder] = useState<FolderUploadPayload | null>(null);
+  const [isLaunchingRepo, setIsLaunchingRepo] = useState(false);
+  const [isPreparingFolder, setIsPreparingFolder] = useState(false);
 
-  const handleTryDemo = () => {
-    setRepoUrl("vercel/next.js");
-    setUrlError("");
-    // Auto-submit after a brief delay for UX
-    setTimeout(() => {
-      navigate(`/processing?repo=${encodeURIComponent("https://github.com/vercel/next.js")}`);
-    }, 300);
-  };
-
-  const onCardMouseMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const r = cardRef.current.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    setTilt({
-      x: Math.max(-8, Math.min(8, -x * 16)),
-      y: Math.max(-8, Math.min(8, y * 16)),
-    });
-    setCardSpotlight({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
-  };
-
-  const onCardMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-    setCardSpotlight({ x: 0.5, y: 0.5 });
-  };
-
-  const validateAndCleanUrl = (url: string): string | null => {
-    let cleanUrl = url.trim();
-
-    if (!cleanUrl) {
-      setUrlError("Please enter a GitHub repository URL.");
-      return null;
+  useEffect(() => {
+    const storedFolder = loadFolderUploadSession();
+    if (storedFolder) {
+      setUploadedFolder(storedFolder);
     }
+  }, []);
 
-    if (/^[\w-]+\/[\w-]+$/.test(cleanUrl)) {
-      cleanUrl = `https://github.com/${cleanUrl}`;
-    }
+  const handleLaunchRepo = () => {
+    setQuickStartError("");
+    setIsLaunchingRepo(true);
 
     try {
-      const parsed = new URL(cleanUrl);
-      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-        setUrlError("URL must use http or https protocol.");
-        return null;
-      }
-
-      if (parsed.hostname === "github.com" || parsed.hostname === "www.github.com") {
-        const pathParts = parsed.pathname.split("/").filter(Boolean);
-        if (pathParts.length < 2) {
-          setUrlError("Invalid GitHub repository URL. Expected format: github.com/user/repo");
-          return null;
-        }
-      }
-    } catch {
-      setUrlError("Invalid URL format.");
-      return null;
+      const source = resolveRepoSourceFromInput(repoInput);
+      setRepoInput(source.repoUrl);
+      navigate(`/processing?repo=${encodeURIComponent(source.repoUrl)}`);
+    } catch (error) {
+      setQuickStartError(
+        error instanceof Error ? error.message : "Invalid repository URL."
+      );
+    } finally {
+      setIsLaunchingRepo(false);
     }
-
-    return cleanUrl;
   };
 
-  const handleGenerate = () => {
-    setUrlError("");
-    const cleanedUrl = validateAndCleanUrl(repoUrl);
-    if (cleanedUrl) {
-      navigate(`/processing?repo=${encodeURIComponent(cleanedUrl)}`);
+  const handleUseSampleRepo = () => {
+    const sampleRepo = "https://github.com/vercel/next.js";
+    setRepoInput(sampleRepo);
+    setQuickStartError("");
+    navigate(`/processing?repo=${encodeURIComponent(sampleRepo)}`);
+  };
+
+  const handleFolderBrowse = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFolderInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files?.length) return;
+
+    setQuickStartError("");
+    setIsPreparingFolder(true);
+
+    try {
+      const payload = await buildFolderUploadPayload(event.target.files);
+      saveFolderUploadSession(payload);
+      setUploadedFolder(payload);
+    } catch (error) {
+      setQuickStartError(
+        error instanceof Error
+          ? error.message
+          : "Could not prepare the uploaded folder."
+      );
+    } finally {
+      setIsPreparingFolder(false);
+      event.target.value = "";
     }
+  };
+
+  const clearPreparedFolder = () => {
+    setUploadedFolder(null);
+    clearFolderUploadSession();
+  };
+
+  const launchFolder = () => {
+    if (!uploadedFolder) {
+      setQuickStartError("Choose a folder before starting analysis.");
+      return;
+    }
+
+    navigate("/processing?mode=folder");
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
-      {/* Multi-color cursor-following overlay – cyan, rose, amber, indigo, blue */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle 50vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(34,211,238,0.14) 0%, transparent 50%),
-            radial-gradient(circle 40vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(236,72,153,0.11) 0%, transparent 50%),
-            radial-gradient(circle 35vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(251,146,60,0.1) 0%, transparent 50%),
-            radial-gradient(circle 42vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(99,102,241,0.1) 0%, transparent 50%),
-            radial-gradient(circle 45vmax at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(59,130,246,0.12) 0%, transparent 50%)
-          `,
-        }}
+    <section className="relative overflow-hidden pb-16 pt-28 sm:pt-32">
+      <div className="absolute inset-0 bg-radial-gradient" />
+      <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
+      <div className="absolute left-[8%] top-[10%] h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute bottom-[12%] right-[10%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        multiple
+        onChange={handleFolderInputChange}
+        // @ts-expect-error webkitdirectory is supported in Chromium browsers.
+        webkitdirectory=""
+        // @ts-expect-error directory is supported in Chromium browsers.
+        directory=""
       />
 
-      {/* Background */}
-      <div className="absolute inset-0 bg-grid opacity-30" />
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-400/5 via-transparent to-cyan-400/5" />
-      
-      {/* Animated gradient orbs – blue, cyan, rose, amber */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-400/25 to-cyan-400/20 rounded-full blur-3xl animate-float opacity-70" />
-      <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-gradient-to-r from-cyan-400/20 to-blue-400/25 rounded-full blur-3xl animate-float opacity-60" style={{ animationDelay: "-3s" }} />
-      <div className="absolute top-1/2 right-1/3 w-[300px] h-[300px] bg-gradient-to-r from-rose-400/18 to-amber-400/15 rounded-full blur-3xl animate-float opacity-50" style={{ animationDelay: "-5s" }} />
-
-      <div className="container relative mx-auto px-4 py-20 md:py-32">
-        <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-          {/* AI Badge - Prominent */}
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-100 via-cyan-50 to-amber-50 border border-blue-200/60 text-sm mb-8 animate-fade-in backdrop-blur-sm">
-            <div className="relative flex items-center gap-2">
-              <div className="relative">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <div className="absolute inset-0 animate-ping">
-                  <Sparkles className="h-5 w-5 text-primary opacity-50" />
-                </div>
-              </div>
-              <span className="font-bold bg-gradient-to-r from-primary via-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                Powered by Advanced AI
-              </span>
-            </div>
-            <div className="h-4 w-px bg-slate-300" />
-            <span className="text-slate-600 flex items-center gap-1">
-              <Zap className="h-3.5 w-3.5 text-amber-500" />
-              Intelligent Code Analysis
-            </span>
+      <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6">
+        <div className="mx-auto max-w-[860px] text-center">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/42">
+            Editorial workspace for code
           </div>
-
-          {/* Headline - More dynamic */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6 animate-fade-in-up text-slate-800">
-            Transform Any{" "}
-            <span className="relative inline-block">
-              <Github className="inline-block h-12 md:h-16 lg:h-20 w-12 md:w-16 lg:w-20 text-slate-700" />
-            </span>{" "}
-            Repository Into a{" "}
-            <span className="relative">
-              <span className="bg-gradient-to-r from-primary via-cyan-500 to-blue-500 bg-clip-text text-transparent">
-                Stunning Video
-              </span>
-              <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="url(#hero-gradient)" strokeWidth="3" strokeLinecap="round"/>
-                <defs>
-                  <linearGradient id="hero-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="hsl(217, 91%, 60%)" />
-                    <stop offset="50%" stopColor="hsl(199, 89%, 48%)" />
-                    <stop offset="100%" stopColor="hsl(199, 89%, 48%)" />
-                  </linearGradient>
-                </defs>
-              </svg>
+          <h1 className="gf-headline mt-4 text-3xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Curate your{" "}
+            <span className="bg-[linear-gradient(135deg,#dbe1ff_0%,#618bff_100%)] bg-clip-text text-transparent">
+              codebase
             </span>
+            .
           </h1>
-
-          {/* Subheadline */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-4 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-            Stop writing stale documentation. Let <span className="text-primary font-semibold">advanced AI</span> analyze your codebase and generate a 
-            <span className="text-foreground font-medium"> beautiful architectural walkthrough</span> in seconds.
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/62 sm:text-base">
+            Open a repository, let GitFlick process the structure, then continue in Studio with a clean saved workspace.
           </p>
+        </div>
 
-          {/* Stats Row */}
-          <div className="flex items-center gap-6 mb-10 text-sm animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-muted-foreground">Real-time processing</span>
+        <div className="mx-auto mt-10 max-w-[860px] rounded-xl gf-panel p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg bg-white/[0.03] px-4 py-1 text-white/72">
+              <Link2 className="h-4 w-4 shrink-0 text-primary" />
+              <Input
+                variant="hero"
+                value={repoInput}
+                placeholder="Paste repository URL (GitHub, GitLab...)"
+                onChange={(event) => {
+                  setRepoInput(event.target.value);
+                  setQuickStartError("");
+                }}
+                onKeyDown={(event) =>
+                  event.key === "Enter" && handleLaunchRepo()
+                }
+                className="h-10 border-0 bg-transparent px-0 font-mono text-sm shadow-none focus-visible:shadow-none"
+              />
             </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <Play className="h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">30 FPS smooth playback</span>
-            </div>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-cyan-400" />
-              <span className="text-muted-foreground">AI-generated narration</span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                variant="ghost"
+                className="h-10 rounded-lg px-4 text-sm font-semibold text-white/76"
+                disabled={isPreparingFolder}
+                onClick={handleFolderBrowse}
+              >
+                <Upload className="h-4 w-4" />
+                {uploadedFolder ? "Replace" : "Upload"}
+              </Button>
+              <Button
+                variant="hero"
+                size="lg"
+                className="rounded-lg px-6"
+                disabled={isLaunchingRepo}
+                onClick={handleLaunchRepo}
+              >
+                {isLaunchingRepo ? "Opening..." : "Open Workspace"}
+              </Button>
             </div>
           </div>
 
-          {/* CTA Input - More prominent */}
-          <div className="w-full max-w-2xl animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-            <div className="relative">
-              {/* Glow effect behind input */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/40 via-cyan-500/40 to-rose-400/35 rounded-2xl blur-lg opacity-40" />
-              
-              <div
-                ref={cardRef}
-                onMouseMove={onCardMouseMove}
-                onMouseLeave={onCardMouseLeave}
-                className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl bg-card/90 border border-border/60 backdrop-blur-sm transition-transform duration-200 ease-out overflow-hidden"
-                style={{
-                  transformStyle: "preserve-3d",
-                  transform: `perspective(800px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg) scale(${tilt.x || tilt.y ? 1.02 : 1})`,
-                }}
-              >
-                {/* Cursor-following light reflection on card */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: `radial-gradient(circle at ${cardSpotlight.x * 100}% ${cardSpotlight.y * 100}%, rgba(255,255,255,0.7) 0%, transparent 45%)`,
-                  }}
-                />
-                <div className="relative flex-1 flex items-center gap-2 px-2">
-                  <Github className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <Input
-                    variant="hero"
-                    placeholder="Paste GitHub URL or username/repo..."
-                    value={repoUrl}
-                    onChange={(e) => {
-                      setRepoUrl(e.target.value);
-                      setUrlError("");
-                    }}
-                    className="flex-1 border-0 bg-transparent focus:ring-0 text-base"
-                    onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-                  />
+          {uploadedFolder ? (
+            <div className="mt-4 rounded-xl gf-panel-soft p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-300/14 text-emerald-300">
+                      <FolderOpen className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {uploadedFolder.folderName}
+                      </div>
+                      <div className="text-sm text-white/58">
+                        {uploadedFolder.files.length} readable files ready
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="relative shrink-0 gap-2 bg-gradient-to-r from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-500/90 shadow-lg shadow-primary/20"
-                  onClick={handleGenerate}
-                >
-                  Generate Video
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" onClick={launchFolder}>
+                    Analyze folder
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" onClick={clearPreparedFolder}>
+                    <X className="h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
-            {urlError && (
-              <p className="text-xs text-destructive mt-2">
-                {urlError}
-              </p>
-            )}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTryDemo}
-                className="gap-2"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Try with Sample Repo
-              </Button>
-              <p className="text-sm text-muted-foreground flex items-center gap-4">
-                <span className="flex items-center gap-1">
-                  <span className="text-green-500">✓</span> Free to use
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-green-500">✓</span> No signup required
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-green-500">✓</span> Instant results
-                </span>
-              </p>
-            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-white/58">
+            <button
+              type="button"
+              onClick={handleUseSampleRepo}
+              className="inline-flex items-center gap-2 font-semibold text-white/88 transition hover:text-white"
+            >
+              Try it with a sample
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
+
+          {quickStartError ? (
+            <div className="mt-4 rounded-lg border border-rose-300/18 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+              {quickStartError}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {LANES.map((lane) => (
+            <article
+              key={lane.title}
+              id={lane.id}
+              className="rounded-xl gf-panel-soft p-5 transition hover:bg-[rgba(27,36,58,0.96)]"
+            >
+              <div className="flex h-full flex-col">
+                <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", lane.accent)}>
+                  <lane.icon className="h-[18px] w-[18px]" />
+                </div>
+                <h3 className="mt-5 text-base font-semibold tracking-tight text-white">
+                  {lane.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-white/58">
+                  {lane.description}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          {METRICS.map((metric) => (
+            <div key={metric.label} className="rounded-xl gf-panel-soft px-5 py-4">
+              <div className="text-xl font-semibold tracking-tight text-white">
+                {metric.value}
+              </div>
+              <div className="mt-1.5 text-xs uppercase tracking-[0.18em] text-white/42">
+                {metric.label}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

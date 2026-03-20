@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GitFlick | Project Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "outline": "#8b90a0",
+                        "surface": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary-fixed": "#00201d",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#060e20",
+                        "tertiary": "#6bd8cb",
+                        "secondary-container": "#3a4a5f",
+                        "tertiary-container": "#29a195",
+                        "inverse-primary": "#0053db",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-surface": "#dae2fd",
+                        "outline-variant": "#414755",
+                        "on-tertiary": "#003732",
+                        "on-background": "#dae2fd",
+                        "surface-container-low": "#131b2e",
+                        "surface-container-highest": "#2d3449",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-dim": "#0b1326",
+                        "on-secondary": "#213145",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-bright": "#31394d",
+                        "inverse-on-surface": "#283044",
+                        "primary": "#b4c5ff",
+                        "surface-tint": "#b4c5ff",
+                        "on-surface-variant": "#c1c6d7",
+                        "background": "#0b1326",
+                        "on-tertiary-container": "#00302b",
+                        "primary-container": "#618bff",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#002469",
+                        "on-secondary-container": "#a9bad3",
+                        "on-primary": "#002a78",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "tertiary-fixed": "#89f5e7",
+                        "on-error": "#690005",
+                        "secondary": "#b7c8e1",
+                        "surface-container": "#171f33",
+                        "secondary-fixed": "#d3e4fe"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "mono": ["JetBrains Mono"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+        }
+        .glass-panel {
+            background: rgba(45, 52, 73, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #414755;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#0b1326]/80 backdrop-blur-md dark:bg-[#0b1326]/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex justify-between items-center px-8 h-16 w-full max-w-none">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-[#dae2fd] dark:text-[#dae2fd] tracking-tighter font-headline">GitFlick</span>
+<div class="hidden md:flex items-center gap-6 font-manrope text-sm font-medium tracking-wide">
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Walkthrough</a>
+<a class="text-blue-500 border-b-2 border-blue-500 pb-4 -mb-4" href="#">Graph</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Q&amp;A</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200" href="#">Agent Ops</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-highest text-sm rounded-xl pl-10 pr-4 py-2 border-none focus:ring-2 focus:ring-primary/20 w-64 transition-all" placeholder="Search projects..." type="text"/>
+</div>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-[#171f33] rounded-xl transition-all" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-[#171f33] rounded-xl transition-all" data-icon="settings">settings</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-xs">
+                JD
+            </div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-[#131b2e] flex flex-col pt-20 pb-6 px-4">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3 p-3 bg-surface-container rounded-xl">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-on-primary" data-icon="rocket_launch" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+</div>
+<div>
+<h3 class="font-manrope font-bold text-[#dae2fd] text-sm leading-tight">Project Alpha</h3>
+<p class="text-[10px] text-on-surface-variant opacity-60 font-mono">v1.0.4-stable</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1 font-inter text-[13px] leading-none">
+<a class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-600/20 to-transparent text-blue-400 border-l-4 border-blue-500 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="movie_filter">movie_filter</span>
+<span>Scenes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+<span>Assets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] hover:text-[#dae2fd] transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 space-y-1 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] transition-all text-[13px]" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="menu_book">menu_book</span>
+<span>Documentation</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#c1c6d7] opacity-70 hover:opacity-100 hover:bg-[#171f33] transition-all text-[13px]" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="contact_support">contact_support</span>
+<span>Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="pl-64 pt-16 min-h-screen flex">
+<!-- Center Scrollable Canvas -->
+<section class="flex-1 p-8 overflow-y-auto">
+<header class="mb-8 flex justify-between items-end">
+<div>
+<h1 class="text-4xl font-headline font-extrabold tracking-tight mb-2">Project Repository</h1>
+<p class="text-on-surface-variant font-body">Manage and monitor your active flickering instances.</p>
+</div>
+<div class="flex gap-3">
+<div class="flex bg-surface-container rounded-xl p-1">
+<button class="px-4 py-1.5 text-xs font-bold rounded-lg bg-surface-container-highest text-primary">All Projects</button>
+<button class="px-4 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:text-on-surface">Active</button>
+</div>
+</div>
+</header>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+<!-- Project Card 1: Processing -->
+<div class="group relative bg-surface-container rounded-xl p-6 transition-all hover:bg-surface-container-high cursor-pointer overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary-container"></div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="font-mono text-xs text-primary mb-1 tracking-widest uppercase">ID: GF-992-X</h4>
+<h3 class="text-xl font-headline font-bold">Neural-Cinema-V3</h3>
+</div>
+<span class="px-2 py-1 rounded bg-primary/10 text-primary text-[10px] font-bold font-label border border-primary/20 tracking-wider">PROCESSING</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="movie">movie</span>
+<span class="font-mono text-xs text-on-surface">42 Scenes</span>
+</div>
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="account_tree">account_tree</span>
+<span class="font-mono text-xs text-on-surface">1.2k Nodes</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-[11px] font-label text-on-surface-variant uppercase tracking-tighter">
+<span>Analysis Progress</span>
+<span>68%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[68%] shadow-[0_0_8px_rgba(180,197,255,0.4)]"></div>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant/5 flex justify-between items-center">
+<span class="text-[10px] text-on-surface-variant font-mono">Updated 2m ago</span>
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border-2 border-surface-container bg-secondary-container text-[8px] flex items-center justify-center">AS</div>
+<div class="w-6 h-6 rounded-full border-2 border-surface-container bg-tertiary-container text-[8px] flex items-center justify-center">MK</div>
+</div>
+</div>
+</div>
+<!-- Project Card 2: Ready -->
+<div class="group relative bg-surface-container rounded-xl p-6 transition-all hover:bg-surface-container-high cursor-pointer overflow-hidden border border-outline-variant/5">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-tertiary to-tertiary-container"></div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="font-mono text-xs text-tertiary mb-1 tracking-widest uppercase">ID: GF-104-B</h4>
+<h3 class="text-xl font-headline font-bold">Cyberpunk-Night-Market</h3>
+</div>
+<span class="px-2 py-1 rounded bg-tertiary/10 text-tertiary text-[10px] font-bold font-label border border-tertiary/20 tracking-wider">READY</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="movie">movie</span>
+<span class="font-mono text-xs text-on-surface">12 Scenes</span>
+</div>
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="description">description</span>
+<span class="font-mono text-xs text-on-surface">304 Files</span>
+</div>
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="timer">timer</span>
+<span class="font-mono text-xs text-on-surface">4m 20s</span>
+</div>
+</div>
+<div class="aspect-video w-full rounded-xl bg-surface-container-highest flex items-center justify-center overflow-hidden relative">
+<img class="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" data-alt="Cyberpunk night market scene preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK_ZVR3il1SbpbHi5y9xNQIGYugNgFpAXHvS6v1ozLPIZJFeazeUYPVD2ffa-mET370FmlBLHBK8-UwsDHT2OebT-EoukTI9jQwBQPYkdiDxya1jBUdStev9Y_7qb77zANypb9uf1f-xfOiANTxr-WbbWga9O0fkpr8QaWGJ6T5DUX651hu4lnEAEXFtGsNael0jYtGvO8enUXQKZweW1kfrvPPZRxt7kPAfDN-jUDDq4AxO0GKNx0CGv04WuS0RZVTjMgilfTobJI"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="play_circle" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant/5 flex justify-between items-center">
+<span class="text-[10px] text-on-surface-variant font-mono">Updated 1h ago</span>
+<span class="text-[10px] text-on-surface-variant font-mono">Owner: @admin_flick</span>
+</div>
+</div>
+<!-- Project Card 3: Needs Attention -->
+<div class="group relative bg-surface-container rounded-xl p-6 transition-all hover:bg-surface-container-high cursor-pointer overflow-hidden border border-outline-variant/5">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-error to-error-container"></div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="font-mono text-xs text-error mb-1 tracking-widest uppercase">ID: GF-882-L</h4>
+<h3 class="text-xl font-headline font-bold">Liquid-Metal-Sim</h3>
+</div>
+<span class="px-2 py-1 rounded bg-error/10 text-error text-[10px] font-bold font-label border border-error/20 tracking-wider">NEEDS ATTENTION</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-6">
+<div class="bg-surface-container-lowest px-3 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="report">report</span>
+<span class="font-mono text-xs text-on-surface">3 Conflicts</span>
+</div>
+</div>
+<div class="p-4 bg-error-container/20 rounded-xl border border-error/10">
+<p class="text-xs text-on-error-container leading-relaxed font-mono">
+                            Memory overflow in Node #402. Vertex buffer exceeds available VRAM for current export settings.
+                        </p>
+</div>
+<div class="mt-14 pt-4 border-t border-outline-variant/5 flex justify-between items-center">
+<span class="text-[10px] text-on-surface-variant font-mono">Updated 12h ago</span>
+<button class="text-xs text-error font-bold flex items-center gap-1">
+                            Resolve <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Add Project Card -->
+<div class="border-2 border-dashed border-outline-variant/20 rounded-xl p-6 flex flex-col items-center justify-center gap-4 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="add">add</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-sm">Create New Project</p>
+<p class="text-[11px] text-on-surface-variant">Start from a blank scene or template</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Detail Panel -->
+<aside class="w-96 bg-surface-container-low border-l border-outline-variant/5 flex flex-col p-8 glass-panel">
+<div class="flex-1">
+<div class="mb-8">
+<div class="flex justify-between items-center mb-4">
+<span class="text-[10px] font-mono text-on-surface-variant tracking-widest uppercase bg-surface-container-highest px-2 py-0.5 rounded">Selected Project</span>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-colors" data-icon="close">close</button>
+</div>
+<h2 class="text-3xl font-headline font-extrabold mb-1">Neural-Cinema-V3</h2>
+<p class="text-sm text-on-surface-variant mb-6">A deep learning approach to architectural visualization flicker correction.</p>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container rounded-xl">
+<p class="text-[10px] text-on-surface-variant font-label uppercase mb-1">Last Sync</p>
+<p class="font-mono text-sm font-bold">14:02:44</p>
+</div>
+<div class="p-4 bg-surface-container rounded-xl">
+<p class="text-[10px] text-on-surface-variant font-label uppercase mb-1">Compute Cost</p>
+<p class="font-mono text-sm font-bold">$12.42</p>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<h5 class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Live Statistics</h5>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Scene Density</span>
+<span class="text-xs font-mono">High (0.88)</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Frame Delta</span>
+<span class="text-xs font-mono">0.02ms</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Metadata Tagging</span>
+<span class="text-xs font-mono">Complete</span>
+</div>
+</div>
+</div>
+<div>
+<h5 class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Next Actions</h5>
+<div class="grid grid-cols-1 gap-3">
+<button class="w-full flex items-center justify-between p-4 bg-primary text-on-primary rounded-xl font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all">
+<span>Continue Studio</span>
+<span class="material-symbols-outlined" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-highest text-on-surface rounded-xl font-bold text-sm hover:bg-surface-bright active:scale-[0.98] transition-all">
+<span>Export Manifest</span>
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 bg-surface-container-highest text-on-surface rounded-xl font-bold text-sm hover:bg-surface-bright active:scale-[0.98] transition-all">
+<span>Batch Update</span>
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-8 border-t border-outline-variant/10">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full grayscale hover:grayscale-0 transition-all" data-alt="Admin user avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1dJ0-27cyEm-a9qX0w0GAK7fv3zXeBcJQFwQgEhYO7vJAdePtZm_RAxPkuNZ09ozvoB6csjmkFo9mAWFvbrbhketMzaMbhfj1R5NWomOt_9ImbagbcOMVj_AaX_2m4dBm8XPwrGdRTTVyfmDCCp1P9QjzH8zUWwWz8mdyQ5_L6aZr7z-hFNWamnQCtcg0JZXTGZzaDaZqdxzMzxMCs0S-ELs6HEz2U7xkGZHs1XQ7NoEwMilZtzktlhkVa_xQo70pJsKMjrZru09h"/>
+<div>
+<p class="text-xs font-bold">Assigned Reviewer</p>
+<p class="text-[10px] text-on-surface-variant font-mono">alex.straus@gitflick.io</p>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Floating Action Button - Only for Dashboard context -->
+<button class="fixed bottom-8 right-[26rem] w-14 h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-2xl" data-icon="add" style="font-variation-settings: 'FILL' 0, 'wght' 700;">add</span>
+</button>
+</body></html>

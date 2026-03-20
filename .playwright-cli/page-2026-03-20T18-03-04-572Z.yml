@@ -1,0 +1,28 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e11]:
+    - link "Back to login" [ref=e13] [cursor=pointer]:
+      - /url: /login
+      - img
+      - text: Back to login
+    - generic [ref=e14]:
+      - generic [ref=e15]: Account recovery
+      - heading "Reset your password" [level=2] [ref=e16]
+      - paragraph [ref=e17]: Enter the email tied to your account and we'll send a secure reset link.
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - text: Email address
+        - textbox "Email address" [ref=e20]:
+          - /placeholder: you@example.com
+      - button "Send reset link" [ref=e21] [cursor=pointer]:
+        - img
+        - text: Send reset link
+    - generic [ref=e22]:
+      - generic [ref=e23]: Security note
+      - generic [ref=e24]: Reset emails are short-lived and can only be used once. If you no longer have access to the email address, contact support before retrying.
+    - paragraph [ref=e25]:
+      - text: Remember your password?
+      - link "Sign in" [ref=e26] [cursor=pointer]:
+        - /url: /login

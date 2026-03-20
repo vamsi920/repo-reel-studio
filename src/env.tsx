@@ -3,8 +3,12 @@
 // Get Google TTS key from: https://console.cloud.google.com/apis/credentials
 
 // Gemini AI Configuration
+// Model must be the API model ID only (e.g. gemini-2.0-flash). No "google:" prefix.
 export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-export const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL;
+const rawModel = import.meta.env.VITE_GEMINI_MODEL || "";
+export const GEMINI_MODEL =
+  (typeof rawModel === "string" ? rawModel.replace(/^google:/i, "").trim() : "") ||
+  "gemini-2.5-flash";
 export const GEMINI_API_BASE =
   "https://generativelanguage.googleapis.com/v1beta";
 
@@ -21,3 +25,6 @@ export const API_URL = typeof raw === "string" ? raw.replace(/\/+$/, "") : raw;
 // Feature Flags
 export const USE_MOCK_MANIFEST =
   import.meta.env.VITE_USE_MOCK_MANIFEST === "true";
+
+export const VIDEO_PIPELINE_V2_ENABLED =
+  import.meta.env.VITE_VIDEO_PIPELINE_V2_ENABLED !== "false";

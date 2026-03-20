@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GitFlick | The Digital Curator for Code</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#b4c5ff",
+              "on-tertiary-fixed-variant": "#005049",
+              "outline": "#8b90a0",
+              "surface": "#0b1326",
+              "surface-container-high": "#222a3d",
+              "on-tertiary-fixed": "#00201d",
+              "error-container": "#93000a",
+              "surface-container-lowest": "#060e20",
+              "tertiary": "#6bd8cb",
+              "secondary-container": "#3a4a5f",
+              "tertiary-container": "#29a195",
+              "inverse-primary": "#0053db",
+              "on-primary-fixed-variant": "#003ea8",
+              "primary-fixed": "#dbe1ff",
+              "inverse-surface": "#dae2fd",
+              "outline-variant": "#414755",
+              "on-tertiary": "#003732",
+              "on-background": "#dae2fd",
+              "surface-container-low": "#131b2e",
+              "surface-container-highest": "#2d3449",
+              "tertiary-fixed-dim": "#6bd8cb",
+              "on-surface": "#dae2fd",
+              "on-secondary-fixed": "#0b1c30",
+              "surface-dim": "#0b1326",
+              "on-secondary": "#213145",
+              "error": "#ffb4ab",
+              "secondary-fixed-dim": "#b7c8e1",
+              "surface-bright": "#31394d",
+              "inverse-on-surface": "#283044",
+              "primary": "#b4c5ff",
+              "surface-tint": "#b4c5ff",
+              "on-surface-variant": "#c1c6d7",
+              "background": "#0b1326",
+              "on-tertiary-container": "#00302b",
+              "primary-container": "#618bff",
+              "surface-variant": "#2d3449",
+              "on-primary-fixed": "#00174b",
+              "on-primary-container": "#002469",
+              "on-secondary-container": "#a9bad3",
+              "on-primary": "#002a78",
+              "on-error-container": "#ffdad6",
+              "on-secondary-fixed-variant": "#38485d",
+              "tertiary-fixed": "#89f5e7",
+              "on-error": "#690005",
+              "secondary": "#b7c8e1",
+              "surface-container": "#171f33",
+              "secondary-fixed": "#d3e4fe"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"],
+              "mono": ["JetBrains Mono"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(45, 52, 73, 0.6);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30 selection:text-primary-fixed overflow-x-hidden">
+<!-- TopNavBar Shell -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 w-full max-w-none bg-[#0b1326]/80 backdrop-blur-md dark:bg-[#0b1326]/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] tonal-shift">
+<div class="flex items-center gap-12">
+<span class="text-xl font-black text-[#dae2fd] dark:text-[#dae2fd] tracking-tighter font-headline">GitFlick</span>
+<div class="hidden md:flex gap-8 items-center font-manrope text-sm font-medium tracking-wide">
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer" href="#">Walkthrough</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer" href="#">Graph</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer" href="#">Q&amp;A</a>
+<a class="text-[#c1c6d7] hover:text-[#dae2fd] transition-all duration-200 cursor-pointer" href="#">Agent Ops</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-[#c1c6d7]">
+<span class="material-symbols-outlined hover:text-on-surface cursor-pointer transition-all duration-200" data-icon="settings">settings</span>
+<span class="material-symbols-outlined hover:text-on-surface cursor-pointer transition-all duration-200" data-icon="notifications">notifications</span>
+</div>
+<button class="bg-primary-container text-on-primary-container px-5 py-2 rounded-xl text-sm font-bold tracking-wide active:scale-95 transition-all duration-200">
+                Export
+            </button>
+</div>
+</nav>
+<main class="pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-screen">
+<!-- Hero Content -->
+<div class="text-center mb-16 max-w-3xl mx-auto">
+<h1 class="font-headline font-extrabold text-5xl md:text-7xl mb-6 tracking-tight text-on-surface">
+                Curate your <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-container">codebase</span>.
+            </h1>
+<p class="text-on-surface-variant text-lg md:text-xl font-body leading-relaxed">
+                Transform complex repositories into visual stories. Walk through logic, map dependencies, and collaborate with autonomous agents.
+            </p>
+</div>
+<!-- Intake Card -->
+<div class="max-w-2xl mx-auto mb-24">
+<div class="surface-container bg-surface-container rounded-full p-2 pl-6 flex items-center shadow-2xl">
+<div class="flex-1 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary/60" data-icon="link">link</span>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline w-full font-mono text-sm" placeholder="Paste repository URL (GitHub, GitLab...)" type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-2 text-sm font-medium">
+<span class="material-symbols-outlined text-lg" data-icon="folder_open">folder_open</span>
+<span class="hidden sm:inline">Upload</span>
+</button>
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-8 py-3 rounded-full font-bold text-sm tracking-wide active:scale-95 transition-all shadow-lg shadow-primary/20">
+                        Open Workspace
+                    </button>
+</div>
+</div>
+<div class="mt-6 flex justify-center gap-4 items-center">
+<span class="text-label-sm text-outline uppercase tracking-widest text-[10px]">Or</span>
+<button class="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+                    Try it with a sample <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Lane Explanation Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<!-- Walkthrough -->
+<div class="surface-container bg-surface-container rounded-xl p-6 relative overflow-hidden group hover:bg-surface-bright transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sky-400 to-cyan-400"></div>
+<div class="flex flex-col h-full">
+<div class="w-10 h-10 rounded-lg bg-sky-400/10 flex items-center justify-center text-sky-400 mb-4">
+<span class="material-symbols-outlined" data-icon="route">route</span>
+</div>
+<h3 class="font-headline font-bold text-lg mb-2 text-on-surface">Walkthrough</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Editorial-style code tours that guide users through key architectural patterns.</p>
+<div class="mt-auto">
+<img class="rounded-lg opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500 h-24 w-full object-cover" data-alt="Abstract cyan geometric code structure visualization" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUTYh2FAlVui5pXHuppHhIHKJIwTjIKeK3FvMCcF4vZpE53tnZbvc9nvWPpkAK-nryJGRmUBN7SIOhWrQ8Ap89G_s4PrJB97hy6d4rI5nKvG3P-hM1a8TaBW5IufseJEAue1_tgeR7lyIbdMXa03-AUGwK_sCa1BAjtnru3DVfYSsjyAxCAiFtuOvvwMojZVMxytQ5N5rxiEEWn2CmTz07y_C3YxGBTwELBUzpG8VVv7bZjGLd-_tUNbWy76LQ_f8LaSFka0ksc2mt"/>
+</div>
+</div>
+</div>
+<!-- Graph -->
+<div class="surface-container bg-surface-container rounded-xl p-6 relative overflow-hidden group hover:bg-surface-bright transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-teal-400"></div>
+<div class="flex flex-col h-full">
+<div class="w-10 h-10 rounded-lg bg-emerald-400/10 flex items-center justify-center text-emerald-400 mb-4">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+</div>
+<h3 class="font-headline font-bold text-lg mb-2 text-on-surface">Graph</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Interactive dependency mapping to visualize how your logic actually flows.</p>
+<div class="mt-auto">
+<img class="rounded-lg opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500 h-24 w-full object-cover" data-alt="Emerald green network node connection graph" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuUlwjN37Mm-M0O0h_Bp8ns98OYtFMwoqVzGazaVsgm9EBGuJqUuy_3VRLYIQJCdgcyrMdU2FsNAhZkaItEaUcoXYNQIZqa0LfpKQfgdGYXdcFdUVoDeMWU1tnXlF1YO2vwyomXXP4eywSqxnTmT1BlFiLy_bIFwKqP1U7uTbsTnkjPBzOVKDFWaYZSvt2Wuy2HpFWCY49mUIlUPfGTKQZ9Pwiv_umuKxch-C01fCmPsRcWuXbRQpN-vv9OrrzAipdlRmWIU-vJvFp"/>
+</div>
+</div>
+</div>
+<!-- Repo Q&A -->
+<div class="surface-container bg-surface-container rounded-xl p-6 relative overflow-hidden group hover:bg-surface-bright transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-400 to-blue-400"></div>
+<div class="flex flex-col h-full">
+<div class="w-10 h-10 rounded-lg bg-indigo-400/10 flex items-center justify-center text-indigo-400 mb-4">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+</div>
+<h3 class="font-headline font-bold text-lg mb-2 text-on-surface">Repo Q&amp;A</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Natural language interface to query and understand specific repository logic.</p>
+<div class="mt-auto">
+<img class="rounded-lg opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500 h-24 w-full object-cover" data-alt="Indigo blue abstract digital data spheres" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrn2RgRmI0Y6dBDipmOJoNtAPA9N6gwTxVfDotABSHFkrF8oYxrqlM6xKVl6Qn-t5nvnfekhlmXVUh2GncF9xoGw9QnkbLM1W8L_AFzx3cy51kpPbMtNkWSI6p9zl99wnFb4XZx3mKrgYP9U8tgWwxnSFAMOSloMlvYaCi9WTUreoGFP_o8H0_Jln1jlKgJeuleUbiK6ep-hxDOeE0eYo_e9objknwovX5YGIhQ6xNeq3G6BLeBEETv1WLBtEhXTBjkiYZ5ZhVpKKT"/>
+</div>
+</div>
+</div>
+<!-- Agent Ops -->
+<div class="surface-container bg-surface-container rounded-xl p-6 relative overflow-hidden group hover:bg-surface-bright transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-400"></div>
+<div class="flex flex-col h-full">
+<div class="w-10 h-10 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400 mb-4">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+<h3 class="font-headline font-bold text-lg mb-2 text-on-surface">Agent Ops</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Monitor and deploy autonomous coding agents directly inside your stack.</p>
+<div class="mt-auto">
+<img class="rounded-lg opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500 h-24 w-full object-cover" data-alt="Amber orange glowing circuit board traces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmxMKwQQk4PHjC68Ps1IYNClh9vzIRmitRt9zHYy5x5zxg7oSkxMYUtSFYgzs6VsNU6eUf9NV-swK3c7BNYY2xq62MeXsJHROu1t9ZooshtTjSnqlQTo7sYqV8KYxU0dH4SPoVaC9CfoBsOvoPt487Q69n9N5Xim9tq5NVerHQFhIXDMtgTwiPLrI1Vrd_eiE9uTrVZS04dTCg_kDnBDOC6X-W3E89ncKxhX9J1omiGO9tGyeXnifAikRxiuWsKcGv_9G2ZmJdmVjN"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Stats Section -->
+<div class="mt-32 pt-16 border-t border-outline-variant/10">
+<div class="flex flex-col md:flex-row justify-between items-center gap-12">
+<div class="text-center md:text-left">
+<p class="font-headline text-3xl font-black text-on-surface tracking-tighter">42,000+</p>
+<p class="text-label-sm text-outline uppercase tracking-widest mt-2">Repositories Indexed</p>
+</div>
+<div class="text-center md:text-left">
+<p class="font-headline text-3xl font-black text-on-surface tracking-tighter">1.2M</p>
+<p class="text-label-sm text-outline uppercase tracking-widest mt-2">Walkthroughs Created</p>
+</div>
+<div class="text-center md:text-left">
+<p class="font-headline text-3xl font-black text-on-surface tracking-tighter">99.9%</p>
+<p class="text-label-sm text-outline uppercase tracking-widest mt-2">Uptime for Agent Ops</p>
+</div>
+<div class="text-center md:text-left">
+<p class="font-headline text-3xl font-black text-on-surface tracking-tighter">8.4ms</p>
+<p class="text-label-sm text-outline uppercase tracking-widest mt-2">Avg Search Latency</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Background Decorative Elements -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-tertiary/5 blur-[120px] rounded-full"></div>
+</div>
+</body></html>

@@ -14,8 +14,14 @@ CREATE TABLE IF NOT EXISTS projects (
   -- Ingestion data
   repo_content TEXT, -- Full repository content from ingestion
   ingestion_stats JSONB, -- Stats: {includedFiles, skippedFiles, totalBytes, totalBytesFormatted, durationMs}
+  graph_data JSONB, -- Raw Code Graph RAG output for downstream tools
+  repo_knowledge_graph JSONB, -- Semantic repo knowledge graph built on top of evidence + code graph
   phase1_completed_at TIMESTAMPTZ, -- When Phase 1 (ingestion) completed
   phase2_completed_at TIMESTAMPTZ, -- When Phase 2 (manifest generation) completed
+  -- Code-Graph-RAG metadata (all nullable — absent until a graph has been built)
+  graph_storage_path TEXT,       -- Object-storage key, e.g. "project-graphs/<id>/graph.json"
+  graph_created_at TIMESTAMPTZ,  -- Timestamp of last successful graph build
+  graph_node_count INTEGER,      -- Node count from the exported JSON (for UI / debugging)
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

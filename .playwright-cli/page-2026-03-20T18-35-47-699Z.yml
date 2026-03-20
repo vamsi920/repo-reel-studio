@@ -1,0 +1,104 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "GitFlick GitFlick" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - img "GitFlick" [ref=e8]
+            - generic [ref=e9]: GitFlick
+          - generic [ref=e10]:
+            - link "Walkthrough" [ref=e11] [cursor=pointer]:
+              - /url: /
+            - link "Graph" [ref=e12] [cursor=pointer]:
+              - /url: /
+            - link "Q&A" [ref=e13] [cursor=pointer]:
+              - /url: /
+            - link "Agent Ops" [ref=e14] [cursor=pointer]:
+              - /url: /
+        - generic [ref=e15]:
+          - link "Sign in" [ref=e16] [cursor=pointer]:
+            - /url: /login
+          - link "Open Workspace" [ref=e17] [cursor=pointer]:
+            - /url: /login
+    - main [ref=e18]:
+      - generic [ref=e21]:
+        - link "Back to home" [ref=e22] [cursor=pointer]:
+          - /url: /
+          - img
+          - text: Back to home
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - text: Trust center
+          - heading "Privacy Policy" [level=1] [ref=e28]
+          - paragraph [ref=e29]: How GitFlick handles account data, repository context, generated media, and the vendors involved in running the product.
+          - generic [ref=e30]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: Last updated
+              - generic [ref=e33]: January 2026
+            - generic [ref=e34]:
+              - generic [ref=e35]: Contact
+              - link "privacy@gitflick.app" [ref=e36] [cursor=pointer]:
+                - /url: mailto:privacy@gitflick.app
+                - img [ref=e37]
+                - text: privacy@gitflick.app
+            - generic [ref=e40]:
+              - generic [ref=e41]: Repository access
+              - generic [ref=e42]: Only the repositories or folders you explicitly submit are processed for walkthrough generation.
+            - generic [ref=e43]:
+              - generic [ref=e44]: Storage posture
+              - generic [ref=e45]: Projects, manifests, and generated assets are retained so you can reopen, review, and export previous work.
+          - generic [ref=e46]:
+            - paragraph [ref=e47]: GitFlick ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service to transform GitHub repositories into video walkthroughs.
+            - generic [ref=e48]:
+              - heading "1. Information We Collect" [level=2] [ref=e49]
+              - paragraph [ref=e50]: "We collect information you provide directly and information we obtain when you use our service:"
+              - list [ref=e51]:
+                - listitem [ref=e52]:
+                  - strong [ref=e53]: "Account information:"
+                  - text: When you sign up, we collect your email address and any name or profile information you provide (e.g., via Supabase Auth).
+                - listitem [ref=e54]:
+                  - strong [ref=e55]: "Repository data:"
+                  - text: When you submit a GitHub repository URL, we access and process the repository’s code and structure to generate videos. We do not store the full contents of your repository beyond what is needed for generating and serving your video.
+                - listitem [ref=e56]:
+                  - strong [ref=e57]: "Usage data:"
+                  - text: We collect usage information such as actions you take in the app, project and video metadata, and basic analytics to operate and improve the service.
+            - generic [ref=e58]:
+              - heading "2. How We Use Your Information" [level=2] [ref=e59]
+              - paragraph [ref=e60]: We use the information we collect to provide, maintain, and improve GitFlick; generate videos from your repositories using AI, including Google Gemini and text-to-speech services; authenticate you and manage your account; send you service-related communications; and comply with legal obligations.
+            - generic [ref=e61]:
+              - heading "3. Third-Party Services" [level=2] [ref=e62]
+              - paragraph [ref=e63]: "We use trusted third parties to run GitFlick:"
+              - list [ref=e64]:
+                - listitem [ref=e65]:
+                  - strong [ref=e66]: "Supabase:"
+                  - text: Authentication, database, and storage. Their privacy policy applies to data they process on our behalf.
+                - listitem [ref=e67]:
+                  - strong [ref=e68]: "Google (Gemini, Cloud TTS):"
+                  - text: AI analysis and narration. Repository and script content may be sent to Google APIs to generate videos and voice. Google’s privacy policy applies to that processing.
+                - listitem [ref=e69]:
+                  - strong [ref=e70]: "GitHub:"
+                  - text: We access only the repositories you explicitly submit. We do not access your GitHub account beyond the specific repo URLs you provide.
+            - generic [ref=e71]:
+              - heading "4. Data Retention" [level=2] [ref=e72]
+              - paragraph [ref=e73]: We retain your account data and project metadata for as long as your account is active. Generated videos and related assets are stored so you can access and export them. You may request deletion of your data by contacting us.
+            - generic [ref=e74]:
+              - heading "5. Your Rights" [level=2] [ref=e75]
+              - paragraph [ref=e76]: Depending on your location, you may have rights to access, correct, delete, or restrict processing of your personal data, or to object to certain processing. To exercise these rights or ask questions, contact us at the email below.
+            - generic [ref=e77]:
+              - heading "6. Security" [level=2] [ref=e78]
+              - paragraph [ref=e79]: We use industry-standard measures to protect your data, including secure connections, access controls, and relying on our providers’ security practices. No method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.
+            - generic [ref=e80]:
+              - heading "7. Changes" [level=2] [ref=e81]
+              - paragraph [ref=e82]: We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy on this page and updating the "Last updated" date. Your continued use of GitFlick after changes constitutes acceptance of the revised policy.
+            - generic [ref=e83]:
+              - heading "8. Contact" [level=2] [ref=e84]
+              - paragraph [ref=e85]:
+                - text: For privacy-related questions or requests, contact us at
+                - link "privacy@gitflick.app" [ref=e86] [cursor=pointer]:
+                  - /url: mailto:privacy@gitflick.app
+                - text: .

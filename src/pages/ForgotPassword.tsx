@@ -1,29 +1,28 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
-import iconUrl from '../../icon.png';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import iconUrl from "../../icon.png";
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  
+
   const { resetPassword } = useAuth();
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
-        title: 'Email required',
-        description: 'Please enter your email address.',
-        variant: 'destructive',
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
       });
       return;
     }
@@ -34,9 +33,9 @@ const ForgotPassword = () => {
 
     if (error) {
       toast({
-        title: 'Error',
-        description: error.message || 'Could not send reset email. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Could not send reset email. Please try again.",
+        variant: "destructive",
       });
     } else {
       setEmailSent(true);
@@ -45,124 +44,133 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden p-4">
-        <div className="absolute inset-0 bg-grid opacity-30" />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
         <div className="absolute inset-0 bg-radial-gradient" />
-        
-        <div className="relative z-10 w-full max-w-md">
-          <Card variant="elevated" className="border-border/50 text-center">
-            <CardHeader className="pb-4">
-              <div className="flex justify-center mb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
-                  <CheckCircle2 className="h-8 w-8 text-success" />
-                </div>
-              </div>
-              <CardTitle className="text-2xl">Check your email</CardTitle>
-              <CardDescription className="text-base">
-                We've sent a password reset link to
-              </CardDescription>
-              <p className="font-medium text-foreground">{email}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Click the link in the email to reset your password.
-                The link will expire in 1 hour.
-              </p>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/login">Back to Login</Link>
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Didn't receive the email?{' '}
-                <button 
-                  onClick={() => setEmailSent(false)}
-                  className="text-primary hover:underline"
-                >
-                  Try again
-                </button>
-              </p>
-            </CardFooter>
-          </Card>
+        <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
+
+        <div className="relative z-10 w-full max-w-[420px] rounded-[28px] gf-panel-glass p-6 text-center sm:p-7">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-emerald-300/12 text-emerald-200">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <h1 className="mt-5 text-[1.8rem] font-semibold tracking-tight text-white">Check your email</h1>
+          <p className="mt-3 text-[0.95rem] leading-7 text-white/60">
+            We sent a secure password reset link to <span className="font-medium text-white">{email}</span>.
+          </p>
+
+          <div className="mt-6 space-y-3">
+            <Button variant="outline" className="w-full" asChild>
+              <Link to="/login">Back to login</Link>
+            </Button>
+            <Button variant="ghost" className="w-full text-white/62 hover:text-white" onClick={() => setEmailSent(false)}>
+              Try another email
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden p-4">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-grid opacity-30" />
+    <div className="relative min-h-screen overflow-hidden bg-background px-4 py-6 sm:px-6">
       <div className="absolute inset-0 bg-radial-gradient" />
-      
-      {/* Floating orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-glow-secondary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
+      <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
+      <div className="absolute left-[8%] top-[18%] h-64 w-64 rounded-full bg-primary/12 blur-3xl" />
+      <div className="absolute bottom-[12%] right-[10%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Back to Login */}
-        <Button variant="ghost" size="sm" className="mb-6" asChild>
-          <Link to="/login">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Login
-          </Link>
-        </Button>
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-[960px] items-center justify-center">
+        <div className="grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+          <section className="hidden lg:block">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">
+                <ArrowLeft className="h-4 w-4" />
+                Back to login
+              </Link>
+            </Button>
 
-        <Card variant="elevated" className="border-border/50">
-          <CardHeader className="text-center pb-4">
-            {/* Logo */}
-            <div className="flex justify-center mb-4">
+            <div className="mt-14 max-w-xl">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-                  <img src={iconUrl} alt="GitFlick" className="h-7 w-7" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05]">
+                  <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+                </div>
+                <div className="font-headline text-2xl font-semibold text-white">GitFlick</div>
+              </div>
+
+              <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/42">
+                Account recovery
+              </div>
+              <h1 className="gf-headline mt-4 text-5xl font-extrabold leading-[0.96] tracking-[-0.05em] text-white">
+                Reset access.
+              </h1>
+              <p className="mt-5 max-w-lg text-lg leading-8 text-white/62">
+                Use the email linked to your account and we’ll send a reset link.
+              </p>
+
+              <div className="mt-8 rounded-[24px] gf-panel-soft p-5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 text-accent" />
+                  <div className="text-sm leading-6 text-white/58">
+                    Reset links are short-lived and keep the same workspace ownership intact.
+                  </div>
                 </div>
               </div>
             </div>
-            <CardTitle className="text-2xl">Reset your password</CardTitle>
-            <CardDescription>
-              Enter your email and we'll send you a reset link
-            </CardDescription>
-          </CardHeader>
+          </section>
 
-          <CardContent>
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="email"
-                  required
-                />
+          <section className="w-full">
+            <div className="mx-auto max-w-[420px] rounded-[28px] gf-panel-glass p-6 sm:p-7">
+              <div className="lg:hidden">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to login
+                  </Link>
+                </Button>
               </div>
-              <Button 
-                type="submit" 
-                className="w-full h-11" 
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Mail className="h-4 w-4 mr-2" />
-                )}
-                Send Reset Link
-              </Button>
-            </form>
-          </CardContent>
 
-          <CardFooter className="flex flex-col space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Remember your password?{' '}
-              <Link to="/login" className="text-primary hover:underline font-medium">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
+              <div className="mt-4 lg:mt-0">
+                <h2 className="text-[2rem] font-semibold tracking-tight text-white">Reset your password</h2>
+                <p className="mt-3 text-[0.95rem] leading-7 text-white/60">
+                  Enter the email tied to your account and we&apos;ll send a secure reset link.
+                </p>
+              </div>
+
+              <form onSubmit={handleResetPassword} className="mt-7 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.24em] text-white/44">
+                    Email address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    autoComplete="email"
+                    required
+                    className="h-12 rounded-[16px] text-[0.95rem]"
+                  />
+                </div>
+
+                <Button type="submit" className="h-12 w-full rounded-[16px] text-base" disabled={isLoading}>
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                  Send reset link
+                </Button>
+              </form>
+
+              <p className="mt-5 text-center text-sm text-white/52">
+                Remember your password?{" "}
+                <Link to="/login" className="font-semibold text-primary transition hover:text-white">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

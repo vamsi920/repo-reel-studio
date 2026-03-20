@@ -7,9 +7,9 @@ export function parseRepoContent(content: string): Record<string, string> {
   if (!content) return files;
 
   const patterns = [
-    /={3,}\nFile:\s*(.+?)\n={3,}\n([\s\S]*?)(?=\n={3,}\nFile:|$)/g,
-    /-+\nFile:\s*(.+?)\n-+\n([\s\S]*?)(?=\n-+\nFile:|$)/g,
-    /-----\s*FILE:\s*(.+?)\s*-----\n([\s\S]*?)(?=\n-----\s*FILE:|$)/gi,
+    /={3,}\r?\nFile:\s*(.+?)\r?\n={3,}\r?\n([\s\S]*?)(?=\r?\n={3,}\r?\nFile:|$)/ig,
+    /-+\r?\nFile:\s*(.+?)\r?\n-+\r?\n([\s\S]*?)(?=\r?\n-+\r?\nFile:|$)/ig,
+    /-+\s*FILE:\s*(.+?)\s*-+\r?\n([\s\S]*?)(?=\r?\n-+\s*FILE:|$)/ig,
   ];
 
   const tryPattern = (pattern: RegExp) => {
@@ -51,6 +51,7 @@ export function parseRepoContent(content: string): Record<string, string> {
       continue;
     }
     if (currentPath) {
+      if (/^[=\-]{3,}$/.test(line.trim())) continue; // Strip raw visual demarcations
       buffer.push(line);
     }
   }

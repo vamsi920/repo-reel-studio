@@ -78,3 +78,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Server-local repo caches (Phase-1 workspace + agent run sandboxes)
+server/.repo-workspaces/
+server/.agent-runs/

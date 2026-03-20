@@ -1,0 +1,48 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e396]:
+    - link "Back to home" [ref=e398] [cursor=pointer]:
+      - /url: /
+      - img [ref=e399]
+      - text: Back to home
+    - generic [ref=e401]:
+      - heading "Welcome back" [level=2] [ref=e402]
+      - paragraph [ref=e403]: Select your preferred entry point.
+    - generic [ref=e404]:
+      - button "G Google" [ref=e405] [cursor=pointer]:
+        - generic [ref=e406]: G
+        - text: Google
+      - button "GitHub" [ref=e407] [cursor=pointer]:
+        - img
+        - text: GitHub
+    - generic [ref=e410]: Or email
+    - generic [ref=e412]:
+      - generic [ref=e413]:
+        - text: Email address
+        - textbox "Email address" [ref=e414]:
+          - /placeholder: name@company.com
+      - generic [ref=e415]:
+        - generic [ref=e416]:
+          - generic [ref=e417]: Password
+          - link "Forgot?" [ref=e418] [cursor=pointer]:
+            - /url: /forgot-password
+        - textbox "Password" [ref=e419]:
+          - /placeholder: Enter your password
+      - button "Initialize Session" [ref=e420] [cursor=pointer]:
+        - img
+        - text: Initialize Session
+    - generic [ref=e422]:
+      - img [ref=e423]
+      - generic [ref=e425]:
+        - generic [ref=e426]: Private workspace memory
+        - generic [ref=e427]: Sign in to reopen saved walkthroughs, graph artifacts, repo Q&A sessions, and agent runs from the same repository context.
+    - generic [ref=e428]:
+      - text: Don't have an account?
+      - link "Request Access" [ref=e429] [cursor=pointer]:
+        - /url: /signup
+    - generic [ref=e430]:
+      - generic [ref=e431]: v2.4.0-stable
+      - generic [ref=e432]: /
+      - generic [ref=e433]: "System status: optimal"

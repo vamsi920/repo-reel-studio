@@ -293,10 +293,10 @@ export const VideoControls = ({
     <TooltipProvider>
       <div
         ref={controlsRef}
-        className="absolute inset-0 flex flex-col justify-end transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/20 to-transparent rounded-xl pointer-events-auto"
+        className="absolute inset-0 flex flex-col justify-end rounded-xl bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 pointer-events-none"
       >
         {/* Top overlay - Title and Actions */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex items-start justify-between bg-gradient-to-b from-black/60 to-transparent">
+        <div className="absolute top-0 left-0 right-0 flex items-start justify-between bg-gradient-to-b from-black/60 to-transparent p-4 pointer-events-auto">
           <div className="flex items-center gap-3">
             <div className="px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm">
               <span className="text-xs font-medium text-primary-foreground">
@@ -408,7 +408,7 @@ export const VideoControls = ({
         </div>
 
         {/* Bottom Controls */}
-        <div className="p-4 space-y-3">
+        <div className="space-y-3 p-4 pointer-events-auto">
           {/* Progress Bar */}
           <div className="relative group">
             {/* Scene markers */}
@@ -682,16 +682,7 @@ export const SceneListSidebar = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-card/50 backdrop-blur-sm border-l border-border">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h3 className="font-semibold text-sm">Scenes</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          {manifest.scenes.length} scenes • {formatSceneTime(manifest.totalFrames)} total
-        </p>
-      </div>
-
-      {/* Scene List */}
+    <div className="flex h-full flex-col bg-[#141c37]">
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {manifest.scenes.map((scene, index) => {
           const isActive = index === currentSceneIndex;
@@ -703,8 +694,8 @@ export const SceneListSidebar = ({
               onClick={() => onSceneClick(index, scene.startFrame)}
               className={`w-full text-left p-3 rounded-lg transition-all group ${
                 isActive
-                  ? "bg-primary/20 border border-primary/30"
-                  : "hover:bg-secondary/50 border border-transparent"
+                  ? "bg-primary/14 border border-primary/30"
+                  : "hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -723,8 +714,8 @@ export const SceneListSidebar = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-sm font-medium truncate ${
-                        isActive ? "text-foreground" : "text-foreground/80"
+                    className={`text-sm font-medium truncate ${
+                        isActive ? "text-white" : "text-white/78"
                       }`}
                     >
                       {scene.title || `Scene ${scene.id}`}
@@ -732,16 +723,16 @@ export const SceneListSidebar = ({
                   </div>
 
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-white/44">
                       {formatSceneTime(scene.startFrame)}
                     </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/[0.06] text-white/46 capitalize">
                       {sceneType.replace("_", " ")}
                     </span>
                   </div>
 
                   {scene.file_path && scene.file_path !== "N/A" && (
-                    <p className="text-xs text-muted-foreground/60 truncate mt-1 font-mono">
+                    <p className="mt-1 truncate font-mono text-xs text-white/38">
                       {scene.file_path}
                     </p>
                   )}
@@ -758,7 +749,10 @@ export const SceneListSidebar = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="border-t border-white/8 p-4">
+        <div className="mb-3 text-xs text-white/42">
+          {manifest.scenes.length} scenes • {formatSceneTime(manifest.totalFrames)} total
+        </div>
         <Button
           variant="outline"
           size="sm"

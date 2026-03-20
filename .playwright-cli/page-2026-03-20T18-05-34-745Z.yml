@@ -1,0 +1,113 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "GitFlick GitFlick" [ref=e7] [cursor=pointer]:
+          - /url: /
+          - img "GitFlick" [ref=e8]
+          - generic [ref=e9]: GitFlick
+        - button [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+    - main [ref=e12]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - heading "Curate your codebase." [level=1] [ref=e20]
+          - paragraph [ref=e21]: Transform complex repositories into visual stories. Walk through logic, map dependencies, and collaborate with autonomous agents.
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]:
+              - img [ref=e25]
+              - textbox "Paste repository URL (GitHub, GitLab...)" [ref=e28]
+            - generic [ref=e29]:
+              - button "Upload" [ref=e30] [cursor=pointer]:
+                - img
+                - text: Upload
+              - button "Open Workspace" [ref=e31] [cursor=pointer]
+          - generic [ref=e32]:
+            - generic [ref=e33]: Or
+            - button "Try it with a sample" [ref=e34] [cursor=pointer]:
+              - text: Try it with a sample
+              - img [ref=e35]
+        - generic [ref=e37]:
+          - article [ref=e38]:
+            - generic [ref=e40]:
+              - img [ref=e42]
+              - heading "Walkthrough" [level=3] [ref=e46]
+              - paragraph [ref=e47]: Editorial-style code tours that guide users through key architectural patterns.
+          - article [ref=e49]:
+            - generic [ref=e51]:
+              - img [ref=e53]
+              - heading "Graph" [level=3] [ref=e58]
+              - paragraph [ref=e59]: Interactive dependency mapping to visualize how your logic actually flows.
+          - article [ref=e61]:
+            - generic [ref=e63]:
+              - img [ref=e65]
+              - heading "Repo Q&A" [level=3] [ref=e67]
+              - paragraph [ref=e68]: Natural language interface to query and understand specific repository logic.
+          - article [ref=e70]:
+            - generic [ref=e72]:
+              - img [ref=e74]
+              - heading "Agent Ops" [level=3] [ref=e77]
+              - paragraph [ref=e78]: Monitor and deploy autonomous coding agents directly inside your stack.
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic [ref=e82]: 42,000+
+            - generic [ref=e83]: Repositories Indexed
+          - generic [ref=e84]:
+            - generic [ref=e85]: 1.2M
+            - generic [ref=e86]: Walkthroughs Created
+          - generic [ref=e87]:
+            - generic [ref=e88]: 99.9%
+            - generic [ref=e89]: Uptime for Agent Ops
+          - generic [ref=e90]:
+            - generic [ref=e91]: 8.4ms
+            - generic [ref=e92]: Avg Search Latency
+        - generic [ref=e93]:
+          - generic [ref=e94]: SOC2 Compliant
+          - generic [ref=e96]: AES-256 Encrypted
+          - generic [ref=e98]:
+            - img [ref=e99]
+            - text: Private repo access
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - text: Ready to review a repo
+          - heading "One workspace for intake, review, graph reasoning, and execution." [level=2] [ref=e109]
+          - paragraph [ref=e110]: GitFlick keeps the repository context intact from ingestion to walkthrough, file-backed Q&A, and agent operations.
+          - generic [ref=e111]:
+            - generic [ref=e112]: Walkthrough review
+            - generic [ref=e113]: Structural graph memory
+            - generic [ref=e114]: File-backed repo answers
+        - generic [ref=e115]:
+          - generic [ref=e116]: Next Action
+          - generic [ref=e117]:
+            - link "Sign in to open a workspace" [ref=e118] [cursor=pointer]:
+              - /url: /login
+              - text: Sign in to open a workspace
+              - img
+            - link "Explore the product lanes" [ref=e119] [cursor=pointer]:
+              - /url: "#walkthrough"
+              - text: Explore the product lanes
+              - img
+          - generic [ref=e121]:
+            - img [ref=e122]
+            - generic [ref=e125]:
+              - generic [ref=e126]: Your code stays private.
+              - generic [ref=e127]: GitFlick only reads repository context needed for indexing, reasoning, and walkthrough generation.
+    - contentinfo [ref=e128]:
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - img "GitFlick" [ref=e132]
+          - generic [ref=e133]:
+            - generic [ref=e134]: GitFlick
+            - generic [ref=e135]: Repo Intelligence Workspace
+        - generic [ref=e136]:
+          - link "Privacy" [ref=e137] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=e138] [cursor=pointer]:
+            - /url: /terms
+        - generic [ref=e139]: © 2026 GitFlick. All rights reserved.

@@ -1,0 +1,35 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - img "GitFlick" [ref=e11]
+      - generic [ref=e12]: GitFlick
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e16]
+        - heading "Welcome to GitFlick" [level=2] [ref=e19]
+        - paragraph [ref=e20]: Sign in to access your dashboard and manage your video projects.
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - img [ref=e23]
+          - text: Account benefits
+        - generic [ref=e25]:
+          - generic [ref=e26]: Save and reopen project workspaces
+          - generic [ref=e27]: Export videos and private watch links
+          - generic [ref=e28]: Access Studio editing and agent operations
+          - generic [ref=e29]: Sync repository context across devices
+      - generic [ref=e31]:
+        - img [ref=e32]
+        - generic [ref=e35]:
+          - generic [ref=e36]: Private workspace access
+          - generic [ref=e37]: Protected routes stay account-scoped so your repository context, manifests, and exports remain private.
+      - generic [ref=e38]:
+        - link "Sign In" [ref=e39] [cursor=pointer]:
+          - /url: /login
+          - img
+          - text: Sign In
+        - link "Back to home" [ref=e40] [cursor=pointer]:
+          - /url: /
+      - paragraph [ref=e41]: Free forever • No credit card required

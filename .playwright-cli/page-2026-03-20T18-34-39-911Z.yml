@@ -1,0 +1,50 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - link "Back to home" [ref=e11] [cursor=pointer]:
+        - /url: /
+        - img [ref=e12]
+        - text: Back to home
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - img "GitFlick" [ref=e17]
+          - generic [ref=e18]: GitFlick
+        - generic [ref=e19]: Account access
+        - heading "Welcome back." [level=1] [ref=e20]
+        - paragraph [ref=e21]: Sign in to reopen saved workspaces and continue where you left off.
+        - generic [ref=e23]:
+          - img [ref=e24]
+          - generic [ref=e27]:
+            - generic [ref=e28]: Private by default
+            - generic [ref=e29]: Repository context, saved manifests, and exports stay tied to your account.
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - heading "Welcome back" [level=2] [ref=e33]
+        - paragraph [ref=e34]: Use Google, GitHub, or email to continue.
+      - generic [ref=e35]:
+        - button "G Google" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: G
+          - text: Google
+        - button "GitHub" [ref=e38] [cursor=pointer]:
+          - img
+          - text: GitHub
+      - generic [ref=e41]: Or email
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - text: Email address
+          - textbox "Email address" [ref=e45]:
+            - /placeholder: name@company.com
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: Password
+            - link "Forgot?" [ref=e49] [cursor=pointer]:
+              - /url: /forgot-password
+          - textbox "Password" [ref=e50]:
+            - /placeholder: Enter your password
+        - button "Initialize Session" [ref=e51] [cursor=pointer]:
+          - img
+          - text: Initialize Session
+      - paragraph [ref=e52]: Your saved workspace stays account-scoped and private.

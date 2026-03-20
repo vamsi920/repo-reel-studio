@@ -1,0 +1,28 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - img "GitFlick" [ref=e11]
+      - generic [ref=e12]: GitFlick
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e17]
+        - heading "Almost there!" [level=3] [ref=e20]
+        - paragraph [ref=e21]: Sign in to access the Studio and edit your generated video.
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - paragraph [ref=e24]:
+            - img [ref=e25]
+            - text: "What you get with an account:"
+          - list [ref=e27]:
+            - listitem [ref=e28]: Save and access your video projects
+            - listitem [ref=e29]: Export videos in multiple formats
+            - listitem [ref=e30]: Access to Studio editing features
+            - listitem [ref=e31]: Sync across devices
+        - link "Sign In" [ref=e33] [cursor=pointer]:
+          - /url: /login
+          - img
+          - text: Sign In
+        - paragraph [ref=e34]: Free forever • No credit card required

@@ -1,0 +1,68 @@
+GitFlick — start frontend + backend (full stack)
+================================================
+
+From the repo root (this project’s top-level folder where package.json lives).
+
+Prerequisites
+-------------
+- Node.js + npm (for Vite)
+- Python 3.12+ with server deps:  pip install -r server/requirements.txt
+  (or use the venv that server/start-server.sh picks up)
+
+Why two processes?
+------------------
+- Backend (Python): ingestion, code graph, Agent Runs API, repo workspace cache, TTS proxy.
+  Default URL: http://localhost:8787
+- Frontend (Vite): React app; proxies /api/* → :8787 in dev.
+  Default URL: http://localhost:8080
+
+Open the app in the browser:  http://localhost:8080
+
+
+Terminal 1 — Python backend
+-----------------------------
+cd /path/to/repo-reel-studio
+npm run ingest:server:python
+
+Optional custom port:
+  PORT=8788 npm run ingest:server:python
+
+
+Terminal 2 — Vite frontend
+--------------------------
+cd /path/to/repo-reel-studio
+npm run dev
+
+
+Quick checks
+------------
+curl http://localhost:8787/api/health
+curl -I http://localhost:8080/
+
+
+Stop
+----
+In each terminal: Ctrl+C
+
+If port 8787 is stuck (bind fails or /api/health never responds), free it then restart:
+  lsof -i :8787
+  kill -9 <PID>
+
+
+Note: npm start
+---------------
+`npm start` runs the Node ingestion server (not Python), so Agent Runs and
+`/api/repo-workspace/ensure` will NOT work. Use the two commands above for
+the full feature set.
+
+Optional: deep import/symbol graph during ingest (slow on large repos)
+-----------------------------------------------------------------------
+Default ingest uses a fast “header-only” graph. For the old deep graph:
+
+  GITFLICK_DEEP_INGEST_GRAPH=1 npm run ingest:server:python
+
+Benchmark quick vs deep (no network, same venv as backend):
+
+  cd server && python3 bench_graph.py
+
+See also: BACKEND_RUN_COMMANDS.txt

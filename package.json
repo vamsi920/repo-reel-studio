@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "ingest:server": "./server/start-server.sh",
+    "ingest:server": "PORT=8787 node server/ingestion-server.mjs",
+    "ingest:server:python": "./server/start-server.sh",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

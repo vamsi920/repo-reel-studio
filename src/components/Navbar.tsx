@@ -1,5 +1,13 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, Settings, ChevronDown, Sparkles } from "lucide-react";
+import {
+  ChevronDown,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  User,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,19 +18,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getUserInitials } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { getUserInitials } from "@/lib/utils";
 import iconUrl from "../../icon.png";
 
+const LANDING_LINKS = [
+  { label: "Walkthrough", href: "#walkthrough" },
+  { label: "Graph", href: "#graph" },
+  { label: "Q&A", href: "#qa" },
+  { label: "Agent Ops", href: "#agent-ops" },
+];
+
 export const Navbar = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isLanding = location.pathname === "/";
-  
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
+
+  const userEmail = user?.email || "";
+  const userName = user?.user_metadata?.full_name || "";
+  const userAvatar = user?.user_metadata?.avatar_url || "";
+  const isHome = location.pathname === "/";
 
   const handleSignOut = async () => {
     await signOut();
@@ -33,58 +50,71 @@ export const Navbar = () => {
     navigate("/");
   };
 
-  const handleComingSoon = (feature: string) => {
-    toast({
-      title: "Coming Soon",
-      description: `${feature} is coming soon!`,
-    });
-  };
-
-  const userEmail = user?.email || "";
-  const userName = user?.user_metadata?.full_name || "";
-  const userAvatar = user?.user_metadata?.avatar_url || "";
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-              <img src={iconUrl} alt="GitFlick" className="h-5 w-5" />
-            </div>
-            <div className="leading-tight">
-              <span className="font-semibold text-foreground block">GitFlick</span>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Repo to Reel
-              </span>
-            </div>
+    <nav className="gf-nav-shell fixed inset-x-0 top-0 z-50">
+      <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-3">
+            <img src={iconUrl} alt="GitFlick" className="h-6 w-6 opacity-90" />
+            <span className="block font-headline text-[1.35rem] font-semibold tracking-tight text-white">
+              GitFlick
+            </span>
           </Link>
 
+          <div className="hidden items-center gap-6 lg:flex">
+            {LANDING_LINKS.map((item) =>
+              isHome ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-sm font-medium text-white/68 transition hover:text-white"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  to="/"
+                  className="text-sm font-medium text-white/68 transition hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
+          </div>
+        </div>
 
-          {/* Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            {isLoading ? (
-              // Loading state
-              <div className="h-8 w-20 bg-muted animate-pulse rounded-md" />
-            ) : isAuthenticated && user ? (
-              // Authenticated state - show user menu
+        <div className="hidden items-center gap-3 md:flex">
+          {isLoading ? (
+            <div className="h-11 w-28 animate-pulse rounded-2xl bg-white/[0.08]" />
+          ) : isAuthenticated && user ? (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/dashboard">
+                  <LayoutGrid className="h-4 w-4" />
+                  Workspace
+                </Link>
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 px-2">
+                  <Button
+                    variant="ghost"
+                    className="flex h-10 items-center gap-2 rounded-2xl bg-white/[0.04] px-2"
+                  >
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={userAvatar} alt={userName || userEmail} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      <AvatarFallback className="bg-primary/25 text-primary">
                         {getUserInitials(userName, userEmail)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium max-w-[120px] truncate hidden lg:block">
+                    <span className="hidden max-w-[140px] truncate text-sm font-medium lg:block">
                       {userName || userEmail.split("@")[0]}
                     </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
@@ -98,7 +128,7 @@ export const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="cursor-pointer">
-                      <Sparkles className="mr-2 h-4 w-4" />
+                      <LayoutGrid className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
@@ -108,104 +138,106 @@ export const Navbar = () => {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleComingSoon("Settings")}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="text-destructive focus:text-destructive"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              // Not authenticated - show login/signup buttons
-              <>
-                <Button variant="nav" size="sm" asChild>
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link to="/login">Get Started</Link>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden text-muted-foreground hover:text-foreground"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">Sign in</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/login">Open Workspace</Link>
+              </Button>
+            </>
+          )}
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-col gap-2">
-                {isLoading ? (
-                  <div className="h-10 bg-muted animate-pulse rounded-md mx-4" />
-                ) : isAuthenticated && user ? (
-                  <>
-                    {/* User info */}
-                    <div className="px-4 py-2 flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={userAvatar} alt={userName || userEmail} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getUserInitials(userName, userEmail)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {userName || "User"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {userEmail}
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      to="/dashboard"
-                      className="px-4 py-2 text-sm hover:bg-accent rounded-md mx-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="px-4 py-2 text-sm hover:bg-accent rounded-md mx-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleSignOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="px-4 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md mx-2 text-left"
-                    >
-                      Sign out
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Button variant="ghost" size="sm" className="justify-start mx-2" asChild>
-                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-                    </Button>
-                    <Button size="sm" className="mx-2" asChild>
-                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white md:hidden"
+          onClick={() => setMobileMenuOpen((current) => !current)}
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
+
+      {mobileMenuOpen ? (
+        <div className="px-4 py-4 md:hidden">
+          <div className="space-y-2 rounded-[24px] gf-panel-glass p-4">
+            {LANDING_LINKS.map((item) =>
+              isHome ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-white/82 transition hover:bg-white/[0.05]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  to="/"
+                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-white/82 transition hover:bg-white/[0.05]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
+
+            {isAuthenticated && user ? (
+              <div className="space-y-2 pt-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <LayoutGrid className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    void handleSignOut();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button className="w-full" asChild>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    Open Workspace
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
     </nav>
   );
 };

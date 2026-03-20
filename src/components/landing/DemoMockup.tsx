@@ -1,97 +1,56 @@
-import { useState, useRef } from "react";
-import { Play, Code2, Mic, Layers, Wand2, Pause } from "lucide-react";
+import { useRef, useState } from "react";
+import { GitPullRequest, Network, Pause, Play, Search } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { RemotionVideo } from "@/components/studio/RemotionVideo";
-import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 import { demoVideoManifest } from "@/data/demoVideoManifest";
+import { useHydrateManifest } from "@/hooks/useHydrateManifest";
+
+const CAPABILITIES = [
+  {
+    icon: Play,
+    title: "Walkthrough review",
+    description: "Watch the generated story and jump scene by scene without leaving the workspace.",
+  },
+  {
+    icon: Network,
+    title: "Code graph context",
+    description: "Keep structural visibility nearby while reviewing the repo as a system.",
+  },
+  {
+    icon: Search,
+    title: "Repo investigation",
+    description: "Ask operational questions and tie answers back to concrete evidence.",
+  },
+  {
+    icon: GitPullRequest,
+    title: "Agent run review",
+    description: "Inspect issue-bound patch attempts with validations and promotion controls.",
+  },
+] as const;
 
 export const DemoMockup = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const playerRef = useRef<PlayerRef>(null);
-  
-  // Hydrate the demo manifest
   const hydratedManifest = useHydrateManifest(demoVideoManifest, 30);
-  const capabilities = [
-    {
-      icon: Code2,
-      title: "Syntax Highlighting",
-      desc: "Beautiful code display with language detection",
-    },
-    {
-      icon: Mic,
-      title: "AI Narration",
-      desc: "Intelligent AI writes engaging explanations",
-    },
-    {
-      icon: Layers,
-      title: "Scene Management",
-      desc: "Automatic scene generation from code structure",
-    },
-    {
-      icon: Wand2,
-      title: "Smart Editing",
-      desc: "Fine-tune your video in the Studio",
-    },
-  ];
 
   return (
-    <section className="py-24 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent" />
-      
+    <section className="py-24">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Everything You Need to{" "}
-            <span className="bg-gradient-to-r from-cyan-400 to-primary bg-clip-text text-transparent">
-              Create Amazing Videos
-            </span>
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Our AI-powered platform handles everything from code analysis to video rendering
-          </p>
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto mb-16">
-          {capabilities.map((cap) => (
-            <div
-              key={cap.title}
-              className="group p-5 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-            >
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <cap.icon className="h-6 w-6 text-primary" />
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+          <div className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+            <div className="flex items-center gap-2 border-b border-slate-200 px-3 pb-3">
+              <div className="flex gap-1.5">
+                <div className="h-3 w-3 rounded-full bg-red-400/80" />
+                <div className="h-3 w-3 rounded-full bg-amber-400/80" />
+                <div className="h-3 w-3 rounded-full bg-emerald-400/80" />
               </div>
-              <h3 className="font-semibold mb-1">{cap.title}</h3>
-              <p className="text-sm text-muted-foreground">{cap.desc}</p>
+              <div className="ml-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+                workspace/gitflick/review
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Video Preview Mockup */}
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
-            {/* Glow effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/25 via-cyan-400/25 to-rose-400/20 rounded-3xl blur-2xl opacity-60" />
-            
-            {/* Video Frame */}
-            <div className="relative bg-card rounded-2xl border border-border overflow-hidden shadow-2xl">
-              {/* Browser-style header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-secondary/50 border-b border-border">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/70" />
-                </div>
-                <div className="flex-1 mx-4">
-                  <div className="bg-background/50 rounded-lg px-4 py-1.5 text-xs text-muted-foreground font-mono">
-                    gitflick.app/studio/your-repo
-                  </div>
-                </div>
-              </div>
-
-              {/* Video Content Area - Real Remotion Player */}
-              <div className="aspect-video bg-black relative overflow-hidden group">
+            <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-slate-950">
+              <div className="relative aspect-video overflow-hidden">
                 {hydratedManifest ? (
                   <>
                     <Player
@@ -102,74 +61,78 @@ export const DemoMockup = () => {
                       compositionWidth={1920}
                       compositionHeight={1080}
                       fps={30}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
+                      style={{ width: "100%", height: "100%" }}
                       controls={false}
                       autoPlay={isPlaying}
-                      loop={true}
+                      loop
                       clickToPlay={false}
                       doubleClickToFullscreen={false}
                       spaceKeyToPlayOrPause={false}
                       acknowledgeRemotionLicense
                     />
-                    
-                    {/* Pause overlay when playing */}
-                    {isPlaying && (
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none z-10" />
-                    )}
-                    
-                    {/* Play/Pause overlay button */}
+
                     <button
+                      type="button"
                       onClick={() => {
-                        if (playerRef.current) {
-                          if (isPlaying) {
-                            playerRef.current.pause();
-                          } else {
-                            playerRef.current.play();
-                          }
-                          setIsPlaying(!isPlaying);
+                        if (!playerRef.current) return;
+                        if (isPlaying) {
+                          playerRef.current.pause();
+                        } else {
+                          playerRef.current.play();
                         }
+                        setIsPlaying((current) => !current);
                       }}
-                      className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 rounded-full backdrop-blur-sm border-2 flex items-center justify-center transition-all z-20 ${
-                        isPlaying 
-                          ? "bg-black/40 border-white/20 opacity-0 group-hover:opacity-100 hover:bg-black/60 hover:scale-110" 
-                          : "bg-black/70 border-white/30 opacity-100 hover:bg-black/80 hover:scale-110"
-                      }`}
+                      className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm"
                     >
-                      {isPlaying ? (
-                        <Pause className="h-7 w-7 text-white ml-0.5" />
-                      ) : (
-                        <Play className="h-7 w-7 text-white ml-1" />
-                      )}
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      {isPlaying ? "Pause demo" : "Play demo"}
                     </button>
+
+                    <div className="absolute bottom-5 left-5 rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs font-medium text-white/85 backdrop-blur-sm">
+                      Live walkthrough preview
+                    </div>
+                    <div className="absolute bottom-5 right-5 rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-xs font-medium text-white/75 backdrop-blur-sm">
+                      1080p • 30 FPS
+                    </div>
                   </>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
-                    <div className="text-center">
-                      <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-slate-600 text-sm">Loading demo video...</p>
+                  <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#0f172a,#020617)]">
+                    <div className="text-center text-white/80">
+                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/25 border-t-white/90" />
+                      Loading demo workspace...
                     </div>
                   </div>
                 )}
-
-                {/* Decorative elements */}
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 shadow-sm z-10">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs text-white/90">Live Demo</span>
-                </div>
-                
-                <div className="absolute bottom-4 right-4 text-xs text-white/70 font-mono z-10">
-                  1080p • 30 FPS
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div className="h-1 bg-secondary">
-                <div className="h-full w-1/3 bg-gradient-to-r from-primary to-cyan-500 rounded-full" />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Demo Workspace
+              </div>
+              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+                The output is a review surface, not just a rendered clip
+              </h2>
+              <p className="mt-4 text-base leading-8 text-slate-600">
+                GitFlick keeps the video artifact inside a broader workspace so teams can move from
+                walkthrough to structure, questions, and issue operations without starting over.
+              </p>
+            </div>
+
+            {CAPABILITIES.map((capability) => (
+              <div
+                key={capability.title}
+                className="rounded-[24px] border border-slate-200 bg-white px-5 py-5 shadow-sm"
+              >
+                <div className="inline-flex rounded-2xl bg-slate-100 p-2 text-slate-700">
+                  <capability.icon className="h-4 w-4" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-slate-950">{capability.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{capability.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -1,0 +1,71 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: "0"
+      - generic [ref=e8]: "0"
+      - generic [ref=e9]: "0"
+      - generic [ref=e10]: "1"
+      - generic [ref=e11]: "0"
+      - generic [ref=e12]: "0"
+      - generic [ref=e13]: "0"
+      - generic [ref=e14]: "1"
+      - generic [ref=e15]: "1"
+      - generic [ref=e16]: "0"
+      - generic [ref=e17]: "0"
+      - generic [ref=e18]: "1"
+      - generic [ref=e19]: "1"
+      - generic [ref=e20]: "1"
+      - generic [ref=e21]: "1"
+      - generic [ref=e22]: "1"
+      - generic [ref=e23]: "1"
+      - generic [ref=e24]: "1"
+      - generic [ref=e25]: "0"
+      - generic [ref=e26]: "1"
+    - generic [ref=e29]:
+      - generic [ref=e31]:
+        - img "GitFlick" [ref=e33]
+        - generic [ref=e34]: GitFlick
+      - generic [ref=e35]:
+        - paragraph [ref=e36]: Processing Repository
+        - heading "vercel/next.js" [level=2] [ref=e37]
+      - generic [ref=e38]:
+        - generic [ref=e40]: "Phase 1: Ingestion"
+        - generic [ref=e44]: "Phase 2: Manifest"
+      - generic [ref=e48]:
+        - img [ref=e49]
+        - generic [ref=e53]:
+          - img [ref=e54]
+          - generic [ref=e56]: 11%
+      - generic [ref=e58]:
+        - heading "Initializing ingestion pipeline..." [level=3] [ref=e59]: Initializing ingestion pipeline...
+        - paragraph [ref=e64]: Fetching and parsing repository...
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e73]: processing.log
+          - generic [ref=e74]: 9 entries
+        - generic [ref=e75]:
+          - generic [ref=e76]: "[13:35:11] INFO: Not authenticated - project will not be saved to database"
+          - generic [ref=e77]: "[13:35:11] → Sign in to save projects and access Studio"
+          - generic [ref=e78]: "[13:35:11] WARNING: User not authenticated - skipping database save"
+          - generic [ref=e79]: "[13:35:11] → Sign in to save projects to your account"
+          - generic [ref=e80]: "[13:35:11] Starting video generation pipeline..."
+          - generic [ref=e81]: "[13:35:11] Target repository: vercel/next.js"
+          - generic [ref=e82]: "[13:35:11] Full URL: https://github.com/vercel/next.js"
+          - generic [ref=e83]: "[13:35:11] Initializing ingestion pipeline..."
+          - generic [ref=e84]: "[13:35:11] Sending POST request to /api/ingest..."
+      - generic [ref=e86]:
+        - generic [ref=e87]: What Happens Now
+        - heading "We are building this in stages" [level=3] [ref=e88]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: 1. Ingest real repo content
+            - generic [ref=e92]: We fetch the repository, parse source files, and reject placeholder-only output.
+          - generic [ref=e93]:
+            - generic [ref=e94]: 2. Build graph-backed context
+            - generic [ref=e95]: We extract architecture, flows, hotspots, and reusable repo knowledge from the code graph.
+          - generic [ref=e96]:
+            - generic [ref=e97]: 3. Plan the walkthrough
+            - generic [ref=e98]: We turn that context into an evidence-backed video structure before voice and render start.

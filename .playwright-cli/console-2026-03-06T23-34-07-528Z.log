@@ -1,0 +1,12 @@
+[   78883ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://127.0.0.1:8080/node_modules/.vite/deps/@remotion_player.js?v=771987a8:1256
+[   78890ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://127.0.0.1:8080/node_modules/.vite/deps/react-router-dom.js?v=771987a8:4392
+[   78894ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://127.0.0.1:8080/node_modules/.vite/deps/react-router-dom.js?v=771987a8:4392
+[   78937ms] [ERROR] Failed to load resource: net::ERR_SOCKET_NOT_CONNECTED @ https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap:0
+[  175762ms] AbortError: signal is aborted without reason
+    at http://127.0.0.1:8080/node_modules/.vite/deps/@supabase_supabase-js.js?v=771987a8:8001:23
+[  175828ms] AbortError: signal is aborted without reason
+    at http://127.0.0.1:8080/node_modules/.vite/deps/@supabase_supabase-js.js?v=771987a8:8001:23
+[  175875ms] AbortError: signal is aborted without reason
+    at http://127.0.0.1:8080/node_modules/.vite/deps/@supabase_supabase-js.js?v=771987a8:8001:23
+[  175934ms] AbortError: signal is aborted without reason
+    at http://127.0.0.1:8080/node_modules/.vite/deps/@supabase_supabase-js.js?v=771987a8:8001:23

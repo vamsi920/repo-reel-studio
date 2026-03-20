@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { 
   CheckCircle, 
   Download, 
@@ -19,10 +19,10 @@ import { Player, PlayerRef } from "@remotion/player";
 import { RemotionVideo } from "@/components/studio/RemotionVideo";
 import { useHydrateManifest } from "@/hooks/useHydrateManifest";
 import { useDownloadVideo } from "@/hooks/useDownloadVideo";
+import iconUrl from "../../icon.png";
 
 const Export = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [manifest, setManifest] = useState<VideoManifest | null>(null);
   const [repoUrl, setRepoUrl] = useState("");
@@ -84,6 +84,8 @@ const Export = () => {
 
   const totalDuration = manifest?.scenes?.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) || 0;
   const durationStr = `${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, "0")}`;
+  const projectId = searchParams.get("project") || sessionStorage.getItem("project-id");
+  const studioHref = projectId ? `/studio?project=${projectId}` : "/studio";
 
   const audioMap = useMemo(() => {
     if (!manifest?.scenes) return new Map<number, string>();
@@ -113,10 +115,12 @@ const Export = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading video...</p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
+        <div className="absolute inset-0 bg-radial-gradient" />
+        <div className="absolute inset-0 gf-grid-overlay opacity-[0.18]" />
+        <div className="relative rounded-[24px] gf-panel-glass px-8 py-7 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-[0.95rem] text-white/60">Loading export workspace...</p>
         </div>
       </div>
     );
@@ -124,11 +128,17 @@ const Export = () => {
 
   if (!manifest) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">No video to export</p>
-          <Button asChild>
-            <Link to="/dashboard">Go to Dashboard</Link>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6">
+        <div className="absolute inset-0 bg-radial-gradient" />
+        <div className="absolute inset-0 gf-grid-overlay opacity-[0.18]" />
+        <div className="relative w-full max-w-[520px] rounded-[28px] gf-panel p-8 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
+          <Terminal className="mx-auto h-12 w-12 text-white/40" />
+          <h1 className="mt-5 text-2xl font-semibold text-white">No video to export</h1>
+          <p className="mt-3 text-[0.98rem] leading-7 text-white/60">
+            The export workspace could not find a saved manifest in the current session or account.
+          </p>
+          <Button className="mt-6" asChild>
+            <Link to="/dashboard">Go to dashboard</Link>
           </Button>
         </div>
       </div>
@@ -136,94 +146,153 @@ const Export = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-grid opacity-20" />
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <div className="absolute inset-0 bg-radial-gradient" />
+      <div className="absolute inset-0 gf-grid-overlay opacity-[0.16]" />
+      <div className="absolute left-[8%] top-[14%] h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute bottom-[10%] right-[8%] h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-4 py-16">
-        {/* Back Button */}
-        <Button variant="ghost" size="sm" className="mb-8" asChild>
-          <Link to="/studio">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Studio
-          </Link>
-        </Button>
-
-        {/* Success Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-success/10 mb-4">
-            <CheckCircle className="h-8 w-8 text-success" />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Video Ready!</h1>
-          <p className="text-muted-foreground">
-            Download your generated walkthrough video.
-          </p>
-        </div>
-
-        {/* Video Info */}
-        <Card variant="elevated" className="mb-8 overflow-hidden">
-          <div className="p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Terminal className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg">{repoName}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {manifest.scenes.length} scenes • {durationStr} duration
-                </p>
-              </div>
+      <header className="gf-nav-shell sticky top-0 z-20">
+        <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
             </div>
-            
-            {/* Scene list preview */}
-            <div className="bg-secondary/30 rounded-lg p-4 max-h-48 overflow-y-auto">
-              <p className="text-xs text-muted-foreground mb-2">Scene breakdown:</p>
-              <div className="space-y-1">
-                {manifest.scenes.slice(0, 8).map((scene, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground w-6">{i + 1}.</span>
-                    <span className="truncate flex-1">{scene.title || scene.file_path}</span>
-                    <span className="text-muted-foreground">{scene.duration_seconds}s</span>
+            <div>
+              <div className="font-headline text-[1.3rem] font-semibold text-white">Export Studio</div>
+              <div className="text-[11px] uppercase tracking-[0.24em] text-white/34">Delivery surface</div>
+            </div>
+          </div>
+
+          <Button variant="outline" size="sm" asChild>
+            <Link to={studioHref}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Studio
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      <main className="relative mx-auto max-w-[1320px] px-4 py-8 sm:px-6 xl:px-8">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-6">
+            <section className="overflow-hidden rounded-[28px] gf-panel shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
+              <div className="bg-[linear-gradient(135deg,rgba(104,132,255,0.12),rgba(17,24,39,0.42),rgba(107,216,203,0.08))] p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-300/12 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Export ready
+                    </div>
+                    <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Deliver the finished walkthrough</h1>
+                    <p className="mt-3 max-w-2xl text-[0.98rem] leading-7 text-white/60">
+                      Download the current render, copy the narration, or generate a private watch link for the saved workspace.
+                    </p>
                   </div>
-                ))}
-                {manifest.scenes.length > 8 && (
-                  <p className="text-xs text-muted-foreground pt-1">
-                    ...and {manifest.scenes.length - 8} more scenes
+                  <div className="flex flex-wrap gap-2">
+                    <div className="gf-tag rounded-full px-4 py-2 text-xs font-medium">{manifest.scenes.length} scenes</div>
+                    <div className="gf-tag rounded-full px-4 py-2 text-xs font-medium">{durationStr} runtime</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="flex items-center gap-4 rounded-[22px] bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/12 text-primary">
+                    <Terminal className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">{repoName}</h2>
+                    <p className="mt-1 text-sm text-white/56">
+                      Generated walkthrough package ready for delivery.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid gap-4">
+              <Card variant="interactive" className="rounded-[24px] p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/12 text-primary">
+                      <Download className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Download video</h3>
+                      <p className="mt-1 text-sm text-white/56">
+                        {isExporting ? "Recording in background…" : "WebM or MP4 depending on browser support."}
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={downloadVideo} disabled={!hydratedManifest || isExporting}>
+                    <Download className="h-4 w-4" />
+                    {isExporting ? "Exporting…" : "Download"}
+                  </Button>
+                </div>
+                {isExporting && statusMessage && (
+                  <p className="text-xs text-white/42" aria-live="polite">
+                    {statusMessage}
                   </p>
                 )}
-              </div>
-            </div>
-          </div>
-        </Card>
+              </Card>
 
-        {/* Export Options */}
-        <div className="space-y-4">
-          {/* Download Video */}
-          <Card variant="interactive" className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Download className="h-5 w-5 text-primary" />
+              {projectId ? (
+                <Card variant="interactive" className="rounded-[24px] p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-white/[0.06] text-primary">
+                        <Link2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-white">Copy watch link</h3>
+                        <p className="mt-1 text-sm text-white/56">
+                          Share a private watch route tied to this saved project.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        const url = `${window.location.origin}/v/${projectId}`;
+                        navigator.clipboard.writeText(url);
+                        toast({ title: "Copied!", description: "Video link copied to clipboard." });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy link
+                    </Button>
+                  </div>
+                </Card>
+              ) : null}
+
+              <Card variant="interactive" className="rounded-[24px] p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-accent/12 text-accent">
+                      <Copy className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Copy all narration</h3>
+                      <p className="mt-1 text-sm text-white/56">Capture the complete script for reviews or external publishing.</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => {
+                      const narration = manifest.scenes
+                        .map((s, i) => `[Scene ${i + 1}: ${s.title || s.file_path}]\n${s.narration_text}`)
+                        .join("\n\n");
+                      copyToClipboard(narration, "Narration script");
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy script
+                  </Button>
                 </div>
-                <div>
-                  <h3 className="font-medium">Download Video</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isExporting ? "Recording in background…" : "WebM or MP4 (depends on browser)"}
-                  </p>
-                </div>
-              </div>
-              <Button onClick={downloadVideo} disabled={!hydratedManifest || isExporting}>
-                <Download className="h-4 w-4 mr-2" />
-                {isExporting ? "Exporting…" : "Download"}
-              </Button>
+              </Card>
             </div>
-            {isExporting && statusMessage && (
-              <p className="text-xs text-muted-foreground mt-3" aria-live="polite">
-                {statusMessage}
-              </p>
-            )}
-            {/* Hidden player for background recording: off-screen but full size so the canvas is laid out and capturable */}
+
             <div
               ref={playerContainerRef}
               aria-hidden="true"
@@ -259,82 +328,54 @@ const Export = () => {
                 />
               )}
             </div>
-          </Card>
+          </div>
 
-          {/* Copy video link (unique /v/:id) */}
-          {(searchParams.get("project") || sessionStorage.getItem("project-id")) && (
-            <Card variant="interactive" className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Link2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Copy video link</h3>
-                    <p className="text-sm text-muted-foreground">Share this link to watch the video (sign-in required)</p>
-                  </div>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    const pid = searchParams.get("project") || sessionStorage.getItem("project-id");
-                    const url = pid ? `${window.location.origin}/v/${pid}` : "";
-                    if (url) {
-                      navigator.clipboard.writeText(url);
-                      toast({ title: "Copied!", description: "Video link copied to clipboard." });
-                    }
-                  }}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy link
-                </Button>
+          <aside className="space-y-6">
+            <section className="rounded-[26px] gf-panel p-5 shadow-[0_20px_48px_rgba(8,14,30,0.24)]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+                Scene breakdown
               </div>
-            </Card>
-          )}
+              <div className="mt-4 max-h-[540px] space-y-2 overflow-y-auto">
+                {manifest.scenes.map((scene, i) => (
+                  <div
+                    key={`${scene.id}-${i}`}
+                    className="rounded-[18px] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-xs font-semibold text-white/70">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-white">
+                          {scene.title || scene.file_path}
+                        </div>
+                        <div className="mt-1 text-xs text-white/42">{scene.duration_seconds}s</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-          {/* Copy Narration */}
-          <Card variant="interactive" className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-glow-secondary/10 flex items-center justify-center">
-                  <Link2 className="h-5 w-5 text-processing" />
+            <section className="rounded-[26px] gf-panel p-5 shadow-[0_20px_48px_rgba(8,14,30,0.24)]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/36">
+                Delivery notes
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                  Export uses the hydrated Remotion composition from the current workspace state.
                 </div>
-                <div>
-                  <h3 className="font-medium">Copy All Narration</h3>
-                  <p className="text-sm text-muted-foreground">Get full script text</p>
+                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                  Private watch links remain account-protected even when shared across devices.
+                </div>
+                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                  The copied narration includes scene labels so editorial review can happen outside the player.
                 </div>
               </div>
-              <Button 
-                variant="secondary" 
-                onClick={() => {
-                  const narration = manifest.scenes
-                    .map((s, i) => `[Scene ${i + 1}: ${s.title || s.file_path}]\n${s.narration_text}`)
-                    .join("\n\n");
-                  copyToClipboard(narration, "Narration script");
-                }}
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </Button>
-            </div>
-          </Card>
-
+            </section>
+          </aside>
         </div>
-
-        {/* Footer Actions */}
-        <div className="flex justify-center gap-4 mt-8">
-          <Button variant="outline" asChild>
-            <Link to="/">
-              New Video
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to="/studio">
-              Back to Player
-            </Link>
-          </Button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

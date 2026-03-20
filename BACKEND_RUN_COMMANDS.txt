@@ -1,0 +1,44 @@
+GitFlick Backend Run Commands
+=============================
+
+Current backend status
+----------------------
+- Backend is already running at: http://0.0.0.0:8787
+- Current command in use: npm run start
+
+Recommended backend command (supports Agent Runs API)
+-----------------------------------------------------
+npm run ingest:server:python
+
+Run Python backend on a custom port
+-----------------------------------
+PORT=8788 npm run ingest:server:python
+
+Node backend command (ingestion server .mjs)
+--------------------------------------------
+npm run ingest:server
+
+Full app (backend + frontend)
+-----------------------------
+npm run start
+
+Frontend only
+-------------
+npm run dev
+
+Health check
+------------
+curl http://localhost:8787/api/health
+
+Phase-1 workspace cache (optional manual trigger)
+-------------------------------------------------
+After ingestion, the app normally POSTs this automatically so Agent Runs
+reuse a single local clone under server/.repo-workspaces/<projectId>/.
+
+curl -s -X POST http://localhost:8787/api/repo-workspace/ensure \
+  -H "Content-Type: application/json" \
+  -d '{"repoUrl":"https://github.com/owner/repo","projectId":"YOUR-UUID"}'
+
+Stop backend
+------------
+- In the terminal where it is running, press: Ctrl+C

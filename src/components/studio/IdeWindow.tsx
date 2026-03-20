@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { interpolate, Easing } from "remotion";
 import { Highlight, themes } from "prism-react-renderer";
-import type { HydratedScene } from "@/hooks/useHydrateManifest";
+import type {
+  HydratedScene,
+  HydratedSentenceEvidence,
+} from "@/hooks/useHydrateManifest";
 
 type SceneWithCode = HydratedScene & {
   code?: string;
@@ -277,6 +280,358 @@ const OverviewCard = ({
           {filePath}
         </p>
       )}
+    </div>
+  );
+};
+
+const RepoMapStage = ({
+  scene,
+  tree,
+  relativeFrame,
+}: {
+  scene: HydratedScene;
+  tree: FileTreeNode[];
+  relativeFrame: number;
+}) => {
+  const focusItems = scene.on_screen_focus?.length
+    ? scene.on_screen_focus
+    : scene.repo_map_paths?.length
+      ? scene.repo_map_paths
+      : scene.source_refs?.map((ref) => ref.file_path).slice(0, 5) || [];
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1.15fr 0.85fr",
+        gap: 20,
+        height: "100%",
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(139, 92, 246, 0.18)",
+          background: "linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.96))",
+          padding: 18,
+          overflow: "hidden",
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "#8b5cf6",
+                fontWeight: 700,
+                fontFamily: "system-ui, sans-serif",
+              }}
+            >
+              Downloaded Repository
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 18,
+                color: "#1e293b",
+                fontWeight: 700,
+                fontFamily: "system-ui, sans-serif",
+              }}
+            >
+              Real repo tree, real modules
+            </div>
+          </div>
+          <div
+            style={{
+              padding: "6px 10px",
+              borderRadius: 9999,
+              background: "rgba(139, 92, 246, 0.12)",
+              border: "1px solid rgba(139, 92, 246, 0.2)",
+              color: "#6d28d9",
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+            }}
+          >
+            Repo Map
+          </div>
+        </div>
+        <div style={{ height: 410, overflowY: "auto", paddingRight: 6 }}>
+          <FileTree
+            nodes={tree}
+            activePath={scene.file_path || ""}
+            relativeFrame={relativeFrame}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(139, 92, 246, 0.18)",
+            background: "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98))",
+            padding: 18,
+            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: "#94a3b8",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              marginBottom: 10,
+              fontWeight: 700,
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            Viewer Anchors
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {focusItems.slice(0, 8).map((item, index) => (
+              <div
+                key={`${item}-${index}`}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  background: "rgba(139, 92, 246, 0.1)",
+                  border: "1px solid rgba(139, 92, 246, 0.18)",
+                  color: "#4c1d95",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(139, 92, 246, 0.18)",
+            background: "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98))",
+            padding: 18,
+            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: "#94a3b8",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              marginBottom: 12,
+              fontWeight: 700,
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            On Screen
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {(scene.bullet_points || []).slice(0, 4).map((bullet, index) => (
+              <div
+                key={`${bullet}-${index}`}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  background: index === 0 ? "rgba(139, 92, 246, 0.1)" : "rgba(15, 23, 42, 0.03)",
+                  border: index === 0
+                    ? "1px solid rgba(139, 92, 246, 0.18)"
+                    : "1px solid rgba(148, 163, 184, 0.12)",
+                  color: "#0f172a",
+                  lineHeight: 1.5,
+                  fontSize: 13,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                {bullet}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DiagramStage = ({
+  scene,
+  relativeFrame,
+}: {
+  scene: HydratedScene;
+  relativeFrame: number;
+}) => {
+  const mermaidLines = (scene.diagram?.mermaid || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const opacity = interpolate(relativeFrame, [0, 12], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1.05fr 0.95fr",
+        gap: 20,
+        height: "100%",
+        padding: 24,
+        opacity,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(139, 92, 246, 0.18)",
+          background: "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98))",
+          padding: 20,
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#8b5cf6",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              marginBottom: 10,
+              fontWeight: 700,
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            Graph-Derived Diagram
+          </div>
+          <div
+            style={{
+              fontSize: 24,
+              lineHeight: 1.2,
+              fontWeight: 700,
+              color: "#0f172a",
+              marginBottom: 10,
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            {scene.diagram?.caption || scene.title}
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gap: 10,
+              marginTop: 18,
+            }}
+          >
+            {(scene.bullet_points || []).slice(0, 4).map((bullet, index) => (
+              <div
+                key={`${bullet}-${index}`}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  background: "rgba(139, 92, 246, 0.08)",
+                  border: "1px solid rgba(139, 92, 246, 0.16)",
+                  color: "#1e293b",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                {bullet}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            marginTop: 18,
+          }}
+        >
+          {(scene.on_screen_focus || []).slice(0, 6).map((item, index) => (
+            <span
+              key={`${item}-${index}`}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 9999,
+                background: "rgba(15, 23, 42, 0.05)",
+                border: "1px solid rgba(148, 163, 184, 0.16)",
+                color: "#475569",
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+              }}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(139, 92, 246, 0.18)",
+          background: "linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))",
+          padding: 20,
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.16)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color: "#c4b5fd",
+            marginBottom: 12,
+            fontWeight: 700,
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          Mermaid Source
+        </div>
+        <pre
+          style={{
+            margin: 0,
+            color: "#e2e8f0",
+            fontSize: 13,
+            lineHeight: 1.65,
+            fontFamily: "'JetBrains Mono', monospace",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {mermaidLines.join("\n")}
+        </pre>
+      </div>
     </div>
   );
 };
@@ -604,15 +959,23 @@ export const IdeWindow = ({
   activeScene,
   previousScene,
   relativeFrame,
+  activeSentence,
   allFiles,
 }: {
   scenes: HydratedScene[];
   activeScene: HydratedScene;
   previousScene?: HydratedScene;
   relativeFrame: number;
+  activeSentence?: HydratedSentenceEvidence;
   allFiles?: string[];
 }) => {
-  const isIntroOrOverview = /^(intro|overview)$/i.test(activeScene?.type ?? "");
+  const visualType =
+    activeScene?.visual_kind ||
+    activeScene?.visual_type ||
+    (activeScene?.diagram?.mermaid ? "diagram" : undefined) ||
+    (/^(intro|overview|summary|wrap_up|outro)$/i.test(activeScene?.type ?? "")
+      ? "overview"
+      : "code");
   const isFileChange = previousScene && previousScene.file_path !== activeScene.file_path;
   const transitionDuration = Math.min(20, activeScene?.durationInFrames ?? 20);
   
@@ -637,12 +1000,33 @@ export const IdeWindow = ({
   const flattenedTree = useMemo(() => flattenTree(tree), [tree]);
   
   // Get code content
+  const rawCurrentCode = ((activeScene as SceneWithCode).code || (activeScene as SceneWithCode).file_content || (activeScene as SceneWithCode).fileContents || "").trim();
   const currentCode = getSceneCode(activeScene as SceneWithCode);
   const previousCode = previousScene ? getSceneCode(previousScene as SceneWithCode) : "";
   const codeToRender = currentCode || `// ${activeScene?.file_path ?? "unknown file"}`;
+  const hasRealCode = rawCurrentCode.length > 0 && !looksLikePlaceholder(rawCurrentCode);
+  const isRepoMapScene = visualType === "repo-map";
+  const isOverviewScene = visualType === "overview" && !hasRealCode;
+  const displayLanguageLabel =
+    visualType === "diagram"
+      ? "MERMAID"
+      : visualType === "repo-map"
+        ? "MAP"
+        : visualType === "overview" && !hasRealCode
+        ? "GUIDE"
+        : getLanguageFromPath(activeScene?.file_path || "").toUpperCase();
 
   // Calculate scroll position for highlighted lines
-  const rawHighlightLines = activeScene?.highlight_lines ?? [];
+  const sentenceHighlightRefs = (activeSentence?.source_refs || []).filter(
+    (ref) => ref.file_path === activeScene.file_path
+  );
+  const rawHighlightLines =
+    sentenceHighlightRefs.length > 0
+      ? [
+          Math.min(...sentenceHighlightRefs.map((ref) => ref.start_line)),
+          Math.max(...sentenceHighlightRefs.map((ref) => ref.end_line)),
+        ]
+      : activeScene?.highlight_lines ?? [];
   const totalLines = codeToRender.split("\n").length;
   const lineHeight = 24;
   const codePadding = 32;
@@ -800,12 +1184,12 @@ export const IdeWindow = ({
             fontSize: 10,
             color: '#6d28d9',
           }}>
-            {getLanguageFromPath(activeScene?.file_path || '').toUpperCase()}
+            {displayLanguageLabel}
           </span>
           <span>
             {activeScene?.file_path ?? "Untitled"}
           </span>
-          <BlinkingCursor relativeFrame={relativeFrame} />
+          {visualType !== "diagram" && <BlinkingCursor relativeFrame={relativeFrame} />}
         </div>
         
         {/* Right side badges */}
@@ -842,9 +1226,9 @@ export const IdeWindow = ({
         height: CODE_VIEWPORT_HEIGHT,
         background: 'linear-gradient(180deg, #ffffff 0%, #fafafa 100%)',
       }}>
-        {isIntroOrOverview ? (
+        {isOverviewScene ? (
           <OverviewCard
-            title={activeScene?.title ?? "Project Overview"}
+            title={activeScene?.title || "Project Overview"}
             filePath={activeScene?.file_path}
             relativeFrame={relativeFrame}
           />
@@ -898,115 +1282,119 @@ export const IdeWindow = ({
           </div>
         </aside>
 
-        {/* Code Editor */}
+        {/* Main Stage */}
         <div style={{ position: "relative", flex: 1, overflow: "hidden" }}>
-          {/* Minimap */}
-          <Minimap
-            totalLines={totalLines}
-            highlightLines={highlightLines}
-            currentScrollPosition={Math.abs(translateY) / (totalLines * lineHeight)}
-          />
-          {isFileChange && relativeFrame < 45 && (
-            <ModuleLabel
-              label={getModuleLabel(activeScene)}
-              relativeFrame={relativeFrame}
-              visibleFrames={45}
-            />
-          )}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              transform: `translateY(${translateY}px) scale(${zoomProgress})`,
-              transformOrigin: "top left",
-              perspective: '1000px',
-            }}
-          >
-            <div style={{ position: "absolute", inset: 0, padding: "24px 32px" }}>
-              {isFileChange && relativeFrame < transitionDuration ? (
-                <>
-                  {/* Outgoing code - slide left */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      padding: "24px 32px",
-                      transform: `translateX(${outgoingTranslateX}px)`,
-                      opacity: outgoingOpacity,
-                    }}
-                  >
-                    <CodeBlock
-                      code={previousCode || codeToRender}
-                      filePath={previousScene?.file_path ?? ""}
-                      highlightLines={previousScene?.highlight_lines ?? []}
-                      relativeFrame={relativeFrame}
-                      isExiting={true}
-                    />
-                  </div>
-                  {/* Incoming code - slide in from right */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      padding: "24px 32px",
-                      transform: `translateX(${incomingTranslateX}px)`,
-                      opacity: incomingOpacity,
-                    }}
-                  >
+          {visualType === "diagram" ? (
+            <DiagramStage scene={activeScene} relativeFrame={relativeFrame} />
+          ) : isRepoMapScene ? (
+            <RepoMapStage scene={activeScene} tree={tree} relativeFrame={relativeFrame} />
+          ) : (
+            <>
+              <Minimap
+                totalLines={totalLines}
+                highlightLines={highlightLines}
+                currentScrollPosition={Math.abs(translateY) / (totalLines * lineHeight)}
+              />
+              {isFileChange && relativeFrame < 45 && (
+                <ModuleLabel
+                  label={getModuleLabel(activeScene)}
+                  relativeFrame={relativeFrame}
+                  visibleFrames={45}
+                />
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  transform: `translateY(${translateY}px) scale(${zoomProgress})`,
+                  transformOrigin: "top left",
+                  perspective: '1000px',
+                }}
+              >
+                <div style={{ position: "absolute", inset: 0, padding: "24px 32px" }}>
+                  {isFileChange && relativeFrame < transitionDuration ? (
+                    <>
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          padding: "24px 32px",
+                          transform: `translateX(${outgoingTranslateX}px)`,
+                          opacity: outgoingOpacity,
+                        }}
+                      >
+                        <CodeBlock
+                          code={previousCode || codeToRender}
+                          filePath={previousScene?.file_path ?? ""}
+                          highlightLines={previousScene?.highlight_lines ?? []}
+                          relativeFrame={relativeFrame}
+                          isExiting={true}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          padding: "24px 32px",
+                          transform: `translateX(${incomingTranslateX}px)`,
+                          opacity: incomingOpacity,
+                        }}
+                      >
+                        <CodeBlock
+                          code={codeToRender}
+                          filePath={activeScene?.file_path ?? ""}
+                          highlightLines={highlightLines}
+                          relativeFrame={relativeFrame}
+                          isEntering={true}
+                        />
+                      </div>
+                    </>
+                  ) : (
                     <CodeBlock
                       code={codeToRender}
                       filePath={activeScene?.file_path ?? ""}
                       highlightLines={highlightLines}
                       relativeFrame={relativeFrame}
-                      isEntering={true}
                     />
-                  </div>
-                </>
-              ) : (
-                <CodeBlock
-                  code={codeToRender}
-                  filePath={activeScene?.file_path ?? ""}
-                  highlightLines={highlightLines}
-                  relativeFrame={relativeFrame}
-                />
-              )}
-            </div>
-          </div>
+                  )}
+                </div>
+              </div>
 
-          {/* Enhanced fade gradients */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: 80,
-              background: "linear-gradient(to left, #ffffff, transparent)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 60,
-              background: "linear-gradient(to top, #ffffff, transparent)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 30,
-              background: "linear-gradient(to bottom, #ffffff, transparent)",
-              pointerEvents: "none",
-            }}
-          />
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  width: 80,
+                  background: "linear-gradient(to left, #ffffff, transparent)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 60,
+                  background: "linear-gradient(to top, #ffffff, transparent)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 30,
+                  background: "linear-gradient(to bottom, #ffffff, transparent)",
+                  pointerEvents: "none",
+                }}
+              />
+            </>
+          )}
         </div>
           </>
         )}
@@ -1071,7 +1459,11 @@ export const IdeWindow = ({
               <polyline points="4 17 10 11 4 5" />
               <line x1="12" y1="19" x2="20" y2="19" />
             </svg>
-            Ln {Math.min(...(highlightLines.length > 0 ? highlightLines : [1]))}, Col 1
+            {visualType === "diagram"
+              ? "System flow view"
+              : visualType === "repo-map"
+                ? "Repository map view"
+              : `Ln ${Math.min(...(highlightLines.length > 0 ? highlightLines : [1]))}, Col 1`}
           </div>
         </div>
         
@@ -1089,7 +1481,7 @@ export const IdeWindow = ({
             border: '1px solid rgba(139, 92, 246, 0.18)',
             fontSize: 10,
           }}>
-            {getLanguageFromPath(activeScene?.file_path || '')}
+            {displayLanguageLabel.toLowerCase()}
           </span>
           <span>UTF-8</span>
         </div>

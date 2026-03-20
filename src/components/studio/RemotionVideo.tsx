@@ -53,6 +53,31 @@ const getActiveSceneIndex = (frame: number, scenes: HydratedManifest["scenes"]) 
   return index === -1 ? 0 : index;
 };
 
+const getActiveSentenceBlock = (
+  relativeFrame: number,
+  scene: HydratedManifest["scenes"][number]
+) => {
+  const blocks = scene?.sentence_blocks || [];
+  if (!blocks.length) return null;
+  return (
+    blocks.find(
+      (block) => relativeFrame >= block.startFrame && relativeFrame < block.endFrame
+    ) || blocks[0]
+  );
+};
+
+/** Merge manifest.repo_files with scene file_paths so Explorer always has a full repo structure. */
+function getRepoFileList(
+  manifest: HydratedManifest,
+  scenes: HydratedManifest["scenes"]
+): string[] {
+  const fromManifest = Array.isArray(manifest.repo_files) ? manifest.repo_files : [];
+  const fromScenes = scenes
+    .map((s) => s.file_path)
+    .filter((p): p is string => Boolean(p) && p !== "N/A");
+  return Array.from(new Set([...fromManifest, ...fromScenes]));
+}
+
 // Animated particle component
 const AnimatedParticle = ({ 
   index, 
@@ -350,6 +375,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
   const activeScene = scenes[sceneIndex] ?? scenes[0];
   const previousScene = sceneIndex > 0 ? scenes[sceneIndex - 1] : undefined;
   const relativeFrame = frame - (activeScene?.startFrame ?? 0);
+  const activeSentenceBlock = getActiveSentenceBlock(relativeFrame, activeScene);
   const isFirstScene = sceneIndex === 0;
   const isLastScene = sceneIndex === scenes.length - 1;
 
@@ -615,7 +641,8 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
               activeScene={activeScene}
               previousScene={previousScene}
               relativeFrame={relativeFrame}
-              allFiles={manifest.repo_files}
+              activeSentence={activeSentenceBlock || undefined}
+              allFiles={getRepoFileList(manifest, scenes)}
             />
           </div>
         </div>
@@ -709,7 +736,7 @@ export const RemotionVideo = ({ manifest }: { manifest: HydratedManifest }) => {
                 textShadow: '0 2px 12px rgba(0, 0, 0, 0.4)',
               }}
             >
-              {activeScene?.narration_text || ""}
+              {activeSentenceBlock?.sentence || activeScene?.narration_text || ""}
             </p>
           </div>
         </div>

@@ -1,0 +1,375 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - link "GitFlick GitFlick Repo Intelligence Workspace" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img "GitFlick" [ref=e9]
+        - generic [ref=e10]:
+          - generic [ref=e11]: GitFlick
+          - text: Repo Intelligence Workspace
+    - main [ref=e14]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - img [ref=e23]
+              - text: One Repo Context, Multiple Review Lanes
+            - heading "Turn repository context into a walkthrough your team can actually review." [level=1] [ref=e25]
+            - paragraph [ref=e26]: GitFlick indexes the repository once, then gives you a clean workspace for video review, structural graph exploration, repo Q&A, and issue-bound mini SWE-agent runs.
+            - generic [ref=e27]:
+              - generic [ref=e28]: Walkthrough
+              - generic [ref=e29]: Code Graph
+              - generic [ref=e30]: Repo Q&A
+              - generic [ref=e31]: Agent Ops
+            - generic [ref=e32]:
+              - generic [ref=e33]:
+                - generic [ref=e34]:
+                  - img [ref=e35]
+                  - generic [ref=e38]: Operator note
+                - text: One repo context reused across every lane
+              - generic [ref=e39]:
+                - generic [ref=e40]:
+                  - img [ref=e41]
+                  - generic [ref=e44]: Operator note
+                - text: Git URL and local folder intake from the same entry point
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - img [ref=e47]
+                  - generic [ref=e50]: Operator note
+                - text: Runs stay isolated until you explicitly approve promotion
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: Workspace Intake
+              - heading "Start from a Git URL or a local repository folder" [level=2] [ref=e54]
+              - paragraph [ref=e55]: Use the same intake flow whether the repository already lives on GitHub or only exists on disk.
+            - generic [ref=e56]:
+              - generic [ref=e57]:
+                - tablist [ref=e58]:
+                  - tab "Git Repository" [selected] [ref=e59] [cursor=pointer]
+                  - tab "Folder Upload" [ref=e60] [cursor=pointer]
+                - tabpanel "Git Repository" [ref=e61]:
+                  - generic [ref=e62]:
+                    - generic [ref=e63]: Git URL
+                    - generic [ref=e64]:
+                      - textbox "Paste https://github.com/user/repo or user/repo" [ref=e65]
+                      - button "Open Workspace" [ref=e66] [cursor=pointer]:
+                        - text: Open Workspace
+                        - img
+                    - generic [ref=e67]:
+                      - generic [ref=e68]: Existing projects reopen instead of re-indexing
+                      - generic [ref=e69]: Works with GitHub URLs or owner/repo
+                  - generic [ref=e70]:
+                    - button "Try sample repo" [ref=e71] [cursor=pointer]:
+                      - img
+                      - text: Try sample repo
+                    - button "Prefer local folder" [ref=e72] [cursor=pointer]:
+                      - img
+                      - text: Prefer local folder
+              - generic [ref=e73]:
+                - generic [ref=e74]: Operator Preview
+                - generic [ref=e75]:
+                  - generic [ref=e76]:
+                    - img [ref=e78]
+                    - generic [ref=e81]:
+                      - generic [ref=e82]: Walkthrough
+                      - generic [ref=e83]: Scene-backed video review generated from repository evidence.
+                  - generic [ref=e84]:
+                    - img [ref=e86]
+                    - generic [ref=e91]:
+                      - generic [ref=e92]: Code Graph
+                      - generic [ref=e93]: Interactive structure view for entry points, hubs, and dependency hotspots.
+                  - generic [ref=e94]:
+                    - img [ref=e96]
+                    - generic [ref=e99]:
+                      - generic [ref=e100]: Repo Q&A
+                      - generic [ref=e101]: File-backed answers for onboarding, runtime tracing, and boundary review.
+                  - generic [ref=e102]:
+                    - img [ref=e104]
+                    - generic [ref=e106]:
+                      - generic [ref=e107]: Agent Ops
+                      - generic [ref=e108]: Issue-bound sandbox runs with patch, validations, and PR draft review.
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - img [ref=e112]
+            - heading "Walkthrough" [level=3] [ref=e115]
+            - paragraph [ref=e116]: Scene-backed video review generated from repository evidence.
+          - generic [ref=e117]:
+            - img [ref=e119]
+            - heading "Code Graph" [level=3] [ref=e124]
+            - paragraph [ref=e125]: Interactive structure view for entry points, hubs, and dependency hotspots.
+          - generic [ref=e126]:
+            - img [ref=e128]
+            - heading "Repo Q&A" [level=3] [ref=e131]
+            - paragraph [ref=e132]: File-backed answers for onboarding, runtime tracing, and boundary review.
+          - generic [ref=e133]:
+            - img [ref=e135]
+            - heading "Agent Ops" [level=3] [ref=e137]
+            - paragraph [ref=e138]: Issue-bound sandbox runs with patch, validations, and PR draft review.
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: Workspace Outputs
+            - heading "One indexed repository, four practical ways to review it" [level=2] [ref=e144]
+          - paragraph [ref=e145]: GitFlick is not just a video generator. It is a repository workspace that keeps walkthroughs, structural views, Q&A, and agent-run evidence aligned to the same repo memory.
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - img [ref=e149]
+            - heading "Scene-backed walkthroughs" [level=3] [ref=e152]
+            - paragraph [ref=e153]: Video review anchored to file paths, durations, and storyboard structure.
+          - generic [ref=e154]:
+            - img [ref=e156]
+            - heading "Structural visibility" [level=3] [ref=e161]
+            - paragraph [ref=e162]: Interactive graph output for entry points, hubs, and dependency flow.
+          - generic [ref=e163]:
+            - img [ref=e165]
+            - heading "File-backed answers" [level=3] [ref=e168]
+            - paragraph [ref=e169]: Repo questions resolved against evidence instead of vague summaries.
+          - generic [ref=e170]:
+            - img [ref=e172]
+            - heading "Issue-bound agent runs" [level=3] [ref=e174]
+            - paragraph [ref=e175]: Sandbox attempts with patch, validations, and PR draft review.
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - generic [ref=e180]: Why Teams Lose Context
+          - heading "Repositories are understandable. Reviewing them is what breaks." [level=2] [ref=e181]:
+            - text: Repositories are understandable.
+            - text: Reviewing them is what breaks.
+          - paragraph [ref=e182]: The problem is not that code is impossible to explain. The problem is that the explanation is fragmented across tools, roles, and moments in time.
+        - generic [ref=e183]:
+          - generic [ref=e184]:
+            - img [ref=e186]
+            - heading "Repository context is expensive to rebuild" [level=3] [ref=e191]
+            - paragraph [ref=e192]: Architecture, entry points, and core files are obvious only after someone has already spent time re-reading the codebase.
+          - generic [ref=e193]:
+            - img [ref=e195]
+            - heading "Answers are scattered across tools" [level=3] [ref=e198]
+            - paragraph [ref=e199]: Documentation, issues, chat threads, and source files each hold part of the picture, but almost never in one review flow.
+          - generic [ref=e200]:
+            - img [ref=e202]
+            - heading "Change review rarely starts with full context" [level=3] [ref=e206]
+            - paragraph [ref=e207]: Teams review diffs without always understanding the surrounding system, which makes risk harder to judge and onboarding slower.
+          - generic [ref=e208]:
+            - img [ref=e210]
+            - heading "Onboarding depends on whoever remembers the repo" [level=3] [ref=e215]
+            - paragraph [ref=e216]: Critical knowledge often lives with a few engineers instead of staying attached to the repository as a reusable workspace artifact.
+      - generic [ref=e218]:
+        - generic [ref=e219]:
+          - generic [ref=e220]: Operating Model
+          - heading "A cleaner path from repository to reviewable output" [level=2] [ref=e221]
+          - paragraph [ref=e222]: "The flow is intentionally simple: bind the repo once, reuse that context across the workspace, and open the specific lane you need for the current review task."
+        - generic [ref=e223]:
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - img [ref=e227]
+              - generic [ref=e232]: "01"
+            - heading "Bind the repository" [level=3] [ref=e233]
+            - paragraph [ref=e234]: Start from a Git URL or a local folder. GitFlick indexes the repo and stores a reusable project workspace.
+          - generic [ref=e235]:
+            - generic [ref=e236]:
+              - img [ref=e238]
+              - generic [ref=e241]: "02"
+            - heading "Generate the walkthrough" [level=3] [ref=e242]
+            - paragraph [ref=e243]: The system builds a scene-backed narrative artifact that stays tied to files, durations, and repo evidence.
+          - generic [ref=e244]:
+            - generic [ref=e245]:
+              - img [ref=e247]
+              - generic [ref=e252]: "03"
+            - heading "Inspect structure and ask questions" [level=3] [ref=e253]
+            - paragraph [ref=e254]: Move between the code graph and repo Q&A to trace architecture, reading paths, and operational boundaries.
+          - generic [ref=e255]:
+            - generic [ref=e256]:
+              - img [ref=e258]
+              - generic [ref=e262]: "04"
+            - heading "Launch issue runs when needed" [level=3] [ref=e263]
+            - paragraph [ref=e264]: Turn one GitHub issue into one isolated sandbox attempt with diff, validations, and PR draft review.
+      - generic [ref=e267]:
+        - generic [ref=e268]:
+          - generic [ref=e274]: workspace/gitflick/review
+          - generic [ref=e276]:
+            - generic [ref=e280]:
+              - generic [ref=e282]: </>
+              - generic [ref=e283]: let
+              - generic [ref=e284]: =>
+              - generic [ref=e285]: ()
+              - generic [ref=e286]: </>
+              - generic [ref=e287]: let
+              - generic [ref=e288]: =>
+              - generic [ref=e289]: ()
+              - generic [ref=e290]: </>
+              - generic [ref=e291]: let
+              - generic [ref=e292]: =>
+              - generic [ref=e293]: ()
+              - generic [ref=e294]: </>
+              - generic [ref=e295]: let
+              - generic [ref=e296]: =>
+              - generic:
+                - generic:
+                  - generic: 1 / 6
+                - generic: Scene 1
+              - generic [ref=e339]:
+                - generic [ref=e341]:
+                  - generic [ref=e346]:
+                    - generic [ref=e347]: MARKDOWN
+                    - generic [ref=e348]: README.md
+                  - generic [ref=e351]: Live
+                - generic [ref=e353]:
+                  - complementary [ref=e354]:
+                    - generic [ref=e355]:
+                      - img [ref=e356]
+                      - text: Explorer
+                    - generic [ref=e359]:
+                      - generic [ref=e361]:
+                        - generic [ref=e362]: ▶
+                        - img [ref=e363]
+                        - generic [ref=e365]: src
+                      - generic [ref=e367]:
+                        - generic [ref=e368]: "{}"
+                        - generic [ref=e369]: package.json
+                      - generic [ref=e371]:
+                        - generic [ref=e372]: MD
+                        - generic [ref=e373]: README.md
+                  - generic [ref=e381]:
+                    - generic:
+                      - img
+                    - generic [ref=e382]:
+                      - generic [ref=e383]:
+                        - generic [ref=e384]: "1"
+                        - generic [ref=e385]: "# GitFlick Demo"
+                      - generic [ref=e387]: "2"
+                      - generic [ref=e389]:
+                        - generic [ref=e390]: "3"
+                        - generic [ref=e391]: A modern React component library built with TypeScript and Tailwind CSS.
+                      - generic [ref=e393]: "4"
+                      - generic [ref=e395]:
+                        - generic [ref=e396]: "5"
+                        - generic [ref=e397]: "## Features"
+                      - generic [ref=e399]: "6"
+                      - generic [ref=e401]:
+                        - generic [ref=e402]: "7"
+                        - generic [ref=e403]: "- 🎨 Beautiful, accessible components"
+                      - generic [ref=e404]:
+                        - generic [ref=e405]: "8"
+                        - generic [ref=e406]: "- ⚡ Lightning-fast performance"
+                      - generic [ref=e407]:
+                        - generic [ref=e408]: "9"
+                        - generic [ref=e409]: "- 📱 Fully responsive design"
+                      - generic [ref=e410]:
+                        - generic [ref=e411]: "10"
+                        - generic [ref=e412]: "- 🎯 TypeScript support"
+                      - generic [ref=e413]:
+                        - generic [ref=e414]: "11"
+                        - generic [ref=e415]: "- 🌈 Customizable themes"
+                      - generic [ref=e417]: "12"
+                      - generic [ref=e419]:
+                        - generic [ref=e420]: "13"
+                        - generic [ref=e421]: "## Quick Start"
+                      - generic [ref=e423]: "14"
+                      - generic [ref=e425]:
+                        - generic [ref=e426]: "15"
+                        - generic [ref=e427]: "```bash"
+                      - generic [ref=e428]:
+                        - generic [ref=e429]: "16"
+                        - generic [ref=e430]: npm install @gitflick/components
+                      - generic [ref=e431]:
+                        - generic [ref=e432]: "17"
+                        - generic [ref=e433]: "```"
+                - generic [ref=e434]:
+                  - generic [ref=e435]:
+                    - generic [ref=e436]: Scene 1 of 6
+                    - generic [ref=e439]:
+                      - img [ref=e440]
+                      - text: 5 files
+                    - generic [ref=e443]:
+                      - img [ref=e444]
+                      - text: Ln 1, Col 1
+                  - generic [ref=e446]:
+                    - generic [ref=e447]: markdown
+                    - generic [ref=e448]: UTF-8
+              - generic [ref=e451]:
+                - generic [ref=e453]: intro
+                - paragraph [ref=e454]: Welcome to GitFlick.
+            - button "Pause demo" [ref=e455] [cursor=pointer]:
+              - img [ref=e456]
+              - text: Pause demo
+            - generic [ref=e459]: Live walkthrough preview
+            - generic [ref=e460]: 1080p • 30 FPS
+        - generic [ref=e461]:
+          - generic [ref=e462]:
+            - generic [ref=e463]: Demo Workspace
+            - heading "The output is a review surface, not just a rendered clip" [level=2] [ref=e464]
+            - paragraph [ref=e465]: GitFlick keeps the video artifact inside a broader workspace so teams can move from walkthrough to structure, questions, and issue operations without starting over.
+          - generic [ref=e466]:
+            - img [ref=e468]
+            - heading "Walkthrough review" [level=3] [ref=e470]
+            - paragraph [ref=e471]: Watch the generated story and jump scene by scene without leaving the workspace.
+          - generic [ref=e472]:
+            - img [ref=e474]
+            - heading "Code graph context" [level=3] [ref=e479]
+            - paragraph [ref=e480]: Keep structural visibility nearby while reviewing the repo as a system.
+          - generic [ref=e481]:
+            - img [ref=e483]
+            - heading "Repo investigation" [level=3] [ref=e486]
+            - paragraph [ref=e487]: Ask operational questions and tie answers back to concrete evidence.
+          - generic [ref=e488]:
+            - img [ref=e490]
+            - heading "Agent run review" [level=3] [ref=e494]
+            - paragraph [ref=e495]: Inspect issue-bound patch attempts with validations and promotion controls.
+      - generic [ref=e497]:
+        - generic [ref=e498]:
+          - generic [ref=e499]: Product Shape
+          - heading "Built as a repository workspace, not a one-off output generator" [level=2] [ref=e500]
+        - generic [ref=e501]:
+          - generic [ref=e502]:
+            - img [ref=e504]
+            - generic [ref=e508]: 1 Repo
+            - generic [ref=e509]: shared context
+            - paragraph [ref=e510]: The workspace keeps walkthrough, graph, Q&A, and runs anchored to one repository memory.
+          - generic [ref=e511]:
+            - img [ref=e513]
+            - generic [ref=e517]: 4 Lanes
+            - generic [ref=e518]: inside Studio
+            - paragraph [ref=e519]: Review the repo through video, structure, file-backed answers, and issue operations.
+          - generic [ref=e520]:
+            - img [ref=e522]
+            - generic [ref=e529]: Saved
+            - generic [ref=e530]: project memory
+            - paragraph [ref=e531]: Backend-backed projects keep manifests, graph artifacts, and repo evidence available later.
+          - generic [ref=e532]:
+            - img [ref=e534]
+            - generic [ref=e537]: Review-Gated
+            - generic [ref=e538]: agent output
+            - paragraph [ref=e539]: Issue runs stay isolated and do not unlock promotion until the review package is approved.
+      - generic [ref=e543]:
+        - generic [ref=e544]:
+          - generic [ref=e545]:
+            - img [ref=e546]
+            - text: Ready To Review A Repo
+          - heading "Start with the repository. Keep the rest inside one workspace." [level=2] [ref=e548]
+          - paragraph [ref=e549]: GitFlick gives you a cleaner path from repo intake to walkthrough review, structural understanding, file-backed Q&A, and issue-driven agent operations.
+        - generic [ref=e550]:
+          - generic [ref=e551]: Next action
+          - generic [ref=e552]:
+            - link "Sign in to open a workspace" [ref=e553] [cursor=pointer]:
+              - /url: /login
+              - text: Sign in to open a workspace
+              - img
+            - link "Start from repo intake" [ref=e554] [cursor=pointer]:
+              - /url: "#hero-launch"
+              - text: Start from repo intake
+              - img
+    - contentinfo [ref=e555]:
+      - generic [ref=e556]:
+        - generic [ref=e557]:
+          - img "GitFlick" [ref=e559]
+          - generic [ref=e560]:
+            - generic [ref=e561]: GitFlick
+            - generic [ref=e562]: Repo Intelligence Workspace
+        - generic [ref=e563]:
+          - link "Privacy" [ref=e564] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms" [ref=e565] [cursor=pointer]:
+            - /url: /terms
+        - generic [ref=e566]: © 2026 GitFlick. All rights reserved.

@@ -1,0 +1,21 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e8]:
+    - img "GitFlick" [ref=e10]
+    - generic [ref=e11]:
+      - img [ref=e12]
+      - text: Route not found
+    - heading "404" [level=1] [ref=e14]
+    - paragraph [ref=e15]: That page does not exist in this workspace.
+    - paragraph [ref=e16]: The route /this-page-does-not-exist could not be resolved. Return to the main intake flow or jump back into your dashboard.
+    - generic [ref=e17]:
+      - link "Return home" [ref=e18] [cursor=pointer]:
+        - /url: /
+        - img
+        - text: Return home
+      - link "Open dashboard" [ref=e19] [cursor=pointer]:
+        - /url: /dashboard
+        - img
+        - text: Open dashboard

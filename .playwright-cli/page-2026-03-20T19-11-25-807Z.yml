@@ -1,0 +1,24 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - img "GitFlick" [ref=e9]
+      - generic [ref=e10]: GitFlick
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - img [ref=e14]
+        - heading "Almost there!" [level=2] [ref=e17]
+        - paragraph [ref=e18]: Sign in to access the Studio and edit your generated video.
+      - generic [ref=e20]:
+        - img [ref=e21]
+        - generic [ref=e24]: Sign in to reopen saved workspaces and keep exports, repo context, and Studio access in one account.
+      - generic [ref=e25]:
+        - link "Sign In" [ref=e26] [cursor=pointer]:
+          - /url: /login
+          - img
+          - text: Sign In
+        - link "Back to home" [ref=e27] [cursor=pointer]:
+          - /url: /
+      - paragraph [ref=e28]: No extra setup required

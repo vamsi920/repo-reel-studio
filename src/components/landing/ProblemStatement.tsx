@@ -1,92 +1,65 @@
-import { FileText, Clock, Users, TrendingDown } from "lucide-react";
+import { FileSearch, GitPullRequest, MessagesSquare, Users } from "lucide-react";
+
+const PROBLEMS = [
+  {
+    icon: FileSearch,
+    title: "Repository context is expensive to rebuild",
+    description:
+      "Architecture, entry points, and core files are obvious only after someone has already spent time re-reading the codebase.",
+  },
+  {
+    icon: MessagesSquare,
+    title: "Answers are scattered across tools",
+    description:
+      "Documentation, issues, chat threads, and source files each hold part of the picture, but almost never in one review flow.",
+  },
+  {
+    icon: GitPullRequest,
+    title: "Change review rarely starts with full context",
+    description:
+      "Teams review diffs without always understanding the surrounding system, which makes risk harder to judge and onboarding slower.",
+  },
+  {
+    icon: Users,
+    title: "Onboarding depends on whoever remembers the repo",
+    description:
+      "Critical knowledge often lives with a few engineers instead of staying attached to the repository as a reusable workspace artifact.",
+  },
+] as const;
 
 export const ProblemStatement = () => {
-  const problems = [
-    {
-      icon: FileText,
-      title: "Stale Documentation",
-      description: "READMEs get outdated the moment code changes. Developers skip them entirely.",
-      stat: "73% of developers",
-      statDesc: "find documentation outdated",
-    },
-    {
-      icon: Clock,
-      title: "Time-Consuming Onboarding",
-      description: "New team members spend hours reading code to understand architecture.",
-      stat: "5+ hours",
-      statDesc: "average onboarding time",
-    },
-    {
-      icon: Users,
-      title: "Knowledge Gaps",
-      description: "Critical architectural decisions are lost in code comments or forgotten.",
-      stat: "60% of projects",
-      statDesc: "lack clear architecture docs",
-    },
-    {
-      icon: TrendingDown,
-      title: "Low Engagement",
-      description: "Text-based docs are boring. Developers prefer visual, interactive content.",
-      stat: "3x more engaging",
-      statDesc: "video vs. text content",
-    },
-  ];
-
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-rose-500/5 to-transparent" />
-      
-      <div className="container relative mx-auto px-4">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-100 border border-rose-300/60 text-sm mb-6">
-            <span className="text-rose-600">⚠️</span>
-            <span className="text-rose-800 font-medium">The Problem We're Solving</span>
+    <section className="py-24">
+      <div className="container mx-auto px-4">
+        <div className="grid gap-10 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+          <div>
+            <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-700">
+              Why Teams Lose Context
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+              Repositories are understandable.
+              <br />
+              Reviewing them is what breaks.
+            </h2>
+            <p className="mt-5 text-base leading-8 text-slate-600">
+              The problem is not that code is impossible to explain. The problem is that the explanation
+              is fragmented across tools, roles, and moments in time.
+            </p>
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            Developer Documentation is{" "}
-            <span className="bg-gradient-to-r from-rose-500 to-orange-500 bg-clip-text text-transparent">
-              Broken
-            </span>
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Traditional documentation fails developers. We're fixing it with AI-powered video walkthroughs.
-          </p>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          {problems.map((problem, index) => (
-            <div
-              key={problem.title}
-              className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-rose-300/50 hover:bg-rose-50/30 transition-all duration-300"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <problem.icon className="h-6 w-6 text-rose-600" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {PROBLEMS.map((problem) => (
+              <div
+                key={problem.title}
+                className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                <div className="inline-flex rounded-2xl bg-slate-100 p-2 text-slate-700">
+                  <problem.icon className="h-5 w-5" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className="font-semibold text-lg">{problem.title}</h3>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-rose-600">{problem.stat}</div>
-                      <div className="text-xs text-muted-foreground">{problem.statDesc}</div>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground">{problem.description}</p>
-                </div>
+                <h3 className="mt-4 text-lg font-semibold text-slate-950">{problem.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{problem.description}</p>
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 via-cyan-500/10 to-blue-500/10 border border-primary/20">
-            <span className="text-2xl">💡</span>
-            <div className="text-left">
-              <p className="font-semibold text-foreground">GitFlick solves this</p>
-              <p className="text-sm text-muted-foreground">
-                Turn any repository into an engaging video walkthrough in under 60 seconds
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

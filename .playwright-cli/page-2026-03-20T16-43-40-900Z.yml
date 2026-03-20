@@ -1,0 +1,71 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - link "Back to home" [ref=e11] [cursor=pointer]:
+        - /url: /
+        - img [ref=e12]
+        - text: Back to home
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - img "GitFlick" [ref=e17]
+          - generic [ref=e18]: GitFlick
+        - heading "Code as high-end content." [level=1] [ref=e19]:
+          - text: Code as
+          - text: high-end content.
+        - paragraph [ref=e20]: The editorial workspace for modern developers. Visualize, audit, and orchestrate your repository with atmospheric precision.
+        - generic [ref=e22]:
+          - img [ref=e24]
+          - generic [ref=e27]:
+            - generic [ref=e28]: Your code stays private.
+            - generic [ref=e29]: We only read-access your repository. Security is part of the product architecture, not an afterthought.
+        - generic [ref=e30]:
+          - generic [ref=e31]: Your code stays private. We only read repository context required for indexing.
+          - generic [ref=e32]: Graph, walkthrough, and repo Q&A share the same workspace memory.
+          - generic [ref=e33]: Agent runs stay isolated until you explicitly approve promotion.
+        - generic [ref=e34]:
+          - generic [ref=e35]: SOC2 compliant
+          - generic [ref=e37]: AES-256 encrypted
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - heading "Welcome back" [level=2] [ref=e42]
+        - paragraph [ref=e43]: Select your preferred entry point.
+      - generic [ref=e44]:
+        - button "G Google" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]: G
+          - text: Google
+        - button "GitHub" [ref=e47] [cursor=pointer]:
+          - img
+          - text: GitHub
+      - generic [ref=e50]: Or email
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - text: Email address
+          - textbox "Email address" [ref=e54]:
+            - /placeholder: name@company.com
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]: Password
+            - link "Forgot?" [ref=e58] [cursor=pointer]:
+              - /url: /forgot-password
+          - textbox "Password" [ref=e59]:
+            - /placeholder: Enter your password
+        - button "Initialize Session" [ref=e60] [cursor=pointer]:
+          - img
+          - text: Initialize Session
+      - generic [ref=e62]:
+        - img [ref=e63]
+        - generic [ref=e65]:
+          - generic [ref=e66]: Private workspace memory
+          - generic [ref=e67]: Sign in to reopen saved walkthroughs, graph artifacts, repo Q&A sessions, and agent runs from the same repository context.
+      - generic [ref=e68]:
+        - text: Don't have an account?
+        - link "Request Access" [ref=e69] [cursor=pointer]:
+          - /url: /signup
+      - generic [ref=e70]:
+        - generic [ref=e71]: v2.4.0-stable
+        - generic [ref=e72]: /
+        - generic [ref=e73]: "System status: optimal"
+        - img [ref=e74]
