@@ -18,10 +18,6 @@ import {
   Network,
   Search,
   LayoutGrid,
-  Clapperboard,
-  FolderClosed,
-  History,
-  SlidersHorizontal,
 } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { Button } from "@/components/ui/button";
@@ -42,7 +38,6 @@ import iconUrl from "../../icon.png";
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
 type WorkspaceView = "video" | "graph" | "ask" | "runs";
-type StudioSidebarSection = "overview" | "scenes" | "assets" | "history" | "settings";
 
 interface LogEntry {
   timestamp: string;
@@ -94,18 +89,6 @@ const WORKSPACE_VIEWS: Array<{
   },
 ];
 
-const STUDIO_SIDEBAR_SECTIONS: Array<{
-  id: StudioSidebarSection;
-  label: string;
-  icon: ElementType;
-}> = [
-  { id: "overview", label: "Overview", icon: LayoutGrid },
-  { id: "scenes", label: "Scenes", icon: Clapperboard },
-  { id: "assets", label: "Assets", icon: FolderClosed },
-  { id: "history", label: "History", icon: History },
-  { id: "settings", label: "Settings", icon: SlidersHorizontal },
-];
-
 const hashNarrationText = (scenes: VideoManifest["scenes"]) => {
   let hash = 2166136261;
   for (const scene of scenes) {
@@ -144,11 +127,11 @@ const Studio = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [studioGraphData, setStudioGraphData] = useState<GitNexusGraphData | null>(null);
   const [repoContent, setRepoContent] = useState("");
   const [focusedRepoFilePath, setFocusedRepoFilePath] = useState<string | null>(null);
-  const [sidebarSection, setSidebarSection] = useState<StudioSidebarSection>("overview");
 
   // Load graph data from sessionStorage on mount
   useEffect(() => {
@@ -719,6 +702,12 @@ const Studio = () => {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    if (workspaceView !== "video" && isVideoFullscreen) {
+      setIsVideoFullscreen(false);
+    }
+  }, [workspaceView, isVideoFullscreen]);
+
   const focusRepoFile = useCallback((filePath: string) => {
     setFocusedRepoFilePath(filePath);
     setWorkspaceView("graph");
@@ -737,10 +726,15 @@ const Studio = () => {
           handlePlayPause();
           break;
         case "f":
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-          } else {
-            document.exitFullscreen();
+          if (workspaceView === "video") {
+            e.preventDefault();
+            setIsVideoFullscreen((prev) => !prev);
+          }
+          break;
+        case "escape":
+          if (isVideoFullscreen) {
+            e.preventDefault();
+            setIsVideoFullscreen(false);
           }
           break;
         case "arrowleft":
@@ -757,7 +751,7 @@ const Studio = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePlayPause, handleSeek, currentFrame, durationInFrames]);
+  }, [handlePlayPause, handleSeek, currentFrame, durationInFrames, workspaceView, isVideoFullscreen]);
 
   // Copy share link (unique /v/:id when project is from DB)
   const handleShare = useCallback(() => {
@@ -885,8 +879,6 @@ const Studio = () => {
           repoLabel={repoLabel}
           activeView={workspaceView}
           onChangeView={setWorkspaceView}
-          activeSection={sidebarSection}
-          onChangeSection={setSidebarSection}
         />
 
         <div className="min-w-0">
@@ -956,7 +948,14 @@ const Studio = () => {
               ) : (
                 <div className="space-y-5">
                   {workspaceView === "video" && (
-              <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+              <section
+                className={cn(
+                  "grid gap-5",
+                  isVideoFullscreen
+                    ? "fixed inset-0 z-50 bg-[#081227] p-4 lg:grid-cols-[minmax(0,80%)_minmax(260px,20%)]"
+                    : "xl:grid-cols-[minmax(0,1fr)_300px]",
+                )}
+              >
                 <section className="rounded-[22px] gf-panel p-3 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
                   <div
                     className="relative"
@@ -1003,11 +1002,13 @@ const Studio = () => {
                                 playerRef={playerRef}
                                 manifest={effectiveHydratedManifest}
                                 isPlaying={isPlaying}
+                                isFullscreen={isVideoFullscreen}
                                 currentFrame={currentFrame}
                                 totalFrames={effectiveHydratedManifest.totalFrames || durationInFrames}
                                 fps={30}
                                 onPlayPause={handlePlayPause}
                                 onSeek={handleSeek}
+                                onToggleFullscreen={() => setIsVideoFullscreen((prev) => !prev)}
                                 onSceneChange={(idx) => console.log("Scene changed:", idx)}
                                 onDownloadVideo={downloadVideo}
                                 isDownloadingVideo={isDownloadingVideo}
@@ -1120,14 +1121,10 @@ const StudioSidebar = ({
   repoLabel,
   activeView,
   onChangeView,
-  activeSection,
-  onChangeSection,
 }: {
   repoLabel: string;
   activeView: WorkspaceView;
   onChangeView: (view: WorkspaceView) => void;
-  activeSection: StudioSidebarSection;
-  onChangeSection: (section: StudioSidebarSection) => void;
 }) => (
   <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/8 lg:bg-[#0f1830]">
     <div className="px-4 py-5">
@@ -1171,32 +1168,7 @@ const StudioSidebar = ({
       </div>
     </div>
 
-    <nav className="flex-1 px-3 py-1">
-      <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-        Studio menu
-      </div>
-      <div className="space-y-1.5">
-        {STUDIO_SIDEBAR_SECTIONS.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onChangeSection(item.id)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
-                isActive
-                  ? "bg-white/[0.08] text-white"
-                  : "text-white/62 hover:bg-white/[0.05] hover:text-white",
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="flex-1" />
 
     <div className="px-4 py-4 text-xs text-white/36">
       Studio workspace shell

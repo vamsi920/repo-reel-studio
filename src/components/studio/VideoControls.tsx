@@ -45,11 +45,13 @@ interface VideoControlsProps {
   playerRef: React.RefObject<PlayerRef>;
   manifest: HydratedManifest;
   isPlaying: boolean;
+  isFullscreen: boolean;
   currentFrame: number;
   totalFrames: number;
   fps: number;
   onPlayPause: () => void;
   onSeek: (frame: number) => void;
+  onToggleFullscreen: () => void;
   onSceneChange?: (sceneIndex: number) => void;
   /** Download video (WebM or MP4); when provided, Download becomes a dropdown with Video + Manifest */
   onDownloadVideo?: () => void;
@@ -66,18 +68,19 @@ export const VideoControls = ({
   playerRef,
   manifest,
   isPlaying,
+  isFullscreen,
   currentFrame,
   totalFrames,
   fps,
   onPlayPause,
   onSeek,
+  onToggleFullscreen,
   onSceneChange,
   onDownloadVideo,
   isDownloadingVideo = false,
 }: VideoControlsProps) => {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isLoop, setIsLoop] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -172,27 +175,6 @@ export const VideoControls = ({
       playerRef.current?.setVolume(0);
     }
   }, [isMuted, volume, playerRef]);
-
-  // Fullscreen
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
 
   // Playback rate
   const handlePlaybackRateChange = useCallback((rate: number) => {
@@ -643,7 +625,7 @@ export const VideoControls = ({
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/10"
-                    onClick={toggleFullscreen}
+                    onClick={onToggleFullscreen}
                   >
                     {isFullscreen ? (
                       <Minimize className="h-4 w-4" />
