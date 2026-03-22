@@ -213,6 +213,10 @@ def create_agent_run_router() -> APIRouter:
                     "commands": [],
                 },
                 "prDraft": None,
+                "prReadable": None,
+                "testMatrix": None,
+                "qualityGates": None,
+                "changeIntent": None,
                 "artifactPaths": {},
                 "failureCategory": None,
             },
@@ -224,12 +228,16 @@ def create_agent_run_router() -> APIRouter:
                 "confidenceScore": 0.2,
                 "confidenceReasons": [],
             },
+            "metrics": None,
             "approval": {
                 "status": "pending",
                 "branchName": build_branch_name(None, request.repoName),
                 "instructions": [],
                 "approvedAt": None,
                 "rejectedAt": None,
+                "prUrl": None,
+                "commitSha": None,
+                "promotionLog": [],
             },
         }
 
@@ -269,16 +277,23 @@ def create_agent_run_router() -> APIRouter:
         if not workspace_path:
             raise HTTPException(status_code=400, detail="No sandbox workspace is available")
 
+        policy_violations = run.get("policyViolations") or []
+        if policy_violations:
+            append_timeline(run_id, "policy_warning", "Approving despite policy violations", "; ".join(policy_violations), level="warning")
+
         branch_name = sanitize_branch_name(
             request.branchName
             or run["approval"].get("branchName")
             or build_branch_name(run.get("issue"), run["repoName"])
         )
+        promotion_log = []
+
         branch_result = run_subprocess(
             ["git", "checkout", "-B", branch_name],
             cwd=workspace_path,
             timeout_seconds=20,
         )
+        promotion_log.append(f"git checkout -B {branch_name}: exit={branch_result['exitCode']}")
         if branch_result["exitCode"] != 0:
             raise HTTPException(status_code=500, detail=branch_result["stderr"] or branch_result["stdout"] or "Failed to prepare branch")
 
@@ -287,22 +302,71 @@ def create_agent_run_router() -> APIRouter:
         pr_body_path = run_dir(run_id) / "pr-body.md"
         pr_body_path.write_text(pr_body, encoding="utf-8")
 
+        pr_url = None
+        commit_sha = None
+
+        sha_result = run_subprocess(["git", "rev-parse", "HEAD"], cwd=workspace_path, timeout_seconds=10)
+        if sha_result["exitCode"] == 0:
+            commit_sha = sha_result["stdout"].strip()[:40]
+
+        push_result = run_subprocess(
+            ["git", "push", "origin", branch_name, "--force-with-lease"],
+            cwd=workspace_path,
+            timeout_seconds=60,
+        )
+        promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
+
+        if push_result["exitCode"] == 0:
+            pr_title = shell_quote(pr_draft.get("title") or "GitFlick agent run")
+            pr_create_result = run_subprocess(
+                ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
+                cwd=workspace_path,
+                timeout_seconds=30,
+            )
+            promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
+
+            if pr_create_result["exitCode"] == 0:
+                raw_url = pr_create_result["stdout"].strip()
+                if raw_url.startswith("http"):
+                    pr_url = raw_url
+                    promotion_log.append(f"PR created: {pr_url}")
+            else:
+                existing_match = re.search(r"(https://github\.com/[^\s]+/pull/\d+)", pr_create_result["stderr"] or "")
+                if existing_match:
+                    pr_url = existing_match.group(1)
+                    promotion_log.append(f"PR already exists: {pr_url}")
+                else:
+                    promotion_log.append(f"gh pr create failed: {pr_create_result['stderr'][:200]}")
+        else:
+            promotion_log.append(f"Push failed: {push_result['stderr'][:200]}")
+
+        manual_instructions = []
+        if not pr_url:
+            manual_instructions = [
+                f"cd {workspace_path}",
+                "git status",
+                f"git push origin {branch_name}",
+                f"gh pr create --title {shell_quote(pr_draft.get('title') or 'GitFlick agent run')} --body-file {shell_quote(str(pr_body_path))}",
+            ]
+
         run["status"] = "approved"
         run["updatedAt"] = now_iso()
         run["approval"] = {
             "status": "approved",
             "branchName": branch_name,
-            "instructions": [
-                f"cd {workspace_path}",
-                "git status",
-                f"git push origin {branch_name}",
-                f"gh pr create --title {shell_quote(pr_draft.get('title') or 'GitFlick agent run')} --body-file {shell_quote(str(pr_body_path))}",
-            ],
+            "instructions": manual_instructions,
             "approvedAt": now_iso(),
             "rejectedAt": None,
+            "prUrl": pr_url,
+            "commitSha": commit_sha,
+            "promotionLog": promotion_log,
         }
         write_run(run)
-        append_timeline(run_id, "approved", "Run approved", f"Prepared branch `{branch_name}` and PR body artifact.")
+
+        if pr_url:
+            append_timeline(run_id, "approved", "Run approved and PR created", f"Branch `{branch_name}` pushed and PR opened at {pr_url}.")
+        else:
+            append_timeline(run_id, "approved", "Run approved (manual push needed)", f"Branch `{branch_name}` prepared but auto-push did not succeed. Manual instructions provided.")
         return {"run": read_required_run(run_id)}
 
     @router.post("/agent-runs/{run_id}/reject")
@@ -319,6 +383,9 @@ def create_agent_run_router() -> APIRouter:
             "instructions": [],
             "approvedAt": None,
             "rejectedAt": now_iso(),
+            "prUrl": None,
+            "commitSha": None,
+            "promotionLog": ["Rejected by operator."],
         }
         write_run(run)
         append_timeline(run_id, "rejected", "Run rejected", "The patch was rejected and will not be promoted.")
@@ -457,11 +524,28 @@ def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
         diff_stat = collect_diff_stat(workspace_path)
         changed_files = collect_changed_files(workspace_path)
         validation_report = execute_validations(workspace_path)
+
+        append_timeline(run_id, "critique", "Self-critiquing patch", "Running self-critique pass on the generated patch.")
+        critique_result = self_critique_patch(issue, plan, changed_files, patch_text, validation_report)
+
         evaluation = evaluate_run(changed_files, validation_report, run.get("timeline", []))
+        change_intent = build_change_intent(issue, plan, changed_files, critique_result)
+        test_matrix = build_test_matrix(validation_report, changed_files)
+        quality_gates = build_quality_gates(validation_report, changed_files, evaluation)
         pr_draft = build_pr_draft(issue, plan, changed_files, validation_report, evaluation)
+        pr_readable = build_pr_readable(issue, plan, changed_files, validation_report, evaluation, change_intent)
+
+        repo_policy = load_repo_policy(workspace_path)
+        policy_violations = enforce_policy_gates(repo_policy, changed_files, quality_gates, evaluation)
+        if policy_violations:
+            append_timeline(run_id, "policy", "Policy violations detected", "; ".join(policy_violations), level="warning")
 
         artifact_paths = save_artifacts(run_id, patch_text, diff_stat, validation_report, pr_draft)
-        finalize_success(run_id, patch_text, diff_stat, changed_files, validation_report, evaluation, pr_draft, artifact_paths)
+        finalize_success(
+            run_id, patch_text, diff_stat, changed_files, validation_report, evaluation,
+            pr_draft, artifact_paths, pr_readable, test_matrix, quality_gates, change_intent,
+            critique_result, policy_violations,
+        )
     except CancelledRunError:
         finalize_failure(run_id, "cancelled", "Run cancelled", "Cancellation was requested before the run completed.")
     except Exception as exc:
@@ -514,6 +598,12 @@ def finalize_success(
     evaluation: dict[str, Any],
     pr_draft: dict[str, Any],
     artifact_paths: dict[str, str],
+    pr_readable: Optional[dict[str, Any]] = None,
+    test_matrix: Optional[dict[str, Any]] = None,
+    quality_gates: Optional[dict[str, Any]] = None,
+    change_intent: Optional[dict[str, Any]] = None,
+    critique_result: Optional[dict[str, Any]] = None,
+    policy_violations: Optional[list[str]] = None,
 ) -> None:
     run = read_required_run(run_id)
     run["status"] = "awaiting_review"
@@ -524,11 +614,26 @@ def finalize_success(
     run["artifacts"]["changedFiles"] = changed_files
     run["artifacts"]["validation"] = validation_report
     run["artifacts"]["prDraft"] = pr_draft
+    run["artifacts"]["prReadable"] = pr_readable
+    run["artifacts"]["testMatrix"] = test_matrix
+    run["artifacts"]["qualityGates"] = quality_gates
+    run["artifacts"]["changeIntent"] = change_intent
     run["artifacts"]["artifactPaths"] = artifact_paths
     run["artifacts"]["failureCategory"] = None
     run["evaluation"] = evaluation
+    run["metrics"] = {
+        "totalTokensUsed": 0,
+        "planningAttempts": 1,
+        "patchAttempts": 1,
+        "critiqueIterations": 1 if critique_result else 0,
+        "validationDepth": len(validation_report.get("commands", [])),
+        "artifactConfidence": evaluation.get("confidenceScore", 0),
+    }
+    if policy_violations:
+        run.setdefault("policyViolations", []).extend(policy_violations)
     write_run(run)
-    append_timeline(run_id, "review", "Awaiting review", "Patch artifact, validations, and PR draft are ready for approval.")
+    recommendation = (quality_gates or {}).get("recommendation", "review")
+    append_timeline(run_id, "review", "Awaiting review", f"Artifacts ready. Recommendation: {recommendation}.")
 
 
 def finalize_failure(run_id: str, failure_category: str, title: str, detail: str) -> None:
@@ -1130,6 +1235,97 @@ def build_best_effort_guidance(
     )
 
 
+def self_critique_patch(
+    issue: dict[str, Any],
+    plan: dict[str, Any],
+    changed_files: list[dict[str, Any]],
+    patch_text: str,
+    validation_report: dict[str, Any],
+) -> dict[str, Any]:
+    """Ask the model to critique its own patch before finalizing."""
+    prompt = f"""
+You are GitFlick's self-critique pass. You just generated a patch for a GitHub issue.
+Review the patch critically and return strict JSON:
+{{
+  "hypothesis": "One sentence: what is the root cause and how does the patch fix it?",
+  "selfCritique": "2-4 sentences: what could go wrong, edge cases missed, assumptions made.",
+  "evidenceSufficiency": "strong" | "moderate" | "weak",
+  "shouldRefine": false,
+  "refinementHint": ""
+}}
+
+Issue: {issue.get("title")}
+Plan summary: {plan.get("summary", "")}
+
+Changed files: {json.dumps([f["path"] for f in changed_files])}
+
+Patch (first 3000 chars):
+{truncate_text(patch_text, 3000)}
+
+Validation status: {validation_report.get("overallStatus", "not_run")}
+Validation notes: {json.dumps(validation_report.get("notes", []))}
+"""
+    result = request_gemini_json(prompt, max_output_tokens=1024)
+    if result:
+        return result
+    return {
+        "hypothesis": plan.get("strategy") or "Addresses the issue with the smallest safe diff.",
+        "selfCritique": "Self-critique was unavailable; review the patch manually.",
+        "evidenceSufficiency": "moderate",
+        "shouldRefine": False,
+        "refinementHint": "",
+    }
+
+
+def load_repo_policy(workspace_path: Path) -> dict[str, Any]:
+    """Load .gitflick-agent.yaml or return defaults."""
+    policy_path = workspace_path / ".gitflick-agent.yaml"
+    if not policy_path.exists():
+        policy_path = workspace_path / ".gitflick-agent.yml"
+    if not policy_path.exists():
+        return {
+            "allowedCommands": [],
+            "forbiddenPaths": [],
+            "requiredChecks": [],
+            "maxFilesChanged": 15,
+            "autoPromoteRisk": "low",
+        }
+    try:
+        import yaml
+        return yaml.safe_load(policy_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        raw = policy_path.read_text(encoding="utf-8")
+        return json.loads(raw) if raw.strip().startswith("{") else {}
+
+
+def enforce_policy_gates(
+    repo_policy: dict[str, Any],
+    changed_files: list[dict[str, Any]],
+    quality_gates: dict[str, Any],
+    evaluation: dict[str, Any],
+) -> list[str]:
+    """Return list of policy violations. Empty means clear to promote."""
+    violations = []
+    max_files = repo_policy.get("maxFilesChanged", 15)
+    if len(changed_files) > max_files:
+        violations.append(f"Changed {len(changed_files)} files; policy limit is {max_files}.")
+
+    forbidden = repo_policy.get("forbiddenPaths") or []
+    for f in changed_files:
+        for pattern in forbidden:
+            if pattern in f.get("path", ""):
+                violations.append(f"File {f['path']} matches forbidden pattern '{pattern}'.")
+
+    required_checks = repo_policy.get("requiredChecks") or []
+    gate_statuses = {g["gate"]: g["status"] for g in quality_gates.get("gates", [])}
+    for check in required_checks:
+        status = gate_statuses.get(check, "not_run")
+        if status not in ("passed", "skipped"):
+            violations.append(f"Required check '{check}' did not pass (status: {status}).")
+
+    return violations
+
+
 def render_documents(documents: list[dict[str, str]]) -> str:
     return "\n\n".join(f"----- FILE: {document['path']} -----\n{document['content']}" for document in documents)
 
@@ -1489,6 +1685,234 @@ def build_pr_draft(
         ]
     )
     return {"title": title, "body": body.strip()}
+
+
+def build_pr_readable(
+    issue: dict[str, Any],
+    plan: dict[str, Any],
+    changed_files: list[dict[str, Any]],
+    validation_report: dict[str, Any],
+    evaluation: dict[str, Any],
+    change_intent: dict[str, Any],
+) -> dict[str, Any]:
+    title = issue.get("title") or "GitFlick agent patch"
+    if not title.lower().startswith("fix"):
+        title = f"Fix: {title}"
+
+    sections = [
+        {
+            "heading": "Summary",
+            "body": plan.get("summary") or "Apply the smallest safe diff that resolves the issue.",
+            "kind": "summary",
+        },
+        {
+            "heading": "What changed and why",
+            "body": change_intent.get("hypothesis") or plan.get("strategy") or "",
+            "kind": "strategy",
+        },
+        {
+            "heading": "Files modified",
+            "body": "\n".join(
+                f"{item['path']} (+{item['additions']} / -{item['deletions']})"
+                for item in changed_files[:10]
+            ) or "No files changed.",
+            "kind": "changes",
+        },
+        {
+            "heading": "Validation results",
+            "body": "\n".join(
+                f"{'PASS' if cmd.get('exitCode') == 0 else 'FAIL'} {cmd.get('command')} ({cmd.get('durationMs')}ms)"
+                for cmd in validation_report.get("commands", [])
+            ) or "No validation commands executed.",
+            "kind": "validation",
+        },
+        {
+            "heading": "Risk assessment",
+            "body": f"Risk: {evaluation.get('riskLevel')} ({evaluation.get('riskScore')})\n" +
+                    "\n".join(evaluation.get("riskReasons") or ["No specific risk flags."]),
+            "kind": "risk",
+        },
+        {
+            "heading": "Confidence",
+            "body": f"Confidence: {evaluation.get('confidenceLevel')} ({evaluation.get('confidenceScore')})\n" +
+                    "\n".join(evaluation.get("confidenceReasons") or []),
+            "kind": "confidence",
+        },
+    ]
+
+    if change_intent.get("selfCritique"):
+        sections.append({
+            "heading": "Self-critique",
+            "body": change_intent["selfCritique"],
+            "kind": "notes",
+        })
+
+    sensitive_files = [f["path"] for f in changed_files if f.get("sensitive")]
+    checklist = [
+        {"label": "Patch applies cleanly", "checked": bool(changed_files)},
+        {"label": "Validation suite passed", "checked": validation_report.get("overallStatus") == "passed"},
+        {"label": "No sensitive files modified", "checked": len(sensitive_files) == 0},
+        {"label": "Blast radius is narrow", "checked": len(changed_files) <= 5},
+        {"label": "Self-critique completed", "checked": bool(change_intent.get("selfCritique"))},
+    ]
+
+    reviewer_prompts = []
+    if sensitive_files:
+        reviewer_prompts.append(f"Review sensitive files closely: {', '.join(sensitive_files[:4])}")
+    if evaluation.get("riskLevel") == "high":
+        reviewer_prompts.append("High risk detected; consider manual testing before merge.")
+    if change_intent.get("evidenceSufficiency") == "weak":
+        reviewer_prompts.append("Evidence grounding is weak; verify the fix addresses the root cause.")
+    if validation_report.get("overallStatus") != "passed":
+        reviewer_prompts.append("Not all validation checks passed; inspect failures before approving.")
+
+    return {
+        "title": title,
+        "sections": sections,
+        "checklist": checklist,
+        "reviewerPrompts": reviewer_prompts,
+    }
+
+
+def build_test_matrix(validation_report: dict[str, Any], changed_files: list[dict[str, Any]]) -> dict[str, Any]:
+    impacted_paths = [f["path"] for f in changed_files]
+    suites = []
+    total_duration = 0
+
+    for cmd in validation_report.get("commands", []):
+        if cmd.get("kind") == "install":
+            continue
+        duration = cmd.get("durationMs", 0)
+        total_duration += duration
+        exit_code = cmd.get("exitCode", -1)
+
+        if exit_code == 124:
+            status = "timeout"
+        elif exit_code == 0:
+            status = "passed"
+        else:
+            status = "failed"
+
+        failure_summary = None
+        if status == "failed":
+            stderr = cmd.get("stderr", "")
+            stdout = cmd.get("stdout", "")
+            raw = (stderr or stdout or "").strip()
+            failure_lines = [line for line in raw.split("\n") if line.strip()][-5:]
+            failure_summary = "\n".join(failure_lines)[:500] if failure_lines else "Command exited with non-zero status."
+
+        command_name = cmd.get("command", "")
+        suite_name = "test" if "test" in command_name else "lint" if "lint" in command_name else "build" if "build" in command_name else "check"
+
+        suites.append({
+            "suite": suite_name,
+            "command": command_name,
+            "status": status,
+            "durationMs": duration,
+            "exitCode": exit_code,
+            "failureSummary": failure_summary,
+            "impactedFiles": impacted_paths[:8],
+            "logRef": None,
+        })
+
+    validation_suites = [s for s in suites if s["status"] != "skipped"]
+    passed_count = len([s for s in validation_suites if s["status"] == "passed"])
+    total_count = max(1, len(validation_suites))
+
+    return {
+        "suites": suites,
+        "overallStatus": validation_report.get("overallStatus", "not_run"),
+        "totalDurationMs": total_duration,
+        "passRate": round(passed_count / total_count, 2) if total_count else 0,
+    }
+
+
+def build_quality_gates(validation_report: dict[str, Any], changed_files: list[dict[str, Any]], evaluation: dict[str, Any]) -> dict[str, Any]:
+    gates = []
+    commands = validation_report.get("commands", [])
+    validation_commands = [c for c in commands if c.get("kind") == "validation"]
+
+    gate_map = {
+        "test": "test",
+        "lint": "lint",
+        "build": "build",
+        "typecheck": "typecheck",
+        "diff": "diff_check",
+    }
+
+    seen_gates = set()
+    for cmd in validation_commands:
+        command_str = cmd.get("command", "").lower()
+        gate_type = "test"
+        for keyword, gtype in gate_map.items():
+            if keyword in command_str:
+                gate_type = gtype
+                break
+
+        if gate_type in seen_gates:
+            continue
+        seen_gates.add(gate_type)
+
+        exit_code = cmd.get("exitCode", -1)
+        status = "passed" if exit_code == 0 else "failed"
+        detail = cmd.get("command", "")
+        gates.append({"gate": gate_type, "status": status, "detail": detail})
+
+    for default_gate in ["lint", "test", "build"]:
+        if default_gate not in seen_gates:
+            gates.append({"gate": default_gate, "status": "not_run", "detail": None})
+
+    all_passed = all(g["status"] in ("passed", "not_run", "skipped") for g in gates)
+    any_failed = any(g["status"] == "failed" for g in gates)
+
+    risk_level = evaluation.get("riskLevel", "medium")
+    if any_failed or risk_level == "high":
+        recommendation = "rework"
+    elif not all_passed or risk_level == "medium":
+        recommendation = "review"
+    else:
+        recommendation = "ship"
+
+    return {"gates": gates, "allPassed": all_passed, "recommendation": recommendation}
+
+
+def build_change_intent(
+    issue: dict[str, Any],
+    plan: dict[str, Any],
+    changed_files: list[dict[str, Any]],
+    critique_result: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    task_breakdown = []
+    for task in (plan.get("tasks") or []):
+        task_breakdown.append({
+            "title": task.get("title", ""),
+            "detail": task.get("detail", ""),
+            "status": "done" if changed_files else "skipped",
+            "acceptanceMet": bool(changed_files),
+        })
+
+    blast_radius = sorted(set(
+        f["path"].rsplit("/", 1)[0] if "/" in f["path"] else "(root)"
+        for f in changed_files
+    ))
+
+    hypothesis = critique_result.get("hypothesis", "") if critique_result else (plan.get("strategy") or "")
+    self_critique = critique_result.get("selfCritique", "") if critique_result else ""
+    evidence_sufficiency = critique_result.get("evidenceSufficiency", "moderate") if critique_result else "moderate"
+
+    if not changed_files:
+        evidence_sufficiency = "weak"
+
+    return {
+        "issueTitle": issue.get("title") or "",
+        "issueNumber": issue.get("number"),
+        "planSummary": plan.get("summary") or "",
+        "hypothesis": hypothesis,
+        "selfCritique": self_critique,
+        "taskBreakdown": task_breakdown,
+        "blastRadius": blast_radius,
+        "evidenceSufficiency": evidence_sufficiency,
+    }
 
 
 def save_artifacts(

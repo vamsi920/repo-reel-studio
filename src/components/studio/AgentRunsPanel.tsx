@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Copy,
   ExternalLink,
   FileCode2,
   FlaskConical,
@@ -15,6 +16,8 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Shield,
+  ShieldCheck,
   Sparkles,
   XCircle,
 } from "lucide-react";
@@ -30,6 +33,10 @@ import {
   type AgentRun,
   type AgentRunContextHints,
   type AgentRunStatus,
+  type PrReadable,
+  type TestMatrix,
+  type QualityGates,
+  type ChangeIntent,
   getAgentRun,
   listAgentRuns,
   rejectAgentRun,
@@ -94,7 +101,7 @@ const STATUS_ACCENTS: Record<AgentRunStatus, string> = {
   cancelled: "bg-white/[0.06] text-white/50",
 };
 
-type DetailTab = "overview" | "diff" | "validation" | "pr";
+type DetailTab = "overview" | "diff" | "validation" | "tests" | "pr" | "quality";
 
 function extractGitHubRepoKey(url: string): string | null {
   try {
@@ -645,7 +652,7 @@ export default function AgentRunsPanel({
                 latestTitle={latestEvent?.title}
               />
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-4">
                 <CompactMetric label="Files changed" value={`${selected.artifacts.changedFiles.length}`} icon={FileCode2} />
                 <CompactMetric
                   label="Validation"
@@ -653,8 +660,13 @@ export default function AgentRunsPanel({
                   icon={FlaskConical}
                 />
                 <CompactMetric
-                  label="Last update"
-                  value={fmtTime(selected.updatedAt) || "n/a"}
+                  label="Recommendation"
+                  value={selected.artifacts.qualityGates?.recommendation ?? "n/a"}
+                  icon={ShieldCheck}
+                />
+                <CompactMetric
+                  label="Evidence"
+                  value={selected.artifacts.changeIntent?.evidenceSufficiency ?? "n/a"}
                   icon={Sparkles}
                 />
               </div>
@@ -666,8 +678,10 @@ export default function AgentRunsPanel({
               {([
                 ["overview", "Overview"],
                 ["diff", "Diff"],
-                ["validation", "Validation"],
-                ["pr", "PR Draft"],
+                ["tests", "Test Matrix"],
+                ["quality", "Quality"],
+                ["validation", "Logs"],
+                ["pr", "PR Review"],
               ] as Array<[DetailTab, string]>).map(([tab, label]) => (
                 <button
                   key={tab}
@@ -688,43 +702,76 @@ export default function AgentRunsPanel({
             <div className="px-5 py-5">
               {activeTab === "overview" && (
                 <div className="space-y-6">
+                  {selected.approval.prUrl && (
+                    <a
+                      href={selected.approval.prUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 rounded-xl bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/16"
+                    >
+                      <GitPullRequest className="h-4 w-4" />
+                      PR opened: {selected.approval.prUrl}
+                      <ExternalLink className="ml-auto h-3.5 w-3.5" />
+                    </a>
+                  )}
+
+                  {selected.artifacts.changeIntent && (
+                    <div className="space-y-4">
+                      <SectionLabel title="What changed and why" />
+                      <div className="rounded-xl bg-white/[0.04] px-4 py-4">
+                        <p className="text-sm leading-6 text-white/74">{selected.artifacts.changeIntent.hypothesis || "No hypothesis recorded."}</p>
+                      </div>
+
+                      {selected.artifacts.changeIntent.selfCritique && (
+                        <div className="rounded-xl border border-amber-300/16 bg-amber-300/6 px-4 py-3">
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200/60">Self-critique</div>
+                          <p className="mt-1 text-sm leading-6 text-amber-100/80">{selected.artifacts.changeIntent.selfCritique}</p>
+                        </div>
+                      )}
+
+                      {selected.artifacts.changeIntent.taskBreakdown.length > 0 && (
+                        <div>
+                          <SectionLabel title="Task breakdown" />
+                          <div className="mt-2 space-y-1.5">
+                            {selected.artifacts.changeIntent.taskBreakdown.map((task, i) => (
+                              <div key={`task-${task.title}-${i}`} className="flex items-start gap-3 rounded-lg bg-white/[0.03] px-3 py-2.5">
+                                <span className={cn(
+                                  "mt-0.5 h-5 w-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold",
+                                  task.acceptanceMet ? "bg-emerald-300/12 text-emerald-100" : "bg-white/[0.06] text-white/40",
+                                )}>
+                                  {task.acceptanceMet ? "✓" : i + 1}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-white/80">{task.title}</div>
+                                  <div className="mt-0.5 text-xs text-white/46">{task.detail}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selected.artifacts.changeIntent.blastRadius.length > 0 && (
+                        <div>
+                          <SectionLabel title="Blast radius" />
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {selected.artifacts.changeIntent.blastRadius.map((dir) => (
+                              <span key={dir} className="rounded-full bg-white/[0.05] px-3 py-1 text-xs text-white/60">{dir}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {selected.approval.instructions.length > 0 && (
                     <div>
-                      <SectionLabel title="Push Instructions" />
+                      <SectionLabel title="Manual push instructions" />
                       <pre className="mt-2 overflow-x-auto rounded-xl bg-[#060e20] p-4 text-xs leading-6 text-white/78 shadow-[inset_0_0_0_1px_rgba(65,71,85,0.12)]">
                         <code>{selected.approval.instructions.join("\n")}</code>
                       </pre>
                     </div>
                   )}
-
-                  <div>
-                    <SectionLabel title="Recent Activity" />
-                    <div className="mt-2 space-y-2">
-                      {selected.timeline.length > 0 ? (
-                        selected.timeline.map((event) => (
-                          <div
-                            key={event.id}
-                            className={cn(
-                              "rounded-xl px-4 py-3",
-                              event.level === "error"
-                                ? "bg-rose-300/10 text-rose-100 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.16)]"
-                                : "bg-white/[0.04] text-white/74 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-                            )}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold">{event.title}</p>
-                              <span className="text-xs text-white/34">{fmtTime(event.at)}</span>
-                            </div>
-                            {event.detail && (
-                              <p className="mt-1 text-sm leading-6 text-white/58">{event.detail}</p>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <EmptyState text="The run will add timeline events as it progresses." />
-                      )}
-                    </div>
-                  </div>
 
                   <div>
                     <SectionLabel title="Changed Files" />
@@ -741,6 +788,7 @@ export default function AgentRunsPanel({
                               <div className="truncate text-sm font-medium text-white">{file.path}</div>
                               <div className="mt-1 text-xs text-white/40">
                                 {file.changedLines} changed line{file.changedLines === 1 ? "" : "s"}
+                                {file.sensitive && <span className="ml-2 text-amber-200">⚠ sensitive</span>}
                               </div>
                             </div>
                             <div className="shrink-0 text-xs text-white/46">
@@ -756,20 +804,36 @@ export default function AgentRunsPanel({
                     </div>
                   </div>
 
-                  {(selected.evaluation.riskReasons.length > 0 ||
-                    selected.evaluation.confidenceReasons.length > 0) && (
-                    <div>
-                      <SectionLabel title="Operator Notes" />
-                      <div className="mt-2 space-y-2">
-                        {selected.evaluation.riskReasons.map((reason) => (
-                          <SimpleNote key={`risk-${reason}`} tone="warning" text={reason} />
-                        ))}
-                        {selected.evaluation.confidenceReasons.map((reason) => (
-                          <SimpleNote key={`confidence-${reason}`} tone="neutral" text={reason} />
-                        ))}
-                      </div>
+                  <div>
+                    <SectionLabel title="Recent Activity" />
+                    <div className="mt-2 space-y-2">
+                      {selected.timeline.length > 0 ? (
+                        selected.timeline.map((event) => (
+                          <div
+                            key={event.id}
+                            className={cn(
+                              "rounded-xl px-4 py-3",
+                              event.level === "error"
+                                ? "bg-rose-300/10 text-rose-100 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.16)]"
+                                : event.level === "warning"
+                                  ? "bg-amber-300/8 text-amber-100 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.12)]"
+                                  : "bg-white/[0.04] text-white/74 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-semibold">{event.title}</p>
+                              <span className="text-xs text-white/34">{fmtTime(event.at)}</span>
+                            </div>
+                            {event.detail && (
+                              <p className="mt-1 text-sm leading-6 text-white/58">{event.detail}</p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <EmptyState text="The run will add timeline events as it progresses." />
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -786,6 +850,18 @@ export default function AgentRunsPanel({
                     </pre>
                   </ScrollArea>
                 </div>
+              )}
+
+              {activeTab === "tests" && (
+                <TestMatrixView testMatrix={selected.artifacts.testMatrix ?? null} />
+              )}
+
+              {activeTab === "quality" && (
+                <QualityGatesView
+                  qualityGates={selected.artifacts.qualityGates ?? null}
+                  evaluation={selected.evaluation}
+                  metrics={selected.metrics ?? null}
+                />
               )}
 
               {activeTab === "validation" && (
@@ -839,31 +915,12 @@ export default function AgentRunsPanel({
               )}
 
               {activeTab === "pr" && (
-                <div className="space-y-3">
-                  {selected.artifacts.prDraft ? (
-                    <>
-                      <div className="rounded-xl bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-                        <SectionLabel title="Title" compact />
-                        <p className="mt-2 text-base font-semibold text-white">
-                          {selected.artifacts.prDraft.title}
-                        </p>
-                      </div>
-                      <ScrollArea className="h-[500px] rounded-xl bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-                        <pre className="whitespace-pre-wrap p-5 text-sm leading-7 text-white/74">
-                          <code>{selected.artifacts.prDraft.body}</code>
-                        </pre>
-                      </ScrollArea>
-                    </>
-                  ) : (
-                    <EmptyState
-                      text={
-                        isActive
-                          ? "The PR draft will appear when the run completes."
-                          : "No PR draft is available for this run."
-                      }
-                    />
-                  )}
-                </div>
+                <PrReviewView
+                  prReadable={selected.artifacts.prReadable ?? null}
+                  prDraft={selected.artifacts.prDraft ?? null}
+                  prUrl={selected.approval.prUrl ?? null}
+                  isActive={isActive}
+                />
               )}
             </div>
           </div>
@@ -1144,4 +1201,307 @@ function EmptyState({ text }: { text: string }) {
 function humanizeValidation(status: AgentRun["artifacts"]["validation"]["overallStatus"]) {
   if (status === "not_run") return "Not run";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function TestMatrixView({ testMatrix }: { testMatrix: TestMatrix | null }) {
+  if (!testMatrix || testMatrix.suites.length === 0) {
+    return <EmptyState text="No test matrix data available for this run." />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <SectionLabel title="Test Matrix" compact />
+          <ValidationBadge status={testMatrix.overallStatus} />
+        </div>
+        <div className="flex items-center gap-4 text-xs text-white/46">
+          <span>Pass rate: <span className="font-semibold text-white">{Math.round(testMatrix.passRate * 100)}%</span></span>
+          <span>Total: <span className="font-semibold text-white">{testMatrix.totalDurationMs}ms</span></span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {testMatrix.suites.map((suite, i) => {
+          const statusColor =
+            suite.status === "passed" ? "bg-emerald-300/12 text-emerald-100" :
+            suite.status === "failed" ? "bg-rose-300/12 text-rose-100" :
+            suite.status === "timeout" ? "bg-amber-300/12 text-amber-100" :
+            "bg-white/[0.06] text-white/50";
+
+          return (
+            <div key={`${suite.command}-${i}`} className="rounded-xl bg-white/[0.04] p-4">
+              <div className="flex items-center gap-3">
+                <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]", statusColor)}>
+                  {suite.status}
+                </span>
+                <span className="flex-1 truncate font-mono text-sm text-white/80">{suite.command}</span>
+                <span className="text-xs text-white/40">{suite.durationMs}ms</span>
+                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-[10px] font-semibold text-white/50 uppercase">{suite.suite}</span>
+              </div>
+
+              {suite.failureSummary && (
+                <pre className="mt-3 overflow-x-auto rounded-lg bg-[#060e20] p-3 text-xs leading-5 text-rose-200/80">
+                  <code>{suite.failureSummary}</code>
+                </pre>
+              )}
+
+              {suite.impactedFiles.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {suite.impactedFiles.slice(0, 5).map((f) => (
+                    <span key={f} className="rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-white/46">{f}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function QualityGatesView({
+  qualityGates,
+  evaluation,
+  metrics,
+}: {
+  qualityGates: QualityGates | null;
+  evaluation: AgentRun["evaluation"];
+  metrics: AgentRun["metrics"];
+}) {
+  return (
+    <div className="space-y-6">
+      {qualityGates && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <SectionLabel title="Quality Gates" />
+            <span className={cn(
+              "rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]",
+              qualityGates.recommendation === "ship" ? "bg-emerald-300/12 text-emerald-100" :
+              qualityGates.recommendation === "review" ? "bg-amber-300/12 text-amber-100" :
+              "bg-rose-300/12 text-rose-100",
+            )}>
+              {qualityGates.recommendation}
+            </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {qualityGates.gates.map((gate) => (
+              <div key={gate.gate} className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3">
+                {gate.status === "passed" ? (
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-300" />
+                ) : gate.status === "failed" ? (
+                  <Shield className="h-4 w-4 shrink-0 text-rose-300" />
+                ) : (
+                  <Shield className="h-4 w-4 shrink-0 text-white/30" />
+                )}
+                <div className="min-w-0">
+                  <div className="text-sm font-medium capitalize text-white/80">{gate.gate.replace("_", " ")}</div>
+                  <div className="text-xs text-white/40">{gate.status}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <SectionLabel title="Risk & Confidence" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-white/[0.04] px-4 py-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white/34">Risk</div>
+            <div className="mt-1 text-lg font-semibold capitalize text-white">{evaluation.riskLevel}</div>
+            <div className="mt-0.5 text-xs text-white/44">Score: {evaluation.riskScore}</div>
+            {evaluation.riskReasons.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {evaluation.riskReasons.map((r) => (
+                  <div key={r} className="text-xs leading-5 text-amber-100/70">{r}</div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="rounded-xl bg-white/[0.04] px-4 py-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white/34">Confidence</div>
+            <div className="mt-1 text-lg font-semibold capitalize text-white">{evaluation.confidenceLevel}</div>
+            <div className="mt-0.5 text-xs text-white/44">Score: {evaluation.confidenceScore}</div>
+            {evaluation.confidenceReasons.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {evaluation.confidenceReasons.map((r) => (
+                  <div key={r} className="text-xs leading-5 text-white/54">{r}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {metrics && (
+        <div className="space-y-3">
+          <SectionLabel title="Run Metrics" />
+          <div className="grid gap-2 sm:grid-cols-3">
+            <MetricPill label="Planning attempts" value={`${metrics.planningAttempts}`} />
+            <MetricPill label="Patch attempts" value={`${metrics.patchAttempts}`} />
+            <MetricPill label="Critique iterations" value={`${metrics.critiqueIterations}`} />
+            <MetricPill label="Validation depth" value={`${metrics.validationDepth}`} />
+            <MetricPill label="Artifact confidence" value={`${Math.round(metrics.artifactConfidence * 100)}%`} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white/[0.04] px-4 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/34">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white">{value}</div>
+    </div>
+  );
+}
+
+function PrReviewView({
+  prReadable,
+  prDraft,
+  prUrl,
+  isActive,
+}: {
+  prReadable: PrReadable | null;
+  prDraft: AgentRun["artifacts"]["prDraft"];
+  prUrl: string | null;
+  isActive: boolean;
+}) {
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: `${label} copied to clipboard.` });
+  };
+
+  if (prReadable) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <SectionLabel title="PR Review" compact />
+            <h3 className="mt-2 text-lg font-semibold text-white">{prReadable.title}</h3>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => copyToClipboard(prReadable.title, "PR title")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Title
+            </Button>
+            {prDraft?.body && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => copyToClipboard(prDraft.body, "PR body")}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Body
+              </Button>
+            )}
+            {prUrl && (
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <a href={prUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open PR
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {prReadable.reviewerPrompts.length > 0 && (
+          <div className="space-y-2">
+            {prReadable.reviewerPrompts.map((prompt) => (
+              <div key={prompt} className="rounded-xl border border-amber-300/16 bg-amber-300/6 px-4 py-3 text-sm text-amber-100/80">
+                {prompt}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {prReadable.sections.map((section) => (
+            <div key={section.heading} className="rounded-xl bg-white/[0.04] px-4 py-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/38">{section.heading}</div>
+              <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/68">{section.body}</div>
+            </div>
+          ))}
+        </div>
+
+        {prReadable.checklist.length > 0 && (
+          <div>
+            <SectionLabel title="Checklist" />
+            <div className="mt-2 space-y-1.5">
+              {prReadable.checklist.map((item) => (
+                <div key={item.label} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2">
+                  <span className={cn(
+                    "h-4 w-4 shrink-0 rounded-sm flex items-center justify-center text-[10px]",
+                    item.checked ? "bg-emerald-300/20 text-emerald-200" : "bg-white/[0.06] text-white/30",
+                  )}>
+                    {item.checked ? "✓" : ""}
+                  </span>
+                  <span className="text-sm text-white/64">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (prDraft) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="rounded-xl bg-white/[0.04] px-4 py-3 flex-1">
+            <SectionLabel title="Title" compact />
+            <p className="mt-2 text-base font-semibold text-white">{prDraft.title}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => copyToClipboard(prDraft.body, "PR body")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Copy
+            </Button>
+            {prUrl && (
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <a href={prUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open PR
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+        <ScrollArea className="h-[500px] rounded-xl bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <pre className="whitespace-pre-wrap p-5 text-sm leading-7 text-white/74">
+            <code>{prDraft.body}</code>
+          </pre>
+        </ScrollArea>
+      </div>
+    );
+  }
+
+  return (
+    <EmptyState
+      text={
+        isActive
+          ? "The PR review will appear when the run completes."
+          : "No PR draft is available for this run."
+      }
+    />
+  );
 }

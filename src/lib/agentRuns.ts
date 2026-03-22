@@ -87,6 +87,74 @@ export interface AgentRunPrDraft {
   body: string;
 }
 
+export interface PrReadableSection {
+  heading: string;
+  body: string;
+  kind: "summary" | "strategy" | "changes" | "validation" | "risk" | "confidence" | "checklist" | "notes";
+}
+
+export interface PrReadable {
+  title: string;
+  sections: PrReadableSection[];
+  checklist: Array<{ label: string; checked: boolean }>;
+  reviewerPrompts: string[];
+}
+
+export interface TestMatrixEntry {
+  suite: string;
+  command: string;
+  status: "passed" | "failed" | "skipped" | "timeout";
+  durationMs: number;
+  exitCode: number;
+  failureSummary?: string | null;
+  impactedFiles: string[];
+  logRef?: string | null;
+}
+
+export interface TestMatrix {
+  suites: TestMatrixEntry[];
+  overallStatus: "passed" | "partial" | "failed" | "not_run";
+  totalDurationMs: number;
+  passRate: number;
+}
+
+export interface QualityGateEntry {
+  gate: "lint" | "test" | "build" | "typecheck" | "security" | "diff_check";
+  status: "passed" | "failed" | "skipped" | "not_run";
+  detail?: string | null;
+}
+
+export interface QualityGates {
+  gates: QualityGateEntry[];
+  allPassed: boolean;
+  recommendation: "ship" | "review" | "rework";
+}
+
+export interface ChangeIntent {
+  issueTitle: string;
+  issueNumber: number | null;
+  planSummary: string;
+  hypothesis: string;
+  selfCritique: string;
+  taskBreakdown: Array<{
+    title: string;
+    detail: string;
+    status: "done" | "partial" | "skipped";
+    acceptanceMet: boolean;
+  }>;
+  blastRadius: string[];
+  evidenceSufficiency: "strong" | "moderate" | "weak";
+}
+
+export interface RunMetrics {
+  totalTokensUsed: number;
+  planningAttempts: number;
+  patchAttempts: number;
+  critiqueIterations: number;
+  validationDepth: number;
+  artifactConfidence: number;
+}
+
 export interface AgentRunEvaluation {
   riskLevel: "low" | "medium" | "high";
   riskScore: number;
@@ -127,16 +195,24 @@ export interface AgentRun {
     changedFiles: AgentRunChangedFile[];
     validation: AgentRunValidation;
     prDraft?: AgentRunPrDraft | null;
+    prReadable?: PrReadable | null;
+    testMatrix?: TestMatrix | null;
+    qualityGates?: QualityGates | null;
+    changeIntent?: ChangeIntent | null;
     artifactPaths: Record<string, string>;
     failureCategory?: string | null;
   };
   evaluation: AgentRunEvaluation;
+  metrics?: RunMetrics | null;
   approval: {
     status: "pending" | "approved" | "rejected";
     branchName?: string | null;
     instructions: string[];
     approvedAt?: string | null;
     rejectedAt?: string | null;
+    prUrl?: string | null;
+    commitSha?: string | null;
+    promotionLog: string[];
   };
 }
 
