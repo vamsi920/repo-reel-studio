@@ -603,6 +603,43 @@ async def ensure_repo_workspace_endpoint(request: EnsureRepoWorkspaceRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@app.post("/api/repo-workspace/sync")
+async def sync_repo_workspace_endpoint(request: EnsureRepoWorkspaceRequest):
+    """
+    Refresh the cached git workspace for a project to the latest remote commit.
+    Used by the dashboard Sync action before a fresh planner/generation run.
+    """
+    from repo_workspace import sync_cached_repo_workspace
+
+    SYNC_TIMEOUT_S = 6 * 60
+
+    def _run() -> dict:
+        return sync_cached_repo_workspace(
+            request.repoUrl.strip(),
+            request.projectId.strip(),
+            request.branch,
+            request.token,
+        )
+
+    try:
+        return await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(executor, _run),
+            timeout=SYNC_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "error": "Workspace sync timed out",
+                "detail": f"Sync took longer than {SYNC_TIMEOUT_S // 60} minutes.",
+            },
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @app.post("/api/tts")
 def synthesize_tts(request: TTSRequest):
     """Proxy Google TTS requests to avoid browser CORS issues."""

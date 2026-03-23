@@ -51,6 +51,7 @@ import {
   type FolderUploadPayload,
 } from "@/lib/projectSource";
 import { cn } from "@/lib/utils";
+import { listWorkspaceVideoEntries } from "@/lib/videoWorkspace";
 
 type StatusFilter = "all" | Project["status"];
 
@@ -131,17 +132,28 @@ function getProjectStats(project: Project): ProjectStats {
   };
 }
 
+function getWorkspaceReadyVideoCount(project: Project) {
+  return listWorkspaceVideoEntries(project.manifest).filter((video) => video.ready).length;
+}
+
+function hasPlayableWorkspaceVideo(project: Project) {
+  return getWorkspaceReadyVideoCount(project) > 0;
+}
+
 const ProjectCard = ({
   project,
   isSelected,
   onSelect,
+  onSync,
 }: {
   project: Project;
   isSelected: boolean;
   onSelect: (projectId: string) => void;
+  onSync: (project: Project) => void;
 }) => {
   const stats = getProjectStats(project);
   const sourceType = getProjectSourceType(project.repo_url);
+  const readyVideoCount = getWorkspaceReadyVideoCount(project);
 
   return (
     <Card
@@ -176,8 +188,23 @@ const ProjectCard = ({
             {sourceType === "folder" ? "Folder Upload" : sourceType}
           </Badge>
           {stats.sceneCount > 0 ? <Badge variant="outline">{stats.sceneCount} scenes</Badge> : null}
+          {readyVideoCount > 0 ? <Badge variant="outline">{readyVideoCount} videos</Badge> : null}
           {stats.graphNodes > 0 ? <Badge variant="outline">{stats.graphNodes} graph nodes</Badge> : null}
           {stats.audioCount > 0 ? <Badge variant="outline">{stats.audioCount} audio</Badge> : null}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSync(project);
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Sync
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -356,11 +383,11 @@ const Dashboard = () => {
   };
 
   const openProjectInStudio = (project: Project) => {
-    if (!project.manifest) {
+    if (!project.manifest || !hasPlayableWorkspaceVideo(project)) {
       toast({
         title: "Workspace not ready",
         description:
-          "This project does not have a saved storyboard yet. Let processing finish first.",
+          "This workspace has a planner but no generated video yet. Open processing to create the master or module videos first.",
         variant: "destructive",
       });
       return;
@@ -371,6 +398,15 @@ const Dashboard = () => {
   };
 
   const openProjectPlayer = (project: Project) => {
+    if (!project.manifest?.scenes?.length) {
+      toast({
+        title: "Master video not ready",
+        description:
+          "The watch route currently opens the master video only. Use Studio to open module videos.",
+        variant: "destructive",
+      });
+      return;
+    }
     navigate(`/v/${project.id}`);
   };
 
@@ -387,6 +423,22 @@ const Dashboard = () => {
 
     navigate(
       `/processing?project=${project.id}&repo=${encodeURIComponent(project.repo_url)}`
+    );
+  };
+
+  const openProjectSync = (project: Project) => {
+    const sourceType = getProjectSourceType(project.repo_url);
+    if (sourceType === "folder") {
+      toast({
+        title: "Folder workspaces can't sync",
+        description:
+          "Folder uploads do not have an upstream remote to sync. Upload the folder again when the local source changes.",
+      });
+      return;
+    }
+
+    navigate(
+      `/processing?project=${project.id}&repo=${encodeURIComponent(project.repo_url)}&sync=1`
     );
   };
 
@@ -493,7 +545,9 @@ const Dashboard = () => {
   const selectedSourceType = selectedProject
     ? getProjectSourceType(selectedProject.repo_url)
     : "unknown";
-  const canOpenStudio = Boolean(selectedProject?.manifest);
+  const canOpenStudio = Boolean(
+    selectedProject?.manifest && hasPlayableWorkspaceVideo(selectedProject)
+  );
 
   return (
     <div className="flex min-h-screen w-full bg-transparent">
@@ -734,6 +788,7 @@ const Dashboard = () => {
                           project={project}
                           isSelected={selectedProject?.id === project.id}
                           onSelect={selectProject}
+                          onSync={openProjectSync}
                         />
                       ))}
                     </div>
@@ -820,14 +875,24 @@ const Dashboard = () => {
                         </Button>
 
                         {selectedProject.status === "ready" ? (
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => openProjectPlayer(selectedProject)}
-                          >
-                            <Video className="h-4 w-4" />
-                            Open Player
-                          </Button>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => openProjectPlayer(selectedProject)}
+                            >
+                              <Video className="h-4 w-4" />
+                              Open Player
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => openProjectSync(selectedProject)}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                              Sync Repo
+                            </Button>
+                          </div>
                         ) : (
                           <Button
                             variant="outline"

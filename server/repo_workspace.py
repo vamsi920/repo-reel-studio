@@ -168,6 +168,89 @@ def ensure_cached_repo_workspace(
     return {"workspacePath": str(ws.resolve()), "status": "cloned"}
 
 
+def sync_cached_repo_workspace(
+    repo_url: str,
+    project_id: str,
+    branch: Optional[str] = None,
+    token: Optional[str] = None,
+) -> dict[str, Any]:
+    """
+    Refresh an existing cached repo workspace to the latest remote revision.
+    Falls back to initial clone when the cache is missing.
+    """
+    repo_url = validate_github_repo_url(repo_url)
+    pid = validate_project_id(project_id)
+
+    if token:
+        os.environ["GITHUB_TOKEN"] = str(token)
+
+    ws = cached_workspace_path(pid)
+    meta = read_meta(pid)
+
+    if not ws.is_dir() or not (ws / ".git").is_dir() or not meta:
+        ensured = ensure_cached_repo_workspace(repo_url, project_id, branch, token)
+        commit = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
+        return {
+            **ensured,
+            "status": "cloned",
+            "headCommit": (commit.get("stdout") or "").strip() or None,
+        }
+
+    active_branch = branch or meta.get("branch")
+    if not active_branch:
+        branch_res = _run_cmd(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=str(ws),
+            timeout_seconds=20,
+        )
+        if branch_res["exitCode"] != 0:
+            raise RuntimeError(branch_res["stderr"] or branch_res["stdout"] or "could not resolve cached workspace branch")
+        active_branch = (branch_res.get("stdout") or "").strip() or "main"
+
+    fetch_res = _run_cmd(
+        ["git", "fetch", "origin", active_branch, "--prune"],
+        cwd=str(ws),
+        timeout_seconds=180,
+    )
+    if fetch_res["exitCode"] != 0:
+        raise RuntimeError(fetch_res["stderr"] or fetch_res["stdout"] or "git fetch failed for cached workspace")
+
+    reset_res = _run_cmd(
+        ["git", "reset", "--hard", f"origin/{active_branch}"],
+        cwd=str(ws),
+        timeout_seconds=90,
+    )
+    if reset_res["exitCode"] != 0:
+        raise RuntimeError(reset_res["stderr"] or reset_res["stdout"] or "git reset failed for cached workspace")
+
+    clean_res = _run_cmd(
+        ["git", "clean", "-fd"],
+        cwd=str(ws),
+        timeout_seconds=60,
+    )
+    if clean_res["exitCode"] != 0:
+        raise RuntimeError(clean_res["stderr"] or clean_res["stdout"] or "git clean failed for cached workspace")
+
+    commit_res = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
+    if commit_res["exitCode"] != 0:
+        raise RuntimeError(commit_res["stderr"] or commit_res["stdout"] or "git rev-parse failed for cached workspace")
+
+    write_meta(
+        pid,
+        {
+            "repoUrl": repo_url,
+            "branch": active_branch,
+            "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+    )
+
+    return {
+        "workspacePath": str(ws.resolve()),
+        "status": "synced",
+        "headCommit": (commit_res.get("stdout") or "").strip() or None,
+    }
+
+
 def get_valid_cache_for_run(project_id: str, repo_url: str) -> Optional[Path]:
     """Return cache path if it exists and matches repo_url."""
     try:

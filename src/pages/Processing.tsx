@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Loader2, CheckCircle2, AlertTriangle, RefreshCw, Play, Sparkles } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+  Play,
+  Sparkles,
+  Layers3,
+  Clapperboard,
+  PauseCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { mockManifest } from "@/data/mockManifest";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService } from "@/lib/db";
@@ -10,7 +21,11 @@ import {
   buildQualityReport,
   generateManifestWithQualityPipeline,
 } from "@/lib/videoPipelineV2";
-import type { GitNexusGraphData } from "@/lib/types";
+import type {
+  GitNexusGraphData,
+  RepoVideoModule,
+  RepoVideoModuleCatalog,
+} from "@/lib/types";
 import { parseRepoContent } from "@/lib/parseRepoContent";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
 import { supabase } from "@/lib/supabase";
@@ -38,6 +53,16 @@ import {
   resolveRepoSourceFromInput,
 } from "@/lib/projectSource";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
+import {
+  createWorkspaceManifest,
+  discoverRepoVideoModules,
+  formatDurationLabel,
+  listWorkspaceVideoEntries,
+  MASTER_VIDEO_TARGET_RANGE_LABEL,
+  mergeGeneratedManifestIntoWorkspace,
+  MODULE_VIDEO_TARGET_RANGE_LABEL,
+  type WorkspaceVideoEntry,
+} from "@/lib/videoWorkspace";
 import iconUrl from "../../icon.png";
 
 const phase1Steps = [
@@ -53,25 +78,22 @@ const phase1Steps = [
 ];
 
 const phase2Steps = [
-  { text: "Analyzing code structure...", duration: 400 },
-  { text: "Building scene manifest from template...", duration: 500 },
-  { text: "Mapping file references to scenes...", duration: 400 },
-  { text: "Calculating scene durations...", duration: 300 },
-  { text: "Preparing video storyboard...", duration: 400 },
-  { text: "Finalizing manifest data...", duration: 300 },
-];
-
-/** Rotating messages so the screen feels alive during long runs. */
-const LOADING_SUBTITLES = [
-  "Fetching and parsing repository...",
-  "Analyzing code structure with GitNexus...",
-  "Indexing files and dependencies...",
-  "Building knowledge graph...",
-  "Still working — large repos take a few minutes...",
-  "Almost there...",
+  { text: "Reading Code Graph RAG output...", duration: 300 },
+  { text: "Ranking high-signal architecture areas...", duration: 450 },
+  { text: "Grouping files into high-level modules...", duration: 350 },
+  { text: "Estimating module and master runtimes...", duration: 250 },
+  { text: "Saving the workspace planner...", duration: 250 },
 ];
 
 type PhaseStatus = "idle" | "running" | "complete" | "error";
+type WorkflowStage =
+  | "booting"
+  | "ingesting"
+  | "discovering"
+  | "awaiting-selection"
+  | "generating"
+  | "generated"
+  | "error";
 
 type IngestionSnapshot = {
   includedFiles: number;
@@ -106,6 +128,8 @@ const formatTime = () => {
   return now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 };
 
+const uniqueModuleIds = (values: string[]) => Array.from(new Set(values));
+
 const Processing = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,6 +139,7 @@ const Processing = () => {
   const [progress, setProgress] = useState(0);
   const [phase1Status, setPhase1Status] = useState<PhaseStatus>("idle");
   const [phase2Status, setPhase2Status] = useState<PhaseStatus>("idle");
+  const [phase3Status, setPhase3Status] = useState<PhaseStatus>("idle");
   const [retryKey, setRetryKey] = useState(0);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [graphData, setGraphData] = useState<GitNexusGraphData | null>(null);
@@ -122,12 +147,21 @@ const Processing = () => {
   const [ingestionSnapshot, setIngestionSnapshot] = useState<IngestionSnapshot | null>(null);
   const [manifestSnapshot, setManifestSnapshot] = useState<ManifestSnapshot | null>(null);
   const [processingError, setProcessingError] = useState<ProcessingErrorState | null>(null);
+  const [workflowStage, setWorkflowStage] = useState<WorkflowStage>("booting");
+  const [workspaceManifest, setWorkspaceManifest] = useState<VideoManifest | null>(null);
+  const [moduleCatalog, setModuleCatalog] = useState<RepoVideoModuleCatalog | null>(null);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+  const [repoContentState, setRepoContentState] = useState("");
+  const [activeGenerationLabel, setActiveGenerationLabel] = useState("");
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Elapsed time while processing (so UI can show "still working" and rotating messages)
   useEffect(() => {
-    const running = phase1Status === "running" || phase2Status === "running";
+    const running =
+      phase1Status === "running" ||
+      phase2Status === "running" ||
+      phase3Status === "running";
     if (!running) {
       setElapsedSeconds(0);
       return;
@@ -136,7 +170,7 @@ const Processing = () => {
       setElapsedSeconds((s) => s + 1);
     }, 1000);
     return () => clearInterval(t);
-  }, [phase1Status, phase2Status]);
+  }, [phase1Status, phase2Status, phase3Status]);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -194,10 +228,241 @@ const Processing = () => {
 
   const repoUrl = sourceDescriptor.repoUrl;
   const repoName = sourceDescriptor.repoName;
+  const parsedRepoFiles = useMemo(
+    () => parseRepoContent(repoContentState),
+    [repoContentState]
+  );
+  const forceSync = useMemo(
+    () => searchParams.get("sync") === "1",
+    [searchParams]
+  );
+
+  const persistWorkspaceManifest = useCallback(
+    async (
+      manifest: VideoManifest,
+      nextStatus: "processing" | "ready" = "processing",
+      durationOverride?: number | null,
+      contextOverride?: {
+        repoContent?: string | null;
+        graphData?: GitNexusGraphData | null;
+      }
+    ) => {
+      setWorkspaceManifest(manifest);
+
+      const resolvedRepoContent =
+        contextOverride?.repoContent !== undefined
+          ? contextOverride.repoContent
+          : repoContentState || null;
+      const resolvedGraphData =
+        contextOverride?.graphData !== undefined
+          ? contextOverride.graphData
+          : graphData;
+
+      try {
+        syncProjectWorkspaceToSession({
+          id: projectId,
+          repo_url: repoUrl,
+          manifest,
+          repo_content: resolvedRepoContent,
+          graph_data: resolvedGraphData,
+          repo_knowledge_graph: manifest.knowledge_graph || null,
+        });
+      } catch {
+        // Compatibility cache only.
+      }
+
+      if (!projectId || !user?.id) return;
+
+      const computedDuration =
+        durationOverride ??
+        manifest.scenes.reduce(
+          (sum, scene) => sum + (scene.duration_seconds || 0),
+          0
+        );
+
+      try {
+        await projectsService.update(projectId, user.id, {
+          status: nextStatus,
+          manifest,
+          duration_seconds: computedDuration || null,
+          repo_knowledge_graph: manifest.knowledge_graph || null,
+          phase2_completed_at:
+            nextStatus === "ready" ? new Date().toISOString() : undefined,
+        } as any);
+      } catch (error) {
+        console.error("Failed to persist workspace manifest:", error);
+      }
+    },
+    [graphData, projectId, repoContentState, repoUrl, user?.id]
+  );
+
+  const toggleModuleSelection = useCallback((moduleId: string, checked: boolean) => {
+    setSelectedModuleIds((current) => {
+      if (checked) {
+        return uniqueModuleIds([...current, moduleId]);
+      }
+      return current.filter((candidate) => candidate !== moduleId);
+    });
+  }, []);
+
+  const generateQueuedVideos = useCallback(
+    async (queue: Array<{ kind: "master" | "module"; module?: RepoVideoModule }>) => {
+      if (!moduleCatalog || queue.length === 0) return;
+
+      if (Object.keys(parsedRepoFiles).length === 0) {
+        addLog("ERROR: No repository files are available for video generation.");
+        setProcessingError({
+          title: "Missing repository evidence",
+          detail: "Reload this workspace or rerun processing so module videos have real code to cite.",
+        });
+        setWorkflowStage("error");
+        setPhase3Status("error");
+        return;
+      }
+
+      setWorkflowStage("generating");
+      setPhase3Status("running");
+      setActiveGenerationLabel(queue[0]?.module?.title || "Master video");
+      addLog(`Queued ${queue.length} video generation run(s).`);
+
+      const plannerManifest =
+        workspaceManifest ||
+        createWorkspaceManifest(
+          repoName,
+          moduleCatalog,
+          Object.keys(parsedRepoFiles)
+        );
+      let nextWorkspace = plannerManifest;
+
+      await persistWorkspaceManifest(nextWorkspace, "processing");
+
+      for (let index = 0; index < queue.length; index += 1) {
+        const item = queue[index];
+        const label =
+          item.kind === "master"
+            ? "Master video"
+            : item.module?.title || `Module ${index + 1}`;
+        const queueStart = 74 + Math.round((index / queue.length) * 20);
+        const queueEnd = 78 + Math.round(((index + 1) / queue.length) * 20);
+
+        setActiveGenerationLabel(label);
+        setCurrentStep(`Generating ${label} with multi-pass Code Graph RAG...`);
+        setProgress(queueStart);
+        addLog(`--- Generating ${label} ---`);
+        addLog(
+          item.kind === "master"
+            ? "Planning the long-form repo narrative from codegraph modules, flows, and evidence packs."
+            : `Scoping the walkthrough to ${label} before writing any scenes.`
+        );
+
+        const generatedManifest = await generateManifestWithQualityPipeline(
+          repoUrl,
+          repoName,
+          repoContentState,
+          parsedRepoFiles,
+          graphData,
+          {
+            kind: item.kind,
+            module: item.module,
+            moduleCatalog,
+            targetDurationSeconds:
+              item.kind === "master"
+                ? moduleCatalog.master_estimated_duration_seconds
+                : item.module?.estimated_duration_seconds,
+            targetDurationLabel:
+              item.kind === "master"
+                ? MASTER_VIDEO_TARGET_RANGE_LABEL
+                : MODULE_VIDEO_TARGET_RANGE_LABEL,
+          }
+        );
+
+        setProgress(queueStart + Math.max(2, Math.round((queueEnd - queueStart) * 0.45)));
+        addLog(`Attaching repository code to ${label} scenes...`);
+
+        const manifestWithCode = enrichManifestWithCode(
+          generatedManifest,
+          parsedRepoFiles
+        );
+        manifestWithCode.quality_report = buildQualityReport(
+          manifestWithCode,
+          parsedRepoFiles
+        );
+
+        nextWorkspace = mergeGeneratedManifestIntoWorkspace(
+          repoName,
+          nextWorkspace,
+          manifestWithCode
+        );
+
+        const videoDuration = manifestWithCode.scenes.reduce(
+          (sum, scene) => sum + (scene.duration_seconds || 0),
+          0
+        );
+        setProgress(queueEnd);
+        addLog(
+          `✓ ${label} ready: ${manifestWithCode.scenes.length} scenes • ${formatDurationLabel(videoDuration)}`
+        );
+
+        await persistWorkspaceManifest(
+          nextWorkspace,
+          index === queue.length - 1 ? "ready" : "processing",
+          index === queue.length - 1 ? videoDuration : null
+        );
+      }
+
+      const finalPrimaryManifest =
+        nextWorkspace.scenes.length > 0
+          ? nextWorkspace
+          : nextWorkspace.module_videos?.[0]?.manifest || null;
+      const finalDuration = finalPrimaryManifest?.scenes?.reduce(
+        (sum, scene) => sum + (scene.duration_seconds || 0),
+        0
+      ) || 0;
+
+      if (finalPrimaryManifest) {
+        setManifestSnapshot({
+          sceneCount: finalPrimaryManifest.scenes.length,
+          totalDurationSeconds: finalDuration,
+          readyForTts:
+            finalPrimaryManifest.quality_report?.ready_for_tts !== false,
+          title: finalPrimaryManifest.title,
+          blockerCount:
+            finalPrimaryManifest.quality_report?.blockers.length || 0,
+          warningCount:
+            finalPrimaryManifest.quality_report?.warnings.length || 0,
+          evidenceCoverage:
+            finalPrimaryManifest.quality_report?.scores.evidence_coverage || 0,
+          visualSync:
+            finalPrimaryManifest.quality_report?.scores.visual_sync || 0,
+          topBlocker: finalPrimaryManifest.quality_report?.blockers[0],
+          topWarning: finalPrimaryManifest.quality_report?.warnings[0],
+        });
+      }
+
+      setPhase3Status("complete");
+      setWorkflowStage("generated");
+      setProgress(100);
+      setCurrentStep("Workspace videos ready");
+      addLog("--- Video generation queue complete ---");
+      addLog("Open Studio to review the master or module videos.");
+    },
+    [
+      addLog,
+      graphData,
+      moduleCatalog,
+      parsedRepoFiles,
+      persistWorkspaceManifest,
+      repoContentState,
+      repoName,
+      repoUrl,
+      workspaceManifest,
+    ]
+  );
 
   useEffect(() => {
     if (!repoInputUrl && !isFolderMode) {
       setPhase1Status("error");
+      setWorkflowStage("error");
       setProcessingError({
         title: "Missing repository URL",
         detail: "Go back and enter a repository URL before starting processing.",
@@ -208,6 +473,7 @@ const Processing = () => {
 
     if (isFolderMode && !folderData) {
       setPhase1Status("error");
+      setWorkflowStage("error");
       setProcessingError({
         title: "Missing folder upload",
         detail: "Go back and upload a folder before starting processing.",
@@ -223,13 +489,21 @@ const Processing = () => {
     if (retryKey > 0) {
       setPhase1Status("idle");
       setPhase2Status("idle");
+      setPhase3Status("idle");
       setProgress(0);
       setLogs([]);
       setCurrentStep("");
       setProcessingError(null);
+      setWorkflowStage("booting");
+      setWorkspaceManifest(null);
+      setModuleCatalog(null);
+      setSelectedModuleIds([]);
+      setRepoContentState("");
+      setActiveGenerationLabel("");
     }
 
     const runProcessing = async () => {
+      setWorkflowStage("booting");
       // Note: Processing can work without auth, but projects won't be saved to DB
       if (!user?.id) {
         addLog("INFO: Not authenticated - project will not be saved to database");
@@ -273,12 +547,60 @@ const Processing = () => {
           if (
             existingProject &&
             existingProject.status === "ready" &&
-            existingProject.manifest
+            existingProject.manifest &&
+            !requestedProjectId &&
+            !forceSync
           ) {
             addLog("Found an existing saved project for this source.");
             addLog("Opening the stored workspace instead of creating a duplicate.");
             syncProjectWorkspaceToSession(existingProject);
             navigate(`/studio?project=${existingProject.id}`, { replace: true });
+            return;
+          }
+
+          if (
+            existingProject &&
+            requestedProjectId &&
+            !forceSync &&
+            existingProject.manifest?.module_catalog
+          ) {
+            const savedWorkspace = existingProject.manifest as VideoManifest;
+            currentProjectId = existingProject.id;
+            setProjectId(existingProject.id);
+            setGraphData((existingProject.graph_data as GitNexusGraphData) || null);
+            setRepoContentState(existingProject.repo_content || "");
+            setWorkspaceManifest(savedWorkspace);
+            setModuleCatalog(savedWorkspace.module_catalog || null);
+            setSelectedModuleIds(
+              savedWorkspace.module_catalog?.default_selected_ids || []
+            );
+            syncProjectWorkspaceToSession(existingProject);
+            setPhase1Status("complete");
+            setPhase2Status("complete");
+            setPhase3Status(
+              savedWorkspace.scenes?.length ||
+                savedWorkspace.module_videos?.length
+                ? "complete"
+                : "idle"
+            );
+            setProgress(
+              savedWorkspace.scenes?.length ||
+                savedWorkspace.module_videos?.length
+                ? 100
+                : 72
+            );
+            setWorkflowStage(
+              savedWorkspace.scenes?.length ||
+                savedWorkspace.module_videos?.length
+                ? "generated"
+                : "awaiting-selection"
+            );
+            addLog("Loaded saved module planner from database.");
+            addLog(
+              savedWorkspace.module_videos?.length
+                ? "Saved module videos are ready for Studio."
+                : "Select modules or generate the master video when you're ready."
+            );
             return;
           }
 
@@ -356,8 +678,62 @@ const Processing = () => {
         addLog("  → Sign in to save projects to your account");
       }
 
+      if (
+        forceSync &&
+        !isFolderMode &&
+        currentProjectId &&
+        repoUrl &&
+        /^https?:\/\/github\.com\//i.test(repoUrl)
+      ) {
+        try {
+          addLog("Starting repo sync process against the latest upstream revision...");
+          setCurrentStep("Syncing cached repo workspace...");
+          setProgress(4);
+          const syncUrl =
+            API_URL === "/api"
+              ? "/api/repo-workspace/sync"
+              : `${API_URL}/api/repo-workspace/sync`;
+          const syncResponse = await fetch(syncUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              repoUrl,
+              projectId: currentProjectId,
+            }),
+          });
+          if (!syncResponse.ok) {
+            let detail = syncResponse.statusText;
+            try {
+              const body = await syncResponse.json();
+              detail =
+                typeof body.detail === "string"
+                  ? body.detail
+                  : JSON.stringify(body.detail ?? body);
+            } catch {
+              // keep status text
+            }
+            addLog(`⚠️ Repo sync could not complete (${syncResponse.status}): ${detail}`);
+          } else {
+            const payload = (await syncResponse.json()) as {
+              status?: string;
+              headCommit?: string | null;
+            };
+            addLog(
+              `✓ Repo sync ${payload.status === "synced" ? "completed" : "initialized"}${payload.headCommit ? ` @ ${payload.headCommit.slice(0, 7)}` : ""}`
+            );
+          }
+        } catch (syncError) {
+          addLog(
+            `⚠️ Repo sync failed before ingestion: ${
+              syncError instanceof Error ? syncError.message : "unknown error"
+            }`
+          );
+        }
+      }
+
       // ===== PHASE 1: INGESTION =====
       setPhase1Status("running");
+      setWorkflowStage("ingesting");
       addLog(`Starting video generation pipeline...`);
       addLog(`Target repository: ${repoName}`);
       addLog(`Full URL: ${repoUrl}`);
@@ -365,6 +741,7 @@ const Processing = () => {
 
       // Variable to hold repository content across phases (avoids sessionStorage quota issues)
       let repoContent: string = "";
+      let activeGraphData: GitNexusGraphData | null = graphData;
 
       // Animate through phase 1 steps while ingestion runs
       const animateSteps = async (steps: typeof phase1Steps, startProgress: number, endProgress: number) => {
@@ -515,6 +892,7 @@ const Processing = () => {
 
           // Always keep content in memory for Phase 2 (same run)
           repoContent = payload.content;
+          setRepoContentState(payload.content);
 
           // sessionStorage is ~5–10 MB; skip writing large content to avoid QuotaExceededError
           const sessionStorageLimitBytes = 4 * 1024 * 1024; // 4 MB
@@ -638,6 +1016,7 @@ const Processing = () => {
         }
         // ── Read GitNexus graph data from response ──────────────────────────
         let ingestGraphData = payload?.graphData ?? null;
+        activeGraphData = ingestGraphData;
         setGraphData(ingestGraphData);
 
         if (ingestGraphData?.codegraph && currentProjectId && user?.id) {
@@ -806,6 +1185,7 @@ const Processing = () => {
           addLog("");
           addLog("You can retry after fixing network issues.");
           setPhase1Status("error");
+          setWorkflowStage("error");
           setProgress(0);
           // Update project status to error
           if (currentProjectId && user?.id) {
@@ -822,6 +1202,7 @@ const Processing = () => {
         addLog("Stopping pipeline because ingestion did not produce a trustworthy repository snapshot.");
         addLog("A placeholder video would be misleading, so this run is marked as failed instead.");
         setPhase1Status("error");
+        setWorkflowStage("error");
         setProgress(0);
         if (currentProjectId && user?.id) {
           try {
@@ -836,9 +1217,10 @@ const Processing = () => {
 
       if (cancelled) return;
 
-      // ===== PHASE 2: MANIFEST =====
+      // ===== PHASE 2: MODULE DISCOVERY =====
       setPhase2Status("running");
-      addLog("--- Starting Phase 2: Manifest Generation ---");
+      setWorkflowStage("discovering");
+      addLog("--- Starting Phase 2: Module Discovery ---");
 
       // Use content from memory (Phase 1), fallback to sessionStorage, then database
       if (!repoContent) {
@@ -852,6 +1234,7 @@ const Processing = () => {
             const project = await projectsService.getById(currentProjectId, user.id);
             if (project?.repo_content) {
               repoContent = project.repo_content;
+              setRepoContentState(project.repo_content);
               addLog("✓ Loaded content from database");
             }
           } catch (dbError) {
@@ -866,6 +1249,7 @@ const Processing = () => {
         addLog("ERROR: Repository parsing produced no usable source files.");
         addLog("Stopping before manifest generation because an empty evidence bundle would create a low-quality video.");
         setPhase2Status("error");
+        setWorkflowStage("error");
         setProgress(60);
         if (currentProjectId && user?.id) {
           try {
@@ -877,353 +1261,49 @@ const Processing = () => {
         sessionStorage.setItem("processing-error", "true");
         return;
       }
-      let manifestWithCode: VideoManifest;
+      await animateSteps(phase2Steps, 60, 72);
+      if (cancelled) return;
 
-      if (USE_MOCK_MANIFEST) {
-        addLog("Using mock manifest (USE_MOCK_MANIFEST=true)");
-        await animateSteps(phase2Steps, 60, 92);
-        if (cancelled) return;
-
-        addLog("Enriching mock manifest with code content...");
-        manifestWithCode = enrichManifestWithCode(mockManifest, fileContents);
-      } else {
-        addLog(
-          VIDEO_PIPELINE_V2_ENABLED
-            ? "Generating manifest with the V2 evidence pipeline..."
-            : "Generating manifest with Gemini AI..."
-        );
-        setCurrentStep(
-          VIDEO_PIPELINE_V2_ENABLED
-            ? "Extracting repo concepts..."
-            : "Calling Gemini API..."
-        );
-        setProgress(65);
-
-        try {
-          addLog("Analyzing repository structure with code graph...");
-          await new Promise(r => setTimeout(r, 500));
-          setProgress(70);
-
-          if (VIDEO_PIPELINE_V2_ENABLED) {
-            addLog("Building deterministic evidence bundle from the downloaded repository...");
-            setCurrentStep("Planning concept flow from code graph...");
-            const v2Manifest = await generateManifestWithQualityPipeline(
-              repoUrl,
-              repoName,
-              repoContent,
-              fileContents,
-              graphData
-            );
-
-            await new Promise(r => setTimeout(r, 500));
-            setProgress(82);
-
-            try {
-              sessionStorage.setItem("video-manifest-intermediate", JSON.stringify(v2Manifest));
-              addLog("✓ V2 intermediate manifest saved (safety checkpoint)");
-            } catch { /* non-fatal */ }
-
-            addLog("Attaching actual repository code to V2 scenes...");
-            manifestWithCode = enrichManifestWithCode(v2Manifest, fileContents);
-            manifestWithCode.quality_report = buildQualityReport(manifestWithCode, fileContents);
-
-            if (manifestWithCode.knowledge_graph) {
-              addLog(
-                `✓ Repo knowledge graph built: ${manifestWithCode.knowledge_graph.summary.total_nodes} nodes, ${manifestWithCode.knowledge_graph.summary.total_edges} edges, ${manifestWithCode.knowledge_graph.summary.total_capsules} capsules`
-              );
-            }
-
-            if (!manifestWithCode.quality_report?.ready_for_tts) {
-              addLog("⚠️  V2 quality gate reported blockers.");
-              manifestWithCode.quality_report.blockers.forEach((blocker) =>
-                addLog(`  • ${blocker}`)
-              );
-              addLog("Keeping the evidence-backed manifest and skipping TTS instead of falling back to a whole-repo prompt.");
-            } else {
-              addLog("✓ V2 manifest passed evidence and sync quality gates.");
-            }
-          } else {
-            addLog("Creating video script with Gemini AI (legacy pipeline)...");
-            const geminiManifest = await generateManifestWithGemini(
-              repoUrl,
-              repoName,
-              repoContent,
-              graphData
-            );
-
-            await new Promise(r => setTimeout(r, 500));
-            setProgress(85);
-
-            try {
-              sessionStorage.setItem("video-manifest-intermediate", JSON.stringify(geminiManifest));
-              addLog("✓ Intermediate manifest saved (safety checkpoint)");
-            } catch { /* non-fatal */ }
-
-            addLog("Enriching manifest with actual code content...");
-            manifestWithCode = enrichManifestWithCode(geminiManifest, fileContents);
-            manifestWithCode.quality_report = buildQualityReport(manifestWithCode, fileContents);
-            addLog("✓ Manifest generated successfully with Gemini AI!");
-          }
-
-          setProgress(92);
-        } catch (error) {
-          console.error('Gemini manifest generation failed:', error);
-          addLog("⚠️  WARNING: Manifest generation failed, falling back to template");
-          addLog(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
-
-          // Try to recover from intermediate save
-          try {
-            const intermediate = sessionStorage.getItem("video-manifest-intermediate");
-            if (intermediate) {
-              addLog("Attempting to recover from intermediate checkpoint...");
-              manifestWithCode = enrichManifestWithCode(JSON.parse(intermediate), fileContents);
-              addLog("✓ Recovered manifest from intermediate checkpoint");
-            } else {
-              throw new Error("No intermediate checkpoint available");
-            }
-          } catch {
-            await animateSteps(phase2Steps, 60, 92);
-            if (cancelled) return;
-
-            // Use a minimal generic manifest (no Sous Chef / mock branding) so
-            // applyDirectorsCutPattern rebuilds scenes with repo-aware narration.
-            const genericFallback: VideoManifest = {
-              title: `${repoName} - Code Walkthrough`,
-              scenes: [],
-              repo_files: Object.keys(fileContents),
-            };
-            addLog("Building manifest from repository structure (generic narration)...");
-            manifestWithCode = applyDirectorsCutPattern(
-              genericFallback,
-              fileContents,
-              repoName,
-              graphData
-            );
-            // If no files were parsed, add one intro scene so we don't show empty/mock content
-            if (manifestWithCode.scenes.length === 0) {
-              manifestWithCode = {
-                ...manifestWithCode,
-                scenes: [
-                  {
-                    id: 1,
-                    type: "intro",
-                    file_path: "README",
-                    highlight_lines: [1, 10],
-                    narration_text: `A quick walkthrough of ${repoName}. This repository is being analyzed.`,
-                    duration_seconds: 12,
-                    title: `Overview: ${repoName}`,
-                    code: "",
-                  },
-                ],
-              };
-            }
-          }
-        }
-      }
-
-      addLog(
-        manifestWithCode.pipeline_version === "v2"
-          ? "Finalizing evidence-backed manifest..."
-          : "Applying director's cut narrative pattern..."
-      );
-      // Only apply when we have Gemini manifest (so we don't overwrite our fallback)
-      try {
-        if (
-          manifestWithCode.pipeline_version !== "v2" &&
-          manifestWithCode.scenes.length > 0 &&
-          Object.keys(fileContents).length > 0
-        ) {
-          const afterCut = applyDirectorsCutPattern(
-            manifestWithCode,
-            fileContents,
-            repoName,
-            graphData
-          );
-          if (afterCut.scenes.length > 0) {
-            manifestWithCode = afterCut;
-          }
-        }
-
-        manifestWithCode.quality_report = buildQualityReport(manifestWithCode, fileContents);
-        if (manifestWithCode.quality_report?.warnings?.length) {
-          manifestWithCode.quality_report.warnings.slice(0, 5).forEach((warning) =>
-            addLog(`⚠️  Quality warning: ${warning}`)
-          );
-        }
-
-        if (cancelled) return;
-
-        // Log scene details
-        addLog(`Total scenes created: ${manifestWithCode.scenes.length}`);
-        const totalDuration = manifestWithCode.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
-        addLog(`Estimated video duration: ${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}`);
-        setManifestSnapshot({
-          sceneCount: manifestWithCode.scenes.length,
-          totalDurationSeconds: totalDuration,
-          readyForTts: manifestWithCode.quality_report?.ready_for_tts !== false,
-          title: manifestWithCode.title,
-          blockerCount: manifestWithCode.quality_report?.blockers.length || 0,
-          warningCount: manifestWithCode.quality_report?.warnings.length || 0,
-          evidenceCoverage: manifestWithCode.quality_report?.scores.evidence_coverage || 0,
-          visualSync: manifestWithCode.quality_report?.scores.visual_sync || 0,
-          topBlocker: manifestWithCode.quality_report?.blockers[0],
-          topWarning: manifestWithCode.quality_report?.warnings[0],
+      addLog("Discovering high-level modules from Code Graph RAG...");
+      const discoveredCatalog = discoverRepoVideoModules(repoName, activeGraphData, null);
+      if (!discoveredCatalog) {
+        addLog("WARNING: Code Graph RAG did not return enough structure for module planning.");
+        setPhase2Status("error");
+        setWorkflowStage("error");
+        setProcessingError({
+          title: "Module discovery failed",
+          detail: "The repository was ingested, but the code graph was too weak to build a high-level module planner.",
         });
-
-        // TTS + upload audio to Supabase Storage (per-user cache for /v and Studio)
-        const readyForTts = manifestWithCode.quality_report?.ready_for_tts !== false;
-        if (!readyForTts) {
-          addLog("Skipping TTS because the quality gate did not pass.");
-          manifestWithCode.quality_report?.blockers.slice(0, 5).forEach((blocker) => {
-            addLog(`  TTS blocker: ${blocker}`, "warning");
-          });
-        }
-
-        if (GOOGLE_TTS_ENABLED && readyForTts && currentProjectId && user?.id && !cancelled) {
-          addLog("Generating voice and uploading to storage...");
-          try {
-            const { audioUrls: genUrls } = await generateAllSceneAudio(manifestWithCode.scenes, "en-US-Standard-D");
-            let uploaded = 0;
-            for (const [sceneId, blobUrl] of genUrls) {
-              if (cancelled) break;
-              try {
-                const res = await fetch(blobUrl);
-                const blob = await res.blob();
-                URL.revokeObjectURL(blobUrl);
-                const path = `${currentProjectId}/${sceneId}.mp3`;
-                const { error } = await supabase.storage.from("project-audio").upload(path, blob, { contentType: "audio/mpeg", upsert: true });
-                if (error) {
-                  addLog(`Warning: could not upload audio scene ${sceneId}: ${error.message}`);
-                  continue;
-                }
-                const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
-                const scene = manifestWithCode.scenes.find((s) => s.id === sceneId);
-                if (scene) {
-                  scene.audioUrl = data.publicUrl;
-                  uploaded++;
-                }
-              } catch (e) {
-                addLog(`Warning: upload failed for scene ${sceneId}`);
-              }
-            }
-            addLog(`Uploaded ${uploaded} audio files to storage`);
-          } catch (e) {
-            addLog(`Voice/storage skipped: ${e instanceof Error ? e.message : "error"}`);
-          }
-        }
-
-        // Save to Supabase
-        if (currentProjectId && user?.id) {
-          addLog("Saving manifest to database...");
-          try {
-            // First try with all fields including optional ones
-            await projectsService.update(currentProjectId, user.id, {
-              status: 'ready',
-              manifest: manifestWithCode,
-              duration_seconds: totalDuration,
-              repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
-              phase2_completed_at: new Date().toISOString(),
-            } as any); // Use 'as any' to allow optional fields
-            addLog("✓ Project saved successfully to database!");
-            addLog("✓ Project is now available in your Dashboard!");
-          } catch (error: any) {
-            console.error('Failed to save project:', error);
-            const errorMessage = error?.message || error?.error_description || 'Unknown error';
-            const errorCode = error?.code || '';
-
-            // If it's a column error, try without the optional fields
-            if (errorCode === 'PGRST204' || errorMessage?.includes('column') || errorMessage?.includes('phase2_completed_at')) {
-              addLog("Attempting to save without optional fields...", "info");
-              try {
-                // Fallback: only update essential fields
-                await projectsService.update(currentProjectId, user.id, {
-                  status: 'ready',
-                  manifest: manifestWithCode,
-                  duration_seconds: totalDuration,
-                });
-                addLog("✓ Project saved successfully (without optional fields)!");
-                addLog("✓ Project is now available in your Dashboard!");
-              } catch (fallbackError: any) {
-                addLog(`WARNING: Could not update project in database`);
-                addLog(`  Error: ${fallbackError?.message || errorMessage}`);
-                addLog(`  → Manifest is ready and saved to session storage`);
-                addLog(`  → You can still use Studio, but project won't appear in Dashboard`);
-              }
-            } else {
-              addLog(`WARNING: Could not update project in database`);
-              addLog(`  Error: ${errorMessage}`);
-              if (errorCode) {
-                addLog(`  Code: ${errorCode}`);
-              }
-              addLog(`  → Manifest is ready and saved to session storage`);
-              addLog(`  → You can still use Studio, but project won't appear in Dashboard`);
-            }
-          }
-        } else if (!currentProjectId) {
-          addLog("WARNING: No project ID - skipping database save");
-          addLog("  Manifest saved to session storage only");
-        }
-
-        // Also save to session storage for immediate access (with error handling)
-        try {
-          syncProjectWorkspaceToSession({
-            id: currentProjectId,
-            repo_url: repoUrl,
-            manifest: manifestWithCode,
-            repo_content: repoContent || null,
-            graph_data: graphData,
-            repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
-          });
-        } catch (storageError: any) {
-          // Handle quota exceeded gracefully
-          if (storageError?.name === 'QuotaExceededError' ||
-            storageError?.message?.includes('quota') ||
-            storageError?.message?.includes('exceeded')) {
-            addLog("⚠️  Manifest too large for sessionStorage");
-            addLog("   Manifest is saved in database and will be loaded from there");
-          } else {
-            console.warn('Failed to store manifest in sessionStorage:', storageError);
-          }
-          // Still try to store smaller items
-          try {
-            syncProjectWorkspaceToSession({
-              id: currentProjectId,
-              repo_url: repoUrl,
-            });
-          } catch (e) {
-            // Ignore if even small items fail
-          }
-        }
-
-        setPhase2Status("complete");
-        setProgress(100);
-        addLog("Phase 2 complete: Manifest ready");
-        addLog("--- All phases complete ---");
-        addLog("Your video is ready! Click 'Continue to Studio' to start editing.");
-      } catch (phase2Error) {
-        // Catch-all for any unexpected error in Phase 2 post-processing
-        console.error('Phase 2 post-processing error:', phase2Error);
-        addLog(`⚠️  Non-fatal error in post-processing: ${phase2Error instanceof Error ? phase2Error.message : 'Unknown'}`);
-        addLog("Manifest is still available — continuing to completion.");
-
-        // Save whatever we have so far
-        try {
-          syncProjectWorkspaceToSession({
-            id: currentProjectId,
-            repo_url: repoUrl,
-            manifest: manifestWithCode,
-            repo_content: repoContent || null,
-            graph_data: graphData,
-            repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
-          });
-        } catch { /* non-fatal */ }
-
-        setPhase2Status("complete");
-        setProgress(100);
-        addLog("Phase 2 complete: Manifest ready (with warnings)");
-        addLog("--- All phases complete ---");
-        addLog("Your video is ready! Click 'Continue to Studio' to start editing.");
+        return;
       }
+
+      const plannerManifest = createWorkspaceManifest(
+        repoName,
+        discoveredCatalog,
+        Object.keys(fileContents)
+      );
+
+      setModuleCatalog(discoveredCatalog);
+      setSelectedModuleIds(discoveredCatalog.default_selected_ids);
+      setWorkspaceManifest(plannerManifest);
+      setManifestSnapshot(null);
+      setPhase2Status("complete");
+      setPhase3Status("idle");
+      setWorkflowStage("awaiting-selection");
+      setProgress(72);
+      setCurrentStep("Planner ready: choose master and module videos");
+      addLog(
+        `✓ Module planner ready: ${discoveredCatalog.modules.length} high-level modules discovered from the code graph`
+      );
+      addLog(
+        `Master video target runtime: ${MASTER_VIDEO_TARGET_RANGE_LABEL}; module videos target runtime: ${MODULE_VIDEO_TARGET_RANGE_LABEL}`
+      );
+      addLog("Select the modules you want, generate the master video, or do both later.");
+
+      await persistWorkspaceManifest(plannerManifest, "processing", null, {
+        repoContent,
+        graphData: activeGraphData,
+      });
     };
 
     runProcessing();
@@ -1234,9 +1314,11 @@ const Processing = () => {
     };
   }, [
     addLog,
+    forceSync,
     isFolderMode,
     folderData,
     navigate,
+    persistWorkspaceManifest,
     repoInputUrl,
     repoName,
     repoUrl,
@@ -1246,11 +1328,24 @@ const Processing = () => {
   ]);
 
   const overallStatus: PhaseStatus =
-    phase1Status === "error" ? "error" :
-      phase2Status === "complete" ? "complete" :
-        phase1Status === "running" || phase2Status === "running" ? "running" : "idle";
-  const isActiveLoadingState =
-    overallStatus === "running" || overallStatus === "idle";
+    workflowStage === "error" ||
+    phase1Status === "error" ||
+    phase2Status === "error" ||
+    phase3Status === "error"
+      ? "error"
+      : workflowStage === "generated"
+        ? "complete"
+        : workflowStage === "awaiting-selection"
+          ? "idle"
+          : phase1Status === "running" ||
+              phase2Status === "running" ||
+              phase3Status === "running"
+            ? "running"
+            : "idle";
+  const isActiveLoadingState = overallStatus === "running";
+  const plannerReady =
+    workflowStage === "awaiting-selection" || workflowStage === "generated";
+  const workspaceVideos = listWorkspaceVideoEntries(workspaceManifest);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
@@ -1277,14 +1372,18 @@ const Processing = () => {
         </div>
 
         {/* Phase indicators */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <PhaseCard
-            title="Phase 1: Ingestion"
+            title="Ingest"
             status={phase1Status}
           />
           <PhaseCard
-            title="Phase 2: Manifest"
+            title="Discover"
             status={phase2Status}
+          />
+          <PhaseCard
+            title="Generate"
+            status={phase3Status}
           />
         </div>
 
@@ -1316,6 +1415,8 @@ const Processing = () => {
                 <CheckCircle2 className="h-5 w-5 text-success mb-1" />
               ) : overallStatus === "error" ? (
                 <AlertTriangle className="h-5 w-5 text-destructive mb-1" />
+              ) : workflowStage === "awaiting-selection" ? (
+                <PauseCircle className="h-5 w-5 text-primary mb-1" />
               ) : (
                 <Loader2 className="h-5 w-5 text-primary animate-spin mb-1" />
               )}
@@ -1328,7 +1429,11 @@ const Processing = () => {
         {/* Current Step — rotating messages so it doesn't look stuck */}
         <div className="text-center mb-6">
           <h3 className="text-base font-medium mb-1 flex items-center justify-center gap-2">
-            {overallStatus === "complete" ? "Ready!" : currentStep || "Initializing..."}
+            {plannerReady
+              ? "Planner Ready"
+              : overallStatus === "complete"
+                ? "Videos Ready"
+                : currentStep || "Initializing..."}
             {overallStatus === "running" && (
               <span className="inline-flex gap-0.5">
                 <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -1338,15 +1443,17 @@ const Processing = () => {
             )}
           </h3>
           <p className="text-sm text-muted-foreground min-h-[2.5rem] flex flex-col items-center justify-center gap-1">
-            {overallStatus === "complete"
-              ? "Your video is ready"
-              : overallStatus === "running"
-                ? LOADING_SUBTITLES[Math.floor(elapsedSeconds / 4) % LOADING_SUBTITLES.length]
-                : "Preparing…"}
+            {workflowStage === "awaiting-selection"
+              ? "Code Graph RAG found the strongest high-level modules. Choose what to generate next."
+              : workflowStage === "generated"
+                ? "The workspace now has generated videos. Open Studio or keep expanding the library."
+                : workflowStage === "generating"
+                  ? `Currently building ${activeGenerationLabel || "the next video"} with scoped evidence and narrative passes.`
+                  : currentStep || "Preparing…"}
           </p>
           {overallStatus === "running" && elapsedSeconds > 10 && (
             <p className="text-xs text-muted-foreground/80 mt-2">
-              Large repos can take 2–10 minutes — we're still working
+              Large repos can take time because every step is evidence-backed and codegraph-scoped
             </p>
           )}
           {overallStatus === "running" && elapsedSeconds > 30 && (
@@ -1444,12 +1551,28 @@ const Processing = () => {
           </div>
         )}
 
-        {/* Success Actions - Continue to Studio */}
-        {overallStatus === "complete" && (
-          <CompletionActions
+        {plannerReady && moduleCatalog && (
+          <PlannerActions
             repoName={repoName}
             projectId={projectId}
-            manifestSnapshot={manifestSnapshot}
+            moduleCatalog={moduleCatalog}
+            selectedModuleIds={selectedModuleIds}
+            workspaceVideos={workspaceVideos}
+            isGenerating={phase3Status === "running"}
+            onToggleModule={toggleModuleSelection}
+            onGenerateModules={() =>
+              void generateQueuedVideos(
+                moduleCatalog.modules
+                  .filter((module) => selectedModuleIds.includes(module.id))
+                  .map((module) => ({ kind: "module" as const, module }))
+              )
+            }
+            onGenerateMaster={() =>
+              void generateQueuedVideos([{ kind: "master" as const }])
+            }
+            onOpenStudio={() =>
+              navigate(projectId ? `/studio?project=${projectId}` : "/studio")
+            }
           />
         )}
         </div>
@@ -1464,17 +1587,17 @@ const Processing = () => {
             <div className="mt-5 grid grid-cols-2 gap-3">
               <StatTile label="Included Files" value={`${ingestionSnapshot?.includedFiles ?? 0}`} />
               <StatTile label="Nodes" value={`${graphData?.nodes?.length ?? 0}`} />
-              <StatTile label="Scenes" value={`${manifestSnapshot?.sceneCount ?? 0}`} />
+              <StatTile label="Modules" value={`${moduleCatalog?.modules.length ?? 0}`} />
               <StatTile
-                label="Quality"
+                label="Videos"
                 value={
                   overallStatus === "error"
                     ? "Failed"
-                    : manifestSnapshot
-                      ? manifestSnapshot.readyForTts
-                        ? "Ready"
-                        : "Blocked"
-                      : "Pending"
+                    : workspaceVideos.filter((video) => video.ready).length > 0
+                      ? `${workspaceVideos.filter((video) => video.ready).length} ready`
+                      : plannerReady
+                        ? "Planner ready"
+                        : "Pending"
                 }
               />
             </div>
@@ -1494,10 +1617,18 @@ const Processing = () => {
                 <div className="mt-2 text-sm text-foreground">
                   {manifestSnapshot?.topBlocker || manifestSnapshot?.topWarning || (overallStatus === "error"
                     ? "Retry after the ingestion issue is resolved."
-                    : "No blocker detected.")}
+                    : plannerReady
+                      ? "Generate the master video, the selected modules, or both."
+                      : "No blocker detected.")}
                 </div>
               </div>
             </div>
+            {plannerReady && (
+              <WorkspaceVideosPanel
+                workspaceVideos={workspaceVideos}
+                projectId={projectId}
+              />
+            )}
           </div>
         </div>
         )}
@@ -1512,7 +1643,7 @@ const LoadingFlowCard = () => (
     <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
       What Happens Now
     </div>
-    <h3 className="mt-2 text-lg font-semibold">Processing in stages</h3>
+    <h3 className="mt-2 text-lg font-semibold">Processing in real stages</h3>
     <div className="mt-5 space-y-3">
       {[
         {
@@ -1520,12 +1651,16 @@ const LoadingFlowCard = () => (
           description: "Fetch files and build the initial project context.",
         },
         {
-          title: "2. Build structure",
-          description: "Map the codebase into graph-backed architecture signals.",
+          title: "2. Discover high-level modules",
+          description: "Use Code Graph RAG signals to identify the strongest architectural areas.",
         },
         {
-          title: "3. Plan the walkthrough",
-          description: "Turn that structure into a clean scene plan for Studio.",
+          title: "3. Let you choose the plan",
+          description: "Pause for module selection before any expensive video generation begins.",
+        },
+        {
+          title: "4. Generate long-form narratives",
+          description: "Run multi-pass evidence retrieval, writing, and editing for every chosen video.",
         },
       ].map((item) => (
         <div key={item.title} className="rounded-lg bg-white/[0.04] px-4 py-4">
@@ -1544,66 +1679,31 @@ const StatTile = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const InsightList = ({
-  title,
-  items,
-  emptyLabel,
-}: {
-  title: string;
-  items: string[];
-  emptyLabel: string;
-}) => (
-  <div>
-    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-      {title}
-    </div>
-    <div className="space-y-2">
-      {items.length > 0 ? items.map((item) => (
-        <div key={item} className="rounded-lg bg-white/[0.04] px-4 py-3 text-sm text-foreground">
-          {item}
-        </div>
-      )) : (
-        <div className="rounded-lg bg-background/20 px-4 py-3 text-sm text-muted-foreground">
-          {emptyLabel}
-        </div>
-      )}
-    </div>
-  </div>
-);
-
-const DeliverableRow = ({
-  title,
-  status,
-  description,
-}: {
-  title: string;
-  status: string;
-  description: string;
-}) => (
-  <div className="rounded-lg bg-white/[0.04] px-4 py-3">
-    <div className="flex items-center justify-between gap-3">
-      <div className="font-medium text-foreground">{title}</div>
-      <div className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] text-primary shadow-[inset_0_0_0_1px_rgba(180,197,255,0.18)]">
-        {status}
-      </div>
-    </div>
-    <div className="mt-2 text-sm text-muted-foreground">{description}</div>
-  </div>
-);
-
-// Completion screen with auth-aware CTA
-const CompletionActions = ({
+const PlannerActions = ({
   repoName,
   projectId,
-  manifestSnapshot,
+  moduleCatalog,
+  selectedModuleIds,
+  workspaceVideos,
+  isGenerating,
+  onToggleModule,
+  onGenerateModules,
+  onGenerateMaster,
+  onOpenStudio,
 }: {
   repoName: string;
   projectId?: string | null;
-  manifestSnapshot: ManifestSnapshot | null;
+  moduleCatalog: RepoVideoModuleCatalog;
+  selectedModuleIds: string[];
+  workspaceVideos: WorkspaceVideoEntry[];
+  isGenerating: boolean;
+  onToggleModule: (moduleId: string, checked: boolean) => void;
+  onGenerateModules: () => void;
+  onGenerateMaster: () => void;
+  onOpenStudio: () => void;
 }) => {
   const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-  const isBlocked = manifestSnapshot?.readyForTts === false;
+  const readyVideoCount = workspaceVideos.filter((video) => video.ready).length;
 
   if (isLoading) {
     return (
@@ -1615,69 +1715,207 @@ const CompletionActions = ({
 
   return (
     <div className="flex flex-col gap-4 mt-6">
-      {/* Success message */}
-      <div className={`${isBlocked ? "bg-warning/10 border-warning/20" : "bg-success/10 border-success/20"} border rounded-lg p-4`}>
+      <div className="border rounded-lg p-4 bg-primary/6 border-primary/16">
         <div className="flex items-start gap-3">
-          <Sparkles className={`h-5 w-5 shrink-0 mt-0.5 ${isBlocked ? "text-warning" : "text-success"}`} />
+          <Layers3 className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
           <div className="flex-1">
-            <h3 className={`font-medium mb-1 ${isBlocked ? "text-warning" : "text-success"}`}>
-              {isBlocked ? "Draft generated with quality blockers" : "Video generated successfully"}
+            <h3 className="font-medium mb-1 text-foreground">
+              Module planner ready for {repoName}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {isBlocked ? (
-                <>
-                  The current draft for <span className="font-medium">{repoName}</span> is viewable, but TTS and final render were stopped because the evidence checks did not pass.
-                </>
-              ) : (
-                <>
-                  Your code walkthrough video for <span className="font-medium">{repoName}</span> is ready to preview.
-                </>
-              )}
+            <p className="text-sm text-muted-foreground leading-6">
+              Code Graph RAG found <span className="font-medium text-foreground">{moduleCatalog.modules.length}</span>{" "}
+              high-level modules. Module videos aim for {MODULE_VIDEO_TARGET_RANGE_LABEL}; the
+              master walkthrough targets {MASTER_VIDEO_TARGET_RANGE_LABEL}.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Auth-aware CTA */}
-      {isAuthenticated ? (
-        <Button
-          size="lg"
-          className="w-full"
-          onClick={() => navigate(projectId ? `/studio?project=${projectId}` : "/studio")}
-        >
-          <Play className="h-4 w-4 mr-2" />
-          {isBlocked ? "Open Draft in Studio" : "Continue to Studio"}
-        </Button>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground text-center">
-            {isBlocked
-              ? "Sign in to inspect the blocked draft and rerun it from the Studio"
-              : "Sign in to access the Studio and edit your video"}
+      <div className="rounded-xl gf-panel p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
+              High-Level Modules
+            </div>
+            <h3 className="mt-2 text-lg font-semibold">Choose module videos</h3>
+          </div>
+          <div className="rounded-full bg-white/[0.04] px-3 py-1 text-xs text-muted-foreground">
+            {selectedModuleIds.length} selected
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {moduleCatalog.modules.map((module) => {
+            const ready = workspaceVideos.some(
+              (video) => video.kind === "module" && video.module_id === module.id && video.ready
+            );
+            const checked = selectedModuleIds.includes(module.id);
+
+            return (
+              <label
+                key={module.id}
+                className="flex cursor-pointer items-start gap-3 rounded-lg bg-white/[0.04] px-4 py-4"
+              >
+                <Checkbox
+                  checked={checked}
+                  disabled={isGenerating}
+                  onCheckedChange={(value) =>
+                    onToggleModule(module.id, Boolean(value))
+                  }
+                />
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="font-medium text-foreground">{module.title}</div>
+                    <div className="flex flex-wrap gap-2 text-[11px]">
+                      <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-muted-foreground">
+                        {module.file_count} files
+                      </span>
+                      <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-muted-foreground">
+                        {formatDurationLabel(module.estimated_duration_seconds)}
+                      </span>
+                      {ready && (
+                        <span className="rounded-full bg-success/12 px-2.5 py-1 text-success">
+                          Ready
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {module.summary}
+                  </p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl gf-panel p-5">
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
+            Master Video
+          </div>
+          <h3 className="mt-2 text-lg font-semibold">Generate the full repo story</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Build the long-form walkthrough across architecture, flows, and the strongest modules.
           </p>
-          <Button size="lg" className="w-full" asChild>
-            <Link to="/login" state={{ from: '/studio' }}>
-              Sign In
-            </Link>
+          <Button
+            className="mt-4 w-full"
+            disabled={isGenerating}
+            onClick={onGenerateMaster}
+          >
+            <Clapperboard className="mr-2 h-4 w-4" />
+            Generate Master Video
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Free forever • No credit card required
+        </div>
+
+        <div className="rounded-xl gf-panel p-5">
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
+            Module Videos
+          </div>
+          <h3 className="mt-2 text-lg font-semibold">Generate the selected modules</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Create focused subsystem walkthroughs with the same code-backed storytelling style.
           </p>
+          <Button
+            className="mt-4 w-full"
+            variant="outline"
+            disabled={isGenerating || selectedModuleIds.length === 0}
+            onClick={onGenerateModules}
+          >
+            <Layers3 className="mr-2 h-4 w-4" />
+            Generate {selectedModuleIds.length} Module Video{selectedModuleIds.length === 1 ? "" : "s"}
+          </Button>
+        </div>
+      </div>
+
+      {readyVideoCount > 0 && (
+        <div className="rounded-xl gf-panel p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
+                Saved Outputs
+              </div>
+              <h3 className="mt-2 text-lg font-semibold">Open the generated videos</h3>
+            </div>
+            <div className="rounded-full bg-success/10 px-3 py-1 text-xs text-success">
+              {readyVideoCount} ready
+            </div>
+          </div>
+          {isAuthenticated ? (
+            <Button className="mt-4 w-full" onClick={onOpenStudio}>
+              <Play className="mr-2 h-4 w-4" />
+              Open Studio
+            </Button>
+          ) : (
+            <Button className="mt-4 w-full" asChild>
+              <Link to="/login" state={{ from: projectId ? `/studio?project=${projectId}` : "/studio" }}>
+                Sign In To Open Studio
+              </Link>
+            </Button>
+          )}
         </div>
       )}
-
-      {/* Secondary action */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-muted-foreground"
-        onClick={() => navigate("/")}
-      >
-        Generate Another Video
-      </Button>
     </div>
   );
 };
+
+const WorkspaceVideosPanel = ({
+  workspaceVideos,
+  projectId,
+}: {
+  workspaceVideos: WorkspaceVideoEntry[];
+  projectId?: string | null;
+}) => (
+  <div className="rounded-xl bg-white/[0.04] p-4">
+    <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+      Video Library
+    </div>
+    <div className="mt-3 space-y-3">
+      {workspaceVideos.map((video) => (
+        <div key={video.id} className="rounded-lg bg-background/20 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-medium text-foreground">{video.label}</div>
+              <div className="mt-1 text-sm leading-6 text-muted-foreground">
+                {video.description}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] ${
+                  video.ready
+                    ? "bg-success/10 text-success"
+                    : "bg-white/[0.06] text-muted-foreground"
+                }`}
+              >
+                {video.ready ? "Ready" : "Pending"}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {formatDurationLabel(video.duration_seconds)}
+              </span>
+            </div>
+          </div>
+          {video.ready && projectId && (
+            <div className="mt-3">
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to={
+                    video.kind === "master"
+                      ? `/studio?project=${projectId}`
+                      : `/studio?project=${projectId}&module=${video.module_id}`
+                  }
+                >
+                  Open In Studio
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 // Helper component for phase cards
 const PhaseCard = ({ title, status }: { title: string; status: PhaseStatus }) => (

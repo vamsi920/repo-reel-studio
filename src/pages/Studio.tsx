@@ -34,6 +34,11 @@ import { generateAllSceneAudio } from "@/lib/googleTTS";
 import { GOOGLE_TTS_ENABLED } from "@/env";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
 import { cn } from "@/lib/utils";
+import {
+  formatDurationLabel,
+  listWorkspaceVideoEntries,
+  resolveWorkspaceManifest,
+} from "@/lib/videoWorkspace";
 import iconUrl from "../../icon.png";
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
@@ -105,6 +110,7 @@ const Studio = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const projectQuery = searchParams.get("project");
+  const activeModuleId = searchParams.get("module");
   const { user } = useAuth();
   const playerRef = useRef<PlayerRef>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -277,8 +283,14 @@ const Studio = () => {
         }
       }
 
-      // Validate manifest
-      if (!parsed || !parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
+      const hasMasterScenes = Boolean(
+        parsed?.scenes && Array.isArray(parsed.scenes) && parsed.scenes.length > 0
+      );
+      const hasModuleVideos = Boolean(parsed?.module_videos?.length);
+      const hasPlanner = Boolean(parsed?.module_catalog?.modules?.length);
+
+      // Validate manifest/workspace
+      if (!parsed || (!hasMasterScenes && !hasModuleVideos && !hasPlanner)) {
         addLog("No valid manifest found", "error");
         addLog("Please go back and create a new video", "error");
         setPhase("error");
@@ -291,8 +303,16 @@ const Studio = () => {
       await new Promise(r => setTimeout(r, 300));
       setProgress(35);
 
-      addLog(`Manifest loaded: "${parsed.title || "Untitled"}"`, "success");
-      addLog(`Found ${parsed.scenes.length} scenes`, "info");
+      addLog(`Workspace loaded: "${parsed.title || "Untitled"}"`, "success");
+      if (hasMasterScenes) {
+        addLog(`Found ${parsed.scenes.length} master scenes`, "info");
+      }
+      if (hasModuleVideos) {
+        addLog(`Found ${parsed.module_videos?.length || 0} generated module videos`, "info");
+      }
+      if (hasPlanner && !hasMasterScenes && !hasModuleVideos) {
+        addLog("Planner metadata is present but no videos are ready yet.", "warning");
+      }
 
       // Set manifest state
       setManifest(parsed);
@@ -300,13 +320,15 @@ const Studio = () => {
         setRepoLabel(repoUrl || parsed.title || "Video Preview");
       }
       setRepoUrlState(repoUrl);
+      const resolvedPlayableManifest =
+        resolveWorkspaceManifest(parsed, activeModuleId).manifest;
 
       // Log scene details
       setCurrentStep("Analyzing scenes...");
       setProgress(45);
       await new Promise(r => setTimeout(r, 200));
 
-      const sceneTypes = parsed.scenes.reduce((acc, s) => {
+      const sceneTypes = (resolvedPlayableManifest?.scenes || []).reduce((acc, s) => {
         acc[s.type] = (acc[s.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -322,6 +344,19 @@ const Studio = () => {
         parsed = mockManifest;
         setManifest(mockManifest);
         setRepoLabel(mockManifest.title);
+      }
+
+      if (!resolvedPlayableManifest?.scenes?.length) {
+        setAudioUrls((prev) => {
+          prev.forEach((url) => URL.revokeObjectURL(url));
+          return new Map();
+        });
+        setPhase("complete");
+        setProgress(100);
+        setCurrentStep("Workspace loaded");
+        addLog("Workspace metadata loaded, but no playable video is ready yet.", "warning");
+        isLoadingRef.current = false;
+        return;
       }
 
       // Phase 2: Hydrating
@@ -345,29 +380,29 @@ const Studio = () => {
       setProgress(90);
 
       // Phase 3: Generating Voice (TTS) — skip if manifest has stored audio (Supabase)
-      const hasStoredAudio = parsed?.scenes?.some((s) => s.audioUrl);
-      if (hasStoredAudio && parsed?.scenes) {
+      const hasStoredAudio = resolvedPlayableManifest.scenes.some((s) => s.audioUrl);
+      if (hasStoredAudio) {
         const stored = new Map<number, string>();
-        for (const s of parsed.scenes) {
+        for (const s of resolvedPlayableManifest.scenes) {
           if (s.audioUrl) stored.set(s.id, s.audioUrl);
         }
         setAudioUrls(stored);
-        setTtsProgress({ completed: stored.size, total: parsed.scenes.length });
+        setTtsProgress({ completed: stored.size, total: resolvedPlayableManifest.scenes.length });
         addLog("Using stored audio from project", "info");
-      } else if (GOOGLE_TTS_ENABLED && parsed && parsed.scenes && parsed.scenes.length > 0) {
+      } else if (GOOGLE_TTS_ENABLED && resolvedPlayableManifest.scenes.length > 0) {
         setPhase("generating-voice");
         setCurrentStep("Generating voice narration...");
         addLog("Starting voice generation with Google TTS...", "info");
-        addLog(`Generating audio for ${parsed.scenes.length} scenes...`, "info");
+        addLog(`Generating audio for ${resolvedPlayableManifest.scenes.length} scenes...`, "info");
 
         try {
-          const narrationHash = hashNarrationText(parsed.scenes);
-          if (ttsHashRef.current === narrationHash && audioUrlsRef.current.size >= parsed.scenes.length) {
-            setTtsProgress({ completed: parsed.scenes.length, total: parsed.scenes.length });
+          const narrationHash = hashNarrationText(resolvedPlayableManifest.scenes);
+          if (ttsHashRef.current === narrationHash && audioUrlsRef.current.size >= resolvedPlayableManifest.scenes.length) {
+            setTtsProgress({ completed: resolvedPlayableManifest.scenes.length, total: resolvedPlayableManifest.scenes.length });
             addLog("Reusing existing voice audio for this manifest", "info");
           } else {
             const { audioUrls: generatedAudioUrls, failures } = await generateAllSceneAudio(
-              parsed.scenes,
+              resolvedPlayableManifest.scenes,
               'en-US-Standard-D',
               (completed, total) => {
                 setTtsProgress({ completed, total });
@@ -437,20 +472,8 @@ const Studio = () => {
 
       setProgress(100);
 
-      // Ensure we have a valid manifest - use parsed or fallback to mock
-      const finalManifest = parsed || mockManifest;
-
-      if (!finalManifest || !finalManifest.scenes || finalManifest.scenes.length === 0) {
-        // Last resort - use mock
-        console.warn("[Studio] No valid manifest at all, using mock");
-        setManifest(mockManifest);
-        setRepoLabel(mockManifest.title);
-        addLog("Using demo manifest", "warning");
-      } else {
-        // Ensure manifest state is set
-        setManifest(finalManifest);
-        addLog(`Manifest: ${finalManifest.scenes.length} scenes`, "info");
-      }
+      setManifest(parsed);
+      addLog(`Manifest: ${resolvedPlayableManifest.scenes.length} scenes`, "info");
 
       setPhase("complete");
       setCurrentStep("Ready to play!");
@@ -491,7 +514,7 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [addLog, projectQuery, repoLabel, user?.id]);
+  }, [activeModuleId, addLog, projectQuery, repoLabel, user?.id]);
 
   useEffect(() => {
     loadManifest();
@@ -506,11 +529,21 @@ const Studio = () => {
     setSearchParams(next, { replace: true });
   }, [phase, projectIdState, projectQuery, searchParams, setSearchParams]);
 
-  const hydratedManifest = useHydrateManifest(manifest, 30, audioUrls);
+  const resolvedWorkspace = useMemo(
+    () => resolveWorkspaceManifest(manifest, activeModuleId),
+    [activeModuleId, manifest]
+  );
+  const activeManifest = resolvedWorkspace.manifest;
+  const workspaceVideos = useMemo(
+    () => listWorkspaceVideoEntries(manifest),
+    [manifest]
+  );
+
+  const hydratedManifest = useHydrateManifest(activeManifest, 30, audioUrls);
 
   // Fallback to mock manifest if we have no manifest at all
   const fallbackHydratedManifest = useHydrateManifest(
-    !manifest ? mockManifest : null,
+    !activeManifest ? mockManifest : null,
     30,
     audioUrls
   );
@@ -666,15 +699,15 @@ const Studio = () => {
       return `${mins}:${secs.toString().padStart(2, "0")}`;
     }
 
-    if (!manifest?.scenes) return "0:00";
-    const totalSeconds = manifest.scenes.reduce(
+    if (!activeManifest?.scenes) return "0:00";
+    const totalSeconds = activeManifest.scenes.reduce(
       (sum, s) => sum + (s.duration_seconds || 0),
       0
     );
     const mins = Math.floor(totalSeconds / 60);
     const secs = Math.floor(totalSeconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }, [hydratedManifest, manifest]);
+  }, [activeManifest, hydratedManifest]);
 
   // Current scene index
   const currentSceneIndex = useMemo(() => {
@@ -693,14 +726,27 @@ const Studio = () => {
   })();
   const highlightedRepoFilePath = focusedRepoFilePath || activeSceneFilePath;
 
-  const evidenceBundle = manifest?.evidence_bundle;
-  const knowledgeGraph = manifest?.knowledge_graph;
-  const qualityReport = manifest?.quality_report;
+  const evidenceBundle = activeManifest?.evidence_bundle;
+  const knowledgeGraph = activeManifest?.knowledge_graph;
+  const qualityReport = activeManifest?.quality_report;
   const setWorkspaceView = useCallback((view: WorkspaceView) => {
     const next = new URLSearchParams(searchParams);
     next.set("view", view);
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+  const selectWorkspaceVideo = useCallback(
+    (entryId: string, moduleId?: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (entryId === "master") {
+        next.delete("module");
+      } else if (moduleId) {
+        next.set("module", moduleId);
+      }
+      next.set("view", "video");
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   useEffect(() => {
     if (workspaceView !== "video" && isVideoFullscreen) {
@@ -756,13 +802,17 @@ const Studio = () => {
   // Copy share link (unique /v/:id when project is from DB)
   const handleShare = useCallback(() => {
     const projectId = projectIdState || projectQuery;
-    const url = projectId ? `${window.location.origin}/v/${projectId}` : window.location.href;
+    const url = projectId
+      ? `${window.location.origin}/studio?project=${projectId}${
+          activeModuleId ? `&module=${activeModuleId}` : ""
+        }`
+      : window.location.href;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
       description: "Video link has been copied to clipboard.",
     });
-  }, [projectIdState, projectQuery]);
+  }, [activeModuleId, projectIdState, projectQuery]);
 
   const LoadingScreen = () => (
     <div className="mx-auto max-w-3xl">
@@ -893,7 +943,7 @@ const Studio = () => {
                 <div>
                   <div className="text-[0.98rem] font-semibold text-white">{repoLabel}</div>
                   <div className="text-sm text-white/48">
-                    {manifest?.scenes?.length || 0} scenes • {totalDuration}
+                    {activeManifest?.scenes?.length || 0} scenes • {totalDuration}
                   </div>
                 </div>
               </div>
@@ -924,6 +974,74 @@ const Studio = () => {
               activeView={workspaceView}
               onChange={setWorkspaceView}
             />
+
+            {workspaceVideos.length > 1 && (
+              <section className="mt-5 rounded-[22px] gf-panel p-4 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+                      Video Library
+                    </div>
+                    <div className="mt-2 text-lg font-semibold text-white">
+                      Master and module walkthroughs
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={projectIdState ? `/processing?project=${projectIdState}&repo=${encodeURIComponent(repoUrlState)}` : `/processing?repo=${encodeURIComponent(repoUrlState)}`}>
+                      <Sparkles className="h-4 w-4" />
+                      Generate More
+                    </Link>
+                  </Button>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {workspaceVideos.map((video) => {
+                    const isActive =
+                      video.kind === "master"
+                        ? !activeModuleId
+                        : activeModuleId === video.module_id;
+
+                    return (
+                      <button
+                        key={video.id}
+                        type="button"
+                        disabled={!video.ready}
+                        onClick={() => selectWorkspaceVideo(video.id, video.module_id)}
+                        className={cn(
+                          "rounded-[18px] border px-4 py-4 text-left transition-colors",
+                          video.ready
+                            ? "border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.06]"
+                            : "border-white/[0.04] bg-white/[0.02] opacity-70",
+                          isActive && "border-primary/40 bg-primary/8"
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium text-white">{video.label}</div>
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-white/60">
+                              {formatDurationLabel(video.duration_seconds)}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded-full px-2.5 py-1",
+                                video.ready
+                                  ? "bg-emerald-300/12 text-emerald-200"
+                                  : "bg-white/[0.06] text-white/50"
+                              )}
+                            >
+                              {video.ready ? "Ready" : "Pending"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-white/58">
+                          {video.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             <div className="mt-5">
               {isLoading ? (
@@ -1091,7 +1209,7 @@ const Studio = () => {
               <RepoInvestigator
                 repoName={repoLabel}
                 repoContent={repoContent}
-                manifest={manifest}
+                manifest={activeManifest || manifest}
                 graphData={studioGraphData}
                 onFocusFile={focusRepoFile}
               />
@@ -1102,7 +1220,7 @@ const Studio = () => {
                 repoUrl={repoUrlState}
                 repoName={repoLabel}
                 projectId={projectIdState}
-                manifest={manifest}
+                manifest={activeManifest || manifest}
                 graphData={studioGraphData}
                 onFocusFile={focusRepoFile}
               />

@@ -16,10 +16,17 @@ import {
   getContextSummaryForCapsule,
   getTutorialCapsules,
 } from "@/lib/repoKnowledgeGraph";
+import {
+  discoverRepoVideoModules,
+  MASTER_VIDEO_TARGET_RANGE_LABEL,
+  MODULE_VIDEO_TARGET_RANGE_LABEL,
+} from "@/lib/videoWorkspace";
 import type {
   GitNexusGraphData,
   QualityReport,
   RepoKnowledgeGraph,
+  RepoVideoModule,
+  RepoVideoModuleCatalog,
   SentenceEvidence,
   SourceRef,
   TutorialPhase,
@@ -56,6 +63,9 @@ interface SceneSpec {
   bulletPoints: string[];
   focusSymbols: string[];
   durationSeconds: number;
+  generationKind?: "master" | "module";
+  moduleTitle?: string;
+  narrationWordTarget?: [number, number];
 }
 
 type ConceptKind =
@@ -111,6 +121,14 @@ interface SceneWriterResponse {
     evidence_indexes: number[];
     on_screen_focus?: string[];
   }>;
+}
+
+export interface VideoGenerationOptions {
+  kind?: "master" | "module";
+  module?: RepoVideoModule | null;
+  moduleCatalog?: RepoVideoModuleCatalog | null;
+  targetDurationSeconds?: number;
+  targetDurationLabel?: string;
 }
 
 const GENERIC_PHRASES = [
@@ -240,6 +258,99 @@ const stretchScenePlanToTarget = (
       durationSeconds: scene.durationSeconds + addition,
     };
   });
+};
+
+const buildScopedFileContents = (
+  fileContents: Record<string, string>,
+  module?: RepoVideoModule | null
+) => {
+  if (!module) return fileContents;
+
+  const scopedPaths = uniqueStrings([
+    ...module.file_paths,
+    ...module.related_file_paths,
+  ]).filter((filePath) => fileContents[filePath]);
+
+  if (scopedPaths.length === 0) {
+    return fileContents;
+  }
+
+  return Object.fromEntries(
+    scopedPaths.map((filePath) => [filePath, fileContents[filePath]])
+  );
+};
+
+const expandConceptsForGeneration = (
+  concepts: ConceptBrief[],
+  fileContents: Record<string, string>,
+  graphData: GitNexusGraphData | null | undefined,
+  kind: "master" | "module"
+) => {
+  const expanded: ConceptBrief[] = [];
+  const seenKeys = new Set<string>();
+  const maxDetailScenes = kind === "master" ? 8 : 4;
+  let addedDetails = 0;
+
+  const pushConcept = (concept: ConceptBrief) => {
+    const primaryKey = `${concept.id}:${concept.primaryFiles[0] || concept.title}`;
+    if (seenKeys.has(primaryKey)) return;
+    seenKeys.add(primaryKey);
+    expanded.push(concept);
+  };
+
+  concepts.forEach((concept) => {
+    pushConcept(concept);
+
+    if (
+      addedDetails >= maxDetailScenes ||
+      concept.kind === "hook" ||
+      concept.kind === "repo_map" ||
+      concept.kind === "conclusion"
+    ) {
+      return;
+    }
+
+    const detailCandidates = uniqueStrings([
+      ...concept.supportingFiles,
+      ...concept.primaryFiles.flatMap((filePath) =>
+        getRelatedFilesForFile(
+          graphData,
+          filePath,
+          Object.keys(fileContents),
+          kind === "master" ? 3 : 2
+        )
+      ),
+    ]).filter(
+      (filePath) =>
+        fileContents[filePath] &&
+        !concept.primaryFiles.includes(filePath) &&
+        !concept.supportingFiles.includes(filePath)
+    );
+
+    const perConceptLimit = kind === "master" ? 2 : 1;
+    detailCandidates.slice(0, perConceptLimit).forEach((filePath, index) => {
+      if (addedDetails >= maxDetailScenes) return;
+      const detailConcept: ConceptBrief = {
+        ...concept,
+        id: `${concept.id}-detail-${index + 1}`,
+        title: `${concept.title}: ${humanizeFileLabel(filePath)}`,
+        summary: `Zoom into ${humanizeFileLabel(filePath)} to make the ${concept.title.toLowerCase()} story concrete and code-backed.`,
+        viewerGoal: `Use ${humanizeFileLabel(filePath)} to show the implementation detail behind ${concept.title.toLowerCase()}.`,
+        primaryFiles: [filePath],
+        supportingFiles: getRelatedFilesForFile(
+          graphData,
+          filePath,
+          Object.keys(fileContents),
+          kind === "master" ? 4 : 3
+        ),
+        importance: clamp(concept.importance - 6 - addedDetails, 18, 96),
+      };
+      pushConcept(detailConcept);
+      addedDetails += 1;
+    });
+  });
+
+  return expanded;
 };
 
 const requestGemini = async (prompt: string, temperature = 0.25) => {
@@ -398,7 +509,9 @@ const extractHighLevelConcepts = (
 const orderConcepts = async (
   repoName: string,
   concepts: ConceptBrief[],
-  architecture: string | undefined
+  architecture: string | undefined,
+  kind: "master" | "module" = "master",
+  moduleTitle?: string
 ) => {
   if (!GEMINI_API_KEY) {
     return {
@@ -411,11 +524,14 @@ const orderConcepts = async (
 
 Repository: ${repoName}
 Architecture hint: ${architecture || "Unknown"}
+Video kind: ${kind === "module" ? `Focused module walkthrough for ${moduleTitle || "the selected module"}` : "Master walkthrough across the full repository"}
 
 Rules:
 - You are only seeing high-level concept summaries, not full code.
 - You may reorder concepts, improve titles, and improve teaching goals.
 - Keep the hook first and the conclusion last.
+- If this is a module walkthrough, keep the story tightly focused on one subsystem instead of broad repo coverage.
+- If this is a master walkthrough, make the flow feel expansive and documentary, not brief.
 - Return JSON only.
 
 Schema:
@@ -706,6 +822,11 @@ Phase: ${scene.phase}
 Scene goal: ${scene.sceneGoal}
 Visual kind: ${scene.visualKind}
 Claim: ${scene.claim}
+Video profile: ${
+  scene.generationKind === "module"
+    ? `Focused module walkthrough${scene.moduleTitle ? ` for ${scene.moduleTitle}` : ""}`
+    : "Long-form master walkthrough"
+}
 
 Rules:
 - Write 4 to 6 spoken sentences.
@@ -714,7 +835,10 @@ Rules:
 - Do not mention file paths, slashes, or raw directory names.
 - Every sentence must cite one or more evidence indexes from the list below.
 - Do not invent behavior not supported by the evidence.
-- Aim for roughly 90 to 150 spoken words.
+- Aim for roughly ${scene.narrationWordTarget?.[0] || 90} to ${
+  scene.narrationWordTarget?.[1] || 150
+} spoken words.
+- Let the narration breathe. This product prefers slower, more complete explanations over compressed one-shot summaries.
 - Return JSON only.
 
 Schema:
@@ -1113,8 +1237,16 @@ export const generateManifestWithQualityPipeline = async (
   repoName: string,
   repoContent: string,
   fileContents: Record<string, string>,
-  graphData?: GitNexusGraphData | null
+  graphData?: GitNexusGraphData | null,
+  options: VideoGenerationOptions = {}
 ): Promise<VideoManifest> => {
+  const generationKind = options.kind === "module" ? "module" : "master";
+  const scopedRepoName =
+    generationKind === "module" && options.module?.title
+      ? `${repoName} - ${options.module.title}`
+      : repoName;
+  const scopedFileContents = buildScopedFileContents(fileContents, options.module);
+
   if (Object.keys(fileContents).length === 0) {
     const emptyEvidence = buildRepoEvidenceBundle(repoName, fileContents, graphData);
     const emptyKnowledge = buildRepoKnowledgeGraph(
@@ -1156,6 +1288,23 @@ export const generateManifestWithQualityPipeline = async (
       pipeline_version: "v2",
       evidence_bundle: emptyEvidence,
       knowledge_graph: emptyKnowledge,
+      generation_profile: {
+        kind: generationKind,
+        label:
+          generationKind === "module"
+            ? options.module?.title || "Module video"
+            : "Master video",
+        module_id: options.module?.id,
+        module_title: options.module?.title,
+        target_duration_seconds: options.targetDurationSeconds,
+        target_duration_label:
+          options.targetDurationLabel ||
+          (generationKind === "module"
+            ? MODULE_VIDEO_TARGET_RANGE_LABEL
+            : MASTER_VIDEO_TARGET_RANGE_LABEL),
+        generated_at: new Date().toISOString(),
+      },
+      module_catalog: options.moduleCatalog || undefined,
     };
 
     return {
@@ -1171,28 +1320,39 @@ export const generateManifestWithQualityPipeline = async (
     };
   }
 
-  const evidence = buildRepoEvidenceBundle(repoName, fileContents, graphData);
+  const evidence = buildRepoEvidenceBundle(scopedRepoName, scopedFileContents, graphData);
   const knowledgeGraph = buildRepoKnowledgeGraph(
-    repoName,
+    scopedRepoName,
     evidence,
-    fileContents,
+    scopedFileContents,
     graphData
   );
+  const moduleCatalog =
+    options.moduleCatalog ||
+    discoverRepoVideoModules(repoName, graphData, knowledgeGraph);
   const extracted = extractHighLevelConcepts(
-    repoName,
+    scopedRepoName,
     evidence,
-    fileContents,
+    scopedFileContents,
     knowledgeGraph,
     graphData
   );
   const orderedConceptPlan = await orderConcepts(
-    repoName,
+    scopedRepoName,
     extracted.concepts,
-    extracted.architecture
+    extracted.architecture,
+    generationKind,
+    options.module?.title
   );
   const plannedTitle = orderedConceptPlan.title;
-  const scenePlan: SceneSpec[] = orderedConceptPlan.concepts.map((concept, index) => {
-    const pack = buildConceptEvidencePack(repoName, concept, evidence, fileContents, graphData);
+  const amplifiedConcepts = expandConceptsForGeneration(
+    orderedConceptPlan.concepts,
+    scopedFileContents,
+    graphData,
+    generationKind
+  );
+  const scenePlan: SceneSpec[] = amplifiedConcepts.map((concept, index) => {
+    const pack = buildConceptEvidencePack(scopedRepoName, concept, evidence, scopedFileContents, graphData);
     const primaryRef = pack.evidenceRefs[0];
     const type: VideoScene["type"] =
       concept.kind === "hook"
@@ -1235,28 +1395,55 @@ export const generateManifestWithQualityPipeline = async (
       focusSymbols: pack.focusSymbols,
       durationSeconds:
         concept.kind === "hook" || concept.kind === "flow"
-          ? 18
+          ? generationKind === "master"
+            ? 44
+            : 34
           : concept.kind === "architecture" || concept.kind === "repo_map" || concept.kind === "conclusion"
-            ? 16
+            ? generationKind === "master"
+              ? 40
+              : 30
             : concept.kind === "operations"
-              ? 15
-              : 18,
+              ? generationKind === "master"
+                ? 36
+                : 28
+              : generationKind === "master"
+                ? 48
+                : 36,
+      generationKind,
+      moduleTitle: options.module?.title,
+      narrationWordTarget:
+        generationKind === "master"
+          ? [120, 210]
+          : [95, 170],
     };
   });
+  const targetDurationSeconds =
+    options.targetDurationSeconds ||
+    (generationKind === "module"
+      ? options.module?.estimated_duration_seconds || 8 * 60
+      : moduleCatalog?.master_estimated_duration_seconds ||
+        24 * 60);
+
+  const stretchedScenePlan = stretchScenePlanToTarget(
+    scenePlan,
+    typeof targetDurationSeconds === "number" && Number.isFinite(targetDurationSeconds)
+      ? targetDurationSeconds
+      : 24 * 60
+  );
 
   const finalScenes: VideoScene[] = [];
-  for (const scene of scenePlan) {
-    const draft = await writeScene(repoName, scene, fileContents);
-    const edited = await editScene(repoName, scene, draft);
-    const finalized = finalizeScene(scene, edited, fileContents);
+  for (const scene of stretchedScenePlan) {
+    const draft = await writeScene(scopedRepoName, scene, scopedFileContents);
+    const edited = await editScene(scopedRepoName, scene, draft);
+    const finalized = finalizeScene(scene, edited, scopedFileContents);
     const validation = validateScene(
       finalized,
-      fileContents,
+      scopedFileContents,
       evidence.source_files.length > 0
     );
 
     if (validation.blockers.length > 0) {
-      const fallback = finalizeScene(scene, fallbackSceneWriter(scene), fileContents);
+      const fallback = finalizeScene(scene, fallbackSceneWriter(scene), scopedFileContents);
       finalScenes.push(fallback);
       continue;
     }
@@ -1265,15 +1452,41 @@ export const generateManifestWithQualityPipeline = async (
   }
 
   const manifest: VideoManifest = {
-    title: plannedTitle,
+    title:
+      generationKind === "module" && options.module?.title
+        ? `${options.module.title} - Code Walkthrough`
+        : plannedTitle,
     scenes: finalScenes,
     repo_files: evidence.repo_tree,
     pipeline_version: "v2",
     evidence_bundle: evidence,
     knowledge_graph: knowledgeGraph,
+    generation_profile: {
+      kind: generationKind,
+      label:
+        generationKind === "module"
+          ? options.module?.title || "Module video"
+          : "Master video",
+      summary:
+        generationKind === "module"
+          ? options.module?.summary
+          : "Long-form walkthrough across the repository's major architecture areas.",
+      module_id: options.module?.id,
+      module_title: options.module?.title,
+      target_duration_seconds:
+        typeof targetDurationSeconds === "number" ? targetDurationSeconds : undefined,
+      target_duration_label:
+        options.targetDurationLabel ||
+        (generationKind === "module"
+          ? MODULE_VIDEO_TARGET_RANGE_LABEL
+          : MASTER_VIDEO_TARGET_RANGE_LABEL),
+      target_scene_count: stretchedScenePlan.length,
+      generated_at: new Date().toISOString(),
+    },
+    module_catalog: moduleCatalog || undefined,
   };
 
-  const qualityReport = buildQualityReport(manifest, fileContents);
+  const qualityReport = buildQualityReport(manifest, scopedFileContents);
 
   return {
     ...manifest,
@@ -1285,6 +1498,9 @@ export const generateManifestWithQualityPipeline = async (
         `The model never receives the whole repository dump in one prompt.`,
         `High-level concepts came from code-graph structure first, then each concept retrieved a local evidence pack before script writing.`,
         `Narrative planning, scene writing, and editing were split into bounded passes.`,
+        generationKind === "module"
+          ? `The walkthrough was scoped to the ${options.module?.title || "selected"} subsystem before writing any scenes.`
+          : `The walkthrough was planned as a master video with expanded detail scenes and a longer target runtime.`,
         `Quality gates ${qualityReport.ready_for_tts ? "passed" : "blocked"} before TTS.`,
         `Source URL: ${repoUrl}`,
       ],

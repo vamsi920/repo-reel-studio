@@ -256,6 +256,56 @@ export interface QualityReport {
   scene_reports: QualitySceneReport[];
 }
 
+export type VideoGenerationKind = "workspace" | "master" | "module";
+
+export interface VideoGenerationProfile {
+  kind: VideoGenerationKind;
+  label: string;
+  summary?: string;
+  module_id?: string;
+  module_title?: string;
+  target_duration_seconds?: number;
+  target_duration_label?: string;
+  target_scene_count?: number;
+  generated_at?: string;
+}
+
+export interface RepoVideoModule {
+  id: string;
+  title: string;
+  summary: string;
+  focus: string;
+  representative_file: string;
+  file_paths: string[];
+  related_file_paths: string[];
+  top_entities: string[];
+  why_it_matters: string[];
+  file_count: number;
+  entity_count: number;
+  dependency_count: number;
+  incoming_links: number;
+  outgoing_links: number;
+  estimated_duration_seconds: number;
+  selected_by_default?: boolean;
+}
+
+export interface RepoVideoModuleCatalog {
+  generated_at: string;
+  source: "codegraph-rag";
+  repo_name: string;
+  architecture?: string;
+  modules: RepoVideoModule[];
+  master_estimated_duration_seconds: number;
+  default_selected_ids: string[];
+}
+
+export interface ModuleVideoRecord {
+  module_id: string;
+  module_title: string;
+  generated_at: string;
+  manifest: VideoManifest;
+}
+
 // Video Manifest Types
 export interface VideoScene {
   id: number;
@@ -290,10 +340,14 @@ export interface VideoManifest {
   title: string;
   scenes: VideoScene[];
   repo_files?: string[];
+  workspace_version?: string;
   pipeline_version?: string;
   evidence_bundle?: RepoEvidenceBundle;
   knowledge_graph?: RepoKnowledgeGraph;
   quality_report?: QualityReport;
+  generation_profile?: VideoGenerationProfile;
+  module_catalog?: RepoVideoModuleCatalog;
+  module_videos?: ModuleVideoRecord[];
   rollout_comparison?: {
     legacy_manifest?: VideoManifest | null;
     legacy_quality_report?: QualityReport | null;
