@@ -1083,15 +1083,18 @@ const Studio = () => {
 
   const LoadingScreen = () => (
     <div className="mx-auto max-w-3xl">
-      <div className="rounded-[22px] gf-panel p-6 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <img src={iconUrl} alt="GitFlick" className="h-8 w-8 object-contain" />
+      <div className="premium-card p-8">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-xl opacity-50 animate-pulse" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
+              <img src={iconUrl} alt="GitFlick" className="h-8 w-8 object-contain" />
+            </div>
           </div>
           <div>
-            <div className="text-sm font-medium text-primary">Preparing Studio</div>
-            <h2 className="mt-1 text-xl font-semibold text-white">{repoLabel}</h2>
-            <p className="mt-1 text-sm text-white/56">
+            <div className="text-sm font-medium gradient-text">Preparing Studio</div>
+            <h2 className="mt-1 text-2xl font-bold text-foreground">{repoLabel}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               {phase === "generating-voice"
                 ? "Generating voice tracks for the walkthrough."
                 : "Loading the project and getting the player ready."}
@@ -1190,48 +1193,46 @@ const Studio = () => {
   );
 
   return (
-    <div className="min-h-screen bg-transparent">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] grid-cols-1 lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-background noise-overlay">
+      <div className="flex min-h-screen">
         <StudioSidebar
           repoLabel={repoLabel}
           activeView={workspaceView}
           onChangeView={setWorkspaceView}
         />
 
-        <div className="min-w-0">
-          <header className="gf-nav-shell sticky top-0 z-30">
-            <div className="flex flex-col gap-3 px-5 py-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" asChild>
-                  <Link to="/dashboard">
-                    <ArrowLeft className="h-4 w-4" />
-                  </Link>
-                </Button>
+        <div className="flex-1 min-w-0">
+          <header className="sticky top-16 z-30 glass border-b border-white/[0.08]">
+            <div className="flex flex-col gap-3 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-center gap-4">
+                <Link to="/dashboard" className="btn-ghost p-2">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+                <div className="h-8 w-px bg-white/10" />
                 <div>
-                  <div className="text-[0.98rem] font-semibold text-white">{repoLabel}</div>
-                  <div className="text-sm text-white/48">
+                  <div className="text-lg font-bold gradient-text">{repoLabel}</div>
+                  <div className="text-sm text-muted-foreground">
                     {manifest?.scenes?.length || 0} scenes • {totalDuration}
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={loadManifest}>
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Reload
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleShare}>
-                  <Share2 className="h-3.5 w-3.5" />
-                  Share
-                </Button>
-                <Button
-                  size="sm"
-                  className="gap-2"
+                <button className="btn-subtle flex items-center gap-2" onClick={loadManifest}>
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Reload</span>
+                </button>
+                <button className="btn-subtle flex items-center gap-2" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+                <button
+                  className="btn-premium flex items-center gap-2"
                   onClick={() => navigate(projectIdState ? `/export?project=${projectIdState}` : "/export")}
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  Export
-                </Button>
+                  <Download className="h-4 w-4" />
+                  <span>Export</span>
+                </button>
               </div>
             </div>
           </header>
@@ -1464,23 +1465,26 @@ const StudioSidebar = ({
   activeView: WorkspaceView;
   onChangeView: (view: WorkspaceView) => void;
 }) => (
-  <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/8 lg:bg-[#0f1830]">
-    <div className="px-4 py-5">
+  <aside className="hidden lg:flex lg:flex-col w-64 glass border-r border-white/[0.08]">
+    <div className="p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-[#002469]">
-          <img src={iconUrl} alt="GitFlick" className="h-6 w-6 object-contain" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-lg opacity-60" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
+            <img src={iconUrl} alt="GitFlick" className="h-7 w-7 object-contain" />
+          </div>
         </div>
         <div className="min-w-0">
-          <div className="truncate text-base font-semibold text-white">GitFlick</div>
-          <div className="truncate text-xs text-white/45">{repoLabel}</div>
+          <div className="truncate text-lg font-bold gradient-text">GitFlick</div>
+          <div className="truncate text-xs text-muted-foreground">{repoLabel}</div>
         </div>
       </div>
     </div>
 
-    <div className="px-3 pb-4">
-      <div className="rounded-xl bg-white/[0.03] p-2">
-        <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-          Workspace lanes
+    <div className="px-4 pb-4">
+      <div className="glass rounded-xl p-3">
+        <div className="px-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Workspace
         </div>
         <div className="space-y-1">
           {WORKSPACE_VIEWS.map((view) => {
@@ -1491,14 +1495,17 @@ const StudioSidebar = ({
                 type="button"
                 onClick={() => onChangeView(view.id)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition",
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-primary/14 text-primary"
-                    : "text-white/62 hover:bg-white/[0.05] hover:text-white",
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-white shadow-lg shadow-primary/10"
+                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
                 )}
               >
                 <view.icon className="h-4 w-4 shrink-0" />
                 <span>{view.label}</span>
+                {isActive && (
+                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                )}
               </button>
             );
           })}
@@ -1508,8 +1515,8 @@ const StudioSidebar = ({
 
     <div className="flex-1" />
 
-    <div className="px-4 py-4 text-xs text-white/36">
-      Studio workspace shell
+    <div className="px-6 py-4 text-xs text-muted-foreground/60">
+      Premium Studio Experience
     </div>
   </aside>
 );
@@ -1521,10 +1528,10 @@ const StudioWorkspaceTabs = ({
   activeView: WorkspaceView;
   onChange: (view: WorkspaceView) => void;
 }) => (
-  <section className="rounded-[16px] gf-panel px-4 py-3 shadow-[0_10px_28px_rgba(8,14,30,0.14)]">
-    <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/34">
-        Workspace lanes
+  <section className="premium-card px-6 py-4">
+    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Workspace Views
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -1536,10 +1543,10 @@ const StudioWorkspaceTabs = ({
               type="button"
               onClick={() => onChange(view.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary/14 text-primary shadow-[0_8px_24px_rgba(104,132,255,0.12)]"
-                  : "bg-white/[0.04] text-white/62 hover:bg-white/[0.06] hover:text-white",
+                  ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
+                  : "glass hover:bg-white/[0.08] text-muted-foreground hover:text-foreground",
               )}
             >
               <view.icon className="h-4 w-4" />

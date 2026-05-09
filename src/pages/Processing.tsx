@@ -1489,27 +1489,32 @@ const Processing = () => {
     !isEpicUnderstandingPhase && (overallStatus === "running" || overallStatus === "idle");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-radial-gradient" />
-      <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
+    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden noise-overlay">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 animate-gradient-shift" />
+      </div>
 
-      <div className={`relative z-10 w-full mx-auto px-4 py-8 ${isEpicUnderstandingPhase ? "max-w-5xl" : isActiveLoadingState ? "max-w-3xl" : "max-w-6xl"}`}>
-        <div className={`grid items-start gap-6 ${isActiveLoadingState || isEpicUnderstandingPhase ? "" : "lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]"}`}>
+      <div className={`relative z-10 w-full mx-auto px-6 py-12 ${isEpicUnderstandingPhase ? "max-w-5xl" : isActiveLoadingState ? "max-w-3xl" : "max-w-6xl"}`}>
+        <div className={`grid items-start gap-8 ${isActiveLoadingState || isEpicUnderstandingPhase ? "" : "lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]"}`}>
         <div className={isActiveLoadingState || isEpicUnderstandingPhase ? "mx-auto w-full" : ""}>
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+        <div className="flex justify-center mb-10">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-xl opacity-50 animate-pulse" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
+                <img src={iconUrl} alt="GitFlick" className="h-7 w-7" />
+              </div>
             </div>
-            <span className="font-semibold text-lg">GitFlick</span>
+            <span className="text-2xl font-bold gradient-text">GitFlick</span>
           </div>
         </div>
 
         {/* Repository Info */}
-        <div className="text-center mb-6">
-          <p className="text-sm text-muted-foreground mb-2">Processing Repository</p>
-          <h2 className="text-xl font-semibold text-foreground">{repoName}</h2>
+        <div className="text-center mb-8">
+          <p className="text-sm font-medium text-muted-foreground mb-2">Processing Repository</p>
+          <h2 className="text-2xl font-bold gradient-text">{repoName}</h2>
         </div>
 
         {/* Phase indicators */}
