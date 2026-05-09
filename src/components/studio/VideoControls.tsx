@@ -14,6 +14,7 @@ import {
   Film,
   FileJson,
   Loader2,
+  GitCompare,
   SkipBack,
   SkipForward,
   ChevronLeft,
@@ -56,6 +57,11 @@ interface VideoControlsProps {
   /** Download video (WebM or MP4); when provided, Download becomes a dropdown with Video + Manifest */
   onDownloadVideo?: () => void;
   isDownloadingVideo?: boolean;
+  onSync?: () => void;
+  isSyncing?: boolean;
+  syncDisabled?: boolean;
+  syncTooltip?: string;
+  showSync?: boolean;
 }
 
 const formatTime = (seconds: number): string => {
@@ -78,6 +84,11 @@ export const VideoControls = ({
   onSceneChange,
   onDownloadVideo,
   isDownloadingVideo = false,
+  onSync,
+  isSyncing = false,
+  syncDisabled = false,
+  syncTooltip = "Sync from GitHub",
+  showSync = false,
 }: VideoControlsProps) => {
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -291,6 +302,29 @@ export const VideoControls = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {showSync && onSync && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-white/80 hover:text-white hover:bg-white/10"
+                      onClick={onSync}
+                      disabled={syncDisabled || isSyncing}
+                    >
+                      {isSyncing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <GitCompare className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{syncTooltip}</TooltipContent>
+              </Tooltip>
+            )}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

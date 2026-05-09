@@ -10,7 +10,16 @@ import {
   buildQualityReport,
   generateManifestWithQualityPipeline,
 } from "@/lib/videoPipelineV2";
-import type { GitNexusGraphData } from "@/lib/types";
+import type {
+  GitNexusGraphData,
+  ProcessingPhase,
+  RepoIntelligence,
+  RepoEvidenceBundle,
+  RepoKnowledgeGraph,
+  OnboardingConfig,
+  VideoGenerationPlan,
+} from "@/lib/types";
+import { enrichManifestWithCode, generatePlaceholderCode } from "@/lib/enrichManifestWithCode";
 import { parseRepoContent } from "@/lib/parseRepoContent";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
 import { supabase } from "@/lib/supabase";
@@ -38,6 +47,15 @@ import {
   resolveRepoSourceFromInput,
 } from "@/lib/projectSource";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
+import { buildRepoIntelligence } from "@/lib/repoIntelligence";
+import { RepoUnderstandingDashboard } from "@/components/processing/RepoUnderstandingDashboard";
+import { OnboardingWizard } from "@/components/processing/onboarding/OnboardingWizard";
+import { ChapterGenerationProgress } from "@/components/processing/ChapterGenerationProgress";
+import {
+  buildGenerationPlan,
+  executeGenerationPlan,
+  mergeChapterManifests,
+} from "@/lib/videoPipelineEpic";
 import iconUrl from "../../icon.png";
 
 const phase1Steps = [
@@ -80,6 +98,7 @@ type IngestionSnapshot = {
   durationMs: number;
   ingestionMode?: string;
   resolvedBranch?: string;
+  resolvedCommitSha?: string | null;
 };
 
 type ManifestSnapshot = {
@@ -100,6 +119,9 @@ type ProcessingErrorState = {
   detail: string;
   code?: string;
 };
+
+type ProcessingMode = "classic" | "epic";
+const EPIC_MODE_ENABLED = true;
 
 const formatTime = () => {
   const now = new Date();
@@ -122,6 +144,19 @@ const Processing = () => {
   const [ingestionSnapshot, setIngestionSnapshot] = useState<IngestionSnapshot | null>(null);
   const [manifestSnapshot, setManifestSnapshot] = useState<ManifestSnapshot | null>(null);
   const [processingError, setProcessingError] = useState<ProcessingErrorState | null>(null);
+
+  // Epic pipeline state
+  const [processingMode, setProcessingMode] = useState<ProcessingMode>(EPIC_MODE_ENABLED ? "epic" : "classic");
+  const [epicPhase, setEpicPhase] = useState<ProcessingPhase>("idle");
+  const [repoIntelligence, setRepoIntelligence] = useState<RepoIntelligence | null>(null);
+  const [repoEvidence, setRepoEvidence] = useState<RepoEvidenceBundle | null>(null);
+  const [repoKnowledgeGraph, setRepoKnowledgeGraph] = useState<RepoKnowledgeGraph | null>(null);
+  const [generationPlan, setGenerationPlan] = useState<VideoGenerationPlan | null>(null);
+  const [isIntelligenceBuilding, setIsIntelligenceBuilding] = useState(false);
+  // Hold parsed file contents in memory for cross-phase reuse
+  const fileContentsRef = useRef<Record<string, string>>({});
+  const repoContentRef = useRef<string>("");
+  const projectIdRef = useRef<string | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -365,6 +400,8 @@ const Processing = () => {
 
       // Variable to hold repository content across phases (avoids sessionStorage quota issues)
       let repoContent: string = "";
+      let ingestResolvedBranch: string | null = null;
+      let ingestResolvedCommitSha: string | null = null;
 
       // Animate through phase 1 steps while ingestion runs
       const animateSteps = async (steps: typeof phase1Steps, startProgress: number, endProgress: number) => {
@@ -507,6 +544,11 @@ const Processing = () => {
 
         const payload = await response.json();
 
+        ingestResolvedBranch =
+          typeof payload.resolvedBranch === "string" ? payload.resolvedBranch : null;
+        ingestResolvedCommitSha =
+          typeof payload.resolvedCommitSha === "string" ? payload.resolvedCommitSha : null;
+
         // Store ingested content (with error handling for quota limits)
         if (payload.content) {
           const contentSizeKB = (payload.content.length / 1024).toFixed(1);
@@ -628,6 +670,7 @@ const Processing = () => {
           durationMs: payload.stats?.durationMs || 0,
           ingestionMode: payload.ingestionMode,
           resolvedBranch: payload.resolvedBranch,
+          resolvedCommitSha: payload.resolvedCommitSha ?? null,
         });
         addLog(`Phase 1 complete: ${payload.stats?.totalBytesFormatted || "unknown size"} processed`);
         if (payload.stats) {
@@ -836,7 +879,19 @@ const Processing = () => {
 
       if (cancelled) return;
 
-      // ===== PHASE 2: MANIFEST =====
+      // Store file contents for epic pipeline to use
+      const parsedFiles = parseRepoContent(repoContent);
+      fileContentsRef.current = parsedFiles;
+      repoContentRef.current = repoContent;
+      projectIdRef.current = currentProjectId;
+
+      // In epic mode, stop here and let the intelligence + onboarding flow take over
+      if (EPIC_MODE_ENABLED && Object.keys(parsedFiles).length > 0) {
+        addLog("--- Switching to Epic pipeline (intelligence → onboarding → chapter generation) ---");
+        return;
+      }
+
+      // ===== PHASE 2: MANIFEST (classic path) =====
       setPhase2Status("running");
       addLog("--- Starting Phase 2: Manifest Generation ---");
 
@@ -1112,6 +1167,24 @@ const Processing = () => {
           }
         }
 
+        const isGitHubRepoForSnapshot =
+          !isFolderMode &&
+          typeof repoUrl === "string" &&
+          /^https?:\/\/github\.com\//iu.test(repoUrl.trim()) &&
+          Boolean(ingestResolvedCommitSha);
+
+        if (isGitHubRepoForSnapshot && manifestWithCode) {
+          manifestWithCode = {
+            ...manifestWithCode,
+            source_snapshot: {
+              repo_url: repoUrl.trim(),
+              branch: ingestResolvedBranch,
+              commit_sha: ingestResolvedCommitSha as string,
+              pinned_at: new Date().toISOString(),
+            },
+          };
+        }
+
         // Save to Supabase
         if (currentProjectId && user?.id) {
           addLog("Saving manifest to database...");
@@ -1245,21 +1318,184 @@ const Processing = () => {
     user?.id,
   ]);
 
+  // -- Epic flow: build intelligence after Phase 1 completes (in epic mode)
+  useEffect(() => {
+    if (processingMode !== "epic") return;
+    if (phase1Status !== "complete") return;
+    if (repoIntelligence) return; // already built
+
+    const fc = fileContentsRef.current;
+    if (Object.keys(fc).length === 0) {
+      const raw = repoContentRef.current || sessionStorage.getItem("repo-content") || "";
+      const parsed = parseRepoContent(raw);
+      fileContentsRef.current = parsed;
+      if (Object.keys(parsed).length === 0) return;
+    }
+
+    setIsIntelligenceBuilding(true);
+    setEpicPhase("understanding");
+    addLog("Building repo intelligence (evidence + knowledge graph)...");
+
+    // Run synchronously (these are client-side deterministic functions)
+    try {
+      const { intelligence, evidence, knowledgeGraph } = buildRepoIntelligence(
+        repoName,
+        repoUrl,
+        fileContentsRef.current,
+        graphData
+      );
+      setRepoIntelligence(intelligence);
+      setRepoEvidence(evidence);
+      setRepoKnowledgeGraph(knowledgeGraph);
+      setIsIntelligenceBuilding(false);
+      addLog(`✓ Intelligence ready: ${intelligence.modules.length} modules, ${intelligence.total_source_files} source files`);
+      addLog(`  Architecture: ${intelligence.architecture_pattern ?? "not detected"}`);
+      addLog(`  Technologies: ${intelligence.technologies.join(", ") || "none detected"}`);
+    } catch (err) {
+      console.error("Intelligence build failed:", err);
+      addLog(`WARNING: Intelligence build failed: ${err instanceof Error ? err.message : "unknown"}`);
+      setIsIntelligenceBuilding(false);
+      // Fall back to classic mode
+      setProcessingMode("classic");
+    }
+  }, [processingMode, phase1Status, repoIntelligence, repoName, repoUrl, graphData, addLog]);
+
+  // -- Handle the user clicking "Continue to Onboarding" from the dashboard
+  const handleContinueToOnboarding = useCallback(() => {
+    setEpicPhase("onboarding");
+    addLog("Onboarding wizard opened — waiting for user configuration...");
+  }, [addLog]);
+
+  // -- Handle the user completing the onboarding wizard
+  const handleOnboardingComplete = useCallback(async (config: OnboardingConfig) => {
+    if (!repoIntelligence) return;
+
+    setEpicPhase("generating");
+    addLog("Onboarding complete. Building generation plan...");
+
+    const pId = projectIdRef.current || projectId || "local";
+    const plan = buildGenerationPlan(pId, config, repoIntelligence);
+    setGenerationPlan(plan);
+    addLog(`Plan: ${plan.chapters.length} chapters, ~${plan.target_total_minutes} minutes target`);
+
+    try {
+      const fc = fileContentsRef.current;
+      const rc = repoContentRef.current;
+      const updatedPlan = await executeGenerationPlan(
+        plan,
+        repoUrl,
+        repoName,
+        rc,
+        fc,
+        graphData,
+        (chapterId, status, manifest, error) => {
+          setGenerationPlan((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              chapters: prev.chapters.map((ch) =>
+                ch.id === chapterId
+                  ? {
+                      ...ch,
+                      status,
+                      manifest: manifest ?? ch.manifest,
+                      actual_duration_seconds:
+                        manifest?.scenes?.reduce(
+                          (s, sc) => s + (sc.duration_seconds || 15),
+                          0
+                        ) ?? ch.actual_duration_seconds,
+                      error: error ?? ch.error,
+                    }
+                  : ch
+              ),
+            };
+          });
+          if (status === "ready") {
+            addLog(`✓ Chapter "${chapterId}" ready`);
+          } else if (status === "error") {
+            addLog(`✗ Chapter "${chapterId}" failed: ${error}`);
+          }
+        }
+      );
+
+      setGenerationPlan(updatedPlan);
+
+      // Merge chapter manifests into a single master manifest for Studio
+      const merged = mergeChapterManifests(updatedPlan.chapters);
+      if (merged) {
+        try {
+          syncProjectWorkspaceToSession({
+            id: projectIdRef.current,
+            repo_url: repoUrl,
+            manifest: merged,
+            repo_content: rc || null,
+            graph_data: graphData,
+            repo_knowledge_graph: repoIntelligence.knowledge_graph_summary ? null : null,
+          });
+        } catch { /* non-fatal */ }
+
+        // Save to DB
+        if (projectIdRef.current && user?.id) {
+          try {
+            const totalDuration = merged.scenes.reduce(
+              (sum, s) => sum + (s.duration_seconds || 15),
+              0
+            );
+            await projectsService.update(projectIdRef.current, user.id, {
+              status: "ready",
+              manifest: merged,
+              duration_seconds: totalDuration,
+            });
+            addLog("✓ Master manifest saved to database");
+          } catch (err) {
+            addLog(`WARNING: DB save failed: ${err instanceof Error ? err.message : "unknown"}`);
+          }
+        }
+      }
+
+      // Save the generation plan to sessionStorage for Studio
+      try {
+        sessionStorage.setItem("generation-plan", JSON.stringify(updatedPlan));
+      } catch { /* non-fatal */ }
+
+      setEpicPhase("complete");
+      setPhase2Status("complete");
+      setProgress(100);
+      addLog("--- Epic generation complete ---");
+    } catch (err) {
+      addLog(`ERROR: Generation failed: ${err instanceof Error ? err.message : "unknown"}`);
+      setEpicPhase("error");
+    }
+  }, [repoIntelligence, projectId, repoUrl, repoName, graphData, user?.id, addLog]);
+
+  // -- Navigate to Studio (epic flow)
+  const handleGoToStudio = useCallback(() => {
+    const pId = projectIdRef.current || projectId;
+    navigate(pId ? `/studio?project=${pId}` : "/studio");
+  }, [navigate, projectId]);
+
   const overallStatus: PhaseStatus =
     phase1Status === "error" ? "error" :
       phase2Status === "complete" ? "complete" :
-        phase1Status === "running" || phase2Status === "running" ? "running" : "idle";
+        epicPhase === "complete" ? "complete" :
+          phase1Status === "running" || phase2Status === "running" ? "running" : "idle";
+
+  // In epic mode, we show the understanding/onboarding UI instead of passive loading
+  const isEpicUnderstandingPhase = processingMode === "epic" && (
+    epicPhase === "understanding" || epicPhase === "onboarding" || epicPhase === "generating" || epicPhase === "complete"
+  );
+
   const isActiveLoadingState =
-    overallStatus === "running" || overallStatus === "idle";
+    !isEpicUnderstandingPhase && (overallStatus === "running" || overallStatus === "idle");
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       <div className="absolute inset-0 bg-radial-gradient" />
       <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
 
-      <div className={`relative z-10 w-full mx-auto px-4 py-8 ${isActiveLoadingState ? "max-w-3xl" : "max-w-6xl"}`}>
-        <div className={`grid items-start gap-6 ${isActiveLoadingState ? "" : "lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]"}`}>
-        <div className={isActiveLoadingState ? "mx-auto w-full" : ""}>
+      <div className={`relative z-10 w-full mx-auto px-4 py-8 ${isEpicUnderstandingPhase ? "max-w-5xl" : isActiveLoadingState ? "max-w-3xl" : "max-w-6xl"}`}>
+        <div className={`grid items-start gap-6 ${isActiveLoadingState || isEpicUnderstandingPhase ? "" : "lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]"}`}>
+        <div className={isActiveLoadingState || isEpicUnderstandingPhase ? "mx-auto w-full" : ""}>
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2">
@@ -1277,18 +1513,49 @@ const Processing = () => {
         </div>
 
         {/* Phase indicators */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <PhaseCard
-            title="Phase 1: Ingestion"
-            status={phase1Status}
-          />
-          <PhaseCard
-            title="Phase 2: Manifest"
-            status={phase2Status}
-          />
-        </div>
+        {processingMode === "epic" ? (
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            <PhaseCard title="Ingest" status={phase1Status} />
+            <PhaseCard
+              title="Intelligence"
+              status={
+                epicPhase === "understanding"
+                  ? isIntelligenceBuilding ? "running" : (repoIntelligence ? "complete" : "running")
+                  : ["onboarding", "generating", "complete"].includes(epicPhase)
+                    ? "complete"
+                    : "idle"
+              }
+            />
+            <PhaseCard
+              title="Onboarding"
+              status={
+                epicPhase === "onboarding"
+                  ? "running"
+                  : ["generating", "complete"].includes(epicPhase)
+                    ? "complete"
+                    : "idle"
+              }
+            />
+            <PhaseCard
+              title="Generate"
+              status={
+                epicPhase === "generating"
+                  ? "running"
+                  : epicPhase === "complete"
+                    ? "complete"
+                    : "idle"
+              }
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <PhaseCard title="Phase 1: Ingestion" status={phase1Status} />
+            <PhaseCard title="Phase 2: Manifest" status={phase2Status} />
+          </div>
+        )}
 
-        {/* Progress Circle */}
+        {/* Progress Circle — hidden once epic understanding phase begins */}
+        {!isEpicUnderstandingPhase && (
         <div className="flex justify-center mb-6">
           <div className="relative h-28 w-28">
             <svg className="h-full w-full -rotate-90">
@@ -1324,8 +1591,10 @@ const Processing = () => {
             <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-75 animate-pulse" style={{ animationDuration: "3s" }} />
           </div>
         </div>
+        )}
 
         {/* Current Step — rotating messages so it doesn't look stuck */}
+        {!isEpicUnderstandingPhase && (
         <div className="text-center mb-6">
           <h3 className="text-base font-medium mb-1 flex items-center justify-center gap-2">
             {overallStatus === "complete" ? "Ready!" : currentStep || "Initializing..."}
@@ -1355,16 +1624,17 @@ const Processing = () => {
             </p>
           )}
         </div>
+        )}
 
         {/* Indeterminate progress bar — always moving so it feels alive */}
-        {overallStatus === "running" && (
+        {overallStatus === "running" && !isEpicUnderstandingPhase && (
           <div className="w-full h-1 rounded-full bg-muted overflow-hidden mb-6">
             <div className="h-full w-[40%] rounded-full bg-primary/70 animate-processing-shimmer" />
           </div>
         )}
 
-        {/* Terminal Log */}
-        <div className="overflow-hidden rounded-xl gf-panel-deep">
+        {/* Terminal Log — collapsed to mini view in epic understanding phases */}
+        <div className={`overflow-hidden rounded-xl gf-panel-deep ${isEpicUnderstandingPhase ? "max-h-0 opacity-0 pointer-events-none transition-all duration-300" : ""}`}>
           <div className="flex items-center gap-2 bg-white/[0.04] px-4 py-2">
             <div className="flex gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
@@ -1400,8 +1670,44 @@ const Processing = () => {
           </div>
         </div>
 
-        {isActiveLoadingState && (
+        {isActiveLoadingState && !isEpicUnderstandingPhase && (
           <LoadingFlowCard />
+        )}
+
+        {/* Epic Mode: Understanding Dashboard */}
+        {isEpicUnderstandingPhase && epicPhase === "understanding" && (
+          <RepoUnderstandingDashboard
+            intelligence={repoIntelligence}
+            evidence={repoEvidence}
+            knowledgeGraph={repoKnowledgeGraph}
+            isBuilding={isIntelligenceBuilding}
+            onContinue={handleContinueToOnboarding}
+          />
+        )}
+
+        {/* Epic Mode: Onboarding Wizard */}
+        {isEpicUnderstandingPhase && epicPhase === "onboarding" && repoIntelligence && (
+          <OnboardingWizard
+            intelligence={repoIntelligence}
+            onComplete={handleOnboardingComplete}
+            onBack={() => setEpicPhase("understanding")}
+          />
+        )}
+
+        {/* Epic Mode: Chapter Generation */}
+        {isEpicUnderstandingPhase && epicPhase === "generating" && generationPlan && (
+          <ChapterGenerationProgress
+            plan={generationPlan}
+            onGoToStudio={handleGoToStudio}
+          />
+        )}
+
+        {/* Epic Mode: Complete */}
+        {isEpicUnderstandingPhase && epicPhase === "complete" && generationPlan && (
+          <ChapterGenerationProgress
+            plan={generationPlan}
+            onGoToStudio={handleGoToStudio}
+          />
         )}
 
         {/* Error Actions */}
@@ -1444,8 +1750,8 @@ const Processing = () => {
           </div>
         )}
 
-        {/* Success Actions - Continue to Studio */}
-        {overallStatus === "complete" && (
+        {/* Success Actions - Continue to Studio (classic mode only) */}
+        {overallStatus === "complete" && !isEpicUnderstandingPhase && (
           <CompletionActions
             repoName={repoName}
             projectId={projectId}
@@ -1454,7 +1760,7 @@ const Processing = () => {
         )}
         </div>
 
-        {!isActiveLoadingState && (
+        {!isActiveLoadingState && !isEpicUnderstandingPhase && (
         <div className="space-y-6">
           <div className="rounded-xl gf-panel p-5">
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
@@ -1691,73 +1997,6 @@ const PhaseCard = ({ title, status }: { title: string; status: PhaseStatus }) =>
     </div>
   </div>
 );
-
-// Helper function to enrich manifest with code from ingested content
-function enrichManifestWithCode(
-  manifest: VideoManifest,
-  fileContents: Record<string, string>
-): VideoManifest {
-  const repoFiles = Object.keys(fileContents);
-  const resolvedRepoFiles = repoFiles.length > 0 ? repoFiles : manifest.repo_files || [];
-  const normalizePath = (value: string) => value.replace(/^\.\/+/, "").replace(/^\/+/, "");
-  const normalizedContents = new Map<string, string>(
-    Object.entries(fileContents).map(([path, contents]) => [normalizePath(path), contents])
-  );
-
-  const lookupCode = (filePath?: string): string | undefined => {
-    if (!filePath) return undefined;
-    // 1) Exact match
-    if (fileContents[filePath]) return fileContents[filePath];
-    const normalizedPath = normalizePath(filePath);
-    // 2) Normalized path
-    if (normalizedContents.has(normalizedPath)) return normalizedContents.get(normalizedPath);
-    // 3) Suffix match: path ends with /normalizedPath
-    const suffixMatch = Object.keys(fileContents).find((path) =>
-      normalizePath(path).endsWith(`/${normalizedPath}`)
-    );
-    if (suffixMatch) return fileContents[suffixMatch];
-    // 4) Basename match: exactly one file with same basename
-    const base = normalizedPath.split("/").pop() || "";
-    if (base) {
-      const basenameMatches = Object.keys(fileContents).filter(
-        (path) => normalizePath(path).split("/").pop() === base
-      );
-      if (basenameMatches.length === 1) return fileContents[basenameMatches[0]];
-    }
-    // 5) Contains match (last resort): normalizedPath substring of key or vice versa, unique
-    const containsMatches = Object.keys(fileContents).filter(
-      (path) => {
-        const np = normalizePath(path);
-        return np.includes(normalizedPath) || normalizedPath.includes(np);
-      }
-    );
-    if (containsMatches.length === 1) return fileContents[containsMatches[0]];
-    return undefined;
-  };
-
-  return {
-    ...manifest,
-    repo_files: resolvedRepoFiles,
-    scenes: manifest.scenes.map((scene) => {
-      const actualCode = lookupCode(scene.file_path);
-      const trimmedActual = actualCode?.trim();
-      const trimmedExisting = scene.code?.trim();
-
-      const usePlaceholder = !trimmedActual && !trimmedExisting;
-      const code = trimmedActual
-        ? actualCode
-        : trimmedExisting
-          ? scene.code
-          : generatePlaceholderCode(scene);
-
-      return {
-        ...scene,
-        code,
-        ...(usePlaceholder ? { highlight_lines: [1, 5] as [number, number] } : {}),
-      };
-    }),
-  };
-}
 
 function applyDirectorsCutPattern(
   manifest: VideoManifest,
@@ -2151,140 +2390,6 @@ function applyDirectorsCutPattern(
     repo_files: manifest.repo_files || allFiles,
     scenes,
   };
-}
-
-// Generate placeholder code when actual code is not available
-function generatePlaceholderCode(scene: VideoScene): string {
-  const filePath = scene.file_path || "unknown";
-  const title = scene.title || "Code Section";
-
-  // Generate contextual placeholder based on file type
-  if (filePath.endsWith(".md")) {
-    return `# ${title}
-
-${scene.narration_text?.slice(0, 200) || "Documentation content..."}
-
-## Overview
-
-This section covers the key aspects of the ${title.toLowerCase()}.
-The implementation follows best practices for maintainability and scalability.
-
-## Key Points
-
-- Well-structured codebase architecture
-- Clean separation of concerns  
-- Comprehensive documentation
-- Type-safe implementations
-`;
-  }
-
-  if (filePath.endsWith(".tsx") || filePath.endsWith(".jsx")) {
-    return `// ${filePath}
-// ${title}
-
-import React from 'react';
-
-/**
- * ${title}
- * ${scene.narration_text?.slice(0, 100) || "Component implementation"}
- */
-export const Component = () => {
-  // State management
-  const [state, setState] = useState(initialState);
-  
-  // Effects and lifecycle
-  useEffect(() => {
-    // Initialize component
-    initializeData();
-    
-    return () => {
-      // Cleanup
-    };
-  }, [dependencies]);
-
-  // Event handlers
-  const handleAction = async () => {
-    try {
-      await performAction();
-      updateState();
-    } catch (error) {
-      handleError(error);
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <Header title="${title}" />
-      <Content data={state.data} />
-      <ActionButton onPress={handleAction} />
-    </View>
-  );
-};
-`;
-  }
-
-  if (filePath.endsWith(".ts") || filePath.endsWith(".js")) {
-    return `// ${filePath}
-// ${title}
-
-/**
- * ${scene.narration_text?.slice(0, 100) || "Module implementation"}
- */
-
-// Configuration
-const config = {
-  apiEndpoint: process.env.API_URL,
-  timeout: 30000,
-  retries: 3,
-};
-
-// Main functionality
-export async function execute(params: ExecuteParams) {
-  // Validate input
-  validateParams(params);
-  
-  // Process data
-  const processed = await processData(params.data);
-  
-  // Apply business logic
-  const result = applyLogic(processed);
-  
-  // Return formatted response
-  return formatResponse(result);
-}
-
-// Helper functions
-function validateParams(params) {
-  if (!params.data) {
-    throw new Error('Missing required data');
-  }
-}
-
-async function processData(data) {
-  // Transform and validate data
-  return transformedData;
-}
-
-function applyLogic(data) {
-  // Core business logic
-  return processedResult;
-}
-
-export default { execute, config };
-`;
-  }
-
-  // Default placeholder
-  return `// ${filePath}
-// ${title}
-
-/*
- * ${scene.narration_text?.slice(0, 150) || "Implementation details"}
- */
-
-// Code content for: ${scene.file_path}
-// This file is part of the codebase walkthrough
-`;
 }
 
 export default Processing;

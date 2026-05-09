@@ -249,7 +249,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const errorPayload =
       payload && typeof payload === "object"
-        ? (payload as { detail?: unknown; error?: unknown })
+        ? (payload as { detail?: unknown; error?: unknown; hint?: unknown })
         : {};
     const nestedDetail =
       errorPayload.detail && typeof errorPayload.detail === "object"
@@ -261,7 +261,12 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       errorPayload.detail ||
       errorPayload.error ||
       `Request failed with status ${response.status}`;
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    const hint =
+      typeof errorPayload.hint === "string" && errorPayload.hint.trim()
+        ? errorPayload.hint.trim()
+        : "";
+    const msg = typeof detail === "string" ? detail : JSON.stringify(detail);
+    throw new Error(hint ? `${msg}\n${hint}` : msg);
   }
 
   return payload as T;
@@ -316,4 +321,28 @@ export async function cancelAgentRun(runId: string): Promise<AgentRun> {
     body: JSON.stringify({}),
   });
   return payload.run;
+}
+
+export interface IngestionHealthAgentRuns {
+  mode: string;
+  proxyBase: string | null;
+  agentReachable: boolean | null;
+}
+
+export interface IngestionHealth {
+  status?: string;
+  agentRuns?: IngestionHealthAgentRuns;
+}
+
+/** Dev: hits Vite `/api/health` proxy; prod: `${VITE_API_URL}/api/health`. */
+export async function fetchIngestionHealth(): Promise<IngestionHealth | null> {
+  const url = API_URL === "/api" ? "/api/health" : `${API_URL}/api/health`;
+  try {
+    const response = await fetch(url);
+    const raw = await response.text();
+    if (!raw) return null;
+    return JSON.parse(raw) as IngestionHealth;
+  } catch {
+    return null;
+  }
 }

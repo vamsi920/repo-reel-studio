@@ -28,3 +28,7 @@ export const USE_MOCK_MANIFEST =
 
 export const VIDEO_PIPELINE_V2_ENABLED =
   import.meta.env.VITE_VIDEO_PIPELINE_V2_ENABLED !== "false";
+
+/** Phase B: scene-level incremental LLM/TTS (neighbor expansion reads this when implemented). */
+export const INCREMENTAL_SCENE_REGEN_ENABLED =
+  import.meta.env.VITE_INCREMENTAL_SCENE_REGEN === "true";

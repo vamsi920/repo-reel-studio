@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, useCallback, useRef, memo, type ElementTy
 import AgentRunsPanel from "@/components/studio/AgentRunsPanel";
 import GraphExplorer from "@/components/studio/GraphExplorer";
 import RepoInvestigator from "@/components/studio/RepoInvestigator";
-import type { GitNexusGraphData } from "@/lib/types";
+import { ChapterPlaylist } from "@/components/studio/ChapterPlaylist";
+import type { GitNexusGraphData, ChapterManifest, VideoGenerationPlan } from "@/lib/types";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,15 +30,34 @@ import { useDownloadVideo } from "@/hooks/useDownloadVideo";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService } from "@/lib/db";
-import type { VideoManifest } from "@/lib/geminiDirector";
+import type { VideoManifest } from "@/lib/types";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
-import { GOOGLE_TTS_ENABLED } from "@/env";
+import { GOOGLE_TTS_ENABLED, VIDEO_PIPELINE_V2_ENABLED } from "@/env";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { generateManifestWithGemini } from "@/lib/geminiDirector";
+import { generateManifestWithQualityPipeline, buildQualityReport } from "@/lib/videoPipelineV2";
+import { enrichManifestWithCode } from "@/lib/enrichManifestWithCode";
+import { extractRepoNameFromSource } from "@/lib/projectSource";
+import {
+  buildSyncPathSelection,
+  fileContentsToGitingestString,
+  githubCompareApi,
+  githubResolveRef,
+  ingestSelectedGithubPaths,
+  isGithubRepoUrl,
+  loadBaselineFileContentsFromRepoContent,
+  mergePartialFileContents,
+} from "@/lib/repoSync";
 import iconUrl from "../../icon.png";
+
+/** Match Processing: avoid QuotaExceededError for sessionStorage repo cache. */
+const SESSION_REPO_CONTENT_MAX_BYTES = 4 * 1024 * 1024;
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
 type WorkspaceView = "video" | "graph" | "ask" | "runs";
+type SyncState = "idle" | "checking" | "updating" | "error";
 
 interface LogEntry {
   timestamp: string;
@@ -132,8 +152,15 @@ const Studio = () => {
   const [studioGraphData, setStudioGraphData] = useState<GitNexusGraphData | null>(null);
   const [repoContent, setRepoContent] = useState("");
   const [focusedRepoFilePath, setFocusedRepoFilePath] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<SyncState>("idle");
+  const syncLockRef = useRef(false);
 
-  // Load graph data from sessionStorage on mount
+  // Chapter-based playlist state
+  const [chapters, setChapters] = useState<ChapterManifest[]>([]);
+  const [generationPlan, setGenerationPlan] = useState<VideoGenerationPlan | null>(null);
+  const hasChapters = chapters.length > 1;
+
+  // Load graph data and chapter plan from sessionStorage on mount
   useEffect(() => {
     if (projectQuery) return;
 
@@ -147,6 +174,14 @@ const Studio = () => {
       const storedContent = sessionStorage.getItem("repo-content");
       if (storedContent) {
         setRepoContent(storedContent);
+      }
+    } catch { /* non-fatal */ }
+    try {
+      const storedPlan = sessionStorage.getItem("generation-plan");
+      if (storedPlan) {
+        const plan = JSON.parse(storedPlan) as VideoGenerationPlan;
+        setGenerationPlan(plan);
+        setChapters(plan.chapters);
       }
     } catch { /* non-fatal */ }
   }, [projectQuery]);
@@ -519,6 +554,12 @@ const Studio = () => {
   const mockHydratedManifest = useHydrateManifest(mockManifest, 30, audioUrls);
 
   const effectiveHydratedManifest = hydratedManifest || fallbackHydratedManifest || mockHydratedManifest;
+  /** Bumps when Git sync finishes or manifest narrative changes — Remotion must remount to pick up new composition reliably. */
+  const playerCompositionKey = useMemo(() => {
+    if (!manifest?.scenes?.length) return "no-manifest";
+    const snap = manifest.source_snapshot?.commit_sha ?? "no-snap";
+    return `${snap}-${hashNarrationText(manifest.scenes)}`;
+  }, [manifest]);
   const durationInFrames = Math.max(1, effectiveHydratedManifest?.totalFrames ?? 1);
   const playerStyle = useMemo(
     () => ({
@@ -591,6 +632,16 @@ const Studio = () => {
     };
   }, [phase]);
 
+  // After sync (or any manifest swap), jump to frame 0 so controls match the new composition.
+  useEffect(() => {
+    if (phase !== "complete") return;
+    const id = requestAnimationFrame(() => {
+      playerRef.current?.seekTo(0);
+      setCurrentFrame(0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [playerCompositionKey, phase]);
+
   // Control visibility on mouse movement
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
@@ -626,6 +677,247 @@ const Studio = () => {
   const handleSceneClick = useCallback((sceneIndex: number, frame: number) => {
     handleSeek(frame);
   }, [handleSeek]);
+
+  const isGithubSyncEligible = useMemo(
+    () => isGithubRepoUrl(repoUrlState || ""),
+    [repoUrlState]
+  );
+
+  const syncTooltip = useMemo(() => {
+    if (!isGithubSyncEligible) return "GitHub repos only";
+    if (syncState === "checking") return "Checking GitHub HEAD…";
+    if (syncState === "updating") return "Syncing changed files…";
+    return "Sync from GitHub";
+  }, [isGithubSyncEligible, syncState]);
+
+  const replaceAudioUrls = useCallback((next: Map<number, string>) => {
+    setAudioUrls((prev) => {
+      prev.forEach((url) => {
+        try {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        } catch {
+          /* ignore */
+        }
+      });
+      return next;
+    });
+  }, []);
+
+  const handleSyncFromGithub = useCallback(async () => {
+    if (!manifest || !isGithubSyncEligible || syncState !== "idle") return;
+    if (syncLockRef.current) return;
+    syncLockRef.current = true;
+
+    try {
+      setSyncState("checking");
+      const snapshot = manifest.source_snapshot;
+      const baselineSha = snapshot?.commit_sha || null;
+      const baselineBranch = snapshot?.branch || null;
+      const repoUrl = (repoUrlState || snapshot?.repo_url || "").trim();
+
+      if (!repoUrl) throw new Error("Missing repository URL for sync");
+
+      const head = await githubResolveRef(repoUrl, baselineBranch);
+
+      if (baselineSha && baselineSha === head.sha) {
+        toast({ title: "Already up to date", description: "No GitHub changes since the pinned snapshot." });
+        setSyncState("idle");
+        return;
+      }
+
+      let workingRepoContent = repoContent;
+      let baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
+      if (Object.keys(baselineMap).length === 0 && projectIdState && user?.id) {
+        try {
+          const projectRow = await projectsService.getById(projectIdState, user.id);
+          if (projectRow?.repo_content) {
+            workingRepoContent = projectRow.repo_content;
+            baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
+            setRepoContent(workingRepoContent);
+          }
+        } catch {
+          /* non-fatal */
+        }
+      }
+
+      if (!baselineSha || Object.keys(baselineMap).length === 0) {
+        const refreshed = {
+          ...manifest,
+          source_snapshot: {
+            repo_url: repoUrl,
+            branch: head.branch,
+            commit_sha: head.sha,
+            pinned_at: new Date().toISOString(),
+          },
+        };
+        setManifest(refreshed);
+        syncProjectWorkspaceToSession({
+          id: projectIdState,
+          repo_url: repoUrl,
+          manifest: refreshed,
+          repo_content: repoContent || null,
+          graph_data: studioGraphData,
+          repo_knowledge_graph: refreshed.knowledge_graph || null,
+        });
+        if (projectIdState && user?.id) {
+          await projectsService.update(projectIdState, user.id, { manifest: refreshed });
+        }
+        toast({ title: "Pinned current HEAD", description: "Baseline snapshot was missing, so HEAD was pinned." });
+        setSyncState("idle");
+        return;
+      }
+
+      setSyncState("updating");
+      const compare = await githubCompareApi(repoUrl, baselineSha, head.sha);
+      const pathsToRefresh = buildSyncPathSelection(compare, manifest, studioGraphData);
+
+      if (pathsToRefresh.length === 0) {
+        const refreshed = {
+          ...manifest,
+          source_snapshot: {
+            repo_url: repoUrl,
+            branch: head.branch,
+            commit_sha: head.sha,
+            pinned_at: new Date().toISOString(),
+          },
+        };
+        setManifest(refreshed);
+        toast({ title: "Snapshot updated", description: "No code paths needed refresh for this compare." });
+        setSyncState("idle");
+        return;
+      }
+
+      const partial = await ingestSelectedGithubPaths({
+        repoUrl,
+        branch: head.branch,
+        paths: pathsToRefresh,
+      });
+
+      const mergedFiles = mergePartialFileContents(baselineMap, partial.files, partial.removed);
+      const mergedRepoContent = fileContentsToGitingestString(mergedFiles);
+      const repoName = extractRepoNameFromSource(repoUrl || repoLabel || manifest.title || "Repository");
+
+      let nextManifest: VideoManifest;
+      if (VIDEO_PIPELINE_V2_ENABLED) {
+        const v2 = await generateManifestWithQualityPipeline(
+          repoUrl,
+          repoName,
+          mergedRepoContent,
+          mergedFiles,
+          studioGraphData
+        );
+        nextManifest = enrichManifestWithCode(v2, mergedFiles);
+        nextManifest.quality_report = buildQualityReport(nextManifest, mergedFiles);
+      } else {
+        const legacy = await generateManifestWithGemini(
+          repoUrl,
+          repoName,
+          mergedRepoContent,
+          studioGraphData
+        );
+        nextManifest = enrichManifestWithCode(legacy, mergedFiles);
+        nextManifest.quality_report = buildQualityReport(nextManifest, mergedFiles);
+      }
+
+      nextManifest.source_snapshot = {
+        repo_url: repoUrl,
+        branch: partial.branch || head.branch,
+        commit_sha: partial.resolvedCommitSha || head.sha,
+        pinned_at: new Date().toISOString(),
+      };
+
+      ttsHashRef.current = null;
+
+      if (nextManifest.quality_report?.ready_for_tts === false) {
+        replaceAudioUrls(new Map());
+      } else if (GOOGLE_TTS_ENABLED) {
+        try {
+          const { audioUrls: genUrls } = await generateAllSceneAudio(nextManifest.scenes, "en-US-Standard-D");
+          const nextAudio = new Map<number, string>();
+          for (const [sceneId, blobUrl] of genUrls) {
+            if (!projectIdState || !user?.id) {
+              nextAudio.set(sceneId, blobUrl);
+              continue;
+            }
+            try {
+              const res = await fetch(blobUrl);
+              const blob = await res.blob();
+              URL.revokeObjectURL(blobUrl);
+              const path = `${projectIdState}/${sceneId}.mp3`;
+              const { error } = await supabase.storage
+                .from("project-audio")
+                .upload(path, blob, { contentType: "audio/mpeg", upsert: true });
+              if (error) {
+                nextAudio.set(sceneId, blobUrl);
+                continue;
+              }
+              const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
+              const scene = nextManifest.scenes.find((s) => s.id === sceneId);
+              if (scene) scene.audioUrl = data.publicUrl;
+              nextAudio.set(sceneId, data.publicUrl);
+            } catch {
+              nextAudio.set(sceneId, blobUrl);
+            }
+          }
+          replaceAudioUrls(nextAudio);
+        } catch {
+          replaceAudioUrls(new Map());
+        }
+      } else {
+        replaceAudioUrls(new Map());
+      }
+
+      const totalDuration = nextManifest.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
+      if (projectIdState && user?.id) {
+        await projectsService.update(projectIdState, user.id, {
+          status: "ready",
+          manifest: nextManifest,
+          duration_seconds: totalDuration,
+          repo_content: mergedRepoContent,
+          graph_data: studioGraphData,
+          repo_knowledge_graph: nextManifest.knowledge_graph || null,
+          phase2_completed_at: new Date().toISOString(),
+        });
+      }
+
+      setManifest(nextManifest);
+      setRepoContent(mergedRepoContent);
+      const repoForSession =
+        mergedRepoContent.length <= SESSION_REPO_CONTENT_MAX_BYTES ? mergedRepoContent : null;
+      syncProjectWorkspaceToSession({
+        id: projectIdState,
+        repo_url: repoUrl,
+        manifest: nextManifest,
+        repo_content: repoForSession,
+        graph_data: studioGraphData,
+        repo_knowledge_graph: nextManifest.knowledge_graph || null,
+      });
+
+      toast({
+        title: "Video synced",
+        description: `Refreshed ${Object.keys(partial.files).length} changed file(s) and rebuilt the walkthrough.`,
+      });
+      setSyncState("idle");
+    } catch (error) {
+      setSyncState("error");
+      const message = error instanceof Error ? error.message : "Sync failed";
+      toast({ title: "Sync failed", description: message, variant: "destructive" });
+      setSyncState("idle");
+    } finally {
+      syncLockRef.current = false;
+    }
+  }, [
+    manifest,
+    isGithubSyncEligible,
+    syncState,
+    repoUrlState,
+    repoContent,
+    projectIdState,
+    user?.id,
+    studioGraphData,
+    repoLabel,
+    replaceAudioUrls,
+  ]);
 
   // Debug logging
   useEffect(() => {
@@ -684,6 +976,31 @@ const Studio = () => {
     );
     return index === -1 ? 0 : index;
   }, [effectiveHydratedManifest, currentFrame]);
+
+  // Active chapter index — derived from currentFrame and chapter boundaries
+  const activeChapterIndex = useMemo(() => {
+    if (!hasChapters || !effectiveHydratedManifest?.scenes) return 0;
+    const readyChapters = chapters.filter((ch) => ch.status === "ready" && ch.manifest);
+    let cursor = 0;
+    for (let i = 0; i < readyChapters.length; i++) {
+      const ch = readyChapters[i];
+      const chDuration = ch.manifest?.scenes.reduce(
+        (sum, s) => sum + (s.duration_seconds || 15),
+        0
+      ) ?? 0;
+      const endFrame = cursor + chDuration * 30;
+      if (currentFrame < endFrame) return i;
+      cursor = endFrame;
+    }
+    return readyChapters.length - 1;
+  }, [hasChapters, chapters, currentFrame, effectiveHydratedManifest]);
+
+  const handleSeekToChapter = useCallback(
+    (chapterIndex: number, frame: number) => {
+      handleSeek(frame);
+    },
+    [handleSeek]
+  );
 
   const activeSceneFilePath =
     effectiveHydratedManifest?.scenes?.[currentSceneIndex]?.file_path;
@@ -974,6 +1291,7 @@ const Studio = () => {
                             }}
                           >
                             <MemoPlayer
+                              key={playerCompositionKey}
                               ref={playerRef}
                               component={RemotionVideo}
                               inputProps={inputProps}
@@ -1012,6 +1330,11 @@ const Studio = () => {
                                 onSceneChange={(idx) => console.log("Scene changed:", idx)}
                                 onDownloadVideo={downloadVideo}
                                 isDownloadingVideo={isDownloadingVideo}
+                                showSync={isGithubSyncEligible}
+                                onSync={handleSyncFromGithub}
+                                isSyncing={syncState === "checking" || syncState === "updating"}
+                                syncDisabled={syncState !== "idle" || !manifest}
+                                syncTooltip={syncTooltip}
                               />
                             </div>
                           </div>
@@ -1042,22 +1365,37 @@ const Studio = () => {
 
                 {effectiveHydratedManifest && (
                   <aside className="overflow-hidden rounded-[22px] gf-panel shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-                    <div className="px-4 py-3.5">
-                      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
-                        Scenes
+                    {hasChapters ? (
+                      <div className="max-h-[720px] overflow-y-auto">
+                        <ChapterPlaylist
+                          chapters={chapters}
+                          masterIndex={generationPlan?.master_index}
+                          currentFrame={currentFrame}
+                          fps={30}
+                          onSeekToChapter={handleSeekToChapter}
+                          activeChapterIndex={activeChapterIndex}
+                        />
                       </div>
-                      <div className="mt-1 text-sm text-white/56">
-                        Jump to a part of the walkthrough without leaving the page.
-                      </div>
-                    </div>
-                    <div className="max-h-[720px] overflow-y-auto">
-                      <SceneListSidebar
-                        manifest={effectiveHydratedManifest}
-                        currentSceneIndex={currentSceneIndex}
-                        onSceneClick={handleSceneClick}
-                        fps={30}
-                      />
-                    </div>
+                    ) : (
+                      <>
+                        <div className="px-4 py-3.5">
+                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+                            Scenes
+                          </div>
+                          <div className="mt-1 text-sm text-white/56">
+                            Jump to a part of the walkthrough without leaving the page.
+                          </div>
+                        </div>
+                        <div className="max-h-[720px] overflow-y-auto">
+                          <SceneListSidebar
+                            manifest={effectiveHydratedManifest}
+                            currentSceneIndex={currentSceneIndex}
+                            onSceneClick={handleSceneClick}
+                            fps={30}
+                          />
+                        </div>
+                      </>
+                    )}
                   </aside>
                 )}
               </section>

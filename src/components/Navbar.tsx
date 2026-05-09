@@ -161,13 +161,20 @@ export const Navbar = () => {
           )}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white md:hidden"
-          onClick={() => setMobileMenuOpen((current) => !current)}
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          {!isLoading && !isAuthenticated ? (
+            <Button size="sm" asChild>
+              <Link to="/login">Sign in</Link>
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen ? (

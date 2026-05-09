@@ -104,6 +104,11 @@ app.options('*', (req, res) => {
 
 app.use(express.json({ limit: "1mb" }));
 
+function normalizeAgentProxyBase(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  return raw.trim().replace(/\/+$/, "");
+}
+
 // Global error handler — must set CORS or browser reports "No Access-Control-Allow-Origin"
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -132,20 +137,195 @@ app.get("/", (_req, res) => {
       health: "/api/health",
       ingest: "/api/ingest",
       ingestFolder: "/api/ingest-folder",
+      agentRuns: "/api/agent-runs",
       tts: "/api/tts",
     },
     timestamp: new Date().toISOString(),
   });
 });
 
-// Health check endpoint - must respond quickly
-app.get("/api/health", (_req, res) => {
+// Health check endpoint — probes Python Agent Ops when AGENT_RUNS_PROXY_URL is set
+app.get("/api/health", async (_req, res) => {
+  const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
+  let agentReachable = null;
+  if (base) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 2500);
+    try {
+      const r = await fetch(`${base}/api/health-agent`, { signal: ctrl.signal });
+      agentReachable = r.ok;
+    } catch {
+      agentReachable = false;
+    } finally {
+      clearTimeout(tid);
+    }
+  }
+
   res.status(200).json({
     status: "ok",
     service: "repo-ingestion-server",
     ingestionMode: "fast-node",
     timestamp: new Date().toISOString(),
+    agentRuns: {
+      mode: base ? "proxy" : "local-read-only",
+      proxyBase: base || null,
+      agentReachable,
+    },
   });
+});
+
+/** Read runs written by Python `server/agent_runs.py` (same `server/.agent-runs` layout). */
+const AGENT_RUNS_STORE = path.join(__dirname, ".agent-runs");
+
+function listRunsFromDisk(repoUrl, projectId, limit) {
+  if (!fs.existsSync(AGENT_RUNS_STORE)) return [];
+
+  /** @type {import("fs").Dirent[]} */
+  let dirs;
+  try {
+    dirs = fs.readdirSync(AGENT_RUNS_STORE, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const runs = [];
+  for (const d of dirs) {
+    if (!d.isDirectory()) continue;
+    const fp = path.join(AGENT_RUNS_STORE, d.name, "run.json");
+    if (!fs.existsSync(fp)) continue;
+    try {
+      const raw = fs.readFileSync(fp, "utf8");
+      const run = JSON.parse(raw);
+      if (!run || typeof run !== "object") continue;
+      if (repoUrl && run.repoUrl !== repoUrl) continue;
+      const wantPid =
+        projectId !== undefined &&
+        projectId !== null &&
+        String(projectId) !== "";
+      if (wantPid && run.projectId !== projectId) continue;
+      runs.push(run);
+    } catch {
+      /* skip malformed */
+    }
+  }
+
+  runs.sort((a, b) => {
+    const ta = String(a.updatedAt || a.createdAt || "");
+    const tb = String(b.updatedAt || b.createdAt || "");
+    return tb.localeCompare(ta);
+  });
+
+  const lim = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
+  return runs.slice(0, lim);
+}
+
+function readRunFromDisk(runId) {
+  const fp = path.join(AGENT_RUNS_STORE, runId, "run.json");
+  if (!fs.existsSync(fp)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(fp, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+async function forwardAgentRunsToUpstream(req, res, baseUrl) {
+  try {
+    const target = `${baseUrl}${req.originalUrl}`;
+    const headers = new Headers();
+
+    const auth = req.headers.authorization;
+    if (auth) headers.set("authorization", String(auth));
+
+    const accept = req.headers.accept;
+    if (accept) headers.set("accept", String(accept));
+
+    /** @type {RequestInit} */
+    const init = { method: req.method, headers, redirect: "follow" };
+
+    if (!["GET", "HEAD"].includes(req.method)) {
+      headers.set("content-type", "application/json");
+      init.body = JSON.stringify(req.body ?? {});
+    }
+
+    const upstream = await fetch(target, init);
+    const bodyText = await upstream.text();
+    const ct = upstream.headers.get("content-type");
+
+    if (ct && ct.includes("application/json")) {
+      try {
+        return res.status(upstream.status).type("application/json").send(JSON.parse(bodyText));
+      } catch {
+        return res.status(upstream.status).type(ct || "text/plain").send(bodyText);
+      }
+    }
+
+    if (ct) res.setHeader("Content-Type", ct);
+    return res.status(upstream.status).send(bodyText);
+  } catch (err) {
+    console.error("[agent-runs] proxy error:", err);
+    return res.status(503).json({
+      error: "Agent Ops backend unreachable",
+      detail: err instanceof Error ? err.message : String(err),
+      hint:
+        `Start the Agent API (npm run agent:server → port 8788) and set AGENT_RUNS_PROXY_URL=${baseUrl} on Node, or run npm run ingest:server:python for full Python ingestion.`,
+    });
+  }
+}
+
+// Agent Ops: Python implements `agent_runs.py`; Node proxies when AGENT_RUNS_PROXY_URL is set.
+app.use(async (req, res, next) => {
+  if (!req.path.startsWith("/api/agent-runs")) return next();
+
+  const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
+  if (base) {
+    return forwardAgentRunsToUpstream(req, res, base);
+  }
+
+  const prefix = "/api/agent-runs";
+  const suffix = req.path.length > prefix.length ? req.path.slice(prefix.length) : "";
+
+  const method = req.method;
+  if (suffix === "") {
+    if (method === "GET") {
+      const repoUrl =
+        typeof req.query.repoUrl === "string" ? req.query.repoUrl : undefined;
+      const projectIdRaw = req.query.projectId;
+      const projectId =
+        typeof projectIdRaw === "string" ? projectIdRaw : undefined;
+      let lim = parseInt(String(req.query.limit ?? "20"), 10);
+      if (!Number.isFinite(lim)) lim = 20;
+
+      const runs = listRunsFromDisk(repoUrl, projectId ?? null, lim);
+      return res.json({ runs });
+    }
+    if (method === "POST") {
+      return res.status(503).json({
+        error: true,
+        detail:
+          "Creating agent runs requires the Python Agent Ops API. Run `npm run agent:server` in another terminal (port 8788), then restart ingestion with AGENT_RUNS_PROXY_URL=http://127.0.0.1:8788 — or run `npm run studio:backend` for both together. Alternative: use `npm run ingest:server:python` for full Python ingestion.",
+      });
+    }
+  }
+
+  const subPost = suffix.match(/^\/([^/]+)\/(approve|reject|cancel)$/);
+  if (subPost && method === "POST") {
+    return res.status(503).json({
+      error: true,
+      detail:
+        "Approve / reject / cancel requires the Python Agent Ops API (set AGENT_RUNS_PROXY_URL or use npm run ingest:server:python).",
+    });
+  }
+
+  const subGet = suffix.match(/^\/([^/]+)$/);
+  if (subGet && method === "GET") {
+    const run = readRunFromDisk(subGet[1]);
+    if (!run)
+      return res.status(404).json({ detail: "Agent run not found" });
+    return res.json({ run });
+  }
+
+  return res.status(404).json({ detail: "Not found" });
 });
 
 app.post("/api/tts", async (req, res) => {
@@ -435,6 +615,135 @@ async function fetchJsonWithTimeout(url, { token, accept, timeoutMs = DEFAULT_GI
   }
 }
 
+function normalizeGithubRelativePath(relPath) {
+  if (!relPath || typeof relPath !== "string") return "";
+  return relPath.replace(/\\/g, "/").replace(/^\/+/, "").trim();
+}
+
+function parseGithubRepoFromRepoUrl(repoUrl) {
+  if (!repoUrl || typeof repoUrl !== "string") return null;
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(repoUrl.trim());
+  } catch {
+    return null;
+  }
+  if (parsedUrl.hostname !== "github.com") return null;
+  const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+  if (pathParts.length < 2) return null;
+  return {
+    owner: pathParts[0],
+    repo: pathParts[1].replace(/\.git$/i, ""),
+  };
+}
+
+async function fetchGithubCommitTip({ owner, repo, ref, token }) {
+  if (!owner || !repo || !ref) {
+    return { sha: null, committedAt: null };
+  }
+  const payload = await fetchJsonWithTimeout(
+    `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits/${encodeURIComponent(ref)}`,
+    { token }
+  );
+  const sha = typeof payload?.sha === "string" ? payload.sha : null;
+  const committedAt =
+    typeof payload?.commit?.committer?.date === "string"
+      ? payload.commit.committer.date
+      : typeof payload?.commit?.author?.date === "string"
+        ? payload.commit.author.date
+        : null;
+  return { sha, committedAt };
+}
+
+async function githubFetchUtf8BlobForSha({ owner, repo, blobSha, token, maxFileBytes }) {
+  const blobPayload = await fetchJsonWithTimeout(
+    `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/blobs/${encodeURIComponent(blobSha)}`,
+    { token }
+  );
+
+  if (blobPayload?.truncated) {
+    return { ok: false, reason: "truncated" };
+  }
+  if (blobPayload?.encoding !== "base64" || typeof blobPayload?.content !== "string") {
+    return { ok: false, reason: "encoding" };
+  }
+
+  let raw;
+  try {
+    raw = Buffer.from(blobPayload.content.replace(/\n/g, ""), "base64");
+  } catch {
+    return { ok: false, reason: "decode" };
+  }
+  if (raw.length === 0 || raw.length > maxFileBytes || isLikelyBinary(raw)) {
+    return { ok: false, reason: "size_or_binary" };
+  }
+
+  const content = raw.toString("utf8");
+  const bytes = Buffer.byteLength(content, "utf8");
+  if (bytes > maxFileBytes) {
+    return { ok: false, reason: "utf8_size" };
+  }
+
+  return { ok: true, content, bytes };
+}
+
+function githubTokenFromReq(req) {
+  const q = typeof req.query?.token === "string" ? req.query.token : "";
+  const b = typeof req.body?.token === "string" ? req.body.token : "";
+  const raw = (q || b).trim();
+  if (raw) return raw;
+  return (process.env.GITHUB_TOKEN || "").trim();
+}
+
+async function githubFetchRecursiveTree({ owner, repo, requestedBranch, token }) {
+  let defaultBranch = null;
+  try {
+    const repoMeta = await fetchJsonWithTimeout(
+      `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      { token }
+    );
+    if (typeof repoMeta?.default_branch === "string" && repoMeta.default_branch.trim()) {
+      defaultBranch = repoMeta.default_branch.trim();
+    }
+  } catch (metaErr) {
+    console.warn(`⚠️  GitHub repo metadata lookup failed: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
+  }
+
+  const branchCandidates = [
+    requestedBranch,
+    defaultBranch,
+    "main",
+    "master",
+  ].filter((candidate, index, all) => candidate && all.indexOf(candidate) === index);
+
+  let tree = null;
+  let resolvedBranch = null;
+  let lastTreeError = null;
+  for (const branch of branchCandidates) {
+    try {
+      const treePayload = await fetchJsonWithTimeout(
+        `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
+        { token }
+      );
+      if (Array.isArray(treePayload?.tree)) {
+        tree = treePayload.tree;
+        resolvedBranch = branch;
+        break;
+      }
+      throw new Error("Tree payload missing 'tree' array");
+    } catch (treeErr) {
+      lastTreeError = treeErr;
+      console.warn(`GitHub tree fetch failed (${branch}): ${treeErr instanceof Error ? treeErr.message : String(treeErr)}`);
+    }
+  }
+
+  if (!tree || !resolvedBranch) {
+    throw lastTreeError || new Error("Could not fetch repository tree via GitHub API");
+  }
+
+  return { tree, resolvedBranch };
+}
+
 async function ingestFromGitHubApi({
   owner,
   repo,
@@ -445,50 +754,12 @@ async function ingestFromGitHubApi({
   maxFileBytes,
 }) {
   return withTimeout(async () => {
-    let defaultBranch = null;
-    try {
-      const repoMeta = await fetchJsonWithTimeout(
-        `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
-        { token }
-      );
-      if (typeof repoMeta?.default_branch === "string" && repoMeta.default_branch.trim()) {
-        defaultBranch = repoMeta.default_branch.trim();
-      }
-    } catch (metaErr) {
-      console.warn(`⚠️  GitHub repo metadata lookup failed: ${metaErr instanceof Error ? metaErr.message : String(metaErr)}`);
-    }
-
-    const branchCandidates = [
+    const { tree, resolvedBranch } = await githubFetchRecursiveTree({
+      owner,
+      repo,
       requestedBranch,
-      defaultBranch,
-      "main",
-      "master",
-    ].filter((candidate, index, all) => candidate && all.indexOf(candidate) === index);
-
-    let tree = null;
-    let resolvedBranch = null;
-    let lastTreeError = null;
-    for (const branch of branchCandidates) {
-      try {
-        const treePayload = await fetchJsonWithTimeout(
-          `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
-          { token }
-        );
-        if (Array.isArray(treePayload?.tree)) {
-          tree = treePayload.tree;
-          resolvedBranch = branch;
-          break;
-        }
-        throw new Error("Tree payload missing 'tree' array");
-      } catch (treeErr) {
-        lastTreeError = treeErr;
-        console.warn(`GitHub tree fetch failed (${branch}): ${treeErr instanceof Error ? treeErr.message : String(treeErr)}`);
-      }
-    }
-
-    if (!tree || !resolvedBranch) {
-      throw lastTreeError || new Error("Could not fetch repository tree via GitHub API");
-    }
+      token,
+    });
 
     const candidates = [];
     let skippedFiles = 0;
@@ -598,13 +869,33 @@ async function ingestFromGitHubApi({
       throw new Error("No eligible source files found via GitHub API");
     }
 
+    let commitSha = null;
+    let committedAt = null;
+    try {
+      const tip = await fetchGithubCommitTip({
+        owner,
+        repo,
+        ref: resolvedBranch,
+        token,
+      });
+      commitSha = tip.sha;
+      committedAt = tip.committedAt;
+    } catch (tipErr) {
+      console.warn(
+        `Commit tip lookup failed (${resolvedBranch}): ${tipErr instanceof Error ? tipErr.message : String(tipErr)}`
+      );
+    }
+
     return {
       chunks,
       includedFiles,
       skippedFiles,
       totalBytes,
       branch: resolvedBranch,
+      commitSha,
+      committedAt,
       mode: "github-api",
+      diagnostics: createRepoScanDiagnostics(),
     };
   }, DEFAULT_GITHUB_INGEST_TIMEOUT_MS, `GitHub API ingest timeout after ${DEFAULT_GITHUB_INGEST_TIMEOUT_MS}ms`);
 }
@@ -1091,7 +1382,30 @@ app.post("/api/ingest", async (req, res) => {
           })),
           mode: fallbackMode,
           branch: fallbackResolvedBranch || null,
+          commitSha: null,
+          committedAt: null,
         };
+      }
+
+      if (isGitHub && owner && repoRaw && ingestResult) {
+        const br = ingestResult.branch || requestedBranch;
+        if (br && !ingestResult.commitSha) {
+          try {
+            const tip = await fetchGithubCommitTip({
+              owner,
+              repo: repoRaw,
+              ref: br,
+              token,
+            });
+            ingestResult = {
+              ...ingestResult,
+              commitSha: tip.sha ?? ingestResult.commitSha,
+              committedAt: tip.committedAt ?? ingestResult.committedAt,
+            };
+          } catch (e) {
+            console.warn(`Could not resolve GitHub commit tip: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
       }
 
       const { chunks, includedFiles, skippedFiles, totalBytes, diagnostics } = ingestResult;
@@ -1205,6 +1519,8 @@ app.post("/api/ingest", async (req, res) => {
         content: chunks.join(""),
         ingestionMode: ingestResult.mode || "clone",
         resolvedBranch: ingestResult.branch || requestedBranch || null,
+        resolvedCommitSha: ingestResult.commitSha || null,
+        committedAt: ingestResult.committedAt || null,
         graphData,  // null if skipped/failed, enhanced graph object otherwise
         projectId: projectId ?? null,
       });
@@ -1435,6 +1751,8 @@ app.post("/api/ingest-folder", async (req, res) => {
       content: chunks.join(""),
       ingestionMode: "folder-upload",
       resolvedBranch: null,
+      resolvedCommitSha: null,
+      committedAt: null,
       graphData,
       projectId: projectId ?? null,
     });
@@ -1447,6 +1765,228 @@ app.post("/api/ingest-folder", async (req, res) => {
     }
     res.status(500).json({
       error: "Folder upload failed",
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// ── GitHub helpers for Studio sync (HEAD / compare / partial blobs) ─────────
+app.get("/api/github/resolve-ref", async (req, res) => {
+  try {
+    const repoUrl = typeof req.query.repoUrl === "string" ? req.query.repoUrl.trim() : "";
+    const branchRaw = typeof req.query.branch === "string" ? req.query.branch : "";
+    const branchCandidate = branchRaw.replace(/^refs\/heads\//, "").trim();
+    const token = githubTokenFromReq(req);
+
+    const pr = parseGithubRepoFromRepoUrl(repoUrl);
+    if (!pr) {
+      return res.status(400).json({ error: "repoUrl must be a github.com https URL" });
+    }
+
+    let ref = branchCandidate;
+    if (!ref) {
+      const repoMeta = await fetchJsonWithTimeout(
+        `${GITHUB_API_BASE}/repos/${encodeURIComponent(pr.owner)}/${encodeURIComponent(pr.repo)}`,
+        { token }
+      );
+      ref =
+        typeof repoMeta?.default_branch === "string" && repoMeta.default_branch.trim()
+          ? repoMeta.default_branch.trim()
+          : "HEAD";
+    }
+
+    const tip = await fetchGithubCommitTip({ owner: pr.owner, repo: pr.repo, ref, token });
+    if (!tip.sha) {
+      return res.status(404).json({ error: "Could not resolve branch or commit ref" });
+    }
+
+    const allowedOrigin = getAllowedOrigin(req);
+    if (allowedOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+
+    return res.json({
+      owner: pr.owner,
+      repo: pr.repo,
+      branch: branchCandidate || (ref === "HEAD" ? null : ref),
+      sha: tip.sha,
+      committed_at: tip.committedAt,
+    });
+  } catch (error) {
+    console.error("resolve-ref error:", error);
+    return res.status(500).json({
+      error: "resolve-ref failed",
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+app.get("/api/github/compare", async (req, res) => {
+  try {
+    const repoUrl = typeof req.query.repoUrl === "string" ? req.query.repoUrl.trim() : "";
+    const base = typeof req.query.base === "string" ? req.query.base.trim() : "";
+    const head = typeof req.query.head === "string" ? req.query.head.trim() : "";
+    const includePatch = req.query.includePatch === "1" || req.query.includePatch === "true";
+    const token = githubTokenFromReq(req);
+
+    if (!base || !head) {
+      return res.status(400).json({ error: "base and head query params are required" });
+    }
+
+    const pr = parseGithubRepoFromRepoUrl(repoUrl);
+    if (!pr) {
+      return res.status(400).json({ error: "repoUrl must be a github.com https URL" });
+    }
+
+    const comparePayload = await fetchJsonWithTimeout(
+      `${GITHUB_API_BASE}/repos/${encodeURIComponent(pr.owner)}/${encodeURIComponent(pr.repo)}/compare/${base}...${head}`,
+      { token }
+    );
+
+    const files = Array.isArray(comparePayload.files)
+      ? comparePayload.files.map((f) => ({
+          filename: f.filename,
+          status: f.status,
+          previous_filename: f.previous_filename ?? null,
+          ...(includePatch && typeof f.patch === "string" ? { patch: f.patch } : {}),
+        }))
+      : [];
+
+    const allowedOrigin = getAllowedOrigin(req);
+    if (allowedOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+
+    return res.json({
+      status: comparePayload.status || null,
+      ahead_by: comparePayload.ahead_by ?? null,
+      behind_by: comparePayload.behind_by ?? null,
+      total_commits: comparePayload.total_commits ?? null,
+      files,
+    });
+  } catch (error) {
+    console.error("compare error:", error);
+    return res.status(500).json({
+      error: "compare failed",
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+app.post("/api/ingest-paths", async (req, res) => {
+  try {
+    const { repoUrl, paths } = req.body ?? {};
+    const requestedBranchRaw = typeof req.body?.branch === "string" ? req.body.branch : "";
+    const requestedBranch = requestedBranchRaw.replace(/^refs\/heads\//, "").trim() || null;
+    const token = githubTokenFromReq(req);
+
+    if (!repoUrl || typeof repoUrl !== "string") {
+      return res.status(400).json({ error: "repoUrl is required" });
+    }
+    if (!Array.isArray(paths) || paths.length === 0) {
+      return res.status(400).json({ error: "paths must be a non-empty array" });
+    }
+
+    const pr = parseGithubRepoFromRepoUrl(repoUrl);
+    if (!pr) {
+      return res.status(400).json({ error: "Only github.com repos are supported" });
+    }
+
+    const maxPaths = Math.min(Number(req.body?.maxPaths) || 200, 500);
+    const uniq = [...new Set(paths.map((p) => normalizeGithubRelativePath(p)).filter(Boolean))].slice(0, maxPaths);
+
+    const maxFileBytes = Number(process.env.INGEST_MAX_FILE_BYTES || DEFAULT_MAX_FILE_BYTES);
+
+    const { tree, resolvedBranch } = await githubFetchRecursiveTree({
+      owner: pr.owner,
+      repo: pr.repo,
+      requestedBranch,
+      token,
+    });
+
+    const pathMeta = new Map();
+    for (const entry of tree) {
+      if (!entry || entry.type !== "blob") continue;
+      const rp = normalizeGithubRelativePath(entry.path);
+      if (!rp || typeof entry.sha !== "string") continue;
+      const size = typeof entry.size === "number" ? entry.size : 0;
+      pathMeta.set(rp, { sha: entry.sha, size });
+    }
+
+    const files = {};
+    const removed = [];
+    const unsupported = [];
+
+    for (const p of uniq) {
+      const meta = pathMeta.get(p);
+      if (!meta) {
+        removed.push(p);
+        continue;
+      }
+      if (isIgnoredRelativePath(p) || !shouldIncludeAsCode(p)) {
+        unsupported.push(p);
+        continue;
+      }
+      const ext = path.extname(p).toLowerCase();
+      if (!ALLOWED_EXTS.has(ext)) {
+        unsupported.push(p);
+        continue;
+      }
+      try {
+        const fetched = await githubFetchUtf8BlobForSha({
+          owner: pr.owner,
+          repo: pr.repo,
+          blobSha: meta.sha,
+          token,
+          maxFileBytes,
+        });
+        if (!fetched.ok || !fetched.content) {
+          unsupported.push(p);
+          continue;
+        }
+        files[p] = fetched.content;
+      } catch {
+        removed.push(p);
+      }
+    }
+
+    let resolvedCommitSha = null;
+    let committedAt = null;
+    try {
+      const tip = await fetchGithubCommitTip({
+        owner: pr.owner,
+        repo: pr.repo,
+        ref: resolvedBranch,
+        token,
+      });
+      resolvedCommitSha = tip.sha;
+      committedAt = tip.committedAt;
+    } catch {
+      /* non-fatal */
+    }
+
+    const allowedOrigin = getAllowedOrigin(req);
+    if (allowedOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+
+    return res.json({
+      repoUrl,
+      branch: resolvedBranch,
+      resolvedCommitSha,
+      committedAt,
+      files,
+      removed,
+      unsupported,
+      requested_count: uniq.length,
+    });
+  } catch (error) {
+    console.error("ingest-paths error:", error);
+    return res.status(500).json({
+      error: "ingest-paths failed",
       detail: error instanceof Error ? error.message : String(error),
     });
   }

@@ -286,10 +286,20 @@ export interface VideoScene {
   endFrame?: number;
 }
 
+/** Pin the Git revision used when the walkthrough was last built (GitHub sync). */
+export interface VideoSourceSnapshot {
+  repo_url: string;
+  branch: string | null;
+  commit_sha: string;
+  pinned_at?: string;
+}
+
 export interface VideoManifest {
   title: string;
   scenes: VideoScene[];
   repo_files?: string[];
+  /** Present after ingest + processing for GitHub repos; used by Studio “Sync”. */
+  source_snapshot?: VideoSourceSnapshot;
   pipeline_version?: string;
   evidence_bundle?: RepoEvidenceBundle;
   knowledge_graph?: RepoKnowledgeGraph;
@@ -508,4 +518,327 @@ export interface GitNexusGraphData {
   processes: GitNexusProcess[];
   summary?: GitNexusGraphSummary;
   codegraph?: CodegraphEngineData;
+}
+
+// ---------------------------------------------------------------------------
+// Processing State Machine
+// ---------------------------------------------------------------------------
+
+export type ProcessingPhase =
+  | "idle"
+  | "ingesting"
+  | "understanding"
+  | "onboarding"
+  | "generating"
+  | "complete"
+  | "error";
+
+// ---------------------------------------------------------------------------
+// Repo Intelligence — persisted "repo profile" that bridges
+// ingestion → onboarding → generation without re-ingestion.
+// ---------------------------------------------------------------------------
+
+export interface RepoModuleProfile {
+  id: string;
+  label: string;
+  description: string;
+  file_paths: string[];
+  representative_file?: string;
+  technologies: string[];
+  complexity: "low" | "medium" | "high";
+  is_entry: boolean;
+  is_hub: boolean;
+}
+
+export interface RepoIntelligence {
+  repo_name: string;
+  repo_url: string;
+  generated_at: string;
+  architecture_pattern?: string;
+  technologies: string[];
+  entry_files: string[];
+  hub_files: string[];
+  total_files: number;
+  total_source_files: number;
+  total_lines: number;
+  languages: Record<string, number>;
+  modules: RepoModuleProfile[];
+  candidate_tutorials: Array<{
+    id: string;
+    title: string;
+    description: string;
+    module_ids: string[];
+    estimated_minutes: number;
+  }>;
+  evidence_health: {
+    snippet_count: number;
+    important_file_count: number;
+    cluster_count: number;
+    process_flow_count: number;
+    fact_count: number;
+    reading_path_count: number;
+  };
+  knowledge_graph_summary?: RepoKnowledgeSummary;
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding Configuration — captures user choices in the wizard
+// ---------------------------------------------------------------------------
+
+export type AudienceLevel = "beginner" | "intermediate" | "architect";
+
+export type VideoIntent =
+  | "onboarding"
+  | "security_review"
+  | "feature_shipping"
+  | "architecture_overview"
+  | "custom";
+
+export interface OnboardingConfig {
+  audience: AudienceLevel;
+  intent: VideoIntent;
+  intent_custom?: string;
+  selected_module_ids: string[];
+  master_journey_enabled: boolean;
+  focused_tutorials_enabled: boolean;
+  target_minutes: number;
+  voice_enabled: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Video Generation Plan — orchestration layer for chapter-based epic videos
+// ---------------------------------------------------------------------------
+
+export type ChapterStatus =
+  | "pending"
+  | "outlining"
+  | "writing"
+  | "enriching"
+  | "tts"
+  | "ready"
+  | "error";
+
+export interface ChapterManifest {
+  id: string;
+  title: string;
+  order: number;
+  module_ids: string[];
+  status: ChapterStatus;
+  manifest?: VideoManifest;
+  target_minutes: number;
+  actual_duration_seconds?: number;
+  error?: string;
+}
+
+export interface VideoGenerationPlan {
+  id: string;
+  project_id: string;
+  created_at: string;
+  onboarding: OnboardingConfig;
+  repo_intelligence: RepoIntelligence;
+  target_total_minutes: number;
+  target_scene_count: number;
+  target_narration_words: number;
+  chapters: ChapterManifest[];
+  master_index?: {
+    title: string;
+    total_chapters: number;
+    total_duration_seconds: number;
+    chapter_ticks: Array<{
+      chapter_id: string;
+      start_seconds: number;
+      title: string;
+    }>;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Video Tree System Types
+// ---------------------------------------------------------------------------
+
+export type VideoNodeType = 'master' | 'category' | 'feature' | 'deep-dive' | 'concept';
+export type VideoDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type DialoguePersonality = 'friendly' | 'professional' | 'casual' | 'technical';
+export type StoryArcPhase = 'hook' | 'exploration' | 'revelation' | 'mastery' | 'conclusion';
+
+export interface VideoTreeNode {
+  id: string;
+  title: string;
+  type: VideoNodeType;
+  thumbnail?: string;
+  duration: number;
+  children: VideoTreeNode[];
+  manifest?: VideoManifest;
+  tags: string[];
+  difficulty: VideoDifficulty;
+  description: string;
+  parentId?: string;
+  order: number;
+  progress?: number;
+  isLocked?: boolean;
+  prerequisites?: string[];
+  concepts?: string[];
+  relatedNodes?: string[];
+}
+
+export interface VideoTree {
+  id: string;
+  projectId: string;
+  repoUrl: string;
+  repoName: string;
+  createdAt: string;
+  updatedAt: string;
+  root: VideoTreeNode;
+  totalDuration: number;
+  totalVideos: number;
+  tags: string[];
+  concepts: ConceptNode[];
+  userProgress?: UserVideoProgress;
+}
+
+export interface ConceptNode {
+  id: string;
+  label: string;
+  category: string;
+  weight: number;
+  color: string;
+  relatedConcepts: string[];
+  videoReferences: string[];
+  position?: { x: number; y: number; z: number };
+  velocity?: { x: number; y: number; z: number };
+}
+
+export interface UserVideoProgress {
+  userId: string;
+  completedVideos: string[];
+  currentVideo?: string;
+  totalWatchTime: number;
+  lastAccessed: string;
+  recommendedPath: string[];
+  bookmarks: VideoBookmark[];
+}
+
+export interface VideoBookmark {
+  videoId: string;
+  timestamp: number;
+  note?: string;
+  createdAt: string;
+}
+
+export interface EnhancedDialogue {
+  text: string;
+  personality: DialoguePersonality;
+  storyPhase: StoryArcPhase;
+  emphasis: EmphasisMarker[];
+  pacing: PacingInstruction[];
+  contextualHints: string[];
+}
+
+export interface EmphasisMarker {
+  start: number;
+  end: number;
+  type: 'strong' | 'pause' | 'speed-up' | 'slow-down';
+  intensity: number;
+}
+
+export interface PacingInstruction {
+  position: number;
+  type: 'pause' | 'breathe' | 'accelerate' | 'decelerate';
+  duration: number;
+}
+
+export interface WordCloudConfig {
+  words: WordCloudItem[];
+  animationType: 'float' | 'orbit' | 'pulse' | 'network';
+  colorScheme: string[];
+  particleCount: number;
+  connectionStrength: number;
+}
+
+export interface WordCloudItem {
+  text: string;
+  value: number;
+  category: string;
+  color?: string;
+  connections: string[];
+  position?: { x: number; y: number; z: number };
+  scale?: number;
+  opacity?: number;
+}
+
+export interface NeuralGraphNode {
+  id: string;
+  label: string;
+  type: 'file' | 'module' | 'function' | 'class';
+  size: number;
+  connections: number;
+  position: { x: number; y: number; z: number };
+  color: string;
+  pulseFrequency?: number;
+  glowIntensity?: number;
+}
+
+export interface NeuralGraphEdge {
+  source: string;
+  target: string;
+  strength: number;
+  type: 'import' | 'call' | 'inherit' | 'implement';
+  animated: boolean;
+  particleSpeed?: number;
+  color?: string;
+}
+
+export interface VideoTreeGenerationPlan {
+  id: string;
+  projectId: string;
+  createdAt: string;
+  intelligence: RepoIntelligence;
+  evidence: RepoEvidenceBundle;
+  knowledgeGraph: RepoKnowledgeGraph;
+  treeStructure: VideoTreeStructure;
+  dialogueConfig: DialogueConfig;
+  visualConfig: VisualConfig;
+}
+
+export interface VideoTreeStructure {
+  masterVideo: VideoNodeSpec;
+  categories: VideoCategorySpec[];
+  totalEstimatedDuration: number;
+  conceptMap: ConceptNode[];
+}
+
+export interface VideoNodeSpec {
+  title: string;
+  type: VideoNodeType;
+  targetDuration: number;
+  modules: string[];
+  concepts: string[];
+  difficulty: VideoDifficulty;
+  narrationStyle: DialoguePersonality;
+  children?: VideoNodeSpec[];
+}
+
+export interface VideoCategorySpec {
+  name: string;
+  description: string;
+  videos: VideoNodeSpec[];
+  order: number;
+  icon?: string;
+}
+
+export interface DialogueConfig {
+  defaultPersonality: DialoguePersonality;
+  audienceLevel: AudienceLevel;
+  storyArcTemplate: StoryArcPhase[];
+  transitionPhrases: Record<string, string[]>;
+  emphasizeTerms: string[];
+}
+
+export interface VisualConfig {
+  wordCloudEnabled: boolean;
+  neuralGraphEnabled: boolean;
+  particleEffects: boolean;
+  animationIntensity: 'low' | 'medium' | 'high';
+  colorPalette: string[];
+  transitionStyle: 'fade' | 'morph' | 'particle' | 'glitch';
 }

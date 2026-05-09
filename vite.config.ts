@@ -23,7 +23,9 @@ export default defineConfig({
           proxy.on("error", (err, _req, _res) => {
             console.log("Proxy error:", err);
             console.log("\n⚠️  Make sure the ingestion server is running:");
-            console.log("   npm run ingest:server\n");
+            console.log("   npm run ingest:server");
+            console.log("   For Studio Agent Ops (issue-bound runs), use:");
+            console.log("   npm run dev:with-agent\n");
           });
           proxy.on("proxyReq", (_proxyReq, req, _res) => {
             console.log(`→ Proxying ${req.method} ${req.url} to ingestion server`);
