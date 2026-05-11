@@ -1490,8 +1490,8 @@ const Processing = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden noise-overlay">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0">
+      {/* Animated gradient background — purely decorative, must never capture clicks */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 animate-gradient-shift" />
       </div>
 

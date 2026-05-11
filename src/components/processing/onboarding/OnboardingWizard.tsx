@@ -87,7 +87,7 @@ const ChoiceCard = ({
   <button
     type="button"
     onClick={onClick}
-    className={`group w-full rounded-xl p-4 text-left transition-all ${
+    className={`group relative z-[1] w-full rounded-xl p-4 text-left transition-all ${
       selected
         ? "bg-primary/12 shadow-[inset_0_0_0_1px_rgba(104,132,255,0.4)]"
         : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] hover:bg-white/[0.06]"
@@ -142,7 +142,7 @@ const ModuleToggle = ({
     <button
       type="button"
       onClick={onToggle}
-      className={`group w-full rounded-lg p-3 text-left transition-all ${
+      className={`group relative z-[1] w-full rounded-lg p-3 text-left transition-all ${
         selected
           ? "bg-primary/10 shadow-[inset_0_0_0_1px_rgba(104,132,255,0.3)]"
           : "bg-white/[0.03] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] hover:bg-white/[0.05]"
@@ -262,9 +262,9 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
   };
 
   return (
-    <div className="space-y-5">
+    <div className="relative z-10 isolate space-y-5">
       {/* Header */}
-      <div className="rounded-2xl gf-panel p-5 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
+      <div className="relative rounded-2xl gf-panel p-5 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
@@ -279,7 +279,7 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
       </div>
 
       {/* Step content */}
-      <div className="rounded-2xl gf-panel p-6 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
+      <div className="relative rounded-2xl gf-panel p-6 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
         {step === "audience" && (
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -536,7 +536,7 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="relative z-[1] flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={handlePrev} className="gap-1.5">
           <ChevronLeft className="h-4 w-4" />
           {currentIdx === 0 ? "Back to Intelligence" : "Previous"}

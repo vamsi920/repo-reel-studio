@@ -382,9 +382,37 @@ const buildFallbackCodegraphData = (
   };
 };
 
+const pickRicherCodegraph = (
+  primary: CodegraphEngineData | null,
+  secondary: CodegraphEngineData | null
+): CodegraphEngineData | null => {
+  if (!primary) return secondary;
+  if (!secondary) return primary;
+
+  const primaryModuleCount = primary.stats?.moduleCount || 0;
+  const secondaryModuleCount = secondary.stats?.moduleCount || 0;
+  const primaryEntityCount = primary.stats?.entityCount || 0;
+  const secondaryEntityCount = secondary.stats?.entityCount || 0;
+  const primaryLinkCount = primary.stats?.linkCount || 0;
+  const secondaryLinkCount = secondary.stats?.linkCount || 0;
+
+  const primaryScore =
+    primaryModuleCount * 5 + primaryEntityCount * 2 + primaryLinkCount;
+  const secondaryScore =
+    secondaryModuleCount * 5 + secondaryEntityCount * 2 + secondaryLinkCount;
+
+  // Prefer the denser map so mixed-language repos don't collapse to tiny
+  // Python-only graphs when both datasets are available.
+  return secondaryScore > primaryScore ? secondary : primary;
+};
+
 export const getCodegraphData = (
   graphData?: GitNexusGraphData | null
-): CodegraphEngineData | null => graphData?.codegraph || buildFallbackCodegraphData(graphData);
+): CodegraphEngineData | null => {
+  const primary = graphData?.codegraph || null;
+  const fallback = buildFallbackCodegraphData(graphData);
+  return pickRicherCodegraph(primary, fallback);
+};
 
 const moduleModeBoost = (fullPath: string, mode: InvestigationMode) => {
   const lower = fullPath.toLowerCase();

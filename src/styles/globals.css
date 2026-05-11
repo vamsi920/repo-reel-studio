@@ -95,7 +95,7 @@
 
 .premium-card::before {
   content: '';
-  @apply absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 transition-opacity duration-500;
+  @apply absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 transition-opacity duration-500 pointer-events-none;
 }
 
 .premium-card:hover::before {
@@ -126,7 +126,7 @@
 
 .btn-premium::before {
   content: '';
-  @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+  @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
   background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)));
 }
 
@@ -189,7 +189,7 @@
 
 .shimmer::before {
   content: '';
-  @apply absolute inset-0 -translate-x-full;
+  @apply absolute inset-0 -translate-x-full pointer-events-none;
   background: linear-gradient(
     90deg,
     transparent,

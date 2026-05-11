@@ -492,6 +492,8 @@ def list_runs(repo_url: Optional[str], project_id: Optional[str], limit: int) ->
 
 
 def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
+    use_opendevin = os.getenv("USE_OPENDEVIN", "").strip().lower() in ("1", "true", "yes")
+
     try:
         set_run_status(run_id, "preparing", "Preparing sandbox", "Fetching issue metadata and cloning the repository.")
         issue = fetch_issue_details(read_required_run(run_id)["issueUrl"], github_token)
@@ -502,54 +504,136 @@ def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
         attach_workspace(run_id, workspace_path)
         guard_not_cancelled(run_id)
 
-        set_run_status(run_id, "running", "Planning fix attempt", "Ranking candidate files and generating a minimal patch plan.")
-        run = read_required_run(run_id)
-        repo_context = collect_repo_context(workspace_path, issue, run.get("contextHints") or {})
-        plan = build_execution_plan(issue, repo_context)
-        update_run_plan(run_id, plan)
-        guard_not_cancelled(run_id)
+        if use_opendevin:
+            _execute_with_opendevin(run_id, issue, workspace_path)
+        else:
+            _execute_with_legacy(run_id, issue, workspace_path)
 
-        change_set = build_change_set(issue, repo_context, plan)
-        if change_set.get("blocked"):
-            raise RuntimeError(change_set.get("reason") or "Patch generation was blocked by missing context")
-        apply_change_set(workspace_path, change_set)
-        append_timeline(run_id, "patch", "Patch applied", change_set.get("summary") or "Candidate changes were written in the sandbox.")
-        guard_not_cancelled(run_id)
-
-        set_run_status(run_id, "validating", "Running validations", "Collecting diff artifacts and deterministic validation results.")
-        patch_text = collect_patch(workspace_path)
-        if not patch_text.strip():
-            raise RuntimeError("Run completed without producing a diff")
-
-        diff_stat = collect_diff_stat(workspace_path)
-        changed_files = collect_changed_files(workspace_path)
-        validation_report = execute_validations(workspace_path)
-
-        append_timeline(run_id, "critique", "Self-critiquing patch", "Running self-critique pass on the generated patch.")
-        critique_result = self_critique_patch(issue, plan, changed_files, patch_text, validation_report)
-
-        evaluation = evaluate_run(changed_files, validation_report, run.get("timeline", []))
-        change_intent = build_change_intent(issue, plan, changed_files, critique_result)
-        test_matrix = build_test_matrix(validation_report, changed_files)
-        quality_gates = build_quality_gates(validation_report, changed_files, evaluation)
-        pr_draft = build_pr_draft(issue, plan, changed_files, validation_report, evaluation)
-        pr_readable = build_pr_readable(issue, plan, changed_files, validation_report, evaluation, change_intent)
-
-        repo_policy = load_repo_policy(workspace_path)
-        policy_violations = enforce_policy_gates(repo_policy, changed_files, quality_gates, evaluation)
-        if policy_violations:
-            append_timeline(run_id, "policy", "Policy violations detected", "; ".join(policy_violations), level="warning")
-
-        artifact_paths = save_artifacts(run_id, patch_text, diff_stat, validation_report, pr_draft)
-        finalize_success(
-            run_id, patch_text, diff_stat, changed_files, validation_report, evaluation,
-            pr_draft, artifact_paths, pr_readable, test_matrix, quality_gates, change_intent,
-            critique_result, policy_violations,
-        )
     except CancelledRunError:
         finalize_failure(run_id, "cancelled", "Run cancelled", "Cancellation was requested before the run completed.")
     except Exception as exc:
         finalize_failure(run_id, classify_failure(str(exc)), "Run failed", str(exc))
+
+
+def _execute_with_opendevin(run_id: str, issue: dict[str, Any], workspace_path: Path) -> None:
+    """Primary executor: OpenDevin as the agent brain."""
+    from opendevin_runner import OpenDevinAdapter
+    from env_builder import load_env_artifacts
+
+    set_run_status(run_id, "running", "Starting OpenDevin executor",
+                   "OpenDevin will autonomously analyze, patch, and validate.")
+    run = read_required_run(run_id)
+    guard_not_cancelled(run_id)
+
+    env_artifacts = None
+    project_id = run.get("projectId")
+    if project_id:
+        env_artifacts = load_env_artifacts(project_id)
+
+    runner = OpenDevinAdapter.create_runner(
+        workspace_path=str(workspace_path),
+        run=run,
+        env_artifacts=env_artifacts,
+    )
+
+    result = runner.run(
+        issue=issue,
+        context_hints=run.get("contextHints"),
+        env_artifacts=env_artifacts,
+    )
+
+    guard_not_cancelled(run_id)
+
+    if result.success and result.patch.strip():
+        set_run_status(run_id, "validating", "Collecting artifacts",
+                       "OpenDevin finished; collecting final diff and validation results.")
+        run = read_required_run(run_id)
+        run = OpenDevinAdapter.apply_result_to_run(run, result)
+
+        repo_policy = load_repo_policy(workspace_path)
+        policy_violations = enforce_policy_gates(
+            repo_policy,
+            result.changed_files,
+            result.quality_gates or {"gates": []},
+            result.evaluation,
+        )
+        if policy_violations:
+            append_timeline(run_id, "policy", "Policy violations detected",
+                           "; ".join(policy_violations), level="warning")
+            run.setdefault("policyViolations", []).extend(policy_violations)
+
+        artifact_paths = save_artifacts(
+            run_id, result.patch, result.diff_stat,
+            result.validation, result.pr_draft or {},
+        )
+        run["artifacts"]["artifactPaths"] = artifact_paths
+        run["status"] = "awaiting_review"
+        run["updatedAt"] = now_iso()
+        run["completedAt"] = now_iso()
+        write_run(run)
+
+        recommendation = (result.quality_gates or {}).get("recommendation", "review")
+        append_timeline(run_id, "review", "Awaiting review",
+                       f"OpenDevin artifacts ready. Recommendation: {recommendation}.")
+    else:
+        error_msg = result.error or "OpenDevin run did not produce a diff"
+        if not result.error:
+            _execute_with_legacy(run_id, issue, workspace_path)
+        else:
+            raise RuntimeError(error_msg)
+
+
+def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Path) -> None:
+    """Legacy executor: existing Gemini-based mini-SWE flow."""
+    set_run_status(run_id, "running", "Planning fix attempt",
+                   "Ranking candidate files and generating a minimal patch plan.")
+    run = read_required_run(run_id)
+    repo_context = collect_repo_context(workspace_path, issue, run.get("contextHints") or {})
+    plan = build_execution_plan(issue, repo_context)
+    update_run_plan(run_id, plan)
+    guard_not_cancelled(run_id)
+
+    change_set = build_change_set(issue, repo_context, plan)
+    if change_set.get("blocked"):
+        raise RuntimeError(change_set.get("reason") or "Patch generation was blocked by missing context")
+    apply_change_set(workspace_path, change_set)
+    append_timeline(run_id, "patch", "Patch applied",
+                   change_set.get("summary") or "Candidate changes were written in the sandbox.")
+    guard_not_cancelled(run_id)
+
+    set_run_status(run_id, "validating", "Running validations",
+                   "Collecting diff artifacts and deterministic validation results.")
+    patch_text = collect_patch(workspace_path)
+    if not patch_text.strip():
+        raise RuntimeError("Run completed without producing a diff")
+
+    diff_stat = collect_diff_stat(workspace_path)
+    changed_files = collect_changed_files(workspace_path)
+    validation_report = execute_validations(workspace_path)
+
+    append_timeline(run_id, "critique", "Self-critiquing patch",
+                   "Running self-critique pass on the generated patch.")
+    critique_result = self_critique_patch(issue, plan, changed_files, patch_text, validation_report)
+
+    evaluation = evaluate_run(changed_files, validation_report, run.get("timeline", []))
+    change_intent = build_change_intent(issue, plan, changed_files, critique_result)
+    test_matrix = build_test_matrix(validation_report, changed_files)
+    quality_gates = build_quality_gates(validation_report, changed_files, evaluation)
+    pr_draft = build_pr_draft(issue, plan, changed_files, validation_report, evaluation)
+    pr_readable = build_pr_readable(issue, plan, changed_files, validation_report, evaluation, change_intent)
+
+    repo_policy = load_repo_policy(workspace_path)
+    policy_violations = enforce_policy_gates(repo_policy, changed_files, quality_gates, evaluation)
+    if policy_violations:
+        append_timeline(run_id, "policy", "Policy violations detected",
+                       "; ".join(policy_violations), level="warning")
+
+    artifact_paths = save_artifacts(run_id, patch_text, diff_stat, validation_report, pr_draft)
+    finalize_success(
+        run_id, patch_text, diff_stat, changed_files, validation_report, evaluation,
+        pr_draft, artifact_paths, pr_readable, test_matrix, quality_gates, change_intent,
+        critique_result, policy_violations,
+    )
 
 
 def set_run_status(run_id: str, status: str, title: str, detail: str) -> None:
@@ -666,11 +750,24 @@ def fetch_issue_details(issue_url: str, github_token: Optional[str]) -> dict[str
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    issue_payload = github_api_json(f"https://api.github.com/repos/{owner}/{repo}/issues/{number}", headers)
-    comments_payload = []
-    comments_url = issue_payload.get("comments_url")
-    if comments_url and issue_payload.get("comments", 0) > 0:
-        comments_payload = github_api_json(comments_url, headers, default=[])[:3]
+    try:
+        issue_payload = github_api_json(f"https://api.github.com/repos/{owner}/{repo}/issues/{number}", headers)
+        comments_payload = []
+        comments_url = issue_payload.get("comments_url")
+        if comments_url and issue_payload.get("comments", 0) > 0:
+            comments_payload = github_api_json(comments_url, headers, default=[])[:3]
+    except RuntimeError as exc:
+        lower = str(exc).lower()
+        # Public API rate-limits unauthenticated requests aggressively.
+        # If this happens, fall back to scraping the public issue page so the run can still start.
+        if "http 403" in lower and "rate limit" in lower:
+            fallback = fetch_issue_details_via_html(issue_url, owner, repo, int(number))
+            if fallback:
+                return fallback
+            raise RuntimeError(
+                "GitHub API rate limit exceeded. Set GITHUB_TOKEN (or pass githubToken) to increase limits, then retry."
+            ) from exc
+        raise
 
     return {
         "owner": owner,
@@ -705,6 +802,60 @@ def github_api_json(url: str, headers: dict[str, str], default: Any = None) -> A
         if default is not None:
             return default
         raise RuntimeError(f"GitHub API request failed: {exc}") from exc
+
+
+def fetch_issue_details_via_html(
+    issue_url: str,
+    owner: str,
+    repo: str,
+    issue_number: int,
+) -> Optional[dict[str, Any]]:
+    """
+    Best-effort fallback when GitHub REST API is rate-limited.
+    Scrapes title/body from the public issue HTML to keep Agent Ops usable.
+    """
+    request = urllib.request.Request(
+        issue_url,
+        headers={
+            "User-Agent": "GitFlick-AgentRuns/1.0",
+            "Accept": "text/html,application/xhtml+xml",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            html = response.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return None
+
+    title_match = re.search(r"<title>(.*?)</title>", html, flags=re.I | re.S)
+    raw_title = title_match.group(1).strip() if title_match else f"Issue {issue_number}"
+    cleaned_title = re.sub(r"\s+", " ", raw_title)
+    cleaned_title = re.sub(rf"\s*·\s*Issue\s*#?{issue_number}.*$", "", cleaned_title, flags=re.I)
+    cleaned_title = re.sub(rf"\s*#?{issue_number}\s*.*$", "", cleaned_title).strip() or f"Issue {issue_number}"
+
+    body = ""
+    body_match = re.search(
+        r'<meta\s+name="description"\s+content="([^"]+)"',
+        html,
+        flags=re.I | re.S,
+    )
+    if body_match:
+        body = body_match.group(1).strip()
+        body = re.sub(r"\s+", " ", body)[:2000]
+
+    return {
+        "owner": owner,
+        "repo": repo,
+        "number": issue_number,
+        "title": cleaned_title,
+        "body": body,
+        "state": None,
+        "labels": [],
+        "author": None,
+        "htmlUrl": issue_url,
+        "comments": [],
+    }
 
 
 def prepare_workspace(run_id: str) -> Path:

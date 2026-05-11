@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent_runs import create_agent_run_router
+from github_webhook import create_webhook_router
 
 
 def load_repo_env_file() -> None:
@@ -32,8 +33,12 @@ def load_repo_env_file() -> None:
                 key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
-                if key and key not in os.environ:
-                    os.environ[key] = value
+                if key:
+                    existing = os.environ.get(key)
+                    # Allow .env to hydrate missing OR empty variables.
+                    # This avoids cases where an empty parent-shell var blocks the real key.
+                    if existing is None or not str(existing).strip():
+                        os.environ[key] = value
     except OSError as exc:
         print(f"⚠️  Warning: Failed to load .env file: {exc}")
 
@@ -49,11 +54,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(create_agent_run_router(), prefix="/api")
+app.include_router(create_webhook_router(), prefix="/api")
 
 
 @app.get("/api/health-agent")
 def health_agent():
-    return {"status": "ok", "service": "agent-runs-api"}
+    return {"status": "ok", "service": "agent-runs-api", "bugbot": True}
 
 
 if __name__ == "__main__":

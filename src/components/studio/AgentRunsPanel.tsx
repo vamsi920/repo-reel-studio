@@ -44,6 +44,8 @@ import {
 } from "@/lib/agentRuns";
 import type { GitNexusGraphData, VideoManifest } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MissionMap, EventDetailPanel } from "@/components/studio/MissionMap";
+import { FixStoryPreview } from "@/components/studio/FixStoryPreview";
 
 interface AgentRunsPanelProps {
   repoUrl: string;
@@ -102,7 +104,7 @@ const STATUS_ACCENTS: Record<AgentRunStatus, string> = {
   cancelled: "bg-white/[0.06] text-white/50",
 };
 
-type DetailTab = "overview" | "diff" | "validation" | "tests" | "pr" | "quality";
+type DetailTab = "overview" | "diff" | "validation" | "tests" | "pr" | "quality" | "mission" | "fixstory";
 
 function extractGitHubRepoKey(url: string): string | null {
   try {
@@ -442,10 +444,10 @@ export default function AgentRunsPanel({
   const latestEvent = selected?.timeline[selected.timeline.length - 1] ?? null;
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[310px_minmax(0,1fr)]">
-      <aside className="space-y-4">
-        <section className="overflow-hidden rounded-[20px] gf-panel shadow-[0_18px_44px_rgba(8,14,30,0.18)]">
-          <div className="px-4 py-4">
+    <div className="relative z-10 isolate grid gap-5 xl:grid-cols-[310px_minmax(0,1fr)]">
+      <aside className="relative space-y-4">
+        <section className="relative overflow-hidden rounded-[20px] gf-panel shadow-[0_18px_44px_rgba(8,14,30,0.18)]">
+          <div className="relative px-4 py-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/34">
               Agent Ops
             </div>
@@ -462,7 +464,7 @@ export default function AgentRunsPanel({
               </div>
             )}
 
-            <div className="mt-4 space-y-3">
+            <div className="relative z-10 mt-4 space-y-3">
               <Input
                 ref={inputRef}
                 value={issueUrl}
@@ -717,11 +719,13 @@ export default function AgentRunsPanel({
             <div className="flex flex-wrap gap-1 bg-white/[0.02] px-3 py-3">
               {([
                 ["overview", "Overview"],
+                ["mission", "Mission Map"],
                 ["diff", "Diff"],
                 ["tests", "Test Matrix"],
                 ["quality", "Quality"],
                 ["validation", "Logs"],
                 ["pr", "PR Review"],
+                ["fixstory", "Fix Story"],
               ] as Array<[DetailTab, string]>).map(([tab, label]) => (
                 <button
                   key={tab}
@@ -740,6 +744,12 @@ export default function AgentRunsPanel({
             </div>
 
             <div className="px-5 py-5">
+              {activeTab === "mission" && (
+                <ScrollArea className="h-[600px]">
+                  <MissionMap run={selected} />
+                </ScrollArea>
+              )}
+
               {activeTab === "overview" && (
                 <div className="space-y-6">
                   {selected.approval.prUrl && (
@@ -961,6 +971,10 @@ export default function AgentRunsPanel({
                   prUrl={selected.approval.prUrl ?? null}
                   isActive={isActive}
                 />
+              )}
+
+              {activeTab === "fixstory" && (
+                <FixStoryPreview run={selected} />
               )}
             </div>
           </div>
