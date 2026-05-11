@@ -1202,7 +1202,7 @@ const Studio = () => {
         />
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-16 z-30 glass border-b border-white/[0.08]">
+          <header className="sticky top-0 z-30 glass border-b border-white/[0.08]">
             <div className="flex flex-col gap-3 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <Link to="/dashboard" className="btn-ghost p-2">
