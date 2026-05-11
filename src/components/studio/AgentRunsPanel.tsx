@@ -37,6 +37,7 @@ import {
   type TestMatrix,
   type QualityGates,
   type ChangeIntent,
+  fetchIngestionHealth,
   getAgentRun,
   listAgentRuns,
   rejectAgentRun,
@@ -210,6 +211,7 @@ export default function AgentRunsPanel({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [showBranchField, setShowBranchField] = useState(false);
+  const [agentBackendHint, setAgentBackendHint] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const contextHints = useMemo(() => buildContextHints(manifest, graphData), [manifest, graphData]);
@@ -244,6 +246,38 @@ export default function AgentRunsPanel({
   useEffect(() => {
     void loadRuns();
   }, [loadRuns]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const probe = async () => {
+      const h = await fetchIngestionHealth();
+      if (cancelled) return;
+      if (!h?.agentRuns) {
+        setAgentBackendHint(
+          "Could not reach the ingestion API. Start the backend (for example npm run dev:with-agent, or npm run ingest:server in another terminal)."
+        );
+        return;
+      }
+      const ar = h.agentRuns;
+      if (ar.mode === "local-read-only") {
+        setAgentBackendHint(
+          "Agent Ops can list past runs but cannot start new ones until the Python API is connected. Run npm run dev:with-agent from the repo root (Vite + ingestion + Agent Ops), or set AGENT_RUNS_PROXY_URL=http://127.0.0.1:8788 when starting the Node ingestion server and run npm run agent:server."
+        );
+        return;
+      }
+      if (ar.agentReachable === false) {
+        setAgentBackendHint(
+          `Agent Ops API is not responding at ${ar.proxyBase ?? "the proxy URL"}. Start it with npm run agent:server (port 8788), then ensure ingestion was started with AGENT_RUNS_PROXY_URL pointing at that URL.`
+        );
+        return;
+      }
+      setAgentBackendHint(null);
+    };
+    void probe();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selected = useMemo(
     () => runs.find((run) => run.id === selectedId) ?? null,
@@ -421,6 +455,12 @@ export default function AgentRunsPanel({
             <p className="mt-2 text-sm leading-6 text-white/54">
               Each run stays inside this repository and returns a reviewable diff before anything is promoted.
             </p>
+
+            {agentBackendHint && (
+              <div className="mt-4 rounded-xl border border-amber-400/28 bg-amber-400/10 px-3 py-3 text-xs leading-relaxed text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.12)]">
+                {agentBackendHint}
+              </div>
+            )}
 
             <div className="mt-4 space-y-3">
               <Input

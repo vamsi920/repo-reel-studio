@@ -51,23 +51,26 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="gf-nav-shell fixed inset-x-0 top-0 z-50">
-      <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={iconUrl} alt="GitFlick" className="h-6 w-6 opacity-90" />
-            <span className="block font-headline text-[1.35rem] font-semibold tracking-tight text-white">
+    <nav className="fixed inset-x-0 top-0 z-50 glass border-b border-white/[0.08]">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity" />
+              <img src={iconUrl} alt="GitFlick" className="relative h-8 w-8" />
+            </div>
+            <span className="text-xl font-bold gradient-text">
               GitFlick
             </span>
           </Link>
 
-          <div className="hidden items-center gap-6 lg:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             {LANDING_LINKS.map((item) =>
               isHome ? (
                 <a
                   key={item.label}
                   href={item.href}
-                  className="text-sm font-medium text-white/68 transition hover:text-white"
+                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-white/[0.05] transition-all"
                 >
                   {item.label}
                 </a>
@@ -75,7 +78,7 @@ export const Navbar = () => {
                 <Link
                   key={item.label}
                   to="/"
-                  className="text-sm font-medium text-white/68 transition hover:text-white"
+                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-white/[0.05] transition-all"
                 >
                   {item.label}
                 </Link>
@@ -86,62 +89,59 @@ export const Navbar = () => {
 
         <div className="hidden items-center gap-3 md:flex">
           {isLoading ? (
-            <div className="h-11 w-28 animate-pulse rounded-2xl bg-white/[0.08]" />
+            <div className="h-10 w-28 skeleton" />
           ) : isAuthenticated && user ? (
             <>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/dashboard">
+              <button className="btn-subtle">
+                <Link to="/dashboard" className="flex items-center gap-2">
                   <LayoutGrid className="h-4 w-4" />
-                  Workspace
+                  <span>Workspace</span>
                 </Link>
-              </Button>
+              </button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex h-10 items-center gap-2 rounded-2xl bg-white/[0.04] px-2"
-                  >
-                    <Avatar className="h-8 w-8">
+                  <button className="flex h-10 items-center gap-2 px-2 pr-3 rounded-xl glass-hover glass transition-all">
+                    <Avatar className="h-8 w-8 ring-2 ring-white/10">
                       <AvatarImage src={userAvatar} alt={userName || userEmail} />
-                      <AvatarFallback className="bg-primary/25 text-primary">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-medium">
                         {getUserInitials(userName, userEmail)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden max-w-[140px] truncate text-sm font-medium lg:block">
+                    <span className="hidden max-w-[140px] truncate text-sm font-medium text-foreground lg:block">
                       {userName || userEmail.split("@")[0]}
                     </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuContent align="end" className="w-60 glass border-white/10">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                      <p className="text-sm font-semibold gradient-text">
                         {userName || "User"}
                       </p>
-                      <p className="text-xs leading-none text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {userEmail}
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem asChild className="focus:bg-white/[0.08]">
                     <Link to="/dashboard" className="cursor-pointer">
                       <LayoutGrid className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="focus:bg-white/[0.08]">
                     <Link to="/profile" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className="text-destructive focus:text-destructive"
+                    className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign out
@@ -151,23 +151,32 @@ export const Navbar = () => {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild>
+              <button className="btn-ghost">
                 <Link to="/login">Sign in</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link to="/login">Open Workspace</Link>
-              </Button>
+              </button>
+              <button className="btn-premium">
+                <Link to="/login" className="flex items-center gap-2">
+                  <span>Open Workspace</span>
+                </Link>
+              </button>
             </>
           )}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white md:hidden"
-          onClick={() => setMobileMenuOpen((current) => !current)}
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          {!isLoading && !isAuthenticated ? (
+            <Button size="sm" asChild>
+              <Link to="/login">Sign in</Link>
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen ? (

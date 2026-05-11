@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, useCallback, useRef, memo, type ElementTy
 import AgentRunsPanel from "@/components/studio/AgentRunsPanel";
 import GraphExplorer from "@/components/studio/GraphExplorer";
 import RepoInvestigator from "@/components/studio/RepoInvestigator";
-import type { GitNexusGraphData } from "@/lib/types";
+import { ChapterPlaylist } from "@/components/studio/ChapterPlaylist";
+import type { GitNexusGraphData, ChapterManifest, VideoGenerationPlan } from "@/lib/types";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,20 +30,34 @@ import { useDownloadVideo } from "@/hooks/useDownloadVideo";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { projectsService } from "@/lib/db";
-import type { VideoManifest } from "@/lib/geminiDirector";
+import type { VideoManifest } from "@/lib/types";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
-import { GOOGLE_TTS_ENABLED } from "@/env";
+import { GOOGLE_TTS_ENABLED, VIDEO_PIPELINE_V2_ENABLED } from "@/env";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { generateManifestWithGemini } from "@/lib/geminiDirector";
+import { generateManifestWithQualityPipeline, buildQualityReport } from "@/lib/videoPipelineV2";
+import { enrichManifestWithCode } from "@/lib/enrichManifestWithCode";
+import { extractRepoNameFromSource } from "@/lib/projectSource";
 import {
-  formatDurationLabel,
-  listWorkspaceVideoEntries,
-  resolveWorkspaceManifest,
-} from "@/lib/videoWorkspace";
+  buildSyncPathSelection,
+  fileContentsToGitingestString,
+  githubCompareApi,
+  githubResolveRef,
+  ingestSelectedGithubPaths,
+  isGithubRepoUrl,
+  loadBaselineFileContentsFromRepoContent,
+  mergePartialFileContents,
+} from "@/lib/repoSync";
 import iconUrl from "../../icon.png";
+
+/** Match Processing: avoid QuotaExceededError for sessionStorage repo cache. */
+const SESSION_REPO_CONTENT_MAX_BYTES = 4 * 1024 * 1024;
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
 type WorkspaceView = "video" | "graph" | "ask" | "runs";
+type SyncState = "idle" | "checking" | "updating" | "error";
 
 interface LogEntry {
   timestamp: string;
@@ -110,7 +125,6 @@ const Studio = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const projectQuery = searchParams.get("project");
-  const activeModuleId = searchParams.get("module");
   const { user } = useAuth();
   const playerRef = useRef<PlayerRef>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -138,8 +152,15 @@ const Studio = () => {
   const [studioGraphData, setStudioGraphData] = useState<GitNexusGraphData | null>(null);
   const [repoContent, setRepoContent] = useState("");
   const [focusedRepoFilePath, setFocusedRepoFilePath] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<SyncState>("idle");
+  const syncLockRef = useRef(false);
 
-  // Load graph data from sessionStorage on mount
+  // Chapter-based playlist state
+  const [chapters, setChapters] = useState<ChapterManifest[]>([]);
+  const [generationPlan, setGenerationPlan] = useState<VideoGenerationPlan | null>(null);
+  const hasChapters = chapters.length > 1;
+
+  // Load graph data and chapter plan from sessionStorage on mount
   useEffect(() => {
     if (projectQuery) return;
 
@@ -153,6 +174,14 @@ const Studio = () => {
       const storedContent = sessionStorage.getItem("repo-content");
       if (storedContent) {
         setRepoContent(storedContent);
+      }
+    } catch { /* non-fatal */ }
+    try {
+      const storedPlan = sessionStorage.getItem("generation-plan");
+      if (storedPlan) {
+        const plan = JSON.parse(storedPlan) as VideoGenerationPlan;
+        setGenerationPlan(plan);
+        setChapters(plan.chapters);
       }
     } catch { /* non-fatal */ }
   }, [projectQuery]);
@@ -283,14 +312,8 @@ const Studio = () => {
         }
       }
 
-      const hasMasterScenes = Boolean(
-        parsed?.scenes && Array.isArray(parsed.scenes) && parsed.scenes.length > 0
-      );
-      const hasModuleVideos = Boolean(parsed?.module_videos?.length);
-      const hasPlanner = Boolean(parsed?.module_catalog?.modules?.length);
-
-      // Validate manifest/workspace
-      if (!parsed || (!hasMasterScenes && !hasModuleVideos && !hasPlanner)) {
+      // Validate manifest
+      if (!parsed || !parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {
         addLog("No valid manifest found", "error");
         addLog("Please go back and create a new video", "error");
         setPhase("error");
@@ -303,16 +326,8 @@ const Studio = () => {
       await new Promise(r => setTimeout(r, 300));
       setProgress(35);
 
-      addLog(`Workspace loaded: "${parsed.title || "Untitled"}"`, "success");
-      if (hasMasterScenes) {
-        addLog(`Found ${parsed.scenes.length} master scenes`, "info");
-      }
-      if (hasModuleVideos) {
-        addLog(`Found ${parsed.module_videos?.length || 0} generated module videos`, "info");
-      }
-      if (hasPlanner && !hasMasterScenes && !hasModuleVideos) {
-        addLog("Planner metadata is present but no videos are ready yet.", "warning");
-      }
+      addLog(`Manifest loaded: "${parsed.title || "Untitled"}"`, "success");
+      addLog(`Found ${parsed.scenes.length} scenes`, "info");
 
       // Set manifest state
       setManifest(parsed);
@@ -320,15 +335,13 @@ const Studio = () => {
         setRepoLabel(repoUrl || parsed.title || "Video Preview");
       }
       setRepoUrlState(repoUrl);
-      const resolvedPlayableManifest =
-        resolveWorkspaceManifest(parsed, activeModuleId).manifest;
 
       // Log scene details
       setCurrentStep("Analyzing scenes...");
       setProgress(45);
       await new Promise(r => setTimeout(r, 200));
 
-      const sceneTypes = (resolvedPlayableManifest?.scenes || []).reduce((acc, s) => {
+      const sceneTypes = parsed.scenes.reduce((acc, s) => {
         acc[s.type] = (acc[s.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -344,19 +357,6 @@ const Studio = () => {
         parsed = mockManifest;
         setManifest(mockManifest);
         setRepoLabel(mockManifest.title);
-      }
-
-      if (!resolvedPlayableManifest?.scenes?.length) {
-        setAudioUrls((prev) => {
-          prev.forEach((url) => URL.revokeObjectURL(url));
-          return new Map();
-        });
-        setPhase("complete");
-        setProgress(100);
-        setCurrentStep("Workspace loaded");
-        addLog("Workspace metadata loaded, but no playable video is ready yet.", "warning");
-        isLoadingRef.current = false;
-        return;
       }
 
       // Phase 2: Hydrating
@@ -380,29 +380,29 @@ const Studio = () => {
       setProgress(90);
 
       // Phase 3: Generating Voice (TTS) — skip if manifest has stored audio (Supabase)
-      const hasStoredAudio = resolvedPlayableManifest.scenes.some((s) => s.audioUrl);
-      if (hasStoredAudio) {
+      const hasStoredAudio = parsed?.scenes?.some((s) => s.audioUrl);
+      if (hasStoredAudio && parsed?.scenes) {
         const stored = new Map<number, string>();
-        for (const s of resolvedPlayableManifest.scenes) {
+        for (const s of parsed.scenes) {
           if (s.audioUrl) stored.set(s.id, s.audioUrl);
         }
         setAudioUrls(stored);
-        setTtsProgress({ completed: stored.size, total: resolvedPlayableManifest.scenes.length });
+        setTtsProgress({ completed: stored.size, total: parsed.scenes.length });
         addLog("Using stored audio from project", "info");
-      } else if (GOOGLE_TTS_ENABLED && resolvedPlayableManifest.scenes.length > 0) {
+      } else if (GOOGLE_TTS_ENABLED && parsed && parsed.scenes && parsed.scenes.length > 0) {
         setPhase("generating-voice");
         setCurrentStep("Generating voice narration...");
         addLog("Starting voice generation with Google TTS...", "info");
-        addLog(`Generating audio for ${resolvedPlayableManifest.scenes.length} scenes...`, "info");
+        addLog(`Generating audio for ${parsed.scenes.length} scenes...`, "info");
 
         try {
-          const narrationHash = hashNarrationText(resolvedPlayableManifest.scenes);
-          if (ttsHashRef.current === narrationHash && audioUrlsRef.current.size >= resolvedPlayableManifest.scenes.length) {
-            setTtsProgress({ completed: resolvedPlayableManifest.scenes.length, total: resolvedPlayableManifest.scenes.length });
+          const narrationHash = hashNarrationText(parsed.scenes);
+          if (ttsHashRef.current === narrationHash && audioUrlsRef.current.size >= parsed.scenes.length) {
+            setTtsProgress({ completed: parsed.scenes.length, total: parsed.scenes.length });
             addLog("Reusing existing voice audio for this manifest", "info");
           } else {
             const { audioUrls: generatedAudioUrls, failures } = await generateAllSceneAudio(
-              resolvedPlayableManifest.scenes,
+              parsed.scenes,
               'en-US-Standard-D',
               (completed, total) => {
                 setTtsProgress({ completed, total });
@@ -472,8 +472,20 @@ const Studio = () => {
 
       setProgress(100);
 
-      setManifest(parsed);
-      addLog(`Manifest: ${resolvedPlayableManifest.scenes.length} scenes`, "info");
+      // Ensure we have a valid manifest - use parsed or fallback to mock
+      const finalManifest = parsed || mockManifest;
+
+      if (!finalManifest || !finalManifest.scenes || finalManifest.scenes.length === 0) {
+        // Last resort - use mock
+        console.warn("[Studio] No valid manifest at all, using mock");
+        setManifest(mockManifest);
+        setRepoLabel(mockManifest.title);
+        addLog("Using demo manifest", "warning");
+      } else {
+        // Ensure manifest state is set
+        setManifest(finalManifest);
+        addLog(`Manifest: ${finalManifest.scenes.length} scenes`, "info");
+      }
 
       setPhase("complete");
       setCurrentStep("Ready to play!");
@@ -514,7 +526,7 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [activeModuleId, addLog, projectQuery, repoLabel, user?.id]);
+  }, [addLog, projectQuery, repoLabel, user?.id]);
 
   useEffect(() => {
     loadManifest();
@@ -529,21 +541,11 @@ const Studio = () => {
     setSearchParams(next, { replace: true });
   }, [phase, projectIdState, projectQuery, searchParams, setSearchParams]);
 
-  const resolvedWorkspace = useMemo(
-    () => resolveWorkspaceManifest(manifest, activeModuleId),
-    [activeModuleId, manifest]
-  );
-  const activeManifest = resolvedWorkspace.manifest;
-  const workspaceVideos = useMemo(
-    () => listWorkspaceVideoEntries(manifest),
-    [manifest]
-  );
-
-  const hydratedManifest = useHydrateManifest(activeManifest, 30, audioUrls);
+  const hydratedManifest = useHydrateManifest(manifest, 30, audioUrls);
 
   // Fallback to mock manifest if we have no manifest at all
   const fallbackHydratedManifest = useHydrateManifest(
-    !activeManifest ? mockManifest : null,
+    !manifest ? mockManifest : null,
     30,
     audioUrls
   );
@@ -552,6 +554,12 @@ const Studio = () => {
   const mockHydratedManifest = useHydrateManifest(mockManifest, 30, audioUrls);
 
   const effectiveHydratedManifest = hydratedManifest || fallbackHydratedManifest || mockHydratedManifest;
+  /** Bumps when Git sync finishes or manifest narrative changes — Remotion must remount to pick up new composition reliably. */
+  const playerCompositionKey = useMemo(() => {
+    if (!manifest?.scenes?.length) return "no-manifest";
+    const snap = manifest.source_snapshot?.commit_sha ?? "no-snap";
+    return `${snap}-${hashNarrationText(manifest.scenes)}`;
+  }, [manifest]);
   const durationInFrames = Math.max(1, effectiveHydratedManifest?.totalFrames ?? 1);
   const playerStyle = useMemo(
     () => ({
@@ -624,6 +632,16 @@ const Studio = () => {
     };
   }, [phase]);
 
+  // After sync (or any manifest swap), jump to frame 0 so controls match the new composition.
+  useEffect(() => {
+    if (phase !== "complete") return;
+    const id = requestAnimationFrame(() => {
+      playerRef.current?.seekTo(0);
+      setCurrentFrame(0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [playerCompositionKey, phase]);
+
   // Control visibility on mouse movement
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
@@ -659,6 +677,247 @@ const Studio = () => {
   const handleSceneClick = useCallback((sceneIndex: number, frame: number) => {
     handleSeek(frame);
   }, [handleSeek]);
+
+  const isGithubSyncEligible = useMemo(
+    () => isGithubRepoUrl(repoUrlState || ""),
+    [repoUrlState]
+  );
+
+  const syncTooltip = useMemo(() => {
+    if (!isGithubSyncEligible) return "GitHub repos only";
+    if (syncState === "checking") return "Checking GitHub HEAD…";
+    if (syncState === "updating") return "Syncing changed files…";
+    return "Sync from GitHub";
+  }, [isGithubSyncEligible, syncState]);
+
+  const replaceAudioUrls = useCallback((next: Map<number, string>) => {
+    setAudioUrls((prev) => {
+      prev.forEach((url) => {
+        try {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        } catch {
+          /* ignore */
+        }
+      });
+      return next;
+    });
+  }, []);
+
+  const handleSyncFromGithub = useCallback(async () => {
+    if (!manifest || !isGithubSyncEligible || syncState !== "idle") return;
+    if (syncLockRef.current) return;
+    syncLockRef.current = true;
+
+    try {
+      setSyncState("checking");
+      const snapshot = manifest.source_snapshot;
+      const baselineSha = snapshot?.commit_sha || null;
+      const baselineBranch = snapshot?.branch || null;
+      const repoUrl = (repoUrlState || snapshot?.repo_url || "").trim();
+
+      if (!repoUrl) throw new Error("Missing repository URL for sync");
+
+      const head = await githubResolveRef(repoUrl, baselineBranch);
+
+      if (baselineSha && baselineSha === head.sha) {
+        toast({ title: "Already up to date", description: "No GitHub changes since the pinned snapshot." });
+        setSyncState("idle");
+        return;
+      }
+
+      let workingRepoContent = repoContent;
+      let baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
+      if (Object.keys(baselineMap).length === 0 && projectIdState && user?.id) {
+        try {
+          const projectRow = await projectsService.getById(projectIdState, user.id);
+          if (projectRow?.repo_content) {
+            workingRepoContent = projectRow.repo_content;
+            baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
+            setRepoContent(workingRepoContent);
+          }
+        } catch {
+          /* non-fatal */
+        }
+      }
+
+      if (!baselineSha || Object.keys(baselineMap).length === 0) {
+        const refreshed = {
+          ...manifest,
+          source_snapshot: {
+            repo_url: repoUrl,
+            branch: head.branch,
+            commit_sha: head.sha,
+            pinned_at: new Date().toISOString(),
+          },
+        };
+        setManifest(refreshed);
+        syncProjectWorkspaceToSession({
+          id: projectIdState,
+          repo_url: repoUrl,
+          manifest: refreshed,
+          repo_content: repoContent || null,
+          graph_data: studioGraphData,
+          repo_knowledge_graph: refreshed.knowledge_graph || null,
+        });
+        if (projectIdState && user?.id) {
+          await projectsService.update(projectIdState, user.id, { manifest: refreshed });
+        }
+        toast({ title: "Pinned current HEAD", description: "Baseline snapshot was missing, so HEAD was pinned." });
+        setSyncState("idle");
+        return;
+      }
+
+      setSyncState("updating");
+      const compare = await githubCompareApi(repoUrl, baselineSha, head.sha);
+      const pathsToRefresh = buildSyncPathSelection(compare, manifest, studioGraphData);
+
+      if (pathsToRefresh.length === 0) {
+        const refreshed = {
+          ...manifest,
+          source_snapshot: {
+            repo_url: repoUrl,
+            branch: head.branch,
+            commit_sha: head.sha,
+            pinned_at: new Date().toISOString(),
+          },
+        };
+        setManifest(refreshed);
+        toast({ title: "Snapshot updated", description: "No code paths needed refresh for this compare." });
+        setSyncState("idle");
+        return;
+      }
+
+      const partial = await ingestSelectedGithubPaths({
+        repoUrl,
+        branch: head.branch,
+        paths: pathsToRefresh,
+      });
+
+      const mergedFiles = mergePartialFileContents(baselineMap, partial.files, partial.removed);
+      const mergedRepoContent = fileContentsToGitingestString(mergedFiles);
+      const repoName = extractRepoNameFromSource(repoUrl || repoLabel || manifest.title || "Repository");
+
+      let nextManifest: VideoManifest;
+      if (VIDEO_PIPELINE_V2_ENABLED) {
+        const v2 = await generateManifestWithQualityPipeline(
+          repoUrl,
+          repoName,
+          mergedRepoContent,
+          mergedFiles,
+          studioGraphData
+        );
+        nextManifest = enrichManifestWithCode(v2, mergedFiles);
+        nextManifest.quality_report = buildQualityReport(nextManifest, mergedFiles);
+      } else {
+        const legacy = await generateManifestWithGemini(
+          repoUrl,
+          repoName,
+          mergedRepoContent,
+          studioGraphData
+        );
+        nextManifest = enrichManifestWithCode(legacy, mergedFiles);
+        nextManifest.quality_report = buildQualityReport(nextManifest, mergedFiles);
+      }
+
+      nextManifest.source_snapshot = {
+        repo_url: repoUrl,
+        branch: partial.branch || head.branch,
+        commit_sha: partial.resolvedCommitSha || head.sha,
+        pinned_at: new Date().toISOString(),
+      };
+
+      ttsHashRef.current = null;
+
+      if (nextManifest.quality_report?.ready_for_tts === false) {
+        replaceAudioUrls(new Map());
+      } else if (GOOGLE_TTS_ENABLED) {
+        try {
+          const { audioUrls: genUrls } = await generateAllSceneAudio(nextManifest.scenes, "en-US-Standard-D");
+          const nextAudio = new Map<number, string>();
+          for (const [sceneId, blobUrl] of genUrls) {
+            if (!projectIdState || !user?.id) {
+              nextAudio.set(sceneId, blobUrl);
+              continue;
+            }
+            try {
+              const res = await fetch(blobUrl);
+              const blob = await res.blob();
+              URL.revokeObjectURL(blobUrl);
+              const path = `${projectIdState}/${sceneId}.mp3`;
+              const { error } = await supabase.storage
+                .from("project-audio")
+                .upload(path, blob, { contentType: "audio/mpeg", upsert: true });
+              if (error) {
+                nextAudio.set(sceneId, blobUrl);
+                continue;
+              }
+              const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
+              const scene = nextManifest.scenes.find((s) => s.id === sceneId);
+              if (scene) scene.audioUrl = data.publicUrl;
+              nextAudio.set(sceneId, data.publicUrl);
+            } catch {
+              nextAudio.set(sceneId, blobUrl);
+            }
+          }
+          replaceAudioUrls(nextAudio);
+        } catch {
+          replaceAudioUrls(new Map());
+        }
+      } else {
+        replaceAudioUrls(new Map());
+      }
+
+      const totalDuration = nextManifest.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
+      if (projectIdState && user?.id) {
+        await projectsService.update(projectIdState, user.id, {
+          status: "ready",
+          manifest: nextManifest,
+          duration_seconds: totalDuration,
+          repo_content: mergedRepoContent,
+          graph_data: studioGraphData,
+          repo_knowledge_graph: nextManifest.knowledge_graph || null,
+          phase2_completed_at: new Date().toISOString(),
+        });
+      }
+
+      setManifest(nextManifest);
+      setRepoContent(mergedRepoContent);
+      const repoForSession =
+        mergedRepoContent.length <= SESSION_REPO_CONTENT_MAX_BYTES ? mergedRepoContent : null;
+      syncProjectWorkspaceToSession({
+        id: projectIdState,
+        repo_url: repoUrl,
+        manifest: nextManifest,
+        repo_content: repoForSession,
+        graph_data: studioGraphData,
+        repo_knowledge_graph: nextManifest.knowledge_graph || null,
+      });
+
+      toast({
+        title: "Video synced",
+        description: `Refreshed ${Object.keys(partial.files).length} changed file(s) and rebuilt the walkthrough.`,
+      });
+      setSyncState("idle");
+    } catch (error) {
+      setSyncState("error");
+      const message = error instanceof Error ? error.message : "Sync failed";
+      toast({ title: "Sync failed", description: message, variant: "destructive" });
+      setSyncState("idle");
+    } finally {
+      syncLockRef.current = false;
+    }
+  }, [
+    manifest,
+    isGithubSyncEligible,
+    syncState,
+    repoUrlState,
+    repoContent,
+    projectIdState,
+    user?.id,
+    studioGraphData,
+    repoLabel,
+    replaceAudioUrls,
+  ]);
 
   // Debug logging
   useEffect(() => {
@@ -699,15 +958,15 @@ const Studio = () => {
       return `${mins}:${secs.toString().padStart(2, "0")}`;
     }
 
-    if (!activeManifest?.scenes) return "0:00";
-    const totalSeconds = activeManifest.scenes.reduce(
+    if (!manifest?.scenes) return "0:00";
+    const totalSeconds = manifest.scenes.reduce(
       (sum, s) => sum + (s.duration_seconds || 0),
       0
     );
     const mins = Math.floor(totalSeconds / 60);
     const secs = Math.floor(totalSeconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }, [activeManifest, hydratedManifest]);
+  }, [hydratedManifest, manifest]);
 
   // Current scene index
   const currentSceneIndex = useMemo(() => {
@@ -718,6 +977,31 @@ const Studio = () => {
     return index === -1 ? 0 : index;
   }, [effectiveHydratedManifest, currentFrame]);
 
+  // Active chapter index — derived from currentFrame and chapter boundaries
+  const activeChapterIndex = useMemo(() => {
+    if (!hasChapters || !effectiveHydratedManifest?.scenes) return 0;
+    const readyChapters = chapters.filter((ch) => ch.status === "ready" && ch.manifest);
+    let cursor = 0;
+    for (let i = 0; i < readyChapters.length; i++) {
+      const ch = readyChapters[i];
+      const chDuration = ch.manifest?.scenes.reduce(
+        (sum, s) => sum + (s.duration_seconds || 15),
+        0
+      ) ?? 0;
+      const endFrame = cursor + chDuration * 30;
+      if (currentFrame < endFrame) return i;
+      cursor = endFrame;
+    }
+    return readyChapters.length - 1;
+  }, [hasChapters, chapters, currentFrame, effectiveHydratedManifest]);
+
+  const handleSeekToChapter = useCallback(
+    (chapterIndex: number, frame: number) => {
+      handleSeek(frame);
+    },
+    [handleSeek]
+  );
+
   const activeSceneFilePath =
     effectiveHydratedManifest?.scenes?.[currentSceneIndex]?.file_path;
   const workspaceView: WorkspaceView = (() => {
@@ -726,27 +1010,14 @@ const Studio = () => {
   })();
   const highlightedRepoFilePath = focusedRepoFilePath || activeSceneFilePath;
 
-  const evidenceBundle = activeManifest?.evidence_bundle;
-  const knowledgeGraph = activeManifest?.knowledge_graph;
-  const qualityReport = activeManifest?.quality_report;
+  const evidenceBundle = manifest?.evidence_bundle;
+  const knowledgeGraph = manifest?.knowledge_graph;
+  const qualityReport = manifest?.quality_report;
   const setWorkspaceView = useCallback((view: WorkspaceView) => {
     const next = new URLSearchParams(searchParams);
     next.set("view", view);
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
-  const selectWorkspaceVideo = useCallback(
-    (entryId: string, moduleId?: string) => {
-      const next = new URLSearchParams(searchParams);
-      if (entryId === "master") {
-        next.delete("module");
-      } else if (moduleId) {
-        next.set("module", moduleId);
-      }
-      next.set("view", "video");
-      setSearchParams(next, { replace: true });
-    },
-    [searchParams, setSearchParams]
-  );
 
   useEffect(() => {
     if (workspaceView !== "video" && isVideoFullscreen) {
@@ -802,29 +1073,28 @@ const Studio = () => {
   // Copy share link (unique /v/:id when project is from DB)
   const handleShare = useCallback(() => {
     const projectId = projectIdState || projectQuery;
-    const url = projectId
-      ? `${window.location.origin}/studio?project=${projectId}${
-          activeModuleId ? `&module=${activeModuleId}` : ""
-        }`
-      : window.location.href;
+    const url = projectId ? `${window.location.origin}/v/${projectId}` : window.location.href;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copied!",
       description: "Video link has been copied to clipboard.",
     });
-  }, [activeModuleId, projectIdState, projectQuery]);
+  }, [projectIdState, projectQuery]);
 
   const LoadingScreen = () => (
     <div className="mx-auto max-w-3xl">
-      <div className="rounded-[22px] gf-panel p-6 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-            <img src={iconUrl} alt="GitFlick" className="h-8 w-8 object-contain" />
+      <div className="premium-card p-8">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-xl opacity-50 animate-pulse" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
+              <img src={iconUrl} alt="GitFlick" className="h-8 w-8 object-contain" />
+            </div>
           </div>
           <div>
-            <div className="text-sm font-medium text-primary">Preparing Studio</div>
-            <h2 className="mt-1 text-xl font-semibold text-white">{repoLabel}</h2>
-            <p className="mt-1 text-sm text-white/56">
+            <div className="text-sm font-medium gradient-text">Preparing Studio</div>
+            <h2 className="mt-1 text-2xl font-bold text-foreground">{repoLabel}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               {phase === "generating-voice"
                 ? "Generating voice tracks for the walkthrough."
                 : "Loading the project and getting the player ready."}
@@ -923,48 +1193,46 @@ const Studio = () => {
   );
 
   return (
-    <div className="min-h-screen bg-transparent">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] grid-cols-1 lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-background noise-overlay">
+      <div className="flex min-h-screen">
         <StudioSidebar
           repoLabel={repoLabel}
           activeView={workspaceView}
           onChangeView={setWorkspaceView}
         />
 
-        <div className="min-w-0">
-          <header className="gf-nav-shell sticky top-0 z-30">
-            <div className="flex flex-col gap-3 px-5 py-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" asChild>
-                  <Link to="/dashboard">
-                    <ArrowLeft className="h-4 w-4" />
-                  </Link>
-                </Button>
+        <div className="flex-1 min-w-0">
+          <header className="sticky top-0 z-30 glass border-b border-white/[0.08]">
+            <div className="flex flex-col gap-3 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-center gap-4">
+                <Link to="/dashboard" className="btn-ghost p-2">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+                <div className="h-8 w-px bg-white/10" />
                 <div>
-                  <div className="text-[0.98rem] font-semibold text-white">{repoLabel}</div>
-                  <div className="text-sm text-white/48">
-                    {activeManifest?.scenes?.length || 0} scenes • {totalDuration}
+                  <div className="text-lg font-bold gradient-text">{repoLabel}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {manifest?.scenes?.length || 0} scenes • {totalDuration}
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={loadManifest}>
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Reload
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleShare}>
-                  <Share2 className="h-3.5 w-3.5" />
-                  Share
-                </Button>
-                <Button
-                  size="sm"
-                  className="gap-2"
+                <button className="btn-subtle flex items-center gap-2" onClick={loadManifest}>
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Reload</span>
+                </button>
+                <button className="btn-subtle flex items-center gap-2" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+                <button
+                  className="btn-premium flex items-center gap-2"
                   onClick={() => navigate(projectIdState ? `/export?project=${projectIdState}` : "/export")}
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  Export
-                </Button>
+                  <Download className="h-4 w-4" />
+                  <span>Export</span>
+                </button>
               </div>
             </div>
           </header>
@@ -974,74 +1242,6 @@ const Studio = () => {
               activeView={workspaceView}
               onChange={setWorkspaceView}
             />
-
-            {workspaceVideos.length > 1 && (
-              <section className="mt-5 rounded-[22px] gf-panel p-4 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-                      Video Library
-                    </div>
-                    <div className="mt-2 text-lg font-semibold text-white">
-                      Master and module walkthroughs
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={projectIdState ? `/processing?project=${projectIdState}&repo=${encodeURIComponent(repoUrlState)}` : `/processing?repo=${encodeURIComponent(repoUrlState)}`}>
-                      <Sparkles className="h-4 w-4" />
-                      Generate More
-                    </Link>
-                  </Button>
-                </div>
-
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {workspaceVideos.map((video) => {
-                    const isActive =
-                      video.kind === "master"
-                        ? !activeModuleId
-                        : activeModuleId === video.module_id;
-
-                    return (
-                      <button
-                        key={video.id}
-                        type="button"
-                        disabled={!video.ready}
-                        onClick={() => selectWorkspaceVideo(video.id, video.module_id)}
-                        className={cn(
-                          "rounded-[18px] border px-4 py-4 text-left transition-colors",
-                          video.ready
-                            ? "border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.06]"
-                            : "border-white/[0.04] bg-white/[0.02] opacity-70",
-                          isActive && "border-primary/40 bg-primary/8"
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="font-medium text-white">{video.label}</div>
-                          <div className="flex items-center gap-2 text-[11px]">
-                            <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-white/60">
-                              {formatDurationLabel(video.duration_seconds)}
-                            </span>
-                            <span
-                              className={cn(
-                                "rounded-full px-2.5 py-1",
-                                video.ready
-                                  ? "bg-emerald-300/12 text-emerald-200"
-                                  : "bg-white/[0.06] text-white/50"
-                              )}
-                            >
-                              {video.ready ? "Ready" : "Pending"}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-white/58">
-                          {video.description}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
 
             <div className="mt-5">
               {isLoading ? (
@@ -1092,6 +1292,7 @@ const Studio = () => {
                             }}
                           >
                             <MemoPlayer
+                              key={playerCompositionKey}
                               ref={playerRef}
                               component={RemotionVideo}
                               inputProps={inputProps}
@@ -1130,6 +1331,11 @@ const Studio = () => {
                                 onSceneChange={(idx) => console.log("Scene changed:", idx)}
                                 onDownloadVideo={downloadVideo}
                                 isDownloadingVideo={isDownloadingVideo}
+                                showSync={isGithubSyncEligible}
+                                onSync={handleSyncFromGithub}
+                                isSyncing={syncState === "checking" || syncState === "updating"}
+                                syncDisabled={syncState !== "idle" || !manifest}
+                                syncTooltip={syncTooltip}
                               />
                             </div>
                           </div>
@@ -1160,22 +1366,37 @@ const Studio = () => {
 
                 {effectiveHydratedManifest && (
                   <aside className="overflow-hidden rounded-[22px] gf-panel shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-                    <div className="px-4 py-3.5">
-                      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
-                        Scenes
+                    {hasChapters ? (
+                      <div className="max-h-[720px] overflow-y-auto">
+                        <ChapterPlaylist
+                          chapters={chapters}
+                          masterIndex={generationPlan?.master_index}
+                          currentFrame={currentFrame}
+                          fps={30}
+                          onSeekToChapter={handleSeekToChapter}
+                          activeChapterIndex={activeChapterIndex}
+                        />
                       </div>
-                      <div className="mt-1 text-sm text-white/56">
-                        Jump to a part of the walkthrough without leaving the page.
-                      </div>
-                    </div>
-                    <div className="max-h-[720px] overflow-y-auto">
-                      <SceneListSidebar
-                        manifest={effectiveHydratedManifest}
-                        currentSceneIndex={currentSceneIndex}
-                        onSceneClick={handleSceneClick}
-                        fps={30}
-                      />
-                    </div>
+                    ) : (
+                      <>
+                        <div className="px-4 py-3.5">
+                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+                            Scenes
+                          </div>
+                          <div className="mt-1 text-sm text-white/56">
+                            Jump to a part of the walkthrough without leaving the page.
+                          </div>
+                        </div>
+                        <div className="max-h-[720px] overflow-y-auto">
+                          <SceneListSidebar
+                            manifest={effectiveHydratedManifest}
+                            currentSceneIndex={currentSceneIndex}
+                            onSceneClick={handleSceneClick}
+                            fps={30}
+                          />
+                        </div>
+                      </>
+                    )}
                   </aside>
                 )}
               </section>
@@ -1209,7 +1430,7 @@ const Studio = () => {
               <RepoInvestigator
                 repoName={repoLabel}
                 repoContent={repoContent}
-                manifest={activeManifest || manifest}
+                manifest={manifest}
                 graphData={studioGraphData}
                 onFocusFile={focusRepoFile}
               />
@@ -1220,7 +1441,7 @@ const Studio = () => {
                 repoUrl={repoUrlState}
                 repoName={repoLabel}
                 projectId={projectIdState}
-                manifest={activeManifest || manifest}
+                manifest={manifest}
                 graphData={studioGraphData}
                 onFocusFile={focusRepoFile}
               />
@@ -1244,23 +1465,26 @@ const StudioSidebar = ({
   activeView: WorkspaceView;
   onChangeView: (view: WorkspaceView) => void;
 }) => (
-  <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-white/8 lg:bg-[#0f1830]">
-    <div className="px-4 py-5">
+  <aside className="hidden lg:flex lg:flex-col w-64 glass border-r border-white/[0.08]">
+    <div className="p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-[#002469]">
-          <img src={iconUrl} alt="GitFlick" className="h-6 w-6 object-contain" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-lg opacity-60" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
+            <img src={iconUrl} alt="GitFlick" className="h-7 w-7 object-contain" />
+          </div>
         </div>
         <div className="min-w-0">
-          <div className="truncate text-base font-semibold text-white">GitFlick</div>
-          <div className="truncate text-xs text-white/45">{repoLabel}</div>
+          <div className="truncate text-lg font-bold gradient-text">GitFlick</div>
+          <div className="truncate text-xs text-muted-foreground">{repoLabel}</div>
         </div>
       </div>
     </div>
 
-    <div className="px-3 pb-4">
-      <div className="rounded-xl bg-white/[0.03] p-2">
-        <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-          Workspace lanes
+    <div className="px-4 pb-4">
+      <div className="glass rounded-xl p-3">
+        <div className="px-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Workspace
         </div>
         <div className="space-y-1">
           {WORKSPACE_VIEWS.map((view) => {
@@ -1271,14 +1495,17 @@ const StudioSidebar = ({
                 type="button"
                 onClick={() => onChangeView(view.id)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition",
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-primary/14 text-primary"
-                    : "text-white/62 hover:bg-white/[0.05] hover:text-white",
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-white shadow-lg shadow-primary/10"
+                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
                 )}
               >
                 <view.icon className="h-4 w-4 shrink-0" />
                 <span>{view.label}</span>
+                {isActive && (
+                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                )}
               </button>
             );
           })}
@@ -1288,8 +1515,8 @@ const StudioSidebar = ({
 
     <div className="flex-1" />
 
-    <div className="px-4 py-4 text-xs text-white/36">
-      Studio workspace shell
+    <div className="px-6 py-4 text-xs text-muted-foreground/60">
+      Premium Studio Experience
     </div>
   </aside>
 );
@@ -1301,10 +1528,10 @@ const StudioWorkspaceTabs = ({
   activeView: WorkspaceView;
   onChange: (view: WorkspaceView) => void;
 }) => (
-  <section className="rounded-[16px] gf-panel px-4 py-3 shadow-[0_10px_28px_rgba(8,14,30,0.14)]">
-    <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/34">
-        Workspace lanes
+  <section className="premium-card px-6 py-4">
+    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Workspace Views
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -1316,10 +1543,10 @@ const StudioWorkspaceTabs = ({
               type="button"
               onClick={() => onChange(view.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary/14 text-primary shadow-[0_8px_24px_rgba(104,132,255,0.12)]"
-                  : "bg-white/[0.04] text-white/62 hover:bg-white/[0.06] hover:text-white",
+                  ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
+                  : "glass hover:bg-white/[0.08] text-muted-foreground hover:text-foreground",
               )}
             >
               <view.icon className="h-4 w-4" />

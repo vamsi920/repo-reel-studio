@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 overflow-hidden",
   {
     variants: {
       variant: {
-        default: "bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-primary-foreground hover:brightness-[1.03]",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "bg-[rgba(45,52,73,0.72)] text-foreground hover:bg-[rgba(49,57,77,0.82)]",
-        secondary: "bg-[rgba(45,52,73,0.72)] text-primary hover:bg-[rgba(49,57,77,0.82)]",
-        ghost: "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
+        default: "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]",
+        destructive: "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20",
+        outline: "bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.12] text-foreground",
+        secondary: "glass glass-hover text-foreground border border-white/[0.08]",
+        ghost: "hover:bg-white/[0.05] text-muted-foreground hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        glow: "bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-primary-foreground glow-primary hover:glow-primary-subtle animate-pulse-glow",
-        hero: "bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-primary-foreground font-semibold hover:brightness-[1.03] transition-all duration-300",
-        nav: "text-muted-foreground hover:text-foreground hover:bg-white/[0.06]",
+        glow: "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 animate-gradient",
+        hero: "bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:scale-[1.02] transition-all duration-300",
+        nav: "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]",
       },
       size: {
         default: "h-10 px-4 py-2",
