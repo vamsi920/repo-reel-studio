@@ -19,7 +19,7 @@ const STEPS = [
     step: "02",
     title: "Generate the walkthrough",
     description:
-      "The system builds a scene-backed narrative artifact that stays tied to files, durations, and repo evidence.",
+      "The system builds a scene-backed narrative artifact tied to files, durations, and repo evidence, with local deterministic context trimming before model calls.",
   },
   {
     icon: Network,

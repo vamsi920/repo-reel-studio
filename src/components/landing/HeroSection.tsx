@@ -48,7 +48,7 @@ const LANES = [
   {
     id: "agent-ops",
     title: "Agent Ops",
-    description: "Run and monitor workflow automation.",
+    description: "Agent-grade repo automation with clearer review and lower token waste.",
     icon: WandSparkles,
     accent: "bg-amber-300/12 text-amber-200",
   },
@@ -57,7 +57,7 @@ const LANES = [
 const METRICS = [
   { value: "Fast", label: "Repository intake" },
   { value: "Clear", label: "Guided walkthroughs" },
-  { value: "Private", label: "Workspace access" },
+  { value: "Lean", label: "Prompt context" },
 ];
 
 export const HeroSection = () => {
@@ -173,6 +173,8 @@ export const HeroSection = () => {
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/62 sm:text-base">
             Open a repository, let GitFlick process the structure, then continue in Studio with a clean saved workspace.
+            Layman-style prompt compression trims setup prose locally with deterministic rules while keeping code, paths, commands,
+            and evidence anchors intact.
           </p>
         </div>
 

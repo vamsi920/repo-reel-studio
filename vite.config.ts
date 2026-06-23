@@ -82,7 +82,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["@supabase/supabase-js"],
+    include: ["firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage"],
     // Force pre-bundling of dependencies
     force: false,
   },

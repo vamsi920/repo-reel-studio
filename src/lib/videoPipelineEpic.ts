@@ -1,7 +1,5 @@
-import {
-  generateManifestWithQualityPipeline,
-  buildQualityReport,
-} from "@/lib/videoPipelineV2";
+import { buildQualityReport } from "@/lib/videoPipelineV2";
+import { buildDeterministicManifest } from "@/lib/deterministicManifest";
 import { enrichManifestWithCode } from "@/lib/enrichManifestWithCode";
 import type {
   ChapterManifest,
@@ -176,12 +174,18 @@ export const executeGenerationPlan = async (
       onChapterProgress(chapter.id, "writing");
       updatedChapters[i] = { ...updatedChapters[i], status: "writing" };
 
-      const chapterManifest = await generateManifestWithQualityPipeline(
-        repoUrl,
+      // Deterministic, code-first generation: read the real files, point at real
+      // lines, narrate like a tutor. No AI/network dependency, no fabricated code.
+      const chapterManifest = buildDeterministicManifest(
         repoName,
-        repoContent,
         chapterFileContents,
-        graphData
+        graphData,
+        {
+          title: chapter.title,
+          maxFileScenes: Math.max(3, Math.min(10, Object.keys(chapterFileContents).length)),
+          includeIntro: chapter.order === 0,
+          includeSummary: false,
+        }
       );
 
       onChapterProgress(chapter.id, "enriching");

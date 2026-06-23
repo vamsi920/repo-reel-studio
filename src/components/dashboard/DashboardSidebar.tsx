@@ -37,8 +37,8 @@ export const DashboardSidebar = ({
   const { user, signOut } = useAuth();
 
   const userEmail = user?.email || "";
-  const userName = user?.user_metadata?.full_name || "";
-  const userAvatar = user?.user_metadata?.avatar_url || "";
+  const userName = user?.displayName || "";
+  const userAvatar = user?.photoURL || "";
 
   const handleSignOut = async () => {
     await signOut();

@@ -32,3 +32,11 @@ export const VIDEO_PIPELINE_V2_ENABLED =
 /** Phase B: scene-level incremental LLM/TTS (neighbor expansion reads this when implemented). */
 export const INCREMENTAL_SCENE_REGEN_ENABLED =
   import.meta.env.VITE_INCREMENTAL_SCENE_REGEN === "true";
+
+// Debug logging for local Layman prompt compression metrics.
+export const LAYMAN_PROMPT_DEBUG =
+  import.meta.env.VITE_LAYMAN_PROMPT_DEBUG === "true";
+
+// Fast kill-switch for Layman compression (debug/rollback). Defaults to enabled.
+export const LAYMAN_PROMPT_ENABLED =
+  import.meta.env.VITE_LAYMAN_PROMPT_ENABLED !== "false";

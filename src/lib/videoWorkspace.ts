@@ -1,4 +1,5 @@
 import { humanizeFileLabel } from "@/lib/repoEvidence";
+import { compressForPromptWithPolicy } from "@/lib/laymanCompressionPolicy";
 import { getCodegraphData, getCodegraphRelatedFiles, scoreCodegraphModule } from "@/lib/upstreamCodegraph";
 import type {
   CodegraphModuleIndexEntry,
@@ -43,6 +44,17 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 64) || "module";
+
+const compressModuleDiscoveryProse = (text: string, label: string) => {
+  const result = compressForPromptWithPolicy({
+    context: "codegraph_narrative",
+    path: `/codegraph-module-discovery/${label}.md`,
+    text,
+    mode: "lite",
+    minSavedTokens: 1,
+  });
+  return result.text;
+};
 
 const formatPathArea = (filePath: string) => {
   const normalized = (filePath || "").replace(/\\/g, "/");
@@ -92,9 +104,12 @@ const buildModuleSummary = (
     ? `${title} centers on ${topEntities.join(", ")} and the code around ${humanizeFileLabel(representativeFile)}.`
     : `${title} is anchored by ${humanizeFileLabel(representativeFile)} and the surrounding implementation.`;
 
-  return `${focusLead} This area carries ${entityCount} indexed codegraph entities across ${
-    moduleEntries.length
-  } important files.`;
+  return compressModuleDiscoveryProse(
+    `${focusLead} This area carries ${entityCount} indexed codegraph entities across ${
+      moduleEntries.length
+    } important files.`,
+    `module-summary-${slugify(title)}`,
+  );
 };
 
 const buildModuleFocus = (
@@ -103,9 +118,15 @@ const buildModuleFocus = (
 ) => {
   const primaryEntity = moduleEntries.flatMap((entry) => entry.topEntities)[0];
   if (primaryEntity?.name) {
-    return `Explain how ${primaryEntity.name} turns ${humanizeFileLabel(representativeFile)} into a meaningful product capability.`;
+    return compressModuleDiscoveryProse(
+      `Explain how ${primaryEntity.name} turns ${humanizeFileLabel(representativeFile)} into a meaningful product capability.`,
+      `module-focus-${slugify(representativeFile)}`,
+    );
   }
-  return `Explain why ${humanizeFileLabel(representativeFile)} matters and how this part of the repo connects to the rest of the system.`;
+  return compressModuleDiscoveryProse(
+    `Explain why ${humanizeFileLabel(representativeFile)} matters and how this part of the repo connects to the rest of the system.`,
+    `module-focus-${slugify(representativeFile)}`,
+  );
 };
 
 const getClusterFilePaths = (
@@ -168,13 +189,22 @@ const createVideoModule = ({
     related_file_paths: relatedFiles.slice(0, 10),
     top_entities: topEntities,
     why_it_matters: [
-      `${title} is grounded in ${areaLabel}, with ${clusterFiles.length} primary files in scope.`,
-      dependencyCount > 0
-        ? `This area touches ${dependencyCount} neighboring codegraph modules, so it explains important architectural seams.`
-        : `This area is cohesive enough to support a focused end-to-end walkthrough.`,
-      topEntities.length > 0
-        ? `The strongest code anchors here are ${topEntities.slice(0, 3).join(", ")}.`
-        : `The walkthrough should stay attached to the representative code instead of generic overview copy.`,
+      compressModuleDiscoveryProse(
+        `${title} is grounded in ${areaLabel}, with ${clusterFiles.length} primary files in scope.`,
+        `module-why-grounding-${slugify(title)}`,
+      ),
+      compressModuleDiscoveryProse(
+        dependencyCount > 0
+          ? `This area touches ${dependencyCount} neighboring codegraph modules, so it explains important architectural seams.`
+          : `This area is cohesive enough to support a focused end-to-end walkthrough.`,
+        `module-why-deps-${slugify(title)}`,
+      ),
+      compressModuleDiscoveryProse(
+        topEntities.length > 0
+          ? `The strongest code anchors here are ${topEntities.slice(0, 3).join(", ")}.`
+          : `The walkthrough should stay attached to the representative code instead of generic overview copy.`,
+        `module-why-anchors-${slugify(title)}`,
+      ),
     ],
     file_count: clusterFiles.length,
     entity_count: entityCount,
@@ -290,8 +320,14 @@ export const discoverRepoVideoModules = (
         discovered.push({
           id: slugify(`${capsule.id}-${capsule.title}`),
           title: capsule.title.replace(/^Deep Dive:\s*/i, "").replace(/^Operational Detail:\s*/i, ""),
-          summary: capsule.summary,
-          focus: capsule.teaching_goal,
+          summary: compressModuleDiscoveryProse(
+            capsule.summary,
+            `capsule-summary-${capsule.id}`,
+          ),
+          focus: compressModuleDiscoveryProse(
+            capsule.teaching_goal,
+            `capsule-focus-${capsule.id}`,
+          ),
           representative_file: representativeFile,
           file_paths: capsule.file_paths.slice(0, 10),
           related_file_paths: [],

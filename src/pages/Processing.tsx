@@ -22,12 +22,13 @@ import type {
 import { enrichManifestWithCode, generatePlaceholderCode } from "@/lib/enrichManifestWithCode";
 import { parseRepoContent } from "@/lib/parseRepoContent";
 import { generateAllSceneAudio } from "@/lib/googleTTS";
-import { supabase } from "@/lib/supabase";
 import {
-  GRAPH_BUCKET,
   graphArtifactPrefix,
   graphCsvObjectKey,
   graphJsonObjectKey,
+  uploadGraphCsv,
+  uploadGraphJson,
+  uploadSceneAudio,
 } from "@/lib/storage";
 import {
   buildGraphTutorialBlueprint,
@@ -56,6 +57,7 @@ import {
   executeGenerationPlan,
   mergeChapterManifests,
 } from "@/lib/videoPipelineEpic";
+import { getLaymanCompressionInstrumentationReport } from "@/lib/laymanCompressionPolicy";
 import iconUrl from "../../icon.png";
 
 const phase1Steps = [
@@ -184,6 +186,16 @@ const Processing = () => {
     console.log(`[PROCESSING] ${message}`);
   }, []);
 
+  const logLaymanCompressionStatus = useCallback(() => {
+    const report = getLaymanCompressionInstrumentationReport();
+    if (report.totalEvents <= 0) return;
+    const skipped = Object.values(report.byContext).reduce((sum, bucket) => sum + bucket.skipped, 0);
+    const validated = Math.max(0, report.totalEvents - skipped);
+    addLog(
+      `Layman context trim active: saved ${report.totalSavedTokens} tokens (${validated} validated, ${skipped} skipped).`,
+    );
+  }, [addLog]);
+
   const searchParams = useMemo(
     () => new URLSearchParams(location.search),
     [location.search]
@@ -266,16 +278,16 @@ const Processing = () => {
 
     const runProcessing = async () => {
       // Note: Processing can work without auth, but projects won't be saved to DB
-      if (!user?.id) {
+      if (!user?.uid) {
         addLog("INFO: Not authenticated - project will not be saved to database");
         addLog("  → Sign in to save projects and access Studio");
       }
 
-      // Create project in Supabase
+      // Create project in Firestore
       let currentProjectId: string | null = null;
 
       // Try to create project in database (only if authenticated)
-      if (user?.id) {
+      if (user?.uid) {
         // Verify database connection first
         try {
           addLog("Checking database connection...");
@@ -286,9 +298,8 @@ const Processing = () => {
           addLog("✓ Database connection verified");
         } catch (checkError: any) {
           addLog(`WARNING: Database check failed: ${checkError.message}`);
-          addLog(`  → This might mean the 'projects' table doesn't exist yet`);
-          addLog(`  → Please run the SQL schema from supabase-schema.sql in Supabase Dashboard`);
-          addLog(`  → See DATABASE_SETUP.md for instructions`);
+          addLog(`  → Deploy Firestore rules and indexes (see FIREBASE_SETUP.md)`);
+          addLog(`  → Run: npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes`);
           addLog(`  → Continuing without database save...`);
         }
         try {
@@ -297,12 +308,12 @@ const Processing = () => {
           if (requestedProjectId) {
             existingProject = await projectsService.getById(
               requestedProjectId,
-              user.id
+              user.uid
             );
           }
 
           if (!existingProject && repoUrl) {
-            existingProject = await projectsService.getByRepoUrl(repoUrl, user.id);
+            existingProject = await projectsService.getByRepoUrl(repoUrl, user.uid);
           }
 
           if (
@@ -335,14 +346,14 @@ const Processing = () => {
               )}...`
             );
 
-            await projectsService.update(existingProject.id, user.id, {
+            await projectsService.update(existingProject.id, user.uid, {
               status: "processing",
               title: `${repoName} - Video Walkthrough`,
             });
           } else {
             addLog("Creating project in database...");
             const project = await projectsService.create({
-              user_id: user.id,
+              user_id: user.uid,
               repo_url: repoUrl,
               repo_name: repoName,
               title: `${repoName} - Video Walkthrough`,
@@ -370,14 +381,13 @@ const Processing = () => {
             addLog(`  Hint: ${errorHint}`);
           }
 
-          // Check for common issues and provide helpful messages
-          if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
-            addLog(`  → SOLUTION: Run the SQL schema in Supabase Dashboard`);
-            addLog(`  → File: supabase-schema.sql`);
-          } else if (errorMessage.includes('permission denied') || errorMessage.includes('RLS') || errorMessage.includes('policy')) {
-            addLog(`  → SOLUTION: Check Row Level Security policies`);
-            addLog(`  → Make sure RLS policies are created (see supabase-schema.sql)`);
-          } else if (errorMessage.includes('JWT') || errorMessage.includes('token') || errorMessage.includes('auth')) {
+          if (errorMessage.includes("permission") || errorCode === "permission-denied") {
+            addLog(`  → SOLUTION: Deploy Firestore rules and confirm you are signed in`);
+            addLog(`  → See FIREBASE_SETUP.md`);
+          } else if (errorMessage.includes("index") || errorCode === "failed-precondition") {
+            addLog(`  → SOLUTION: Deploy Firestore composite indexes`);
+            addLog(`  → Run: npx -y firebase-tools@latest deploy --only firestore:indexes`);
+          } else if (errorMessage.includes("JWT") || errorMessage.includes("token") || errorMessage.includes("auth")) {
             addLog(`  → SOLUTION: Authentication issue - please sign in again`);
           } else if (errorMessage.includes('null value') || errorMessage.includes('violates')) {
             addLog(`  → SOLUTION: Check that all required fields are provided`);
@@ -578,10 +588,10 @@ const Processing = () => {
         }
 
         // Save Phase 1 completion to database (optional - only if columns exist)
-        if (currentProjectId && user?.id && payload.content && payload.stats) {
+        if (currentProjectId && user?.uid && payload.content && payload.stats) {
           try {
             // Try to save Phase 1 data, but don't fail if columns don't exist
-            await projectsService.update(currentProjectId, user.id, {
+            await projectsService.update(currentProjectId, user.uid, {
               repo_content: payload.content,
               ingestion_stats: {
                 includedFiles: payload.stats.includedFiles || 0,
@@ -600,7 +610,7 @@ const Processing = () => {
             if (error?.code === 'PGRST204' || error?.message?.includes('column')) {
               try {
                 // Fallback: only update basic fields
-                await projectsService.update(currentProjectId, user.id, {
+                await projectsService.update(currentProjectId, user.uid, {
                   status: 'processing',
                 });
                 addLog("✓ Project status updated (some fields not available)");
@@ -683,12 +693,13 @@ const Processing = () => {
         let ingestGraphData = payload?.graphData ?? null;
         setGraphData(ingestGraphData);
 
-        if (ingestGraphData?.codegraph && currentProjectId && user?.id) {
+        if (ingestGraphData?.codegraph && currentProjectId && user?.uid) {
           try {
             const uploadedAt = new Date().toISOString();
-            const jsonKey = graphJsonObjectKey(currentProjectId);
-            const csvKey = graphCsvObjectKey(currentProjectId);
-            const prefix = graphArtifactPrefix(currentProjectId);
+            const uid = user.uid;
+            const jsonKey = graphJsonObjectKey(uid, currentProjectId);
+            const csvKey = graphCsvObjectKey(uid, currentProjectId);
+            const prefix = graphArtifactPrefix(uid, currentProjectId);
 
             const jsonBlob = new Blob([JSON.stringify(ingestGraphData.codegraph, null, 2)], {
               type: "application/json",
@@ -700,19 +711,10 @@ const Processing = () => {
               }
             );
 
-            const [jsonUpload, csvUpload] = await Promise.all([
-              supabase.storage.from(GRAPH_BUCKET).upload(jsonKey, jsonBlob, {
-                contentType: "application/json",
-                upsert: true,
-              }),
-              supabase.storage.from(GRAPH_BUCKET).upload(csvKey, csvBlob, {
-                contentType: "text/csv",
-                upsert: true,
-              }),
+            await Promise.all([
+              uploadGraphJson(uid, currentProjectId, jsonBlob),
+              uploadGraphCsv(uid, currentProjectId, csvBlob),
             ]);
-
-            if (jsonUpload.error) throw jsonUpload.error;
-            if (csvUpload.error) throw csvUpload.error;
 
             ingestGraphData = {
               ...ingestGraphData,
@@ -728,9 +730,9 @@ const Processing = () => {
             };
 
             setGraphData(ingestGraphData);
-            addLog("✓ Stored code graph artifacts in Supabase storage");
+            addLog("✓ Stored code graph artifacts in Firebase Storage");
 
-            await projectsService.update(currentProjectId, user.id, {
+            await projectsService.update(currentProjectId, user.uid, {
               graph_data: ingestGraphData,
               graph_storage_path: prefix,
               graph_created_at: uploadedAt,
@@ -851,9 +853,9 @@ const Processing = () => {
           setPhase1Status("error");
           setProgress(0);
           // Update project status to error
-          if (currentProjectId && user?.id) {
+          if (currentProjectId && user?.uid) {
             try {
-              await projectsService.update(currentProjectId, user.id, { status: 'error' });
+              await projectsService.update(currentProjectId, user.uid, { status: 'error' });
             } catch (err) {
               console.error('Failed to update project status:', err);
             }
@@ -866,9 +868,9 @@ const Processing = () => {
         addLog("A placeholder video would be misleading, so this run is marked as failed instead.");
         setPhase1Status("error");
         setProgress(0);
-        if (currentProjectId && user?.id) {
+        if (currentProjectId && user?.uid) {
           try {
-            await projectsService.update(currentProjectId, user.id, { status: 'error' });
+            await projectsService.update(currentProjectId, user.uid, { status: 'error' });
           } catch (err) {
             console.error('Failed to update project status:', err);
           }
@@ -901,10 +903,10 @@ const Processing = () => {
         repoContent = sessionStorage.getItem("repo-content") || "";
 
         // If still empty and we have a project ID, try fetching from database
-        if (!repoContent && currentProjectId && user?.id) {
+        if (!repoContent && currentProjectId && user?.uid) {
           try {
             addLog("Loading repository content from database...");
-            const project = await projectsService.getById(currentProjectId, user.id);
+            const project = await projectsService.getById(currentProjectId, user.uid);
             if (project?.repo_content) {
               repoContent = project.repo_content;
               addLog("✓ Loaded content from database");
@@ -922,9 +924,9 @@ const Processing = () => {
         addLog("Stopping before manifest generation because an empty evidence bundle would create a low-quality video.");
         setPhase2Status("error");
         setProgress(60);
-        if (currentProjectId && user?.id) {
+        if (currentProjectId && user?.uid) {
           try {
-            await projectsService.update(currentProjectId, user.id, { status: 'error' });
+            await projectsService.update(currentProjectId, user.uid, { status: 'error' });
           } catch (err) {
             console.error('Failed to update project status:', err);
           }
@@ -1112,6 +1114,7 @@ const Processing = () => {
         addLog(`Total scenes created: ${manifestWithCode.scenes.length}`);
         const totalDuration = manifestWithCode.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
         addLog(`Estimated video duration: ${Math.floor(totalDuration / 60)}:${(totalDuration % 60).toString().padStart(2, '0')}`);
+        logLaymanCompressionStatus();
         setManifestSnapshot({
           sceneCount: manifestWithCode.scenes.length,
           totalDurationSeconds: totalDuration,
@@ -1125,7 +1128,7 @@ const Processing = () => {
           topWarning: manifestWithCode.quality_report?.warnings[0],
         });
 
-        // TTS + upload audio to Supabase Storage (per-user cache for /v and Studio)
+        // TTS + upload audio to Firebase Storage (per-user cache for /v and Studio)
         const readyForTts = manifestWithCode.quality_report?.ready_for_tts !== false;
         if (!readyForTts) {
           addLog("Skipping TTS because the quality gate did not pass.");
@@ -1134,7 +1137,7 @@ const Processing = () => {
           });
         }
 
-        if (GOOGLE_TTS_ENABLED && readyForTts && currentProjectId && user?.id && !cancelled) {
+        if (GOOGLE_TTS_ENABLED && readyForTts && currentProjectId && user?.uid && !cancelled) {
           addLog("Generating voice and uploading to storage...");
           try {
             const { audioUrls: genUrls } = await generateAllSceneAudio(manifestWithCode.scenes, "en-US-Standard-D");
@@ -1145,16 +1148,10 @@ const Processing = () => {
                 const res = await fetch(blobUrl);
                 const blob = await res.blob();
                 URL.revokeObjectURL(blobUrl);
-                const path = `${currentProjectId}/${sceneId}.mp3`;
-                const { error } = await supabase.storage.from("project-audio").upload(path, blob, { contentType: "audio/mpeg", upsert: true });
-                if (error) {
-                  addLog(`Warning: could not upload audio scene ${sceneId}: ${error.message}`);
-                  continue;
-                }
-                const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
+                const audioUrl = await uploadSceneAudio(user.uid, currentProjectId, sceneId, blob);
                 const scene = manifestWithCode.scenes.find((s) => s.id === sceneId);
                 if (scene) {
-                  scene.audioUrl = data.publicUrl;
+                  scene.audioUrl = audioUrl;
                   uploaded++;
                 }
               } catch (e) {
@@ -1185,12 +1182,12 @@ const Processing = () => {
           };
         }
 
-        // Save to Supabase
-        if (currentProjectId && user?.id) {
+        // Save to Firestore
+        if (currentProjectId && user?.uid) {
           addLog("Saving manifest to database...");
           try {
             // First try with all fields including optional ones
-            await projectsService.update(currentProjectId, user.id, {
+            await projectsService.update(currentProjectId, user.uid, {
               status: 'ready',
               manifest: manifestWithCode,
               duration_seconds: totalDuration,
@@ -1209,7 +1206,7 @@ const Processing = () => {
               addLog("Attempting to save without optional fields...", "info");
               try {
                 // Fallback: only update essential fields
-                await projectsService.update(currentProjectId, user.id, {
+                await projectsService.update(currentProjectId, user.uid, {
                   status: 'ready',
                   manifest: manifestWithCode,
                   duration_seconds: totalDuration,
@@ -1315,7 +1312,7 @@ const Processing = () => {
     repoUrl,
     retryKey,
     requestedProjectId,
-    user?.id,
+    user?.uid,
   ]);
 
   // -- Epic flow: build intelligence after Phase 1 completes (in epic mode)
@@ -1435,13 +1432,13 @@ const Processing = () => {
         } catch { /* non-fatal */ }
 
         // Save to DB
-        if (projectIdRef.current && user?.id) {
+        if (projectIdRef.current && user?.uid) {
           try {
             const totalDuration = merged.scenes.reduce(
               (sum, s) => sum + (s.duration_seconds || 15),
               0
             );
-            await projectsService.update(projectIdRef.current, user.id, {
+            await projectsService.update(projectIdRef.current, user.uid, {
               status: "ready",
               manifest: merged,
               duration_seconds: totalDuration,
@@ -1466,7 +1463,7 @@ const Processing = () => {
       addLog(`ERROR: Generation failed: ${err instanceof Error ? err.message : "unknown"}`);
       setEpicPhase("error");
     }
-  }, [repoIntelligence, projectId, repoUrl, repoName, graphData, user?.id, addLog]);
+  }, [repoIntelligence, projectId, repoUrl, repoName, graphData, user?.uid, addLog]);
 
   // -- Navigate to Studio (epic flow)
   const handleGoToStudio = useCallback(() => {

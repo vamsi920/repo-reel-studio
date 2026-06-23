@@ -37,8 +37,8 @@ export const Navbar = () => {
   const { user, isAuthenticated, isLoading, signOut } = useAuth();
 
   const userEmail = user?.email || "";
-  const userName = user?.user_metadata?.full_name || "";
-  const userAvatar = user?.user_metadata?.avatar_url || "";
+  const userName = user?.displayName || "";
+  const userAvatar = user?.photoURL || "";
   const isHome = location.pathname === "/";
 
   const handleSignOut = async () => {

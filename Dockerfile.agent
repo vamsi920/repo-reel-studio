@@ -1,0 +1,28 @@
+# Python Agent Ops API — ECS / AWS deployment
+FROM python:3.12-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY server/requirements.txt ./server/requirements.txt
+RUN python -m pip install --no-cache-dir -r server/requirements.txt
+
+COPY server/ ./server/
+
+RUN mkdir -p /data/agent-runs /data/proactive
+
+COPY scripts/docker-agent-entrypoint.sh /usr/local/bin/docker-agent-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-agent-entrypoint.sh
+
+ENV AGENT_API_PORT=8788
+ENV PROACTIVE_STORE_ROOT=/data/proactive
+
+EXPOSE 8788
+
+WORKDIR /app/server
+
+ENTRYPOINT ["/usr/local/bin/docker-agent-entrypoint.sh"]
+CMD ["python", "-m", "uvicorn", "agent_runs_app:app", "--host", "0.0.0.0", "--port", "8788"]

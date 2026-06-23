@@ -15,8 +15,13 @@
     --popover: 226 24% 23%;
     --popover-foreground: 222 57% 92%;
 
-    --primary: 224 100% 85%;
-    --primary-foreground: 220 100% 23%;
+    /* Instrument cyan HUD: bright cyan fill, dark ink text */
+    --primary: 192 100% 56%;
+    --primary-foreground: 200 80% 9%;
+    --primary-300: 192 100% 70%;
+    --primary-400: 192 100% 56%;
+    --primary-500: 192 95% 48%;
+    --primary-600: 192 90% 40%;
 
     --secondary: 212 32% 80%;
     --secondary-foreground: 211 35% 20%;
@@ -27,34 +32,43 @@
     --accent: 174 59% 63%;
     --accent-foreground: 168 100% 11%;
 
-    --destructive: 6 100% 84%;
-    --destructive-foreground: 0 100% 21%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 223 14% 33%;
+    --border: 223 14% 30%;
     --input: 226 24% 23%;
-    --ring: 224 100% 85%;
+    --ring: 192 100% 56%;
 
     --radius: 0.5rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
 
-    --glow-primary: 224 100% 85%;
+    --glow-primary: 192 100% 56%;
     --glow-secondary: 174 59% 63%;
     --surface-elevated: 224 37% 15%;
     --surface-overlay: 222 20% 22%;
     --text-primary: 222 57% 92%;
     --text-secondary: 223 17% 80%;
     --text-tertiary: 223 10% 63%;
-    --success: 174 59% 63%;
-    --warning: 38 92% 60%;
+    --success: 142 71% 45%;
+    --success-500: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --warning-500: 38 92% 50%;
+    --error-500: 0 72% 58%;
     --processing: 174 59% 63%;
+    --primary-bg-subtle: 192 100% 56% / 0.12;
+    --success-bg-subtle: 142 71% 45% / 0.12;
+    --warning-bg-subtle: 38 92% 50% / 0.12;
+    --error-bg-subtle: 0 72% 58% / 0.12;
 
     --sidebar-background: 221 40% 13%;
     --sidebar-foreground: 222 57% 92%;
-    --sidebar-primary: 224 100% 85%;
-    --sidebar-primary-foreground: 217 100% 24%;
+    --sidebar-primary: 192 100% 56%;
+    --sidebar-primary-foreground: 200 80% 9%;
     --sidebar-accent: 224 37% 15%;
     --sidebar-accent-foreground: 222 57% 92%;
     --sidebar-border: 223 14% 26%;
-    --sidebar-ring: 224 100% 85%;
+    --sidebar-ring: 192 100% 56%;
   }
 
   .dark {
@@ -64,27 +78,27 @@
     --card-foreground: 222 57% 92%;
     --popover: 226 24% 23%;
     --popover-foreground: 222 57% 92%;
-    --primary: 224 100% 85%;
-    --primary-foreground: 217 100% 24%;
+    --primary: 192 100% 56%;
+    --primary-foreground: 200 80% 9%;
     --secondary: 212 32% 80%;
     --secondary-foreground: 211 35% 20%;
     --muted: 224 31% 19%;
     --muted-foreground: 222 17% 80%;
     --accent: 174 59% 63%;
     --accent-foreground: 168 100% 11%;
-    --destructive: 6 100% 84%;
-    --destructive-foreground: 0 100% 21%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 98%;
     --border: 223 14% 26%;
     --input: 226 24% 23%;
-    --ring: 224 100% 85%;
+    --ring: 192 100% 56%;
     --sidebar-background: 221 40% 13%;
     --sidebar-foreground: 222 57% 92%;
-    --sidebar-primary: 224 100% 85%;
-    --sidebar-primary-foreground: 217 100% 24%;
+    --sidebar-primary: 192 100% 56%;
+    --sidebar-primary-foreground: 200 80% 9%;
     --sidebar-accent: 224 37% 15%;
     --sidebar-accent-foreground: 222 57% 92%;
     --sidebar-border: 223 14% 26%;
-    --sidebar-ring: 224 100% 85%;
+    --sidebar-ring: 192 100% 56%;
   }
 }
 
@@ -109,8 +123,14 @@
   }
 
   ::selection {
-    background: rgba(97, 139, 255, 0.28);
-    color: rgba(218, 226, 253, 0.98);
+    background: hsl(var(--primary) / 0.30);
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   h1, h2, h3, h4, h5, h6, .font-headline {
@@ -119,6 +139,11 @@
 
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(65, 71, 85, 0.78) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -134,6 +159,53 @@
     background: rgba(65, 71, 85, 0.78);
     border-radius: 999px;
   }
+}
+
+@layer utilities {
+  /* Mono eyebrow / micro-label */
+  .ame-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: hsl(var(--primary));
+  }
+
+  /* Status pip */
+  .ame-pip {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+    vertical-align: middle;
+  }
+  .ame-pip-success { background: hsl(var(--success)); box-shadow: 0 0 0 3px hsl(var(--success) / 0.12); }
+  .ame-pip-warning { background: hsl(var(--warning)); box-shadow: 0 0 0 3px hsl(var(--warning) / 0.12); }
+  .ame-pip-error   { background: hsl(var(--destructive)); box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.12); }
+  .ame-pip.live { animation: ame-pip-pulse 1.8s ease-in-out infinite; }
+
+  /* Corner-tick instrument framing */
+  .instrument-panel { position: relative; }
+  .instrument-panel::before,
+  .instrument-panel::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+    border: 0 solid hsl(var(--primary));
+    opacity: 0.9;
+  }
+  .instrument-panel::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+  .instrument-panel::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+}
+
+@keyframes ame-pip-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
 }
 
 @layer utilities {

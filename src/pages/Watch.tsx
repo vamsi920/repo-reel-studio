@@ -22,13 +22,13 @@ const Watch = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!videoId || !user?.id) {
+    if (!videoId || !user?.uid) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     projectsService
-      .getById(videoId, user.id)
+      .getById(videoId, user.uid)
       .then((p) => {
         if (!cancelled) setProject(p);
       })
@@ -39,7 +39,7 @@ const Watch = () => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [videoId, user?.id]);
+  }, [videoId, user?.uid]);
 
   const audioMap = useMemo(() => {
     if (!project?.manifest?.scenes) return new Map<number, string>();

@@ -6,11 +6,24 @@ import { execFile } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { createHash } from "crypto";
 import { Readable } from "stream";
 import { x as tarExtract } from "tar";
 import { promisify } from "util";
 import { fileURLToPath } from "url";
 import { buildCodeGraph } from './code-graph-rag.mjs';
+import {
+  buildLocalIngestionHealth,
+  buildProxyIngestionHealth,
+} from "./agent_ops_health.mjs";
+import {
+  coerceProactiveUpstreamBody,
+  createProactiveLocalStore,
+  proactiveProxyUnreachableResponse,
+  proactiveWriteBlockedResponse,
+  structuredProactiveDetail,
+  validateProactiveRepoUrl,
+} from "./proactive_node_shim.mjs";
 
 
 const execFileAsync = promisify(execFile);
@@ -40,7 +53,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration - allow specific origins (dev + production)
+// CORS configuration — allow specific origins (dev + production).
+// AWS: set CORS_ORIGINS on the Node ECS task (comma-separated), e.g.
+//   https://app.example.com,https://d123.cloudfront.net
 const BASE_ORIGINS = [
   'https://gitflick.netlify.app',
   'http://localhost:5173',
@@ -147,35 +162,32 @@ app.get("/", (_req, res) => {
 // Health check endpoint — probes Python Agent Ops when AGENT_RUNS_PROXY_URL is set
 app.get("/api/health", async (_req, res) => {
   const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
-  let agentReachable = null;
-  if (base) {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 2500);
-    try {
-      const r = await fetch(`${base}/api/health-agent`, { signal: ctrl.signal });
-      agentReachable = r.ok;
-    } catch {
-      agentReachable = false;
-    } finally {
-      clearTimeout(tid);
-    }
+  if (!base) {
+    return res.status(200).json(buildLocalIngestionHealth());
   }
 
-  res.status(200).json({
-    status: "ok",
-    service: "repo-ingestion-server",
-    ingestionMode: "fast-node",
-    timestamp: new Date().toISOString(),
-    agentRuns: {
-      mode: base ? "proxy" : "local-read-only",
-      proxyBase: base || null,
-      agentReachable,
-    },
-  });
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 2500);
+  let agentReachable = false;
+  let upstream = null;
+  try {
+    const response = await fetch(`${base}/api/health-agent`, { signal: ctrl.signal });
+    agentReachable = response.ok;
+    if (response.ok) {
+      upstream = await response.json();
+    }
+  } catch {
+    agentReachable = false;
+  } finally {
+    clearTimeout(tid);
+  }
+
+  return res.status(200).json(buildProxyIngestionHealth(base, upstream, agentReachable));
 });
 
 /** Read runs written by Python `server/agent_runs.py` (same `server/.agent-runs` layout). */
 const AGENT_RUNS_STORE = path.join(__dirname, ".agent-runs");
+const PROACTIVE_STORE = path.join(__dirname, ".proactive-agent-ops");
 
 function listRunsFromDisk(repoUrl, projectId, limit) {
   if (!fs.existsSync(AGENT_RUNS_STORE)) return [];
@@ -229,7 +241,24 @@ function readRunFromDisk(runId) {
   }
 }
 
-async function forwardAgentRunsToUpstream(req, res, baseUrl) {
+const proactiveLocal = createProactiveLocalStore({
+  storeRoot: PROACTIVE_STORE,
+  readRunFromDisk,
+});
+
+function getScopedRepoUrl(source) {
+  return typeof source?.repoUrl === "string" ? source.repoUrl.trim() : "";
+}
+
+function getScopedProjectId(source) {
+  return typeof source?.projectId === "string" && source.projectId.trim() ? source.projectId.trim() : null;
+}
+
+function sendProactiveValidationError(res, validation) {
+  return res.status(validation.statusCode).json({ detail: validation.detail });
+}
+
+async function forwardAgentOpsToUpstream(req, res, baseUrl, label) {
   try {
     const target = `${baseUrl}${req.originalUrl}`;
     const headers = new Headers();
@@ -254,7 +283,9 @@ async function forwardAgentRunsToUpstream(req, res, baseUrl) {
 
     if (ct && ct.includes("application/json")) {
       try {
-        return res.status(upstream.status).type("application/json").send(JSON.parse(bodyText));
+        const parsed = JSON.parse(bodyText);
+        const body = label === "proactive" ? coerceProactiveUpstreamBody(parsed, upstream.status) : parsed;
+        return res.status(upstream.status).json(body);
       } catch {
         return res.status(upstream.status).type(ct || "text/plain").send(bodyText);
       }
@@ -263,7 +294,10 @@ async function forwardAgentRunsToUpstream(req, res, baseUrl) {
     if (ct) res.setHeader("Content-Type", ct);
     return res.status(upstream.status).send(bodyText);
   } catch (err) {
-    console.error("[agent-runs] proxy error:", err);
+    console.error(`[${label}] proxy error:`, err);
+    if (label === "proactive") {
+      return res.status(503).json(proactiveProxyUnreachableResponse(baseUrl, err));
+    }
     return res.status(503).json({
       error: "Agent Ops backend unreachable",
       detail: err instanceof Error ? err.message : String(err),
@@ -279,7 +313,7 @@ app.use(async (req, res, next) => {
 
   const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
   if (base) {
-    return forwardAgentRunsToUpstream(req, res, base);
+    return forwardAgentOpsToUpstream(req, res, base, "agent-runs");
   }
 
   const prefix = "/api/agent-runs";
@@ -326,6 +360,90 @@ app.use(async (req, res, next) => {
   }
 
   return res.status(404).json({ detail: "Not found" });
+});
+
+app.use(async (req, res, next) => {
+  if (!req.path.startsWith("/api/proactive")) return next();
+
+  const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
+  if (base) {
+    return forwardAgentOpsToUpstream(req, res, base, "proactive");
+  }
+
+  const prefix = "/api/proactive";
+  const suffix = req.path.length > prefix.length ? req.path.slice(prefix.length) : "";
+  const method = req.method;
+
+  if (suffix === "/config") {
+    if (method === "GET") {
+      const validated = validateProactiveRepoUrl(getScopedRepoUrl(req.query));
+      if (!validated.ok) return sendProactiveValidationError(res, validated);
+      return res.json({
+        config: proactiveLocal.getLocalProactiveConfig(validated.value, getScopedProjectId(req.query)),
+      });
+    }
+    if (method === "POST") {
+      const validated = validateProactiveRepoUrl(getScopedRepoUrl(req.body));
+      if (!validated.ok) return sendProactiveValidationError(res, validated);
+      return res.json({
+        config: proactiveLocal.updateLocalProactiveConfig(
+          validated.value,
+          getScopedProjectId(req.body),
+          req.body ?? {},
+        ),
+      });
+    }
+  }
+
+  if (suffix === "/status" && method === "GET") {
+    const validated = validateProactiveRepoUrl(getScopedRepoUrl(req.query));
+    if (!validated.ok) return sendProactiveValidationError(res, validated);
+    return res.json(proactiveLocal.summarizeLocalProactiveStatus(validated.value, getScopedProjectId(req.query)));
+  }
+
+  if (suffix === "/candidates" && method === "GET") {
+    const validated = validateProactiveRepoUrl(getScopedRepoUrl(req.query));
+    if (!validated.ok) return sendProactiveValidationError(res, validated);
+    const batchId = typeof req.query.batchId === "string" && req.query.batchId.trim() ? req.query.batchId.trim() : null;
+    const includeDismissed = String(req.query.includeDismissed || "").toLowerCase() === "true";
+    return res.json({
+      candidates: proactiveLocal
+        .listLocalProactiveCandidates(
+          validated.value,
+          getScopedProjectId(req.query),
+          batchId,
+          includeDismissed,
+          100,
+        )
+        .map((item) => proactiveLocal.enrichLocalProactiveCandidate(item)),
+    });
+  }
+
+  const proactiveCandidateGet = suffix.match(/^\/candidates\/([^/]+)$/);
+  if (proactiveCandidateGet && method === "GET") {
+    const candidate = proactiveLocal.findLocalProactiveCandidate(proactiveCandidateGet[1]);
+    if (!candidate) {
+      return res.status(404).json({
+        detail: structuredProactiveDetail("Candidate not found", "candidate_not_found"),
+      });
+    }
+    return res.json({ candidate: proactiveLocal.enrichLocalProactiveCandidate(candidate) });
+  }
+
+  if (suffix === "/dispatch-daily" && method === "POST") {
+    const validated = validateProactiveRepoUrl(getScopedRepoUrl(req.body));
+    if (!validated.ok) return sendProactiveValidationError(res, validated);
+    return res.status(503).json(proactiveWriteBlockedResponse("dispatch"));
+  }
+
+  const proactiveAction = suffix.match(/^\/candidates\/([^/]+)\/(approve|dismiss)$/);
+  if (proactiveAction && method === "POST") {
+    return res.status(503).json(proactiveWriteBlockedResponse("candidateAction"));
+  }
+
+  return res.status(404).json({
+    detail: structuredProactiveDetail("Not found", "not_found"),
+  });
 });
 
 app.post("/api/tts", async (req, res) => {

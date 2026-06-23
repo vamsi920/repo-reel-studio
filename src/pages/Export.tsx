@@ -37,9 +37,9 @@ const Export = () => {
       // Try to load from Supabase first
       const projectId = searchParams.get('project') || sessionStorage.getItem('project-id');
       
-      if (projectId && user?.id) {
+      if (projectId && user?.uid) {
         try {
-          const project = await projectsService.getById(projectId, user.id);
+          const project = await projectsService.getById(projectId, user.uid);
           if (project && project.manifest && project.status === 'ready') {
             setManifest(project.manifest as VideoManifest);
             setRepoUrl(project.repo_url);
@@ -70,7 +70,7 @@ const Export = () => {
     };
 
     loadManifest();
-  }, [searchParams, user?.id]);
+  }, [searchParams, user?.uid]);
 
   const repoName = (() => {
     try {

@@ -23,6 +23,21 @@ const PROOF_ITEMS = [
   },
 ] as const;
 
+const EFFICIENCY_ROW = [
+  {
+    title: "Code Graph RAG",
+    detail: "Finds relevant context before prompt assembly.",
+  },
+  {
+    title: "Layman compression",
+    detail: "Trims prompt noise while keeping evidence anchors intact.",
+  },
+  {
+    title: "Review-gated Agent Ops",
+    detail: "Runs automation in sandboxed lanes with human approval.",
+  },
+] as const;
+
 export const SocialProof = () => {
   return (
     <section className="border-y border-slate-200 bg-white/80 py-10">
@@ -35,6 +50,9 @@ export const SocialProof = () => {
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
               One indexed repository, four practical ways to review it
             </h2>
+            <p className="mt-2 text-sm font-medium text-slate-700">
+              Agent-grade repo automation. Clearer review. Lower token waste.
+            </p>
           </div>
           <p className="max-w-xl text-sm leading-6 text-slate-600">
             GitFlick is not just a video generator. It is a repository workspace that keeps walkthroughs,
@@ -55,6 +73,17 @@ export const SocialProof = () => {
               <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5">
+          <div className="grid gap-3 md:grid-cols-3">
+            {EFFICIENCY_ROW.map((item) => (
+              <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                <p className="mt-1 text-xs leading-5 text-slate-600">{item.detail}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -1,5 +1,5 @@
--- GitFlick Database Schema
--- Run this in your Supabase SQL Editor to create the tables
+-- DEPRECATED: This schema was for Supabase Postgres. GitFlick now uses Firebase Firestore.
+-- See FIREBASE_SETUP.md and firestore.rules. Kept for reference only.
 
 -- Projects table
 CREATE TABLE IF NOT EXISTS projects (

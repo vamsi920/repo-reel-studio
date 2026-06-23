@@ -1,4 +1,6 @@
-import { GEMINI_API_BASE, GEMINI_API_KEY, GEMINI_MODEL } from "@/env";
+import { GEMINI_API_BASE, GEMINI_API_KEY, GEMINI_MODEL, LAYMAN_PROMPT_DEBUG } from "@/env";
+import { estimateTokens, type LaymanBriefMode } from "@/lib/laymanCompressionCore";
+import { compressForPromptWithPolicy, recordLaymanCompressionRollback } from "@/lib/laymanCompressionPolicy";
 import {
   buildRepoEvidenceBundle,
   buildSceneSourceRefs,
@@ -122,6 +124,50 @@ interface SceneWriterResponse {
     on_screen_focus?: string[];
   }>;
 }
+
+const compressVideoPromptProse = (
+  label: string,
+  text: string,
+  mode: LaymanBriefMode = "lite",
+): string => {
+  const result = compressForPromptWithPolicy({
+    context: "video_prose_context",
+    path: `/video-prompts/${label}.md`,
+    text,
+    mode,
+    minSavedTokens: 2,
+  });
+  if (LAYMAN_PROMPT_DEBUG) {
+    console.debug(
+      JSON.stringify({
+        event: "layman_prompt_compression",
+        label,
+        mode,
+        usedCompression: result.usedCompression,
+        fallbackReason: result.fallbackReason,
+        originalTokens: result.metrics.originalTokens,
+        compressedTokens: result.metrics.compressedTokens,
+        savedTokens: result.metrics.savedTokens,
+      }),
+    );
+  }
+  return result.text;
+};
+
+const buildVideoGenerationProfileContext = (
+  kind: "master" | "module",
+  moduleTitle?: string,
+): string => {
+  const profileProse =
+    kind === "module"
+      ? `Focused module walkthrough for ${moduleTitle || "the selected module"}. Keep the story tight to the subsystem boundary, and avoid broad repo coverage unless it directly explains this module.`
+      : "Master walkthrough across the full repository. Keep the flow expansive and documentary, with complete explanations instead of short summaries.";
+  return compressVideoPromptProse(
+    `video-generation-profile-${kind}-${moduleTitle || "default"}`,
+    profileProse,
+    "lite",
+  );
+};
 
 export interface VideoGenerationOptions {
   kind?: "master" | "module";
@@ -520,18 +566,38 @@ const orderConcepts = async (
     };
   }
 
+  const compressedArchitectureHint = architecture
+    ? compressVideoPromptProse("order-concepts-architecture", architecture, "lite")
+    : "Unknown";
+  const compressedVideoProfileContext = buildVideoGenerationProfileContext(kind, moduleTitle);
+  const promptConcepts = concepts.map((concept) => ({
+    id: concept.id,
+    kind: concept.kind,
+    phase: concept.phase,
+    title: concept.title,
+    summary: compressVideoPromptProse(
+      `order-concepts-summary-${concept.id}`,
+      concept.summary,
+      "lite",
+    ),
+    viewer_goal: compressVideoPromptProse(
+      `order-concepts-goal-${concept.id}`,
+      concept.viewerGoal,
+      "lite",
+    ),
+    primary_files: concept.primaryFiles.map(humanizeFileLabel),
+  }));
+
   const prompt = `You are planning the teaching arc for a repository walkthrough video.
 
 Repository: ${repoName}
-Architecture hint: ${architecture || "Unknown"}
-Video kind: ${kind === "module" ? `Focused module walkthrough for ${moduleTitle || "the selected module"}` : "Master walkthrough across the full repository"}
+Architecture hint: ${compressedArchitectureHint}
+Video profile context: ${compressedVideoProfileContext}
 
 Rules:
 - You are only seeing high-level concept summaries, not full code.
 - You may reorder concepts, improve titles, and improve teaching goals.
 - Keep the hook first and the conclusion last.
-- If this is a module walkthrough, keep the story tightly focused on one subsystem instead of broad repo coverage.
-- If this is a master walkthrough, make the flow feel expansive and documentary, not brief.
 - Return JSON only.
 
 Schema:
@@ -550,15 +616,7 @@ Schema:
 
 Concepts:
 ${JSON.stringify(
-    concepts.map((concept) => ({
-      id: concept.id,
-      kind: concept.kind,
-      phase: concept.phase,
-      title: concept.title,
-      summary: concept.summary,
-      viewer_goal: concept.viewerGoal,
-      primary_files: concept.primaryFiles.map(humanizeFileLabel),
-    })),
+    promptConcepts,
     null,
     2
   )}`;
@@ -813,20 +871,27 @@ const buildScenePlan = (
 const buildSceneWriterPrompt = (
   repoName: string,
   scene: SceneSpec,
-  evidencePack: Array<{ index: number; ref: SourceRef; excerpt: string }>
-) => `You are writing ONE scene of a repository tutorial video.
+  evidencePack: Array<{ index: number; ref: SourceRef; excerpt: string }>,
+  options: { compress?: boolean } = {}
+) => {
+  const compress = options.compress ?? true;
+  // High-risk prompt intent fields: keep exact to avoid changing required scene instructions/evidence framing.
+  const sceneGoal = scene.sceneGoal;
+  const claim = scene.claim;
+  const videoProfileContext = compress
+    ? buildVideoGenerationProfileContext(scene.generationKind === "module" ? "module" : "master", scene.moduleTitle)
+    : (scene.generationKind === "module"
+        ? `Focused module walkthrough for ${scene.moduleTitle || "the selected module"}. Keep the story tight to the subsystem boundary, and avoid broad repo coverage unless it directly explains this module.`
+        : "Master walkthrough across the full repository. Keep the flow expansive and documentary, with complete explanations instead of short summaries.");
+  return `You are writing ONE scene of a repository tutorial video.
 
 Repository: ${repoName}
 Scene title: ${scene.title}
 Phase: ${scene.phase}
-Scene goal: ${scene.sceneGoal}
+Scene goal: ${sceneGoal}
 Visual kind: ${scene.visualKind}
-Claim: ${scene.claim}
-Video profile: ${
-  scene.generationKind === "module"
-    ? `Focused module walkthrough${scene.moduleTitle ? ` for ${scene.moduleTitle}` : ""}`
-    : "Long-form master walkthrough"
-}
+Claim: ${claim}
+Video profile context: ${videoProfileContext}
 
 Rules:
 - Write 4 to 6 spoken sentences.
@@ -868,17 +933,29 @@ ${JSON.stringify(
   null,
   2
 )}`;
+};
 
 const buildScriptEditorPrompt = (
   repoName: string,
   scene: SceneSpec,
-  draft: SceneWriterResponse
-) => `You are editing one scene of a repository tutorial script.
+  draft: SceneWriterResponse,
+  options: { compress?: boolean } = {}
+) => {
+  const compress = options.compress ?? true;
+  // Keep editor goal exact; this field directly encodes intended user-visible narrative objective.
+  const goal = scene.sceneGoal;
+  const videoProfileContext = compress
+    ? buildVideoGenerationProfileContext(scene.generationKind === "module" ? "module" : "master", scene.moduleTitle)
+    : (scene.generationKind === "module"
+        ? `Focused module walkthrough for ${scene.moduleTitle || "the selected module"}. Keep the story tight to the subsystem boundary, and avoid broad repo coverage unless it directly explains this module.`
+        : "Master walkthrough across the full repository. Keep the flow expansive and documentary, with complete explanations instead of short summaries.");
+  return `You are editing one scene of a repository tutorial script.
 
 Repository: ${repoName}
 Scene: ${scene.title}
-Goal: ${scene.sceneGoal}
+Goal: ${goal}
 Visual kind: ${scene.visualKind}
+Video profile context: ${videoProfileContext}
 
 Rules:
 - Improve clarity, pacing, and layman-friendliness.
@@ -890,6 +967,7 @@ Rules:
 
 Current draft:
 ${JSON.stringify(draft, null, 2)}`;
+};
 
 const fallbackSceneWriter = (scene: SceneSpec): SceneWriterResponse => {
   const sentences = [
@@ -929,12 +1007,28 @@ const writeScene = async (
   }));
 
   try {
-    const raw = await requestGemini(buildSceneWriterPrompt(repoName, scene, evidencePack), 0.3);
-    const parsed = parseGeminiJson<SceneWriterResponse>(raw);
-    if (!parsed.sentences?.length) {
-      throw new Error("Scene writer returned no sentences");
+    const raw = await requestGemini(buildSceneWriterPrompt(repoName, scene, evidencePack, { compress: true }), 0.3);
+    try {
+      const parsed = parseGeminiJson<SceneWriterResponse>(raw);
+      if (!parsed.sentences?.length) {
+        throw new Error("Scene writer returned no sentences");
+      }
+      return parsed;
+    } catch (parseError) {
+      const rollbackPrompt = buildSceneWriterPrompt(repoName, scene, evidencePack, { compress: false });
+      const rawRollback = await requestGemini(rollbackPrompt, 0.3);
+      recordLaymanCompressionRollback({
+        context: "video_prose_context",
+        mode: "full",
+        reason: "rollback_after_schema_parse_failure",
+        originalEstimate: estimateTokens(rollbackPrompt),
+      });
+      const parsedRollback = parseGeminiJson<SceneWriterResponse>(rawRollback);
+      if (!parsedRollback.sentences?.length) {
+        throw parseError;
+      }
+      return parsedRollback;
     }
-    return parsed;
   } catch (error) {
     console.warn(`Scene writer failed for ${scene.title}; using deterministic fallback.`, error);
     return fallbackSceneWriter(scene);
@@ -951,15 +1045,28 @@ const editScene = async (
   }
 
   try {
-    const raw = await requestGemini(buildScriptEditorPrompt(repoName, scene, draft), 0.2);
-    const parsed = parseGeminiJson<SceneWriterResponse>(raw);
-    if (
-      !parsed.sentences?.length ||
-      parsed.sentences.length !== draft.sentences?.length
-    ) {
-      return draft;
+    const raw = await requestGemini(buildScriptEditorPrompt(repoName, scene, draft, { compress: true }), 0.2);
+    try {
+      const parsed = parseGeminiJson<SceneWriterResponse>(raw);
+      if (!parsed.sentences?.length || parsed.sentences.length !== draft.sentences?.length) {
+        throw new Error("Script editor returned invalid sentence structure");
+      }
+      return parsed;
+    } catch (parseError) {
+      const rollbackPrompt = buildScriptEditorPrompt(repoName, scene, draft, { compress: false });
+      const rawRollback = await requestGemini(rollbackPrompt, 0.2);
+      recordLaymanCompressionRollback({
+        context: "video_prose_context",
+        mode: "full",
+        reason: "rollback_after_schema_parse_failure",
+        originalEstimate: estimateTokens(rollbackPrompt),
+      });
+      const parsedRollback = parseGeminiJson<SceneWriterResponse>(rawRollback);
+      if (!parsedRollback.sentences?.length || parsedRollback.sentences.length !== draft.sentences?.length) {
+        throw parseError;
+      }
+      return parsedRollback;
     }
-    return parsed;
   } catch (error) {
     console.warn(`Script editor failed for ${scene.title}; keeping writer draft.`, error);
     return draft;
@@ -1506,4 +1613,16 @@ export const generateManifestWithQualityPipeline = async (
       ],
     },
   };
+};
+
+export const __videoPipelineV2PromptTestables = {
+  buildSceneWriterPrompt: (repoName: string, scene: SceneSpec, evidencePack: any) =>
+    buildSceneWriterPrompt(repoName, scene, evidencePack, { compress: true }),
+  buildScriptEditorPrompt: (repoName: string, scene: SceneSpec, draft: SceneWriterResponse) =>
+    buildScriptEditorPrompt(repoName, scene, draft, { compress: true }),
+};
+
+export const __videoPipelineV2GeminiRollbackTestables = {
+  writeScene,
+  editScene,
 };

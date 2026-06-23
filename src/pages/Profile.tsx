@@ -29,19 +29,12 @@ const Profile = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (user?.user_metadata?.full_name) {
-      setFullName(user.user_metadata.full_name);
+    if (user?.displayName) {
+      setFullName(user.displayName);
     }
   }, [user]);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setIsUpdating(true);
@@ -90,10 +83,17 @@ const Profile = () => {
   }
 
   const userEmail = user.email || '';
-  const userName = user.user_metadata?.full_name || '';
-  const userAvatar = user.user_metadata?.avatar_url || '';
-  const createdAt = user.created_at ? formatDate(user.created_at) : 'Unknown';
-  const provider = user.app_metadata?.provider || 'email';
+  const userName = user.displayName || '';
+  const userAvatar = user.photoURL || '';
+  const createdAt = user.metadata?.creationTime
+    ? formatDate(new Date(user.metadata.creationTime))
+    : 'Unknown';
+  const rawProvider = user.providerData[0]?.providerId || '';
+  const provider = rawProvider.includes('google')
+    ? 'google'
+    : rawProvider.includes('github')
+      ? 'github'
+      : 'email';
   const providerLabel =
     provider === "google"
       ? "Google"

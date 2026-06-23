@@ -1,0 +1,117 @@
+name: Deploy to AWS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Build frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_GEMINI_MODEL: ${{ secrets.VITE_GEMINI_MODEL }}
+          VITE_GOOGLE_TTS_API_KEY: ${{ secrets.VITE_GOOGLE_TTS_API_KEY }}
+          VITE_USE_MOCK_MANIFEST: ${{ secrets.VITE_USE_MOCK_MANIFEST }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync frontend to S3
+        run: |
+          aws s3 sync dist/ "s3://${{ secrets.S3_FRONTEND_BUCKET }}/" --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" \
+            --exclude "*.html"
+          aws s3 sync dist/ "s3://${{ secrets.S3_FRONTEND_BUCKET }}/" --delete \
+            --cache-control "public,max-age=0,must-revalidate" \
+            --exclude "*" \
+            --include "*.html"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
+
+      - name: Build and push Node image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f Dockerfile -t "${{ secrets.ECR_NODE_REPOSITORY }}:$IMAGE_TAG" .
+          docker tag "${{ secrets.ECR_NODE_REPOSITORY }}:$IMAGE_TAG" "${{ secrets.ECR_NODE_REPOSITORY }}:latest"
+          docker push "${{ secrets.ECR_NODE_REPOSITORY }}:$IMAGE_TAG"
+          docker push "${{ secrets.ECR_NODE_REPOSITORY }}:latest"
+
+      - name: Build and push Agent image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f Dockerfile.agent -t "${{ secrets.ECR_AGENT_REPOSITORY }}:$IMAGE_TAG" .
+          docker tag "${{ secrets.ECR_AGENT_REPOSITORY }}:$IMAGE_TAG" "${{ secrets.ECR_AGENT_REPOSITORY }}:latest"
+          docker push "${{ secrets.ECR_AGENT_REPOSITORY }}:$IMAGE_TAG"
+          docker push "${{ secrets.ECR_AGENT_REPOSITORY }}:latest"
+
+      - name: Redeploy ECS services
+        run: |
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER }}" \
+            --service "${{ secrets.ECS_AGENT_SERVICE }}" \
+            --force-new-deployment \
+            --region "${{ secrets.AWS_REGION }}"
+          aws ecs update-service \
+            --cluster "${{ secrets.ECS_CLUSTER }}" \
+            --service "${{ secrets.ECS_NODE_SERVICE }}" \
+            --force-new-deployment \
+            --region "${{ secrets.AWS_REGION }}"
+
+      - name: Wait for Node service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${{ secrets.ECS_CLUSTER }}" \
+            --services "${{ secrets.ECS_NODE_SERVICE }}" \
+            --region "${{ secrets.AWS_REGION }}"
+
+      - name: Smoke check API health
+        run: |
+          curl -fsS "${{ secrets.VITE_API_URL }}/api/health" | tee health.json
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("health.json"))
+          assert data.get("status") in ("ok", "degraded"), data
+          agent = (data.get("agentRuns") or {})
+          if not agent.get("agentReachable"):
+              print("WARN: agentRuns.agentReachable is false — check AGENT_RUNS_PROXY_URL / Python service", file=sys.stderr)
+          print("Health check passed:", data.get("status"))
+          PY

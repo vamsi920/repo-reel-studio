@@ -277,11 +277,11 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   const loadProjects = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.uid) return;
 
     setIsLoadingProjects(true);
     try {
-      const data = await projectsService.getDashboardProjects(user.id);
+      const data = await projectsService.getDashboardProjects(user.uid);
       setProjects(data);
     } catch (error) {
       console.error("Failed to load projects:", error);
@@ -293,15 +293,15 @@ const Dashboard = () => {
     } finally {
       setIsLoadingProjects(false);
     }
-  }, [user?.id]);
+  }, [user?.uid]);
 
   useEffect(() => {
     void loadProjects();
   }, [loadProjects]);
 
   const userName = useMemo(() => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name.split(" ")[0];
+    if (user?.displayName) {
+      return user.displayName.split(" ")[0];
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -450,8 +450,8 @@ const Dashboard = () => {
       const source = resolveRepoSourceFromInput(repoInput);
       setRepoInput(source.repoUrl);
 
-      const existingProject = user?.id
-        ? await projectsService.getByRepoUrl(source.repoUrl, user.id)
+      const existingProject = user?.uid
+        ? await projectsService.getByRepoUrl(source.repoUrl, user.uid)
         : null;
 
       if (existingProject?.status === "ready" && existingProject.manifest) {
@@ -485,8 +485,8 @@ const Dashboard = () => {
       saveFolderUploadSession(payload);
       setUploadedFolder(payload);
 
-      const existingProject = user?.id
-        ? await projectsService.getByRepoUrl(payload.repoUrl, user.id)
+      const existingProject = user?.uid
+        ? await projectsService.getByRepoUrl(payload.repoUrl, user.uid)
         : null;
 
       if (existingProject) {

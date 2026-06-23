@@ -1,0 +1,47 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GitFlickDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*",
+        "ecr:*",
+        "ecs:*",
+        "elasticfilesystem:*",
+        "elasticloadbalancing:*",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:PassRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:CreatePolicy",
+        "iam:DeletePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:ListPolicyVersions",
+        "iam:TagRole",
+        "iam:TagPolicy",
+        "logs:*",
+        "s3:*",
+        "cloudfront:*",
+        "acm:*",
+        "route53:*",
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:DeleteParameter",
+        "ssm:AddTagsToResource",
+        "servicediscovery:*",
+        "application-autoscaling:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-import { supabase } from './supabase';
-import type { GitNexusGraphData, RepoKnowledgeGraph, VideoManifest } from './types';
-import { extractRepoNameFromSource } from './projectSource';
+// Local storage implementation — no Firebase/Firestore.
 
-// Ingestion stats type
+import type { GitNexusGraphData, RepoKnowledgeGraph, VideoManifest } from "./types";
+import { extractRepoNameFromSource } from "./projectSource";
+
 export interface IngestionStats {
   includedFiles: number;
   skippedFiles: number;
@@ -11,14 +11,13 @@ export interface IngestionStats {
   durationMs: number;
 }
 
-// Database Types
 export interface Project {
   id: string;
   user_id: string;
   repo_url: string;
   repo_name: string;
   title: string;
-  status: 'processing' | 'ready' | 'error';
+  status: "processing" | "ready" | "error";
   manifest: VideoManifest | null;
   duration_seconds: number | null;
   repo_content?: string | null;
@@ -39,7 +38,7 @@ export interface ProjectInsert {
   repo_url: string;
   repo_name: string;
   title: string;
-  status: 'processing' | 'ready' | 'error';
+  status: "processing" | "ready" | "error";
   manifest?: VideoManifest | null;
   duration_seconds?: number | null;
   repo_content?: string | null;
@@ -54,7 +53,7 @@ export interface ProjectInsert {
 }
 
 export interface ProjectUpdate {
-  status?: 'processing' | 'ready' | 'error';
+  status?: "processing" | "ready" | "error";
   manifest?: VideoManifest | null;
   duration_seconds?: number | null;
   title?: string;
@@ -69,260 +68,120 @@ export interface ProjectUpdate {
   phase2_completed_at?: string | null;
 }
 
-const OPTIONAL_PROJECT_COLUMNS = new Set([
-  'repo_content',
-  'ingestion_stats',
-  'graph_data',
-  'repo_knowledge_graph',
-  'phase1_completed_at',
-  'phase2_completed_at',
-  'graph_storage_path',
-  'graph_created_at',
-  'graph_node_count',
-]);
+const LS_KEY = "reel_studio_projects";
 
-const stripUndefined = <T extends Record<string, unknown>>(payload: T) =>
-  Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined)
-  ) as T;
-
-const extractMissingProjectColumn = (error: any): string | null => {
-  const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`;
-
-  const directMatch = message.match(/Could not find the '([^']+)' column of 'projects'/i);
-  if (directMatch?.[1]) return directMatch[1];
-
-  const schemaMatch = message.match(/column ['"]?([a-z0-9_]+)['"]?/i);
-  if (schemaMatch?.[1]) return schemaMatch[1];
-
-  return null;
-};
-
-const withProjectSchemaFallback = async <T>(
-  payload: Record<string, unknown>,
-  run: (safePayload: Record<string, unknown>) => Promise<{ data: T | null; error: any }>
-): Promise<T> => {
-  const unsupportedColumns = new Set<string>();
-  let lastError: any = null;
-
-  for (let attempt = 0; attempt < OPTIONAL_PROJECT_COLUMNS.size + 1; attempt += 1) {
-    const safePayload = stripUndefined(
-      Object.fromEntries(
-        Object.entries(payload).filter(([key]) => !unsupportedColumns.has(key))
-      )
-    );
-
-    const { data, error } = await run(safePayload);
-    if (!error && data) {
-      return data;
-    }
-    if (!error && !data) {
-      throw new Error('No data returned from database operation');
-    }
-
-    const missingColumn = extractMissingProjectColumn(error);
-    if (missingColumn && OPTIONAL_PROJECT_COLUMNS.has(missingColumn)) {
-      unsupportedColumns.add(missingColumn);
-      console.warn(`[projectsService] Retrying without unsupported column "${missingColumn}"`);
-      lastError = error;
-      continue;
-    }
-
-    throw error;
+function loadAll(): Project[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? (JSON.parse(raw) as Project[]) : [];
+  } catch {
+    return [];
   }
+}
 
-  throw lastError || new Error('Failed to persist project after schema fallback retries');
-};
+function saveAll(projects: Project[]): void {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(projects));
+  } catch (e) {
+    console.warn("[db] localStorage write failed:", e);
+  }
+}
 
-// Projects CRUD Operations
+function uid(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export const projectsService = {
-  // Check if projects table exists and is accessible
   async checkConnection(): Promise<{ connected: boolean; error?: string }> {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .select('id')
-        .limit(1);
-
-      if (error) {
-        return { connected: false, error: error.message };
-      }
-      return { connected: true };
-    } catch (error: any) {
-      return { connected: false, error: error.message };
-    }
+    return { connected: true };
   },
 
-  // Get all projects for current user
   async getAll(userId: string): Promise<Project[]> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching projects:', error);
-      const enhancedError: any = new Error(`Failed to fetch projects: ${error.message}`);
-      enhancedError.code = error.code;
-      enhancedError.details = error.details;
-      enhancedError.hint = error.hint;
-      throw enhancedError;
-    }
-
-    return data || [];
+    return loadAll()
+      .filter((p) => p.user_id === userId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
 
   async getDashboardProjects(userId: string): Promise<Project[]> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        id,
-        user_id,
-        repo_url,
-        repo_name,
-        title,
-        status,
-        manifest,
-        duration_seconds,
-        ingestion_stats,
-        graph_data,
-        repo_knowledge_graph,
-        graph_storage_path,
-        graph_created_at,
-        graph_node_count,
-        phase1_completed_at,
-        phase2_completed_at,
-        created_at,
-        updated_at
-      `)
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching dashboard projects:', error);
-      const enhancedError: any = new Error(`Failed to fetch dashboard projects: ${error.message}`);
-      enhancedError.code = error.code;
-      enhancedError.details = error.details;
-      enhancedError.hint = error.hint;
-      throw enhancedError;
-    }
-
-    return (data || []) as Project[];
+    return loadAll()
+      .filter((p) => p.user_id === userId)
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   },
 
-  // Get single project by ID
   async getById(projectId: string, userId: string): Promise<Project | null> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Not found
-      }
-      console.error('Error fetching project:', error);
-      throw error;
-    }
-
-    return data;
+    const p = loadAll().find((x) => x.id === projectId);
+    if (!p || p.user_id !== userId) return null;
+    return p;
   },
 
-  // Create new project
   async create(project: ProjectInsert): Promise<Project> {
-    try {
-      return await withProjectSchemaFallback<Project>(
-        {
-          ...project,
-          manifest: project.manifest || null,
-          duration_seconds: project.duration_seconds || null,
-        },
-        async (safePayload) =>
-          await supabase
-            .from('projects')
-            .insert(safePayload)
-            .select()
-            .single()
-      );
-    } catch (error: any) {
-      console.error('Error creating project:', error);
-      const enhancedError: any = new Error(error.message || 'Failed to create project');
-      enhancedError.code = error.code;
-      enhancedError.details = error.details;
-      enhancedError.hint = error.hint;
-      throw enhancedError;
-    }
+    const now = new Date().toISOString();
+    const newProject: Project = {
+      id: uid(),
+      user_id: project.user_id,
+      repo_url: project.repo_url,
+      repo_name: project.repo_name,
+      title: project.title,
+      status: project.status,
+      manifest: project.manifest ?? null,
+      duration_seconds: project.duration_seconds ?? null,
+      repo_content: project.repo_content ?? null,
+      ingestion_stats: project.ingestion_stats ?? null,
+      graph_data: project.graph_data ?? null,
+      repo_knowledge_graph: project.repo_knowledge_graph ?? null,
+      graph_storage_path: project.graph_storage_path ?? null,
+      graph_created_at: project.graph_created_at ?? null,
+      graph_node_count: project.graph_node_count ?? null,
+      phase1_completed_at: project.phase1_completed_at ?? null,
+      phase2_completed_at: project.phase2_completed_at ?? null,
+      created_at: now,
+      updated_at: now,
+    };
+    const all = loadAll();
+    all.push(newProject);
+    saveAll(all);
+    return newProject;
   },
 
-  // Update project
   async update(projectId: string, userId: string, updates: ProjectUpdate): Promise<Project> {
-    try {
-      return await withProjectSchemaFallback<Project>(
-        {
-          ...updates,
-          updated_at: new Date().toISOString(),
-        },
-        async (safePayload) =>
-          await supabase
-            .from('projects')
-            .update(safePayload)
-            .eq('id', projectId)
-            .eq('user_id', userId)
-            .select()
-            .single()
-      );
-    } catch (error) {
-      console.error('Error updating project:', error);
-      throw error;
-    }
+    const all = loadAll();
+    const idx = all.findIndex((p) => p.id === projectId);
+    if (idx === -1) throw new Error("Project not found");
+    if (all[idx].user_id !== userId) throw new Error("Forbidden");
+    const updated: Project = {
+      ...all[idx],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    all[idx] = updated;
+    saveAll(all);
+    return updated;
   },
 
-  // Delete project
   async delete(projectId: string, userId: string): Promise<void> {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', projectId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('Error deleting project:', error);
-      throw error;
-    }
+    const all = loadAll();
+    const idx = all.findIndex((p) => p.id === projectId);
+    if (idx === -1) return;
+    if (all[idx].user_id !== userId) throw new Error("Forbidden");
+    all.splice(idx, 1);
+    saveAll(all);
   },
 
-  // Get project by repo URL (to check if already exists)
   async getByRepoUrl(repoUrl: string, userId: string): Promise<Project | null> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('repo_url', repoUrl)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching project by repo URL:', error);
-      throw error;
-    }
-
-    return data;
+    const matches = loadAll()
+      .filter((p) => p.user_id === userId && p.repo_url === repoUrl)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return matches[0] ?? null;
   },
 };
 
-// Helper function to format duration
 export function formatDuration(seconds: number | null): string {
-  if (!seconds) return '0:00';
+  if (!seconds) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-// Helper function to extract repo name from URL
 export function extractRepoName(repoUrl: string): string {
   return extractRepoNameFromSource(repoUrl);
 }

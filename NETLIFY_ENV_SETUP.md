@@ -10,12 +10,18 @@ Make sure these are set in your Netlify dashboard (Site settings → Environment
 VITE_API_URL=https://repo-reel-backend.fly.dev
 ```
 
-### Supabase Configuration
+### Firebase (Auth, Firestore, Storage)
 
 ```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_KEY=your_supabase_anon_key
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
+
+See `FIREBASE_SETUP.md` for Console steps and deploying rules/indexes.
 
 ### Gemini AI (Optional)
 

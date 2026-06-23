@@ -7,6 +7,7 @@
  */
 
 import type { GitNexusGraphData, GitNexusNode } from './types';
+import { compressForPromptWithPolicy } from "@/lib/laymanCompressionPolicy";
 
 // ---------------------------------------------------------------------------
 // Graph Importance & Ranking
@@ -15,6 +16,17 @@ import type { GitNexusGraphData, GitNexusNode } from './types';
 interface GraphImportanceResult {
     files: string[];
     symbols?: string[];
+}
+
+function compressNarrativeProse(text: string | undefined, label: string): string {
+    if (!text || !text.trim()) return text || "";
+    return compressForPromptWithPolicy({
+        context: "codegraph_narrative",
+        path: `/codegraph-rag/${label}.md`,
+        text,
+        mode: "lite",
+        minSavedTokens: 1,
+    }).text;
 }
 
 /**
@@ -108,7 +120,11 @@ export function getArchitectureNarrative(graph: GitNexusGraphData | null): strin
         }
 
         if (s.readmeSummary) {
-            sections.push(`\nREADME Summary:\n${s.readmeSummary.substring(0, 400)}`);
+            const compressedReadmeSummary = compressNarrativeProse(
+                s.readmeSummary.substring(0, 400),
+                "readme-summary",
+            );
+            sections.push(`\nREADME Summary:\n${compressedReadmeSummary}`);
         }
     }
 
@@ -136,7 +152,9 @@ export function getArchitectureNarrative(graph: GitNexusGraphData | null): strin
                 .sort((a, b) => (b.complexity ?? 0) - (a.complexity ?? 0))
                 .slice(0, 1)[0];
             let desc = `  ★ ${hf}`;
-            if (topSymbol?.docstring) desc += ` — ${topSymbol.docstring.substring(0, 80)}`;
+            if (topSymbol?.docstring) {
+                desc += ` — ${compressNarrativeProse(topSymbol.docstring.substring(0, 80), `hub-doc-${hf}`)}`;
+            }
             sections.push(desc);
             if (topSymbol?.codeSnippet) {
                 sections.push(`    \`\`\`\n${topSymbol.codeSnippet.split('\n').slice(0, 5).map(l => '    ' + l).join('\n')}\n    \`\`\``);
@@ -148,7 +166,9 @@ export function getArchitectureNarrative(graph: GitNexusGraphData | null): strin
     if (graph.clusters && graph.clusters.length > 0) {
         sections.push('\n=== MODULE CLUSTERS ===');
         for (const cluster of graph.clusters.slice(0, 8)) {
-            const desc = cluster.description || `${cluster.label} (${cluster.members.length} files)`;
+            const desc = cluster.description
+                ? compressNarrativeProse(cluster.description, `cluster-${cluster.id || cluster.label}`)
+                : `${cluster.label} (${cluster.members.length} files)`;
             sections.push(`  [${cluster.kind || 'module'}] ${cluster.label}: ${desc}`);
         }
     }
@@ -161,7 +181,9 @@ export function getArchitectureNarrative(graph: GitNexusGraphData | null): strin
                 .map(s => `${s.symbolName} (${s.filePath.split('/').pop()})`)
                 .join(' → ');
             sections.push(`  ▸ ${proc.name}: ${stepStr}`);
-            if (proc.description) sections.push(`    ${proc.description}`);
+            if (proc.description) {
+                sections.push(`    ${compressNarrativeProse(proc.description, `process-${proc.id || proc.name}`)}`);
+            }
         }
     }
 
@@ -174,7 +196,11 @@ export function getArchitectureNarrative(graph: GitNexusGraphData | null): strin
     if (keySymbols.length > 0) {
         sections.push('\n=== KEY SYMBOLS ===');
         for (const sym of keySymbols) {
-            sections.push(`  ${sym.kind} ${sym.name} (${sym.filePath.split('/').pop()}): ${sym.docstring?.substring(0, 120)}`);
+            const docstring = compressNarrativeProse(
+                sym.docstring?.substring(0, 120),
+                `symbol-${sym.name}`,
+            );
+            sections.push(`  ${sym.kind} ${sym.name} (${sym.filePath.split('/').pop()}): ${docstring}`);
         }
     }
 

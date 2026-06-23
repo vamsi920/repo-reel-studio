@@ -1,0 +1,19 @@
+project_name = "gitflick"
+environment  = "prod"
+aws_region   = "us-east-1"
+
+# Custom domain (recommended). Leave domain_name empty for raw ALB + CloudFront URLs.
+domain_name     = "example.com"
+route53_zone_id = "" # optional if zone name matches domain_name
+
+app_subdomain = "app"
+api_subdomain = "api"
+
+# Add CloudFront URL here until custom domain DNS is live, e.g.:
+# cloudfront_url = "https://d123abc.cloudfront.net"
+cloudfront_url = ""
+
+# Extra browser origins for CORS (comma-separated in ECS task env).
+# cors_origins = ["https://staging.example.com"]
+
+enable_efs = true

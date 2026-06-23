@@ -20,6 +20,8 @@ import {
   buildCodegraphQuestionContext,
   getCodegraphRelatedFiles,
 } from "@/lib/upstreamCodegraph";
+import { type LaymanBriefMode } from "@/lib/laymanCompressionCore";
+import { compressForPromptWithPolicy } from "@/lib/laymanCompressionPolicy";
 import type {
   GitNexusGraphData,
   RepoContextCapsule,
@@ -114,6 +116,62 @@ interface RepoInvestigatorArgs {
   repoContent?: string;
   graphData?: GitNexusGraphData | null;
   manifest?: VideoManifest | null;
+}
+
+export type RepoMemoryContextCompressionResult = {
+  text: string;
+  usedCompression: boolean;
+  fallbackReason:
+    | "not_used"
+    | "path_or_url_risk"
+    | "unsafe"
+    | "noncompressible"
+    | "validation_failed"
+    | "savings_too_small";
+};
+
+export function compressRepoMemoryContext(
+  text: string,
+  label: string,
+  options?: {
+    mode?: LaymanBriefMode;
+    minSavedTokens?: number;
+    simplifyProse?: (proseTemplate: string, mode: LaymanBriefMode) => string;
+  },
+): RepoMemoryContextCompressionResult {
+  const result = compressForPromptWithPolicy({
+    context: "repo_investigator_memory",
+    path: `/repo-investigator-memory/${label}.md`,
+    text,
+    mode: options?.mode ?? "lite",
+    minSavedTokens: options?.minSavedTokens ?? 1,
+    simplifyProse: options?.simplifyProse,
+  });
+  const hasPathWarning = Boolean(
+    result.validation?.warnings?.some((warning) => warning.code === "path_mismatch"),
+  );
+  const hasUrlError = Boolean(
+    result.validation?.errors?.some((error) => error.code === "url_mismatch"),
+  );
+  if (hasPathWarning || hasUrlError) {
+    return {
+      text,
+      usedCompression: false,
+      fallbackReason: "path_or_url_risk",
+    };
+  }
+  if (!result.usedCompression) {
+    return {
+      text,
+      usedCompression: false,
+      fallbackReason: result.fallbackReason ?? "not_used",
+    };
+  }
+  return {
+    text: result.text,
+    usedCompression: true,
+    fallbackReason: "not_used",
+  };
 }
 
 const STOP_WORDS = new Set([
@@ -663,7 +721,9 @@ const buildPrompt = ({
   const capsuleContext = capsules
     .map(
       (capsule, index) =>
-        `${index + 1}. ${capsule.title} [${capsule.purpose}] — ${capsule.summary}`
+        `${index + 1}. ${capsule.title} [${capsule.purpose}] — ${
+          compressRepoMemoryContext(capsule.summary, `capsule-${capsule.id}`).text
+        }`
     )
     .join("\n");
 
@@ -671,7 +731,9 @@ const buildPrompt = ({
     .slice(0, 3)
     .map(
       (path, index) =>
-        `${index + 1}. ${path.title}: ${path.description} Files: ${path.file_paths.join(", ")}`
+        `${index + 1}. ${path.title}: ${
+          compressRepoMemoryContext(path.description, `reading-path-${path.id}`).text
+        } Files: ${path.file_paths.join(", ")}`
     )
     .join("\n");
 

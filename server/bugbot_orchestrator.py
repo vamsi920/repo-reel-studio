@@ -29,6 +29,11 @@ from agent_runs import (
 from env_builder import ensure_agent_ready_environment, load_env_artifacts
 from opendevin_runner import OpenDevinAdapter, OpenDevinConfig, OpenDevinRunner
 
+try:
+    from caveman_helper import get_config as caveman_config
+except ImportError:
+    def caveman_config(): return {"enabled": False, "mode": "lite"}
+
 
 BUGBOT_CONCURRENCY_LIMIT = int(os.getenv("BUGBOT_CONCURRENCY_LIMIT", "3"))
 
@@ -92,6 +97,7 @@ class BugBotOrchestrator:
                 "stage": BugBotStage.COMPLETE,
                 "stages": self.stage_results,
                 "duration_ms": duration_ms,
+                "caveman": caveman_config(),
             }
 
         except Exception as exc:

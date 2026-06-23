@@ -17,6 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from agent_runs import create_agent_run_router
+from proactive_api import create_proactive_router
+from proactive_api_errors import register_proactive_exception_handlers
 
 try:
     from gitingest import ingest
@@ -439,7 +441,9 @@ app = FastAPI(
     description="Repository ingestion service powered by gitingest + GitNexus",
     version="3.0.0"
 )
+register_proactive_exception_handlers(app)
 app.include_router(create_agent_run_router(), prefix="/api")
+app.include_router(create_proactive_router(), prefix="/api")
 
 # CORS middleware
 app.add_middleware(
@@ -555,15 +559,12 @@ def count_files_in_content(content: str) -> int:
     return count
 
 
-@app.get("/api/health", response_model=HealthResponse)
+@app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "ok",
-        "service": "repo-ingestion-server-v3",
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "gitingest_available": True
-    }
+    """Health check endpoint with Agent Ops + proactive diagnostics."""
+    from agent_ops_health import build_python_ingestion_health
+
+    return build_python_ingestion_health()
 
 
 @app.post("/api/repo-workspace/ensure")

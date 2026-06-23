@@ -88,19 +88,31 @@
   @apply hover:bg-white/[0.04] transition-all duration-200;
 }
 
-/* Premium Card Styles */
+/* Premium Card Styles — flat hairline instrument panel */
 .premium-card {
-  @apply relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.04] border border-white/[0.08] shadow-2xl shadow-black/10;
+  @apply relative overflow-hidden rounded-lg bg-card border border-border shadow-sm transition-colors duration-200;
 }
 
-.premium-card::before {
+.premium-card:hover {
+  @apply border-primary/40;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.08);
+}
+
+.premium-card::before,
+.premium-card::after {
   content: '';
-  @apply absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 transition-opacity duration-500 pointer-events-none;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  border: 0 solid hsl(var(--primary));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
-
-.premium-card:hover::before {
-  @apply opacity-100;
-}
+.premium-card::before { top: 7px; left: 7px; border-top-width: 2px; border-left-width: 2px; }
+.premium-card::after { bottom: 7px; right: 7px; border-bottom-width: 2px; border-right-width: 2px; }
+.premium-card:hover::before,
+.premium-card:hover::after { opacity: 0.8; }
 
 /* Glow Effects */
 .glow-primary {

@@ -15,6 +15,22 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from layman_compress_helper import compress_prompt_prose_safe
+
+try:
+    from caveman_helper import (
+        compress_prose, compress_issue_body, compress_pr_body,
+        measure_prompt, is_enabled as caveman_enabled,
+    )
+except ImportError:
+    def compress_prose(t): return t
+    def compress_issue_body(t, **kw): return t
+    def compress_pr_body(t): return t
+    def measure_prompt(label, text):
+        class _M:
+            def to_dict(self): return {}
+        return _M()
+    def caveman_enabled(): return False
 
 
 RUNS_ROOT = Path(__file__).resolve().parent / ".agent-runs"
@@ -281,11 +297,9 @@ def create_agent_run_router() -> APIRouter:
         if policy_violations:
             append_timeline(run_id, "policy_warning", "Approving despite policy violations", "; ".join(policy_violations), level="warning")
 
-        branch_name = sanitize_branch_name(
-            request.branchName
-            or run["approval"].get("branchName")
-            or build_branch_name(run.get("issue"), run["repoName"])
-        )
+        from proactive_branch_name import resolve_approval_branch_name
+
+        branch_name = resolve_approval_branch_name(run, request.branchName)
         promotion_log = []
 
         branch_result = run_subprocess(
@@ -433,6 +447,92 @@ def read_required_run(run_id: str) -> dict[str, Any]:
     if not run:
         raise HTTPException(status_code=404, detail="Agent run not found")
     return run
+
+
+def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> dict[str, Any]:
+    run = read_required_run(run_id)
+    if run["status"] not in {"awaiting_review", "approved"}:
+        raise HTTPException(status_code=400, detail="Run is not awaiting review")
+
+    workspace_path = run["artifacts"].get("workspacePath")
+    if not workspace_path:
+        raise HTTPException(status_code=400, detail="No sandbox workspace is available")
+
+    policy_violations = run.get("policyViolations") or []
+    if policy_violations:
+        append_timeline(run_id, "policy_warning", "Approving despite policy violations", "; ".join(policy_violations), level="warning")
+
+    from proactive_branch_name import resolve_approval_branch_name
+
+    branch_name = resolve_approval_branch_name(run, branch_name)
+    promotion_log = []
+
+    branch_result = run_subprocess(["git", "checkout", "-B", branch_name], cwd=workspace_path, timeout_seconds=20)
+    promotion_log.append(f"git checkout -B {branch_name}: exit={branch_result['exitCode']}")
+    if branch_result["exitCode"] != 0:
+        raise HTTPException(status_code=500, detail=branch_result["stderr"] or branch_result["stdout"] or "Failed to prepare branch")
+
+    pr_draft = run["artifacts"].get("prDraft") or {}
+    pr_body_path = run_dir(run_id) / "pr-body.md"
+    pr_body_path.write_text(pr_draft.get("body", ""), encoding="utf-8")
+
+    sha_result = run_subprocess(["git", "rev-parse", "HEAD"], cwd=workspace_path, timeout_seconds=10)
+    commit_sha = sha_result["stdout"].strip()[:40] if sha_result["exitCode"] == 0 else None
+    pr_url = None
+
+    push_result = run_subprocess(["git", "push", "origin", branch_name, "--force-with-lease"], cwd=workspace_path, timeout_seconds=60)
+    promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
+
+    if push_result["exitCode"] == 0:
+        pr_create_result = run_subprocess(
+            ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
+            cwd=workspace_path,
+            timeout_seconds=30,
+        )
+        promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
+        if pr_create_result["exitCode"] == 0:
+            raw_url = pr_create_result["stdout"].strip()
+            if raw_url.startswith("http"):
+                pr_url = raw_url
+                promotion_log.append(f"PR created: {pr_url}")
+        else:
+            existing_match = re.search(r"(https://github\.com/[^\s]+/pull/\d+)", pr_create_result["stderr"] or "")
+            if existing_match:
+                pr_url = existing_match.group(1)
+                promotion_log.append(f"PR already exists: {pr_url}")
+            else:
+                promotion_log.append(f"gh pr create failed: {pr_create_result['stderr'][:200]}")
+    else:
+        promotion_log.append(f"Push failed: {push_result['stderr'][:200]}")
+
+    manual_instructions = []
+    if not pr_url:
+        manual_instructions = [
+            f"cd {workspace_path}",
+            "git status",
+            f"git push origin {branch_name}",
+            f"gh pr create --title {shell_quote(pr_draft.get('title') or 'GitFlick agent run')} --body-file {shell_quote(str(pr_body_path))}",
+        ]
+
+    run["status"] = "approved"
+    run["updatedAt"] = now_iso()
+    run["approval"] = {
+        "status": "approved",
+        "branchName": branch_name,
+        "instructions": manual_instructions,
+        "approvedAt": now_iso(),
+        "rejectedAt": None,
+        "prUrl": pr_url,
+        "commitSha": commit_sha,
+        "promotionLog": promotion_log,
+    }
+    write_run(run)
+
+    if pr_url:
+        append_timeline(run_id, "approved", "Run approved and PR created", f"Branch `{branch_name}` pushed and PR opened at {pr_url}.")
+    else:
+        append_timeline(run_id, "approved", "Run approved (manual push needed)", f"Branch `{branch_name}` prepared but auto-push did not succeed. Manual instructions provided.")
+    return read_required_run(run_id)
 
 
 def read_run(run_id: str) -> Optional[dict[str, Any]]:
@@ -651,7 +751,9 @@ def set_run_status(run_id: str, status: str, title: str, detail: str) -> None:
 def update_run_issue(run_id: str, issue: dict[str, Any]) -> None:
     run = read_required_run(run_id)
     run["issue"] = issue
-    run["approval"]["branchName"] = build_branch_name(issue, run["repoName"])
+    from proactive_branch_name import build_branch_name_for_run
+
+    run["approval"]["branchName"] = build_branch_name_for_run(run)
     run["updatedAt"] = now_iso()
     write_run(run)
     append_timeline(run_id, "issue", "Issue ingested", f"Loaded issue #{issue.get('number')} and normalized comments/labels.")
@@ -713,6 +815,9 @@ def finalize_success(
         "validationDepth": len(validation_report.get("commands", [])),
         "artifactConfidence": evaluation.get("confidenceScore", 0),
     }
+    if caveman_enabled():
+        run["metrics"]["cavemanEnabled"] = True
+        run["metrics"]["cavemanMode"] = os.getenv("CAVEMAN_HELPER_MODE", "lite")
     if policy_violations:
         run.setdefault("policyViolations", []).extend(policy_violations)
     write_run(run)
@@ -1180,6 +1285,15 @@ def normalize_rel_path(value: str) -> str:
 
 
 def build_execution_plan(issue: dict[str, Any], repo_context: dict[str, Any]) -> dict[str, Any]:
+    issue_body = (
+        compress_issue_body(issue.get("body", ""), max_chars=5000)
+        if caveman_enabled()
+        else truncate_text(issue.get("body", ""), 5000)
+    )
+    issue_body_summary = compress_prompt_prose_safe(issue_body)
+    architecture_hint = compress_prompt_prose_safe(
+        (repo_context.get("contextHints") or {}).get("architecture") or "unknown"
+    )
     prompt = f"""
 You are GitFlick's planning pass for an autonomous issue fix run.
 Return strict JSON with keys:
@@ -1190,17 +1304,18 @@ Return strict JSON with keys:
 - validation_focus: array of string
 
 Issue title: {issue.get("title")}
-Issue body:
-{truncate_text(issue.get("body", ""), 5000)}
+Issue body summary:
+{issue_body_summary}
 
 Repo context:
 - Candidate files: {json.dumps(repo_context.get("candidateFiles", []))}
 - Top directories: {json.dumps(repo_context.get("topDirectories", []))}
 - Technologies: {json.dumps((repo_context.get("contextHints") or {}).get("technologies", []))}
-- Architecture hint: {(repo_context.get("contextHints") or {}).get("architecture") or "unknown"}
+- Architecture hint: {architecture_hint}
 - Repo analysis: {json.dumps(repo_context.get("repoAnalysis", {}), indent=2)[:1800]}
 - Package scripts: {json.dumps(((repo_context.get("packageJson") or {}).get("scripts") or {}), indent=2)[:2000]}
 """
+    measure_prompt("legacy_plan_prompt", prompt)
     response = request_gemini_json(prompt, max_output_tokens=2048)
     if response:
         return response
@@ -1394,6 +1509,17 @@ def self_critique_patch(
     validation_report: dict[str, Any],
 ) -> dict[str, Any]:
     """Ask the model to critique its own patch before finalizing."""
+    validation_notes = validation_report.get("notes", [])
+    compressed_notes = []
+    if isinstance(validation_notes, list):
+        for note in validation_notes:
+            if isinstance(note, str):
+                compressed_notes.append(compress_prompt_prose_safe(note))
+            else:
+                compressed_notes.append(note)
+    else:
+        compressed_notes = validation_notes
+
     prompt = f"""
 You are GitFlick's self-critique pass. You just generated a patch for a GitHub issue.
 Review the patch critically and return strict JSON:
@@ -1414,8 +1540,9 @@ Patch (first 3000 chars):
 {truncate_text(patch_text, 3000)}
 
 Validation status: {validation_report.get("overallStatus", "not_run")}
-Validation notes: {json.dumps(validation_report.get("notes", []))}
+Validation notes: {json.dumps(compressed_notes)}
 """
+    measure_prompt("legacy_critique_prompt", prompt)
     result = request_gemini_json(prompt, max_output_tokens=1024)
     if result:
         return result
@@ -1485,6 +1612,11 @@ def request_gemini_json(prompt: str, max_output_tokens: int) -> Optional[dict[st
     api_key = (os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY") or "").strip()
     if not api_key:
         return None
+
+    metrics = measure_prompt("gemini_request", prompt)
+    metric_info = metrics.to_dict()
+    if metric_info:
+        print(f"[caveman] gemini_request metrics: {json.dumps(metric_info)}")
 
     model = (
         os.getenv("GEMINI_MODEL")
@@ -1835,7 +1967,10 @@ def build_pr_draft(
             *[f"- {reason}" for reason in (evaluation.get("confidenceReasons") or [])[:4]],
         ]
     )
-    return {"title": title, "body": body.strip()}
+    body = body.strip()
+    if caveman_enabled():
+        body = compress_pr_body(body)
+    return {"title": title, "body": body}
 
 
 def build_pr_readable(
@@ -1897,6 +2032,12 @@ def build_pr_readable(
             "body": change_intent["selfCritique"],
             "kind": "notes",
         })
+
+    if caveman_enabled():
+        compressible_kinds = {"summary", "strategy", "risk", "confidence", "notes"}
+        for section in sections:
+            if section["kind"] in compressible_kinds:
+                section["body"] = compress_prose(section["body"])
 
     sensitive_files = [f["path"] for f in changed_files if f.get("sensitive")]
     checklist = [

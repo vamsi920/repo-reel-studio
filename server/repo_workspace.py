@@ -115,8 +115,7 @@ def ensure_cached_repo_workspace(
     repo_url = validate_github_repo_url(repo_url)
     pid = validate_project_id(project_id)
 
-    if token:
-        os.environ["GITHUB_TOKEN"] = str(token)
+    from proactive_secret_sanitizer import transient_github_token
 
     REPO_WORKSPACES_ROOT.mkdir(parents=True, exist_ok=True)
     ws = cached_workspace_path(pid)
@@ -141,21 +140,22 @@ def ensure_cached_repo_workspace(
     root.mkdir(parents=True, exist_ok=True)
 
     parent = str(root)
-    clone_res = _run_cmd(
-        ["git", "clone", "--depth", "1", repo_url, str(ws)],
-        cwd=parent,
-        timeout_seconds=300,
-    )
-    if clone_res["exitCode"] != 0:
-        raise RuntimeError(
-            clone_res["stderr"] or clone_res["stdout"] or "git clone failed for workspace cache"
+    with transient_github_token(token):
+        clone_res = _run_cmd(
+            ["git", "clone", "--depth", "1", repo_url, str(ws)],
+            cwd=parent,
+            timeout_seconds=300,
         )
+        if clone_res["exitCode"] != 0:
+            raise RuntimeError(
+                clone_res["stderr"] or clone_res["stdout"] or "git clone failed for workspace cache"
+            )
 
-    if branch:
-        co = _run_cmd(["git", "checkout", branch], cwd=str(ws), timeout_seconds=60)
-        if co["exitCode"] != 0:
-            shutil.rmtree(ws, ignore_errors=True)
-            raise RuntimeError(co["stderr"] or co["stdout"] or "branch checkout failed")
+        if branch:
+            co = _run_cmd(["git", "checkout", branch], cwd=str(ws), timeout_seconds=60)
+            if co["exitCode"] != 0:
+                shutil.rmtree(ws, ignore_errors=True)
+                raise RuntimeError(co["stderr"] or co["stdout"] or "branch checkout failed")
 
     write_meta(
         pid,
@@ -181,15 +181,15 @@ def sync_cached_repo_workspace(
     repo_url = validate_github_repo_url(repo_url)
     pid = validate_project_id(project_id)
 
-    if token:
-        os.environ["GITHUB_TOKEN"] = str(token)
+    from proactive_secret_sanitizer import transient_github_token
 
     ws = cached_workspace_path(pid)
     meta = read_meta(pid)
 
     if not ws.is_dir() or not (ws / ".git").is_dir() or not meta:
         ensured = ensure_cached_repo_workspace(repo_url, project_id, branch, token)
-        commit = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
+        with transient_github_token(token):
+            commit = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
         return {
             **ensured,
             "status": "cloned",
@@ -197,43 +197,46 @@ def sync_cached_repo_workspace(
         }
 
     active_branch = branch or meta.get("branch")
-    if not active_branch:
-        branch_res = _run_cmd(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+    with transient_github_token(token):
+        if not active_branch:
+            branch_res = _run_cmd(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=str(ws),
+                timeout_seconds=20,
+            )
+            if branch_res["exitCode"] != 0:
+                raise RuntimeError(
+                    branch_res["stderr"] or branch_res["stdout"] or "could not resolve cached workspace branch"
+                )
+            active_branch = (branch_res.get("stdout") or "").strip() or "main"
+
+        fetch_res = _run_cmd(
+            ["git", "fetch", "origin", active_branch, "--prune"],
             cwd=str(ws),
-            timeout_seconds=20,
+            timeout_seconds=180,
         )
-        if branch_res["exitCode"] != 0:
-            raise RuntimeError(branch_res["stderr"] or branch_res["stdout"] or "could not resolve cached workspace branch")
-        active_branch = (branch_res.get("stdout") or "").strip() or "main"
+        if fetch_res["exitCode"] != 0:
+            raise RuntimeError(fetch_res["stderr"] or fetch_res["stdout"] or "git fetch failed for cached workspace")
 
-    fetch_res = _run_cmd(
-        ["git", "fetch", "origin", active_branch, "--prune"],
-        cwd=str(ws),
-        timeout_seconds=180,
-    )
-    if fetch_res["exitCode"] != 0:
-        raise RuntimeError(fetch_res["stderr"] or fetch_res["stdout"] or "git fetch failed for cached workspace")
+        reset_res = _run_cmd(
+            ["git", "reset", "--hard", f"origin/{active_branch}"],
+            cwd=str(ws),
+            timeout_seconds=90,
+        )
+        if reset_res["exitCode"] != 0:
+            raise RuntimeError(reset_res["stderr"] or reset_res["stdout"] or "git reset failed for cached workspace")
 
-    reset_res = _run_cmd(
-        ["git", "reset", "--hard", f"origin/{active_branch}"],
-        cwd=str(ws),
-        timeout_seconds=90,
-    )
-    if reset_res["exitCode"] != 0:
-        raise RuntimeError(reset_res["stderr"] or reset_res["stdout"] or "git reset failed for cached workspace")
+        clean_res = _run_cmd(
+            ["git", "clean", "-fd"],
+            cwd=str(ws),
+            timeout_seconds=60,
+        )
+        if clean_res["exitCode"] != 0:
+            raise RuntimeError(clean_res["stderr"] or clean_res["stdout"] or "git clean failed for cached workspace")
 
-    clean_res = _run_cmd(
-        ["git", "clean", "-fd"],
-        cwd=str(ws),
-        timeout_seconds=60,
-    )
-    if clean_res["exitCode"] != 0:
-        raise RuntimeError(clean_res["stderr"] or clean_res["stdout"] or "git clean failed for cached workspace")
-
-    commit_res = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
-    if commit_res["exitCode"] != 0:
-        raise RuntimeError(commit_res["stderr"] or commit_res["stdout"] or "git rev-parse failed for cached workspace")
+        commit_res = _run_cmd(["git", "rev-parse", "HEAD"], cwd=str(ws), timeout_seconds=20)
+        if commit_res["exitCode"] != 0:
+            raise RuntimeError(commit_res["stderr"] or commit_res["stdout"] or "git rev-parse failed for cached workspace")
 
     write_meta(
         pid,

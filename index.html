@@ -23,7 +23,38 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <style>
+      html, body, #root { min-height: 100%; margin: 0; background: #0a0a0f; color: #f5f5f5; }
+      #boot-status { padding: 24px; font: 14px/1.5 system-ui, sans-serif; color: #a3a3a3; }
+      #boot-error {
+        display: none;
+        margin: 24px;
+        padding: 16px;
+        border: 1px solid #7f1d1d;
+        border-radius: 12px;
+        background: #1a0a0a;
+        color: #fecaca;
+        font: 14px/1.5 system-ui, sans-serif;
+        white-space: pre-wrap;
+      }
+    </style>
+    <div id="root"><div id="boot-status">Loading GitFlick…</div></div>
+    <div id="boot-error"></div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var el = document.getElementById("boot-error");
+        if (!el) return;
+        el.style.display = "block";
+        el.textContent = "App failed to load:\\n" + (event.message || "Unknown error");
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        var el = document.getElementById("boot-error");
+        if (!el) return;
+        el.style.display = "block";
+        var reason = event.reason && (event.reason.message || String(event.reason));
+        el.textContent = "App failed to load:\\n" + (reason || "Unhandled promise rejection");
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

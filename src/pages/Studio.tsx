@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef, memo, type ElementType } from "react";
 import AgentRunsPanel from "@/components/studio/AgentRunsPanel";
+import { agentOpsStudioSectionClass } from "@/components/studio/agent-ops/shared/agentOpsLayout";
 import GraphExplorer from "@/components/studio/GraphExplorer";
 import RepoInvestigator from "@/components/studio/RepoInvestigator";
 import { ChapterPlaylist } from "@/components/studio/ChapterPlaylist";
@@ -35,9 +36,10 @@ import { generateAllSceneAudio } from "@/lib/googleTTS";
 import { GOOGLE_TTS_ENABLED, VIDEO_PIPELINE_V2_ENABLED } from "@/env";
 import { syncProjectWorkspaceToSession } from "@/lib/projectSession";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { uploadSceneAudio } from "@/lib/storage";
 import { generateManifestWithGemini } from "@/lib/geminiDirector";
 import { generateManifestWithQualityPipeline, buildQualityReport } from "@/lib/videoPipelineV2";
+import { getLaymanCompressionInstrumentationReport } from "@/lib/laymanCompressionPolicy";
 import { enrichManifestWithCode } from "@/lib/enrichManifestWithCode";
 import { extractRepoNameFromSource } from "@/lib/projectSource";
 import {
@@ -201,6 +203,17 @@ const Studio = () => {
     console.log(`[${type.toUpperCase()}] ${message}`);
   }, []);
 
+  const logLaymanCompressionStatus = useCallback(() => {
+    const report = getLaymanCompressionInstrumentationReport();
+    if (report.totalEvents <= 0) return;
+    const skipped = Object.values(report.byContext).reduce((sum, bucket) => sum + bucket.skipped, 0);
+    const validated = Math.max(0, report.totalEvents - skipped);
+    addLog(
+      `Layman context trim active: saved ${report.totalSavedTokens} tokens (${validated} validated, ${skipped} skipped).`,
+      "info",
+    );
+  }, [addLog]);
+
   // Load manifest from sessionStorage on mount
   const loadManifest = useCallback(async () => {
     // Prevent multiple simultaneous loads
@@ -232,13 +245,13 @@ const Studio = () => {
       setRepoUrlState(repoUrl);
 
       // Try to load from Supabase first
-      if (projectId && user?.id) {
+      if (projectId && user?.uid) {
         addLog("Loading project from database...", "info");
         setCurrentStep("Fetching project data...");
         setProgress(20);
 
         try {
-          const project = await projectsService.getById(projectId, user.id);
+          const project = await projectsService.getById(projectId, user.uid);
 
           if (project && project.manifest && project.status === 'ready') {
             addLog("Project found in database", "success");
@@ -328,6 +341,7 @@ const Studio = () => {
 
       addLog(`Manifest loaded: "${parsed.title || "Untitled"}"`, "success");
       addLog(`Found ${parsed.scenes.length} scenes`, "info");
+      logLaymanCompressionStatus();
 
       // Set manifest state
       setManifest(parsed);
@@ -526,7 +540,7 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [addLog, projectQuery, repoLabel, user?.id]);
+  }, [addLog, projectQuery, repoLabel, user?.uid]);
 
   useEffect(() => {
     loadManifest();
@@ -727,9 +741,9 @@ const Studio = () => {
 
       let workingRepoContent = repoContent;
       let baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
-      if (Object.keys(baselineMap).length === 0 && projectIdState && user?.id) {
+      if (Object.keys(baselineMap).length === 0 && projectIdState && user?.uid) {
         try {
-          const projectRow = await projectsService.getById(projectIdState, user.id);
+          const projectRow = await projectsService.getById(projectIdState, user.uid);
           if (projectRow?.repo_content) {
             workingRepoContent = projectRow.repo_content;
             baselineMap = loadBaselineFileContentsFromRepoContent(workingRepoContent);
@@ -759,8 +773,8 @@ const Studio = () => {
           graph_data: studioGraphData,
           repo_knowledge_graph: refreshed.knowledge_graph || null,
         });
-        if (projectIdState && user?.id) {
-          await projectsService.update(projectIdState, user.id, { manifest: refreshed });
+        if (projectIdState && user?.uid) {
+          await projectsService.update(projectIdState, user.uid, { manifest: refreshed });
         }
         toast({ title: "Pinned current HEAD", description: "Baseline snapshot was missing, so HEAD was pinned." });
         setSyncState("idle");
@@ -835,7 +849,7 @@ const Studio = () => {
           const { audioUrls: genUrls } = await generateAllSceneAudio(nextManifest.scenes, "en-US-Standard-D");
           const nextAudio = new Map<number, string>();
           for (const [sceneId, blobUrl] of genUrls) {
-            if (!projectIdState || !user?.id) {
+            if (!projectIdState || !user?.uid) {
               nextAudio.set(sceneId, blobUrl);
               continue;
             }
@@ -843,18 +857,10 @@ const Studio = () => {
               const res = await fetch(blobUrl);
               const blob = await res.blob();
               URL.revokeObjectURL(blobUrl);
-              const path = `${projectIdState}/${sceneId}.mp3`;
-              const { error } = await supabase.storage
-                .from("project-audio")
-                .upload(path, blob, { contentType: "audio/mpeg", upsert: true });
-              if (error) {
-                nextAudio.set(sceneId, blobUrl);
-                continue;
-              }
-              const { data } = supabase.storage.from("project-audio").getPublicUrl(path);
+              const url = await uploadSceneAudio(user.uid, projectIdState, sceneId, blob);
               const scene = nextManifest.scenes.find((s) => s.id === sceneId);
-              if (scene) scene.audioUrl = data.publicUrl;
-              nextAudio.set(sceneId, data.publicUrl);
+              if (scene) scene.audioUrl = url;
+              nextAudio.set(sceneId, url);
             } catch {
               nextAudio.set(sceneId, blobUrl);
             }
@@ -868,8 +874,8 @@ const Studio = () => {
       }
 
       const totalDuration = nextManifest.scenes.reduce((sum, s) => sum + (s.duration_seconds || 15), 0);
-      if (projectIdState && user?.id) {
-        await projectsService.update(projectIdState, user.id, {
+      if (projectIdState && user?.uid) {
+        await projectsService.update(projectIdState, user.uid, {
           status: "ready",
           manifest: nextManifest,
           duration_seconds: totalDuration,
@@ -913,7 +919,7 @@ const Studio = () => {
     repoUrlState,
     repoContent,
     projectIdState,
-    user?.id,
+    user?.uid,
     studioGraphData,
     repoLabel,
     replaceAudioUrls,
@@ -1437,14 +1443,16 @@ const Studio = () => {
                   )}
 
                   {workspaceView === "runs" && (
-              <AgentRunsPanel
-                repoUrl={repoUrlState}
-                repoName={repoLabel}
-                projectId={projectIdState}
-                manifest={manifest}
-                graphData={studioGraphData}
-                onFocusFile={focusRepoFile}
-              />
+              <section id="studio-agent-ops" className={agentOpsStudioSectionClass}>
+                <AgentRunsPanel
+                  repoUrl={repoUrlState}
+                  repoName={repoLabel}
+                  projectId={projectIdState}
+                  manifest={manifest}
+                  graphData={studioGraphData}
+                  onFocusFile={focusRepoFile}
+                />
+              </section>
                   )}
                 </div>
               )}

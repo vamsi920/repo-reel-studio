@@ -15,6 +15,27 @@ import time
 import uuid
 from pathlib import Path
 from typing import Any, Optional
+from layman_compress_helper import compress_prompt_prose_safe
+
+try:
+    from caveman_helper import (
+        compress_issue_body,
+        compress_prose,
+        compress_pr_body,
+        compress_prompt_sections,
+        measure_prompt,
+        is_enabled,
+    )
+except ImportError:
+    def compress_issue_body(t, **kw): return t
+    def compress_prose(t): return t
+    def compress_pr_body(t): return t
+    def compress_prompt_sections(s): return s
+    def measure_prompt(label, text):
+        class _M:
+            def to_dict(self): return {}
+        return _M()
+    def is_enabled(): return False
 
 
 class OpenDevinConfig:
@@ -125,9 +146,14 @@ class OpenDevinResult:
         self.plan: Optional[dict[str, Any]] = None
         self.hypothesis: str = ""
         self.root_cause: str = ""
+        self.executor_mode: str = "opendevin"
+        self.executor_attempts: list[str] = []
 
     def to_artifacts(self) -> dict[str, Any]:
         """Map result fields to the AgentRun.artifacts structure."""
+        failure_category = None if self.success else "agent_failure"
+        if not self.success and self.executor_mode == "unavailable":
+            failure_category = "execution_error"
         return {
             "patch": self.patch,
             "diffStat": self.diff_stat,
@@ -139,7 +165,9 @@ class OpenDevinResult:
             "qualityGates": self.quality_gates,
             "changeIntent": self.change_intent,
             "artifactPaths": {},
-            "failureCategory": None if self.success else "agent_failure",
+            "failureCategory": failure_category,
+            "executorMode": self.executor_mode,
+            "executorAttempts": list(self.executor_attempts),
         }
 
     def to_timeline(self) -> list[dict[str, Any]]:
@@ -190,9 +218,27 @@ class OpenDevinRunner:
             self._emit("plan.ready", "Execution plan generated",
                        self.result.plan.get("summary", ""))
 
-            execution_output = self._execute_opendevin(task_prompt, env_artifacts)
+            execution_output = self._execute_opendevin(
+                task_prompt,
+                env_artifacts,
+                issue=issue,
+                context_hints=context_hints,
+            )
 
             self._parse_execution_output(execution_output)
+            if execution_output.get("unavailable"):
+                from opendevin_fallback import EXECUTOR_MODE_UNAVAILABLE
+
+                self.result.executor_mode = EXECUTOR_MODE_UNAVAILABLE
+                self.result.executor_attempts = list(execution_output.get("attempts") or [])
+                self.result.error = str(execution_output.get("error") or self.result.error or "").strip() or (
+                    "OpenDevin and legacy executors were unavailable."
+                )
+            elif execution_output.get("legacy"):
+                from opendevin_fallback import EXECUTOR_MODE_LEGACY
+
+                self.result.executor_mode = EXECUTOR_MODE_LEGACY
+                self.result.executor_attempts = ["legacy"]
 
             self._collect_diff_artifacts()
 
@@ -212,6 +258,9 @@ class OpenDevinRunner:
             self.result.metrics["validationDepth"] = len(self.result.validation.get("commands", []))
             self.result.metrics["artifactConfidence"] = self.result.evaluation.get("confidenceScore", 0)
 
+            if is_enabled() and self.result.metrics.get("caveman"):
+                self.result.metrics.setdefault("caveman", {})
+
             status = "completed" if self.result.success else "failed"
             self._emit(f"run.{status}", f"OpenDevin run {status}",
                        f"Duration: {duration_ms}ms, Files changed: {len(self.result.changed_files)}")
@@ -229,12 +278,17 @@ class OpenDevinRunner:
         context_hints: Optional[dict[str, Any]],
         env_artifacts: Optional[dict[str, Any]],
     ) -> str:
+        issue_body = issue.get("body", "")
+        if is_enabled():
+            issue_body = compress_issue_body(issue_body)
+        issue_body = compress_prompt_prose_safe(issue_body)
+
         sections = [
             "You are an autonomous software engineer fixing a GitHub issue.",
             "",
             f"## Issue #{issue.get('number')}: {issue.get('title', '')}",
             "",
-            issue.get("body", ""),
+            issue_body,
             "",
         ]
 
@@ -242,7 +296,11 @@ class OpenDevinRunner:
         if comments:
             sections.append("## Issue Comments")
             for comment in comments[:5]:
-                sections.append(f"**{comment.get('author', 'unknown')}**: {comment.get('body', '')}")
+                body = comment.get("body", "")
+                if is_enabled():
+                    body = compress_prose(body)
+                body = compress_prompt_prose_safe(body)
+                sections.append(f"**{comment.get('author', 'unknown')}**: {body}")
             sections.append("")
 
         if context_hints:
@@ -250,7 +308,7 @@ class OpenDevinRunner:
             if context_hints.get("technologies"):
                 sections.append(f"Technologies: {', '.join(context_hints['technologies'])}")
             if context_hints.get("architecture"):
-                sections.append(f"Architecture: {context_hints['architecture']}")
+                sections.append(f"Architecture: {compress_prompt_prose_safe(context_hints['architecture'])}")
             if context_hints.get("focusFiles"):
                 sections.append(f"Key files to examine: {', '.join(context_hints['focusFiles'][:8])}")
             if context_hints.get("hubFiles"):
@@ -275,6 +333,13 @@ class OpenDevinRunner:
             "",
             "Keep changes minimal and focused. Do not modify unrelated files.",
         ])
+
+        if is_enabled():
+            sections = compress_prompt_sections(sections)
+
+        metrics = measure_prompt("opendevin_task_prompt", "\n".join(sections)) if measure_prompt else None
+        if metrics:
+            self.result.metrics["caveman"] = metrics.to_dict()
 
         return "\n".join(sections)
 
@@ -301,28 +366,79 @@ class OpenDevinRunner:
         self,
         task_prompt: str,
         env_artifacts: Optional[dict[str, Any]],
+        *,
+        issue: dict[str, Any],
+        context_hints: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """
         Execute OpenDevin either via API or subprocess.
         Falls back to the existing Gemini-based executor if OpenDevin isn't available.
         """
-        self._emit("execute.start", "Starting OpenDevin execution",
-                   f"Max iterations: {self.config.max_iterations}")
+        from opendevin_fallback import describe_opendevin_availability
 
-        # Try OpenDevin API first
+        availability = describe_opendevin_availability()
+        attempts: list[str] = list(availability.get("channels") or [])
+        self.result.executor_attempts = attempts
+        self._emit(
+            "execute.start",
+            "Starting OpenDevin execution",
+            f"Max iterations: {self.config.max_iterations}; channels: {', '.join(attempts) or 'none'}",
+        )
+
         opendevin_url = os.getenv("OPENDEVIN_API_URL", "").strip()
         if opendevin_url:
-            return self._execute_via_api(opendevin_url, task_prompt)
+            output = self._execute_via_api(
+                opendevin_url,
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                env_artifacts=env_artifacts,
+                attempts=attempts,
+            )
+            if not output.get("unavailable"):
+                return output
 
-        # Try OpenDevin CLI
         opendevin_path = os.getenv("OPENDEVIN_PATH", "").strip()
         if opendevin_path and Path(opendevin_path).exists():
-            return self._execute_via_cli(opendevin_path, task_prompt)
+            output = self._execute_via_cli(
+                opendevin_path,
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                env_artifacts=env_artifacts,
+                attempts=attempts,
+            )
+            if not output.get("unavailable"):
+                return output
 
-        # Fallback: use Docker-based OpenDevin
-        return self._execute_via_docker(task_prompt, env_artifacts)
+        if os.getenv("OPENDEVIN_ENABLE_DOCKER_PROBE", "").strip().lower() in ("1", "true", "yes"):
+            output = self._execute_via_docker(
+                task_prompt,
+                env_artifacts,
+                issue=issue,
+                context_hints=context_hints,
+                attempts=attempts,
+            )
+            if not output.get("unavailable"):
+                return output
 
-    def _execute_via_api(self, api_url: str, task_prompt: str) -> dict[str, Any]:
+        return self._execute_fallback(
+            task_prompt,
+            issue=issue,
+            context_hints=context_hints,
+            attempts=attempts,
+        )
+
+    def _execute_via_api(
+        self,
+        api_url: str,
+        task_prompt: str,
+        *,
+        issue: dict[str, Any],
+        context_hints: Optional[dict[str, Any]],
+        env_artifacts: Optional[dict[str, Any]],
+        attempts: list[str],
+    ) -> dict[str, Any]:
         """Execute via OpenDevin HTTP API."""
         import urllib.request
 
@@ -351,9 +467,24 @@ class OpenDevinRunner:
         except Exception as exc:
             self._emit("execute.api_error", "OpenDevin API failed, falling back",
                        str(exc), level="warning")
-            return self._execute_fallback(task_prompt)
+            return self._execute_fallback(
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                attempts=attempts,
+                last_error=str(exc),
+            )
 
-    def _execute_via_cli(self, opendevin_path: str, task_prompt: str) -> dict[str, Any]:
+    def _execute_via_cli(
+        self,
+        opendevin_path: str,
+        task_prompt: str,
+        *,
+        issue: dict[str, Any],
+        context_hints: Optional[dict[str, Any]],
+        env_artifacts: Optional[dict[str, Any]],
+        attempts: list[str],
+    ) -> dict[str, Any]:
         """Execute via OpenDevin CLI subprocess."""
         self._emit("execute.cli", "Running OpenDevin CLI", opendevin_path)
 
@@ -401,7 +532,13 @@ class OpenDevinRunner:
         except FileNotFoundError:
             self._emit("execute.not_found", "OpenDevin not found, using fallback",
                        level="warning")
-            return self._execute_fallback(task_prompt)
+            return self._execute_fallback(
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                attempts=attempts,
+                last_error="OpenDevin CLI not found",
+            )
 
         finally:
             if prompt_file.exists():
@@ -411,8 +548,12 @@ class OpenDevinRunner:
         self,
         task_prompt: str,
         env_artifacts: Optional[dict[str, Any]],
+        *,
+        issue: dict[str, Any],
+        context_hints: Optional[dict[str, Any]],
+        attempts: list[str],
     ) -> dict[str, Any]:
-        """Execute OpenDevin inside a Docker container."""
+        """Execute OpenDevin inside a Docker container (only when explicitly enabled)."""
         self._emit("execute.docker", "Launching OpenDevin in Docker sandbox",
                    f"Image: {self.config.sandbox_image}")
 
@@ -427,7 +568,13 @@ class OpenDevinRunner:
         if not docker_available:
             self._emit("execute.no_docker", "Docker not available, using Gemini fallback",
                        level="warning")
-            return self._execute_fallback(task_prompt)
+            return self._execute_fallback(
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                attempts=attempts,
+                last_error="Docker is not available",
+            )
 
         try:
             result = subprocess.run(
@@ -460,22 +607,87 @@ class OpenDevinRunner:
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
             self._emit("execute.docker_error", "Docker execution failed",
                        str(exc), level="warning")
-            return self._execute_fallback(task_prompt)
+            return self._execute_fallback(
+                task_prompt,
+                issue=issue,
+                context_hints=context_hints,
+                attempts=attempts,
+                last_error=str(exc),
+            )
 
-    def _execute_fallback(self, task_prompt: str) -> dict[str, Any]:
-        """Fallback to existing Gemini-based execution when OpenDevin is not available."""
-        self._emit("execute.fallback", "Using Gemini-based fallback executor",
-                   "OpenDevin is not configured; falling back to existing agent engine")
+    def _execute_fallback(
+        self,
+        task_prompt: str,
+        *,
+        issue: dict[str, Any],
+        context_hints: Optional[dict[str, Any]],
+        attempts: list[str],
+        last_error: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Fallback to legacy executor; never return a silent success without a patch."""
+        from opendevin_fallback import (
+            describe_opendevin_availability,
+            try_legacy_executor,
+            unavailable_reason,
+        )
 
+        availability = describe_opendevin_availability()
+        self._emit(
+            "execute.fallback",
+            "OpenDevin unavailable; trying legacy executor",
+            last_error or "No OpenDevin channel succeeded",
+            level="warning",
+        )
+
+        legacy_result = try_legacy_executor(
+            self.config.workspace_path,
+            issue,
+            context_hints=context_hints,
+        )
+        if legacy_result.patch.strip():
+            self._apply_legacy_result(legacy_result)
+            self._emit(
+                "execute.legacy_ok",
+                "Legacy executor produced a patch",
+                f"{len(legacy_result.changed_files)} files changed",
+            )
+            return {
+                "exit_code": 0,
+                "stdout": "",
+                "stderr": "",
+                "iterations": 1,
+                "total_tokens": 0,
+                "events": [],
+                "legacy": True,
+            }
+
+        reason = unavailable_reason(
+            availability=availability,
+            legacy_error=(legacy_result.error or last_error or "").strip() or None,
+        )
+        self._emit("execute.unavailable", "Executors unavailable", reason, level="error")
         return {
-            "exit_code": 0,
+            "exit_code": 1,
             "stdout": "",
-            "stderr": "",
-            "iterations": 1,
+            "stderr": reason,
+            "iterations": 0,
             "total_tokens": 0,
             "events": [],
-            "fallback": True,
+            "unavailable": True,
+            "error": reason,
+            "attempts": list(dict.fromkeys([*attempts, "legacy"])),
         }
+
+    def _apply_legacy_result(self, legacy_result: OpenDevinResult) -> None:
+        self.result.patch = legacy_result.patch
+        self.result.diff_stat = legacy_result.diff_stat
+        self.result.changed_files = list(legacy_result.changed_files)
+        self.result.validation = legacy_result.validation
+        self.result.quality_gates = legacy_result.quality_gates
+        self.result.evaluation = legacy_result.evaluation
+        self.result.plan = legacy_result.plan
+        self.result.success = bool(legacy_result.patch.strip())
+        self.result.error = legacy_result.error
 
     def _process_opendevin_events(self, events: list[dict[str, Any]]) -> None:
         """Convert OpenDevin execution events into structured timeline events."""
@@ -503,9 +715,9 @@ class OpenDevinRunner:
 
     def _parse_execution_output(self, output: dict[str, Any]) -> None:
         """Extract meaningful data from execution output."""
-        if output.get("fallback"):
-            self._emit("parse.fallback", "Using fallback mode",
-                       "Will delegate to existing agent_runs executor")
+        if output.get("unavailable"):
+            return
+        if output.get("legacy"):
             return
 
         stdout = output.get("stdout", "")
@@ -775,6 +987,9 @@ class OpenDevinRunner:
             "*Generated by NeoDevEx BugBot (OpenDevin)*",
         ])
 
+        if is_enabled():
+            body = compress_pr_body(body)
+
         self.result.pr_draft = {"title": title, "body": body.strip()}
 
         # PR Readable
@@ -787,6 +1002,12 @@ class OpenDevinRunner:
             {"heading": "Risk", "body": f"Risk: {eval_.get('riskLevel')} ({eval_.get('riskScore')})\n" + "\n".join(eval_.get("riskReasons", [])), "kind": "risk"},
             {"heading": "Confidence", "body": f"Confidence: {eval_.get('confidenceLevel')} ({eval_.get('confidenceScore')})\n" + "\n".join(eval_.get("confidenceReasons", [])), "kind": "confidence"},
         ]
+
+        if is_enabled():
+            _prose_kinds = {"summary", "strategy", "risk", "confidence"}
+            for section in sections:
+                if section["kind"] in _prose_kinds:
+                    section["body"] = compress_prose(section["body"])
 
         sensitive = [f["path"] for f in self.result.changed_files if f.get("sensitive")]
         checklist = [
@@ -895,6 +1116,8 @@ class OpenDevinAdapter:
         run["artifacts"]["qualityGates"] = artifacts["qualityGates"]
         run["artifacts"]["changeIntent"] = artifacts["changeIntent"]
         run["artifacts"]["failureCategory"] = artifacts["failureCategory"]
+        run["artifacts"]["executorMode"] = artifacts.get("executorMode")
+        run["artifacts"]["executorAttempts"] = artifacts.get("executorAttempts") or []
 
         run["evaluation"] = result.evaluation
         run["metrics"] = result.metrics

@@ -325,13 +325,27 @@ export async function cancelAgentRun(runId: string): Promise<AgentRun> {
 
 export interface IngestionHealthAgentRuns {
   mode: string;
-  proxyBase: string | null;
-  agentReachable: boolean | null;
+  proxyBase?: string | null;
+  agentReachable?: boolean | null;
+  connected?: boolean | null;
+  routesAvailable?: boolean;
+  writes?: "full" | "read-only" | "proxied" | string;
+}
+
+export interface IngestionHealthProactive {
+  mode?: string;
+  connected?: boolean | null;
+  routesAvailable?: boolean;
+  writes?: "full" | "read-only" | "proxied" | string;
 }
 
 export interface IngestionHealth {
   status?: string;
+  service?: string;
+  ingestionMode?: string;
+  timestamp?: string;
   agentRuns?: IngestionHealthAgentRuns;
+  proactive?: IngestionHealthProactive;
 }
 
 /** Dev: hits Vite `/api/health` proxy; prod: `${VITE_API_URL}/api/health`. */

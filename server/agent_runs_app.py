@@ -17,6 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agent_runs import create_agent_run_router
 from github_webhook import create_webhook_router
+from proactive_api import create_proactive_router
+from proactive_api_errors import register_proactive_exception_handlers
 
 
 def load_repo_env_file() -> None:
@@ -46,6 +48,7 @@ def load_repo_env_file() -> None:
 load_repo_env_file()
 
 app = FastAPI(title="GitFlick Agent Runs API", version="1.0.0")
+register_proactive_exception_handlers(app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,11 +58,14 @@ app.add_middleware(
 )
 app.include_router(create_agent_run_router(), prefix="/api")
 app.include_router(create_webhook_router(), prefix="/api")
+app.include_router(create_proactive_router(), prefix="/api")
 
 
 @app.get("/api/health-agent")
 def health_agent():
-    return {"status": "ok", "service": "agent-runs-api", "bugbot": True}
+    from agent_ops_health import build_agent_api_health
+
+    return build_agent_api_health()
 
 
 if __name__ == "__main__":

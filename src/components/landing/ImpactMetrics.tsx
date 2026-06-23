@@ -15,9 +15,10 @@ const METRICS = [
   },
   {
     icon: Waypoints,
-    value: "Saved",
-    label: "project memory",
-    description: "Backend-backed projects keep manifests, graph artifacts, and repo evidence available later.",
+    value: "Deterministic",
+    label: "context trimming",
+    description:
+      "Layman-style compression reduces setup prompt verbosity locally while preserving code snippets, paths, commands, and evidence references.",
   },
   {
     icon: ShieldCheck,

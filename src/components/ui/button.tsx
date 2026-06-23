@@ -9,14 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]",
+        default: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:shadow-[0_2px_4px_rgba(10,13,20,.20),0_10px_24px_-8px_hsl(var(--primary)/0.6)] hover:-translate-y-px active:translate-y-0",
         destructive: "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20",
         outline: "bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.12] text-foreground",
-        secondary: "glass glass-hover text-foreground border border-white/[0.08]",
+        secondary: "bg-card text-foreground border border-border hover:bg-card/80",
         ghost: "hover:bg-white/[0.05] text-muted-foreground hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        glow: "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 animate-gradient",
-        hero: "bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:scale-[1.02] transition-all duration-300",
+        glow: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:shadow-[0_2px_4px_rgba(10,13,20,.20),0_10px_24px_-8px_hsl(var(--primary)/0.6)]",
+        hero: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:-translate-y-px transition-all duration-300",
         nav: "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]",
       },
       size: {

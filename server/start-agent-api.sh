@@ -33,8 +33,8 @@ source venv/bin/activate
 
 if ! python -c "import fastapi, uvicorn" 2>/dev/null; then
   echo "📦 Installing Agent Ops Python dependencies..."
-  pip install -q -r server/requirements.txt || {
-    echo "❌ pip install failed. Try: pip install -r server/requirements.txt"
+  python -m pip install -q -r server/requirements.txt || {
+    echo "❌ pip install failed. Try: python -m pip install -r server/requirements.txt"
     exit 1
   }
 fi
