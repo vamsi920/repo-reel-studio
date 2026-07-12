@@ -27,9 +27,9 @@ export function ProactiveLiveConsole({ candidate, batch }: ProactiveLiveConsoleP
   return (
     <section aria-label="Live console" className="min-w-0">
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <h4 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">Live console</h4>
+        <h4 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Live console</h4>
         {eventCount > 0 ? (
-          <span className="text-[10px] tabular-nums text-white/32">{eventCount} events</span>
+          <span className="text-[10px] tabular-nums text-muted-foreground">{eventCount} events</span>
         ) : null}
       </div>
 
@@ -37,7 +37,7 @@ export function ProactiveLiveConsole({ candidate, batch }: ProactiveLiveConsoleP
         <p
           className={cn(
             agentOpsConsoleEmptyClass,
-            "text-center text-[11px] leading-4 text-white/38",
+            "border-border text-center text-[11px] leading-4 text-muted-foreground",
           )}
         >
           {AGENT_OPS_COPY.liveConsoleEmpty}
@@ -46,7 +46,7 @@ export function ProactiveLiveConsole({ candidate, batch }: ProactiveLiveConsoleP
         <ScrollArea
           className={cn(
             agentOpsConsoleViewportClass,
-            "rounded-md border border-white/[0.06] bg-[#050b14]/80",
+            "rounded-md border border-border bg-[#050b14]/80",
           )}
         >
           <div className="divide-y divide-white/[0.05] p-1.5">

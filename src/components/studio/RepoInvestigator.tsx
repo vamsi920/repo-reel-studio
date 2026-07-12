@@ -26,23 +26,23 @@ interface RepoInvestigatorProps {
 }
 
 const modeStyles: Record<string, string> = {
-  security: "bg-rose-300/10 text-rose-100 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.16)]",
+  security: "bg-rose-500/10 text-rose-700 shadow-[inset_0_0_0_1px_rgba(251,113,133,0.16)]",
   architecture:
     "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(180,197,255,0.16)]",
   runtime:
-    "bg-emerald-300/10 text-emerald-100 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.16)]",
-  data: "bg-amber-300/10 text-amber-100 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.16)]",
+    "bg-emerald-500/10 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.16)]",
+  data: "bg-amber-500/10 text-amber-700 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.16)]",
   onboarding:
-    "bg-indigo-300/10 text-indigo-100 shadow-[inset_0_0_0_1px_rgba(129,140,248,0.16)]",
+    "bg-indigo-500/10 text-indigo-700 shadow-[inset_0_0_0_1px_rgba(129,140,248,0.16)]",
   dependencies:
-    "bg-violet-300/10 text-violet-100 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.16)]",
-  general: "bg-white/[0.05] text-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+    "bg-violet-500/10 text-violet-700 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.16)]",
+  general: "bg-muted text-muted-foreground",
 };
 
 const confidenceStyles: Record<string, string> = {
-  high: "bg-emerald-300/10 text-emerald-100 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.16)]",
-  medium: "bg-amber-300/10 text-amber-100 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.16)]",
-  low: "bg-white/[0.05] text-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
+  high: "bg-emerald-500/10 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.16)]",
+  medium: "bg-amber-500/10 text-amber-700 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.16)]",
+  low: "bg-muted text-muted-foreground",
 };
 
 const titleCase = (value: string) =>
@@ -149,15 +149,15 @@ export default function RepoInvestigator({
 
   return (
     <section className="overflow-hidden rounded-[24px] gf-panel shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
-      <div className="border-b border-white/[0.06] px-6 py-5">
+      <div className="border-b border-border px-6 py-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="text-sm font-semibold text-primary">Repo Q&amp;A</div>
-            <h2 className="mt-1 text-3xl font-semibold tracking-tight text-white">
+            <h2 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
               Chat with this repository
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/56">
-              Scoped to <span className="font-mono text-white/78">{repoDisplayName}</span>.
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              Scoped to <span className="font-mono text-muted-foreground">{repoDisplayName}</span>.
               Ask one precise question and get a clean, file-backed answer tied to this repo
               only.
             </p>
@@ -172,7 +172,7 @@ export default function RepoInvestigator({
       </div>
 
       <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-h-[760px] flex-col overflow-hidden rounded-[26px] bg-[#0f1731] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="flex min-h-[760px] flex-col overflow-hidden rounded-[26px] bg-secondary">
           <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
             {conversation.length === 0 && !isLoading ? (
               <WelcomeState
@@ -199,7 +199,7 @@ export default function RepoInvestigator({
             {isLoading ? <AssistantLoading repoDisplayName={repoDisplayName} /> : null}
 
             {error ? (
-              <div className="mt-6 rounded-[20px] border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+              <div className="mt-6 rounded-[20px] border border-rose-300/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-700">
                 {error}
               </div>
             ) : null}
@@ -207,22 +207,22 @@ export default function RepoInvestigator({
             <div ref={chatEndRef} />
           </div>
 
-          <div className="border-t border-white/[0.06] bg-[#101936] px-4 py-4 sm:px-6">
+          <div className="border-t border-border bg-card px-4 py-4 sm:px-6">
             <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
                   type="button"
                   onClick={() => handleAsk(suggestion)}
-                  className="whitespace-nowrap rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-white/64 transition hover:bg-primary/10 hover:text-white"
+                  className="whitespace-nowrap rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
                 >
                   {suggestion}
                 </button>
               ))}
             </div>
 
-            <div className="rounded-[22px] bg-[#141e3b] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-              <div className="flex items-center gap-2 px-3 pb-2 pt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/34">
+            <div className="rounded-[22px] bg-muted p-2">
+              <div className="flex items-center gap-2 px-3 pb-2 pt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Bound to {repoDisplayName}
               </div>
@@ -237,7 +237,7 @@ export default function RepoInvestigator({
                     }
                   }}
                   placeholder={`Ask about ${repoDisplayName}...`}
-                  className="min-h-[88px] w-full resize-none bg-transparent px-3 py-3 text-sm leading-6 text-white outline-none placeholder:text-white/34"
+                  className="min-h-[88px] w-full resize-none bg-transparent px-3 py-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
                 />
                 <Button
                   type="button"
@@ -260,8 +260,8 @@ export default function RepoInvestigator({
           <RailCard title="Repo scope">
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-semibold text-white">{repoDisplayName}</div>
-                <div className="mt-1 text-sm leading-6 text-white/52">
+                <div className="text-sm font-semibold text-foreground">{repoDisplayName}</div>
+                <div className="mt-1 text-sm leading-6 text-muted-foreground">
                   Answers stay scoped to this codebase and pull from local evidence, reading
                   paths, and graph context when available.
                 </div>
@@ -283,7 +283,7 @@ export default function RepoInvestigator({
                       key={filePath}
                       type="button"
                       onClick={() => onFocusFile?.(filePath)}
-                      className="w-full rounded-[16px] bg-[#111a34] px-4 py-3 text-left text-sm text-white/72 transition hover:bg-primary/10 hover:text-white"
+                      className="w-full rounded-[16px] bg-muted px-4 py-3 text-left text-sm text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
                     >
                       <div className="truncate font-mono text-xs">{filePath}</div>
                     </button>
@@ -298,18 +298,18 @@ export default function RepoInvestigator({
                       key={`${item.index}-${item.source_ref.file_path}-${item.source_ref.start_line}`}
                       type="button"
                       onClick={() => onFocusFile?.(item.source_ref.file_path)}
-                      className="w-full rounded-[18px] bg-[#111a34] p-4 text-left transition hover:bg-white/[0.06]"
+                      className="w-full rounded-[18px] bg-muted p-4 text-left transition hover:bg-black/[0.04]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate font-mono text-[11px] text-primary">
                             {formatRefLabel(item.source_ref)}
                           </div>
-                          <div className="mt-2 line-clamp-3 text-xs leading-6 text-white/56">
+                          <div className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">
                             {previewExcerpt(item.excerpt)}
                           </div>
                         </div>
-                        <div className="rounded-full bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-white/54">
+                        <div className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
                           [{item.index}]
                         </div>
                       </div>
@@ -326,7 +326,7 @@ export default function RepoInvestigator({
                         key={followUp}
                         type="button"
                         onClick={() => handleAsk(followUp)}
-                        className="w-full rounded-[16px] bg-white/[0.04] px-4 py-3 text-left text-sm text-white/72 transition hover:bg-primary/10 hover:text-white"
+                        className="w-full rounded-[16px] bg-muted px-4 py-3 text-left text-sm text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
                       >
                         {followUp}
                       </button>
@@ -343,7 +343,7 @@ export default function RepoInvestigator({
                     key={suggestion}
                     type="button"
                     onClick={() => handleAsk(suggestion)}
-                    className="w-full rounded-[16px] bg-white/[0.04] px-4 py-3 text-left text-sm text-white/72 transition hover:bg-primary/10 hover:text-white"
+                    className="w-full rounded-[16px] bg-muted px-4 py-3 text-left text-sm text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
                   >
                     {suggestion}
                   </button>
@@ -373,10 +373,10 @@ function WelcomeState({
       </div>
       <div>
         <div className="text-sm font-semibold text-primary">GitFlick Repo Q&amp;A</div>
-        <h3 className="mt-2 text-2xl font-semibold text-white">
+        <h3 className="mt-2 text-2xl font-semibold text-foreground">
           Ask anything narrow about {repoDisplayName}
         </h3>
-        <p className="mt-3 text-sm leading-7 text-white/58">
+        <p className="mt-3 text-sm leading-7 text-muted-foreground">
           This lane behaves like a repo-dedicated chat assistant. Ask for entry points,
           auth flow, dependency hubs, storage boundaries, or the best files to read next.
         </p>
@@ -387,7 +387,7 @@ function WelcomeState({
             key={suggestion}
             type="button"
             onClick={() => onAsk(suggestion)}
-            className="rounded-full bg-white/[0.05] px-4 py-2 text-sm text-white/72 transition hover:bg-primary/10 hover:text-white"
+            className="rounded-full bg-muted px-4 py-2 text-sm text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
           >
             {suggestion}
           </button>
@@ -400,7 +400,7 @@ function WelcomeState({
 function UserMessage({ question }: { question: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[82%] rounded-[22px] rounded-tr-[10px] bg-[#1c2747] px-5 py-4 text-sm leading-7 text-white shadow-[0_18px_40px_rgba(6,12,26,0.2)]">
+      <div className="max-w-[82%] rounded-[22px] rounded-tr-[10px] bg-primary/10 px-5 py-4 text-sm leading-7 text-foreground shadow-sm">
         {question}
       </div>
     </div>
@@ -431,7 +431,7 @@ function AssistantMessage({
 
       <div className="min-w-0 flex-1">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <div className="text-sm font-semibold text-white">GitFlick Assistant</div>
+          <div className="text-sm font-semibold text-foreground">GitFlick Assistant</div>
           <Pill className={modeStyles[answer.mode] || modeStyles.general}>
             {titleCase(answer.mode)}
           </Pill>
@@ -442,10 +442,10 @@ function AssistantMessage({
           </Pill>
         </div>
 
-        <div className="rounded-[24px] rounded-tl-[10px] bg-[#16203d] p-5 shadow-[0_18px_40px_rgba(6,12,26,0.18)]">
-          <h3 className="text-xl font-semibold tracking-tight text-white">{answer.verdict}</h3>
+        <div className="rounded-[24px] rounded-tl-[10px] bg-card border border-border p-5 shadow-sm">
+          <h3 className="text-xl font-semibold tracking-tight text-foreground">{answer.verdict}</h3>
 
-          <div className="mt-3 space-y-3 text-sm leading-7 text-white/68">
+          <div className="mt-3 space-y-3 text-sm leading-7 text-muted-foreground">
             {paragraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
@@ -458,10 +458,10 @@ function AssistantMessage({
                 {visibleTrace.map((step, index) => (
                   <div
                     key={`${step.label}-${index}`}
-                    className="rounded-[18px] bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                    className="rounded-[18px] bg-muted p-4"
                   >
-                    <div className="text-sm font-semibold text-white">{step.label}</div>
-                    <p className="mt-1 text-sm leading-6 text-white/60">{step.summary}</p>
+                    <div className="text-sm font-semibold text-foreground">{step.label}</div>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.summary}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {step.source_refs.slice(0, 3).map((ref) => (
                         <FileChip
@@ -484,15 +484,15 @@ function AssistantMessage({
                 {visibleFindings.map((finding) => (
                   <div
                     key={`${finding.title}-${finding.detail}`}
-                    className="rounded-[18px] bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                    className="rounded-[18px] bg-muted p-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-white">{finding.title}</div>
+                      <div className="text-sm font-semibold text-foreground">{finding.title}</div>
                       <SeverityPill severity={finding.severity}>
                         {titleCase(finding.severity)}
                       </SeverityPill>
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-white/60">{finding.detail}</p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{finding.detail}</p>
                   </div>
                 ))}
               </div>
@@ -500,7 +500,7 @@ function AssistantMessage({
           ) : null}
 
           {visibleFiles.length > 0 ? (
-            <div className="mt-5 border-t border-white/[0.06] pt-4">
+            <div className="mt-5 border-t border-border pt-4">
               <SectionLabel>Files to open</SectionLabel>
               <div className="mt-3 flex flex-wrap gap-2">
                 {visibleFiles.map((filePath) => (
@@ -515,7 +515,7 @@ function AssistantMessage({
           ) : null}
 
           {expanded && answer.follow_ups.length > 0 ? (
-            <div className="mt-5 border-t border-white/[0.06] pt-4">
+            <div className="mt-5 border-t border-border pt-4">
               <SectionLabel>Ask next</SectionLabel>
               <div className="mt-3 flex flex-wrap gap-2">
                 {answer.follow_ups.slice(0, 3).map((followUp) => (
@@ -543,12 +543,12 @@ function AssistantLoading({ repoDisplayName }: { repoDisplayName: string }) {
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-400 text-[#081222] shadow-[0_18px_40px_rgba(90,128,255,0.2)]">
         <Bot className="h-5 w-5" />
       </div>
-      <div className="min-w-0 flex-1 rounded-[24px] rounded-tl-[10px] bg-[#16203d] p-5 shadow-[0_18px_40px_rgba(6,12,26,0.18)]">
-        <div className="flex items-center gap-3 text-sm text-white/72">
+      <div className="min-w-0 flex-1 rounded-[24px] rounded-tl-[10px] bg-card border border-border p-5 shadow-sm">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           Investigating {repoDisplayName}...
         </div>
-        <div className="mt-3 text-sm leading-6 text-white/46">
+        <div className="mt-3 text-sm leading-6 text-muted-foreground">
           Pulling the strongest file evidence, graph context, and reading path for this
           question.
         </div>
@@ -567,11 +567,11 @@ function TinyStat({
   value: number;
 }) {
   return (
-    <div className="rounded-full bg-white/[0.05] px-3 py-2 text-xs text-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+    <div className="rounded-full bg-muted px-3 py-2 text-xs text-muted-foreground">
       <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5" />
-        <span className="uppercase tracking-[0.18em] text-white/34">{label}</span>
-        <span className="font-semibold text-white">{value}</span>
+        <span className="uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+        <span className="font-semibold text-foreground">{value}</span>
       </div>
     </div>
   );
@@ -585,8 +585,8 @@ function RailCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[24px] bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+    <section className="rounded-[24px] bg-card border border-border p-5">
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
         {title}
       </div>
       <div className="mt-4">{children}</div>
@@ -617,10 +617,10 @@ function SeverityPill({
 }) {
   const className =
     severity === "high"
-      ? "border-rose-300/20 bg-rose-300/10 text-rose-100"
+      ? "border-rose-300/30 bg-rose-500/10 text-rose-700"
       : severity === "medium"
-        ? "border-amber-300/20 bg-amber-300/10 text-amber-100"
-        : "bg-white/[0.05] text-white/70";
+        ? "border-amber-300/30 bg-amber-500/10 text-amber-700"
+        : "bg-muted text-muted-foreground";
 
   return (
     <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${className}`}>
@@ -631,7 +631,7 @@ function SeverityPill({
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/36">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
       {children}
     </div>
   );
@@ -648,7 +648,7 @@ function FileChip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-white/66 transition hover:bg-primary/10 hover:text-white"
+      className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-primary/10 hover:text-foreground"
     >
       {label}
     </button>
@@ -657,7 +657,7 @@ function FileChip({
 
 function InfoPill({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full bg-[#111a34] px-3 py-1.5 text-xs text-white/62">
+    <span className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
       {children}
     </span>
   );

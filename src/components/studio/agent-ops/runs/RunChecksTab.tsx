@@ -12,21 +12,21 @@ export function RunChecksTab({ run, onRefreshRun }: RunChecksTabProps) {
   return (
     <div className="min-w-0 space-y-6">
       <section aria-labelledby="run-checks-validation-heading">
-        <h4 id="run-checks-validation-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+        <h4 id="run-checks-validation-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Validation
         </h4>
         <RunValidationTab validation={run.artifacts.validation} onRefreshRun={onRefreshRun} />
       </section>
 
       <section aria-labelledby="run-checks-tests-heading">
-        <h4 id="run-checks-tests-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+        <h4 id="run-checks-tests-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Tests
         </h4>
         <TestMatrixView testMatrix={run.artifacts.testMatrix ?? null} />
       </section>
 
       <section aria-labelledby="run-checks-risk-heading">
-        <h4 id="run-checks-risk-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+        <h4 id="run-checks-risk-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Risk & gates
         </h4>
         <QualityGatesView

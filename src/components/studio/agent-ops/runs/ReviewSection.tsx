@@ -9,7 +9,7 @@ type ReviewSectionProps = {
 export function ReviewSection({ title, children, className }: ReviewSectionProps) {
   return (
     <section className={className}>
-      <h3 className="text-sm font-semibold text-white/88">{title}</h3>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       <div className="mt-2 min-w-0">{children}</div>
     </section>
   );

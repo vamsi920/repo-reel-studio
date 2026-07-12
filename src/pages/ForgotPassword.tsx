@@ -49,19 +49,19 @@ const ForgotPassword = () => {
         <div className="absolute inset-0 gf-grid-overlay opacity-[0.12]" />
 
         <div className="relative z-10 w-full max-w-[420px] rounded-[28px] gf-panel-glass p-6 text-center sm:p-7">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-emerald-300/12 text-emerald-200">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-emerald-50 text-emerald-700">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h1 className="mt-5 text-[1.8rem] font-semibold tracking-tight text-white">Check your email</h1>
-          <p className="mt-3 text-[0.95rem] leading-7 text-white/60">
-            We sent a secure password reset link to <span className="font-medium text-white">{email}</span>.
+          <h1 className="mt-5 text-[1.8rem] font-semibold tracking-tight text-foreground">Check your email</h1>
+          <p className="mt-3 text-[0.95rem] leading-7 text-muted-foreground">
+            We sent a secure password reset link to <span className="font-medium text-foreground">{email}</span>.
           </p>
 
           <div className="mt-6 space-y-3">
             <Button variant="outline" className="w-full" asChild>
               <Link to="/login">Back to login</Link>
             </Button>
-            <Button variant="ghost" className="w-full text-white/62 hover:text-white" onClick={() => setEmailSent(false)}>
+            <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground" onClick={() => setEmailSent(false)}>
               Try another email
             </Button>
           </div>
@@ -89,26 +89,26 @@ const ForgotPassword = () => {
 
             <div className="mt-14 max-w-xl">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-muted">
                   <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
                 </div>
-                <div className="font-headline text-2xl font-semibold text-white">GitFlick</div>
+                <div className="font-headline text-2xl font-semibold text-foreground">GitFlick</div>
               </div>
 
-              <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/42">
+              <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                 Account recovery
               </div>
-              <h1 className="gf-headline mt-4 text-5xl font-extrabold leading-[0.96] tracking-[-0.05em] text-white">
+              <h1 className="gf-headline mt-4 text-5xl font-extrabold leading-[0.96] tracking-[-0.05em] text-foreground">
                 Reset access.
               </h1>
-              <p className="mt-5 max-w-lg text-lg leading-8 text-white/62">
+              <p className="mt-5 max-w-lg text-lg leading-8 text-muted-foreground">
                 Use the email linked to your account and we’ll send a reset link.
               </p>
 
               <div className="mt-8 rounded-[24px] gf-panel-soft p-5">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 h-5 w-5 text-accent" />
-                  <div className="text-sm leading-6 text-white/58">
+                  <div className="text-sm leading-6 text-muted-foreground">
                     Reset links are short-lived and keep the same workspace ownership intact.
                   </div>
                 </div>
@@ -128,15 +128,15 @@ const ForgotPassword = () => {
               </div>
 
               <div className="mt-4 lg:mt-0">
-                <h2 className="text-[2rem] font-semibold tracking-tight text-white">Reset your password</h2>
-                <p className="mt-3 text-[0.95rem] leading-7 text-white/60">
+                <h2 className="text-[2rem] font-semibold tracking-tight text-foreground">Reset your password</h2>
+                <p className="mt-3 text-[0.95rem] leading-7 text-muted-foreground">
                   Enter the email tied to your account and we&apos;ll send a secure reset link.
                 </p>
               </div>
 
               <form onSubmit={handleResetPassword} className="mt-7 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.24em] text-white/44">
+                  <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
                     Email address
                   </Label>
                   <Input
@@ -162,9 +162,9 @@ const ForgotPassword = () => {
                 </Button>
               </form>
 
-              <p className="mt-5 text-center text-sm text-white/52">
+              <p className="mt-5 text-center text-sm text-muted-foreground">
                 Remember your password?{" "}
-                <Link to="/login" className="font-semibold text-primary transition hover:text-white">
+                <Link to="/login" className="font-semibold text-primary transition hover:text-primary/80">
                   Sign in
                 </Link>
               </p>

@@ -169,11 +169,11 @@ function ConceptCard({
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: concept.color }}
             />
-            <span className="text-sm font-medium text-white/90">
+            <span className="text-sm font-medium text-foreground">
               {concept.label}
             </span>
           </div>
-          <div className="mt-1 text-[10px] text-white/50">
+          <div className="mt-1 text-[10px] text-muted-foreground">
             {concept.category} • weight: {concept.weight}
           </div>
         </div>
@@ -273,7 +273,7 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
   }, [isDiscovering, concepts, onComplete]);
   
   return (
-    <div className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-[#0a0f1f] via-[#0d1424] to-[#111a34]">
+    <div className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 border border-border">
       {/* 3D Background */}
       <div className="absolute inset-0">
         <Canvas camera={{ position: [0, 0, 10], fov: 75 }}>
@@ -325,13 +325,13 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 {phase === "scanning" && "Scanning Repository..."}
                 {phase === "discovering" && "Discovering Concepts..."}
                 {phase === "organizing" && "Organizing Knowledge..."}
                 {phase === "complete" && "Discovery Complete!"}
               </h3>
-              <p className="text-sm text-white/60 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {phase === "scanning" && "Analyzing code structure and dependencies"}
                 {phase === "discovering" && `Found ${discoveredConcepts.length} concepts`}
                 {phase === "organizing" && "Building knowledge graph"}
@@ -342,7 +342,7 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
           
           {/* Progress bar */}
           <div className="mt-4">
-            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-primary to-violet-500"
                 initial={{ width: 0 }}
@@ -413,13 +413,13 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
-                className="bg-white/[0.04] rounded-lg p-3"
+                className="bg-black/[0.04] rounded-lg p-3"
               >
                 <div className="flex items-center gap-2">
-                  <stat.icon className="h-4 w-4 text-white/40" />
-                  <span className="text-xs text-white/40">{stat.label}</span>
+                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{stat.label}</span>
                 </div>
-                <div className="mt-1 text-xl font-bold text-white">
+                <div className="mt-1 text-xl font-bold text-foreground">
                   {phase === "complete" ? stat.value : "—"}
                 </div>
               </motion.div>

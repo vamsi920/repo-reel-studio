@@ -60,7 +60,7 @@ export function RunInspectorHeader({
   const showRetry = isFailed || run.status === "rejected";
 
   return (
-    <header className="space-y-3 border-b border-white/[0.06] px-4 py-3 sm:px-5">
+    <header className="space-y-3 border-b border-border px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -70,19 +70,19 @@ export function RunInspectorHeader({
           </div>
 
           <h3
-            className="min-w-0 break-words text-base font-semibold leading-snug text-white line-clamp-2"
+            className="min-w-0 break-words text-base font-semibold leading-snug text-foreground line-clamp-2"
             title={title}
           >
             {title}
           </h3>
 
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/40">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="shrink-0">{refLabel}</span>
-            <span className="text-white/20" aria-hidden>
+            <span className="text-muted-foreground/50" aria-hidden>
               ·
             </span>
             <span className="shrink-0 font-mono tabular-nums">{run.id.slice(0, 8)}</span>
-            <span className="text-white/20" aria-hidden>
+            <span className="text-muted-foreground/50" aria-hidden>
               ·
             </span>
             <time className="shrink-0 tabular-nums" dateTime={run.updatedAt}>
@@ -90,14 +90,14 @@ export function RunInspectorHeader({
             </time>
             {run.issue?.htmlUrl ? (
               <>
-                <span className="text-white/20" aria-hidden>
+                <span className="text-muted-foreground/50" aria-hidden>
                   ·
                 </span>
                 <a
                   href={run.issue.htmlUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-w-0 max-w-full items-center gap-1 truncate text-primary hover:text-white"
+                  className="inline-flex min-w-0 max-w-full items-center gap-1 truncate text-primary hover:text-primary/80"
                 >
                   GitHub
                   <ExternalLink className="h-3 w-3 shrink-0" />
@@ -107,7 +107,7 @@ export function RunInspectorHeader({
           </div>
 
           {summary ? (
-            <p className="line-clamp-2 text-xs leading-5 text-white/46" title={summary}>
+            <p className="line-clamp-2 text-xs leading-5 text-muted-foreground" title={summary}>
               {summary}
             </p>
           ) : null}
@@ -135,7 +135,7 @@ export function RunInspectorHeader({
               intent="tertiary"
               size="sm"
               className={cn(
-                "min-h-10 border-amber-300/20 bg-amber-300/10 px-2.5 text-xs text-amber-100 hover:bg-amber-300/16 sm:min-h-8 sm:h-8",
+                "min-h-10 border-amber-300/20 bg-amber-300/10 px-2.5 text-xs text-amber-700 hover:bg-amber-300/16 sm:min-h-8 sm:h-8",
                 agentOpsActionMinWidth.cancel,
               )}
               onClick={onCancel}
@@ -172,7 +172,7 @@ export function RunInspectorHeader({
           role="group"
           aria-label="Run approval"
         >
-          <label htmlFor={BRANCH_INPUT_ID} className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
+          <label htmlFor={BRANCH_INPUT_ID} className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Promotion branch
           </label>
           <div className="mt-1.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -226,11 +226,11 @@ function MetaChip({ label, value }: { label: string; value: string }) {
   return (
     <span
       aria-label={statusAriaLabel(label, value)}
-      className="inline-flex max-w-[9rem] min-w-0 items-center gap-1 rounded bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-white/55"
+      className="inline-flex max-w-[9rem] min-w-0 items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
       title={`${label}: ${value}`}
     >
-      <span className="shrink-0 uppercase tracking-[0.08em] text-white/32">{label}</span>
-      <span className="truncate font-medium text-white/78">{value}</span>
+      <span className="shrink-0 uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
+      <span className="truncate font-medium text-foreground">{value}</span>
     </span>
   );
 }

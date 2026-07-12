@@ -1636,15 +1636,15 @@ const Processing = () => {
         )}
 
         {/* Terminal Log — collapsed to mini view in epic understanding phases */}
-        <div className={`overflow-hidden rounded-xl gf-panel-deep ${isEpicUnderstandingPhase ? "max-h-0 opacity-0 pointer-events-none transition-all duration-300" : ""}`}>
-          <div className="flex items-center gap-2 bg-white/[0.04] px-4 py-2">
+        <div className={`overflow-hidden rounded-xl border border-border gf-panel-deep ${isEpicUnderstandingPhase ? "max-h-0 opacity-0 pointer-events-none transition-all duration-300" : ""}`}>
+          <div className="flex items-center gap-2 bg-[#0b1428] px-4 py-2">
             <div className="flex gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
               <div className="w-2.5 h-2.5 rounded-full bg-warning/60" />
               <div className="w-2.5 h-2.5 rounded-full bg-success/60" />
             </div>
-            <span className="text-xs text-muted-foreground font-mono ml-2">processing.log</span>
-            <span className="text-xs text-muted-foreground/50 ml-auto">{logs.length} entries</span>
+            <span className="text-xs text-slate-400 font-mono ml-2">processing.log</span>
+            <span className="text-xs text-slate-500 ml-auto">{logs.length} entries</span>
           </div>
           <div className="h-48 overflow-y-auto bg-[#060e20] p-3 font-mono text-[11px] space-y-0.5 scroll-smooth">
             {logs.map((log, index) => {
@@ -1655,10 +1655,10 @@ const Processing = () => {
               return (
                 <div
                   key={index}
-                  className={`${isError ? "text-destructive" :
-                    isWarning ? "text-warning" :
-                      isSuccess ? "text-success" :
-                        index === logs.length - 1 ? "text-primary" : "text-muted-foreground"
+                  className={`${isError ? "text-red-400" :
+                    isWarning ? "text-amber-400" :
+                      isSuccess ? "text-emerald-400" :
+                        index === logs.length - 1 ? "text-[hsl(var(--primary-300))]" : "text-slate-400"
                     }`}
                 >
                   {log}
@@ -1787,7 +1787,7 @@ const Processing = () => {
               />
             </div>
             <div className="mt-5 space-y-3">
-              <div className="rounded-lg bg-white/[0.04] px-4 py-3">
+              <div className="rounded-lg bg-muted px-4 py-3">
                 <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                   Architecture
                 </div>
@@ -1795,7 +1795,7 @@ const Processing = () => {
                   {graphData?.summary?.architecturePattern || (overallStatus === "error" ? "Unavailable" : "Detecting")}
                 </div>
               </div>
-              <div className="rounded-lg bg-white/[0.04] px-4 py-3">
+              <div className="rounded-lg bg-muted px-4 py-3">
                 <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                   Note
                 </div>
@@ -1836,7 +1836,7 @@ const LoadingFlowCard = () => (
           description: "Turn that structure into a clean scene plan for Studio.",
         },
       ].map((item) => (
-        <div key={item.title} className="rounded-lg bg-white/[0.04] px-4 py-4">
+        <div key={item.title} className="rounded-lg bg-muted px-4 py-4">
           <div className="text-sm font-medium text-foreground">{item.title}</div>
           <div className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</div>
         </div>
@@ -1846,7 +1846,7 @@ const LoadingFlowCard = () => (
 );
 
 const StatTile = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-lg bg-white/[0.04] px-4 py-3">
+  <div className="rounded-lg bg-muted px-4 py-3">
     <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
     <div className="mt-2 text-lg font-semibold text-foreground">{value}</div>
   </div>
@@ -1867,7 +1867,7 @@ const InsightList = ({
     </div>
     <div className="space-y-2">
       {items.length > 0 ? items.map((item) => (
-        <div key={item} className="rounded-lg bg-white/[0.04] px-4 py-3 text-sm text-foreground">
+        <div key={item} className="rounded-lg bg-muted px-4 py-3 text-sm text-foreground">
           {item}
         </div>
       )) : (
@@ -1888,7 +1888,7 @@ const DeliverableRow = ({
   status: string;
   description: string;
 }) => (
-  <div className="rounded-lg bg-white/[0.04] px-4 py-3">
+  <div className="rounded-lg bg-muted px-4 py-3">
     <div className="flex items-center justify-between gap-3">
       <div className="font-medium text-foreground">{title}</div>
       <div className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] text-primary shadow-[inset_0_0_0_1px_rgba(180,197,255,0.18)]">
@@ -1989,7 +1989,7 @@ const CompletionActions = ({
 
 // Helper component for phase cards
 const PhaseCard = ({ title, status }: { title: string; status: PhaseStatus }) => (
-  <div className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+  <div className="flex items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
     <span className="text-xs font-medium">{title}</span>
     <div className="flex items-center gap-1.5">
       {status === "running" && <span className="h-2 w-2 rounded-full bg-processing animate-pulse" />}

@@ -17,7 +17,7 @@ export function RunReviewerBriefTab({ run, isRunActive, isReview, onOpenPrTab }:
       <div className="space-y-2">
         <PrPublicationStatusBar run={run} isRunActive={isRunActive} isReview={isReview} compact />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs leading-5 text-white/42">
+          <p className="text-xs leading-5 text-muted-foreground">
             {AGENT_OPS_COPY.reviewerBriefNote}
           </p>
           {onOpenPrTab ? (

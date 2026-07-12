@@ -68,17 +68,17 @@ export function RunInspectorProgress({
                 <span
                   className={cn(
                     "truncate text-[10px] font-semibold uppercase tracking-[0.06em] sm:text-[11px]",
-                    failed && "text-rose-200",
+                    failed && "text-rose-700",
                     current && "text-primary",
-                    complete && "text-emerald-100/90",
-                    !reached && "text-white/32",
-                    reached && !failed && !current && !complete && "text-white/55",
+                    complete && "text-emerald-700",
+                    !reached && "text-muted-foreground/60",
+                    reached && !failed && !current && !complete && "text-muted-foreground",
                   )}
                 >
                   {step.label}
                 </span>
               </div>
-              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.08]" aria-hidden>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted" aria-hidden>
                 <div
                   className={cn(
                     "h-full rounded-full",
@@ -86,7 +86,7 @@ export function RunInspectorProgress({
                     failed && "bg-rose-400",
                     current && !failed && "bg-primary",
                     complete && "bg-emerald-400/90",
-                    reached && !complete && !current && !failed && "bg-white/25",
+                    reached && !complete && !current && !failed && "bg-muted-foreground/40",
                   )}
                   style={{ width: barFill === "w-0" ? "0%" : barFill === "w-1/2" ? "50%" : "100%" }}
                 />
@@ -99,7 +99,7 @@ export function RunInspectorProgress({
       <p
         className={cn(
           "min-w-0 truncate text-xs leading-5",
-          isFailed ? "text-rose-200/90" : isActive ? "text-primary/90" : "text-white/48",
+          isFailed ? "text-rose-600" : isActive ? "text-primary/90" : "text-muted-foreground",
         )}
         title={eventLine}
       >
@@ -107,7 +107,7 @@ export function RunInspectorProgress({
       </p>
 
       {facts ? (
-        <p className="min-w-0 truncate text-[11px] tabular-nums text-white/38" title={facts}>
+        <p className="min-w-0 truncate text-[11px] tabular-nums text-muted-foreground" title={facts}>
           {facts}
         </p>
       ) : null}
@@ -130,10 +130,10 @@ function StepIndicator({
     <span
       className={cn(
         "flex h-4 w-4 shrink-0 items-center justify-center rounded-full",
-        complete && "bg-emerald-300/15 text-emerald-100",
+        complete && "bg-emerald-300/15 text-emerald-700",
         current && !failed && "bg-primary/15 text-primary",
-        failed && "bg-rose-300/15 text-rose-100",
-        !reached && "bg-white/[0.06] text-white/30",
+        failed && "bg-rose-300/15 text-rose-700",
+        !reached && "bg-muted text-muted-foreground/70",
       )}
       aria-hidden
     >

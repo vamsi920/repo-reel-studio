@@ -46,16 +46,16 @@ const NODE_TYPE_ICONS: Record<VideoNodeType, React.ElementType> = {
 
 const NODE_TYPE_COLORS: Record<VideoNodeType, string> = {
   master: "bg-primary/20 text-primary border-primary/30",
-  category: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  feature: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  "deep-dive": "bg-rose-500/20 text-rose-400 border-rose-500/30",
-  concept: "bg-violet-500/20 text-violet-400 border-violet-500/30",
+  category: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  feature: "bg-amber-100 text-amber-700 border-amber-200",
+  "deep-dive": "bg-rose-100 text-rose-700 border-rose-200",
+  concept: "bg-violet-100 text-violet-700 border-violet-200",
 };
 
 const DIFFICULTY_BADGES: Record<VideoDifficulty, { color: string; label: string }> = {
-  beginner: { color: "bg-emerald-500/20 text-emerald-300", label: "Beginner" },
-  intermediate: { color: "bg-amber-500/20 text-amber-300", label: "Intermediate" },
-  advanced: { color: "bg-rose-500/20 text-rose-300", label: "Advanced" },
+  beginner: { color: "bg-emerald-100 text-emerald-700", label: "Beginner" },
+  intermediate: { color: "bg-amber-100 text-amber-700", label: "Intermediate" },
+  advanced: { color: "bg-rose-100 text-rose-700", label: "Advanced" },
 };
 
 interface TreeNodeComponentProps {
@@ -104,8 +104,8 @@ function TreeNodeComponent({
           isSelected
             ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(104,132,255,0.2)]"
             : isHovered
-            ? "bg-white/[0.06] border-white/[0.12]"
-            : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]",
+            ? "bg-muted border-border"
+            : "bg-card border-border hover:bg-muted",
           isLocked && "opacity-50 cursor-not-allowed"
         )}
         style={{ marginLeft: `${level * 24}px` }}
@@ -122,11 +122,11 @@ function TreeNodeComponent({
                 e.stopPropagation();
                 onToggleExpand(node.id);
               }}
-              className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition"
+              className="flex-shrink-0 p-1 rounded-lg hover:bg-muted transition"
             >
               <ChevronRight
                 className={cn(
-                  "h-4 w-4 text-white/40 transition-transform",
+                  "h-4 w-4 text-muted-foreground transition-transform",
                   isExpanded && "rotate-90"
                 )}
               />
@@ -150,7 +150,7 @@ function TreeNodeComponent({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white/90 truncate">
+              <h3 className="text-sm font-semibold text-foreground truncate">
                 {node.title}
               </h3>
               {node.difficulty && (
@@ -162,28 +162,28 @@ function TreeNodeComponent({
                 </span>
               )}
             </div>
-            <p className="text-xs text-white/40 truncate mt-0.5">
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
               {node.description}
             </p>
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-[10px] text-white/30 flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {formatDuration(node.duration)}
               </span>
               {node.concepts && node.concepts.length > 0 && (
-                <span className="text-[10px] text-white/30">
+                <span className="text-[10px] text-muted-foreground">
                   {node.concepts.length} concepts
                 </span>
               )}
               {progress > 0 && (
                 <div className="flex items-center gap-1">
-                  <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-white/30">{progress}%</span>
+                  <span className="text-[10px] text-muted-foreground">{progress}%</span>
                 </div>
               )}
             </div>
@@ -198,10 +198,10 @@ function TreeNodeComponent({
                   e.stopPropagation();
                   onPreview(node);
                 }}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
+                className="p-2 rounded-lg bg-muted hover:bg-black/[0.06] transition"
                 title="Preview"
               >
-                <Play className="h-3.5 w-3.5 text-white/60" />
+                <Play className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             )}
           </div>
@@ -209,7 +209,7 @@ function TreeNodeComponent({
         
         {/* Progress bar */}
         {progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/5 rounded-b-xl overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-muted rounded-b-xl overflow-hidden">
             <motion.div
               className="h-full bg-primary"
               initial={{ width: 0 }}
@@ -320,46 +320,46 @@ export const VideoTreeNavigator = ({
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="p-4 border-b border-white/[0.06] space-y-3">
+      <div className="p-4 border-b border-border space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Video Tree</h2>
+          <h2 className="text-lg font-semibold text-foreground">Video Tree</h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleZoomOut}
-              className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition"
+              className="p-1.5 rounded-lg bg-muted hover:bg-black/[0.06] transition"
               title="Zoom out"
             >
-              <ZoomOut className="h-4 w-4 text-white/60" />
+              <ZoomOut className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               type="button"
               onClick={handleZoomReset}
-              className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition"
+              className="p-1.5 rounded-lg bg-muted hover:bg-black/[0.06] transition"
               title="Reset zoom"
             >
-              <Maximize2 className="h-4 w-4 text-white/60" />
+              <Maximize2 className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               type="button"
               onClick={handleZoomIn}
-              className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition"
+              className="p-1.5 rounded-lg bg-muted hover:bg-black/[0.06] transition"
               title="Zoom in"
             >
-              <ZoomIn className="h-4 w-4 text-white/60" />
+              <ZoomIn className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
         </div>
         
         {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search videos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.06] transition"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-card transition"
           />
         </div>
         
@@ -372,7 +372,7 @@ export const VideoTreeNavigator = ({
               "px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5",
               showRecommended
                 ? "bg-primary/20 text-primary"
-                : "bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"
+                : "bg-muted text-muted-foreground hover:bg-black/[0.06]"
             )}
           >
             <Star className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ export const VideoTreeNavigator = ({
                   "px-2.5 py-1.5 rounded-lg text-xs font-medium transition",
                   selectedDifficulty === key
                     ? badge.color
-                    : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
+                    : "bg-muted text-muted-foreground hover:bg-black/[0.06]"
                 )}
               >
                 {badge.label}
@@ -413,7 +413,7 @@ export const VideoTreeNavigator = ({
                   "p-1.5 rounded-lg transition",
                   selectedType === type
                     ? NODE_TYPE_COLORS[type as VideoNodeType]
-                    : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
+                    : "bg-muted text-muted-foreground hover:bg-black/[0.06]"
                 )}
                 title={type}
               >
@@ -425,13 +425,13 @@ export const VideoTreeNavigator = ({
       </div>
       
       {/* Stats */}
-      <div className="px-4 py-3 bg-white/[0.02] border-b border-white/[0.06]">
+      <div className="px-4 py-3 bg-muted border-b border-border">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-4">
-            <span className="text-white/40">
+            <span className="text-muted-foreground">
               {tree.totalVideos} videos
             </span>
-            <span className="text-white/40">
+            <span className="text-muted-foreground">
               {Math.floor(tree.totalDuration / 60)} minutes
             </span>
             {userProgress && (
@@ -442,8 +442,8 @@ export const VideoTreeNavigator = ({
           </div>
           {userProgress && (
             <div className="flex items-center gap-2">
-              <span className="text-white/40">Progress</span>
-              <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <span className="text-muted-foreground">Progress</span>
+              <div className="w-24 h-1.5 bg-background rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full"
                   style={{
@@ -451,7 +451,7 @@ export const VideoTreeNavigator = ({
                   }}
                 />
               </div>
-              <span className="text-white/60">
+              <span className="text-foreground">
                 {Math.round((userProgress.completedVideos.length / tree.totalVideos) * 100)}%
               </span>
             </div>
@@ -470,7 +470,7 @@ export const VideoTreeNavigator = ({
       >
         {showRecommended && recommendedNodes.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
               <Star className="h-4 w-4 text-amber-400" />
               Recommended Path
             </h3>
@@ -490,7 +490,7 @@ export const VideoTreeNavigator = ({
                 />
               ))}
             </div>
-            <div className="my-4 border-t border-white/[0.06]" />
+            <div className="my-4 border-t border-border" />
           </div>
         )}
         

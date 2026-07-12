@@ -9,8 +9,8 @@ export interface InputProps extends React.ComponentProps<"input"> {
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant = "default", ...props }, ref) => {
     const variants = {
-      default: "h-10 border-0 bg-[rgba(45,52,73,0.72)] text-foreground placeholder:text-muted-foreground/78 focus:bg-[rgba(49,57,77,0.84)] focus-visible:shadow-[0_0_0_6px_rgba(180,197,255,0.12)]",
-      hero: "h-10 border-0 bg-[rgba(45,52,73,0.72)] text-sm text-foreground placeholder:text-muted-foreground/72 focus:bg-[rgba(49,57,77,0.84)] focus-visible:shadow-[0_0_0_6px_rgba(180,197,255,0.12)]",
+      default: "h-10 border border-border bg-black/[0.02] text-foreground placeholder:text-muted-foreground/78 focus:bg-white focus-visible:shadow-[0_0_0_6px_hsl(var(--primary)/0.12)]",
+      hero: "h-10 border border-border bg-black/[0.02] text-sm text-foreground placeholder:text-muted-foreground/72 focus:bg-white focus-visible:shadow-[0_0_0_6px_hsl(var(--primary)/0.12)]",
     };
 
     return (

@@ -96,9 +96,9 @@ export const DemoMockup = () => {
                     </div>
                   </>
                 ) : (
-                  <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#0f172a,#020617)]">
-                    <div className="text-center text-white/80">
-                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/25 border-t-white/90" />
+                  <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#f1f5f9,#e2e8f0)]">
+                    <div className="text-center text-slate-500">
+                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-slate-600" />
                       Loading demo workspace...
                     </div>
                   </div>

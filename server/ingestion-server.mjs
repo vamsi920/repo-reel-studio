@@ -47,6 +47,16 @@ const DEFAULT_PYTHON_CODEGRAPH_TIMEOUT_MS = Number(process.env.INGEST_PYTHON_COD
 const GITHUB_API_BASE = "https://api.github.com";
 const MAX_DIAGNOSTIC_SAMPLES = 5;
 
+// Security headers on every response (defense-in-depth for the ingestion API).
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-site");
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  next();
+});
+
 // Add request logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);

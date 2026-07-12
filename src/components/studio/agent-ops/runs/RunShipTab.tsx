@@ -22,7 +22,7 @@ export function RunShipTab({
   return (
     <div className="min-w-0 space-y-6">
       <section aria-labelledby="run-ship-pr-heading">
-        <h4 id="run-ship-pr-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+        <h4 id="run-ship-pr-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Pull request
         </h4>
         <RunPrTab
@@ -39,7 +39,7 @@ export function RunShipTab({
       </section>
 
       <section aria-labelledby="run-ship-brief-heading">
-        <h4 id="run-ship-brief-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+        <h4 id="run-ship-brief-heading" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Reviewer brief
         </h4>
         <RunReviewerBriefTab run={run} isRunActive={isRunActive} isReview={isReview} />

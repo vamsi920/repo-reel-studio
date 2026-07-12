@@ -10,7 +10,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, variant =
   const variants = {
     default: "premium-card",
     elevated: "premium-card hover-lift",
-    glass: "glass border border-white/[0.08]",
+    glass: "bg-white/70 backdrop-blur-xl border border-black/[0.06]",
     interactive: "premium-card hover-lift cursor-pointer",
   };
 

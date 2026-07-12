@@ -7,6 +7,7 @@ import { PolicyBanner } from "@/components/studio/agent-ops/proactive/PolicyBann
 import { ProactiveCandidateFactStrip } from "@/components/studio/agent-ops/proactive/ProactiveCandidateFactStrip";
 import { ProactiveInspectorTabBar } from "@/components/studio/agent-ops/proactive/ProactiveInspectorTabBar";
 import { ProactiveLiveConsole } from "@/components/studio/agent-ops/proactive/ProactiveLiveConsole";
+import { ProactiveDeepWorkJourney } from "@/components/studio/agent-ops/proactive/ProactiveDeepWorkJourney";
 import {
   proactiveInspectorPanelId,
   proactiveInspectorTabId,
@@ -78,15 +79,15 @@ export function ProactiveCandidateDetail({
 
   return (
     <AgentOpsPanel className="min-w-0 max-w-full">
-      <header className="border-b border-white/[0.06] px-3 py-3 sm:px-4">
+      <header className="border-b border-border px-3 py-3 sm:px-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-white/35">Inspection</p>
-            <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white">{candidate.title}</h3>
+            <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Inspection</p>
+            <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">{candidate.title}</h3>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <CandidateTypeChip type={candidate.type} />
               <CandidateStatusPill status={candidate.status} executionFailure={candidate.executionFailure} />
-              <span className="text-xs tabular-nums text-white/45">Score {candidateScorePercent(candidate)}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">Score {candidateScorePercent(candidate)}</span>
             </div>
           </div>
           {candidate.runId ? (
@@ -127,7 +128,11 @@ export function ProactiveCandidateDetail({
       >
         {activeTab === "overview" && (
           <div className="space-y-3">
-            <p className="text-xs leading-5 text-white/55">{candidate.hypothesis}</p>
+            {linkedRun?.journey ? (
+              <ProactiveDeepWorkJourney journey={linkedRun.journey} prReady={linkedRun.prReady} />
+            ) : null}
+
+            <p className="text-xs leading-5 text-muted-foreground">{candidate.hypothesis}</p>
 
             {evidence.length > 0 ? (
               <DisclosureSection
@@ -136,7 +141,7 @@ export function ProactiveCandidateDetail({
               >
                 <ul className="space-y-1.5">
                   {evidence.map((item) => (
-                    <li key={item} className="flex gap-2 text-xs leading-5 text-white/58">
+                    <li key={item} className="flex gap-2 text-xs leading-5 text-muted-foreground">
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-300/80" aria-hidden />
                       <span className="min-w-0">{item}</span>
                     </li>
@@ -172,7 +177,7 @@ export function ProactiveCandidateDetail({
         {activeTab === "checks" && (
           <div className="space-y-4">
             <section aria-labelledby="proactive-checks-validation">
-              <h4 id="proactive-checks-validation" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36">
+              <h4 id="proactive-checks-validation" className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Validation
               </h4>
               {linkedRun ? (
@@ -192,21 +197,21 @@ export function ProactiveCandidateDetail({
 
             {changedFiles.length > 0 ? (
               <DisclosureSection title={`Changed files (${changedFiles.length})`} defaultOpen={changedFiles.length <= 6}>
-                <ul className="divide-y divide-white/[0.06] font-mono text-[11px]">
+                <ul className="divide-y divide-border font-mono text-[11px]">
                   {changedFiles.slice(0, 20).map((file) => (
                     <li key={file.path} className="flex min-w-0 items-center justify-between gap-2 py-1.5">
-                      <span className="min-w-0 break-all text-white/72 sm:break-normal sm:truncate" title={file.path}>
+                      <span className="min-w-0 break-all text-foreground/80 sm:break-normal sm:truncate" title={file.path}>
                         {file.sensitive ? "[sensitive] " : ""}
                         {file.path}
                       </span>
-                      <span className="shrink-0 tabular-nums text-white/35">
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
                         +{file.additions}/-{file.deletions}
                       </span>
                     </li>
                   ))}
                 </ul>
                 {changedFiles.length > 20 ? (
-                  <p className="mt-1 text-[10px] text-white/35">+{changedFiles.length - 20} more files</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">+{changedFiles.length - 20} more files</p>
                 ) : null}
               </DisclosureSection>
             ) : null}
@@ -244,7 +249,7 @@ export function ProactiveCandidateDetail({
 
             {linkedRun?.diffStat ? (
               <DisclosureSection title="Patch stat">
-                <pre className="max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-5 text-white/62">
+                <pre className="max-h-28 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-5 text-foreground/80">
                   <code>{linkedRun.diffStat}</code>
                 </pre>
               </DisclosureSection>
@@ -270,18 +275,18 @@ function DisclosureSection({
   return (
     <details
       open={defaultOpen}
-      className={cn("group rounded-lg border border-white/[0.06] bg-white/[0.02]", agentOpsTransitionClass)}
+      className={cn("group rounded-lg border border-border bg-muted/30", agentOpsTransitionClass)}
     >
       <summary
         className={cn(
-          "flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/36 [&::-webkit-details-marker]:hidden",
+          "flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground [&::-webkit-details-marker]:hidden",
           agentOpsTransitionClass,
         )}
       >
         {title}
         <span
           className={cn(
-            "text-white/30 transition group-open:rotate-180",
+            "text-muted-foreground transition group-open:rotate-180",
             agentOpsChevronClass,
           )}
           aria-hidden
@@ -289,7 +294,7 @@ function DisclosureSection({
           ▾
         </span>
       </summary>
-      <div className="border-t border-white/[0.05] px-3 py-2.5">{children}</div>
+      <div className="border-t border-border px-3 py-2.5">{children}</div>
     </details>
   );
 }
@@ -297,8 +302,8 @@ function DisclosureSection({
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 items-baseline justify-between gap-3 text-xs">
-      <span className="shrink-0 text-white/38">{label}</span>
-      <span className="min-w-0 truncate text-right text-white/72">{value}</span>
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className="min-w-0 truncate text-right text-foreground/80">{value}</span>
     </div>
   );
 }
@@ -319,22 +324,22 @@ function QualityGatesSummary({
           className={cn(
             "rounded-md border px-2 py-0.5 font-medium capitalize",
             qualityGates.allPassed
-              ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
-              : "border-amber-300/25 bg-amber-300/10 text-amber-100",
+              ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-700"
+              : "border-amber-300/25 bg-amber-300/10 text-amber-700",
           )}
         >
           {qualityGates.recommendation}
         </span>
-        <span className="text-white/38">{qualityGates.allPassed ? "All passed" : "Needs attention"}</span>
+        <span className="text-muted-foreground">{qualityGates.allPassed ? "All passed" : "Needs attention"}</span>
       </div>
-      <ul className="divide-y divide-white/[0.06]">
+      <ul className="divide-y divide-border">
         {qualityGates.gates.map((gate) => (
           <li key={gate.gate} className="flex min-w-0 items-center justify-between gap-2 py-1.5 text-xs">
-            <span className="text-white/65">{gate.gate}</span>
+            <span className="text-foreground/80">{gate.gate}</span>
             <span
               className={cn(
                 "shrink-0 font-medium uppercase tracking-[0.06em]",
-                gate.status === "passed" || gate.status === "pass" ? "text-emerald-200/90" : "text-amber-200/90",
+                gate.status === "passed" || gate.status === "pass" ? "text-emerald-700" : "text-amber-700",
               )}
             >
               {gate.status}
@@ -343,7 +348,7 @@ function QualityGatesSummary({
         ))}
       </ul>
       {evaluation?.riskLevel ? (
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-muted-foreground">
           Risk {evaluation.riskLevel}
           {evaluation.confidenceLevel ? ` · Confidence ${evaluation.confidenceLevel}` : ""}
         </p>

@@ -34,18 +34,18 @@ export function PrPublicationStatusBar({
         headline.tone === "open" && "border-emerald-300/25 bg-emerald-300/8",
         headline.tone === "draft" && "border-sky-300/20 bg-sky-300/6",
         headline.tone === "approval" && "border-amber-300/25 bg-amber-300/8",
-        headline.tone === "pending" && "border-white/10 bg-white/[0.03]",
-        headline.tone === "idle" && "border-white/[0.08] bg-white/[0.02]",
+        headline.tone === "pending" && "border-border bg-muted",
+        headline.tone === "idle" && "border-border bg-muted/60",
       )}
       role="status"
     >
       <div className={cn("flex gap-2", compact ? "flex-col" : "flex-col sm:flex-row sm:items-start sm:justify-between")}>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <GitPullRequest className="h-4 w-4 shrink-0 text-white/55" aria-hidden />
-            <p className="text-sm font-semibold text-white/88">{headline.title}</p>
+            <GitPullRequest className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <p className="text-sm font-semibold text-foreground">{headline.title}</p>
           </div>
-          <p className="mt-1 text-xs leading-5 text-white/48">{headline.detail}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{headline.detail}</p>
           <PublicationFacts snapshot={snapshot} />
         </div>
 
@@ -88,6 +88,6 @@ function PublicationFacts({ snapshot }: { snapshot: PrPublicationSnapshot }) {
   if (facts.length === 0) return null;
 
   return (
-    <p className="mt-2 text-[11px] text-white/38">{facts.join(" · ")}</p>
+    <p className="mt-2 text-[11px] text-muted-foreground">{facts.join(" · ")}</p>
   );
 }

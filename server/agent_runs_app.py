@@ -12,11 +12,12 @@ from __future__ import annotations
 import os
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent_runs import create_agent_run_router
 from github_webhook import create_webhook_router
+from governance_api import create_governance_router
 from proactive_api import create_proactive_router
 from proactive_api_errors import register_proactive_exception_handlers
 
@@ -49,16 +50,43 @@ load_repo_env_file()
 
 app = FastAPI(title="GitFlick Agent Runs API", version="1.0.0")
 register_proactive_exception_handlers(app)
+
+
+# Security headers on every API response (defense-in-depth for the agent-ops API).
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Cross-Origin-Resource-Policy": "same-site",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+}
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for key, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(key, value)
+    return response
+
+
+# CORS: tightened to a configurable allowlist. No credentials are used (the app is
+# auth-free / token-in-body), so we keep credentials off and default to a permissive
+# origin only when no allowlist is configured.
+_origins_env = os.environ.get("AGENT_API_ALLOWED_ORIGINS", "").strip()
+_allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    max_age=86400,
 )
 app.include_router(create_agent_run_router(), prefix="/api")
 app.include_router(create_webhook_router(), prefix="/api")
 app.include_router(create_proactive_router(), prefix="/api")
+app.include_router(create_governance_router(), prefix="/api")
 
 
 @app.get("/api/health-agent")

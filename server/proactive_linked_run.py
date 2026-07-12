@@ -203,6 +203,63 @@ def normalize_change_intent(raw: Any) -> dict[str, Any]:
     return {"hypothesis": hypothesis, "evidenceSufficiency": sufficiency}
 
 
+def normalize_journey(raw: Any) -> Optional[dict[str, Any]]:
+    """Pass through the deep-work journey artifact, lightly bounded for transport."""
+    if not isinstance(raw, dict) or not raw.get("stages"):
+        return None
+    stages = [
+        {
+            "key": str(s.get("key") or ""),
+            "label": str(s.get("label") or ""),
+            "status": str(s.get("status") or "pending"),
+            "detail": truncate_linked_run_text(s.get("detail"), 400),
+        }
+        for s in (raw.get("stages") or [])
+        if isinstance(s, dict)
+    ][:8]
+    approaches = [
+        {
+            "id": str(a.get("id") or ""),
+            "title": str(a.get("title") or ""),
+            "risk": str(a.get("risk") or ""),
+            "score": a.get("score"),
+            "rationale": truncate_linked_run_text(a.get("rationale"), 280),
+        }
+        for a in (raw.get("approaches") or [])
+        if isinstance(a, dict)
+    ][:6]
+    attempts = [
+        {
+            "index": a.get("index"),
+            "validationStatus": str(a.get("validationStatus") or ""),
+            "patchPresent": bool(a.get("patchPresent")),
+            "changedFiles": a.get("changedFiles"),
+            "approachTitle": str((a.get("approach") or {}).get("title") or ""),
+            "prReady": bool((a.get("prReady") or {}).get("ready")),
+        }
+        for a in (raw.get("attempts") or [])
+        if isinstance(a, dict)
+    ][:6]
+    research = raw.get("research") if isinstance(raw.get("research"), dict) else {}
+    return {
+        "version": raw.get("version", 1),
+        "prReady": bool(raw.get("prReady")),
+        "stages": stages,
+        "approaches": approaches,
+        "attempts": attempts,
+        "attemptsRun": raw.get("attemptsRun", len(attempts)),
+        "maxAttempts": raw.get("maxAttempts"),
+        "selected": raw.get("selected") if isinstance(raw.get("selected"), dict) else None,
+        "research": {
+            "summary": truncate_linked_run_text(research.get("summary"), 400),
+            "targetFile": str(research.get("targetFile") or ""),
+            "relatedFiles": [str(f) for f in (research.get("relatedFiles") or [])][:8],
+            "existingTests": [str(f) for f in (research.get("existingTests") or [])][:6],
+            "riskNotes": [truncate_linked_run_text(n, 200) for n in (research.get("riskNotes") or [])][:5],
+        },
+    }
+
+
 def build_linked_run_summary(run: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
     if not isinstance(run, dict):
         return None
@@ -254,4 +311,6 @@ def build_linked_run_summary(run: Optional[dict[str, Any]]) -> Optional[dict[str
         "sensitivePaths": list(policy["sensitivePaths"]),
         "sandboxPolicy": artifacts.get("sandboxPolicy") if isinstance(artifacts.get("sandboxPolicy"), dict) else None,
         "policyAudit": artifacts.get("policyAudit") if isinstance(artifacts.get("policyAudit"), dict) else None,
+        "journey": normalize_journey(artifacts.get("journey")),
+        "prReady": bool(artifacts.get("prReady")),
     }

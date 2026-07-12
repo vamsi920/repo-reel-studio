@@ -1,0 +1,58 @@
+{
+  "name": "gitflick-proactive-governance",
+  "version": "1.0",
+  "defaults": { "action": "allow" },
+  "rules": [
+    {
+      "name": "deny-destructive-shell",
+      "description": "Destructive or system-altering shell patterns are structurally blocked.",
+      "priority": 100,
+      "action": "deny",
+      "condition": { "field": "flags.destructive", "operator": "truthy" }
+    },
+    {
+      "name": "deny-remote-fetch-exec",
+      "description": "Piping a network download straight into a shell (curl|bash) is blocked.",
+      "priority": 100,
+      "action": "deny",
+      "condition": { "field": "flags.remote_exec", "operator": "truthy" }
+    },
+    {
+      "name": "deny-secret-exfiltration",
+      "description": "Reading credential/secret material into a command is blocked.",
+      "priority": 95,
+      "action": "deny",
+      "condition": { "field": "flags.secret_access", "operator": "truthy" }
+    },
+    {
+      "name": "require-approval-pr-create",
+      "description": "Opening a pull request requires human approval.",
+      "priority": 80,
+      "action": "require_approval",
+      "approvers": ["maintainer"],
+      "condition": { "field": "action.type", "operator": "eq", "value": "pr.create" }
+    },
+    {
+      "name": "require-approval-git-push",
+      "description": "Pushing to a remote requires human approval.",
+      "priority": 80,
+      "action": "require_approval",
+      "approvers": ["maintainer"],
+      "condition": { "field": "action.type", "operator": "eq", "value": "git.push" }
+    },
+    {
+      "name": "require-approval-network-install",
+      "description": "Dependency installation reaches the network; allowed but recorded as elevated.",
+      "priority": 40,
+      "action": "allow",
+      "condition": { "field": "flags.network", "operator": "truthy" }
+    },
+    {
+      "name": "allow-known-validation",
+      "description": "Test / lint / build / diff validation commands are allowed.",
+      "priority": 30,
+      "action": "allow",
+      "condition": { "field": "flags.known_validation", "operator": "truthy" }
+    }
+  ]
+}

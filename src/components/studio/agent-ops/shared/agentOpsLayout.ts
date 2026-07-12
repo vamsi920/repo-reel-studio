@@ -5,7 +5,7 @@ export const agentOpsPanelSurfaceClass =
 
 /** Sidebar / board panels — lighter chrome to avoid stacked `gf-panel` clutter on narrow viewports. */
 export const agentOpsNestedPanelClass =
-  "min-w-0 max-w-full overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.025] shadow-none";
+  "min-w-0 max-w-full overflow-hidden rounded-[18px] border border-border bg-muted/60 shadow-none";
 
 export const agentOpsFactStripClass =
   "flex min-w-0 gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden";
@@ -24,7 +24,7 @@ export const agentOpsStudioEmbedClass = `${agentOpsRootClass} ${agentOpsStudioSe
 
 /** In-Studio toolbar chrome (lighter than nested `gf-panel` shells). */
 export const agentOpsStudioChromeClass =
-  "shrink-0 rounded-[22px] border border-white/[0.08] bg-white/[0.025] px-4 py-3 sm:px-5 sm:py-3.5";
+  "shrink-0 rounded-[22px] border border-border bg-muted/60 px-4 py-3 sm:px-5 sm:py-3.5";
 
 export const agentOpsStudioPanelClass = "min-h-0 flex-1 min-w-0 outline-none";
 
@@ -38,7 +38,7 @@ export const agentOpsSplitMainClass = "min-w-0 max-w-full space-y-3";
 export const agentOpsInspectorShellClass = agentOpsPanelSurfaceClass;
 
 export const agentOpsFieldLabelClass =
-  "text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40";
+  "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
 
 export const agentOpsProactiveMainGridClass =
   "grid min-w-0 max-w-full grid-cols-1 gap-3 md:gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(min(100%,360px),380px)] xl:items-start";

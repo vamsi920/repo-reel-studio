@@ -698,7 +698,7 @@ export const SceneListSidebar = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#141c37]">
+    <div className="flex h-full flex-col bg-card">
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {manifest.scenes.map((scene, index) => {
           const isActive = index === currentSceneIndex;
@@ -711,7 +711,7 @@ export const SceneListSidebar = ({
               className={`w-full text-left p-3 rounded-lg transition-all group ${
                 isActive
                   ? "bg-primary/14 border border-primary/30"
-                  : "hover:bg-white/[0.04] border border-transparent"
+                  : "hover:bg-muted border border-transparent"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -731,7 +731,7 @@ export const SceneListSidebar = ({
                   <div className="flex items-center gap-2">
                     <span
                     className={`text-sm font-medium truncate ${
-                        isActive ? "text-white" : "text-white/78"
+                        isActive ? "text-foreground" : "text-foreground/80"
                       }`}
                     >
                       {scene.title || `Scene ${scene.id}`}
@@ -739,16 +739,16 @@ export const SceneListSidebar = ({
                   </div>
 
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-white/44">
+                    <span className="text-xs text-muted-foreground">
                       {formatSceneTime(scene.startFrame)}
                     </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/[0.06] text-white/46 capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground capitalize">
                       {sceneType.replace("_", " ")}
                     </span>
                   </div>
 
                   {scene.file_path && scene.file_path !== "N/A" && (
-                    <p className="mt-1 truncate font-mono text-xs text-white/38">
+                    <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
                       {scene.file_path}
                     </p>
                   )}
@@ -765,8 +765,8 @@ export const SceneListSidebar = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="border-t border-white/8 p-4">
-        <div className="mb-3 text-xs text-white/42">
+      <div className="border-t border-border p-4">
+        <div className="mb-3 text-xs text-muted-foreground">
           {manifest.scenes.length} scenes • {formatSceneTime(manifest.totalFrames)} total
         </div>
         <Button

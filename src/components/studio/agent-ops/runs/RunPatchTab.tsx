@@ -85,8 +85,8 @@ function PatchSection({
 }) {
   return (
     <section className="min-w-0">
-      <h3 className="text-sm font-semibold text-white/88">{title}</h3>
-      <p className="mt-0.5 text-xs text-white/40">{hint}</p>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
       <div className="mt-2">{children}</div>
     </section>
   );
@@ -114,7 +114,7 @@ function PatchPlaceholder({
   return (
     <AgentOpsEmptyState message={message} action={action} compact>
       {icon === "loading" ? (
-        <AgentOpsSpinner className="h-3.5 w-3.5 text-white/35" />
+        <AgentOpsSpinner className="h-3.5 w-3.5 text-muted-foreground" />
       ) : null}
     </AgentOpsEmptyState>
   );

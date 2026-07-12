@@ -22,10 +22,10 @@ export function CompactMetric({
   return (
     <div className={cn(agentOpsMetricCellClass, agentOpsMetricCellStableClass)}>
       <div className={cn(agentOpsMetricLabelClass, "flex items-center gap-1.5")}>
-        <Icon className="h-3.5 w-3.5 shrink-0 text-white/32" aria-hidden />
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
         {label}
       </div>
-      <div className={cn(agentOpsMetricValueClass, "text-base text-white/88")}>{value}</div>
+      <div className={cn(agentOpsMetricValueClass, "text-base text-foreground")}>{value}</div>
     </div>
   );
 }

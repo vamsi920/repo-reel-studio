@@ -41,13 +41,13 @@ function RunQueueItemComponent({ run, isSelected, onSelect }: RunQueueItemProps)
           agentOpsQueueRowClass,
           agentOpsFocusVisibleClass,
           "focus-visible:ring-inset",
-          isSelected ? "bg-white/[0.09]" : "hover:bg-white/[0.04]",
+          isSelected ? "bg-muted" : "hover:bg-muted/60",
         )}
       >
         <div className="flex min-w-0 items-center justify-between gap-2">
           <RunStatusBadge status={run.status} variant="short" className="max-w-[58%] truncate" />
           <time
-            className="shrink-0 text-[10px] font-medium tabular-nums text-white/36"
+            className="shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground"
             dateTime={run.updatedAt}
             title={run.updatedAt}
           >

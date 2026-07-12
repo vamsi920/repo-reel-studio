@@ -83,7 +83,7 @@ export function IssueRunComposer({
 
       {!isGitHub ? (
         <div
-          className="mt-3 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs leading-5 text-rose-100"
+          className="mt-3 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-xs leading-5 text-rose-700"
           role="alert"
         >
           {AGENT_OPS_COPY.githubOnly}
@@ -111,7 +111,7 @@ export function IssueRunComposer({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1 space-y-1">
             <label htmlFor={BRANCH_ID} className={agentOpsFieldLabelClass}>
-              Branch <span className="font-normal normal-case tracking-normal text-white/30">(optional)</span>
+              Branch <span className="font-normal normal-case tracking-normal text-muted-foreground">(optional)</span>
             </label>
             <Input
               id={BRANCH_ID}
@@ -143,7 +143,7 @@ export function IssueRunComposer({
             <AgentOpsAttentionPanel attention={formErrorAttention} />
           </div>
         ) : showEmptyHint ? (
-          <p className="text-xs leading-5 text-white/36">{AGENT_OPS_COPY.issueUrlHint}</p>
+          <p className="text-xs leading-5 text-muted-foreground">{AGENT_OPS_COPY.issueUrlHint}</p>
         ) : null}
       </form>
     </AgentOpsPanel>

@@ -51,7 +51,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 glass border-b border-white/[0.08]">
+    <nav className="fixed inset-x-0 top-0 z-50 glass border-b border-border">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3 group">
@@ -70,7 +70,7 @@ export const Navbar = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-white/[0.05] transition-all"
+                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-black/[0.05] transition-all"
                 >
                   {item.label}
                 </a>
@@ -78,7 +78,7 @@ export const Navbar = () => {
                 <Link
                   key={item.label}
                   to="/"
-                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-white/[0.05] transition-all"
+                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-lg hover:bg-black/[0.05] transition-all"
                 >
                   {item.label}
                 </Link>
@@ -102,7 +102,7 @@ export const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex h-10 items-center gap-2 px-2 pr-3 rounded-xl glass-hover glass transition-all">
-                    <Avatar className="h-8 w-8 ring-2 ring-white/10">
+                    <Avatar className="h-8 w-8 ring-2 ring-border">
                       <AvatarImage src={userAvatar} alt={userName || userEmail} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-medium">
                         {getUserInitials(userName, userEmail)}
@@ -114,7 +114,7 @@ export const Navbar = () => {
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60 glass border-white/10">
+                <DropdownMenuContent align="end" className="w-60 glass border-border">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold gradient-text">
@@ -125,20 +125,20 @@ export const Navbar = () => {
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem asChild className="focus:bg-white/[0.08]">
+                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuItem asChild className="focus:bg-black/[0.05]">
                     <Link to="/dashboard" className="cursor-pointer">
                       <LayoutGrid className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="focus:bg-white/[0.08]">
+                  <DropdownMenuItem asChild className="focus:bg-black/[0.05]">
                     <Link to="/profile" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator className="bg-border" />
                   <DropdownMenuItem
                     onClick={handleSignOut}
                     className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
@@ -171,7 +171,7 @@ export const Navbar = () => {
           ) : null}
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.04] text-white"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-black/[0.04] text-foreground"
             onClick={() => setMobileMenuOpen((current) => !current)}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -187,7 +187,7 @@ export const Navbar = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-white/82 transition hover:bg-white/[0.05]"
+                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-foreground/82 transition hover:bg-black/[0.05]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
@@ -196,7 +196,7 @@ export const Navbar = () => {
                 <Link
                   key={item.label}
                   to="/"
-                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-white/82 transition hover:bg-white/[0.05]"
+                  className="block rounded-2xl px-3 py-2.5 text-[0.95rem] font-medium text-foreground/82 transition hover:bg-black/[0.05]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}

@@ -306,6 +306,62 @@ export function normalizeProactiveLinkedRun(raw: unknown): ProactiveLinkedRunSum
     sensitivePaths: Array.isArray(raw.sensitivePaths)
       ? raw.sensitivePaths.map((item) => asString(item, "")).filter(Boolean)
       : [],
+    prReady: asBoolean(raw.prReady, false),
+    journey: normalizeDeepWorkJourney(raw.journey),
+  };
+}
+
+function normalizeDeepWorkJourney(
+  raw: unknown,
+): ProactiveLinkedRunSummary["journey"] {
+  if (!isRecord(raw) || !Array.isArray(raw.stages)) return null;
+  const research = isRecord(raw.research) ? raw.research : {};
+  return {
+    version: asNumber(raw.version, 1),
+    prReady: asBoolean(raw.prReady, false),
+    stages: raw.stages.filter(isRecord).map((s) => ({
+      key: asString(s.key, ""),
+      label: asString(s.label, ""),
+      status: asString(s.status, "pending"),
+      detail: asString(s.detail, ""),
+    })),
+    approaches: Array.isArray(raw.approaches)
+      ? raw.approaches.filter(isRecord).map((a) => ({
+          id: asString(a.id, ""),
+          title: asString(a.title, ""),
+          risk: asString(a.risk, ""),
+          score: typeof a.score === "number" ? a.score : null,
+          rationale: asString(a.rationale, ""),
+        }))
+      : [],
+    attempts: Array.isArray(raw.attempts)
+      ? raw.attempts.filter(isRecord).map((a) => ({
+          index: typeof a.index === "number" ? a.index : null,
+          validationStatus: asString(a.validationStatus, ""),
+          patchPresent: asBoolean(a.patchPresent, false),
+          changedFiles: typeof a.changedFiles === "number" ? a.changedFiles : null,
+          approachTitle: asString(a.approachTitle, ""),
+          prReady: asBoolean(a.prReady, false),
+        }))
+      : [],
+    attemptsRun: asNumber(raw.attemptsRun, 0),
+    maxAttempts: typeof raw.maxAttempts === "number" ? raw.maxAttempts : null,
+    selected: isRecord(raw.selected)
+      ? { id: asOptionalString(raw.selected.id), title: asOptionalString(raw.selected.title) }
+      : null,
+    research: {
+      summary: asString(research.summary, ""),
+      targetFile: asString(research.targetFile, ""),
+      relatedFiles: Array.isArray(research.relatedFiles)
+        ? research.relatedFiles.map((f) => asString(f, "")).filter(Boolean)
+        : [],
+      existingTests: Array.isArray(research.existingTests)
+        ? research.existingTests.map((f) => asString(f, "")).filter(Boolean)
+        : [],
+      riskNotes: Array.isArray(research.riskNotes)
+        ? research.riskNotes.map((f) => asString(f, "")).filter(Boolean)
+        : [],
+    },
   };
 }
 

@@ -86,28 +86,28 @@ const WORKSPACE_VIEWS: Array<{
     label: "Walkthrough",
     description: "Review the generated narrative and jump scene by scene.",
     icon: Play,
-    accent: "from-primary/16 via-[#18223f] to-cyan-300/8",
+    accent: "from-primary/16 via-[#eef6fb] to-cyan-300/8",
   },
   {
     id: "graph",
     label: "Code Graph",
     description: "Inspect structure, entry points, and dependency hotspots.",
     icon: Network,
-    accent: "from-emerald-300/14 via-[#18223f] to-teal-300/8",
+    accent: "from-emerald-300/14 via-[#eef6fb] to-teal-300/8",
   },
   {
     id: "ask",
     label: "Repo Q&A",
     description: "Ask targeted questions and get file-backed answers.",
     icon: Search,
-    accent: "from-indigo-300/14 via-[#18223f] to-blue-300/8",
+    accent: "from-indigo-300/14 via-[#eef6fb] to-blue-300/8",
   },
   {
     id: "runs",
     label: "Agent Ops",
     description: "Launch issue-bound sandboxes, inspect results, and approve promotion.",
     icon: Sparkles,
-    accent: "from-amber-300/14 via-[#18223f] to-orange-300/8",
+    accent: "from-amber-300/14 via-[#eef6fb] to-orange-300/8",
   },
 ];
 
@@ -579,7 +579,7 @@ const Studio = () => {
     () => ({
       width: "100%",
       height: "100%",
-      backgroundColor: "#020617",
+      backgroundColor: "hsl(var(--muted))",
       borderRadius: "16px",
       overflow: "hidden",
       boxShadow: "0 0 0 1px rgba(15,23,42,0.08), 0 18px 40px rgba(15,23,42,0.18)",
@@ -1138,11 +1138,11 @@ const Studio = () => {
         </div>
 
         <div className="mt-6">
-          <div className="flex items-center justify-between text-sm text-white/52">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>{currentStep || "Preparing studio..."}</span>
             <span>{progress}%</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -1151,13 +1151,13 @@ const Studio = () => {
         </div>
 
         {phase === "generating-voice" && ttsProgress.total > 0 && (
-          <div className="mt-4 rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm text-white/56 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="mt-4 rounded-[18px] bg-muted px-4 py-3 text-sm text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
             Voice generation: scene {ttsProgress.completed} of {ttsProgress.total}
           </div>
         )}
 
-        <div className="mt-5 rounded-[18px] bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+        <div className="mt-5 rounded-[18px] bg-muted p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Recent Activity
           </div>
           <div className="mt-3 space-y-2 font-mono text-xs">
@@ -1165,12 +1165,12 @@ const Studio = () => {
               <div
                 key={`${log.timestamp}-${index}`}
                 className={log.type === "error"
-                  ? "text-rose-200"
+                  ? "text-destructive"
                   : log.type === "warning"
-                    ? "text-amber-200"
+                    ? "text-amber-600"
                     : log.type === "success"
-                      ? "text-emerald-200"
-                      : "text-white/58"}
+                      ? "text-emerald-600"
+                      : "text-muted-foreground"}
               >
                 [{log.timestamp}] {log.message}
               </div>
@@ -1208,13 +1208,13 @@ const Studio = () => {
         />
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-0 z-30 glass border-b border-white/[0.08]">
+          <header className="sticky top-0 z-30 glass border-b border-border">
             <div className="flex flex-col gap-3 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <Link to="/dashboard" className="btn-ghost p-2">
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
-                <div className="h-8 w-px bg-white/10" />
+                <div className="h-8 w-px bg-border" />
                 <div>
                   <div className="text-lg font-bold gradient-text">{repoLabel}</div>
                   <div className="text-sm text-muted-foreground">
@@ -1253,10 +1253,10 @@ const Studio = () => {
               {isLoading ? (
                 <LoadingScreen />
               ) : phase === "error" ? (
-                <div className="rounded-[24px] border border-rose-300/18 bg-[#151d38] p-6 shadow-[0_18px_44px_rgba(2,6,23,0.28)]">
-                  <AlertTriangle className="h-10 w-10 text-rose-300" />
-                  <h2 className="mt-4 text-2xl font-semibold text-white">Studio failed to load</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/56">
+                <div className="rounded-[24px] border border-destructive/20 bg-destructive/5 p-6 shadow-[0_18px_44px_rgba(2,6,23,0.06)]">
+                  <AlertTriangle className="h-10 w-10 text-destructive" />
+                  <h2 className="mt-4 text-2xl font-semibold text-foreground">Studio failed to load</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                     {currentStep || "The project manifest could not be loaded for this studio session."}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-3">
@@ -1276,7 +1276,7 @@ const Studio = () => {
                 className={cn(
                   "grid gap-5",
                   isVideoFullscreen
-                    ? "fixed inset-0 z-50 bg-[#081227] p-4 lg:grid-cols-[minmax(0,80%)_minmax(260px,20%)]"
+                    ? "fixed inset-0 z-50 bg-background p-4 lg:grid-cols-[minmax(0,80%)_minmax(260px,20%)]"
                     : "xl:grid-cols-[minmax(0,1fr)_300px]",
                 )}
               >
@@ -1347,11 +1347,11 @@ const Studio = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex min-h-[460px] items-center justify-center rounded-[22px] bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                        <div className="flex min-h-[460px] items-center justify-center rounded-[22px] bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <div className="max-w-md px-6 text-center">
-                            <AlertTriangle className="mx-auto h-12 w-12 text-amber-300" />
-                            <h2 className="mt-4 text-xl font-semibold text-white">Player not ready</h2>
-                            <p className="mt-2 text-sm leading-6 text-white/56">
+                            <AlertTriangle className="mx-auto h-12 w-12 text-amber-500" />
+                            <h2 className="mt-4 text-xl font-semibold text-foreground">Player not ready</h2>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
                               The video manifest loaded, but the player could not be prepared yet.
                             </p>
                             <div className="mt-5 flex justify-center gap-3">
@@ -1386,10 +1386,10 @@ const Studio = () => {
                     ) : (
                       <>
                         <div className="px-4 py-3.5">
-                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                             Scenes
                           </div>
-                          <div className="mt-1 text-sm text-white/56">
+                          <div className="mt-1 text-sm text-muted-foreground">
                             Jump to a part of the walkthrough without leaving the page.
                           </div>
                         </div>
@@ -1419,10 +1419,10 @@ const Studio = () => {
                 ) : (
                   <div className="rounded-[22px] gf-panel p-5 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
                     <div className="text-sm font-medium text-primary">Code Graph</div>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                    <h2 className="mt-2 text-2xl font-semibold text-foreground">
                       Graph data is not available for this session
                     </h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-white/56">
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                       The project manifest loaded, but the raw graph payload was
                       not present in the current session. Re-running processing
                       will rebuild the graph view.
@@ -1473,7 +1473,7 @@ const StudioSidebar = ({
   activeView: WorkspaceView;
   onChangeView: (view: WorkspaceView) => void;
 }) => (
-  <aside className="hidden lg:flex lg:flex-col w-64 glass border-r border-white/[0.08]">
+  <aside className="hidden lg:flex lg:flex-col w-64 glass border-r border-border">
     <div className="p-6">
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -1505,8 +1505,8 @@ const StudioSidebar = ({
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   isActive
-                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-white shadow-lg shadow-primary/10"
-                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-foreground shadow-lg shadow-primary/10"
+                    : "text-muted-foreground hover:bg-black/[0.03] hover:text-foreground",
                 )}
               >
                 <view.icon className="h-4 w-4 shrink-0" />
@@ -1554,7 +1554,7 @@ const StudioWorkspaceTabs = ({
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all",
                 isActive
                   ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
-                  : "glass hover:bg-white/[0.08] text-muted-foreground hover:text-foreground",
+                  : "glass hover:bg-black/[0.04] text-muted-foreground hover:text-foreground",
               )}
             >
               <view.icon className="h-4 w-4" />
@@ -1581,24 +1581,24 @@ const PhaseCard = ({
     flex flex-col items-center gap-1.5 rounded-lg border px-3 py-2 transition-all duration-300
     ${status === "running" ? "border-primary/30 bg-primary/12" :
       status === "complete" ? "border-emerald-300/18 bg-emerald-300/10" :
-        "border-white/8 bg-white/[0.04]"}
+        "border-border bg-muted"}
   `}>
     <div className="flex items-center gap-2">
       <Icon className={`h-3.5 w-3.5 ${status === "running" ? "text-primary animate-pulse" :
-          status === "complete" ? "text-emerald-200" :
-            "text-white/36"
+          status === "complete" ? "text-emerald-600" :
+            "text-muted-foreground"
         }`} />
-      <span className="text-xs font-medium text-white/74">{title}</span>
+      <span className="text-xs font-medium text-foreground/80">{title}</span>
     </div>
     <div className="flex items-center gap-1">
       {status === "running" && (
         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
       )}
       {status === "complete" && (
-        <CheckCircle2 className="h-3 w-3 text-emerald-200" />
+        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
       )}
       {status === "idle" && (
-        <span className="h-1.5 w-1.5 rounded-full bg-white/24" />
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
       )}
     </div>
   </div>

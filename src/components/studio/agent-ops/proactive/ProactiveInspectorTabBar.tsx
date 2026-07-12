@@ -47,7 +47,7 @@ export function ProactiveInspectorTabBar({ activeTab, onTabChange }: ProactiveIn
   );
 
   return (
-    <div className="shrink-0 border-b border-white/[0.06] bg-white/[0.02]">
+    <div className="shrink-0 border-b border-border bg-muted/20">
       <div
         className={cn(
           "flex items-stretch gap-0.5 overflow-x-auto overscroll-x-contain px-2 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5",
@@ -75,8 +75,8 @@ export function ProactiveInspectorTabBar({ activeTab, onTabChange }: ProactiveIn
                 agentOpsTransitionClass,
                 agentOpsFocusVisibleClass,
                 selected
-                  ? "bg-white/[0.09] text-white shadow-[inset_0_-2px_0_0_hsl(var(--primary))]"
-                  : "text-white/45 hover:bg-white/[0.04] hover:text-white/72",
+                  ? "bg-muted text-foreground shadow-[inset_0_-2px_0_0_hsl(var(--primary))]"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
               {label}

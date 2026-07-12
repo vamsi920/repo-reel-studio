@@ -70,20 +70,20 @@ const StatCard = ({
 }) => {
   const accentMap = {
     primary: "text-primary bg-primary/12",
-    emerald: "text-emerald-300 bg-emerald-300/12",
-    amber: "text-amber-300 bg-amber-300/12",
-    rose: "text-rose-300 bg-rose-300/12",
+    emerald: "text-emerald-700 bg-emerald-100",
+    amber: "text-amber-700 bg-amber-100",
+    rose: "text-rose-700 bg-rose-100",
   };
   return (
-    <div className="rounded-xl bg-white/[0.04] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+    <div className="rounded-xl bg-black/[0.04] p-4 shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]">
       <div className="flex items-center gap-2.5">
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${accentMap[accent]}`}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">{label}</div>
-          <div className="mt-0.5 text-lg font-semibold text-white">{value}</div>
-          {sub && <div className="text-[11px] text-white/36">{sub}</div>}
+          <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+          <div className="mt-0.5 text-lg font-semibold text-foreground">{value}</div>
+          {sub && <div className="text-[11px] text-muted-foreground">{sub}</div>}
         </div>
       </div>
     </div>
@@ -108,40 +108,40 @@ const ModuleCard = ({
   technologies: string[];
 }) => {
   const complexityColor = {
-    low: "bg-emerald-400/14 text-emerald-300",
-    medium: "bg-amber-400/14 text-amber-300",
-    high: "bg-rose-400/14 text-rose-300",
+    low: "bg-emerald-100 text-emerald-700",
+    medium: "bg-amber-100 text-amber-700",
+    high: "bg-rose-100 text-rose-700",
   };
   return (
-    <div className="group rounded-xl bg-white/[0.04] p-4 transition hover:bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+    <div className="group rounded-xl bg-black/[0.04] p-4 transition hover:bg-black/[0.06] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white truncate">{label}</span>
+            <span className="text-sm font-semibold text-foreground truncate">{label}</span>
             {isEntry && (
               <span className="shrink-0 rounded-full bg-primary/14 px-2 py-0.5 text-[10px] font-medium text-primary">
                 Entry
               </span>
             )}
             {isHub && (
-              <span className="shrink-0 rounded-full bg-amber-300/14 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                 Hub
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-white/48 line-clamp-2">{description}</p>
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{description}</p>
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-white/20 transition group-hover:text-white/40" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:text-muted-foreground" />
       </div>
       <div className="mt-3 flex items-center gap-2 flex-wrap">
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${complexityColor[complexity]}`}>
           {complexity}
         </span>
-        <span className="text-[10px] text-white/32">{fileCount} files</span>
+        <span className="text-[10px] text-muted-foreground">{fileCount} files</span>
         {technologies.slice(0, 2).map((tech) => (
           <span
             key={tech}
-            className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/48"
+            className="rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] text-muted-foreground"
           >
             {tech}
           </span>
@@ -175,7 +175,7 @@ const LanguageBar = ({ languages }: { languages: Record<string, number> }) => {
 
   return (
     <div>
-      <div className="flex h-2 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="flex h-2 overflow-hidden rounded-full bg-black/[0.06]">
         {sorted.map((item, i) => (
           <div
             key={item.lang}
@@ -188,8 +188,8 @@ const LanguageBar = ({ languages }: { languages: Record<string, number> }) => {
         {sorted.map((item, i) => (
           <div key={item.lang} className="flex items-center gap-1.5 text-[11px]">
             <span className={`h-2 w-2 rounded-full ${colors[i % colors.length]}`} />
-            <span className="text-white/56">{item.lang}</span>
-            <span className="text-white/28">{item.pct.toFixed(0)}%</span>
+            <span className="text-muted-foreground">{item.lang}</span>
+            <span className="text-muted-foreground">{item.pct.toFixed(0)}%</span>
           </div>
         ))}
       </div>
@@ -212,10 +212,10 @@ const EvidenceHealthBar = ({
   return (
     <div>
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-white/48">{label}</span>
-        <span className="font-medium text-white/64">{value}</span>
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium text-muted-foreground">{value}</span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
         <div
           className="h-full rounded-full bg-primary transition-all duration-700"
           style={{ width: `${pct}%` }}
@@ -232,21 +232,21 @@ const ProcessFlowMini = ({
   name: string;
   steps: Array<{ symbol_name: string; file_path: string }>;
 }) => (
-  <div className="rounded-lg bg-white/[0.03] p-3">
-    <div className="text-xs font-medium text-white/64 mb-2">{name}</div>
+  <div className="rounded-lg bg-black/[0.03] p-3">
+    <div className="text-xs font-medium text-muted-foreground mb-2">{name}</div>
     <div className="flex items-center gap-1.5 overflow-x-auto">
       {steps.slice(0, 5).map((step, i) => (
         <div key={`${step.symbol_name}-${i}`} className="flex items-center gap-1.5 shrink-0">
-          <span className="rounded bg-white/[0.06] px-2 py-1 text-[10px] font-mono text-white/56 whitespace-nowrap">
+          <span className="rounded bg-black/[0.06] px-2 py-1 text-[10px] font-mono text-muted-foreground whitespace-nowrap">
             {step.symbol_name || step.file_path.split("/").pop()}
           </span>
           {i < Math.min(steps.length, 5) - 1 && (
-            <ChevronRight className="h-3 w-3 text-white/20 shrink-0" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
           )}
         </div>
       ))}
       {steps.length > 5 && (
-        <span className="text-[10px] text-white/28 shrink-0">+{steps.length - 5} more</span>
+        <span className="text-[10px] text-muted-foreground shrink-0">+{steps.length - 5} more</span>
       )}
     </div>
   </div>
@@ -302,18 +302,18 @@ export const RepoUnderstandingDashboard = ({
       <AnimateIn delay={0} show={hasData}>
         <div className="rounded-2xl gf-panel p-5 shadow-[0_18px_44px_rgba(8,14,30,0.22)]">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/14 shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]">
               <Network className="h-5 w-5 text-primary" />
             </div>
             <div>
               <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
                 Repository Intelligence
               </div>
-              <h2 className="mt-0.5 text-xl font-semibold text-white">
+              <h2 className="mt-0.5 text-xl font-semibold text-foreground">
                 {i?.repo_name ?? "Analyzing repository..."}
               </h2>
               {i?.architecture_pattern && (
-                <p className="mt-1 text-sm text-white/48">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {i.architecture_pattern} architecture
                   {i.technologies.length > 0 &&
                     ` — ${i.technologies.slice(0, 4).join(", ")}`}
@@ -365,39 +365,39 @@ export const RepoUnderstandingDashboard = ({
         <div className="grid gap-3 lg:grid-cols-2">
           {/* Languages */}
           <div className="rounded-xl gf-panel p-5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34 mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Language Breakdown
             </div>
             {i?.languages && Object.keys(i.languages).length > 0 ? (
               <LanguageBar languages={i.languages} />
             ) : (
-              <div className="h-12 rounded-lg bg-white/[0.03] animate-pulse" />
+              <div className="h-12 rounded-lg bg-black/[0.03] animate-pulse" />
             )}
           </div>
 
           {/* Architecture + Tech */}
           <div className="rounded-xl gf-panel p-5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34 mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Architecture Signals
             </div>
             <div className="space-y-2">
               {i?.architecture_pattern && (
-                <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2">
+                <div className="flex items-center gap-2 rounded-lg bg-black/[0.04] px-3 py-2">
                   <Box className="h-4 w-4 text-primary/60" />
-                  <span className="text-sm text-white/64">{i.architecture_pattern}</span>
+                  <span className="text-sm text-muted-foreground">{i.architecture_pattern}</span>
                 </div>
               )}
               {i?.technologies.slice(0, 5).map((tech) => (
                 <div
                   key={tech}
-                  className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2"
+                  className="flex items-center gap-2 rounded-lg bg-black/[0.04] px-3 py-2"
                 >
-                  <Zap className="h-3.5 w-3.5 text-amber-300/50" />
-                  <span className="text-sm text-white/56">{tech}</span>
+                  <Zap className="h-3.5 w-3.5 text-amber-600/70" />
+                  <span className="text-sm text-muted-foreground">{tech}</span>
                 </div>
               ))}
               {!i?.architecture_pattern && !i?.technologies.length && (
-                <div className="h-8 rounded-lg bg-white/[0.03] animate-pulse" />
+                <div className="h-8 rounded-lg bg-black/[0.03] animate-pulse" />
               )}
             </div>
           </div>
@@ -410,7 +410,7 @@ export const RepoUnderstandingDashboard = ({
           <div className="rounded-xl gf-panel p-5">
             <div className="flex items-center gap-2 mb-3">
               <GitBranch className="h-4 w-4 text-primary/60" />
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Entry Points
               </div>
             </div>
@@ -418,22 +418,22 @@ export const RepoUnderstandingDashboard = ({
               {topEntryFiles.map((fp) => (
                 <div
                   key={fp}
-                  className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs"
+                  className="flex items-center gap-2 rounded-lg bg-black/[0.04] px-3 py-2 text-xs"
                 >
-                  <FileCode className="h-3.5 w-3.5 text-emerald-300/50 shrink-0" />
-                  <span className="font-mono text-white/56 truncate">{fp}</span>
+                  <FileCode className="h-3.5 w-3.5 text-emerald-600/70 shrink-0" />
+                  <span className="font-mono text-muted-foreground truncate">{fp}</span>
                 </div>
               ))}
               {topEntryFiles.length === 0 && (
-                <div className="text-xs text-white/28">Analyzing entry points...</div>
+                <div className="text-xs text-muted-foreground">Analyzing entry points...</div>
               )}
             </div>
           </div>
 
           <div className="rounded-xl gf-panel p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Database className="h-4 w-4 text-amber-300/50" />
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
+              <Database className="h-4 w-4 text-amber-600/70" />
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Hub Files
               </div>
             </div>
@@ -441,14 +441,14 @@ export const RepoUnderstandingDashboard = ({
               {topHubFiles.map((fp) => (
                 <div
                   key={fp}
-                  className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs"
+                  className="flex items-center gap-2 rounded-lg bg-black/[0.04] px-3 py-2 text-xs"
                 >
-                  <Shield className="h-3.5 w-3.5 text-amber-300/50 shrink-0" />
-                  <span className="font-mono text-white/56 truncate">{fp}</span>
+                  <Shield className="h-3.5 w-3.5 text-amber-600/70 shrink-0" />
+                  <span className="font-mono text-muted-foreground truncate">{fp}</span>
                 </div>
               ))}
               {topHubFiles.length === 0 && (
-                <div className="text-xs text-white/28">Mapping dependency hotspots...</div>
+                <div className="text-xs text-muted-foreground">Mapping dependency hotspots...</div>
               )}
             </div>
           </div>
@@ -460,15 +460,15 @@ export const RepoUnderstandingDashboard = ({
         <div className="rounded-xl gf-panel p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Module Map
               </div>
-              <p className="mt-1 text-xs text-white/36">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Top-level clusters detected from the code graph
               </p>
             </div>
             {i?.modules && i.modules.length > 6 && (
-              <span className="text-[11px] text-white/28">
+              <span className="text-[11px] text-muted-foreground">
                 {i.modules.length} total
               </span>
             )}
@@ -488,8 +488,8 @@ export const RepoUnderstandingDashboard = ({
             ))}
             {(!i?.modules || i.modules.length === 0) && (
               <>
-                <div className="h-24 rounded-xl bg-white/[0.03] animate-pulse" />
-                <div className="h-24 rounded-xl bg-white/[0.03] animate-pulse" />
+                <div className="h-24 rounded-xl bg-black/[0.03] animate-pulse" />
+                <div className="h-24 rounded-xl bg-black/[0.03] animate-pulse" />
               </>
             )}
           </div>
@@ -500,7 +500,7 @@ export const RepoUnderstandingDashboard = ({
       {ev && ev.process_flows.length > 0 && (
         <AnimateIn delay={500} show={sectionRevealed >= 5}>
           <div className="rounded-xl gf-panel p-5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34 mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
               Detected Execution Flows
             </div>
             <div className="space-y-2">
@@ -519,7 +519,7 @@ export const RepoUnderstandingDashboard = ({
       {/* Evidence health */}
       <AnimateIn delay={600} show={sectionRevealed >= 6}>
         <div className="rounded-xl gf-panel p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34 mb-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-4">
             Evidence Coverage
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

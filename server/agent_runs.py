@@ -323,10 +323,15 @@ def create_agent_run_router() -> APIRouter:
         if sha_result["exitCode"] == 0:
             commit_sha = sha_result["stdout"].strip()[:40]
 
+        # Human-approved promotion path; push/PR are governed and audited.
         push_result = run_subprocess(
             ["git", "push", "origin", branch_name, "--force-with-lease"],
             cwd=workspace_path,
             timeout_seconds=60,
+            governed=True,
+            governance_action="git.push",
+            governance_context={"run_id": run_id, "branch": branch_name},
+            human_approved=True,
         )
         promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
 
@@ -336,6 +341,10 @@ def create_agent_run_router() -> APIRouter:
                 ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
                 cwd=workspace_path,
                 timeout_seconds=30,
+                governed=True,
+                governance_action="pr.create",
+                governance_context={"run_id": run_id, "branch": branch_name},
+                human_approved=True,
             )
             promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
 
@@ -480,7 +489,18 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
     commit_sha = sha_result["stdout"].strip()[:40] if sha_result["exitCode"] == 0 else None
     pr_url = None
 
-    push_result = run_subprocess(["git", "push", "origin", branch_name, "--force-with-lease"], cwd=workspace_path, timeout_seconds=60)
+    # This promotion path is reached only after explicit human approval, which
+    # satisfies the require_approval policy on git.push / pr.create. Each action
+    # is still evaluated and written to the tamper-evident audit log.
+    push_result = run_subprocess(
+        ["git", "push", "origin", branch_name, "--force-with-lease"],
+        cwd=workspace_path,
+        timeout_seconds=60,
+        governed=True,
+        governance_action="git.push",
+        governance_context={"run_id": run_id, "branch": branch_name},
+        human_approved=True,
+    )
     promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
 
     if push_result["exitCode"] == 0:
@@ -488,6 +508,10 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
             ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
             cwd=workspace_path,
             timeout_seconds=30,
+            governed=True,
+            governance_action="pr.create",
+            governance_context={"run_id": run_id, "branch": branch_name},
+            human_approved=True,
         )
         promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
         if pr_create_result["exitCode"] == 0:
@@ -598,6 +622,26 @@ def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
         set_run_status(run_id, "preparing", "Preparing sandbox", "Fetching issue metadata and cloning the repository.")
         issue = fetch_issue_details(read_required_run(run_id)["issueUrl"], github_token)
         update_run_issue(run_id, issue)
+
+        # Governance gate: record + authorize the start of an autonomous agent run.
+        try:
+            from governance import GovernanceDenied, get_kernel
+
+            get_kernel().govern_action(
+                "agent.run.start",
+                f"run:{run_id}",
+                {
+                    "run_id": run_id,
+                    "issue_url": (issue or {}).get("url") or read_required_run(run_id).get("issueUrl"),
+                    "executor": "opendevin" if use_opendevin else "legacy",
+                },
+            )
+        except ImportError:
+            pass
+        except GovernanceDenied as exc:  # type: ignore[misc]
+            finalize_failure(run_id, "blocked", "Run blocked by governance", exc.decision.reason)
+            return
+
         guard_not_cancelled(run_id)
 
         workspace_path = prepare_workspace(run_id)
@@ -683,8 +727,140 @@ def _execute_with_opendevin(run_id: str, issue: dict[str, Any], workspace_path: 
             raise RuntimeError(error_msg)
 
 
+def _deepwork_enabled() -> bool:
+    return os.getenv("PROACTIVE_DEEP_LOOP", "").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _reset_workspace(workspace_path: Path) -> None:
+    """Return the sandbox to a pristine HEAD between approach attempts."""
+    run_subprocess(["git", "reset", "--hard", "HEAD"], cwd=str(workspace_path), timeout_seconds=30)
+    run_subprocess(["git", "clean", "-fd"], cwd=str(workspace_path), timeout_seconds=30)
+
+
+def _validation_feedback(validation_report: dict[str, Any]) -> str:
+    """Distill failing validations into guidance the next approach's prompt can use."""
+    failing = [
+        c for c in (validation_report.get("commands") or [])
+        if c.get("exitCode") not in (0, None)
+    ]
+    if not failing:
+        return ""
+    parts = []
+    for cmd in failing[:2]:
+        stderr = (cmd.get("stderr") or cmd.get("stdout") or "").strip()
+        parts.append(f"`{cmd.get('command')}` failed: {stderr[-600:]}")
+    return "Previous attempt did not pass validation. " + " ".join(parts)
+
+
+def _rank_outcome(outcome: Optional[dict[str, Any]]) -> tuple:
+    if not outcome:
+        return (-1, 0)
+    order = {"passed": 3, "partial": 2, "failed": 1, "not_run": 0}
+    status = str((outcome.get("validation") or {}).get("overallStatus") or "not_run")
+    return (order.get(status, 0), 1 if str(outcome.get("patch") or "").strip() else 0)
+
+
+def _better_outcome(current: Optional[dict[str, Any]], candidate: dict[str, Any]) -> dict[str, Any]:
+    return candidate if _rank_outcome(candidate) >= _rank_outcome(current) else current
+
+
+def _deep_work_patch_and_validate(
+    run_id: str,
+    issue: dict[str, Any],
+    workspace_path: Path,
+    repo_context: dict[str, Any],
+    plan: dict[str, Any],
+    run: dict[str, Any],
+) -> Optional[dict[str, Any]]:
+    """Research → Brainstorm → (Patch → Test) loop over ranked approaches.
+
+    Tries the strongest approach first; if validations are not fully green, feeds the
+    failure back and tries the next approach, until one passes every gate or attempts are
+    exhausted. Returns the chosen artifacts + a `journey` for the UI. Fully guarded by the
+    caller: any exception falls back to the original single-pass executor.
+    """
+    from proactive_deep_pipeline import (
+        build_journey,
+        build_research_brief,
+        generate_approaches,
+        run_deep_fix_loop,
+    )
+
+    brief = build_research_brief(issue=issue, repo_context=repo_context, validation_profile=None)
+    append_timeline(run_id, "research", "Researched the change", brief.summary)
+    approaches = generate_approaches(issue, brief)
+    append_timeline(
+        run_id, "brainstorm", f"Brainstormed {len(approaches)} approach(es)",
+        "; ".join(a.title for a in approaches),
+    )
+
+    repo_policy = load_repo_policy(workspace_path)
+    state: dict[str, Any] = {"feedback": "", "best": None, "first": True}
+
+    def patch_and_test(approach) -> dict[str, Any]:
+        guard_not_cancelled(run_id)
+        if not state["first"]:
+            _reset_workspace(workspace_path)
+        state["first"] = False
+
+        plan_variant = dict(plan)
+        plan_variant["approach"] = approach.to_dict()
+        if state["feedback"]:
+            plan_variant["attemptGuidance"] = state["feedback"]
+
+        change_set = build_change_set(issue, repo_context, plan_variant)
+        if change_set.get("blocked"):
+            return {
+                "blocked": True, "reason": change_set.get("reason"),
+                "patch": "", "validation": {"overallStatus": "not_run"},
+                "changedFiles": [], "policyViolations": [],
+            }
+        apply_change_set(workspace_path, change_set)
+        patch_text = collect_patch(workspace_path)
+        changed_files = collect_changed_files(workspace_path)
+        validation_report = execute_validations(workspace_path)
+        evaluation = evaluate_run(changed_files, validation_report, run.get("timeline", []))
+        quality_gates = build_quality_gates(validation_report, changed_files, evaluation)
+        policy_violations = enforce_policy_gates(repo_policy, changed_files, quality_gates, evaluation)
+
+        outcome = {
+            "changeSet": change_set,
+            "patch": patch_text,
+            "diffStat": collect_diff_stat(workspace_path),
+            "changedFiles": changed_files,
+            "validation": validation_report,
+            "policyViolations": policy_violations,
+            "blocked": False,
+            "reason": change_set.get("summary"),
+        }
+        state["best"] = _better_outcome(state["best"], outcome)
+        state["feedback"] = _validation_feedback(validation_report)
+        return outcome
+
+    def on_event(stage: str, title: str, detail: str, level: str) -> None:
+        append_timeline(run_id, stage, title, detail, level=level if level != "success" else "info")
+
+    loop_result = run_deep_fix_loop(approaches, patch_and_test, on_event=on_event)
+    journey = build_journey(brief=brief, approaches=approaches, loop_result=loop_result)
+
+    winner = loop_result.get("winner")
+    chosen = (winner or {}).get("outcome") if winner else state["best"]
+    return {"journey": journey, "prReady": bool(winner), "chosen": chosen}
+
+
+def _attach_journey(run_id: str, journey: Optional[dict[str, Any]], pr_ready: Optional[bool]) -> None:
+    if journey is None:
+        return
+    run = read_required_run(run_id)
+    run.setdefault("artifacts", {})["journey"] = journey
+    run["artifacts"]["prReady"] = bool(pr_ready)
+    run["updatedAt"] = now_iso()
+    write_run(run)
+
+
 def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Path) -> None:
-    """Legacy executor: existing Gemini-based mini-SWE flow."""
+    """Legacy executor: existing Gemini-based mini-SWE flow, with an optional rigorous
+    Research → Brainstorm → Patch → Test loop in front (PROACTIVE_DEEP_LOOP)."""
     set_run_status(run_id, "running", "Planning fix attempt",
                    "Ranking candidate files and generating a minimal patch plan.")
     run = read_required_run(run_id)
@@ -693,23 +869,50 @@ def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Pat
     update_run_plan(run_id, plan)
     guard_not_cancelled(run_id)
 
-    change_set = build_change_set(issue, repo_context, plan)
-    if change_set.get("blocked"):
-        raise RuntimeError(change_set.get("reason") or "Patch generation was blocked by missing context")
-    apply_change_set(workspace_path, change_set)
-    append_timeline(run_id, "patch", "Patch applied",
-                   change_set.get("summary") or "Candidate changes were written in the sandbox.")
-    guard_not_cancelled(run_id)
+    journey: Optional[dict[str, Any]] = None
+    pr_ready_flag: Optional[bool] = None
+    deep: Optional[dict[str, Any]] = None
 
-    set_run_status(run_id, "validating", "Running validations",
-                   "Collecting diff artifacts and deterministic validation results.")
-    patch_text = collect_patch(workspace_path)
-    if not patch_text.strip():
-        raise RuntimeError("Run completed without producing a diff")
+    if _deepwork_enabled():
+        try:
+            deep = _deep_work_patch_and_validate(run_id, issue, workspace_path, repo_context, plan, run)
+        except CancelledRunError:
+            raise
+        except Exception as exc:  # never let the rigorous path break a run — fall back
+            append_timeline(run_id, "deepwork", "Deep-work loop fell back",
+                            f"Reverting to single-pass execution: {exc}", level="warning")
+            deep = None
 
-    diff_stat = collect_diff_stat(workspace_path)
-    changed_files = collect_changed_files(workspace_path)
-    validation_report = execute_validations(workspace_path)
+    if deep and deep.get("chosen") and str((deep["chosen"]).get("patch") or "").strip():
+        chosen = deep["chosen"]
+        change_set = chosen["changeSet"]
+        patch_text = chosen["patch"]
+        diff_stat = chosen.get("diffStat") or collect_diff_stat(workspace_path)
+        changed_files = chosen["changedFiles"]
+        validation_report = chosen["validation"]
+        journey = deep.get("journey")
+        pr_ready_flag = bool(deep.get("prReady"))
+        set_run_status(run_id, "validating", "Verifying best approach",
+                       "Selected the strongest approach that passed validation.")
+    else:
+        # ---- Original single-pass executor (fallback / deep-loop disabled) ----
+        change_set = build_change_set(issue, repo_context, plan)
+        if change_set.get("blocked"):
+            raise RuntimeError(change_set.get("reason") or "Patch generation was blocked by missing context")
+        apply_change_set(workspace_path, change_set)
+        append_timeline(run_id, "patch", "Patch applied",
+                       change_set.get("summary") or "Candidate changes were written in the sandbox.")
+        guard_not_cancelled(run_id)
+
+        set_run_status(run_id, "validating", "Running validations",
+                       "Collecting diff artifacts and deterministic validation results.")
+        patch_text = collect_patch(workspace_path)
+        if not patch_text.strip():
+            raise RuntimeError("Run completed without producing a diff")
+
+        diff_stat = collect_diff_stat(workspace_path)
+        changed_files = collect_changed_files(workspace_path)
+        validation_report = execute_validations(workspace_path)
 
     append_timeline(run_id, "critique", "Self-critiquing patch",
                    "Running self-critique pass on the generated patch.")
@@ -734,6 +937,7 @@ def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Pat
         pr_draft, artifact_paths, pr_readable, test_matrix, quality_gates, change_intent,
         critique_result, policy_violations,
     )
+    _attach_journey(run_id, journey, pr_ready_flag)
 
 
 def set_run_status(run_id: str, status: str, title: str, detail: str) -> None:
@@ -1772,7 +1976,13 @@ def execute_validations(workspace_path: Path) -> dict[str, Any]:
 
     results = []
     if install_command:
-        install_result = run_subprocess(install_command, cwd=str(workspace_path), timeout_seconds=300)
+        install_result = run_subprocess(
+            install_command,
+            cwd=str(workspace_path),
+            timeout_seconds=300,
+            governed=True,
+            governance_context={"phase": "install", "workspace": str(workspace_path)},
+        )
         install_result["kind"] = "install"
         results.append(install_result)
         if install_result["exitCode"] != 0:
@@ -1780,7 +1990,13 @@ def execute_validations(workspace_path: Path) -> dict[str, Any]:
             return {"overallStatus": "failed", "commands": results, "mode": repo_analysis.get("validationMode"), "notes": notes}
 
     for command in commands[:3]:
-        result = run_subprocess(command, cwd=str(workspace_path), timeout_seconds=300)
+        result = run_subprocess(
+            command,
+            cwd=str(workspace_path),
+            timeout_seconds=300,
+            governed=True,
+            governance_context={"phase": "validation", "workspace": str(workspace_path)},
+        )
         result["kind"] = "validation"
         results.append(result)
 
@@ -1809,8 +2025,46 @@ def detect_package_manager(workspace_path: Path) -> Optional[str]:
     return None
 
 
-def run_subprocess(command: list[str], cwd: str, timeout_seconds: int) -> dict[str, Any]:
+def run_subprocess(
+    command: list[str],
+    cwd: str,
+    timeout_seconds: int,
+    *,
+    governed: bool = False,
+    governance_action: Optional[str] = None,
+    governance_context: Optional[dict[str, Any]] = None,
+    human_approved: bool = False,
+) -> dict[str, Any]:
     started = time.time()
+
+    # Governance gate: agent-influenced commands are checked + audited *before*
+    # they reach the shell. Internal trusted plumbing (clone/checkout/rev-parse)
+    # passes governed=False and is not gated. Denied actions never execute.
+    if governed:
+        try:
+            from governance import GovernanceDenied, get_kernel
+
+            kernel = get_kernel()
+            if governance_action:
+                kernel.govern_action(
+                    governance_action,
+                    " ".join(command),
+                    governance_context,
+                    human_approved=human_approved,
+                )
+            kernel.govern_command(command, governance_context)
+        except ImportError:
+            pass  # governance layer unavailable — never block trusted plumbing
+        except GovernanceDenied as exc:  # type: ignore[misc]
+            return {
+                "command": " ".join(command),
+                "exitCode": 126,
+                "stdout": "",
+                "stderr": f"Blocked by governance policy: {exc.decision.reason}",
+                "durationMs": int((time.time() - started) * 1000),
+                "governance": exc.decision.to_dict(),
+            }
+
     env = os.environ.copy()
     env["CI"] = "1"
     env["GIT_TERMINAL_PROMPT"] = "0"

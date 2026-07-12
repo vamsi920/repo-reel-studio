@@ -20,7 +20,7 @@ const statusConfig: Record<
   ChapterStatus,
   { label: string; color: string; icon: React.ElementType; animate?: boolean }
 > = {
-  pending: { label: "Queued", color: "text-white/28", icon: Clock },
+  pending: { label: "Queued", color: "text-muted-foreground", icon: Clock },
   outlining: {
     label: "Outlining...",
     color: "text-primary",
@@ -35,18 +35,18 @@ const statusConfig: Record<
   },
   enriching: {
     label: "Attaching code...",
-    color: "text-amber-300",
+    color: "text-amber-600",
     icon: Loader2,
     animate: true,
   },
   tts: {
     label: "Generating voice...",
-    color: "text-violet-300",
+    color: "text-violet-600",
     icon: Loader2,
     animate: true,
   },
-  ready: { label: "Ready", color: "text-emerald-300", icon: CheckCircle2 },
-  error: { label: "Failed", color: "text-rose-300", icon: AlertTriangle },
+  ready: { label: "Ready", color: "text-emerald-600", icon: CheckCircle2 },
+  error: { label: "Failed", color: "text-rose-600", icon: AlertTriangle },
 };
 
 const ChapterRow = ({
@@ -77,34 +77,34 @@ const ChapterRow = ({
           : status === "error"
             ? "bg-rose-300/6 shadow-[inset_0_0_0_1px_rgba(252,165,165,0.12)]"
             : status === "pending"
-              ? "bg-white/[0.02] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
+              ? "bg-black/[0.02] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03)]"
               : "bg-primary/6 shadow-[inset_0_0_0_1px_rgba(104,132,255,0.16)]"
       }`}
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-xs font-bold text-white/40">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.06] text-xs font-bold text-muted-foreground">
           {order + 1}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-white/72 truncate">{title}</div>
+          <div className="text-sm font-medium text-muted-foreground truncate">{title}</div>
           <div className="flex items-center gap-2 mt-0.5">
             <Icon
               className={`h-3.5 w-3.5 ${cfg.color} ${cfg.animate ? "animate-spin" : ""}`}
             />
             <span className={`text-[11px] ${cfg.color}`}>{cfg.label}</span>
             {status === "ready" && sceneCount != null && (
-              <span className="text-[11px] text-white/28">
+              <span className="text-[11px] text-muted-foreground">
                 {sceneCount} scenes
               </span>
             )}
             {status === "ready" && durationSeconds != null && (
-              <span className="text-[11px] text-white/28">
+              <span className="text-[11px] text-muted-foreground">
                 {mins}:{secs.toString().padStart(2, "0")}
               </span>
             )}
           </div>
           {error && (
-            <p className="mt-1 text-[11px] text-rose-300/70 truncate">{error}</p>
+            <p className="mt-1 text-[11px] text-rose-600/80 truncate">{error}</p>
           )}
         </div>
       </div>
@@ -147,21 +147,21 @@ export const ChapterGenerationProgress = ({ plan, onGoToStudio }: Props) => {
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
               {isComplete ? "Generation Complete" : "Generating Chapters"}
             </div>
-            <h2 className="mt-1 text-xl font-semibold text-white">
+            <h2 className="mt-1 text-xl font-semibold text-foreground">
               {plan.repo_intelligence.repo_name}
             </h2>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-foreground">
               {readyCount}/{totalChapters}
             </div>
-            <div className="text-[11px] text-white/36">chapters ready</div>
+            <div className="text-[11px] text-muted-foreground">chapters ready</div>
           </div>
         </div>
 
         {/* Progress bar */}
         <div className="mt-4">
-          <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="h-2 overflow-hidden rounded-full bg-black/[0.06]">
             <div
               className="h-full rounded-full bg-primary transition-all duration-500"
               style={{ width: `${pct}%` }}
@@ -171,23 +171,23 @@ export const ChapterGenerationProgress = ({ plan, onGoToStudio }: Props) => {
 
         {/* Stats */}
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-white/[0.04] p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/28">
+          <div className="rounded-lg bg-black/[0.04] p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Duration
             </div>
-            <div className="mt-1 text-base font-semibold text-white">{totalDuration}</div>
+            <div className="mt-1 text-base font-semibold text-foreground">{totalDuration}</div>
           </div>
-          <div className="rounded-lg bg-white/[0.04] p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/28">
+          <div className="rounded-lg bg-black/[0.04] p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Scenes
             </div>
-            <div className="mt-1 text-base font-semibold text-white">{totalScenes}</div>
+            <div className="mt-1 text-base font-semibold text-foreground">{totalScenes}</div>
           </div>
-          <div className="rounded-lg bg-white/[0.04] p-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/28">
+          <div className="rounded-lg bg-black/[0.04] p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               Target
             </div>
-            <div className="mt-1 text-base font-semibold text-white">
+            <div className="mt-1 text-base font-semibold text-foreground">
               ~{plan.target_total_minutes} min
             </div>
           </div>

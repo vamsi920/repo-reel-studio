@@ -24,15 +24,15 @@ export function TestMatrixView({ testMatrix }: TestMatrixViewProps) {
   return (
     <article className="min-w-0 space-y-3" aria-label="Test matrix">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-white/88">Tests</h3>
+        <h3 className="text-sm font-semibold text-foreground">Tests</h3>
         <ValidationStatusBadge status={testMatrix.overallStatus} />
-        <span className="text-xs text-white/38">
+        <span className="text-xs text-muted-foreground">
           {suites.length} suite{suites.length === 1 ? "" : "s"} · {passRate} pass · {testMatrix.totalDurationMs}ms
           {failedCount > 0 ? ` · ${failedCount} failed` : ""}
         </span>
       </header>
 
-      <ol className="divide-y divide-white/[0.06] rounded-md border border-white/[0.08]">
+      <ol className="divide-y divide-border rounded-md border border-border">
         {suites.map((suite, index) => (
           <TestSuiteRow key={`${suite.command}-${suite.suite}-${index}`} suite={suite} />
         ))}
@@ -55,11 +55,11 @@ function TestSuiteRow({ suite }: { suite: TestMatrixEntry }) {
     >
       <div className="flex min-w-0 items-center gap-2">
         <SuiteStatusChip status={suite.status} />
-        <span className="min-w-0 flex-1 truncate font-mono text-xs text-white/78" title={suite.command}>
+        <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground" title={suite.command}>
           {suite.command}
         </span>
-        <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-white/32">{suite.suite}</span>
-        <span className="shrink-0 tabular-nums text-[11px] text-white/36">{suite.durationMs}ms</span>
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-muted-foreground">{suite.suite}</span>
+        <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground">{suite.durationMs}ms</span>
         <span className="sr-only">exit {suite.exitCode}</span>
       </div>
 
@@ -70,7 +70,7 @@ function TestSuiteRow({ suite }: { suite: TestMatrixEntry }) {
       ) : null}
 
       {impactedFiles.length > 0 ? (
-        <p className="mt-2 truncate font-mono text-[10px] text-white/40" title={impactedFiles.join(", ")}>
+        <p className="mt-2 truncate font-mono text-[10px] text-muted-foreground" title={impactedFiles.join(", ")}>
           {impactedFiles.slice(0, 6).join(" · ")}
           {impactedFiles.length > 6 ? ` · +${impactedFiles.length - 6}` : ""}
         </p>
@@ -83,12 +83,12 @@ function SuiteStatusChip({ status }: { status: TestMatrixEntry["status"] }) {
   const label = humanizeSuiteStatus(status);
   const tone =
     status === "passed"
-      ? "bg-emerald-300/10 text-emerald-100"
+      ? "bg-emerald-300/10 text-emerald-700"
       : status === "failed"
-        ? "border border-rose-400/25 bg-rose-400/10 text-rose-100"
+        ? "border border-rose-400/25 bg-rose-400/10 text-rose-700"
         : status === "timeout"
-          ? "border border-amber-400/25 bg-amber-400/10 text-amber-100"
-          : "bg-white/[0.06] text-white/50";
+          ? "border border-amber-400/25 bg-amber-400/10 text-amber-700"
+          : "bg-muted text-muted-foreground";
 
   return (
     <span

@@ -68,7 +68,7 @@ export function RunInspectorDetail({
 
       <RunInspectorFactStrip run={run} isReview={selectedRunView.isReview} onOpenTab={onTabChange} />
 
-      <div className="border-b border-white/[0.04] bg-white/[0.015] px-4 py-2.5 sm:px-5">
+      <div className="border-b border-border bg-muted/40 px-4 py-2.5 sm:px-5">
         <RunInspectorProgress
           phaseIndex={selectedRunView.phaseIndex}
           isActive={selectedRunView.isActive}

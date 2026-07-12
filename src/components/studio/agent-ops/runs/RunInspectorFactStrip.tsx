@@ -25,7 +25,7 @@ export function RunInspectorFactStrip({ run, isReview, onOpenTab }: RunInspector
     <div
       className={cn(
         agentOpsFactStripClass,
-        "border-b border-white/[0.06] px-3 py-2 sm:px-5",
+        "border-b border-border px-3 py-2 sm:px-5",
       )}
       aria-label="Run facts"
     >

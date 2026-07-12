@@ -28,7 +28,7 @@ export function RunValidationTab({
   return (
     <article className="min-w-0 space-y-4">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-white/88">Validation</h3>
+        <h3 className="text-sm font-semibold text-foreground">Validation</h3>
         <span
           className={cn(
             "rounded-md border px-2 py-0.5 text-[11px] font-medium",
@@ -38,7 +38,7 @@ export function RunValidationTab({
           {humanizeValidationOverall(validation.overallStatus)}
         </span>
         {commands.length > 0 ? (
-          <span className="text-xs text-white/38">
+          <span className="text-xs text-muted-foreground">
             {commands.length} command{commands.length === 1 ? "" : "s"}
             {failedCount > 0 ? ` · ${failedCount} failed` : ""}
           </span>
@@ -47,10 +47,10 @@ export function RunValidationTab({
 
       {notes.length > 0 ? (
         <section className="min-w-0">
-          <h4 className="text-xs font-medium text-white/50">Notes</h4>
-          <ul className="mt-1.5 divide-y divide-white/[0.06] rounded-md border border-white/[0.08]">
+          <h4 className="text-xs font-medium text-muted-foreground">Notes</h4>
+          <ul className="mt-1.5 divide-y divide-border rounded-md border border-border">
             {notes.map((note) => (
-              <li key={note} className="px-3 py-2 text-xs leading-5 text-white/58">
+              <li key={note} className="px-3 py-2 text-xs leading-5 text-foreground/80">
                 {note}
               </li>
             ))}
@@ -59,7 +59,7 @@ export function RunValidationTab({
       ) : null}
 
       {commands.length > 0 ? (
-        <ol className="divide-y divide-white/[0.06] rounded-md border border-white/[0.08]">
+        <ol className="divide-y divide-border rounded-md border border-border">
           {commands.map((command, index) => (
             <ValidationCommandRow key={`${command.command}-${command.durationMs}-${index}`} command={command} />
           ))}
@@ -92,7 +92,7 @@ function ValidationCommandRow({ command }: { command: AgentRunCommandResult }) {
       >
         <summary
           className={cn(
-            "flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 hover:bg-white/[0.03] [&::-webkit-details-marker]:hidden",
+            "flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 hover:bg-muted/60 [&::-webkit-details-marker]:hidden",
             agentOpsTransitionClass,
           )}
         >
@@ -100,26 +100,26 @@ function ValidationCommandRow({ command }: { command: AgentRunCommandResult }) {
             className={cn(
               "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]",
               passed
-                ? "bg-emerald-300/10 text-emerald-100"
-                : "border border-rose-400/30 bg-rose-400/10 text-rose-100",
+                ? "bg-emerald-300/10 text-emerald-700"
+                : "border border-rose-400/30 bg-rose-400/10 text-rose-700",
             )}
           >
             {passed ? "Pass" : "Fail"}
           </span>
-          <span className="min-w-0 flex-1 truncate font-mono text-xs text-white/78" title={command.command}>
+          <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground" title={command.command}>
             {command.command}
           </span>
-          <span className="shrink-0 tabular-nums text-[11px] text-white/36">{command.durationMs}ms</span>
+          <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground">{command.durationMs}ms</span>
           <ChevronDown
             className={cn(
-              "h-3.5 w-3.5 shrink-0 text-white/32 group-open:rotate-180",
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground group-open:rotate-180",
               agentOpsChevronClass,
             )}
             aria-hidden
           />
         </summary>
 
-        <div className="space-y-2 border-t border-white/[0.05] px-3 py-2.5">
+        <div className="space-y-2 border-t border-border px-3 py-2.5">
           <CommandLog label="stdout" content={command.stdout} emphasize={passed} />
           <CommandLog label="stderr" content={command.stderr} emphasize={!passed} />
         </div>
@@ -144,7 +144,7 @@ function CommandLog({
       <div
         className={cn(
           "text-[10px] font-medium uppercase tracking-[0.08em]",
-          emphasize ? "text-white/55" : "text-white/35",
+          emphasize ? "text-foreground/70" : "text-muted-foreground",
         )}
       >
         {label}
@@ -154,7 +154,7 @@ function CommandLog({
           "mt-1 max-h-36 overflow-auto rounded border bg-black/20",
           emphasize && label === "stderr" && content
             ? "border-rose-400/20"
-            : "border-white/[0.06]",
+            : "border-border",
         )}
       >
         <pre className="overflow-x-auto p-2 font-mono text-[11px] leading-5 text-white/72">

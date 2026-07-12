@@ -29,28 +29,28 @@ const LANES = [
     title: "Walkthrough",
     description: "A clean scene-by-scene code tour.",
     icon: Workflow,
-    accent: "bg-sky-300/12 text-sky-200",
+    accent: "bg-sky-100 text-sky-700",
   },
   {
     id: "graph",
     title: "Graph",
     description: "Dependency context without the noise.",
     icon: Network,
-    accent: "bg-emerald-300/12 text-emerald-200",
+    accent: "bg-emerald-100 text-emerald-700",
   },
   {
     id: "qa",
     title: "Repo Q&A",
     description: "Ask focused questions against saved repo context.",
     icon: MessageSquareText,
-    accent: "bg-indigo-300/12 text-indigo-200",
+    accent: "bg-indigo-100 text-indigo-700",
   },
   {
     id: "agent-ops",
     title: "Agent Ops",
     description: "Agent-grade repo automation with clearer review and lower token waste.",
     icon: WandSparkles,
-    accent: "bg-amber-300/12 text-amber-200",
+    accent: "bg-amber-100 text-amber-700",
   },
 ] as const;
 
@@ -161,17 +161,17 @@ export const HeroSection = () => {
 
       <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6">
         <div className="mx-auto max-w-[860px] text-center">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/42">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-muted-foreground">
             Editorial workspace for code
           </div>
-          <h1 className="gf-headline mt-4 text-3xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="gf-headline mt-4 text-3xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Curate your{" "}
-            <span className="bg-[linear-gradient(135deg,#dbe1ff_0%,#618bff_100%)] bg-clip-text text-transparent">
+            <span className="bg-[linear-gradient(135deg,#1d4ed8_0%,#0891b2_100%)] bg-clip-text text-transparent">
               codebase
             </span>
             .
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/62 sm:text-base">
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
             Open a repository, let GitFlick process the structure, then continue in Studio with a clean saved workspace.
             Layman-style prompt compression trims setup prose locally with deterministic rules while keeping code, paths, commands,
             and evidence anchors intact.
@@ -180,7 +180,7 @@ export const HeroSection = () => {
 
         <div className="mx-auto mt-10 max-w-[860px] rounded-xl gf-panel p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg bg-white/[0.03] px-4 py-1 text-white/72">
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg bg-black/[0.03] px-4 py-1 text-foreground/72">
               <Link2 className="h-4 w-4 shrink-0 text-primary" />
               <Input
                 variant="hero"
@@ -199,7 +199,7 @@ export const HeroSection = () => {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 variant="ghost"
-                className="h-10 rounded-lg px-4 text-sm font-semibold text-white/76"
+                className="h-10 rounded-lg px-4 text-sm font-semibold text-foreground/76"
                 disabled={isPreparingFolder}
                 onClick={handleFolderBrowse}
               >
@@ -223,14 +223,14 @@ export const HeroSection = () => {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-300/14 text-emerald-300">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                       <FolderOpen className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-white">
+                      <div className="text-sm font-semibold text-foreground">
                         {uploadedFolder.folderName}
                       </div>
-                      <div className="text-sm text-white/58">
+                      <div className="text-sm text-muted-foreground">
                         {uploadedFolder.files.length} readable files ready
                       </div>
                     </div>
@@ -251,11 +251,11 @@ export const HeroSection = () => {
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-white/58">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
             <button
               type="button"
               onClick={handleUseSampleRepo}
-              className="inline-flex items-center gap-2 font-semibold text-white/88 transition hover:text-white"
+              className="inline-flex items-center gap-2 font-semibold text-foreground/88 transition hover:text-foreground"
             >
               Try it with a sample
               <ArrowRight className="h-4 w-4" />
@@ -263,7 +263,7 @@ export const HeroSection = () => {
           </div>
 
           {quickStartError ? (
-            <div className="mt-4 rounded-lg border border-rose-300/18 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {quickStartError}
             </div>
           ) : null}
@@ -274,16 +274,16 @@ export const HeroSection = () => {
             <article
               key={lane.title}
               id={lane.id}
-              className="rounded-xl gf-panel-soft p-5 transition hover:bg-[rgba(27,36,58,0.96)]"
+              className="rounded-xl gf-panel-soft p-5 transition hover:bg-black/[0.04]"
             >
               <div className="flex h-full flex-col">
                 <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", lane.accent)}>
                   <lane.icon className="h-[18px] w-[18px]" />
                 </div>
-                <h3 className="mt-5 text-base font-semibold tracking-tight text-white">
+                <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
                   {lane.title}
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-white/58">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   {lane.description}
                 </p>
               </div>
@@ -294,10 +294,10 @@ export const HeroSection = () => {
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
           {METRICS.map((metric) => (
             <div key={metric.label} className="rounded-xl gf-panel-soft px-5 py-4">
-              <div className="text-xl font-semibold tracking-tight text-white">
+              <div className="text-xl font-semibold tracking-tight text-foreground">
                 {metric.value}
               </div>
-              <div className="mt-1.5 text-xs uppercase tracking-[0.18em] text-white/42">
+              <div className="mt-1.5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 {metric.label}
               </div>
             </div>

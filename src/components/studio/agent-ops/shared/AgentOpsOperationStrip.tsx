@@ -24,8 +24,8 @@ export function AgentOpsOperationStrip({ operation, className }: AgentOpsOperati
           "inline-flex max-w-full items-center gap-1.5 text-[11px] font-medium leading-[22px]",
           agentOpsOperationFadeClass,
           operation ? "opacity-100" : "pointer-events-none opacity-0",
-          operation?.tone === "mutate" && "text-amber-100/85",
-          operation?.tone === "neutral" && "text-white/55",
+          operation?.tone === "mutate" && "text-amber-700",
+          operation?.tone === "neutral" && "text-muted-foreground",
         )}
         aria-hidden={!operation}
       >

@@ -120,7 +120,7 @@ const Export = () => {
         <div className="absolute inset-0 gf-grid-overlay opacity-[0.18]" />
         <div className="relative rounded-[24px] gf-panel-glass px-8 py-7 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-[0.95rem] text-white/60">Loading export workspace...</p>
+          <p className="mt-4 text-[0.95rem] text-muted-foreground">Loading export workspace...</p>
         </div>
       </div>
     );
@@ -132,9 +132,9 @@ const Export = () => {
         <div className="absolute inset-0 bg-radial-gradient" />
         <div className="absolute inset-0 gf-grid-overlay opacity-[0.18]" />
         <div className="relative w-full max-w-[520px] rounded-[28px] gf-panel p-8 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
-          <Terminal className="mx-auto h-12 w-12 text-white/40" />
-          <h1 className="mt-5 text-2xl font-semibold text-white">No video to export</h1>
-          <p className="mt-3 text-[0.98rem] leading-7 text-white/60">
+          <Terminal className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h1 className="mt-5 text-2xl font-semibold text-foreground">No video to export</h1>
+          <p className="mt-3 text-[0.98rem] leading-7 text-muted-foreground">
             The export workspace could not find a saved manifest in the current session or account.
           </p>
           <Button className="mt-6" asChild>
@@ -155,12 +155,12 @@ const Export = () => {
       <header className="gf-nav-shell sticky top-0 z-20">
         <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
               <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
             </div>
             <div>
-              <div className="font-headline text-[1.3rem] font-semibold text-white">Export Studio</div>
-              <div className="text-[11px] uppercase tracking-[0.24em] text-white/34">Delivery surface</div>
+              <div className="font-headline text-[1.3rem] font-semibold text-foreground">Export Studio</div>
+              <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Delivery surface</div>
             </div>
           </div>
 
@@ -177,15 +177,15 @@ const Export = () => {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-6">
             <section className="overflow-hidden rounded-[28px] gf-panel shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
-              <div className="bg-[linear-gradient(135deg,rgba(104,132,255,0.12),rgba(17,24,39,0.42),rgba(107,216,203,0.08))] p-6">
+              <div className="bg-[linear-gradient(135deg,rgba(104,132,255,0.08),rgba(255,255,255,0.6),rgba(107,216,203,0.06))] p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-300/12 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
                       <CheckCircle className="h-3.5 w-3.5" />
                       Export ready
                     </div>
-                    <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">Deliver the finished walkthrough</h1>
-                    <p className="mt-3 max-w-2xl text-[0.98rem] leading-7 text-white/60">
+                    <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">Deliver the finished walkthrough</h1>
+                    <p className="mt-3 max-w-2xl text-[0.98rem] leading-7 text-muted-foreground">
                       Download the current render, copy the narration, or generate a private watch link for the saved workspace.
                     </p>
                   </div>
@@ -197,13 +197,13 @@ const Export = () => {
               </div>
 
               <div className="p-6">
-                <div className="flex items-center gap-4 rounded-[22px] bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+                <div className="flex items-center gap-4 rounded-[22px] bg-muted p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                   <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/12 text-primary">
                     <Terminal className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-white">{repoName}</h2>
-                    <p className="mt-1 text-sm text-white/56">
+                    <h2 className="text-lg font-semibold text-foreground">{repoName}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Generated walkthrough package ready for delivery.
                     </p>
                   </div>
@@ -219,8 +219,8 @@ const Export = () => {
                       <Download className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white">Download video</h3>
-                      <p className="mt-1 text-sm text-white/56">
+                      <h3 className="text-base font-semibold text-foreground">Download video</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {isExporting ? "Recording in background…" : "WebM or MP4 depending on browser support."}
                       </p>
                     </div>
@@ -231,7 +231,7 @@ const Export = () => {
                   </Button>
                 </div>
                 {isExporting && statusMessage && (
-                  <p className="text-xs text-white/42" aria-live="polite">
+                  <p className="text-xs text-muted-foreground" aria-live="polite">
                     {statusMessage}
                   </p>
                 )}
@@ -241,12 +241,12 @@ const Export = () => {
                 <Card variant="interactive" className="rounded-[24px] p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-white/[0.06] text-primary">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
                         <Link2 className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold text-white">Copy watch link</h3>
-                        <p className="mt-1 text-sm text-white/56">
+                        <h3 className="text-base font-semibold text-foreground">Copy watch link</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
                           Share a private watch route tied to this saved project.
                         </p>
                       </div>
@@ -273,8 +273,8 @@ const Export = () => {
                       <Copy className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-white">Copy all narration</h3>
-                      <p className="mt-1 text-sm text-white/56">Capture the complete script for reviews or external publishing.</p>
+                      <h3 className="text-base font-semibold text-foreground">Copy all narration</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">Capture the complete script for reviews or external publishing.</p>
                     </div>
                   </div>
                   <Button 
@@ -339,17 +339,17 @@ const Export = () => {
                 {manifest.scenes.map((scene, i) => (
                   <div
                     key={`${scene.id}-${i}`}
-                    className="rounded-[18px] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                    className="rounded-[18px] bg-muted px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-xs font-semibold text-white/70">
+                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground/70">
                         {i + 1}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-white">
+                        <div className="truncate text-sm font-semibold text-foreground">
                           {scene.title || scene.file_path}
                         </div>
-                        <div className="mt-1 text-xs text-white/42">{scene.duration_seconds}s</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{scene.duration_seconds}s</div>
                       </div>
                     </div>
                   </div>
@@ -358,17 +358,17 @@ const Export = () => {
             </section>
 
             <section className="rounded-[26px] gf-panel p-5 shadow-[0_20px_48px_rgba(8,14,30,0.24)]">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/36">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                 Delivery notes
               </div>
               <div className="mt-4 space-y-3">
-                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                <div className="rounded-[18px] bg-muted px-4 py-3 text-sm leading-6 text-muted-foreground">
                   Export uses the hydrated Remotion composition from the current workspace state.
                 </div>
-                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                <div className="rounded-[18px] bg-muted px-4 py-3 text-sm leading-6 text-muted-foreground">
                   Private watch links remain account-protected even when shared across devices.
                 </div>
-                <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/62">
+                <div className="rounded-[18px] bg-muted px-4 py-3 text-sm leading-6 text-muted-foreground">
                   The copied narration includes scene labels so editorial review can happen outside the player.
                 </div>
               </div>

@@ -71,7 +71,7 @@ export function RunQueuePanel({
       />
 
       <div className="relative mt-2.5 min-w-0">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/28" aria-hidden />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" aria-hidden />
         <Input
           id={SEARCH_ID}
           className="h-9 min-w-0 pl-8 text-sm"
@@ -92,12 +92,12 @@ export function RunQueuePanel({
             className="text-center sm:text-left"
           />
         ) : emptyFiltered ? (
-          <p className="rounded-lg border border-dashed border-white/[0.08] px-3 py-6 text-center text-xs leading-5 text-white/40">
+          <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs leading-5 text-muted-foreground">
             No match{hasFilter ? ` for “${runFilter.trim()}”` : ""}.
           </p>
         ) : (
           <ul
-            className="max-h-[min(52vh,28rem)] min-w-0 divide-y divide-white/[0.06] overflow-y-auto overflow-x-hidden rounded-lg border border-white/[0.06] bg-black/10"
+            className="max-h-[min(52vh,28rem)] min-w-0 divide-y divide-border overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-muted/30"
             aria-label="Run queue"
           >
             {filteredRuns.map((run) => (
@@ -113,7 +113,7 @@ export function RunQueuePanel({
       </div>
 
       {!emptyAll ? (
-        <p className="mt-2 text-[10px] tabular-nums text-white/32">
+        <p className="mt-2 text-[10px] tabular-nums text-muted-foreground">
           {filteredRuns.length} of {runs.length} shown
         </p>
       ) : null}

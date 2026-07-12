@@ -11,13 +11,13 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:shadow-[0_2px_4px_rgba(10,13,20,.20),0_10px_24px_-8px_hsl(var(--primary)/0.6)] hover:-translate-y-px active:translate-y-0",
         destructive: "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20",
-        outline: "bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.12] text-foreground",
+        outline: "bg-black/[0.03] hover:bg-black/[0.06] border border-border hover:border-black/[0.16] text-foreground",
         secondary: "bg-card text-foreground border border-border hover:bg-card/80",
-        ghost: "hover:bg-white/[0.05] text-muted-foreground hover:text-foreground",
+        ghost: "hover:bg-muted text-muted-foreground hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         glow: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:shadow-[0_2px_4px_rgba(10,13,20,.20),0_10px_24px_-8px_hsl(var(--primary)/0.6)]",
         hero: "bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(10,13,20,.18),0_6px_18px_-8px_hsl(var(--primary)/0.5)] hover:bg-primary/90 hover:-translate-y-px transition-all duration-300",
-        nav: "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]",
+        nav: "text-muted-foreground hover:text-foreground hover:bg-muted",
       },
       size: {
         default: "h-10 px-4 py-2",

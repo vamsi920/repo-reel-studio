@@ -67,38 +67,38 @@ function StatusBlock({
       className={cn(
         agentOpsStatusBlockClass,
         "w-full max-w-full rounded-xl border px-4 py-3 sm:w-auto sm:min-w-[200px] sm:px-5",
-        tone === "attention" && "border-amber-300/20 bg-amber-300/[0.07]",
-        tone === "active" && "border-sky-300/20 bg-sky-300/[0.06]",
-        tone === "ready" && "border-emerald-300/20 bg-emerald-300/[0.07]",
-        tone === "idle" && "border-white/[0.08] bg-white/[0.03]",
+        tone === "attention" && "border-amber-200 bg-amber-50",
+        tone === "active" && "border-sky-200 bg-sky-50",
+        tone === "ready" && "border-emerald-200 bg-emerald-50",
+        tone === "idle" && "border-border bg-muted/40",
       )}
     >
       <div className="flex items-baseline gap-1">
         <span
           className={cn(
             "text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl xl:text-4xl",
-            tone === "attention" && "text-amber-50",
-            tone === "active" && "text-sky-50",
-            tone === "ready" && "text-emerald-50",
-            tone === "idle" && "text-white/72",
+            tone === "attention" && "text-amber-700",
+            tone === "active" && "text-sky-700",
+            tone === "ready" && "text-emerald-700",
+            tone === "idle" && "text-foreground/80",
           )}
         >
           {value}
         </span>
         {suffix ? (
-          <span className="text-base font-medium tabular-nums text-white/36 sm:text-lg">{suffix}</span>
+          <span className="text-base font-medium tabular-nums text-muted-foreground sm:text-lg">{suffix}</span>
         ) : null}
       </div>
       <p
         className={cn(
           "mt-0.5 line-clamp-2 text-xs font-semibold leading-snug sm:text-sm",
-          tone === "idle" ? "text-white/58" : "text-white",
+          tone === "idle" ? "text-muted-foreground" : "text-foreground",
         )}
       >
         {headline}
       </p>
       {detail ? (
-        <p className="mt-1 min-h-5 text-xs leading-5 text-white/42">{detail}</p>
+        <p className="mt-1 min-h-5 text-xs leading-5 text-muted-foreground">{detail}</p>
       ) : (
         <p className="mt-1 min-h-5" aria-hidden />
       )}

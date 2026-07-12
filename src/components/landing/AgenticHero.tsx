@@ -68,19 +68,19 @@ function AnimatedPipeline() {
                   "relative flex h-11 w-11 items-center justify-center rounded-xl text-lg transition-all duration-300",
                   isActive
                     ? `bg-gradient-to-br ${step.color} shadow-lg`
-                    : "bg-white/[0.06]",
-                  isCurrent && "ring-2 ring-white/20 ring-offset-2 ring-offset-black",
+                    : "bg-black/[0.06]",
+                  isCurrent && "ring-2 ring-black/15 ring-offset-2 ring-offset-background",
                 )}
               >
                 {step.icon}
                 {isCurrent && (
-                  <span className="absolute inset-0 animate-ping rounded-xl bg-white/10" />
+                  <span className="absolute inset-0 animate-ping rounded-xl bg-black/10" />
                 )}
               </div>
               <span
                 className={cn(
                   "text-[10px] font-medium tracking-wide transition-colors",
-                  isActive ? "text-white/70" : "text-white/25",
+                  isActive ? "text-foreground/70" : "text-muted-foreground/50",
                 )}
               >
                 {step.label}
@@ -91,13 +91,13 @@ function AnimatedPipeline() {
                 <div
                   className={cn(
                     "h-px w-6 transition-all duration-500",
-                    idx < activeStep ? "bg-white/30" : "bg-white/[0.06]",
+                    idx < activeStep ? "bg-black/20" : "bg-black/[0.06]",
                   )}
                 />
                 <div
                   className={cn(
                     "h-1 w-1 rounded-full transition-all duration-500",
-                    idx < activeStep ? "bg-white/40" : "bg-white/[0.06]",
+                    idx < activeStep ? "bg-black/30" : "bg-black/[0.06]",
                   )}
                 />
               </div>
@@ -223,10 +223,10 @@ export function AgenticHero() {
 
         {/* Grid */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+              "linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
@@ -235,7 +235,7 @@ export function AgenticHero() {
       {/* Content */}
       <div className="relative mx-auto max-w-6xl px-4 pt-32 pb-20 sm:px-6">
         {/* Headline */}
-        <h1 className="mx-auto max-w-4xl text-center text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl">
+        <h1 className="mx-auto max-w-4xl text-center text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
           <span className="inline-block">Your repo&apos;s</span>{" "}
           <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
             autonomous
@@ -243,8 +243,8 @@ export function AgenticHero() {
           <span className="inline-block">control plane</span>
         </h1>
 
-        <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-relaxed text-white/50">
-          Label a GitHub issue <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-purple-300">neodevex</code> and
+        <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-relaxed text-muted-foreground">
+          Label a GitHub issue <code className="rounded bg-muted px-1.5 py-0.5 text-sm text-purple-700">neodevex</code> and
           watch an AI agent reproduce the bug, implement a fix, validate it in a sandboxed environment,
           and open a draft PR — all with a beautiful mission map of every step.
         </p>
@@ -258,7 +258,7 @@ export function AgenticHero() {
               onChange={(e) => setRepoUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="github.com/your-org/your-repo"
-              className="w-full rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 text-sm text-white placeholder:text-white/25 focus:border-purple-500/40 focus:outline-none focus:ring-1 focus:ring-purple-500/20 transition"
+              className="w-full rounded-xl border border-border bg-black/[0.03] px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-purple-500/40 focus:outline-none focus:ring-1 focus:ring-purple-500/20 transition"
             />
           </div>
           <button
@@ -285,13 +285,13 @@ export function AgenticHero() {
               return (
                 <div
                   key={pillar.title}
-                  className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.1]"
+                  className="group rounded-2xl border border-border bg-black/[0.02] p-5 transition-all duration-300 hover:bg-black/[0.04] hover:border-black/[0.1]"
                 >
                   <div className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl", pillar.bg)}>
                     <Icon className={cn("h-4 w-4", pillar.accent)} />
                   </div>
-                  <h3 className="mt-3 text-sm font-semibold text-white/80">{pillar.title}</h3>
-                  <p className="mt-1.5 text-xs leading-relaxed text-white/40">{pillar.description}</p>
+                  <h3 className="mt-3 text-sm font-semibold text-foreground/80">{pillar.title}</h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{pillar.description}</p>
                 </div>
               );
             })}
@@ -343,10 +343,10 @@ export function HowItWorksSection() {
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">
             How it works
           </span>
-          <h2 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h2 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             From issue to PR in minutes
           </h2>
-          <p className="mt-4 text-lg text-white/40">
+          <p className="mt-4 text-lg text-muted-foreground">
             Four steps. Fully automated. Fully auditable.
           </p>
         </div>
@@ -365,24 +365,24 @@ export function HowItWorksSection() {
                   <span className={cn("text-3xl font-bold tabular-nums", step.color)}>
                     {step.number}
                   </span>
-                  <h3 className="text-xl font-semibold text-white">{step.title}</h3>
+                  <h3 className="text-xl font-semibold text-foreground">{step.title}</h3>
                 </div>
-                <p className="text-base leading-relaxed text-white/45 max-w-md">
+                <p className="text-base leading-relaxed text-muted-foreground max-w-md">
                   {step.description}
                 </p>
               </div>
 
-              <div className="flex-1 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 min-h-[120px] flex items-center justify-center">
+              <div className="flex-1 rounded-2xl border border-border bg-black/[0.02] p-6 min-h-[120px] flex items-center justify-center">
                 <div className="flex items-center gap-3">
-                  <div className={cn("h-12 w-12 rounded-xl bg-white/[0.06] flex items-center justify-center")}>
+                  <div className={cn("h-12 w-12 rounded-xl bg-black/[0.06] flex items-center justify-center")}>
                     {step.visual === "ingest" && <Terminal className="h-5 w-5 text-blue-400" />}
                     {step.visual === "trigger" && <Sparkles className="h-5 w-5 text-purple-400" />}
                     {step.visual === "run" && <Bot className="h-5 w-5 text-cyan-400" />}
                     {step.visual === "review" && <GitPullRequest className="h-5 w-5 text-emerald-400" />}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-white/70">{step.title}</div>
-                    <div className="text-xs text-white/30">Automated</div>
+                    <div className="text-sm font-medium text-foreground/70">{step.title}</div>
+                    <div className="text-xs text-muted-foreground">Automated</div>
                   </div>
                 </div>
               </div>
@@ -421,13 +421,13 @@ const TRUST_ITEMS = [
 
 export function TrustSection() {
   return (
-    <section className="relative py-24 border-t border-white/[0.04]">
+    <section className="relative py-24 border-t border-border">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="text-center mb-16">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
             Trust & Safety
           </span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Autonomous doesn&apos;t mean uncontrolled
           </h2>
         </div>
@@ -438,11 +438,11 @@ export function TrustSection() {
             return (
               <div
                 key={item.title}
-                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 transition hover:bg-white/[0.04]"
+                className="rounded-2xl border border-border bg-black/[0.02] p-5 transition hover:bg-black/[0.04]"
               >
                 <Icon className="h-5 w-5 text-emerald-400 mb-3" />
-                <h3 className="text-sm font-semibold text-white/80">{item.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-white/40">{item.description}</p>
+                <h3 className="text-sm font-semibold text-foreground/80">{item.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{item.description}</p>
               </div>
             );
           })}
@@ -464,10 +464,10 @@ export function CtaSection() {
       </div>
 
       <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
-        <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Ready to automate your bug fixes?
         </h2>
-        <p className="mt-5 text-lg text-white/45">
+        <p className="mt-5 text-lg text-muted-foreground">
           Connect your repository and let BugBot handle the rest.
           Every step is transparent, auditable, and under your control.
         </p>
@@ -483,7 +483,7 @@ export function CtaSection() {
             href="https://github.com"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-8 py-4 text-base font-medium text-white/70 transition hover:bg-white/[0.06]"
+            className="flex items-center gap-2 rounded-xl border border-border bg-black/[0.03] px-8 py-4 text-base font-medium text-muted-foreground transition hover:bg-black/[0.06]"
           >
             View Docs
           </a>

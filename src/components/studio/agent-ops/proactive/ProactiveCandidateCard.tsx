@@ -110,7 +110,7 @@ function ProactiveCandidateCardComponent({
         agentOpsCandidateCardClass,
         "flex min-w-0 max-w-full cursor-pointer flex-col gap-2 rounded-xl border px-3 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
         agentOpsTransitionClass,
-        "border-white/[0.08] bg-white/[0.035] hover:bg-white/[0.05]",
+        "border-border bg-muted/40 hover:bg-muted",
         agentOpsRadioFocusClass,
         isSelected && "border-emerald-300/35 bg-emerald-300/[0.07] ring-1 ring-emerald-300/30",
         isDismissed && "opacity-55",
@@ -126,7 +126,7 @@ function ProactiveCandidateCardComponent({
           />
           {validationChip ? (
             <span
-              className="hidden min-w-0 max-w-full truncate text-[9px] font-medium uppercase tracking-[0.06em] text-emerald-100/70 sm:inline"
+              className="hidden min-w-0 max-w-full truncate text-[9px] font-medium uppercase tracking-[0.06em] text-emerald-700 sm:inline"
               title={statusAriaLabel("Validation coverage", String(validationChip))}
             >
               Val {String(validationChip)}
@@ -135,34 +135,34 @@ function ProactiveCandidateCardComponent({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {isSelected ? (
-            <span className="rounded border border-emerald-300/30 bg-emerald-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-100">
+            <span className="rounded border border-emerald-300/30 bg-emerald-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
               {isSelectedCandidate ? "Selected" : "Run open"}
             </span>
           ) : null}
-          <span className="tabular-nums text-sm font-semibold text-white/88" aria-label={statusAriaLabel("Score", `${score} percent`)}>
+          <span className="tabular-nums text-sm font-semibold text-foreground" aria-label={statusAriaLabel("Score", `${score} percent`)}>
             {score}
           </span>
         </div>
       </div>
 
-      <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-white/90">{candidate.title}</h4>
+      <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{candidate.title}</h4>
 
-      <p className="line-clamp-2 text-xs leading-5 text-white/52">{candidate.hypothesis}</p>
+      <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">{candidate.hypothesis}</p>
 
       {evidence ? (
-        <p className="line-clamp-2 text-[11px] leading-4 text-white/42">
-          <span className="font-medium text-white/30">Evidence </span>
+        <p className="line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+          <span className="font-medium text-muted-foreground">Evidence </span>
           {evidence}
         </p>
       ) : (
-        <p className="text-[11px] text-white/32">{AGENT_OPS_COPY.evidenceEmpty}</p>
+        <p className="text-[11px] text-muted-foreground">{AGENT_OPS_COPY.evidenceEmpty}</p>
       )}
 
       {policyLine ? (
         <p
           className={cn(
             "line-clamp-1 text-[11px] leading-4",
-            policyBlocked ? "text-rose-100/85" : "text-amber-100/85",
+            policyBlocked ? "text-rose-700" : "text-amber-700",
           )}
         >
           {policyLine}
@@ -170,7 +170,7 @@ function ProactiveCandidateCardComponent({
       ) : null}
 
       {executionFailure ? (
-        <p className="line-clamp-1 text-[11px] leading-4 text-rose-100/80" title={executionFailure.reason}>
+        <p className="line-clamp-1 text-[11px] leading-4 text-rose-700" title={executionFailure.reason}>
           <span className="font-medium">{executionFailure.label}: </span>
           {executionFailure.reason}
         </p>
@@ -205,7 +205,7 @@ function ProactiveCandidateCardComponent({
             {policyWarning && !policyBlocked ? (
               <AgentOpsActionHint id={approveHintId}>{AGENT_OPS_COPY.approvePolicyWarning}</AgentOpsActionHint>
             ) : approveDisabledReason && policyBlocked ? (
-              <AgentOpsActionHint id={approveHintId} className="text-rose-100/70">
+              <AgentOpsActionHint id={approveHintId} className="text-rose-700">
                 {approveDisabledReason}
               </AgentOpsActionHint>
             ) : null}

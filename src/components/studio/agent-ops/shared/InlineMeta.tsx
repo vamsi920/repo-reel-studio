@@ -4,12 +4,12 @@ export function InlineMeta({ label, value, className }: { label: string; value: 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-[10px] font-medium tabular-nums text-white/48",
+        "inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground",
         className,
       )}
     >
-      <span className="uppercase tracking-[0.08em] text-white/32">{label}</span>
-      <span className="text-white/72">{value}</span>
+      <span className="uppercase tracking-[0.08em] text-muted-foreground/70">{label}</span>
+      <span className="text-foreground/80">{value}</span>
     </span>
   );
 }

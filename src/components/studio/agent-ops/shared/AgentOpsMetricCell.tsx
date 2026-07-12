@@ -8,10 +8,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const agentOpsMetricCellClass =
-  "rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-2";
+  "rounded-md border border-border bg-muted/40 px-2.5 py-2";
 
 export const agentOpsMetricLabelClass =
-  "text-[9px] font-medium uppercase tracking-[0.08em] text-white/34";
+  "text-[9px] font-medium uppercase tracking-[0.08em] text-muted-foreground";
 
 type AgentOpsMetricCellProps = {
   label: string;
@@ -28,14 +28,14 @@ export function AgentOpsMetricCell({ label, value, sub, emphasize = false, class
       <dd
         className={cn(
           agentOpsMetricValueClass,
-          "text-white/82",
-          emphasize && "text-emerald-100",
+          "text-foreground",
+          emphasize && "text-emerald-700",
           !sub && "capitalize",
         )}
       >
         {value}
       </dd>
-      {sub ? <dd className={cn(agentOpsMetricSubClass, "text-white/36")}>{sub}</dd> : null}
+      {sub ? <dd className={cn(agentOpsMetricSubClass, "text-muted-foreground")}>{sub}</dd> : null}
     </div>
   );
 }

@@ -94,9 +94,9 @@ function WordNode({
           color={item.color || "#6884ff"}
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.03}
-          outlineColor="#000000"
-          outlineOpacity={0.3}
+          outlineWidth={0.035}
+          outlineColor="#0f172a"
+          outlineOpacity={0.6}
           onPointerOver={() => setHovered(true)}
           onPointerOut={() => setHovered(false)}
         >
@@ -202,11 +202,12 @@ function ParticleField({ count = 100 }: { count: number }) {
       positions[i3 + 1] = (Math.random() - 0.5) * 20;
       positions[i3 + 2] = (Math.random() - 0.5) * 30;
       
-      // Varying colors for particles
+      // Varying colors for particles (darker/more saturated so they read against
+      // the light canvas backdrop instead of washing out under additive blending)
       const color = new THREE.Color().setHSL(
         0.6 + Math.random() * 0.2,
-        0.7,
-        0.6
+        0.85,
+        0.42
       );
       colors[i3] = color.r;
       colors[i3 + 1] = color.g;
@@ -295,11 +296,11 @@ export const MagicalWordCloud = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.5 }}
-      className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#0a0f1f] via-[#0d1424] to-[#111a34]"
+      className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100 border border-border"
     >
       {/* Gradient overlay for depth */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1f]/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
       </div>
       
@@ -341,7 +342,7 @@ export const MagicalWordCloud = ({
       
       {/* UI Overlay */}
       <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-        <div className="text-xs text-white/40 font-mono">
+        <div className="text-xs text-muted-foreground font-mono">
           {concepts.length} concepts discovered
         </div>
         <div className="flex gap-2">
@@ -352,7 +353,7 @@ export const MagicalWordCloud = ({
               className={`px-3 py-1 text-xs rounded-full transition ${
                 animationType === type
                   ? "bg-primary/20 text-primary"
-                  : "bg-white/5 text-white/40 hover:bg-white/10"
+                  : "bg-black/5 text-muted-foreground hover:bg-black/10"
               }`}
               onClick={() => {
                 // Would need to add prop callback to change animation type

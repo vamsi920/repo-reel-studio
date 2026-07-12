@@ -14,10 +14,10 @@ type AgentOpsFactChipProps = {
 };
 
 const TONE_CLASS = {
-  neutral: "border-white/10 bg-white/[0.04] text-white/62",
-  ok: "border-emerald-300/22 bg-emerald-300/[0.07] text-emerald-100/90",
-  warn: "border-amber-300/22 bg-amber-300/[0.08] text-amber-100/90",
-  danger: "border-rose-300/22 bg-rose-300/[0.08] text-rose-100/90",
+  neutral: "border-border bg-muted/70 text-muted-foreground",
+  ok: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  warn: "border-amber-200 bg-amber-50 text-amber-700",
+  danger: "border-rose-200 bg-rose-50 text-rose-700",
 } as const;
 
 export function AgentOpsFactChip({
@@ -39,7 +39,7 @@ export function AgentOpsFactChip({
     "inline-flex max-w-[min(100%,14rem)] shrink-0 items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] leading-none sm:max-w-full sm:gap-1.5 sm:px-2 sm:text-[11px]",
     TONE_CLASS[tone],
     agentOpsTransitionClass,
-    interactive && "cursor-pointer hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+    interactive && "cursor-pointer hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
   );
 
   if (interactive) {
@@ -69,7 +69,7 @@ function FactChipContent({
   const compact = shortLabel ?? label;
   return (
     <>
-      <span className="shrink-0 uppercase tracking-[0.06em] text-white/32 sm:tracking-[0.08em]">
+      <span className="shrink-0 uppercase tracking-[0.06em] text-muted-foreground/70 sm:tracking-[0.08em]">
         <span className="sm:hidden">{compact}</span>
         <span className="hidden sm:inline">{label}</span>
       </span>

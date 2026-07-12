@@ -57,9 +57,9 @@ export function ProactiveModeCard({
     <section className={cn(agentOpsStudioChromeClass, "min-w-0 max-w-full p-4 sm:p-5")}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-white">Proactive</h3>
+          <h3 className="text-sm font-semibold text-foreground">Proactive</h3>
           <ModeStatusPill enabled={enabled} saving={toggling} />
-          <p className="mt-1 text-[11px] leading-4 text-white/42">{AGENT_OPS_COPY.proactiveScope}</p>
+          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{AGENT_OPS_COPY.proactiveScope}</p>
         </div>
 
         <div className="flex flex-col items-end gap-1">
@@ -72,7 +72,7 @@ export function ProactiveModeCard({
             aria-labelledby="proactive-mode-toggle-label"
             aria-busy={toggling}
             onCheckedChange={(checked) => onToggle(Boolean(checked))}
-            className="data-[state=checked]:bg-emerald-400 data-[state=unchecked]:bg-white/[0.14]"
+            className="data-[state=checked]:bg-emerald-400 data-[state=unchecked]:bg-input"
           />
         </div>
       </div>
@@ -83,7 +83,7 @@ export function ProactiveModeCard({
         <AgentOpsMetricCell label="Deadline" value={deadline} sub="daily cutoff" />
       </dl>
 
-      <p className="mt-2 text-[11px] leading-5 text-white/40" title={proactiveDispatchLabel(batch ?? null, enabled, target, deadline)}>
+      <p className="mt-2 text-[11px] leading-5 text-muted-foreground" title={proactiveDispatchLabel(batch ?? null, enabled, target, deadline)}>
         {proactiveDispatchLabel(batch ?? null, enabled, target, deadline)}
       </p>
 
@@ -135,9 +135,9 @@ function ModeStatusPill({ enabled, saving }: { enabled: boolean; saving: boolean
       aria-label={statusAriaLabel("Proactive mode", label)}
       className={cn(
         agentOpsModePillClass,
-        saving && "border-white/15 bg-white/[0.06] text-white/55",
-        !saving && enabled && "border-emerald-300/25 bg-emerald-300/10 text-emerald-100",
-        !saving && !enabled && "border-white/12 bg-white/[0.04] text-white/50",
+        saving && "border-border bg-muted text-muted-foreground",
+        !saving && enabled && "border-emerald-300/25 bg-emerald-300/10 text-emerald-700",
+        !saving && !enabled && "border-border bg-muted text-muted-foreground",
       )}
     >
       {label}

@@ -3,10 +3,10 @@ export const agentOpsQueueRowClass =
   "min-h-[4.5rem] px-3 py-2.5";
 
 export const agentOpsQueueTitleClass =
-  "block min-h-[2.5rem] min-w-0 line-clamp-2 text-sm font-medium leading-snug text-white/88";
+  "block min-h-[2.5rem] min-w-0 line-clamp-2 text-sm font-medium leading-snug text-foreground";
 
 export const agentOpsQueueMetaClass =
-  "block min-h-3 min-w-0 truncate font-mono text-[10px] leading-none text-white/34";
+  "block min-h-3 min-w-0 truncate font-mono text-[10px] leading-none text-muted-foreground";
 
 export const agentOpsCandidateCardClass = "min-h-[12rem]";
 
@@ -18,7 +18,7 @@ export const agentOpsTabTriggerClass =
 export const agentOpsConsoleViewportClass = "h-32 min-h-32 max-h-32 shrink-0 overflow-hidden";
 
 export const agentOpsConsoleEmptyClass =
-  "flex h-32 min-h-32 max-h-32 items-center justify-center rounded-md border border-dashed border-white/[0.08] px-3";
+  "flex h-32 min-h-32 max-h-32 items-center justify-center rounded-md border border-dashed border-border px-3";
 
 export const agentOpsCodeViewportSmClass =
   "min-h-[9rem] max-h-36 overflow-y-auto overflow-x-hidden";
@@ -27,13 +27,13 @@ export const agentOpsCodeViewportLgClass =
   "min-h-[12rem] max-h-[min(56vh,28rem)] overflow-y-auto overflow-x-hidden";
 
 export const agentOpsCodeShellClass =
-  "min-w-0 max-w-full overflow-hidden rounded-md border border-white/[0.08] bg-black/25";
+  "min-w-0 max-w-full overflow-hidden rounded-md border border-border bg-black/25";
 
 export const agentOpsMetricCellStableClass = "min-h-[3.75rem]";
 
 export const agentOpsMetricValueClass = "mt-1 flex min-h-5 items-center text-sm font-semibold tabular-nums leading-tight";
 
-export const agentOpsMetricSubClass = "mt-0.5 block min-h-[0.875rem] text-[10px] leading-none text-white/36";
+export const agentOpsMetricSubClass = "mt-0.5 block min-h-[0.875rem] text-[10px] leading-none text-muted-foreground";
 
 export const agentOpsInspectorPanelClass = "min-h-[12rem]";
 
@@ -43,7 +43,7 @@ export const agentOpsModePillClass =
   "inline-flex min-w-[5.5rem] justify-center rounded-md border px-2 py-0.5 text-[11px] font-semibold";
 
 export const agentOpsToggleStatusLabelClass =
-  "inline-block min-w-[4.5rem] text-right text-[10px] font-medium text-white/38";
+  "inline-block min-w-[4.5rem] text-right text-[10px] font-medium text-muted-foreground";
 
 export const agentOpsActionMinWidth = {
   startRun: "min-w-[7.5rem]",

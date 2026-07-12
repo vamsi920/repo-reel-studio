@@ -69,7 +69,7 @@ type ProjectStats = {
 const STATUS_META: Record<Project["status"], { label: string; className: string }> = {
   ready: {
     label: "Ready",
-    className: "bg-emerald-300/10 text-emerald-200",
+    className: "bg-emerald-100 text-emerald-700",
   },
   processing: {
     label: "Processing",
@@ -77,7 +77,7 @@ const STATUS_META: Record<Project["status"], { label: string; className: string 
   },
   error: {
     label: "Needs Attention",
-    className: "bg-rose-300/10 text-rose-200",
+    className: "bg-rose-100 text-rose-700",
   },
 };
 
@@ -159,7 +159,7 @@ const ProjectCard = ({
     <Card
       variant="interactive"
       className={cn(
-        "rounded-[22px] gf-panel-soft shadow-none transition-all hover:bg-[rgba(27,36,58,0.96)]",
+        "rounded-[22px] gf-panel-soft shadow-none transition-all hover:bg-black/[0.03]",
         isSelected && "ring-1 ring-primary/40"
       )}
       onClick={() => onSelect(project.id)}
@@ -167,10 +167,10 @@ const ProjectCard = ({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-lg font-semibold text-white">
+            <p className="truncate text-lg font-semibold text-foreground">
               {getProjectDisplayName(project)}
             </p>
-            <p className="mt-1.5 text-xs text-white/45">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Updated {stats.lastUpdatedLabel}
             </p>
           </div>
@@ -179,7 +179,7 @@ const ProjectCard = ({
           </Badge>
         </div>
 
-        <p className="mt-3 truncate font-mono text-[11px] text-white/36">
+        <p className="mt-3 truncate font-mono text-[11px] text-muted-foreground/70">
           {project.repo_url}
         </p>
 
@@ -227,9 +227,9 @@ const SummaryStatCard = ({
   <div className="rounded-[20px] gf-panel-soft p-4">
     <div className="flex items-start justify-between gap-4">
       <div>
-        <div className="text-xs font-medium uppercase tracking-[0.18em] text-white/40">{label}</div>
-        <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
-        <p className="mt-2 text-xs leading-5 text-white/46">{description}</p>
+        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+        <div className="mt-2 text-2xl font-semibold text-foreground">{value}</div>
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
       </div>
       <div className={cn("rounded-2xl p-2", accentClass)}>
         <Icon className="h-5 w-5" />
@@ -249,13 +249,13 @@ const WorkspaceMetricTile = ({
   value: string;
   detail: string;
 }) => (
-  <div className="rounded-[18px] bg-white/[0.04] p-3">
-    <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-white/40">
+  <div className="rounded-[18px] bg-muted p-3">
+    <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
       <Icon className="h-4 w-4" />
       {label}
     </div>
-    <div className="mt-2 text-lg font-semibold text-white">{value}</div>
-    <p className="mt-1 text-xs leading-5 text-white/52">{detail}</p>
+    <div className="mt-2 text-lg font-semibold text-foreground">{value}</div>
+    <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
   </div>
 );
 
@@ -562,10 +562,10 @@ const Dashboard = () => {
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/80">
               Workspaces
             </div>
-            <h1 className="mt-3 text-3xl font-semibold text-white">
+            <h1 className="mt-3 text-3xl font-semibold text-foreground">
               {greeting}, {userName}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/58">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Start a new analysis or reopen a saved repo workspace.
             </p>
           </header>
@@ -583,14 +583,14 @@ const Dashboard = () => {
               label="Ready"
               value={`${summary.readyCount}`}
               description="Ready to open in Studio"
-              accentClass="bg-emerald-300/12 text-emerald-200"
+              accentClass="bg-emerald-50 text-emerald-700"
             />
             <SummaryStatCard
               icon={RefreshCw}
               label="Processing"
               value={`${summary.processingCount}`}
               description="Still running"
-              accentClass="bg-amber-300/12 text-amber-200"
+              accentClass="bg-amber-50 text-amber-700"
             />
           </section>
 
@@ -603,19 +603,19 @@ const Dashboard = () => {
                       <WandSparkles className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-white/40">
+                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                         Quick Start
                       </div>
-                      <h2 className="mt-2 text-lg font-semibold text-white">
+                      <h2 className="mt-2 text-lg font-semibold text-foreground">
                         Launch a workspace
                       </h2>
-                      <p className="mt-2 text-sm leading-6 text-white/56">
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         Start from a repository URL or a local folder.
                       </p>
                     </div>
                   </div>
                   <Tabs defaultValue="repo" className="w-full">
-                    <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg bg-white/[0.05] p-1">
+                    <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg bg-muted p-1">
                       <TabsTrigger value="repo" className="rounded-md">
                         Git Repository
                       </TabsTrigger>
@@ -625,7 +625,7 @@ const Dashboard = () => {
                     </TabsList>
 
                     <TabsContent value="repo" className="mt-4 space-y-4">
-                      <div className="rounded-lg bg-white/[0.04] p-4">
+                      <div className="rounded-lg bg-muted p-4">
                         <div className="flex flex-col gap-3 lg:flex-row">
                           <Input
                             variant="hero"
@@ -673,10 +673,10 @@ const Dashboard = () => {
                       <div className="rounded-lg bg-emerald-300/8 p-4">
                           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div>
-                              <div className="text-lg font-semibold text-white">
+                              <div className="text-lg font-semibold text-foreground">
                                 {uploadedFolder.folderName}
                               </div>
-                              <div className="mt-1 text-sm text-white/58">
+                              <div className="mt-1 text-sm text-muted-foreground">
                                 {uploadedFolder.files.length} readable files prepared for analysis.
                               </div>
                             </div>
@@ -693,14 +693,14 @@ const Dashboard = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className="rounded-lg bg-white/[0.03] p-5 text-center">
-                          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white/[0.05] text-white">
+                        <div className="rounded-lg bg-muted p-5 text-center">
+                          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-foreground">
                             <Upload className="h-6 w-6" />
                           </div>
-                          <div className="mt-4 text-sm font-semibold text-white">
+                          <div className="mt-4 text-sm font-semibold text-foreground">
                             Upload a local repository folder
                           </div>
-                          <p className="mt-2 text-sm leading-6 text-white/56">
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">
                             The dashboard fingerprints uploaded folders so the same source can reopen a saved project instead of creating duplicate context.
                           </p>
                           <Button
@@ -722,7 +722,7 @@ const Dashboard = () => {
                   </Tabs>
 
                   {quickStartError ? (
-                    <div className="mt-4 rounded-lg border border-rose-300/18 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
+                    <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                       {quickStartError}
                     </div>
                   ) : null}
@@ -733,18 +733,18 @@ const Dashboard = () => {
                 <div className="px-5 py-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-white/40">
+                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                         Saved Workspaces
                       </div>
-                      <h2 className="mt-2 text-lg font-semibold text-white">
+                      <h2 className="mt-2 text-lg font-semibold text-foreground">
                         Reopen a saved workspace
                       </h2>
-                      <p className="mt-2 text-sm leading-6 text-white/56">
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         Filter or search to continue where you left off.
                       </p>
                     </div>
                     <div className="relative w-full max-w-sm">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/34" />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
@@ -774,9 +774,9 @@ const Dashboard = () => {
                       <Loader2 className="h-6 w-6 animate-spin text-sky-700" />
                     </div>
                   ) : filteredProjects.length === 0 ? (
-                    <div className="rounded-[20px] bg-white/[0.04] p-10 text-center">
-                      <p className="text-sm font-semibold text-white">No matching workspaces</p>
-                      <p className="mt-2 text-sm text-white/56">
+                    <div className="rounded-[20px] bg-muted p-10 text-center">
+                      <p className="text-sm font-semibold text-foreground">No matching workspaces</p>
+                      <p className="mt-2 text-sm text-muted-foreground">
                         Start a new analysis above or change the current filters.
                       </p>
                     </div>
@@ -801,14 +801,14 @@ const Dashboard = () => {
               <div className="overflow-hidden rounded-[24px] gf-panel">
                 <div className="px-5 py-4">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-white/[0.06] p-2 text-primary">
+                    <div className="rounded-lg bg-secondary p-2 text-primary">
                       <GitBranch className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-white/40">
+                      <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                         Selected Workspace
                       </div>
-                      <h2 className="mt-2 text-lg font-semibold text-white">
+                      <h2 className="mt-2 text-lg font-semibold text-foreground">
                         Context and next action
                       </h2>
                     </div>
@@ -817,14 +817,14 @@ const Dashboard = () => {
 
                 <div className="space-y-4 px-5 py-5">
                   {!selectedProject || !selectedStats ? (
-                    <div className="rounded-[20px] bg-white/[0.04] p-9 text-center text-sm text-white/56">
+                    <div className="rounded-[20px] bg-muted p-9 text-center text-sm text-muted-foreground">
                       Select a workspace to continue.
                     </div>
                   ) : (
                     <>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-semibold text-white">
+                          <h3 className="text-lg font-semibold text-foreground">
                             {getProjectDisplayName(selectedProject)}
                           </h3>
                           <Badge className={STATUS_META[selectedProject.status].className} variant="outline">
@@ -834,10 +834,10 @@ const Dashboard = () => {
                             {selectedSourceType === "folder" ? "Folder Upload" : selectedSourceType}
                           </Badge>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-white/58">
+                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
                           {selectedStats.architecture}
                         </p>
-                        <div className="mt-4 rounded-[18px] bg-white/[0.04] px-4 py-3 font-mono text-[11px] text-white/52">
+                        <div className="mt-4 rounded-[18px] bg-muted px-4 py-3 font-mono text-[11px] text-muted-foreground">
                           {selectedProject.repo_url}
                         </div>
                       </div>
@@ -905,12 +905,12 @@ const Dashboard = () => {
                         )}
                       </div>
 
-                      <div className="rounded-[20px] bg-white/[0.04] p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                          <Clock3 className="h-4 w-4 text-white/40" />
+                      <div className="rounded-[20px] bg-muted p-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <Clock3 className="h-4 w-4 text-muted-foreground" />
                           Workspace snapshot
                         </div>
-                        <p className="mt-2 text-sm leading-6 text-white/56">
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
                           Created {formatDistanceToNowStrict(new Date(selectedProject.created_at), {
                             addSuffix: true,
                           })} and updated {selectedStats.lastUpdatedLabel}.

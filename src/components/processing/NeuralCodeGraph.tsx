@@ -117,12 +117,12 @@ function GraphNode({
       <Billboard>
         <Text
           fontSize={0.15}
-          color="white"
+          color="#0f172a"
           anchorX="center"
           anchorY="bottom"
           position={[0, 1, 0]}
           outlineWidth={0.02}
-          outlineColor="#000000"
+          outlineColor="#ffffff"
         >
           {node.label}
         </Text>
@@ -352,21 +352,21 @@ export const NeuralCodeGraph = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1 }}
-      className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-[#050a15] via-[#0a1120] to-[#0d1424]"
+      className="relative h-[600px] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 border border-border"
     >
       {/* Header */}
       <div className="absolute top-4 left-4 z-10">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           Neural Code Graph
-          <span className="text-xs text-white/40 font-normal">
+          <span className="text-xs text-muted-foreground font-normal">
             {nodes.length} nodes • {edges.length} connections
           </span>
         </h3>
-        <p className="text-sm text-white/60 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Visualizing code dependencies and relationships
         </p>
       </div>
-      
+
       {/* Legend */}
       <div className="absolute bottom-4 left-4 z-10 flex items-center gap-4">
         {[
@@ -379,7 +379,7 @@ export const NeuralCodeGraph = ({
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-xs text-white/60">{item.label}</span>
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
       </div>
@@ -403,7 +403,7 @@ export const NeuralCodeGraph = ({
         <CameraController isAnimating={isAnimating} />
         
         {/* Grid helper */}
-        <gridHelper args={[20, 20, "#ffffff", "#ffffff"]} opacity={0.1} />
+        <gridHelper args={[20, 20, "#94a3b8", "#cbd5e1"]} opacity={0.1} />
         
         {/* Edges */}
         {edges.map((edge, i) => {

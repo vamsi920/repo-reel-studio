@@ -28,7 +28,7 @@ export function ProactiveDashboardEmpty({
         compact
         className="items-center text-center sm:items-stretch sm:text-left"
       >
-        <AgentOpsSpinner className="mx-auto h-5 w-5 text-white/45 sm:mx-0" />
+        <AgentOpsSpinner className="mx-auto h-5 w-5 text-muted-foreground sm:mx-0" />
       </AgentOpsEmptyState>
     );
   }

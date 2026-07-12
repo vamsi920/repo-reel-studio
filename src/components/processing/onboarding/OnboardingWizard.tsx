@@ -53,7 +53,7 @@ const StepIndicator = ({
                 ? "bg-primary/20 text-primary"
                 : i === currentIdx
                   ? "bg-primary text-primary-foreground shadow-[0_4px_16px_rgba(104,132,255,0.3)]"
-                  : "bg-white/[0.06] text-white/28"
+                  : "bg-black/[0.06] text-muted-foreground"
             }`}
           >
             {i < currentIdx ? <Check className="h-3.5 w-3.5" /> : i + 1}
@@ -61,7 +61,7 @@ const StepIndicator = ({
           {i < steps.length - 1 && (
             <div
               className={`h-px w-6 transition-all ${
-                i < currentIdx ? "bg-primary/40" : "bg-white/[0.08]"
+                i < currentIdx ? "bg-primary/40" : "bg-black/[0.08]"
               }`}
             />
           )}
@@ -90,13 +90,13 @@ const ChoiceCard = ({
     className={`group relative z-[1] w-full rounded-xl p-4 text-left transition-all ${
       selected
         ? "bg-primary/12 shadow-[inset_0_0_0_1px_rgba(104,132,255,0.4)]"
-        : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] hover:bg-white/[0.06]"
+        : "bg-black/[0.04] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] hover:bg-black/[0.06]"
     }`}
   >
     <div className="flex items-start gap-3">
       <div
         className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
-          selected ? "bg-primary/20 text-primary" : "bg-white/[0.06] text-white/36"
+          selected ? "bg-primary/20 text-primary" : "bg-black/[0.06] text-muted-foreground"
         }`}
       >
         <Icon className="h-4.5 w-4.5" />
@@ -104,18 +104,18 @@ const ChoiceCard = ({
       <div className="min-w-0 flex-1">
         <div
           className={`text-sm font-semibold transition ${
-            selected ? "text-primary" : "text-white/72"
+            selected ? "text-primary" : "text-muted-foreground"
           }`}
         >
           {title}
         </div>
-        <p className="mt-1 text-xs text-white/40 leading-relaxed">{description}</p>
+        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{description}</p>
       </div>
       <div
         className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border transition ${
           selected
             ? "border-primary bg-primary"
-            : "border-white/16 bg-transparent"
+            : "border-border bg-transparent"
         }`}
       >
         {selected && <Check className="h-3 w-3 text-primary-foreground" />}
@@ -134,9 +134,9 @@ const ModuleToggle = ({
   onToggle: () => void;
 }) => {
   const complexityColor = {
-    low: "text-emerald-300",
-    medium: "text-amber-300",
-    high: "text-rose-300",
+    low: "text-emerald-700",
+    medium: "text-amber-700",
+    high: "text-rose-700",
   };
   return (
     <button
@@ -145,7 +145,7 @@ const ModuleToggle = ({
       className={`group relative z-[1] w-full rounded-lg p-3 text-left transition-all ${
         selected
           ? "bg-primary/10 shadow-[inset_0_0_0_1px_rgba(104,132,255,0.3)]"
-          : "bg-white/[0.03] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] hover:bg-white/[0.05]"
+          : "bg-black/[0.03] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03)] hover:bg-black/[0.05]"
       }`}
     >
       <div className="flex items-center gap-2.5">
@@ -153,14 +153,14 @@ const ModuleToggle = ({
           className={`flex h-5 w-5 items-center justify-center rounded border transition ${
             selected
               ? "border-primary bg-primary"
-              : "border-white/16 bg-transparent"
+              : "border-border bg-transparent"
           }`}
         >
           {selected && <Check className="h-3 w-3 text-primary-foreground" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${selected ? "text-white" : "text-white/64"}`}>
+            <span className={`text-sm font-medium ${selected ? "text-foreground" : "text-muted-foreground"}`}>
               {mod.label}
             </span>
             {mod.is_entry && (
@@ -169,13 +169,13 @@ const ModuleToggle = ({
               </span>
             )}
             {mod.is_hub && (
-              <span className="rounded-full bg-amber-300/14 px-1.5 py-0.5 text-[9px] text-amber-300">
+              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] text-amber-700">
                 hub
               </span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-white/28">{mod.file_paths.length} files</span>
+            <span className="text-[10px] text-muted-foreground">{mod.file_paths.length} files</span>
             <span className={`text-[10px] ${complexityColor[mod.complexity]}`}>
               {mod.complexity}
             </span>
@@ -270,7 +270,7 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
               Configure Your Walkthrough
             </div>
-            <h2 className="mt-1 text-xl font-semibold text-white">
+            <h2 className="mt-1 text-xl font-semibold text-foreground">
               {intelligence.repo_name}
             </h2>
           </div>
@@ -284,9 +284,9 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4.5 w-4.5 text-primary/60" />
-              <h3 className="text-base font-semibold text-white">Who is this for?</h3>
+              <h3 className="text-base font-semibold text-foreground">Who is this for?</h3>
             </div>
-            <p className="text-sm text-white/40 mb-5">
+            <p className="text-sm text-muted-foreground mb-5">
               Depth and vocabulary adapt to the audience level.
             </p>
             <div className="space-y-2.5">
@@ -319,9 +319,9 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Target className="h-4.5 w-4.5 text-primary/60" />
-              <h3 className="text-base font-semibold text-white">What's the goal?</h3>
+              <h3 className="text-base font-semibold text-foreground">What's the goal?</h3>
             </div>
-            <p className="text-sm text-white/40 mb-5">
+            <p className="text-sm text-muted-foreground mb-5">
               The narrative arc adapts to the viewer's purpose.
             </p>
             <div className="space-y-2.5">
@@ -361,9 +361,9 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <LayoutGrid className="h-4.5 w-4.5 text-primary/60" />
-              <h3 className="text-base font-semibold text-white">Select Modules</h3>
+              <h3 className="text-base font-semibold text-foreground">Select Modules</h3>
             </div>
-            <p className="text-sm text-white/40 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Pick which parts of the repo to include. More modules = longer video.
             </p>
 
@@ -377,15 +377,15 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
               >
                 Select all
               </button>
-              <span className="text-white/16">|</span>
+              <span className="text-muted-foreground">|</span>
               <button
                 type="button"
                 onClick={() => setSelectedModuleIds(new Set())}
-                className="text-[11px] text-white/36 hover:text-white/56 transition"
+                className="text-[11px] text-muted-foreground hover:text-muted-foreground transition"
               >
                 Clear
               </button>
-              <span className="ml-auto text-[11px] text-white/28">
+              <span className="ml-auto text-[11px] text-muted-foreground">
                 {selectedModuleIds.size} of {intelligence.modules.length} selected
               </span>
             </div>
@@ -402,35 +402,35 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
             </div>
 
             {/* Output toggles */}
-            <div className="mt-5 pt-4 border-t border-white/[0.06]">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34 mb-3">
+            <div className="mt-5 pt-4 border-t border-border">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">
                 Output Format
               </div>
               <div className="space-y-2">
-                <label className="flex items-center gap-3 rounded-lg bg-white/[0.04] px-4 py-3 cursor-pointer hover:bg-white/[0.06] transition">
+                <label className="flex items-center gap-3 rounded-lg bg-black/[0.04] px-4 py-3 cursor-pointer hover:bg-black/[0.06] transition">
                   <input
                     type="checkbox"
                     checked={masterJourney}
                     onChange={() => setMasterJourney(!masterJourney)}
-                    className="h-4 w-4 rounded border-white/20 bg-transparent text-primary focus:ring-primary/40"
+                    className="h-4 w-4 rounded border-border bg-transparent text-primary focus:ring-primary/40"
                   />
                   <div>
-                    <div className="text-sm font-medium text-white/72">Master Journey</div>
-                    <div className="text-[11px] text-white/36">
+                    <div className="text-sm font-medium text-muted-foreground">Master Journey</div>
+                    <div className="text-[11px] text-muted-foreground">
                       Full-repo narrative with chapter ticks (default)
                     </div>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 rounded-lg bg-white/[0.04] px-4 py-3 cursor-pointer hover:bg-white/[0.06] transition">
+                <label className="flex items-center gap-3 rounded-lg bg-black/[0.04] px-4 py-3 cursor-pointer hover:bg-black/[0.06] transition">
                   <input
                     type="checkbox"
                     checked={focusedTutorials}
                     onChange={() => setFocusedTutorials(!focusedTutorials)}
-                    className="h-4 w-4 rounded border-white/20 bg-transparent text-primary focus:ring-primary/40"
+                    className="h-4 w-4 rounded border-border bg-transparent text-primary focus:ring-primary/40"
                   />
                   <div>
-                    <div className="text-sm font-medium text-white/72">Focused Tutorials</div>
-                    <div className="text-[11px] text-white/36">
+                    <div className="text-sm font-medium text-muted-foreground">Focused Tutorials</div>
+                    <div className="text-[11px] text-muted-foreground">
                       Shorter standalone videos for each selected module
                     </div>
                   </div>
@@ -444,42 +444,42 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-4.5 w-4.5 text-primary/60" />
-              <h3 className="text-base font-semibold text-white">Review & Generate</h3>
+              <h3 className="text-base font-semibold text-foreground">Review & Generate</h3>
             </div>
-            <p className="text-sm text-white/40 mb-5">
+            <p className="text-sm text-muted-foreground mb-5">
               Confirm your choices. Generation runs chapter by chapter — you can start watching early.
             </p>
 
             <div className="grid gap-3 sm:grid-cols-3 mb-5">
-              <div className="rounded-xl bg-white/[0.04] p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-white/34">
+              <div className="rounded-xl bg-black/[0.04] p-4">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Est. Duration
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-white">{estimatedMinutes}</span>
-                  <span className="text-sm text-white/40">min</span>
+                  <span className="text-2xl font-bold text-foreground">{estimatedMinutes}</span>
+                  <span className="text-sm text-muted-foreground">min</span>
                 </div>
               </div>
-              <div className="rounded-xl bg-white/[0.04] p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-white/34">
+              <div className="rounded-xl bg-black/[0.04] p-4">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Scenes
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-white">~{estimatedScenes}</span>
-                  <span className="text-sm text-white/40">scenes</span>
+                  <span className="text-2xl font-bold text-foreground">~{estimatedScenes}</span>
+                  <span className="text-sm text-muted-foreground">scenes</span>
                 </div>
               </div>
-              <div className="rounded-xl bg-white/[0.04] p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-white/34">
+              <div className="rounded-xl bg-black/[0.04] p-4">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                   Narration
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-foreground">
                     {estimatedWords > 1000
                       ? `${(estimatedWords / 1000).toFixed(1)}k`
                       : estimatedWords}
                   </span>
-                  <span className="text-sm text-white/40">words</span>
+                  <span className="text-sm text-muted-foreground">words</span>
                 </div>
               </div>
             </div>
@@ -516,14 +516,14 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
             </div>
 
             {/* Cost / time hint */}
-            <div className="mt-5 rounded-xl bg-amber-300/8 p-4 shadow-[inset_0_0_0_1px_rgba(252,211,77,0.12)]">
+            <div className="mt-5 rounded-xl bg-amber-50 p-4 shadow-[inset_0_0_0_1px_rgba(252,211,77,0.3)]">
               <div className="flex items-start gap-3">
-                <Clock className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
+                <Clock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm font-medium text-amber-200">
+                  <div className="text-sm font-medium text-amber-700">
                     Time & Cost Estimate
                   </div>
-                  <p className="mt-1 text-xs text-white/40 leading-relaxed">
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                     {estimatedMinutes > 20
                       ? `${estimatedMinutes}+ minutes is a long video. LLM and TTS costs scale linearly. Expect 3–8 minutes of generation time with chapter-based incremental output.`
                       : `Should complete in under 2 minutes. Each chapter generates independently so you can start watching early.`}
@@ -564,8 +564,8 @@ export const OnboardingWizard = ({ intelligence, onComplete, onBack }: Props) =>
 };
 
 const ReviewRow = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-center justify-between rounded-lg bg-white/[0.04] px-4 py-2.5">
-    <span className="text-xs text-white/40">{label}</span>
-    <span className="text-sm font-medium text-white/72">{value}</span>
+  <div className="flex items-center justify-between rounded-lg bg-black/[0.04] px-4 py-2.5">
+    <span className="text-xs text-muted-foreground">{label}</span>
+    <span className="text-sm font-medium text-muted-foreground">{value}</span>
   </div>
 );

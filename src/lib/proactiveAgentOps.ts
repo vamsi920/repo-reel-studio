@@ -275,6 +275,48 @@ export interface ProactiveExecutionFailure {
   prApprovalBlocked?: boolean;
 }
 
+export interface ProactiveDeepWorkStage {
+  key: string;
+  label: string;
+  status: "done" | "failed" | "skipped" | "pending" | string;
+  detail: string;
+}
+
+export interface ProactiveDeepWorkApproach {
+  id: string;
+  title: string;
+  risk: string;
+  score: number | null;
+  rationale: string;
+}
+
+export interface ProactiveDeepWorkAttempt {
+  index: number | null;
+  validationStatus: string;
+  patchPresent: boolean;
+  changedFiles: number | null;
+  approachTitle: string;
+  prReady: boolean;
+}
+
+export interface ProactiveDeepWorkJourney {
+  version: number;
+  prReady: boolean;
+  stages: ProactiveDeepWorkStage[];
+  approaches: ProactiveDeepWorkApproach[];
+  attempts: ProactiveDeepWorkAttempt[];
+  attemptsRun: number;
+  maxAttempts: number | null;
+  selected: { id?: string; title?: string } | null;
+  research: {
+    summary: string;
+    targetFile: string;
+    relatedFiles: string[];
+    existingTests: string[];
+    riskNotes: string[];
+  };
+}
+
 export interface ProactiveLinkedRunSummary {
   id: string;
   status: string;
@@ -314,6 +356,8 @@ export interface ProactiveLinkedRunSummary {
   prApprovalBlocked: boolean;
   prPromotionDiscouraged: boolean;
   sensitivePaths: string[];
+  prReady?: boolean;
+  journey?: ProactiveDeepWorkJourney | null;
 }
 
 export interface ProactiveCandidate {

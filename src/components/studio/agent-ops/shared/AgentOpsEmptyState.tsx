@@ -37,13 +37,13 @@ export function AgentOpsEmptyState({
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-col gap-2.5 rounded-md border border-dashed border-white/[0.1] bg-white/[0.02] text-left",
+        "flex w-full min-w-0 flex-col gap-2.5 rounded-md border border-dashed border-border bg-muted/30 text-left",
         compact ? "px-3 py-3" : "px-3 py-4 sm:px-4 sm:py-5",
         className,
       )}
     >
-      {title ? <p className="text-xs font-semibold text-white/68">{title}</p> : null}
-      <p className="text-xs leading-5 text-white/42">{message}</p>
+      {title ? <p className="text-xs font-semibold text-foreground/80">{title}</p> : null}
+      <p className="text-xs leading-5 text-muted-foreground">{message}</p>
       {children}
       {action ? <EmptyActionButton action={action} /> : null}
     </div>

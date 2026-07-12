@@ -51,18 +51,18 @@ export function LaymanCompressionDebugSurface() {
 
   return (
     <section
-      className="rounded-md border border-cyan-300/30 bg-cyan-950/25 px-3 py-2"
+      className="rounded-md border border-cyan-200 bg-cyan-50 px-3 py-2"
       aria-label="Layman compression debug metrics"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-        <span className="font-semibold uppercase tracking-wide text-cyan-200">Layman metrics</span>
-        <span className="text-cyan-100/85">Saved: {report.totalSavedTokens} tokens</span>
-        <span className="text-cyan-100/70">Events: {report.totalEvents}</span>
+        <span className="font-semibold uppercase tracking-wide text-cyan-800">Layman metrics</span>
+        <span className="text-cyan-700">Saved: {report.totalSavedTokens} tokens</span>
+        <span className="text-cyan-700/80">Events: {report.totalEvents}</span>
       </div>
-      <ul className="mt-1 space-y-0.5 text-[11px] text-cyan-50/80">
+      <ul className="mt-1 space-y-0.5 text-[11px] text-cyan-800/80">
         {contextRows.map((row) => (
           <li key={row.context} className="flex flex-wrap gap-x-2">
-            <span className="font-medium text-cyan-100/90">{row.label}:</span>
+            <span className="font-medium text-cyan-800">{row.label}:</span>
             <span>saved {row.savedTokens}</span>
             <span>events {row.events}</span>
             <span>skipped {row.skipped}</span>

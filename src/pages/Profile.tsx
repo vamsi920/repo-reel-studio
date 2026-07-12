@@ -72,7 +72,7 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
         <div className="absolute inset-0 gf-grid-overlay opacity-[0.18]" />
         <div className="relative rounded-[24px] gf-panel-glass px-8 py-7 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)]">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-[0.95rem] text-white/60">Loading account workspace...</p>
+          <p className="mt-4 text-[0.95rem] text-muted-foreground">Loading account workspace...</p>
         </div>
       </div>
     );
@@ -114,12 +114,12 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
         <header className="gf-nav-shell sticky top-0 z-20">
           <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:px-8">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                 <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
               </div>
               <div>
-                <div className="font-headline text-[1.35rem] font-semibold text-white">GitFlick</div>
-                <div className="text-[11px] uppercase tracking-[0.24em] text-white/36">Account workspace</div>
+                <div className="font-headline text-[1.35rem] font-semibold text-foreground">GitFlick</div>
+                <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Account workspace</div>
               </div>
             </Link>
 
@@ -135,7 +135,7 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                 size="sm"
                 onClick={handleSignOut}
                 disabled={isLoggingOut}
-                className="text-white/70 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
                 Sign out
@@ -158,10 +158,10 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                   Personal workspace
                 </div>
-                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
                   {userName || "Your profile"}
                 </h1>
-                <p className="mt-2 text-[0.98rem] leading-7 text-white/60">{userEmail}</p>
+                <p className="mt-2 text-[0.98rem] leading-7 text-muted-foreground">{userEmail}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <div className="gf-tag rounded-full px-4 py-2 text-xs font-medium">Signed in with {providerLabel}</div>
                   <div className="gf-tag rounded-full px-4 py-2 text-xs font-medium">Member since {createdAt}</div>
@@ -169,12 +169,12 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-              <div className="rounded-[22px] bg-[#131b2e] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+              <div className="rounded-[22px] bg-card border border-border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                   <Sparkles className="h-4 w-4" />
                   Workspace posture
                 </div>
-                <div className="mt-3 text-[0.95rem] leading-6 text-white/62">
+                <div className="mt-3 text-[0.95rem] leading-6 text-muted-foreground">
                   Your account controls access to saved walkthroughs, export history, repo memory, and future agent operations.
                 </div>
               </div>
@@ -191,10 +191,10 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                   <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                     Profile settings
                   </div>
-                  <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">
+                  <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
                     Update your account details
                   </h2>
-                  <p className="mt-2 text-[0.95rem] leading-6 text-white/58">
+                  <p className="mt-2 text-[0.95rem] leading-6 text-muted-foreground">
                     Keep your account metadata current so workspace ownership and collaboration surfaces stay accurate.
                   </p>
                 </div>
@@ -202,7 +202,7 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-[11px] uppercase tracking-[0.24em] text-white/44">
+                  <Label htmlFor="fullName" className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
                     Full name
                   </Label>
                   <Input
@@ -216,7 +216,7 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.24em] text-white/44">
+                  <Label htmlFor="email" className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
                     Email address
                   </Label>
                   <Input
@@ -224,9 +224,9 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                     type="email"
                     value={userEmail}
                     disabled
-                    className="h-12 rounded-[16px] bg-white/[0.04] text-[0.95rem]"
+                    className="h-12 rounded-[16px] bg-muted text-[0.95rem]"
                   />
-                  <p className="text-xs text-white/38">
+                  <p className="text-xs text-muted-foreground">
                     Email cannot be changed from this surface.
                   </p>
                 </div>
@@ -248,27 +248,27 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                     <Shield className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/36">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                       Account posture
                     </div>
-                    <div className="mt-1 text-lg font-semibold text-white">Security and identity</div>
+                    <div className="mt-1 text-lg font-semibold text-foreground">Security and identity</div>
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/34">
+                  <div className="rounded-[18px] bg-muted px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                       <Mail className="h-3.5 w-3.5" />
                       Sign-in method
                     </div>
-                    <div className="mt-1 text-[0.95rem] font-medium text-white">{providerLabel}</div>
+                    <div className="mt-1 text-[0.95rem] font-medium text-foreground">{providerLabel}</div>
                   </div>
-                  <div className="rounded-[18px] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/34">
+                  <div className="rounded-[18px] bg-muted px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                       <Calendar className="h-3.5 w-3.5" />
                       Member since
                     </div>
-                    <div className="mt-1 text-[0.95rem] font-medium text-white">{createdAt}</div>
+                    <div className="mt-1 text-[0.95rem] font-medium text-foreground">{createdAt}</div>
                   </div>
                 </div>
               </section>
@@ -277,13 +277,13 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                   Plan and billing
                 </div>
-                <h3 className="mt-2 text-lg font-semibold text-white">Free plan</h3>
-                <p className="mt-2 text-[0.95rem] leading-6 text-white/58">
+                <h3 className="mt-2 text-lg font-semibold text-foreground">Free plan</h3>
+                <p className="mt-2 text-[0.95rem] leading-6 text-muted-foreground">
                   Unlimited local generation and secure workspace recovery. Premium workspace controls can ship later without changing the account surface.
                 </p>
-                <div className="mt-4 rounded-[18px] bg-[#111a34]/70 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-                  <div className="text-sm font-semibold text-white">Current allowance</div>
-                  <div className="mt-2 text-sm leading-6 text-white/58">
+                <div className="mt-4 rounded-[18px] bg-secondary px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                  <div className="text-sm font-semibold text-foreground">Current allowance</div>
+                  <div className="mt-2 text-sm leading-6 text-muted-foreground">
                     Export access, saved manifests, private watch routes, and repository memory are all available in the current plan.
                   </div>
                 </div>
@@ -301,14 +301,14 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
                 </Button>
               </section>
 
-              <section className="rounded-[26px] border border-rose-300/18 bg-[#151d38] p-5 shadow-[0_20px_48px_rgba(8,14,30,0.24)]">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-200/70">
+              <section className="rounded-[26px] border border-destructive/20 bg-destructive/5 p-5 shadow-[0_20px_48px_rgba(8,14,30,0.06)]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-destructive/80">
                   Danger zone
                 </div>
                 <div className="mt-3 flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-lg font-semibold text-white">Sign out of this device</div>
-                    <div className="mt-2 text-[0.95rem] leading-6 text-white/58">
+                    <div className="text-lg font-semibold text-foreground">Sign out of this device</div>
+                    <div className="mt-2 text-[0.95rem] leading-6 text-muted-foreground">
                       End the current session while keeping your saved projects and exports tied to the account.
                     </div>
                   </div>

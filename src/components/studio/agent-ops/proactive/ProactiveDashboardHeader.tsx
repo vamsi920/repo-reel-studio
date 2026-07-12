@@ -48,7 +48,7 @@ export function ProactiveDashboardHeader({
 
   const metricValue = (value: string) =>
     metricsPending ? (
-      <span className="text-white/28" aria-hidden>
+      <span className="text-muted-foreground" aria-hidden>
         …
       </span>
     ) : (
@@ -56,10 +56,10 @@ export function ProactiveDashboardHeader({
     );
 
   return (
-    <div className="border-b border-white/[0.06] px-4 py-3 sm:px-5">
+    <div className="border-b border-border px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h2 className="text-sm font-semibold text-white">Candidates</h2>
+          <h2 className="text-sm font-semibold text-foreground">Candidates</h2>
           <StatusChip tone={enabled ? "on" : "off"} label={enabled ? "Enabled" : "Paused"}>
             {enabled ? "Enabled" : "Paused"}
           </StatusChip>
@@ -88,26 +88,26 @@ export function ProactiveDashboardHeader({
         </AgentOpsActionButton>
       </div>
 
-      <div className="mt-3 flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-xs tabular-nums text-white/55">
+      <div className="mt-3 flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-xs tabular-nums text-muted-foreground">
         <span>
-          <span className="text-white/35">Ready </span>
-          <span className={cn("font-semibold text-white/85", ready > 0 && "text-emerald-100/90")}>
+          <span className="text-muted-foreground">Ready </span>
+          <span className={cn("font-semibold text-foreground", ready > 0 && "text-emerald-700")}>
             {metricValue(`${ready}/${target}`)}
           </span>
         </span>
         <span>
-          <span className="text-white/35">Batch </span>
-          <span className="font-medium text-white/75">{metricValue(formatBatchStatusLabel(batch, loading))}</span>
+          <span className="text-muted-foreground">Batch </span>
+          <span className="font-medium text-foreground/80">{metricValue(formatBatchStatusLabel(batch, loading))}</span>
         </span>
         <span>
-          <span className="text-white/35">Passed </span>
-          <span className="font-medium text-white/75">{metricValue(`${progress?.ready ?? 0}`)}</span>
+          <span className="text-muted-foreground">Passed </span>
+          <span className="font-medium text-foreground/80">{metricValue(`${progress?.ready ?? 0}`)}</span>
         </span>
       </div>
 
       {progress ? (
-        <details className="mt-2 text-[11px] text-white/42">
-          <summary className="cursor-pointer list-none font-medium text-white/38 [&::-webkit-details-marker]:hidden">
+        <details className="mt-2 text-[11px] text-muted-foreground">
+          <summary className="cursor-pointer list-none font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
             Batch breakdown
           </summary>
           <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -146,9 +146,9 @@ function StatusChip({
       aria-label={statusAriaLabel("Proactive", label)}
       className={cn(
         "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]",
-        tone === "on" && "border-emerald-300/25 bg-emerald-300/10 text-emerald-100",
-        tone === "off" && "border-white/12 bg-white/[0.04] text-white/50",
-        tone === "neutral" && "border-white/10 bg-white/[0.05] text-white/45",
+        tone === "on" && "border-emerald-300/25 bg-emerald-300/10 text-emerald-700",
+        tone === "off" && "border-border bg-muted text-muted-foreground",
+        tone === "neutral" && "border-border bg-muted text-muted-foreground",
       )}
     >
       {children}

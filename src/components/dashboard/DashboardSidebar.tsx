@@ -52,7 +52,7 @@ export const DashboardSidebar = ({
   return (
     <aside
       className={cn(
-        "sticky top-0 flex h-screen flex-col bg-[#121a2b] text-white shadow-[inset_-1px_0_0_rgba(120,130,150,0.08)] transition-all duration-300",
+        "sticky top-0 flex h-screen flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300",
         collapsed ? "w-[76px]" : "w-[250px]"
       )}
     >
@@ -64,8 +64,8 @@ export const DashboardSidebar = ({
             </div>
             {!collapsed ? (
               <div className="min-w-0">
-                <div className="truncate text-base font-semibold text-white">GitFlick</div>
-                <div className="truncate text-xs text-white/45">Workspace</div>
+                <div className="truncate text-base font-semibold text-sidebar-foreground">GitFlick</div>
+                <div className="truncate text-xs text-muted-foreground">Workspace</div>
               </div>
             ) : null}
           </Link>
@@ -73,7 +73,7 @@ export const DashboardSidebar = ({
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent text-muted-foreground transition hover:bg-sidebar-accent/70 hover:text-sidebar-foreground"
           >
             <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
           </button>
@@ -84,7 +84,7 @@ export const DashboardSidebar = ({
         <div className={cn("p-4 pt-0", collapsed && "px-3")}>
           {collapsed ? (
             <Link to="/profile" className="flex justify-center">
-              <Avatar className="h-11 w-11 ring-1 ring-white/10">
+              <Avatar className="h-11 w-11 ring-1 ring-sidebar-border">
                 <AvatarImage src={userAvatar} alt={userName || userEmail} />
                 <AvatarFallback className="bg-primary/20 text-primary">
                   {getUserInitials(userName, userEmail)}
@@ -94,19 +94,19 @@ export const DashboardSidebar = ({
           ) : (
             <Link
               to="/profile"
-              className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3.5 py-3 transition hover:bg-white/[0.06]"
+              className="flex items-center gap-3 rounded-xl px-3.5 py-3 transition hover:bg-sidebar-accent"
             >
-              <Avatar className="h-11 w-11 ring-1 ring-white/10">
+              <Avatar className="h-11 w-11 ring-1 ring-sidebar-border">
                 <AvatarImage src={userAvatar} alt={userName || userEmail} />
                 <AvatarFallback className="bg-primary/20 text-primary">
                   {getUserInitials(userName, userEmail)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
                   {userName || "User"}
                 </p>
-                <p className="truncate text-xs text-white/50">{userEmail}</p>
+                <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
               </div>
             </Link>
           )}
@@ -127,8 +127,8 @@ export const DashboardSidebar = ({
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
                 isActive
-                  ? "bg-white/[0.08] text-white"
-                  : "text-white/65 hover:bg-white/[0.05] hover:text-white"
+                  ? "bg-sidebar-accent text-sidebar-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -143,7 +143,7 @@ export const DashboardSidebar = ({
           variant="ghost"
           size="sm"
           className={cn(
-            "w-full text-white/60 hover:text-white",
+            "w-full text-muted-foreground hover:text-sidebar-foreground",
             collapsed ? "justify-center" : "justify-start"
           )}
           onClick={handleSignOut}

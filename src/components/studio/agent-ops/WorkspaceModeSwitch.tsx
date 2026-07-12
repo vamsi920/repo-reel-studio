@@ -93,7 +93,7 @@ export function WorkspaceModeSwitch(props: WorkspaceModeSwitchProps) {
 
   return (
     <div
-      className="grid grid-cols-2 gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1"
+      className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/40 p-1"
       role="tablist"
       aria-label="Agent Ops workspace"
       aria-orientation="horizontal"
@@ -124,8 +124,8 @@ export function WorkspaceModeSwitch(props: WorkspaceModeSwitchProps) {
               agentOpsTransitionClass,
               agentOpsFocusVisibleClass,
               selected
-                ? "bg-white/[0.11] text-white shadow-[inset_0_0_0_1px_rgba(180,197,255,0.22)]"
-                : "text-white/52 hover:bg-white/[0.05] hover:text-white/80",
+                ? "bg-background text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25)]"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <span>{label}</span>
@@ -135,10 +135,10 @@ export function WorkspaceModeSwitch(props: WorkspaceModeSwitchProps) {
                 selected
                   ? tabCount > 0
                     ? "bg-primary/22 text-primary"
-                    : "bg-white/[0.08] text-white/55"
+                    : "bg-muted text-muted-foreground"
                   : tabCount > 0
-                    ? "bg-white/[0.07] text-white/70"
-                    : "bg-white/[0.04] text-white/38",
+                    ? "bg-muted text-foreground/70"
+                    : "bg-muted/60 text-muted-foreground",
               )}
               aria-hidden
             >

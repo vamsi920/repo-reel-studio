@@ -77,15 +77,15 @@ export const ChapterPlaylist = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3.5 border-b border-white/[0.06]">
+      <div className="px-4 py-3.5 border-b border-border">
         <div className="flex items-center gap-2">
           <ListMusic className="h-4 w-4 text-primary/60" />
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/34">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Chapters
           </div>
         </div>
         {totalDuration > 0 && (
-          <div className="mt-1 text-sm text-white/48">
+          <div className="mt-1 text-sm text-muted-foreground">
             {readyChapters.length} chapters &bull; {formatDuration(totalDuration)}
           </div>
         )}
@@ -94,7 +94,7 @@ export const ChapterPlaylist = ({
       {/* Chapter timeline bar */}
       {chapterFrameStarts.length > 1 && (
         <div className="px-4 py-2">
-          <div className="flex h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
             {chapterFrameStarts.map((cf, i) => {
               const widthPct =
                 ((cf.endFrame - cf.startFrame) /
@@ -113,7 +113,7 @@ export const ChapterPlaylist = ({
                       ? "bg-primary"
                       : isPast
                         ? "bg-primary/40"
-                        : "bg-white/[0.08]"
+                        : "bg-border"
                   )}
                   style={{ width: `${widthPct}%` }}
                   title={readyChapters[i]?.title}
@@ -138,10 +138,10 @@ export const ChapterPlaylist = ({
               type="button"
               onClick={() => handleChapterClick(i)}
               className={cn(
-                "w-full px-4 py-3 text-left transition-all border-b border-white/[0.03]",
+                "w-full px-4 py-3 text-left transition-all border-b border-border",
                 isActive
                   ? "bg-primary/8"
-                  : "hover:bg-white/[0.03]"
+                  : "hover:bg-muted"
               )}
             >
               <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export const ChapterPlaylist = ({
                       ? "bg-primary text-primary-foreground"
                       : isPast
                         ? "bg-primary/14 text-primary"
-                        : "bg-white/[0.06] text-white/28"
+                        : "bg-muted text-muted-foreground"
                   )}
                 >
                   {isPast ? (
@@ -167,17 +167,17 @@ export const ChapterPlaylist = ({
                   <div
                     className={cn(
                       "text-sm font-medium truncate",
-                      isActive ? "text-primary" : "text-white/64"
+                      isActive ? "text-primary" : "text-foreground"
                     )}
                   >
                     {ch.title}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-white/28">
+                    <span className="text-[10px] text-muted-foreground">
                       {sceneCount} scenes
                     </span>
-                    <span className="text-[10px] text-white/20">&bull;</span>
-                    <span className="text-[10px] text-white/28">
+                    <span className="text-[10px] text-muted-foreground">&bull;</span>
+                    <span className="text-[10px] text-muted-foreground">
                       {formatDuration(duration)}
                     </span>
                   </div>
@@ -185,7 +185,7 @@ export const ChapterPlaylist = ({
                 <ChevronRight
                   className={cn(
                     "h-3.5 w-3.5 shrink-0 transition",
-                    isActive ? "text-primary/60" : "text-white/12"
+                    isActive ? "text-primary/60" : "text-muted-foreground/50"
                   )}
                 />
               </div>

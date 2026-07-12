@@ -5,75 +5,22 @@
 
 @layer base {
   :root {
-    /* Premium Dark Theme - Inspired by Linear/Vercel */
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    
-    /* Premium Purple/Blue Gradient Primary */
-    --primary: 263 90% 66%;
-    --primary-foreground: 0 0% 98%;
-    
-    /* Sophisticated Secondary */
-    --secondary: 240 5% 17%;
-    --secondary-foreground: 0 0% 98%;
-    
-    /* Modern Muted Tones */
-    --muted: 240 5% 17%;
-    --muted-foreground: 240 5% 64%;
-    
-    /* Premium Accent - Cyan */
-    --accent: 198 78% 64%;
-    --accent-foreground: 0 0% 9%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    
-    /* Subtle Borders */
-    --border: 240 6% 20%;
-    --input: 240 6% 20%;
-    --ring: 263 90% 66%;
-    
-    --radius: 0.75rem;
-    
-    /* Chart Colors - Premium Palette */
-    --chart-1: 263 90% 66%;
-    --chart-2: 198 78% 64%;
-    --chart-3: 160 84% 39%;
-    --chart-4: 43 96% 56%;
-    --chart-5: 0 84% 60%;
+    /* Chart colors, layered on top of the Instrument light palette from index.css */
+    --chart-1: 199 89% 38%;
+    --chart-2: 174 55% 34%;
+    --chart-3: 160 84% 32%;
+    --chart-4: 32 95% 44%;
+    --chart-5: 0 72% 48%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: "cv11", "ss01", "ss03";
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--background)),
-      hsl(240 10% 3.9%)
-    );
-  }
-  
   /* Premium Typography */
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     letter-spacing: -0.02em;
   }
-  
+
   code, pre {
     font-family: 'JetBrains Mono', monospace;
   }
@@ -81,11 +28,11 @@
 
 /* Premium Glass Morphism Effect */
 .glass {
-  @apply backdrop-blur-xl bg-white/[0.02] border border-white/[0.05];
+  @apply backdrop-blur-xl bg-white/60 border border-black/[0.06];
 }
 
 .glass-hover {
-  @apply hover:bg-white/[0.04] transition-all duration-200;
+  @apply hover:bg-white/80 transition-all duration-200;
 }
 
 /* Premium Card Styles — flat hairline instrument panel */
@@ -153,20 +100,20 @@
 /* Subtle Button */
 .btn-subtle {
   @apply relative inline-flex items-center justify-center px-5 py-2.5 font-medium rounded-xl transition-all duration-200;
-  @apply bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.12];
+  @apply bg-black/[0.03] hover:bg-black/[0.06] border border-black/[0.08] hover:border-black/[0.12];
   @apply text-foreground/90 hover:text-foreground;
 }
 
 /* Ghost Button */
 .btn-ghost {
   @apply relative inline-flex items-center justify-center px-4 py-2 font-medium rounded-lg transition-all duration-200;
-  @apply hover:bg-white/[0.05] text-muted-foreground hover:text-foreground;
+  @apply hover:bg-black/[0.05] text-muted-foreground hover:text-foreground;
 }
 
 /* Premium Input Styles */
 .input-premium {
-  @apply w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-foreground placeholder:text-muted-foreground/50;
-  @apply focus:bg-white/[0.05] focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20;
+  @apply w-full px-4 py-3 rounded-xl bg-black/[0.02] border border-black/[0.08] text-foreground placeholder:text-muted-foreground/50;
+  @apply focus:bg-white focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20;
   @apply transition-all duration-200;
 }
 
@@ -181,8 +128,8 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full;
-  @apply hover:bg-white/20;
+  @apply bg-black/10 rounded-full;
+  @apply hover:bg-black/20;
 }
 
 /* Animations */
@@ -257,7 +204,7 @@
 /* Premium Badge */
 .badge-premium {
   @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
-  @apply bg-gradient-to-r from-primary/20 to-accent/20 text-foreground border border-white/10;
+  @apply bg-gradient-to-r from-primary/10 to-accent/10 text-foreground border border-black/10;
 }
 
 /* Status Indicators */
@@ -276,7 +223,7 @@
 
 /* Premium Divider */
 .divider {
-  @apply relative h-px bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  @apply relative h-px bg-gradient-to-r from-transparent via-black/10 to-transparent;
 }
 
 /* Hover Lift Effect */
@@ -302,14 +249,14 @@
   @apply premium-card backdrop-blur-2xl;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.02)
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.6)
   );
 }
 
 /* Loading States */
 .skeleton {
-  @apply animate-pulse bg-white/5 rounded-xl;
+  @apply animate-pulse bg-black/5 rounded-xl;
 }
 
 /* Premium Tooltip */

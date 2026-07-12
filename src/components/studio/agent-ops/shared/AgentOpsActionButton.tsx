@@ -17,8 +17,8 @@ const INTENT_VARIANT: Record<AgentOpsActionIntent, ButtonProps["variant"]> = {
 
 const INTENT_CLASS: Record<AgentOpsActionIntent, string> = {
   primary: "font-semibold shadow-sm shadow-primary/20",
-  secondary: "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.06] hover:text-white",
-  tertiary: "text-white/45 hover:bg-white/[0.04] hover:text-white/72",
+  secondary: "border-border bg-muted/50 text-foreground/80 hover:bg-muted hover:text-foreground",
+  tertiary: "text-muted-foreground hover:bg-muted/60 hover:text-foreground/80",
 };
 
 export type AgentOpsActionButtonProps = ButtonProps & {
@@ -56,7 +56,7 @@ export function AgentOpsActionButton({
         "gap-1.5",
         agentOpsFocusVisibleClass,
         INTENT_CLASS[intent],
-        isDisabled && disabledReason && "disabled:opacity-100 disabled:text-white/40",
+        isDisabled && disabledReason && "disabled:opacity-100 disabled:text-muted-foreground",
         className,
       )}
     >
@@ -87,7 +87,7 @@ export function AgentOpsActionHint({
   className?: string;
 }) {
   return (
-    <p id={id} className={cn("text-[10px] leading-4 text-white/42", className)}>
+    <p id={id} className={cn("text-[10px] leading-4 text-muted-foreground", className)}>
       {children}
     </p>
   );
@@ -106,5 +106,5 @@ export const agentOpsCardSecondaryActionClass = cn(
 );
 
 export const agentOpsCardTertiaryActionClass = cn(
-  "h-8 min-w-0 max-w-full px-2 text-[11px] text-white/55 sm:min-w-[5.5rem]",
+  "h-8 min-w-0 max-w-full px-2 text-[11px] text-muted-foreground sm:min-w-[5.5rem]",
 );

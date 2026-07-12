@@ -162,10 +162,10 @@ export function MissionMap({ run, onEventClick }: MissionMapProps) {
       <div className="flex items-center justify-between px-1 mb-3">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-purple-400" />
-          <span className="text-sm font-medium text-white/80">Mission Map</span>
+          <span className="text-sm font-medium text-foreground">Mission Map</span>
         </div>
         {totalDuration && (
-          <div className="flex items-center gap-1.5 text-xs text-white/40">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
             {formatDuration(totalDuration)}
           </div>
@@ -234,17 +234,17 @@ function StageNode({
         onClick={onToggle}
         className={cn(
           "relative z-10 flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-all duration-200",
-          "hover:bg-white/[0.04]",
-          isActive && "bg-white/[0.06]",
-          isExpanded && "bg-white/[0.05]",
+          "hover:bg-muted",
+          isActive && "bg-muted",
+          isExpanded && "bg-secondary",
         )}
       >
         {/* Node circle */}
         <div
           className={cn(
             "relative flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border transition-all duration-300",
-            stage.status === "idle" && "border-white/10 bg-white/[0.03]",
-            stage.status === "running" && `border-white/20 bg-white/[0.08] ${stage.glowColor} shadow-lg`,
+            stage.status === "idle" && "border-border bg-muted/50",
+            stage.status === "running" && `border-primary/30 bg-primary/10 ${stage.glowColor} shadow-lg`,
             stage.status === "passed" && "border-emerald-500/30 bg-emerald-500/10",
             stage.status === "failed" && "border-red-500/30 bg-red-500/10",
           )}
@@ -256,12 +256,12 @@ function StageNode({
           ) : stage.status === "failed" ? (
             <XCircle className="h-4 w-4 text-red-400" />
           ) : (
-            <Icon className={cn("h-4 w-4", stage.status === "idle" ? "text-white/20" : stage.color)} />
+            <Icon className={cn("h-4 w-4", stage.status === "idle" ? "text-muted-foreground" : stage.color)} />
           )}
 
           {/* Pulse ring for active */}
           {stage.status === "running" && (
-            <span className="absolute inset-0 animate-ping rounded-full border border-white/10" />
+            <span className="absolute inset-0 animate-ping rounded-full border border-border" />
           )}
         </div>
 
@@ -271,19 +271,19 @@ function StageNode({
             <span
               className={cn(
                 "text-sm font-medium",
-                stage.status === "idle" ? "text-white/30" : "text-white/80",
+                stage.status === "idle" ? "text-muted-foreground" : "text-foreground",
               )}
             >
               {stage.label}
             </span>
             {hasEvents && (
-              <span className="text-[10px] text-white/30 tabular-nums">
+              <span className="text-[10px] text-muted-foreground tabular-nums">
                 {stage.events.length}
               </span>
             )}
           </div>
           {stage.events.length > 0 && (
-            <p className="text-xs text-white/40 truncate mt-0.5">
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
               {stage.events[stage.events.length - 1].title}
             </p>
           )}
@@ -293,9 +293,9 @@ function StageNode({
         {hasEvents && (
           <div className="shrink-0">
             {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5 text-white/30" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-white/30" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </div>
         )}
@@ -303,7 +303,7 @@ function StageNode({
 
       {/* Expanded events */}
       {isExpanded && hasEvents && (
-        <div className="ml-[23px] pl-6 border-l border-white/[0.06] mt-1 space-y-0.5">
+        <div className="ml-[23px] pl-6 border-l border-border mt-1 space-y-0.5">
           {stage.events.map((event) => (
             <EventRow
               key={event.id}
@@ -346,27 +346,27 @@ function EventRow({ event, stageColor, isSelected, onSelect }: EventRowProps) {
       onClick={onSelect}
       className={cn(
         "flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left transition-all duration-150",
-        "hover:bg-white/[0.04]",
-        isSelected && "bg-white/[0.06] ring-1 ring-white/[0.08]",
+        "hover:bg-muted",
+        isSelected && "bg-muted ring-1 ring-border",
       )}
     >
       {/* Dot */}
       <div
         className={cn(
           "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-          event.level === "error" ? "bg-red-400" : event.level === "warning" ? "bg-amber-400" : "bg-white/20",
+          event.level === "error" ? "bg-red-400" : event.level === "warning" ? "bg-amber-400" : "bg-muted-foreground/40",
         )}
       />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-white/70 truncate">
+          <span className="text-xs font-medium text-foreground truncate">
             {event.title}
           </span>
-          <span className="text-[10px] text-white/25 tabular-nums shrink-0">{time}</span>
+          <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{time}</span>
         </div>
         {event.detail && (
-          <p className="text-[11px] text-white/35 mt-0.5 line-clamp-2 leading-relaxed">
+          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
             {event.detail}
           </p>
         )}
@@ -417,7 +417,7 @@ export function EventDetailPanel({ event, run, onClose }: EventDetailPanelProps)
   }, [event, run]);
 
   return (
-    <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4 space-y-3">
+    <div className="rounded-xl bg-muted border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -426,37 +426,37 @@ export function EventDetailPanel({ event, run, onClose }: EventDetailPanelProps)
               event.level === "error" ? "bg-red-400" : event.level === "warning" ? "bg-amber-400" : "bg-emerald-400",
             )}
           />
-          <span className="text-sm font-semibold text-white">{event.title}</span>
+          <span className="text-sm font-semibold text-foreground">{event.title}</span>
         </div>
-        <button onClick={onClose} className="text-white/30 hover:text-white/60 text-xs">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xs">
           Close
         </button>
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-4 text-xs text-white/40">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="font-mono">{event.kind}</span>
           <span>{new Date(event.at).toLocaleString()}</span>
         </div>
 
         {event.detail && (
-          <div className="rounded-lg bg-black/30 p-3">
-            <pre className="text-xs text-white/60 whitespace-pre-wrap font-mono leading-relaxed">
+          <div className="rounded-lg bg-background border border-border p-3">
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">
               {event.detail}
             </pre>
           </div>
         )}
 
         {relatedArtifacts.length > 0 && (
-          <div className="pt-2 border-t border-white/[0.06]">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">
+          <div className="pt-2 border-t border-border">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Related Artifacts
             </span>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {relatedArtifacts.map((artifact) => (
                 <span
                   key={artifact.label}
-                  className="rounded-md bg-white/[0.06] px-2 py-1 text-[11px] text-white/50"
+                  className="rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground"
                 >
                   <FileCode2 className="inline h-3 w-3 mr-1 -mt-0.5" />
                   {artifact.label}

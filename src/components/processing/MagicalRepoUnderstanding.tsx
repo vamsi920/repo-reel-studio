@@ -226,7 +226,7 @@ export const MagicalRepoUnderstanding = ({
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen bg-gradient-to-br from-[#0a0f1f] via-[#0d1424] to-[#111a34] overflow-hidden"
+      className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-hidden"
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0">
@@ -255,10 +255,10 @@ export const MagicalRepoUnderstanding = ({
             >
               <div
                 className={`w-2 h-2 rounded-full ${
-                  currentPhase === phase ? "bg-primary" : "bg-white/20"
+                  currentPhase === phase ? "bg-primary" : "bg-muted-foreground/30"
                 }`}
               />
-              <span className="text-xs text-white/60 capitalize">{phase}</span>
+              <span className="text-xs text-muted-foreground capitalize">{phase}</span>
             </div>
           ))}
         </div>
@@ -287,11 +287,11 @@ export const MagicalRepoUnderstanding = ({
               animate={{ opacity: 1 }}
               className="text-center mb-8"
             >
-              <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+              <h2 className="text-3xl font-bold text-foreground mb-2 flex items-center justify-center gap-3">
                 <Sparkles className="h-8 w-8 text-primary" />
                 Concept Universe
               </h2>
-              <p className="text-white/60">
+              <p className="text-muted-foreground">
                 Exploring {concepts.length} interconnected concepts
               </p>
             </motion.div>
@@ -336,17 +336,17 @@ export const MagicalRepoUnderstanding = ({
               ].map((stat, i) => (
                 <div
                   key={stat.label}
-                  className="stat-card parallax-card rounded-xl bg-white/[0.04] p-6 backdrop-blur-md border border-white/[0.08] hover:bg-white/[0.06] transition-all duration-300"
+                  className="stat-card parallax-card rounded-xl bg-black/[0.04] p-6 backdrop-blur-md border border-border hover:bg-black/[0.06] transition-all duration-300"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-3 rounded-lg bg-${stat.color}/10`}>
                       <stat.icon className={`h-6 w-6 text-${stat.color}`} />
                     </div>
                     <div>
-                      <div className="text-xs text-white/40 uppercase tracking-wider">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wider">
                         {stat.label}
                       </div>
-                      <div className="text-2xl font-bold text-white mt-1">
+                      <div className="text-2xl font-bold text-foreground mt-1">
                         {stat.value}
                       </div>
                     </div>
@@ -360,16 +360,16 @@ export const MagicalRepoUnderstanding = ({
               {intelligence.modules.slice(0, 4).map((module, i) => (
                 <div
                   key={module.id}
-                  className="module-card parallax-card rounded-xl bg-white/[0.04] p-6 backdrop-blur-md border border-white/[0.08] hover:bg-white/[0.06] transition-all duration-300"
+                  className="module-card parallax-card rounded-xl bg-black/[0.04] p-6 backdrop-blur-md border border-border hover:bg-black/[0.06] transition-all duration-300"
                 >
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-lg font-semibold text-foreground">
                           {module.label}
                         </h3>
                         {module.is_hub && (
-                          <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs">
+                          <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs">
                             Hub
                           </span>
                         )}
@@ -379,19 +379,19 @@ export const MagicalRepoUnderstanding = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-white/60 mt-2">
+                      <p className="text-sm text-muted-foreground mt-2">
                         {module.description}
                       </p>
                       <div className="flex items-center gap-4 mt-3">
-                        <span className="text-xs text-white/40">
+                        <span className="text-xs text-muted-foreground">
                           {module.file_paths.length} files
                         </span>
-                        <span className="text-xs text-white/40">
+                        <span className="text-xs text-muted-foreground">
                           Complexity: {module.complexity}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-white/20" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
               ))}
@@ -402,7 +402,7 @@ export const MagicalRepoUnderstanding = ({
               <div className="flex justify-center pt-8">
                 <button
                   onClick={onContinue}
-                  className="continue-button group relative px-8 py-4 rounded-full bg-primary text-white font-semibold text-lg shadow-[0_20px_50px_rgba(104,132,255,0.3)] hover:shadow-[0_20px_60px_rgba(104,132,255,0.4)] transition-all duration-300 hover:scale-105"
+                  className="continue-button group relative px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold text-lg shadow-[0_20px_50px_rgba(104,132,255,0.3)] hover:shadow-[0_20px_60px_rgba(104,132,255,0.4)] transition-all duration-300 hover:scale-105"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Continue to Video Generation
