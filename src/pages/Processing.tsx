@@ -978,7 +978,9 @@ const Processing = () => {
             try {
               sessionStorage.setItem("video-manifest-intermediate", JSON.stringify(v2Manifest));
               addLog("✓ V2 intermediate manifest saved (safety checkpoint)");
-            } catch { /* non-fatal */ }
+            } catch (e) {
+              console.warn("[Processing] could not persist V2 intermediate manifest checkpoint:", e);
+            }
 
             addLog("Attaching actual repository code to V2 scenes...");
             manifestWithCode = enrichManifestWithCode(v2Manifest, fileContents);
@@ -1014,7 +1016,9 @@ const Processing = () => {
             try {
               sessionStorage.setItem("video-manifest-intermediate", JSON.stringify(geminiManifest));
               addLog("✓ Intermediate manifest saved (safety checkpoint)");
-            } catch { /* non-fatal */ }
+            } catch (e) {
+              console.warn("[Processing] could not persist intermediate manifest checkpoint:", e);
+            }
 
             addLog("Enriching manifest with actual code content...");
             manifestWithCode = enrichManifestWithCode(geminiManifest, fileContents);
@@ -1286,7 +1290,9 @@ const Processing = () => {
             graph_data: graphData,
             repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
           });
-        } catch { /* non-fatal */ }
+        } catch (e) {
+          console.warn("[Processing] failed to sync workspace to session after post-processing error:", e);
+        }
 
         setPhase2Status("complete");
         setProgress(100);
@@ -1429,7 +1435,9 @@ const Processing = () => {
             graph_data: graphData,
             repo_knowledge_graph: repoIntelligence.knowledge_graph_summary ? null : null,
           });
-        } catch { /* non-fatal */ }
+        } catch (e) {
+          console.warn("[Processing] failed to sync merged workspace to session:", e);
+        }
 
         // Save to DB
         if (projectIdRef.current && user?.uid) {
@@ -1453,7 +1461,9 @@ const Processing = () => {
       // Save the generation plan to sessionStorage for Studio
       try {
         sessionStorage.setItem("generation-plan", JSON.stringify(updatedPlan));
-      } catch { /* non-fatal */ }
+      } catch (e) {
+        console.warn("[Processing] could not persist generation-plan to sessionStorage:", e);
+      }
 
       setEpicPhase("complete");
       setPhase2Status("complete");
