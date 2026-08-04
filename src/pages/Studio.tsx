@@ -171,13 +171,17 @@ const Studio = () => {
       if (stored) {
         setStudioGraphData(JSON.parse(stored));
       }
-    } catch { /* non-fatal */ }
+    } catch (e) {
+      console.warn("[Studio] failed to parse stored graph-data; skipping:", e);
+    }
     try {
       const storedContent = sessionStorage.getItem("repo-content");
       if (storedContent) {
         setRepoContent(storedContent);
       }
-    } catch { /* non-fatal */ }
+    } catch (e) {
+      console.warn("[Studio] failed to read stored repo-content; skipping:", e);
+    }
     try {
       const storedPlan = sessionStorage.getItem("generation-plan");
       if (storedPlan) {
@@ -185,7 +189,9 @@ const Studio = () => {
         setGenerationPlan(plan);
         setChapters(plan.chapters);
       }
-    } catch { /* non-fatal */ }
+    } catch (e) {
+      console.warn("[Studio] failed to parse stored generation-plan; skipping:", e);
+    }
   }, [projectQuery]);
 
   // Auto-scroll logs

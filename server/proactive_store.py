@@ -211,8 +211,12 @@ def _write_json(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
             try:
                 dir_fd = os.open(path.parent, os.O_DIRECTORY)
             except OSError as exc:
+                # Some filesystems (e.g. certain network mounts) do not support
+                # opening a directory for fsync; those specific errnos are safe
+                # to ignore. Any other OSError is unexpected and must propagate
+                # rather than be silently swallowed.
                 if exc.errno not in (errno.ENOTDIR, errno.EOPNOTSUPP, errno.ENOSYS):
-                    pass
+                    raise
             else:
                 try:
                     os.fsync(dir_fd)

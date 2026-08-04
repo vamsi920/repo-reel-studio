@@ -132,7 +132,9 @@ export function useDownloadVideo({
         try {
           recorder.stop();
           playerRef.current?.pause();
-        } catch (_) {}
+        } catch (stopErr) {
+          console.warn("[useDownloadVideo] failed to stop recorder/player cleanly:", stopErr);
+        }
       }, durationMs + 500);
     };
 

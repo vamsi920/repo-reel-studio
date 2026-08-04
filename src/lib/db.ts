@@ -74,7 +74,8 @@ function loadAll(): Project[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
     return raw ? (JSON.parse(raw) as Project[]) : [];
-  } catch {
+  } catch (e) {
+    console.warn("[db] failed to read/parse stored projects; returning empty list:", e);
     return [];
   }
 }
