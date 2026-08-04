@@ -445,13 +445,36 @@ register_proactive_exception_handlers(app)
 app.include_router(create_agent_run_router(), prefix="/api")
 app.include_router(create_proactive_router(), prefix="/api")
 
-# CORS middleware
+# CORS middleware — restrict to an explicit allowlist instead of a wildcard.
+# The previous config (allow_origins=["*"] with allow_credentials=True) makes
+# Starlette reflect the caller's Origin and echo Access-Control-Allow-Credentials:
+# true, which effectively lets any website make credentialed cross-origin calls.
+# This API is auth-free (token is passed in the request body), so credentials are
+# disabled and origins are limited to the app's own frontends plus an optional
+# CORS_ORIGINS env allowlist (comma-separated), matching ingestion-server.mjs.
+_BASE_CORS_ORIGINS = [
+    "https://gitflick.netlify.app",
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:3000",
+]
+_extra_cors = [
+    o.strip()
+    for o in os.environ.get("CORS_ORIGINS", "").split(",")
+    if o.strip()
+]
+_allowed_cors_origins = [*_BASE_CORS_ORIGINS, *_extra_cors]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    max_age=86400,
 )
 
 
