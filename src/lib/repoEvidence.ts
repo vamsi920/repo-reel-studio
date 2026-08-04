@@ -1,4 +1,5 @@
 import { getImportantFiles } from "@/lib/codeGraph";
+import { uniqueStrings } from "@/lib/textUtils";
 import type {
   GitNexusCluster,
   GitNexusGraphData,
@@ -27,15 +28,6 @@ const SOURCE_HINT_RE = /(^|\/)(src|lib|app|server|core|pkg|internal|connection|p
 const CODE_FILE_RE = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|c|cc|cpp|hpp|h|cs|php|rb|swift|dart)$/i;
 
 const normalizePath = (value: string) => value.replace(/^\.\/+/, "").replace(/^\/+/, "");
-
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  Array.from(
-    new Set(
-      values
-        .filter((value): value is string => Boolean(value && value.trim()))
-        .map((value) => value.trim())
-    )
-  );
 
 export const humanizeFileLabel = (value: string) =>
   value

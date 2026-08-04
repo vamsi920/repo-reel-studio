@@ -1,4 +1,5 @@
 import { humanizeFileLabel } from "@/lib/repoEvidence";
+import { clamp, slugify, uniqueStrings } from "@/lib/textUtils";
 import { compressForPromptWithPolicy } from "@/lib/laymanCompressionPolicy";
 import { getCodegraphData, getCodegraphRelatedFiles, scoreCodegraphModule } from "@/lib/upstreamCodegraph";
 import type {
@@ -25,25 +26,6 @@ export interface WorkspaceVideoEntry {
   ready: boolean;
   module_id?: string;
 }
-
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  Array.from(
-    new Set(
-      values
-        .filter((value): value is string => Boolean(value && value.trim()))
-        .map((value) => value.trim())
-    )
-  );
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64) || "module";
 
 const compressModuleDiscoveryProse = (text: string, label: string) => {
   const result = compressForPromptWithPolicy({

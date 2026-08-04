@@ -1,4 +1,4 @@
-import { API_URL } from "@/env";
+import { resolveApiPath } from "@/lib/apiPath";
 import { parseAgentOpsAttention, sanitizeAgentOpsRaw, stripAgentOpsMarkup } from "@/lib/agentOpsAttention";
 import { serializeProactiveContextHints } from "@/lib/proactiveContextHints";
 import {
@@ -21,9 +21,6 @@ export {
   validateMorningDeadline,
   validateProactiveConfigPatch,
 } from "@/lib/proactiveConfig";
-
-const resolveApiPath = (path: string) =>
-  API_URL === "/api" ? `/api${path}` : `${API_URL}/api${path}`;
 
 export type ProactiveApiErrorDetail = {
   message?: string;

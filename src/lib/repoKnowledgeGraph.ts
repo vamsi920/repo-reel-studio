@@ -11,6 +11,7 @@ import {
   getRelevantCodegraphEntities,
   getRelevantCodegraphModules,
 } from "@/lib/upstreamCodegraph";
+import { clamp, toSentenceCase, uniqueStrings } from "@/lib/textUtils";
 import type {
   GitNexusGraphData,
   RepoContextCapsule,
@@ -24,21 +25,6 @@ import type {
   TutorialPhase,
   VideoVisualKind,
 } from "@/lib/types";
-
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  Array.from(
-    new Set(
-      values
-        .filter((value): value is string => Boolean(value && value.trim()))
-        .map((value) => value.trim())
-    )
-  );
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
-
-const toSentenceCase = (value: string) =>
-  value.charAt(0).toUpperCase() + value.slice(1);
 
 const buildFileTags = (
   filePath: string,
