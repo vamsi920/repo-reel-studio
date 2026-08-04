@@ -1,4 +1,6 @@
-import { GEMINI_API_KEY, GEMINI_MODEL, GEMINI_API_BASE, USE_MOCK_MANIFEST } from "@/env";
+import { GEMINI_API_KEY, USE_MOCK_MANIFEST } from "@/env";
+import { parseGeminiJson, requestGemini } from "@/lib/geminiClient";
+import { humanizeName } from "@/lib/textUtils";
 import { parseRepoContent } from "@/lib/parseRepoContent";
 import { getGraphHintsForGemini, getImportantFiles } from "@/lib/codeGraph";
 import {
@@ -8,16 +10,6 @@ import {
   mergeManifestWithBlueprint,
 } from "@/lib/tutorialBlueprint";
 import type { VideoManifest, VideoScene, GitNexusGraphData } from "@/lib/types";
-
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
 
 const MAX_DIGEST_CHARS = 40_000;
 const LINES_PER_EXCERPT = 180;
@@ -62,42 +54,6 @@ function buildStructuredDigest(
   return digest.length > maxChars
     ? `${digest.slice(0, maxChars)}\n... (truncated)`
     : digest;
-}
-
-function stripMarkdownFence(value: string) {
-  if (!value.startsWith("```")) return value;
-  return value.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
-}
-
-function parseGeminiJson<T>(raw: string): T {
-  const text = stripMarkdownFence(raw.trim());
-
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      try {
-        return JSON.parse(objectMatch[0]) as T;
-      } catch {
-        // continue
-      }
-    }
-
-    const scenesStart = text.indexOf('"scenes"');
-    if (scenesStart !== -1) {
-      const arrayStart = text.indexOf("[", scenesStart);
-      const lastCompleteScene = text.lastIndexOf("},");
-      const lastBrace = text.lastIndexOf("}");
-      const cutAt = lastCompleteScene !== -1 ? lastCompleteScene + 1 : lastBrace;
-      if (arrayStart !== -1 && cutAt !== -1 && cutAt > arrayStart) {
-        const candidate = `${text.slice(0, cutAt)}]}`;
-        return JSON.parse(candidate) as T;
-      }
-    }
-
-    throw new Error("Could not parse JSON from Gemini response");
-  }
 }
 
 function buildGraphPrompt(
@@ -323,46 +279,16 @@ function validateScene(scene: VideoScene, fallbackFile: string) {
 }
 
 function humanizeFallbackTitle(filePath: string) {
-  const value = filePath.split("/").pop() || filePath;
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\.[^/.]+$/, "")
-    .replace(/\b\w/g, (char) => char.toUpperCase())
-    .trim();
+  return humanizeName(filePath.split("/").pop() || filePath);
 }
 
-async function requestGemini(prompt: string) {
-  const response = await fetch(
-    `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.35,
-          topK: 40,
-          topP: 0.92,
-          maxOutputTokens: 32768,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-  }
-
-  const data: GeminiResponse = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("No response from Gemini API");
-  }
-  return text;
-}
+const requestDirectorGemini = (prompt: string) =>
+  requestGemini(prompt, {
+    temperature: 0.35,
+    topK: 40,
+    topP: 0.92,
+    maxOutputTokens: 32768,
+  });
 
 export async function generateManifestWithGemini(
   repoUrl: string,
@@ -412,7 +338,7 @@ export async function generateManifestWithGemini(
     }
 
     try {
-      const raw = await requestGemini(prompt);
+      const raw = await requestDirectorGemini(prompt);
       const parsed = parseGeminiJson<VideoManifest>(raw);
 
       if (!parsed.title || !Array.isArray(parsed.scenes) || parsed.scenes.length === 0) {

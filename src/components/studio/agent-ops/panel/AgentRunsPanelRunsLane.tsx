@@ -1,6 +1,9 @@
 import type { RefObject } from "react";
 
-import { AgentRunsPanelRunsLaneInspector } from "@/components/studio/agent-ops/panel/AgentRunsPanelRunsLaneInspector";
+import {
+  AgentRunsPanelRunsLaneInspector,
+  type AgentRunsPanelRunsLaneInspectorProps,
+} from "@/components/studio/agent-ops/panel/AgentRunsPanelRunsLaneInspector";
 import { IssueRunComposer } from "@/components/studio/agent-ops/runs/IssueRunComposer";
 import { RunQueuePanel } from "@/components/studio/agent-ops/runs/RunQueuePanel";
 import { RunsWorkspace } from "@/components/studio/agent-ops/runs/RunsWorkspace";
@@ -9,7 +12,7 @@ import type { SelectedRunView } from "@/components/studio/agent-ops/panel/types"
 import type { AgentRun } from "@/lib/agentRuns";
 import type { AgentOpsAttention } from "@/lib/agentOpsAttention";
 
-export type AgentRunsPanelRunsLaneProps = {
+export type AgentRunsPanelRunsLaneProps = AgentRunsPanelRunsLaneInspectorProps & {
   issueUrl: string;
   branch: string;
   submitting: boolean;
@@ -31,21 +34,6 @@ export type AgentRunsPanelRunsLaneProps = {
   onRunFilterChange: (value: string) => void;
   onSelectRun: (runId: string) => void;
   onRefreshRuns: () => void;
-  onFocusComposer: () => void;
-  selected: AgentRun | null;
-  selectedRunView: SelectedRunView | null;
-  activeTab: RunDetailTab;
-  onTabChange: (tab: RunDetailTab) => void;
-  action: "approve" | "reject" | "cancel" | "retry" | null;
-  refreshing: boolean;
-  approveBranch: string;
-  onApproveBranchChange: (value: string) => void;
-  onRefreshSelected: () => void;
-  onCancel: () => void;
-  onRetry: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-  onFocusFile?: (filePath: string) => void;
 };
 
 export function AgentRunsPanelRunsLane(props: AgentRunsPanelRunsLaneProps) {

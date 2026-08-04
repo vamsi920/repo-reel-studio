@@ -1,4 +1,4 @@
-import { API_URL } from "@/env";
+import { resolveApiPath } from "@/lib/apiPath";
 
 export type AgentRunStatus =
   | "queued"
@@ -226,9 +226,6 @@ export interface CreateAgentRunRequest {
   contextHints?: AgentRunContextHints | null;
 }
 
-const resolveApiPath = (path: string) =>
-  API_URL === "/api" ? `/api${path}` : `${API_URL}/api${path}`;
-
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(resolveApiPath(path), {
     headers: {
@@ -350,7 +347,7 @@ export interface IngestionHealth {
 
 /** Dev: hits Vite `/api/health` proxy; prod: `${VITE_API_URL}/api/health`. */
 export async function fetchIngestionHealth(): Promise<IngestionHealth | null> {
-  const url = API_URL === "/api" ? "/api/health" : `${API_URL}/api/health`;
+  const url = resolveApiPath("/health");
   try {
     const response = await fetch(url);
     const raw = await response.text();

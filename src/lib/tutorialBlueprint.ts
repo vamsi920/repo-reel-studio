@@ -1,4 +1,5 @@
 import { getImportantFiles } from "@/lib/codeGraph";
+import { countWords, humanizeName, uniqueStrings } from "@/lib/textUtils";
 import type {
   GitNexusCluster,
   GitNexusGraphData,
@@ -58,12 +59,6 @@ const DOC_RE = /(^|\/)(readme|docs?|guide|overview|architecture)/i;
 const SOURCE_HINT_RE = /(^|\/)(src|lib|app|server|core|pkg|internal|connection|protocol|service|services|components|pages)\//i;
 const CODE_FILE_RE = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|c|cc|cpp|hpp|h|cs|php|rb|swift|dart)$/i;
 
-const countWords = (text: string) =>
-  text
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
-
 /**
  * Calculate scene duration from narration word count.
  * Uses 2.3 words/second speaking rate + generous buffer for pauses and visual absorption.
@@ -90,16 +85,6 @@ const dynamicSceneDuration = (
 };
 
 const normalizePath = (value: string) => value.replace(/^\.\/+/, "").replace(/^\/+/, "");
-
-const uniqueStrings = (values: Array<string | null | undefined>): string[] =>
-  Array.from(new Set(values.filter((value): value is string => Boolean(value && value.trim())).map((value) => value.trim())));
-
-const humanizeName = (value: string) =>
-  value
-    .replace(/[_-]+/g, " ")
-    .replace(/\.[^/.]+$/, "")
-    .replace(/\b\w/g, (char) => char.toUpperCase())
-    .trim();
 
 const isDocFile = (filePath: string) => DOC_RE.test(filePath) || /\.(md|mdx|txt|rst)$/i.test(filePath);
 

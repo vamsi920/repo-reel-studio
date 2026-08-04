@@ -1,4 +1,6 @@
-import { GEMINI_API_BASE, GEMINI_API_KEY, GEMINI_MODEL, LAYMAN_PROMPT_DEBUG } from "@/env";
+import { GEMINI_API_KEY, LAYMAN_PROMPT_DEBUG } from "@/env";
+import { parseGeminiJson, requestGemini as callGemini } from "@/lib/geminiClient";
+import { clamp, countWords, uniqueStrings } from "@/lib/textUtils";
 import { estimateTokens, type LaymanBriefMode } from "@/lib/laymanCompressionCore";
 import { compressForPromptWithPolicy, recordLaymanCompressionRollback } from "@/lib/laymanCompressionPolicy";
 import {
@@ -37,16 +39,6 @@ import type {
   VideoSceneDiagram,
   VideoVisualKind,
 } from "@/lib/types";
-
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
 
 interface SceneSpec {
   id: number;
@@ -190,37 +182,6 @@ const GENERIC_PHRASES = [
 
 const WORDS_PER_SECOND = 2.3;
 
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  Array.from(
-    new Set(
-      values
-        .filter((value): value is string => Boolean(value && value.trim()))
-        .map((value) => value.trim())
-    )
-  );
-
-const countWords = (text: string | null | undefined) =>
-  text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
-
-const stripMarkdownFence = (value: string) => {
-  if (!value.startsWith("```")) return value;
-  return value.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
-};
-
-const parseGeminiJson = <T,>(raw: string): T => {
-  const text = stripMarkdownFence(raw.trim());
-
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      return JSON.parse(objectMatch[0]) as T;
-    }
-    throw new Error("Could not parse JSON from Gemini response");
-  }
-};
-
 const sanitizeNarration = (text: string) => {
   let cleaned = text;
 
@@ -241,9 +202,6 @@ const sanitizeNarration = (text: string) => {
   cleaned = cleaned.replace(/\s{2,}/g, " ").trim();
   return cleaned;
 };
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 
 const estimateDuration = (sentences: string[], fallbackSeconds = 14) => {
   const words = sentences.reduce((sum, sentence) => sum + countWords(sentence), 0);
@@ -399,38 +357,8 @@ const expandConceptsForGeneration = (
   return expanded;
 };
 
-const requestGemini = async (prompt: string, temperature = 0.25) => {
-  const response = await fetch(
-    `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature,
-          topK: 32,
-          topP: 0.9,
-          maxOutputTokens: 4096,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-  }
-
-  const data: GeminiResponse = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("No response from Gemini API");
-  }
-  return text;
-};
+const requestGemini = (prompt: string, temperature = 0.25) =>
+  callGemini(prompt, { temperature, topK: 32, topP: 0.9, maxOutputTokens: 4096 });
 
 const buildArchitectureDiagram = (sceneSpecs: SceneSpec[]) => {
   const architectural = sceneSpecs.filter(

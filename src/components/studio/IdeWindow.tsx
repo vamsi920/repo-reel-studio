@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { interpolate, Easing } from "remotion";
+import { clamp } from "@/lib/textUtils";
 import { Highlight, themes } from "prism-react-renderer";
 import type {
   HydratedScene,
@@ -32,9 +33,6 @@ function pathToExpandedSet(activePath: string): Set<string> {
 }
 
 const CODE_VIEWPORT_HEIGHT = 520;
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 
 const PLACEHOLDER_HINTS = [
   "Code content for:",

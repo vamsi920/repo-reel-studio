@@ -1,4 +1,6 @@
-import { GEMINI_API_BASE, GEMINI_API_KEY, GEMINI_MODEL } from "@/env";
+import { GEMINI_API_KEY } from "@/env";
+import { parseGeminiJson, requestGemini } from "@/lib/geminiClient";
+import { clamp } from "@/lib/textUtils";
 import { parseRepoContent } from "@/lib/parseRepoContent";
 import {
   buildRepoEvidenceBundle,
@@ -38,16 +40,6 @@ type RepoQuestionMode =
   | "onboarding"
   | "dependencies"
   | "general";
-
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
 
 interface RawAnswerPayload {
   verdict?: string;
@@ -241,64 +233,14 @@ const GENERIC_ANSWER_PATTERNS = [
   /answer confidently/i,
 ];
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
-
-const stripMarkdownFence = (value: string) => {
-  if (!value.startsWith("```")) return value;
-  return value.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
-};
-
-const parseGeminiJson = <T,>(raw: string): T => {
-  const text = stripMarkdownFence(raw.trim());
-
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      return JSON.parse(objectMatch[0]) as T;
-    }
-    throw new Error("Could not parse JSON from Gemini response");
-  }
-};
-
-const requestGemini = async (prompt: string) => {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
-  const response = await fetch(
-    `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          topK: 24,
-          topP: 0.85,
-          maxOutputTokens: 2048,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-  }
-
-  const data: GeminiResponse = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("No response from Gemini API");
-  }
-  return text;
-};
+const requestInvestigatorGemini = (prompt: string) =>
+  requestGemini(prompt, {
+    temperature: 0.2,
+    topK: 24,
+    topP: 0.85,
+    maxOutputTokens: 2048,
+    requireApiKey: true,
+  });
 
 const tokenize = (value: string) =>
   Array.from(
@@ -1074,7 +1016,7 @@ export const investigateRepoQuestion = async ({
   });
 
   try {
-    const raw = await requestGemini(prompt);
+    const raw = await requestInvestigatorGemini(prompt);
     const parsed = parseGeminiJson<RawAnswerPayload>(raw);
 
     const traceSteps = (parsed.trace_steps || [])

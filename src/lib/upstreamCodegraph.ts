@@ -6,6 +6,7 @@ import type {
   GitNexusGraphData,
   GitNexusNode,
 } from "@/lib/types";
+import { uniqueStrings } from "@/lib/textUtils";
 
 type InvestigationMode =
   | "security"
@@ -15,15 +16,6 @@ type InvestigationMode =
   | "onboarding"
   | "dependencies"
   | "general";
-
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  Array.from(
-    new Set(
-      values
-        .filter((value): value is string => Boolean(value && value.trim()))
-        .map((value) => value.trim())
-    )
-  );
 
 const fileNameFromPath = (value: string) => {
   const normalized = (value || "").replace(/\\/g, "/");
