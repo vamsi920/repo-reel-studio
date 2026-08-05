@@ -48,7 +48,25 @@ def load_repo_env_file() -> None:
 
 load_repo_env_file()
 
-app = FastAPI(title="GitFlick Agent Runs API", version="1.0.0")
+from contextlib import asynccontextmanager
+
+from proactive_scheduler import start_proactive_scheduler, stop_proactive_scheduler
+from sandbox_runner import sweep_orphaned_sandboxes
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    swept = sweep_orphaned_sandboxes()
+    if swept:
+        print(f"🧹 Removed {swept} orphaned sandbox container(s) from a previous run")
+    start_proactive_scheduler()
+    try:
+        yield
+    finally:
+        stop_proactive_scheduler()
+
+
+app = FastAPI(title="GitFlick Agent Runs API", version="1.0.0", lifespan=lifespan)
 register_proactive_exception_handlers(app)
 
 

@@ -101,11 +101,18 @@ const buildFallbackCodegraphData = (
     const moduleEntry = ensureModule(node.filePath);
     if (!moduleEntry) return;
     moduleEntry.lines = Math.max(moduleEntry.lines, node.lineCount || 0, node.endLine || 0);
+    // Prefer the File node's own community (direct, per-node, e.g. from
+    // Graphify's Leiden clustering) over the coarser cluster.members-derived
+    // aggregation below, which only runs if graphData.clusters is populated.
+    if (node.kind === "File" && node.cluster) {
+      moduleEntry.clusterIds.add(node.cluster);
+    }
   });
 
   const rawNodes: CodegraphEngineData["graph"]["nodes"] = [];
   const rawLinks: CodegraphEngineData["graph"]["links"] = [];
   const entityIndex: CodegraphEntityIndexEntry[] = [];
+  const entityCommunityById = new Map<string, string>();
   const rawLinkKeys = new Set<string>();
 
   const pushRawLink = (
@@ -132,6 +139,9 @@ const buildFallbackCodegraphData = (
 
     const entityId = toEntityId(node);
     moduleEntry.entityIds.push(entityId);
+    if (node.cluster) {
+      entityCommunityById.set(entityId, node.cluster);
+    }
 
     const entityEntry: CodegraphEntityIndexEntry = {
       id: entityId,
@@ -252,6 +262,7 @@ const buildFallbackCodegraphData = (
         moduleEntry.entityEntries.length +
         moduleEntry.dependencies.size +
         moduleEntry.dependents.size,
+      community: moduleEntry.clusterIds.size > 0 ? [...moduleEntry.clusterIds][0] : undefined,
     });
   });
 
@@ -267,6 +278,7 @@ const buildFallbackCodegraphData = (
       startLine: entity.startLine,
       endLine: entity.endLine,
       weight: 1 + entity.linksIn + entity.linksOut,
+      community: entityCommunityById.get(entity.id),
     });
   });
 
@@ -354,8 +366,17 @@ const buildFallbackCodegraphData = (
       fullPath: moduleEntry.fullPath,
     }));
 
+  // Milestone 1's graphify_bridge.py adapter tags its GitNexusGraphData
+  // summary with a "graphify" keyTechnology marker -- use it to label this
+  // synthesized CodegraphEngineData with the engine that actually produced
+  // the underlying graph, instead of always claiming "xnuinside-codegraph"
+  // (which was only ever true for the old regex/AST builders).
+  const isGraphifySourced = Boolean(
+    graphData.summary?.keyTechnologies?.includes("graphify")
+  );
+
   return {
-    engine: "xnuinside-codegraph",
+    engine: isGraphifySourced ? "graphify" : "xnuinside-codegraph",
     source: "gitnexus-fallback",
     generatedAt: new Date().toISOString(),
     graph: {

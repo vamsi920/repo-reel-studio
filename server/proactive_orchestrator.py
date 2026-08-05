@@ -69,6 +69,27 @@ from proactive_ai_console import (
 )
 
 
+def _graphify_centrality_enabled() -> bool:
+    return os.getenv("PROACTIVE_GRAPHIFY_CENTRALITY", "").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _import_counts_for_workspace(workspace: Path, files: list[str]) -> dict[str, int]:
+    """build_import_counts(), or real graph-derived centrality when enabled.
+
+    Always falls back to the regex heuristic on any failure -- see
+    graphify_centrality.py's module docstring for why (subprocess missing,
+    extraction timeout, malformed graph, etc. must never block discovery).
+    """
+    if _graphify_centrality_enabled():
+        try:
+            from graphify_centrality import centrality_via_graphify
+
+            return centrality_via_graphify(workspace, files)
+        except Exception as exc:  # noqa: BLE001 - graph path is best-effort
+            print(f"[proactive] graphify centrality failed, falling back to regex heuristic: {exc}")
+    return build_import_counts(workspace, files)
+
+
 SIGNAL_RE = re.compile(r"\b(TODO|FIXME|HACK|XXX|BUG|OPTIMIZE|PERF)\b[:\-\s]*(.{0,140})", re.I)
 TEST_RE = re.compile(r"(\.|/)(test|spec)\.(ts|tsx|js|jsx|py)$|(^|/)tests?/", re.I)
 CENTRAL_NAMES = {"app", "index", "main", "server", "router", "api", "store", "client", "agent", "runner"}
@@ -327,7 +348,7 @@ def discover_candidates(
     test_files = {path for path in files if TEST_RE.search(path)}
     validation_profile = detect_validation_hints(workspace, env_artifacts)
     validation = validation_evidence_lines(validation_profile)
-    import_counts = build_import_counts(workspace, files)
+    import_counts = _import_counts_for_workspace(workspace, files)
     recent_index = load_recent_opportunity_index(
         repo_url,
         project_id,
@@ -502,11 +523,14 @@ def execute_candidate_run(
         else proactive_executor_timeout_seconds()
     )
     reason = ""
+    workspace: Optional[Path] = None
     try:
         workspace = prepare_candidate_workspace(discovery_workspace, run_id)
         run = read_run(run_id)
         if not run:
             raise RuntimeError("Proactive AgentRun record disappeared before execution")
+
+        _start_candidate_sandbox(run_id, workspace, run)
 
         from proactive_branch_name import is_proactive_issue
 
@@ -692,6 +716,40 @@ def execute_candidate_run(
             phase,
             str(exc) or "Proactive execution failed.",
         )
+    finally:
+        if workspace is not None:
+            try:
+                from sandbox_runner import destroy_sandbox
+
+                destroy_sandbox(str(workspace))
+            except ImportError:
+                pass
+
+
+def _start_candidate_sandbox(run_id: str, workspace: Path, run: dict[str, Any]) -> None:
+    """Best-effort: register a real container sandbox for this candidate's workspace.
+
+    Never raises — patch/test execution must proceed via the Local tier if
+    Docker isn't available (see sandbox_runner.create_sandbox).
+    """
+    try:
+        from sandbox_runner import create_sandbox, ensure_image_for_workspace
+
+        image_tag = ensure_image_for_workspace(run.get("projectId"), str(workspace), run.get("repoUrl") or "")
+        handle = create_sandbox(run_id, str(workspace), image_tag)
+        if handle.mode == "docker":
+            append_timeline(
+                run_id, "workspace", "Sandbox containerized",
+                f"Patch/test execution is isolated in a Docker container ({handle.image_tag}).",
+            )
+        else:
+            append_timeline(
+                run_id, "workspace", "Sandbox running locally",
+                "Docker isolation was unavailable for this run; falling back to a local process sandbox.",
+                level="warning",
+            )
+    except ImportError:
+        pass
 
 
 def finalize_proactive_execution_stop(

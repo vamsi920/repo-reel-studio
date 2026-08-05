@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 from layman_compress_helper import compress_prompt_prose_safe
+import token_savings
 
 try:
     from caveman_helper import (
@@ -49,6 +50,8 @@ class OpenDevinConfig:
         max_iterations: int = 30,
         timeout_seconds: int = 600,
         policy: Optional[dict[str, Any]] = None,
+        run_id: Optional[str] = None,
+        project_id: Optional[str] = None,
     ):
         self.workspace_path = workspace_path
         self.sandbox_image = sandbox_image or "python:3.12-slim"
@@ -56,6 +59,8 @@ class OpenDevinConfig:
         self.max_iterations = max_iterations
         self.timeout_seconds = timeout_seconds
         self.policy = policy or {}
+        self.run_id = run_id
+        self.project_id = project_id
 
     def to_env(self) -> dict[str, str]:
         env = os.environ.copy()
@@ -148,13 +153,17 @@ class OpenDevinResult:
         self.root_cause: str = ""
         self.executor_mode: str = "opendevin"
         self.executor_attempts: list[str] = []
+        # Populated only when the legacy executor ran the deep-work pipeline
+        # (Research → Brainstorm → Patch → Test-loop → Verify); None otherwise.
+        self.journey: Optional[dict[str, Any]] = None
+        self.pr_ready: bool = False
 
     def to_artifacts(self) -> dict[str, Any]:
         """Map result fields to the AgentRun.artifacts structure."""
         failure_category = None if self.success else "agent_failure"
         if not self.success and self.executor_mode == "unavailable":
             failure_category = "execution_error"
-        return {
+        artifacts = {
             "patch": self.patch,
             "diffStat": self.diff_stat,
             "changedFiles": self.changed_files,
@@ -169,6 +178,10 @@ class OpenDevinResult:
             "executorMode": self.executor_mode,
             "executorAttempts": list(self.executor_attempts),
         }
+        if self.journey is not None:
+            artifacts["journey"] = self.journey
+            artifacts["prReady"] = self.pr_ready
+        return artifacts
 
     def to_timeline(self) -> list[dict[str, Any]]:
         return [event.to_timeline_event() for event in self.events]
@@ -240,15 +253,21 @@ class OpenDevinRunner:
                 self.result.executor_mode = EXECUTOR_MODE_LEGACY
                 self.result.executor_attempts = ["legacy"]
 
-            self._collect_diff_artifacts()
+            # Legacy fallback (including the deep-work pipeline via
+            # try_legacy_executor) already populated patch/validation/evaluation/PR
+            # artifacts in _apply_legacy_result — do not re-collect or re-validate
+            # here, which would overwrite ranked multi-approach results with a
+            # cruder single-pass validation pass.
+            if not execution_output.get("legacy"):
+                self._collect_diff_artifacts()
 
-            if self.result.changed_files:
-                validation_output = self._run_validations(env_artifacts)
-                self._parse_validation_output(validation_output)
+                if self.result.changed_files:
+                    validation_output = self._run_validations(env_artifacts)
+                    self._parse_validation_output(validation_output)
 
-            self._build_evaluation()
-            self._build_pr_artifacts(issue)
-            self._build_change_intent(issue)
+                self._build_evaluation()
+                self._build_pr_artifacts(issue)
+                self._build_change_intent(issue)
 
             self.result.success = bool(self.result.patch.strip())
 
@@ -340,6 +359,10 @@ class OpenDevinRunner:
         metrics = measure_prompt("opendevin_task_prompt", "\n".join(sections)) if measure_prompt else None
         if metrics:
             self.result.metrics["caveman"] = metrics.to_dict()
+            token_savings.record_from_metrics(
+                "agent_ops", "opendevin_task_prompt", metrics,
+                run_id=self.config.run_id, project_id=self.config.project_id,
+            )
 
         return "\n".join(sections)
 
@@ -643,6 +666,8 @@ class OpenDevinRunner:
             self.config.workspace_path,
             issue,
             context_hints=context_hints,
+            run_id=self.config.run_id,
+            project_id=self.config.project_id,
         )
         if legacy_result.patch.strip():
             self._apply_legacy_result(legacy_result)
@@ -686,6 +711,12 @@ class OpenDevinRunner:
         self.result.quality_gates = legacy_result.quality_gates
         self.result.evaluation = legacy_result.evaluation
         self.result.plan = legacy_result.plan
+        self.result.test_matrix = legacy_result.test_matrix
+        self.result.pr_draft = legacy_result.pr_draft
+        self.result.pr_readable = legacy_result.pr_readable
+        self.result.change_intent = legacy_result.change_intent
+        self.result.journey = legacy_result.journey
+        self.result.pr_ready = legacy_result.pr_ready
         self.result.success = bool(legacy_result.patch.strip())
         self.result.error = legacy_result.error
 
@@ -988,7 +1019,12 @@ class OpenDevinRunner:
         ])
 
         if is_enabled():
+            original_len = len(body)
             body = compress_pr_body(body)
+            token_savings.record_savings(
+                "agent_ops", "opendevin_pr_draft", original_len, len(body),
+                run_id=self.config.run_id, project_id=self.config.project_id,
+            )
 
         self.result.pr_draft = {"title": title, "body": body.strip()}
 
@@ -1005,9 +1041,15 @@ class OpenDevinRunner:
 
         if is_enabled():
             _prose_kinds = {"summary", "strategy", "risk", "confidence"}
+            original_total = sum(len(s["body"]) for s in sections if s["kind"] in _prose_kinds)
             for section in sections:
                 if section["kind"] in _prose_kinds:
                     section["body"] = compress_prose(section["body"])
+            compressed_total = sum(len(s["body"]) for s in sections if s["kind"] in _prose_kinds)
+            token_savings.record_savings(
+                "agent_ops", "opendevin_pr_readable", original_total, compressed_total,
+                run_id=self.config.run_id, project_id=self.config.project_id,
+            )
 
         sensitive = [f["path"] for f in self.result.changed_files if f.get("sensitive")]
         checklist = [
@@ -1099,6 +1141,8 @@ class OpenDevinAdapter:
             max_iterations=max_iters,
             timeout_seconds=timeout,
             policy=run.get("policy"),
+            run_id=run.get("id"),
+            project_id=run.get("projectId"),
         )
         return OpenDevinRunner(config)
 
@@ -1118,6 +1162,9 @@ class OpenDevinAdapter:
         run["artifacts"]["failureCategory"] = artifacts["failureCategory"]
         run["artifacts"]["executorMode"] = artifacts.get("executorMode")
         run["artifacts"]["executorAttempts"] = artifacts.get("executorAttempts") or []
+        if "journey" in artifacts:
+            run["artifacts"]["journey"] = artifacts["journey"]
+            run["artifacts"]["prReady"] = artifacts.get("prReady", False)
 
         run["evaluation"] = result.evaluation
         run["metrics"] = result.metrics

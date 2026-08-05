@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState, useCallback, useRef, memo, type ElementType } from "react";
 import AgentRunsPanel from "@/components/studio/AgentRunsPanel";
+import SmePanel from "@/components/sme/SmePanel";
+import SmeStatusIndicator from "@/components/sme/SmeStatusIndicator";
+import { ProjectJourney } from "@/components/journey/ProjectJourney";
+import { ShieldCheck } from "lucide-react";
+import { recordProjectEvent } from "@/lib/projectMemory";
+import type { Project } from "@/lib/db";
 import { agentOpsStudioSectionClass } from "@/components/studio/agent-ops/shared/agentOpsLayout";
 import GraphExplorer from "@/components/studio/GraphExplorer";
 import RepoInvestigator from "@/components/studio/RepoInvestigator";
 import { ChapterPlaylist } from "@/components/studio/ChapterPlaylist";
 import type { GitNexusGraphData, ChapterManifest, VideoGenerationPlan } from "@/lib/types";
+import type { GraphSubgraph } from "@/lib/graphifyQuery";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -58,7 +65,7 @@ import iconUrl from "../../icon.png";
 const SESSION_REPO_CONTENT_MAX_BYTES = 4 * 1024 * 1024;
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
-type WorkspaceView = "video" | "graph" | "ask" | "runs";
+type WorkspaceView = "video" | "graph" | "ask" | "runs" | "sme";
 type SyncState = "idle" | "checking" | "updating" | "error";
 
 interface LogEntry {
@@ -109,6 +116,13 @@ const WORKSPACE_VIEWS: Array<{
     icon: Sparkles,
     accent: "from-amber-300/14 via-[#eef6fb] to-orange-300/8",
   },
+  {
+    id: "sme",
+    label: "SME Desk",
+    description: "Upload domain truths and audit the SME agent's fact-checks.",
+    icon: ShieldCheck,
+    accent: "from-rose-300/14 via-[#eef6fb] to-pink-300/8",
+  },
 ];
 
 const hashNarrationText = (scenes: VideoManifest["scenes"]) => {
@@ -154,8 +168,10 @@ const Studio = () => {
   const [studioGraphData, setStudioGraphData] = useState<GitNexusGraphData | null>(null);
   const [repoContent, setRepoContent] = useState("");
   const [focusedRepoFilePath, setFocusedRepoFilePath] = useState<string | null>(null);
+  const [graphHighlightPath, setGraphHighlightPath] = useState<GraphSubgraph | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const syncLockRef = useRef(false);
+  const [journeyProject, setJourneyProject] = useState<Project | null>(null);
 
   // Chapter-based playlist state
   const [chapters, setChapters] = useState<ChapterManifest[]>([]);
@@ -899,6 +915,15 @@ const Studio = () => {
         repo_knowledge_graph: nextManifest.knowledge_graph || null,
       });
 
+      if (projectIdState) {
+        recordProjectEvent(
+          projectIdState,
+          "studio",
+          "github-sync",
+          `Synced from GitHub: refreshed ${Object.keys(partial.files).length} changed file(s) and rebuilt the walkthrough (${nextManifest.scenes.length} scenes).`
+        );
+      }
+
       toast({
         title: "Video synced",
         description: `Refreshed ${Object.keys(partial.files).length} changed file(s) and rebuilt the walkthrough.`,
@@ -1012,7 +1037,7 @@ const Studio = () => {
     effectiveHydratedManifest?.scenes?.[currentSceneIndex]?.file_path;
   const workspaceView: WorkspaceView = (() => {
     const view = searchParams.get("view");
-    return view === "graph" || view === "ask" || view === "video" || view === "runs" ? view : "video";
+    return view === "graph" || view === "ask" || view === "video" || view === "runs" || view === "sme" ? view : "video";
   })();
   const highlightedRepoFilePath = focusedRepoFilePath || activeSceneFilePath;
 
@@ -1031,8 +1056,32 @@ const Studio = () => {
     }
   }, [workspaceView, isVideoFullscreen]);
 
+  // Load the project record for the journey strip (non-blocking, best effort).
+  useEffect(() => {
+    if (!projectIdState || !user?.uid) {
+      setJourneyProject(null);
+      return;
+    }
+    let cancelled = false;
+    void projectsService
+      .getById(projectIdState, user.uid)
+      .then((project) => {
+        if (!cancelled) setJourneyProject(project);
+      })
+      .catch(() => {
+        if (!cancelled) setJourneyProject(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectIdState, user?.uid, phase]);
+
   const focusRepoFile = useCallback((filePath: string) => {
     setFocusedRepoFilePath(filePath);
+    setWorkspaceView("graph");
+  }, [setWorkspaceView]);
+
+  const showGraphPath = useCallback(() => {
     setWorkspaceView("graph");
   }, [setWorkspaceView]);
 
@@ -1224,6 +1273,10 @@ const Studio = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                <SmeStatusIndicator
+                  projectId={projectIdState}
+                  onClick={() => setWorkspaceView("sme")}
+                />
                 <button className="btn-subtle flex items-center gap-2" onClick={loadManifest}>
                   <RefreshCw className="h-4 w-4" />
                   <span>Reload</span>
@@ -1244,6 +1297,9 @@ const Studio = () => {
           </header>
 
           <main className="w-full px-5 py-5">
+            {journeyProject && (
+              <ProjectJourney project={journeyProject} compact className="mb-4" />
+            )}
             <StudioWorkspaceTabs
               activeView={workspaceView}
               onChange={setWorkspaceView}
@@ -1414,6 +1470,7 @@ const Studio = () => {
                   <GraphExplorer
                     graphData={studioGraphData}
                     activeFilePath={highlightedRepoFilePath}
+                    highlightPath={graphHighlightPath}
                     onNodeClick={(node) => setFocusedRepoFilePath(node.filePath)}
                   />
                 ) : (
@@ -1439,6 +1496,9 @@ const Studio = () => {
                 manifest={manifest}
                 graphData={studioGraphData}
                 onFocusFile={focusRepoFile}
+                projectId={projectIdState}
+                onGraphPathHighlight={setGraphHighlightPath}
+                onShowInGraph={showGraphPath}
               />
                   )}
 
@@ -1453,6 +1513,24 @@ const Studio = () => {
                   onFocusFile={focusRepoFile}
                 />
               </section>
+                  )}
+
+                  {workspaceView === "sme" && (
+              <SmePanel
+                projectId={projectIdState}
+                reviewTarget={
+                  manifest?.scenes?.length
+                    ? {
+                        step: "manifest",
+                        label: "video narration",
+                        content: manifest.scenes
+                          .map((s) => s.narration_text)
+                          .filter(Boolean)
+                          .join("\n\n"),
+                      }
+                    : null
+                }
+              />
                   )}
                 </div>
               )}

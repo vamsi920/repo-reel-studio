@@ -16,6 +16,8 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from layman_compress_helper import compress_prompt_prose_safe
+import supabase_store
+import token_savings
 
 try:
     from caveman_helper import (
@@ -323,7 +325,10 @@ def create_agent_run_router() -> APIRouter:
         if sha_result["exitCode"] == 0:
             commit_sha = sha_result["stdout"].strip()[:40]
 
-        # Human-approved promotion path; push/PR are governed and audited.
+        # Human-approved promotion path; push/PR are governed and audited. Run
+        # on the host (use_sandbox=False): this needs the host's git/gh
+        # credentials, and by this point the run's sandbox has already been
+        # torn down (execute_agent_run destroys it once the run completes).
         push_result = run_subprocess(
             ["git", "push", "origin", branch_name, "--force-with-lease"],
             cwd=workspace_path,
@@ -332,6 +337,7 @@ def create_agent_run_router() -> APIRouter:
             governance_action="git.push",
             governance_context={"run_id": run_id, "branch": branch_name},
             human_approved=True,
+            use_sandbox=False,
         )
         promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
 
@@ -345,6 +351,7 @@ def create_agent_run_router() -> APIRouter:
                 governance_action="pr.create",
                 governance_context={"run_id": run_id, "branch": branch_name},
                 human_approved=True,
+                use_sandbox=False,
             )
             promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
 
@@ -491,7 +498,9 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
 
     # This promotion path is reached only after explicit human approval, which
     # satisfies the require_approval policy on git.push / pr.create. Each action
-    # is still evaluated and written to the tamper-evident audit log.
+    # is still evaluated and written to the tamper-evident audit log. Run on
+    # the host (use_sandbox=False): needs host git/gh credentials, and by this
+    # point the run's sandbox has already been torn down.
     push_result = run_subprocess(
         ["git", "push", "origin", branch_name, "--force-with-lease"],
         cwd=workspace_path,
@@ -500,6 +509,7 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
         governance_action="git.push",
         governance_context={"run_id": run_id, "branch": branch_name},
         human_approved=True,
+        use_sandbox=False,
     )
     promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
 
@@ -512,6 +522,7 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
             governance_action="pr.create",
             governance_context={"run_id": run_id, "branch": branch_name},
             human_approved=True,
+            use_sandbox=False,
         )
         promotion_log.append(f"gh pr create: exit={pr_create_result['exitCode']}")
         if pr_create_result["exitCode"] == 0:
@@ -559,7 +570,7 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
     return read_required_run(run_id)
 
 
-def read_run(run_id: str) -> Optional[dict[str, Any]]:
+def _read_run_from_disk(run_id: str) -> Optional[dict[str, Any]]:
     ensure_runs_root()
     path = run_json_path(run_id)
     if not path.exists():
@@ -568,7 +579,7 @@ def read_run(run_id: str) -> Optional[dict[str, Any]]:
         return json.loads(path.read_text(encoding="utf-8"))
 
 
-def write_run(run: dict[str, Any]) -> None:
+def _write_run_to_disk(run: dict[str, Any]) -> None:
     ensure_runs_root()
     directory = run_dir(run["id"])
     directory.mkdir(parents=True, exist_ok=True)
@@ -577,6 +588,35 @@ def write_run(run: dict[str, Any]) -> None:
     with STORE_LOCK:
         temp_path.write_text(json.dumps(run, indent=2), encoding="utf-8")
         temp_path.replace(path)
+
+
+def read_run(run_id: str) -> Optional[dict[str, Any]]:
+    """Run metadata lives in Postgres (`agent_runs`) when Supabase is
+    configured; falls back to the legacy `.agent-runs/<id>/run.json` file
+    otherwise (e.g. local dev without a database configured)."""
+    if not supabase_store.is_configured():
+        return _read_run_from_disk(run_id)
+    row = supabase_store.select_one("agent_runs", {"id": run_id})
+    return row["run"] if row else None
+
+
+def write_run(run: dict[str, Any]) -> None:
+    if not supabase_store.is_configured():
+        _write_run_to_disk(run)
+        return
+    with STORE_LOCK:
+        supabase_store.upsert(
+            "agent_runs",
+            {
+                "id": run["id"],
+                "project_id": run.get("projectId"),
+                "repo_url": run.get("repoUrl"),
+                "status": run.get("status"),
+                "run": run,
+                "updated_at": now_iso(),
+            },
+            on_conflict="id",
+        )
 
 
 def append_timeline(run_id: str, kind: str, title: str, detail: str = "", level: str = "info") -> None:
@@ -598,25 +638,37 @@ def append_timeline(run_id: str, kind: str, title: str, detail: str = "", level:
 
 
 def list_runs(repo_url: Optional[str], project_id: Optional[str], limit: int) -> list[dict[str, Any]]:
-    ensure_runs_root()
-    runs: list[dict[str, Any]] = []
-    for directory in RUNS_ROOT.iterdir():
-        if not directory.is_dir():
-            continue
-        run = read_run(directory.name)
-        if not run:
-            continue
-        if repo_url and run.get("repoUrl") != repo_url:
-            continue
-        if project_id and run.get("projectId") != project_id:
-            continue
-        runs.append(run)
-    runs.sort(key=lambda item: item.get("updatedAt") or item.get("createdAt") or "", reverse=True)
-    return runs[: max(1, min(limit, 100))]
+    bounded_limit = max(1, min(limit, 100))
+
+    if not supabase_store.is_configured():
+        ensure_runs_root()
+        runs: list[dict[str, Any]] = []
+        for directory in RUNS_ROOT.iterdir():
+            if not directory.is_dir():
+                continue
+            run = _read_run_from_disk(directory.name)
+            if not run:
+                continue
+            if repo_url and run.get("repoUrl") != repo_url:
+                continue
+            if project_id and run.get("projectId") != project_id:
+                continue
+            runs.append(run)
+        runs.sort(key=lambda item: item.get("updatedAt") or item.get("createdAt") or "", reverse=True)
+        return runs[:bounded_limit]
+
+    filters: dict[str, Any] = {}
+    if repo_url:
+        filters["repo_url"] = repo_url
+    if project_id:
+        filters["project_id"] = project_id
+    rows = supabase_store.select("agent_runs", filters, order="updated_at.desc", limit=bounded_limit)
+    return [row["run"] for row in rows if row.get("run")]
 
 
 def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
     use_opendevin = os.getenv("USE_OPENDEVIN", "").strip().lower() in ("1", "true", "yes")
+    workspace_path: Optional[Path] = None
 
     try:
         set_run_status(run_id, "preparing", "Preparing sandbox", "Fetching issue metadata and cloning the repository.")
@@ -657,6 +709,14 @@ def execute_agent_run(run_id: str, github_token: Optional[str]) -> None:
         finalize_failure(run_id, "cancelled", "Run cancelled", "Cancellation was requested before the run completed.")
     except Exception as exc:
         finalize_failure(run_id, classify_failure(str(exc)), "Run failed", str(exc))
+    finally:
+        if workspace_path is not None:
+            try:
+                from sandbox_runner import destroy_sandbox
+
+                destroy_sandbox(str(workspace_path))
+            except ImportError:
+                pass
 
 
 def _execute_with_opendevin(run_id: str, issue: dict[str, Any], workspace_path: Path) -> None:
@@ -782,13 +842,14 @@ def _deep_work_patch_and_validate(
     from proactive_deep_pipeline import (
         build_journey,
         build_research_brief,
-        generate_approaches,
         run_deep_fix_loop,
     )
 
     brief = build_research_brief(issue=issue, repo_context=repo_context, validation_profile=None)
     append_timeline(run_id, "research", "Researched the change", brief.summary)
-    approaches = generate_approaches(issue, brief)
+    approaches = generate_deep_work_approaches(
+        issue, brief, repo_context, run_id=run_id, project_id=run.get("projectId"),
+    )
     append_timeline(
         run_id, "brainstorm", f"Brainstormed {len(approaches)} approach(es)",
         "; ".join(a.title for a in approaches),
@@ -808,7 +869,9 @@ def _deep_work_patch_and_validate(
         if state["feedback"]:
             plan_variant["attemptGuidance"] = state["feedback"]
 
-        change_set = build_change_set(issue, repo_context, plan_variant)
+        change_set = build_change_set(
+            issue, repo_context, plan_variant, run_id=run_id, project_id=run.get("projectId")
+        )
         if change_set.get("blocked"):
             return {
                 "blocked": True, "reason": change_set.get("reason"),
@@ -858,6 +921,35 @@ def _attach_journey(run_id: str, journey: Optional[dict[str, Any]], pr_ready: Op
     write_run(run)
 
 
+def run_deep_work_pipeline(
+    run_id: str,
+    issue: dict[str, Any],
+    workspace_path: Path,
+    repo_context: dict[str, Any],
+    plan: dict[str, Any],
+    run: dict[str, Any],
+) -> Optional[dict[str, Any]]:
+    """Public entry point for the Research → Brainstorm → Patch → Test-loop → Verify
+    pipeline (PROACTIVE_DEEP_LOOP), shared by the manual/webhook Agent Ops executor
+    (_execute_with_legacy) and the autonomous proactive dispatch path
+    (opendevin_fallback.try_legacy_executor).
+
+    Returns None — never raises, except CancelledRunError — when the deep loop is
+    disabled or fails for any reason; callers must fall back to a single-pass patch
+    on a None result, exactly as this function's callers already do.
+    """
+    if not _deepwork_enabled():
+        return None
+    try:
+        return _deep_work_patch_and_validate(run_id, issue, workspace_path, repo_context, plan, run)
+    except CancelledRunError:
+        raise
+    except Exception as exc:  # never let the rigorous path break a run — fall back
+        append_timeline(run_id, "deepwork", "Deep-work loop fell back",
+                        f"Reverting to single-pass execution: {exc}", level="warning")
+        return None
+
+
 def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Path) -> None:
     """Legacy executor: existing Gemini-based mini-SWE flow, with an optional rigorous
     Research → Brainstorm → Patch → Test loop in front (PROACTIVE_DEEP_LOOP)."""
@@ -865,23 +957,13 @@ def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Pat
                    "Ranking candidate files and generating a minimal patch plan.")
     run = read_required_run(run_id)
     repo_context = collect_repo_context(workspace_path, issue, run.get("contextHints") or {})
-    plan = build_execution_plan(issue, repo_context)
+    plan = build_execution_plan(issue, repo_context, run_id=run_id, project_id=run.get("projectId"))
     update_run_plan(run_id, plan)
     guard_not_cancelled(run_id)
 
     journey: Optional[dict[str, Any]] = None
     pr_ready_flag: Optional[bool] = None
-    deep: Optional[dict[str, Any]] = None
-
-    if _deepwork_enabled():
-        try:
-            deep = _deep_work_patch_and_validate(run_id, issue, workspace_path, repo_context, plan, run)
-        except CancelledRunError:
-            raise
-        except Exception as exc:  # never let the rigorous path break a run — fall back
-            append_timeline(run_id, "deepwork", "Deep-work loop fell back",
-                            f"Reverting to single-pass execution: {exc}", level="warning")
-            deep = None
+    deep = run_deep_work_pipeline(run_id, issue, workspace_path, repo_context, plan, run)
 
     if deep and deep.get("chosen") and str((deep["chosen"]).get("patch") or "").strip():
         chosen = deep["chosen"]
@@ -896,7 +978,9 @@ def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Pat
                        "Selected the strongest approach that passed validation.")
     else:
         # ---- Original single-pass executor (fallback / deep-loop disabled) ----
-        change_set = build_change_set(issue, repo_context, plan)
+        change_set = build_change_set(
+            issue, repo_context, plan, run_id=run_id, project_id=run.get("projectId")
+        )
         if change_set.get("blocked"):
             raise RuntimeError(change_set.get("reason") or "Patch generation was blocked by missing context")
         apply_change_set(workspace_path, change_set)
@@ -916,14 +1000,23 @@ def _execute_with_legacy(run_id: str, issue: dict[str, Any], workspace_path: Pat
 
     append_timeline(run_id, "critique", "Self-critiquing patch",
                    "Running self-critique pass on the generated patch.")
-    critique_result = self_critique_patch(issue, plan, changed_files, patch_text, validation_report)
+    critique_result = self_critique_patch(
+        issue, plan, changed_files, patch_text, validation_report,
+        run_id=run_id, project_id=run.get("projectId"),
+    )
 
     evaluation = evaluate_run(changed_files, validation_report, run.get("timeline", []))
     change_intent = build_change_intent(issue, plan, changed_files, critique_result)
     test_matrix = build_test_matrix(validation_report, changed_files)
     quality_gates = build_quality_gates(validation_report, changed_files, evaluation)
-    pr_draft = build_pr_draft(issue, plan, changed_files, validation_report, evaluation)
-    pr_readable = build_pr_readable(issue, plan, changed_files, validation_report, evaluation, change_intent)
+    pr_draft = build_pr_draft(
+        issue, plan, changed_files, validation_report, evaluation,
+        run_id=run_id, project_id=run.get("projectId"),
+    )
+    pr_readable = build_pr_readable(
+        issue, plan, changed_files, validation_report, evaluation, change_intent,
+        run_id=run_id, project_id=run.get("projectId"),
+    )
 
     repo_policy = load_repo_policy(workspace_path)
     policy_violations = enforce_policy_gates(repo_policy, changed_files, quality_gates, evaluation)
@@ -1192,6 +1285,7 @@ def prepare_workspace(run_id: str) -> Path:
                     "Sandbox from project cache",
                     "Reused Phase-1 git checkout (local copy); no re-clone from GitHub.",
                 )
+                _start_run_sandbox(run_id, workspace, project_id, repo_url)
                 return workspace
         except Exception as exc:
             print(f"⚠️  Project workspace cache unavailable, cloning from network: {exc}")
@@ -1212,7 +1306,34 @@ def prepare_workspace(run_id: str) -> Path:
         )
         if checkout_result["exitCode"] != 0:
             raise RuntimeError(checkout_result["stderr"] or checkout_result["stdout"] or "Branch checkout failed")
+    _start_run_sandbox(run_id, workspace, project_id, repo_url)
     return workspace
+
+
+def _start_run_sandbox(run_id: str, workspace: Path, project_id: Optional[str], repo_url: str) -> None:
+    """Best-effort: register a real container sandbox for this run's workspace.
+
+    Never raises — patch/test execution must proceed via the Local tier if
+    Docker isn't available (see sandbox_runner.create_sandbox).
+    """
+    try:
+        from sandbox_runner import create_sandbox, ensure_image_for_workspace
+
+        image_tag = ensure_image_for_workspace(project_id, str(workspace), repo_url)
+        handle = create_sandbox(run_id, str(workspace), image_tag)
+        if handle.mode == "docker":
+            append_timeline(
+                run_id, "workspace", "Sandbox containerized",
+                f"Patch/test execution is isolated in a Docker container ({handle.image_tag}).",
+            )
+        else:
+            append_timeline(
+                run_id, "workspace", "Sandbox running locally",
+                "Docker isolation was unavailable for this run; falling back to a local process sandbox.",
+                level="warning",
+            )
+    except ImportError:
+        pass
 
 
 def collect_repo_context(
@@ -1488,7 +1609,12 @@ def normalize_rel_path(value: str) -> str:
     return normalized
 
 
-def build_execution_plan(issue: dict[str, Any], repo_context: dict[str, Any]) -> dict[str, Any]:
+def build_execution_plan(
+    issue: dict[str, Any],
+    repo_context: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+) -> dict[str, Any]:
     issue_body = (
         compress_issue_body(issue.get("body", ""), max_chars=5000)
         if caveman_enabled()
@@ -1520,7 +1646,9 @@ Repo context:
 - Package scripts: {json.dumps(((repo_context.get("packageJson") or {}).get("scripts") or {}), indent=2)[:2000]}
 """
     measure_prompt("legacy_plan_prompt", prompt)
-    response = request_gemini_json(prompt, max_output_tokens=2048)
+    response = request_gemini_json(
+        prompt, max_output_tokens=2048, label="plan", run_id=run_id, project_id=project_id
+    )
     if response:
         return response
     return {
@@ -1541,8 +1669,19 @@ Repo context:
     }
 
 
-def build_change_set(issue: dict[str, Any], repo_context: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+def build_change_set(
+    issue: dict[str, Any],
+    repo_context: dict[str, Any],
+    plan: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+) -> dict[str, Any]:
     documents = list(repo_context.get("candidateDocuments", []))
+    issue_body_for_patch = (
+        compress_issue_body(issue.get("body", ""), max_chars=6000)
+        if caveman_enabled()
+        else truncate_text(issue.get("body", ""), 6000)
+    )
     tracked_lookup = {normalize_rel_path(path) for path in repo_context.get("trackedFiles", [])}
     attempt_guidance = ""
     last_blocked_reason = ""
@@ -1582,7 +1721,7 @@ Rules:
 
 Issue title: {issue.get("title")}
 Issue body:
-{truncate_text(issue.get("body", ""), 6000)}
+{issue_body_for_patch}
 
 Plan:
 {json.dumps(plan, indent=2)[:3500]}
@@ -1599,7 +1738,9 @@ Available files:
 File contents:
 {render_documents(documents)}
 """
-        result = request_gemini_json(prompt, max_output_tokens=8192)
+        result = request_gemini_json(
+            prompt, max_output_tokens=8192, label="change_set", run_id=run_id, project_id=project_id
+        )
         if not result:
             raise RuntimeError("Gemini API key is required for autonomous patch generation")
 
@@ -1711,6 +1852,8 @@ def self_critique_patch(
     changed_files: list[dict[str, Any]],
     patch_text: str,
     validation_report: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
 ) -> dict[str, Any]:
     """Ask the model to critique its own patch before finalizing."""
     validation_notes = validation_report.get("notes", [])
@@ -1747,7 +1890,9 @@ Validation status: {validation_report.get("overallStatus", "not_run")}
 Validation notes: {json.dumps(compressed_notes)}
 """
     measure_prompt("legacy_critique_prompt", prompt)
-    result = request_gemini_json(prompt, max_output_tokens=1024)
+    result = request_gemini_json(
+        prompt, max_output_tokens=1024, label="critique", run_id=run_id, project_id=project_id
+    )
     if result:
         return result
     return {
@@ -1757,6 +1902,94 @@ Validation notes: {json.dumps(compressed_notes)}
         "shouldRefine": False,
         "refinementHint": "",
     }
+
+
+def generate_deep_work_approaches(
+    issue: dict[str, Any],
+    brief: Any,
+    repo_context: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+) -> list[Any]:
+    """Brainstorm stage: ask the model for several genuinely distinct fix strategies,
+    ranked best-first, instead of picking from a fixed template catalog. Falls back to
+    proactive_deep_pipeline's deterministic catalog on a missing API key, a malformed
+    response, or any other failure — brainstorming must never break the deep-work loop.
+    """
+    from proactive_deep_pipeline import Approach
+    from proactive_deep_pipeline import generate_approaches as generate_template_approaches
+
+    fallback = generate_template_approaches(issue, brief)
+
+    try:
+        repo_analysis = (repo_context or {}).get("repoAnalysis", {})
+        prompt = f"""
+You are GitFlick's brainstorming pass. Propose 2 to 4 genuinely different ways to
+fix or improve the target — vary the actual strategy (minimal surgical patch vs.
+test-first vs. refactor-and-fix vs. add a guard/lifecycle cleanup, etc), not just
+wording of the same patch.
+
+Return strict JSON:
+{{
+  "approaches": [
+    {{
+      "title": "short, specific title",
+      "strategy": "short-kebab-slug",
+      "rationale": "1-2 sentences: what this approach actually does and why it might work",
+      "risk": "low" | "medium" | "high"
+    }}
+  ]
+}}
+Order the list best-first (most likely to cleanly resolve the issue with the least
+risk first). Do not include markdown fences.
+
+Issue title: {issue.get("title")}
+Issue category: {brief.category}
+Research brief:
+{json.dumps(brief.to_dict(), indent=2)[:3000]}
+
+Repo analysis:
+{json.dumps(repo_analysis, indent=2)[:1500]}
+"""
+        result = request_gemini_json(
+            prompt, max_output_tokens=2048, label="brainstorm_approaches",
+            run_id=run_id, project_id=project_id,
+        )
+        raw_approaches = (result or {}).get("approaches") or []
+
+        approaches: list[Any] = []
+        seen_ids: set[str] = set()
+        for index, item in enumerate(raw_approaches[:4]):
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("title") or "").strip()
+            if not title:
+                continue
+            strategy = str(item.get("strategy") or "").strip()
+            approach_id = _slugify_approach_id(strategy, f"llm-approach-{index + 1}")
+            if approach_id in seen_ids:
+                approach_id = f"{approach_id}-{index + 1}"
+            seen_ids.add(approach_id)
+            risk = str(item.get("risk") or "medium").strip().lower()
+            if risk not in ("low", "medium", "high"):
+                risk = "medium"
+            approaches.append(Approach(
+                id=approach_id,
+                title=title,
+                strategy=strategy or approach_id,
+                rationale=str(item.get("rationale") or title).strip(),
+                score=round(max(0.5, 0.95 - index * 0.08), 3),
+                risk=risk,
+            ))
+
+        return approaches or fallback
+    except Exception:
+        return fallback
+
+
+def _slugify_approach_id(text: str, fallback: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", (text or "").strip().lower()).strip("-")
+    return slug or fallback
 
 
 def load_repo_policy(workspace_path: Path) -> dict[str, Any]:
@@ -1812,15 +2045,22 @@ def render_documents(documents: list[dict[str, str]]) -> str:
     return "\n\n".join(f"----- FILE: {document['path']} -----\n{document['content']}" for document in documents)
 
 
-def request_gemini_json(prompt: str, max_output_tokens: int) -> Optional[dict[str, Any]]:
+def request_gemini_json(
+    prompt: str,
+    max_output_tokens: int,
+    label: str = "gemini_request",
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+) -> Optional[dict[str, Any]]:
     api_key = (os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY") or "").strip()
     if not api_key:
         return None
 
-    metrics = measure_prompt("gemini_request", prompt)
+    metrics = measure_prompt(label, prompt)
     metric_info = metrics.to_dict()
     if metric_info:
-        print(f"[caveman] gemini_request metrics: {json.dumps(metric_info)}")
+        print(f"[caveman] {label} metrics: {json.dumps(metric_info)}")
+    token_savings.record_from_metrics("agent_ops", label, metrics, run_id=run_id, project_id=project_id)
 
     model = (
         os.getenv("GEMINI_MODEL")
@@ -2034,12 +2274,14 @@ def run_subprocess(
     governance_action: Optional[str] = None,
     governance_context: Optional[dict[str, Any]] = None,
     human_approved: bool = False,
+    use_sandbox: bool = True,
 ) -> dict[str, Any]:
     started = time.time()
 
     # Governance gate: agent-influenced commands are checked + audited *before*
-    # they reach the shell. Internal trusted plumbing (clone/checkout/rev-parse)
-    # passes governed=False and is not gated. Denied actions never execute.
+    # they reach the shell (and before dispatch into a sandbox container, if
+    # any). Internal trusted plumbing (clone/checkout/rev-parse) passes
+    # governed=False and is not gated. Denied actions never execute.
     if governed:
         try:
             from governance import GovernanceDenied, get_kernel
@@ -2064,6 +2306,16 @@ def run_subprocess(
                 "durationMs": int((time.time() - started) * 1000),
                 "governance": exc.decision.to_dict(),
             }
+
+    if use_sandbox:
+        try:
+            from sandbox_runner import get_sandbox, run_in_sandbox
+
+            sandbox = get_sandbox(cwd)
+            if sandbox is not None and sandbox.mode == "docker":
+                return run_in_sandbox(sandbox, command, timeout_seconds=timeout_seconds)
+        except ImportError:
+            pass  # sandbox_runner unavailable — behave exactly as before
 
     env = os.environ.copy()
     env["CI"] = "1"
@@ -2178,6 +2430,8 @@ def build_pr_draft(
     changed_files: list[dict[str, Any]],
     validation_report: dict[str, Any],
     evaluation: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
 ) -> dict[str, Any]:
     title = issue.get("title") or "GitFlick agent patch"
     if not title.lower().startswith("fix"):
@@ -2223,7 +2477,11 @@ def build_pr_draft(
     )
     body = body.strip()
     if caveman_enabled():
+        original_len = len(body)
         body = compress_pr_body(body)
+        token_savings.record_savings(
+            "agent_ops", "pr_draft", original_len, len(body), run_id=run_id, project_id=project_id
+        )
     return {"title": title, "body": body}
 
 
@@ -2234,6 +2492,8 @@ def build_pr_readable(
     validation_report: dict[str, Any],
     evaluation: dict[str, Any],
     change_intent: dict[str, Any],
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
 ) -> dict[str, Any]:
     title = issue.get("title") or "GitFlick agent patch"
     if not title.lower().startswith("fix"):
@@ -2289,9 +2549,15 @@ def build_pr_readable(
 
     if caveman_enabled():
         compressible_kinds = {"summary", "strategy", "risk", "confidence", "notes"}
+        original_total = sum(len(s["body"]) for s in sections if s["kind"] in compressible_kinds)
         for section in sections:
             if section["kind"] in compressible_kinds:
                 section["body"] = compress_prose(section["body"])
+        compressed_total = sum(len(s["body"]) for s in sections if s["kind"] in compressible_kinds)
+        token_savings.record_savings(
+            "agent_ops", "pr_readable", original_total, compressed_total,
+            run_id=run_id, project_id=project_id,
+        )
 
     sensitive_files = [f["path"] for f in changed_files if f.get("sensitive")]
     checklist = [

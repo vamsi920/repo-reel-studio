@@ -30,6 +30,9 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CODEGRAPH_BRIDGE_PATH = path.join(__dirname, "codegraph_bridge.py");
+const GRAPHIFY_BRIDGE_PATH = path.join(__dirname, "graphify_bridge.py");
+const GRAPHIFY_QUERY_PATH = path.join(__dirname, "graphify_query.py");
+const DEFAULT_GRAPHIFY_QUERY_TIMEOUT_MS = Number(process.env.GRAPHIFY_QUERY_TIMEOUT_MS || 60_000);
 
 
 const app = express();
@@ -44,6 +47,11 @@ const DEFAULT_GITHUB_API_TIMEOUT_MS = Number(process.env.INGEST_GITHUB_API_TIMEO
 const DEFAULT_GITHUB_INGEST_TIMEOUT_MS = Number(process.env.INGEST_GITHUB_INGEST_TIMEOUT_MS || 90_000);
 const DEFAULT_GITHUB_BLOB_BATCH_SIZE = Number(process.env.INGEST_GITHUB_BLOB_BATCH_SIZE || 12);
 const DEFAULT_PYTHON_CODEGRAPH_TIMEOUT_MS = Number(process.env.INGEST_PYTHON_CODEGRAPH_TIMEOUT_MS || 45_000);
+// USE_GRAPHIFY defaults on so ingest builds + persists graphify-out for
+// path/explain. Set USE_GRAPHIFY=false to skip. Always falls back to
+// buildCodeGraph(chunks) on any graphify failure -- see call sites below.
+const USE_GRAPHIFY = process.env.USE_GRAPHIFY !== "false";
+const DEFAULT_GRAPHIFY_TIMEOUT_MS = Number(process.env.INGEST_GRAPHIFY_TIMEOUT_MS || 60_000);
 const GITHUB_API_BASE = "https://api.github.com";
 const MAX_DIAGNOSTIC_SAMPLES = 5;
 
@@ -193,6 +201,80 @@ app.get("/api/health", async (_req, res) => {
   }
 
   return res.status(200).json(buildProxyIngestionHealth(base, upstream, agentReachable));
+});
+
+/** Spawn graphify_query.py and parse its JSON stdout (always soft-fails to available:false). */
+async function runGraphifyQuery(args, timeoutMs = DEFAULT_GRAPHIFY_QUERY_TIMEOUT_MS) {
+  const pythonCandidates = [process.env.PYTHON_BIN, "python3", "python"].filter(Boolean);
+  let lastError = null;
+  for (const pythonBin of pythonCandidates) {
+    try {
+      const { stdout } = await execFileAsync(
+        pythonBin,
+        [GRAPHIFY_QUERY_PATH, ...args],
+        {
+          cwd: __dirname,
+          timeout: timeoutMs,
+          maxBuffer: 4 * 1024 * 1024,
+        }
+      );
+      if (!stdout?.trim()) {
+        return { available: false, reason: "graphify_query returned empty output" };
+      }
+      return JSON.parse(stdout);
+    } catch (error) {
+      lastError = error;
+      // Soft-fail path: graphify_query prints JSON even on errors to stdout; try parse stderr/stdout
+      const raw = error?.stdout || error?.stderr || "";
+      if (typeof raw === "string" && raw.trim().startsWith("{")) {
+        try {
+          return JSON.parse(raw.trim().split("\n").pop());
+        } catch {
+          /* continue */
+        }
+      }
+    }
+  }
+  return {
+    available: false,
+    reason: lastError?.message || "graphify_query failed",
+  };
+}
+
+app.get("/api/graph/status", async (req, res) => {
+  const projectId = typeof req.query.projectId === "string" ? req.query.projectId.trim() : "";
+  if (!projectId) {
+    return res.status(400).json({ ready: false, reason: "projectId is required" });
+  }
+  const result = await runGraphifyQuery(["status", projectId]);
+  return res.status(200).json(result);
+});
+
+app.post("/api/graph/explain", async (req, res) => {
+  const projectId = typeof req.body?.projectId === "string" ? req.body.projectId.trim() : "";
+  const label = typeof req.body?.label === "string" ? req.body.label.trim() : "";
+  if (!projectId || !label) {
+    return res.status(400).json({
+      available: false,
+      reason: "projectId and label are required",
+    });
+  }
+  const result = await runGraphifyQuery(["explain", projectId, label]);
+  return res.status(200).json(result);
+});
+
+app.post("/api/graph/path", async (req, res) => {
+  const projectId = typeof req.body?.projectId === "string" ? req.body.projectId.trim() : "";
+  const from = typeof req.body?.from === "string" ? req.body.from.trim() : "";
+  const to = typeof req.body?.to === "string" ? req.body.to.trim() : "";
+  if (!projectId || !from || !to) {
+    return res.status(400).json({
+      available: false,
+      reason: "projectId, from, and to are required",
+    });
+  }
+  const result = await runGraphifyQuery(["path", projectId, from, to]);
+  return res.status(200).json(result);
 });
 
 /** Read runs written by Python `server/agent_runs.py` (same `server/.agent-runs` layout). */
@@ -1311,6 +1393,88 @@ async function runPythonCodegraph(chunks) {
   return null;
 }
 
+async function stageAllFilesForGraphify(chunks) {
+  const files = parseChunksToFiles(chunks);
+  if (files.length === 0) {
+    return null;
+  }
+
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "repo-graphify-"));
+  let stagedCount = 0;
+  for (const file of files) {
+    const safeRelativePath = sanitizeRelativePath(file.filePath);
+    if (!safeRelativePath) continue;
+    const targetPath = path.join(tempDir, safeRelativePath);
+    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.promises.writeFile(targetPath, file.content, "utf8");
+    stagedCount += 1;
+  }
+
+  if (stagedCount === 0) {
+    await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    return null;
+  }
+
+  return { tempDir, stagedCount };
+}
+
+// Runs `graphify extract --code-only` via server/graphify_bridge.py and
+// returns an already-adapted GitNexusGraphData object (see that file's
+// module docstring for the real graph.json schema this maps from -- it
+// diverges from Graphify's own README, verified by running the tool).
+// Full replacement for buildCodeGraph's output, not an overlay merge like
+// the xnuinside/codegraph Python path above.
+// When projectId is set, also persists graphify-out for later path/explain.
+async function runGraphify(chunks, repoName = "", projectId = null) {
+  const staged = await stageAllFilesForGraphify(chunks);
+  if (!staged) return null;
+
+  const pythonCandidates = [process.env.PYTHON_BIN, "python3", "python"].filter(Boolean);
+  let lastError = null;
+
+  try {
+    for (const pythonBin of pythonCandidates) {
+      try {
+        const args = [
+          GRAPHIFY_BRIDGE_PATH,
+          staged.tempDir,
+          "--repo-name",
+          repoName,
+          "--timeout",
+          String(Math.floor(DEFAULT_GRAPHIFY_TIMEOUT_MS / 1000)),
+        ];
+        if (projectId) {
+          args.push("--persist-project-id", String(projectId));
+        }
+        const { stdout } = await execFileAsync(pythonBin, args, {
+          cwd: __dirname,
+          timeout: DEFAULT_GRAPHIFY_TIMEOUT_MS,
+          maxBuffer: 20 * 1024 * 1024,
+        });
+        if (!stdout?.trim()) {
+          throw new Error("Graphify bridge returned an empty payload");
+        }
+        const parsed = JSON.parse(stdout);
+        const graphifyWorkspace = parsed.graphifyWorkspace || null;
+        if (parsed.graphifyWorkspace) {
+          delete parsed.graphifyWorkspace;
+        }
+        parsed._graphifyWorkspace = graphifyWorkspace;
+        return parsed;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  } finally {
+    await fs.promises.rm(staged.tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+  return null;
+}
+
 
 app.post("/api/ingest", async (req, res) => {
   let tempDir;
@@ -1566,9 +1730,32 @@ app.post("/api/ingest", async (req, res) => {
 
       // ── Code Graph RAG analysis ──────────────────────────────────────────────
       let graphData = null;
+      let graphifyWorkspace = null;
       try {
         const t0Graph = Date.now();
-        graphData = buildCodeGraph(chunks);
+        if (USE_GRAPHIFY) {
+          try {
+            graphData = await runGraphify(chunks, repoRaw || repoUrl || "", projectId);
+            if (graphData) {
+              graphifyWorkspace = graphData._graphifyWorkspace || null;
+              delete graphData._graphifyWorkspace;
+              console.log(JSON.stringify({
+                event: "graphify_indexed",
+                projectId: projectId ?? null,
+                durationMs: Date.now() - t0Graph,
+                graphifyReady: Boolean(graphifyWorkspace?.ready),
+                stats: { nodes: graphData.nodes?.length || 0, edges: graphData.edges?.length || 0, clusters: graphData.clusters?.length || 0 },
+                message: `graphify: ${graphData.nodes?.length || 0} nodes, ${graphData.edges?.length || 0} edges, ${graphData.clusters?.length || 0} communities`,
+              }));
+            }
+          } catch (graphifyErr) {
+            console.warn(`⚠️  [graphify] extraction failed, falling back to code-graph-rag (non-fatal):`, graphifyErr.message);
+            graphData = null;
+          }
+        }
+        if (!graphData) {
+          graphData = buildCodeGraph(chunks);
+        }
         const baseGraphDurationMs = Date.now() - t0Graph;
         const hasPythonFiles = parseChunksToFiles(chunks).some(
           (file) => path.extname(file.filePath).toLowerCase() === ".py"
@@ -1651,6 +1838,7 @@ app.post("/api/ingest", async (req, res) => {
         committedAt: ingestResult.committedAt || null,
         graphData,  // null if skipped/failed, enhanced graph object otherwise
         projectId: projectId ?? null,
+        graphifyWorkspace: graphifyWorkspace ?? null,
       });
     } catch (error) {
       console.error("Ingestion error:", error);
@@ -1835,9 +2023,28 @@ app.post("/api/ingest-folder", async (req, res) => {
 
     // Build Code Graph RAG
     let graphData = null;
+    let graphifyWorkspace = null;
     try {
       const t0Graph = Date.now();
-      graphData = buildCodeGraph(chunks);
+      if (USE_GRAPHIFY) {
+        try {
+          graphData = await runGraphify(chunks, name, projectId);
+          if (graphData) {
+            graphifyWorkspace = graphData._graphifyWorkspace || null;
+            delete graphData._graphifyWorkspace;
+            console.log(
+              `✓ graphify (folder): ${graphData.nodes?.length || 0} nodes, ${graphData.edges?.length || 0} edges, ${graphData.clusters?.length || 0} communities` +
+              (graphifyWorkspace?.ready ? " (workspace persisted)" : "")
+            );
+          }
+        } catch (graphifyErr) {
+          console.warn(`⚠️ [graphify] folder extraction failed, falling back to code-graph-rag (non-fatal):`, graphifyErr.message);
+          graphData = null;
+        }
+      }
+      if (!graphData) {
+        graphData = buildCodeGraph(chunks);
+      }
       const graphDurationMs = Date.now() - t0Graph;
       const hasPythonFiles = parseChunksToFiles(chunks).some(
         (file) => path.extname(file.filePath).toLowerCase() === ".py"
@@ -1883,6 +2090,7 @@ app.post("/api/ingest-folder", async (req, res) => {
       committedAt: null,
       graphData,
       projectId: projectId ?? null,
+      graphifyWorkspace: graphifyWorkspace ?? null,
     });
   } catch (error) {
     console.error("Folder upload error:", error);

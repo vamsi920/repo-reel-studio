@@ -50,7 +50,18 @@ def try_legacy_executor(
     issue: dict[str, Any],
     *,
     context_hints: Optional[dict[str, Any]] = None,
+    run_id: Optional[str] = None,
+    project_id: Optional[str] = None,
 ) -> Any:
+    """Legacy (non-OpenDevin) executor. When a linked AgentRun record is available
+    (run_id resolves via read_run) and PROACTIVE_DEEP_LOOP is enabled, this drives
+    the same Research → Brainstorm → Patch → Test-loop → Verify pipeline the manual
+    Agent Ops executor uses (agent_runs.run_deep_work_pipeline) instead of a single
+    build_change_set/apply/validate pass — so autonomously-discovered proactive
+    candidates get the same ranked multi-approach retry as manually-created runs.
+    Falls back to the original single-pass flow when the deep loop is disabled,
+    unavailable (no run_id/no linked run), or produces no attempt with a patch.
+    """
     from opendevin_runner import OpenDevinResult
 
     result = OpenDevinResult()
@@ -68,42 +79,73 @@ def try_legacy_executor(
         from agent_runs import (
             apply_change_set,
             build_change_set,
+            build_change_intent,
             build_execution_plan,
+            build_pr_draft,
+            build_pr_readable,
             build_quality_gates,
+            build_test_matrix,
             collect_changed_files,
             collect_diff_stat,
             collect_patch,
             collect_repo_context,
             evaluate_run,
             execute_validations,
+            read_run,
+            run_deep_work_pipeline,
             self_critique_patch,
         )
 
         repo_context = collect_repo_context(workspace, issue, context_hints or {})
-        plan = build_execution_plan(issue, repo_context)
+        plan = build_execution_plan(issue, repo_context, run_id=run_id, project_id=project_id)
         result.plan = plan
 
-        change_set = build_change_set(issue, repo_context, plan)
-        if change_set.get("blocked"):
-            result.error = str(change_set.get("reason") or "Legacy executor blocked by missing context.")
-            result.success = False
-            return result
+        run = read_run(run_id) if run_id else None
+        deep = run_deep_work_pipeline(run_id, issue, workspace, repo_context, plan, run) if run else None
 
-        apply_change_set(workspace, change_set)
-        patch_text = collect_patch(workspace)
+        if deep and deep.get("chosen") and str((deep["chosen"]).get("patch") or "").strip():
+            chosen = deep["chosen"]
+            patch_text = chosen["patch"]
+            changed_files = chosen["changedFiles"]
+            validation_report = chosen["validation"]
+            result.journey = deep.get("journey")
+            result.pr_ready = bool(deep.get("prReady"))
+        else:
+            change_set = build_change_set(issue, repo_context, plan, run_id=run_id, project_id=project_id)
+            if change_set.get("blocked"):
+                result.error = str(change_set.get("reason") or "Legacy executor blocked by missing context.")
+                result.success = False
+                return result
+
+            apply_change_set(workspace, change_set)
+            patch_text = collect_patch(workspace)
+            if not patch_text.strip():
+                result.error = "Legacy executor completed without producing a patch."
+                result.success = False
+                return result
+
+            changed_files = collect_changed_files(workspace)
+            validation_report = execute_validations(workspace)
+
         result.patch = patch_text
-        if not patch_text.strip():
-            result.error = "Legacy executor completed without producing a patch."
-            result.success = False
-            return result
-
         result.diff_stat = collect_diff_stat(workspace)
-        result.changed_files = collect_changed_files(workspace)
-        validation_report = execute_validations(workspace)
+        result.changed_files = changed_files
         result.validation = validation_report
-        critique_result = self_critique_patch(issue, plan, result.changed_files, patch_text, validation_report)
-        result.evaluation = evaluate_run(result.changed_files, validation_report, [])
-        result.quality_gates = build_quality_gates(validation_report, result.changed_files, result.evaluation)
+        critique_result = self_critique_patch(
+            issue, plan, changed_files, patch_text, validation_report, run_id=run_id, project_id=project_id,
+        )
+        result.evaluation = evaluate_run(changed_files, validation_report, (run or {}).get("timeline", []))
+        result.quality_gates = build_quality_gates(validation_report, changed_files, result.evaluation)
+        result.test_matrix = build_test_matrix(validation_report, changed_files)
+        change_intent = build_change_intent(issue, plan, changed_files, critique_result)
+        result.change_intent = change_intent
+        result.pr_draft = build_pr_draft(
+            issue, plan, changed_files, validation_report, result.evaluation, run_id=run_id, project_id=project_id,
+        )
+        result.pr_readable = build_pr_readable(
+            issue, plan, changed_files, validation_report, result.evaluation, change_intent,
+            run_id=run_id, project_id=project_id,
+        )
         result.success = True
         return result
     except Exception as exc:

@@ -20,8 +20,19 @@ import {
   buildCodegraphQuestionContext,
   getCodegraphRelatedFiles,
 } from "@/lib/upstreamCodegraph";
+import {
+  detectGraphIntent,
+  fetchGraphExplain,
+  fetchGraphPath,
+  graphResultToTraceSteps,
+  type GraphExplainResult,
+  type GraphPathResult,
+  type GraphSubgraph,
+} from "@/lib/graphifyQuery";
 import { type LaymanBriefMode } from "@/lib/laymanCompressionCore";
 import { compressForPromptWithPolicy } from "@/lib/laymanCompressionPolicy";
+import { buildMemoryContextBlock } from "@/lib/projectMemory";
+import { getCachedResponse, setCachedResponse } from "@/lib/llmCache";
 import type {
   GitNexusGraphData,
   RepoContextCapsule,
@@ -78,6 +89,8 @@ export interface RepoAnswerTraceStep {
   label: string;
   summary: string;
   source_refs: SourceRef[];
+  /** Present when the hop came from graphify path/explain. */
+  confidence?: string;
 }
 
 export interface RepoAnswerFinding {
@@ -108,6 +121,10 @@ export interface RepoInvestigationAnswer {
     file_paths: string[];
   }>;
   focused_files: string[];
+  /** Raw graphify CLI-style text when path/explain succeeded. */
+  graphify_text?: string | null;
+  graphify_kind?: "path" | "explain" | null;
+  graph_subgraph?: GraphSubgraph | null;
 }
 
 interface RepoInvestigatorArgs {
@@ -116,6 +133,8 @@ interface RepoInvestigatorArgs {
   repoContent?: string;
   graphData?: GitNexusGraphData | null;
   manifest?: VideoManifest | null;
+  /** When set, accumulated per-project memory is injected into the prompt. */
+  projectId?: string | null;
 }
 
 export type RepoMemoryContextCompressionResult = {
@@ -709,6 +728,8 @@ const buildPrompt = ({
   capsules,
   readingPaths,
   codegraphContext,
+  projectMemoryContext,
+  graphifyContext,
 }: {
   repoName: string;
   question: string;
@@ -717,6 +738,8 @@ const buildPrompt = ({
   capsules: RepoContextCapsule[];
   readingPaths: RepoKnowledgeGraph["reading_paths"];
   codegraphContext?: ReturnType<typeof buildCodegraphQuestionContext>;
+  projectMemoryContext?: string;
+  graphifyContext?: string;
 }) => {
   const capsuleContext = capsules
     .map(
@@ -803,11 +826,14 @@ Return ONLY valid JSON:
   "follow_ups": ["next narrow repo question", "next narrow repo question"]
 }
 
-Knowledge graph context:
+${projectMemoryContext ? `${projectMemoryContext}\n\n` : ""}Knowledge graph context:
 ${capsuleContext || "No capsule context."}
 
 Reading paths:
 ${pathContext || "No reading paths."}
+
+Graphify path/explain (verified hops — do not invent hops beyond this):
+${graphifyContext || "No graphify path/explain result for this question."}
 
 Python dependency graph context:
 Modules:
@@ -827,6 +853,7 @@ const buildFallbackAnswer = ({
   capsules,
   readingPaths,
   codegraphContext,
+  graphifyResult,
 }: {
   question: string;
   mode: RepoQuestionMode;
@@ -834,6 +861,7 @@ const buildFallbackAnswer = ({
   capsules: RepoContextCapsule[];
   readingPaths: RepoKnowledgeGraph["reading_paths"];
   codegraphContext?: ReturnType<typeof buildCodegraphQuestionContext>;
+  graphifyResult?: GraphPathResult | GraphExplainResult | null;
 }): RepoInvestigationAnswer => {
   const topEvidence = evidence.slice(0, 4);
   const topCapsule = capsules[0];
@@ -849,6 +877,20 @@ const buildFallbackAnswer = ({
   ).slice(0, 6);
   const primaryFile = focusedFiles[0];
   const supportingFiles = focusedFiles.filter((filePath) => filePath !== primaryFile);
+
+  const graphTraceSteps: RepoAnswerTraceStep[] = graphResultToTraceSteps(
+    graphifyResult || { available: false }
+  ).map((step) => ({
+    label: step.label,
+    summary: step.summary,
+    source_refs: topEvidence[0] ? [topEvidence[0].source_ref] : [],
+    confidence: step.confidence,
+  }));
+
+  const graphifyKind =
+    graphifyResult?.available && graphifyResult.kind ? graphifyResult.kind : null;
+  const graphifyText = graphifyResult?.available ? graphifyResult.text || null : null;
+  const graphSubgraph = graphifyResult?.available ? graphifyResult.subgraph || null : null;
 
   return {
     question,
@@ -867,12 +909,21 @@ const buildFallbackAnswer = ({
       supportingFiles,
       codegraphSummary,
     }),
-    confidence: evidence.length >= 8 ? "high" : evidence.length >= 4 ? "medium" : "low",
-    trace_steps: topEvidence.slice(0, 3).map((item, index) => ({
-      label: `Step ${index + 1}`,
-      summary: buildTraceSummary(item, mode, index),
-      source_refs: [item.source_ref],
-    })),
+    confidence: graphifyResult?.available
+      ? "high"
+      : evidence.length >= 8
+        ? "high"
+        : evidence.length >= 4
+          ? "medium"
+          : "low",
+    trace_steps:
+      graphTraceSteps.length > 0
+        ? graphTraceSteps.slice(0, 5)
+        : topEvidence.slice(0, 3).map((item, index) => ({
+            label: `Step ${index + 1}`,
+            summary: buildTraceSummary(item, mode, index),
+            source_refs: [item.source_ref],
+          })),
     findings: topEvidence.slice(0, 2).map((item, index) => ({
       title: buildFindingTitle(mode, index),
       detail: buildFindingDetail(item, mode, index),
@@ -898,6 +949,9 @@ const buildFallbackAnswer = ({
       file_paths: path.file_paths,
     })),
     focused_files: focusedFiles,
+    graphify_text: graphifyText,
+    graphify_kind: graphifyKind,
+    graph_subgraph: graphSubgraph,
   };
 };
 
@@ -925,6 +979,7 @@ export const investigateRepoQuestion = async ({
   repoContent,
   graphData,
   manifest,
+  projectId,
 }: RepoInvestigatorArgs): Promise<RepoInvestigationAnswer> => {
   const trimmedQuestion = question.trim();
   if (!trimmedQuestion) {
@@ -942,6 +997,27 @@ export const investigateRepoQuestion = async ({
   const tokens = tokenize(trimmedQuestion);
   const mode = detectMode(trimmedQuestion);
   const codegraphContext = buildCodegraphQuestionContext(graphData, tokens, mode);
+
+  // Optional graphify path/explain against the persisted project workspace.
+  let graphifyResult: GraphPathResult | GraphExplainResult | null = null;
+  if (projectId) {
+    const intent = detectGraphIntent(trimmedQuestion);
+    if (intent?.kind === "path") {
+      try {
+        graphifyResult = await fetchGraphPath(projectId, intent.from, intent.to);
+        if (!graphifyResult.available) graphifyResult = null;
+      } catch {
+        graphifyResult = null;
+      }
+    } else if (intent?.kind === "explain") {
+      try {
+        graphifyResult = await fetchGraphExplain(projectId, intent.label);
+        if (!graphifyResult.available) graphifyResult = null;
+      } catch {
+        graphifyResult = null;
+      }
+    }
+  }
 
   const scoredCapsules = getTutorialCapsules(knowledgeGraph)
     .map((capsule) => ({
@@ -1057,6 +1133,7 @@ export const investigateRepoQuestion = async ({
     capsules: selectedCapsules,
     readingPaths: fallbackReadingPaths,
     codegraphContext,
+    graphifyResult,
   });
 
   if (!GEMINI_API_KEY) {
@@ -1071,10 +1148,17 @@ export const investigateRepoQuestion = async ({
     capsules: selectedCapsules,
     readingPaths: fallbackReadingPaths,
     codegraphContext,
+    projectMemoryContext: projectId
+      ? buildMemoryContextBlock(projectId, { maxChars: 2500 })
+      : "",
+    graphifyContext: graphifyResult?.available ? graphifyResult.text || "" : "",
   });
 
   try {
-    const raw = await requestGemini(prompt);
+    const cacheContext = `repo-qa:${repoName}:${mode}`;
+    const cached = await getCachedResponse(GEMINI_MODEL, prompt, cacheContext);
+    const raw = cached ?? (await requestGemini(prompt));
+    if (!cached) void setCachedResponse(GEMINI_MODEL, prompt, cacheContext, raw);
     const parsed = parseGeminiJson<RawAnswerPayload>(raw);
 
     const traceSteps = (parsed.trace_steps || [])
@@ -1114,11 +1198,16 @@ export const investigateRepoQuestion = async ({
     const weakPayload =
       isWeakAnswerText(parsed.verdict) ||
       isWeakAnswerText(parsed.answer) ||
-      (traceSteps.length === 0 && findings.length === 0);
+      (traceSteps.length === 0 && findings.length === 0 && !graphifyResult?.available);
 
     if (weakPayload) {
       return baselineAnswer;
     }
+
+    const graphTracePreferred =
+      baselineAnswer.graphify_kind && baselineAnswer.trace_steps.length > 0
+        ? baselineAnswer.trace_steps
+        : null;
 
     return {
       question: trimmedQuestion,
@@ -1127,7 +1216,7 @@ export const investigateRepoQuestion = async ({
       answer: parsed.answer?.trim() || baselineAnswer.answer,
       confidence: parsed.confidence || baselineAnswer.confidence,
       findings: findings.length > 0 ? findings : baselineAnswer.findings,
-      trace_steps: traceSteps.length > 0 ? traceSteps : baselineAnswer.trace_steps,
+      trace_steps: graphTracePreferred || (traceSteps.length > 0 ? traceSteps : baselineAnswer.trace_steps),
       follow_ups: nextFollowUps.length > 0 ? nextFollowUps : baselineAnswer.follow_ups,
       evidence: evidenceItems,
       capsules: selectedCapsules.slice(0, 4).map((capsule) => ({
@@ -1141,6 +1230,9 @@ export const investigateRepoQuestion = async ({
         file_paths: path.file_paths,
       })),
       focused_files: mergedFocusedFiles,
+      graphify_text: baselineAnswer.graphify_text,
+      graphify_kind: baselineAnswer.graphify_kind,
+      graph_subgraph: baselineAnswer.graph_subgraph,
     };
   } catch (error) {
     console.warn("Repo investigation fell back to deterministic answer", error);
@@ -1180,6 +1272,10 @@ export const buildRepoQuestionSuggestions = (
     busyEntity
       ? `What does ${busyEntity.name} in ${humanizeFileLabel(busyEntity.modulePath)} actually control?`
       : "",
+    busyEntity && dependencyAnchor
+      ? `How does ${busyEntity.name} connect to ${humanizeFileLabel(dependencyAnchor)}?`
+      : "",
+    busyEntity ? `Explain ${busyEntity.name}` : "",
     flow
       ? `Explain ${flow} in plain English and show the proving files.`
       : "Which files matter most if I want the architecture quickly?",

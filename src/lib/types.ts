@@ -408,6 +408,10 @@ export interface CodegraphRawNode {
   startLine?: number;
   endLine?: number;
   weight?: number;
+  // Community id (from GitNexusNode.cluster, e.g. Graphify's Leiden
+  // community detection). Optional/additive -- absent for graphs built
+  // without clustering (regex-based builders, older cached data).
+  community?: string;
 }
 
 export interface CodegraphRawLink {
@@ -484,7 +488,7 @@ export interface CodegraphArtifacts {
 }
 
 export interface CodegraphEngineData {
-  engine: "xnuinside-codegraph";
+  engine: "xnuinside-codegraph" | "graphify";
   source?: "upstream" | "gitnexus-fallback";
   generatedAt: string;
   graph: {

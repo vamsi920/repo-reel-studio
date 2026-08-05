@@ -343,6 +343,18 @@ const link = g.append("g")
     .attr("class", d => `link link-${d.type}`)
     .attr("marker-end", d => `url(#arrow-${d.type})`);
 
+// Community color scale (e.g. Graphify's Leiden community detection, via
+// GitNexusNode.cluster -> CodegraphRawNode.community). Additive: nodes
+// without a community keep their existing type-based fill/stroke from
+// styles.css untouched -- this only overrides stroke color, so the
+// module/entity/external shape distinction stays intact.
+const communityIds = Array.from(
+    new Set(graphData.nodes.map(n => n.community).filter(Boolean))
+);
+const communityColor = communityIds.length > 0
+    ? d3.scaleOrdinal(d3.schemeTableau10).domain(communityIds)
+    : null;
+
 // Create nodes
 const node = g.append("g")
     .selectAll("g")
@@ -357,6 +369,7 @@ const node = g.append("g")
 // Add shapes based on node type with size based on lines of code
 node.each(function(d) {
     const el = d3.select(this);
+    const communityStroke = communityColor && d.community ? communityColor(d.community) : null;
     if (d.type === "module") {
         const size = getNodeSize(d, 26);
         const shellSize = size + 12;
@@ -382,6 +395,10 @@ node.each(function(d) {
             .attr("x", -accentWidth / 2)
             .attr("y", -size / 2 + 7)
             .attr("rx", 999);
+        if (communityStroke) {
+            el.select(".node-module").style("stroke", communityStroke).style("stroke-width", "2.2px");
+            el.select(".node-module-accent").style("fill", communityStroke);
+        }
     } else if (d.type === "entity") {
         const r = getNodeSize(d, 8);
         el.append("circle")
@@ -393,6 +410,10 @@ node.each(function(d) {
         el.append("circle")
             .attr("class", "node-entity node-shape")
             .attr("r", r);
+        if (communityStroke) {
+            el.select(".node-entity").style("stroke", communityStroke).style("stroke-width", "2px");
+            el.select(".node-entity-ring").style("stroke", communityStroke);
+        }
     } else {
         el.append("circle")
             .attr("class", "node-external-ring node-shape")
@@ -864,10 +885,12 @@ function clearHighlight() {
 
     node.classed('dimmed', false)
         .classed('highlighted', false)
-        .classed('highlighted-main', false);
+        .classed('highlighted-main', false)
+        .classed('path-node', false);
 
     link.classed('dimmed', false)
-        .classed('highlighted', false);
+        .classed('highlighted', false)
+        .classed('path-edge', false);
 
     labels.classed('dimmed', false);
 
@@ -876,6 +899,65 @@ function clearHighlight() {
     searchClear.classList.remove('visible');
     hideAutocomplete();
 }
+
+// Highlight a multi-node path (from graphify path/explain). Matches labels or ids.
+function highlightPath(nodeLabels, edgePairs) {
+    const labelsSet = new Set((nodeLabels || []).map((value) => String(value).toLowerCase()));
+    const matchingIds = new Set(
+        graphData.nodes
+            .filter((candidate) => {
+                const label = String(candidate.label || candidate.id || "").toLowerCase();
+                const id = String(candidate.id || "").toLowerCase();
+                return labelsSet.has(label) || labelsSet.has(id);
+            })
+            .map((candidate) => candidate.id)
+    );
+
+    if (matchingIds.size === 0) {
+        clearHighlight();
+        return;
+    }
+
+    const edgeKeySet = new Set(
+        (edgePairs || []).map((edge) => {
+            const from = String(edge.from || "").toLowerCase();
+            const to = String(edge.to || "").toLowerCase();
+            return `${from}=>${to}`;
+        })
+    );
+
+    node.classed('dimmed', (d) => !matchingIds.has(d.id))
+        .classed('highlighted', false)
+        .classed('highlighted-main', (d) => matchingIds.has(d.id))
+        .classed('path-node', (d) => matchingIds.has(d.id));
+
+    link.classed('dimmed', (d) => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        return !(matchingIds.has(sourceId) && matchingIds.has(targetId));
+    })
+    .classed('highlighted', (d) => {
+        const source = typeof d.source === 'object' ? d.source : graphData.nodes.find((n) => n.id === d.source);
+        const target = typeof d.target === 'object' ? d.target : graphData.nodes.find((n) => n.id === d.target);
+        if (!source || !target) return false;
+        if (!(matchingIds.has(source.id) && matchingIds.has(target.id))) return false;
+        if (edgeKeySet.size === 0) return true;
+        const a = String(source.label || source.id).toLowerCase();
+        const b = String(target.label || target.id).toLowerCase();
+        return edgeKeySet.has(`${a}=>${b}`) || edgeKeySet.has(`${b}=>${a}`);
+    })
+    .classed('path-edge', function(d) {
+        return d3.select(this).classed('highlighted');
+    });
+
+    labels.classed('dimmed', (d) => !matchingIds.has(d.id));
+
+    highlightText.textContent = `Path highlight: ${matchingIds.size} node(s)`;
+    highlightInfo.classList.add('visible');
+}
+
+window.highlightPath = highlightPath;
+window.clearHighlight = clearHighlight;
 
 // Filter nodes based on search query
 function filterNodes(query) {

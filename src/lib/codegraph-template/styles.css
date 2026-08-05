@@ -879,6 +879,21 @@ svg {
     filter: drop-shadow(0 0 8px rgba(47, 95, 214, 0.22));
 }
 
+.node.path-node .node-module,
+.node.path-node .node-entity,
+.node.path-node .node-external {
+    stroke: #34d399;
+    stroke-width: 2.5px;
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.55));
+}
+
+.link.path-edge {
+    stroke: #34d399 !important;
+    stroke-opacity: 1;
+    stroke-width: 2.5px;
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.45));
+}
+
 ::-webkit-scrollbar {
     width: 7px;
     height: 7px;

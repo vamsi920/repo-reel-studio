@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Boxes,
   Download,
@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button";
 import { buildCodegraphSrcDoc } from "@/lib/codegraphFrame";
 import { getCodegraphData } from "@/lib/upstreamCodegraph";
 import type { CodegraphCsvRow, GitNexusGraphData, GitNexusNode } from "@/lib/types";
+import type { GraphSubgraph } from "@/lib/graphifyQuery";
 
 interface GraphExplorerProps {
   graphData: GitNexusGraphData;
   activeFilePath?: string;
   onNodeClick?: (node: GitNexusNode) => void;
+  /** Path subgraph from Repo Q&A graphify path/explain. */
+  highlightPath?: GraphSubgraph | null;
 }
 
 const serializeCsv = (rows: CodegraphCsvRow[]) => {
@@ -47,6 +50,7 @@ export default function GraphExplorer({
   graphData,
   activeFilePath,
   onNodeClick,
+  highlightPath = null,
 }: GraphExplorerProps) {
   const codegraph = getCodegraphData(graphData);
   const isFallbackGraph = codegraph?.source === "gitnexus-fallback";
@@ -54,6 +58,7 @@ export default function GraphExplorer({
     () => (codegraph ? buildCodegraphSrcDoc(codegraph) : ""),
     [codegraph]
   );
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [selectedNode, setSelectedNode] = useState<{
     label: string;
     nodeType: string;
@@ -93,6 +98,27 @@ export default function GraphExplorer({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [fileNodeLookup, onNodeClick]);
+
+  const postHighlight = () => {
+    const frame = iframeRef.current?.contentWindow;
+    if (!frame) return;
+    if (highlightPath?.nodeLabels?.length) {
+      frame.postMessage(
+        {
+          type: "highlightPath",
+          nodeLabels: highlightPath.nodeLabels,
+          edges: highlightPath.edges || [],
+        },
+        "*"
+      );
+    } else {
+      frame.postMessage({ type: "clearHighlight" }, "*");
+    }
+  };
+
+  useEffect(() => {
+    postHighlight();
+  }, [highlightPath, srcDoc]);
 
   if (codegraph) {
     return (
@@ -185,10 +211,12 @@ export default function GraphExplorer({
         <div className="p-6">
           <div className="overflow-hidden rounded-[22px] bg-card border border-border shadow-sm">
             <iframe
+              ref={iframeRef}
               title="Interactive codegraph"
               srcDoc={srcDoc}
               sandbox="allow-scripts allow-same-origin"
               className="h-[960px] w-full border-0"
+              onLoad={postHighlight}
             />
           </div>
           <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">

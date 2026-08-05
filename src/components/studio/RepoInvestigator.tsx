@@ -6,6 +6,7 @@ import {
   FileSearch,
   Loader2,
   MessageSquare,
+  Network,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,10 @@ import {
   type RepoInvestigationAnswer,
 } from "@/lib/repoInvestigator";
 import { getCodegraphData } from "@/lib/upstreamCodegraph";
+import type { GraphSubgraph } from "@/lib/graphifyQuery";
 import type { GitNexusGraphData, SourceRef, VideoManifest } from "@/lib/types";
+import { recordProjectMemory } from "@/lib/projectMemory";
+import { runSmeReview } from "@/lib/smeAgent";
 
 interface RepoInvestigatorProps {
   repoName: string;
@@ -23,6 +27,12 @@ interface RepoInvestigatorProps {
   manifest: VideoManifest | null;
   graphData: GitNexusGraphData | null;
   onFocusFile?: (filePath: string) => void;
+  /** Enables per-project memory + SME fact-checking of answers. */
+  projectId?: string | null;
+  /** Fired when a graphify path/explain subgraph is available. */
+  onGraphPathHighlight?: (subgraph: GraphSubgraph | null) => void;
+  /** Switch Studio to the Graph tab with the current path highlight. */
+  onShowInGraph?: () => void;
 }
 
 const modeStyles: Record<string, string> = {
@@ -82,6 +92,9 @@ export default function RepoInvestigator({
   manifest,
   graphData,
   onFocusFile,
+  projectId,
+  onGraphPathHighlight,
+  onShowInGraph,
 }: RepoInvestigatorProps) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<RepoInvestigationAnswer | null>(null);
@@ -129,13 +142,31 @@ export default function RepoInvestigator({
         repoContent,
         manifest,
         graphData,
+        projectId,
       });
+
+      if (projectId) {
+        // Remember the exchange so future steps inherit it, and let the SME
+        // agent fact-check the answer in the background.
+        recordProjectMemory(projectId, {
+          kind: "qa",
+          source: "repo-qa",
+          content: `Q: ${result.question} — A: ${result.answer}`,
+        });
+        void runSmeReview({
+          projectId,
+          step: "repo-qa",
+          label: "Q&A answer",
+          content: `Question: ${result.question}\nAnswer: ${result.answer}\nVerdict: ${result.verdict}`,
+        });
+      }
 
       setAnswer(result);
       setHistory((current) =>
         [result, ...current.filter((entry) => entry.question !== result.question)].slice(0, 8)
       );
       setQuestion("");
+      onGraphPathHighlight?.(result.graph_subgraph ?? null);
     } catch (investigationError) {
       setError(
         investigationError instanceof Error
@@ -190,6 +221,14 @@ export default function RepoInvestigator({
                       expanded={index === conversation.length - 1}
                       onAsk={handleAsk}
                       onFocusFile={onFocusFile}
+                      onShowInGraph={
+                        entry.graph_subgraph?.nodeLabels?.length
+                          ? () => {
+                              onGraphPathHighlight?.(entry.graph_subgraph ?? null);
+                              onShowInGraph?.();
+                            }
+                          : undefined
+                      }
                     />
                   </div>
                 ))}
@@ -407,21 +446,35 @@ function UserMessage({ question }: { question: string }) {
   );
 }
 
+function confidenceChipClass(confidence?: string) {
+  const value = (confidence || "").toUpperCase();
+  if (value === "EXTRACTED") {
+    return "bg-emerald-500/15 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.28)]";
+  }
+  if (value === "INFERRED") {
+    return "bg-amber-500/15 text-amber-700 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.28)]";
+  }
+  return "bg-muted text-muted-foreground";
+}
+
 function AssistantMessage({
   answer,
   expanded,
   onAsk,
   onFocusFile,
+  onShowInGraph,
 }: {
   answer: RepoInvestigationAnswer;
   expanded: boolean;
   onAsk: (question: string) => void;
   onFocusFile?: (filePath: string) => void;
+  onShowInGraph?: () => void;
 }) {
   const paragraphs = toParagraphs(answer.answer);
   const visibleFindings = expanded ? answer.findings.slice(0, 3) : answer.findings.slice(0, 1);
-  const visibleTrace = expanded ? answer.trace_steps.slice(0, 3) : answer.trace_steps.slice(0, 1);
+  const visibleTrace = expanded ? answer.trace_steps.slice(0, 8) : answer.trace_steps.slice(0, 3);
   const visibleFiles = expanded ? answer.focused_files.slice(0, 5) : answer.focused_files.slice(0, 3);
+  const graphifyText = answer.graphify_text?.trim() || "";
 
   return (
     <div className="flex gap-4">
@@ -440,6 +493,11 @@ function AssistantMessage({
           >
             {titleCase(answer.confidence)} confidence
           </Pill>
+          {answer.graphify_kind ? (
+            <Pill className="bg-emerald-500/10 text-emerald-700 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.16)]">
+              graphify {answer.graphify_kind}
+            </Pill>
+          ) : null}
         </div>
 
         <div className="rounded-[24px] rounded-tl-[10px] bg-card border border-border p-5 shadow-sm">
@@ -451,16 +509,54 @@ function AssistantMessage({
             ))}
           </div>
 
+          {graphifyText ? (
+            <div className="mt-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <SectionLabel>
+                  {answer.graphify_kind === "explain" ? "Graphify explain" : "Graphify path"}
+                </SectionLabel>
+                {onShowInGraph ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 rounded-full px-3 text-xs"
+                    onClick={onShowInGraph}
+                  >
+                    <Network className="h-3.5 w-3.5" />
+                    Show in graph
+                  </Button>
+                ) : null}
+              </div>
+              <pre className="overflow-x-auto rounded-[16px] bg-[#0b1220] px-4 py-3 font-mono text-[12px] leading-6 text-emerald-300/95 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.18)]">
+                {graphifyText}
+              </pre>
+            </div>
+          ) : null}
+
           {visibleTrace.length > 0 ? (
             <div className="mt-5">
               <SectionLabel>Trace</SectionLabel>
               <div className="mt-3 space-y-3">
-                {visibleTrace.map((step, index) => (
+                {visibleTrace.map((step, index) => {
+                  const hopConfidence =
+                    (step as { confidence?: string }).confidence ||
+                    (/\b(EXTRACTED|INFERRED)\b/i.exec(step.summary || "")?.[1] ?? "");
+                  return (
                   <div
                     key={`${step.label}-${index}`}
                     className="rounded-[18px] bg-muted p-4"
                   >
-                    <div className="text-sm font-semibold text-foreground">{step.label}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-sm font-semibold text-foreground">{step.label}</div>
+                      {hopConfidence ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${confidenceChipClass(hopConfidence)}`}
+                        >
+                          {hopConfidence}
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.summary}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {step.source_refs.slice(0, 3).map((ref) => (
@@ -472,7 +568,8 @@ function AssistantMessage({
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : null}
