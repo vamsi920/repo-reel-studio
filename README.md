@@ -1,112 +1,144 @@
-# NeoDevEx
+<a name="readme-top"></a>
 
-Repo to Reel
+<div align="center">
+  <img src="https://assets.openhands.dev/logo-whitebackground.png" alt="OpenHands logo" width="340">
+  <h1 align="center" style="border-bottom: none">Agent Canvas</h1>
+  <p align="center">
+    <strong>The self-hosted developer control center for coding agents and automations.</strong>
+  </p>
+  <p align="center">
+    Run OpenHands, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
+  </p>
+</div>
+<div align="center">
+  <a href="https://github.com/OpenHands/incubator-program"><img src="https://img.shields.io/badge/status-beta-blue?style=for-the-badge" alt="Project status beta"></a>
+  <a href="https://github.com/OpenHands/OpenHands/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/OpenHands/OpenHands/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
+  <a href="https://www.npmjs.com/package/@openhands/agent-canvas"><img src="https://img.shields.io/npm/v/%40openhands%2Fagent-canvas?style=for-the-badge&logo=npm" alt="npm version"></a>
+  <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/backends"><img src="https://img.shields.io/badge/Documentation-000?logo=googledocs&logoColor=FFE165&style=for-the-badge" alt="Documentation"></a>
+  <a href="https://go.openhands.dev/slack"><img src="https://img.shields.io/badge/Slack-Join%20the%20community-611f69?logo=slack&logoColor=white&style=for-the-badge" alt="Join us on Slack"></a>
+</div>
+<div align="center">
+  <a href="#quickstart">Quickstart</a> |
+  <a href="./docs/README.md">Docs</a> |
+  <a href="./docs/SELF_HOSTING.md">Self-Hosting</a> |
+  <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents">ACP Agents</a> |
+  <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations">Automations</a> |
+  <a href="https://go.openhands.dev/slack">Slack</a>
+</div>
+<p align="center">
+  <img src="https://assets.openhands.dev/screenshot/automation-preview.png" alt="Agent Canvas automation preview" width="100%">
+</p>
+<hr>
 
-Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
+OpenHands Agent Canvas turns your coding agents into a self-hosted, always-on engineering team. It's a developer control center for starting conversations and automating everyday tasks — like generating reports that publish to Slack or automatically decomposing GitHub issues into tasks.
 
----
+It runs locally on your machine by default, but can connect to multiple “agent backends”, e.g. running agents in Docker containers, on VMs, or within your company infrastructure. You can optionally choose to run agents on OpenHands Cloud or OpenHands Enterprise infrastructure.
 
-## At a glance
+Agent Canvas runs the open source OpenHands agent out-of-the-box, but can use any third-party agent like Claude Code and Codex.
 
-| Input                     | Output                          | Stack                             | Runs with              |
-| ------------------------- | ------------------------------- | --------------------------------- | ---------------------- |
-| GitHub URL or `user/repo` | Video manifest + studio preview | Vite + React + Remotion + FastAPI | Node 18+ + Python 3.8+ |
+|                                                                                                                      |                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [**Self-host your way**](https://docs.openhands.dev/openhands/usage/agent-canvas/backend-setup/vm)                   | Run agents locally, in Docker, on VMs, or anywhere you can run an agent server backend                                                   |
+| [**Switch between different backends**](https://docs.openhands.dev/openhands/usage/agent-canvas/backends)            | Switch between local, remote, and cloud agents without losing focus                                                                      |
+| [**Create automations**](https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations)               | Create automations and workflows that integrate with Slack, GitHub, Linear, and more. Run on a schedule or in response to webhook events |
+| [**Integrate with the tools you use**](https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations) | Connect your automations with third-party services like Slack, GitHub, Notion, and more to automate workflows                            |
+| [**Bring your own model**](https://docs.openhands.dev/openhands/usage/settings/llm-settings#llm-profiles)            | Use with any LLM                                                                                                                         |
+| [**Use with any agent**](https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents)                         | Use with OpenHands, Claude Code, Codex, Gemini, or any agent with Agent-Client Protocol (ACP).                                           |
 
-### Demo video
+If you have questions or feedback, please open a GitHub issue or join the [#proj-agent-canvas channel in Slack](https://openhands.dev/joinslack).
 
-**[▶ Live demo](https://gitflick.netlify.app/studio?project=4600de3d-947b-4df6-b5fa-1bcf81ac058a)** — See NeoDevEx Studio in action. (Live demo URL still points at the old `gitflick.netlify.app` deployment — update this once the Netlify site itself is renamed.)
+## Quickstart
 
-## What NeoDevEx does
+You can install OpenHands to run agents on any machine: on your laptop, on a dedicated computer like a Mac Mini,
+or on a server in the cloud.
 
-- Ingests a public GitHub repository and builds a structured content map.
-- Generates a scene-by-scene video manifest with Gemini 3.0.
-- Launches a visual Studio to preview, tweak, and export your video assets.
+The most powerful way to run OpenHands is on a server in the cloud. This allows your agents to continue running
+even when your laptop is shut, and makes it easier to trigger your agents through third-party services
+like Slack, GitHub, and Datadog. See [SELF_HOSTING.md](docs/SELF_HOSTING.md) for details, especially with respect to security hardening.
 
-## How it works
+Notably, you can run the backend in _multiple different environments_, and switch between
+them from the same Agent Canvas frontend. E.g. you can share an Agent Server with your team for agents doing
+code review and dependency updates, then have your personal agents running on your laptop.
 
+### Option 1: Without a Sandbox
+
+> [!WARNING]
+> This runs the agent-server directly on the machine you're installing on — the agent will have full access to your filesystem!
+
+**Prerequisites**: Node.js 22.12.x or later, `uv`
+
+```sh
+npm install -g @openhands/agent-canvas
+agent-canvas
 ```
-Paste GitHub URL
-      |
-      v
-Ingestion Server (gitingest)
-      |
-      v
-Gemini 3.0 Manifest Builder
-      |
-      v
-Studio Preview + Export
+
+The `agent-canvas` command starts the full local stack by default. You can also split it when you want to run pieces separately:
+
+```sh
+agent-canvas --frontend-only  # static frontend + ingress only
+agent-canvas --backend-only   # agent server + automation backend + ingress only
 ```
 
-## Quick start
+### Option 2: With a Docker Sandbox
 
-```bash
-# 1. Install dependencies
+**Prerequisites**:
+
+- Docker: Docker Desktop on macOS/Windows, or Docker Engine/Docker Desktop on Linux.
+- A host directory for `PROJECTS_PATH` containing the project folders you want the agent to access. Create it before starting the container.
+
+**macOS / Linux:**
+
+```sh
+export PROJECTS_PATH="$HOME/projects"  # directory containing your project folders
+mkdir -p "$PROJECTS_PATH" "$HOME/.openhands"
+
+docker run -it --rm \
+  -p 8000:8000 \
+  -v "$HOME/.openhands:/home/openhands/.openhands" \
+  -v "${PROJECTS_PATH}:/projects" \
+  ghcr.io/openhands/agent-canvas:1.13.0 # x-release-please-version
+```
+
+**Windows (PowerShell / Windows Terminal):** See [README.windows.md](./README.windows.md) for the equivalent commands.
+
+The agent will be able to access any project under `PROJECTS_PATH`.
+
+### Option 3: From Source
+
+> [!WARNING]
+> This runs the agent-server directly on the machine you're installing on — the agent will have full access to your filesystem!
+
+**Prerequisites**: Node.js 22.12.x or later, `npm`, `uv` (for running the agent server via `uvx`)
+
+```sh
+git clone https://github.com/OpenHands/OpenHands.git
+cd OpenHands
 npm install
-npm run ingest:install
-
-# 2. Configure Gemini
-cp .env.example .env
-# Add GEMINI_API_KEY in .env
-
-# 3. Run everything
-npm start
+npm run dev
 ```
-
-Open http://localhost:8080 and paste a GitHub URL.
-
-## Project structure
-
-```
-repo-reel-studio/
-  server/               # Ingestion API + gitingest
-  src/                  # React UI + Studio
-  public/               # Static assets
-  README.md             # You are here
-```
-
-## Configuration
-
-| Variable         | Description                                 |
-| ---------------- | ------------------------------------------- |
-| `GEMINI_API_KEY` | Gemini API key used for manifest generation |
-
-### Ingestion limits (large repos)
-
-Ingestion **caps how much of the repo** is read so the pipeline stays fast and within memory. That’s why you see many “Skipped Files” on big repos (e.g. ever-co/ever-gauzy).
-
-| Variable                  | Default | Description                          |
-| ------------------------- | ------- | ------------------------------------ |
-| `INGEST_MAX_FILES`        | `120`   | Max number of source files included  |
-| `INGEST_MAX_TOTAL_BYTES`  | `6291456` (6 MB) | Max total bytes of file content |
-| `INGEST_MAX_FILE_BYTES`   | `524288` (512 KB) | Max size per file (larger files skipped) |
-
-To include more of a large repo, set these in `.env` (or server env) and restart the ingestion server, e.g.:
-
-```bash
-INGEST_MAX_FILES=400
-INGEST_MAX_TOTAL_BYTES=25165824
-INGEST_MAX_FILE_BYTES=524288
-```
-
-(25 MB total example; increase further if the server has enough memory.)
-
-## API surface (ingestion)
-
-- `POST /api/ingest` with JSON body: `{ "repoUrl": "https://github.com/user/repo" }`
-- Response: `{ summary, tree, content, repoUrl }`
-
-## Troubleshooting
-
-- Missing repository URL: ensure the URL is public and formatted as `github.com/user/repo`.
-- Private repos: not yet supported without tokens.
-- Timeouts on large repos: try smaller repos first, then scale up.
-- Code-Graph-RAG failing: Ensure Memgraph is running, and that you followed the **[Operators & Debugging Runbook](docs/CODE_GRAPH_RAG_SETUP.md#10-operators--debugging-runbook)**!
-
-## Notes
-
-- Phase 1 uses [gitingest](https://github.com/coderamp-labs/gitingest) for ingestion.
-- Phase 2 uses Gemini 3.0 to synthesize the video manifest.
 
 ---
 
-NeoDevEx: Repo to Reel.
+Access the UI at [http://localhost:8000](http://localhost:8000) for the npm/source launchers, or [http://localhost:8000/canvas](http://localhost:8000/canvas) for the Docker image. You can add additional backends directly from the UI.
+
+# Architecture
+
+Agent Canvas is powered by the [OpenHands Agent Server](https://github.com/OpenHands/software-agent-sdk/tree/main/openhands-agent-server/openhands/agent_server), a REST API for running multiple agents on a single machine. Each Agent Server runs on a single host/port; the Agent Canvas can connect to multiple Agent Servers and easily flip between them.
+
+You can run an Agent Server anywhere:
+
+- Directly on your laptop (be careful!)
+- On a dedicated machine like a Mac Mini
+- On a virtual machine in the cloud
+- Inside OpenHands Cloud (our commercial offering)
+
+The Agent Server is often paired with an [Automation Server](https://github.com/OpenHands/automation), which lets you set up agents that run on a schedule or in response to events.
+
+<img width="1456" height="1258" alt="image" src="https://github.com/user-attachments/assets/cb6de6f5-ac30-4d04-a76a-b5c259f0c163" />
+
+## More documentation
+
+- [Documentation index](./docs/README.md)
+- [Architecture overview](./docs/architecture.md)
+- [Development guide](./docs/DEVELOPMENT.md)
+- [Self-hosting guide](./docs/SELF_HOSTING.md)
