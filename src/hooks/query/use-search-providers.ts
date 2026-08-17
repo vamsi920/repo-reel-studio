@@ -21,7 +21,9 @@ export const useSearchProviders = () =>
       // litellm exposes ~150 providers, so any fixed cap silently truncates
       // the picker: `openrouter` sorts past position 100 and disappears.
       const page = await ConfigService.searchProviders({}, verifiedByProvider);
-      return page.items;
+      // Hide the "openhands" provider — its free-tier models are billed and
+      // served through OpenHands' own Cloud, not something this fork offers.
+      return page.items.filter((provider) => provider.name !== "openhands");
     },
     staleTime: VERIFIED_MODELS_STALE_TIME,
     gcTime: VERIFIED_MODELS_GC_TIME,

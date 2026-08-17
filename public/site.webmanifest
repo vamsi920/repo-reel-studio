@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "NeoDevEx",
+    "short_name": "NeoDevEx",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -13,7 +13,7 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
+    "theme_color": "#0b81b7",
+    "background_color": "#EEF2F7",
     "display": "standalone"
 }

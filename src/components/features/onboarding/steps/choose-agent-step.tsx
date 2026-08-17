@@ -77,7 +77,7 @@ function getAgentOptions(): AgentOption[] {
   return [
     {
       id: "openhands",
-      label: "OpenHands",
+      label: "NeoDevEx",
       descriptionKey: I18nKey.ONBOARDING$AGENT_OPENHANDS_DESCRIPTION,
     },
     ...ACP_PROVIDERS.map<AgentOption>((provider) => ({

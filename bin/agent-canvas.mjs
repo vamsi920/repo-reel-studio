@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * CLI entry point for @openhands/agent-canvas
+ * CLI entry point for neodevex
  *
  * Runs the full Agent Canvas stack locally by default:
  * - Agent-server via uvx
@@ -32,7 +32,7 @@ if (args.includes("-v") || args.includes("--version")) {
 if (args.includes("--info")) {
   const { version } = JSON.parse(readFileSync(PKG_JSON, "utf-8"));
   const defaults = JSON.parse(readFileSync(DEFAULTS_JSON, "utf-8"));
-  console.log(`@openhands/agent-canvas ${version}
+  console.log(`neodevex ${version}
 
 Default stack versions:
   agent-server:    ${defaults.versions.agentServer}
@@ -57,13 +57,13 @@ const isBackendOnly = args.includes("--backend-only");
 
 if (args.includes("-h") || args.includes("--help")) {
   console.log(`
-@openhands/agent-canvas - Run the Agent Canvas UI with agent-server
+neodevex - Run the Agent Canvas UI with agent-server
 
 Runs the full stack with agent-server and automation backend via uvx,
 and serves pre-built static frontend assets.
 
 USAGE:
-  npx @openhands/agent-canvas [options]
+  npx neodevex [options]
 
 AUTH MODES:
   By default the server auto-generates an API key that is injected into
@@ -96,28 +96,28 @@ not environment variables.
 
 EXAMPLES:
   # Start full stack (local mode, auto-generated key)
-  npx @openhands/agent-canvas
+  npx neodevex
 
   # Pin a specific key (local mode, key auto-injected into frontend)
-  LOCAL_BACKEND_API_KEY=my-key npx @openhands/agent-canvas
+  LOCAL_BACKEND_API_KEY=my-key npx neodevex
 
   # Public mode — users must enter the API key in the browser
-  LOCAL_BACKEND_API_KEY=my-secret npx @openhands/agent-canvas --public
+  LOCAL_BACKEND_API_KEY=my-secret npx neodevex --public
 
   # Use a specific port
-  npx @openhands/agent-canvas --port 3000
+  npx neodevex --port 3000
 
   # Start only the static frontend behind ingress
-  npx @openhands/agent-canvas --frontend-only
+  npx neodevex --frontend-only
 
   # Start only the agent-server and automation backend behind ingress
-  npx @openhands/agent-canvas --backend-only
+  npx neodevex --backend-only
 
   # Show default stack versions and ports
-  npx @openhands/agent-canvas --info
+  npx neodevex --info
 
   # Use local SDK checkout for development
-  OH_AGENT_SERVER_LOCAL_PATH=/path/to/sdk npx @openhands/agent-canvas
+  OH_AGENT_SERVER_LOCAL_PATH=/path/to/sdk npx neodevex
 `);
   process.exit(0);
 }
@@ -153,7 +153,7 @@ try {
   ({ main } = await import("../scripts/dev-with-automation.mjs"));
 } catch (err) {
   console.error("Failed to load required scripts. Try reinstalling:");
-  console.error("  npm install -g @openhands/agent-canvas@latest");
+  console.error("  npm install -g neodevex@latest");
   console.error(`\nError: ${err.message}`);
   process.exit(1);
 }

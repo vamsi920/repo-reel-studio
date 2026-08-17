@@ -2363,7 +2363,7 @@
     "ca": "Selecciona un perfil LLM per a aquest agent."
   },
   "SETTINGS$AGENT_PROFILE_NO_LLM": {
-    "en": "Create an LLM profile first to define an NeoDevEx agent.",
+    "en": "Create an LLM profile first to define a NeoDevEx agent.",
     "ja": "NeoDevExエージェントを定義するには、まずLLMプロファイルを作成してください。",
     "zh-CN": "请先创建一个LLM配置文件以定义NeoDevEx代理。",
     "zh-TW": "請先建立一個LLM設定檔以定義NeoDevEx代理。",
@@ -12002,7 +12002,7 @@
     "ca": "Feu clic aquí per obtenir instruccions"
   },
   "SETTINGS$NEED_OPENHANDS_ACCOUNT": {
-    "en": "Need an NeoDevEx Account?",
+    "en": "Need a NeoDevEx Account?",
     "ja": "NeoDevExアカウントが必要ですか？",
     "zh-CN": "需要NeoDevEx账户？",
     "zh-TW": "需要NeoDevEx帳戶？",
@@ -20825,7 +20825,7 @@
     "ca": "No s'han pogut obtenir les habilitats. Torneu-ho a intentar més tard."
   },
   "TIPS$SETUP_SCRIPT": {
-    "en": "You can add .openhands/setup.sh to your repository to automatically run a setup script every time you start an NeoDevEx conversation.",
+    "en": "You can add .openhands/setup.sh to your repository to automatically run a setup script every time you start a NeoDevEx conversation.",
     "ja": "NeoDevExの会話を開始するたびに自動的にセットアップスクリプトを実行するために、.openhands/setup.shをリポジトリに追加できます。",
     "zh-CN": "您可以将.openhands/setup.sh添加到您的仓库中，以便在每次启动NeoDevEx对话时自动运行设置脚本。",
     "zh-TW": "您可以將.openhands/setup.sh添加到您的倉庫中，以便在每次啟動NeoDevEx對話時自動運行設置腳本。",

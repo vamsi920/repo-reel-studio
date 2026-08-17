@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Forked as **NeoDevEx** from OpenHands' Agent Canvas. See [UPSTREAM.md](./UPSTREAM.md)
+  for what changed. Entries below this point are inherited upstream history.
+
 ## [1.0.0-alpha.2] - 2025-05-11
 
 ### Added

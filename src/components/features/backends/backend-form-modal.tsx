@@ -35,7 +35,6 @@ import {
   modalTitleLgMediumClassName,
 } from "#/utils/modal-classes";
 import ExternalLinkIcon from "#/icons/external-link.svg?react";
-import ServerIcon from "#/icons/server.svg?react";
 import { getBackendStatusLabel } from "./backend-status-label";
 import { BackendStatusDot } from "./backend-status-dot";
 import { DeviceFlowAuth } from "./device-flow-auth";
@@ -1101,71 +1100,6 @@ function CloudLoginColumn({
   );
 }
 
-interface BackendOptionTabProps {
-  value: AddBackendOption;
-  selectedValue: AddBackendOption;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onSelect: (value: AddBackendOption) => void;
-  panelId: string;
-  testId: string;
-}
-
-/**
- * Presents a connection-method tab: icon, title, and a one-line subtitle.
- *
- * The shared tablist owns the outer border, so these buttons meet cleanly at
- * the center. Selection uses a bottom bar instead of recoloring the full
- * outline, preserving the group as one visual control.
- */
-function BackendOptionTab({
-  value,
-  selectedValue,
-  title,
-  description,
-  icon,
-  onSelect,
-  panelId,
-  testId,
-}: BackendOptionTabProps) {
-  const isSelected = value === selectedValue;
-  const tabId = `${testId}-tab`;
-
-  return (
-    <button
-      id={tabId}
-      type="button"
-      role="tab"
-      aria-selected={isSelected}
-      aria-controls={panelId}
-      data-testid={testId}
-      onClick={() => onSelect(value)}
-      className={cn(
-        "relative flex min-h-16 w-full cursor-pointer items-center gap-3 px-3 py-3 text-left transition-colors",
-        "first:border-r first:border-r-[var(--oh-border)]",
-        "focus-visible:z-10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-300",
-        isSelected
-          ? "bg-[var(--oh-surface-raised)] text-white after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary"
-          : "text-[var(--oh-muted)] hover:bg-[var(--oh-surface-raised)] hover:text-white",
-      )}
-    >
-      <span
-        className="flex size-8 shrink-0 items-center justify-center"
-        aria-hidden
-      >
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-xs leading-tight text-[var(--oh-muted)]">
-          {description}
-        </span>
-      </span>
-    </button>
-  );
-}
-
 interface AnimatedPanelHeightProps {
   children: React.ReactNode;
 }
@@ -1354,57 +1288,23 @@ function AddBackendChooser({
   source: BackendAddedSource;
 }) {
   const { t } = useTranslation("openhands");
-  const [selectedOption, setSelectedOption] =
-    React.useState<AddBackendOption>("cloud");
+  // The "cloud" option (login to OpenHands' real hosted Cloud service) is
+  // intentionally not offered — this fork is local-agent-server-only, so
+  // there's nothing to choose between. Kept as internal state/type (rather
+  // than deleting AddBackendOption/BackendOptionTab) since a locked-cloud
+  // deployment still reaches CloudLoginColumn via a different path in
+  // AddBackendConnectionOptions below.
+  const [selectedOption] = React.useState<AddBackendOption>("agent-server");
   const [agentServerLocation, setAgentServerLocation] =
     React.useState<AgentServerLocation>("local");
   const panelId = "add-backend-selected-panel";
-  const selectedTabId = `add-backend-option-${selectedOption}-tab`;
-  const isCloudSelected = selectedOption === "cloud";
+  const isCloudSelected: boolean = selectedOption === "cloud";
 
   return (
     <div data-testid="add-backend-chooser" className="flex flex-col">
-      <div
-        role="tablist"
-        aria-label={t(I18nKey.BACKEND$CHOOSER_TITLE)}
-        className="grid grid-cols-2 overflow-hidden rounded-lg border border-[var(--oh-border)]"
-      >
-        <BackendOptionTab
-          value="cloud"
-          selectedValue={selectedOption}
-          title={t(I18nKey.BACKEND$CLOUD_TITLE)}
-          description={t(I18nKey.BACKEND$CLOUD_OPTION_DESCRIPTION)}
-          icon={
-            <OpenHandsLogoWhite
-              width={32}
-              height={32}
-              data-testid="add-backend-option-cloud-logo"
-            />
-          }
-          onSelect={setSelectedOption}
-          panelId={panelId}
-          testId="add-backend-option-cloud"
-        />
-        <BackendOptionTab
-          value="agent-server"
-          selectedValue={selectedOption}
-          title={t(I18nKey.BACKEND$AGENT_SERVER_TITLE)}
-          description={t(I18nKey.BACKEND$AGENT_SERVER_OPTION_DESCRIPTION)}
-          icon={<ServerIcon className="size-6" />}
-          onSelect={setSelectedOption}
-          panelId={panelId}
-          testId="add-backend-option-agent-server"
-        />
-      </div>
-
       <div className="mt-6">
         <AnimatedPanelHeight>
-          <section
-            id={panelId}
-            role="tabpanel"
-            aria-labelledby={selectedTabId}
-            className="min-w-0"
-          >
+          <section id={panelId} className="min-w-0">
             {isCloudSelected ? (
               /* Padding keeps the CTA and Advanced host field from hugging the
                  border; when Advanced expands the panel grows with the content
