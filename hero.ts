@@ -11,7 +11,7 @@ export default heroui({
   themes: {
     dark: {
       colors: {
-        primary: "#4465DB",
+        primary: "#0B81B7", // NeoDevEx cyan-blue
 
         // Map HeroUI's zinc-based semantic colours to our cool-grey palette.
         // This ensures every HeroUI component that uses bg-default, bg-content*,

@@ -64,12 +64,13 @@
 
 :root {
   color-scheme: dark;
-  --oh-color-primary: #c9b974;
-  --oh-color-logo: #cfb755;
+  /* NeoDevEx brand — cyan-blue/teal, replacing OpenHands' default gold */
+  --oh-color-primary: #0b81b7;
+  --oh-color-logo: #0b81b7;
   --oh-color-base: var(--cool-grey-950);
   --oh-color-base-secondary: var(--cool-grey-925);
-  --oh-color-danger: #e76a5e;
-  --oh-color-success: #a5e75e;
+  --oh-color-danger: #d32222;
+  --oh-color-success: #188c42;
   --oh-color-basic: var(--cool-grey-400);
   --oh-color-tertiary: var(--cool-grey-800);
   --oh-color-tertiary-light: var(--cool-grey-300);
@@ -97,13 +98,13 @@
   --oh-scrollbar-hover: color-mix(in srgb, var(--cool-grey-400) 50%, transparent);
   --oh-default: var(--cool-grey-800);
   --oh-default-foreground: var(--cool-grey-100);
-  --oh-accent: #c9b974;
+  --oh-accent: #27867d;
   --oh-accent-foreground: var(--cool-grey-950);
-  --oh-success: #a5e75e;
+  --oh-success: #188c42;
   --oh-success-foreground: var(--cool-grey-950);
-  --oh-warning: #c9b974;
+  --oh-warning: #db7706;
   --oh-warning-foreground: var(--cool-grey-950);
-  --oh-danger: #e76a5e;
+  --oh-danger: #d32222;
   --oh-danger-foreground: var(--cool-grey-50);
   --oh-segment: var(--cool-grey-925);
   --oh-segment-foreground: var(--cool-grey-100);

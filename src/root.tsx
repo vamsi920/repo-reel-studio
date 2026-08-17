@@ -46,6 +46,7 @@ import { AgentServerUIRoot } from "#/components/providers";
 import { TelemetryConsentBanner } from "#/components/features/analytics/telemetry-consent-banner";
 import { buildAgentCanvasPath } from "#/utils/base-path";
 import { useOnboardingCompletion } from "#/components/features/onboarding/use-onboarding-completion";
+import { useSeedGeminiDefaultProfile } from "#/hooks/use-seed-gemini-default-profile";
 import { NavigationProvider } from "#/context/navigation-context";
 import {
   applyColorTheme,
@@ -222,7 +223,7 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "OpenHands" },
+  { title: "NeoDevEx" },
   { name: "description", content: "Let's Start Building!" },
 ];
 
@@ -262,6 +263,10 @@ export default function App() {
     isSameCloudHost(active.backend.host, lockedCloudHost);
   const { isCompleted: onboardingCompleted, markCompleted } =
     useOnboardingCompletion();
+  // Always mounted (unlike root-layout, which first-run onboarding gates
+  // out): seed a default Gemini profile from VITE_GEMINI_API_KEY so a real
+  // LLM is active before/regardless of the onboarding wizard's own choices.
+  useSeedGeminiDefaultProfile();
 
   // In locked-to-Cloud mode the `openhands-onboarded` localStorage flag is
   // not trustworthy: it may have been set during a previous non-locked
