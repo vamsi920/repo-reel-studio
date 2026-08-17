@@ -263,12 +263,32 @@ export function buildLocalStatusSummary({
 }
 
 export function createProactiveLocalStore({ storeRoot, readRunFromDisk, nowIso = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z") }) {
-  function proactiveScopeKey(repoUrl, projectId = null) {
+  function legacyScopeKey(repoUrl, projectId = null) {
     const raw = `${normalizeProactiveRepoUrl(repoUrl)}::${String(projectId || "").trim()}`;
     return createHash("sha256").update(raw).digest("hex").slice(0, 24);
   }
 
+  function proactiveScopeKey(repoUrl, projectId = null) {
+    const pid = String(projectId || "").trim();
+    const raw = pid ? `project::${pid}` : `${normalizeProactiveRepoUrl(repoUrl)}::`;
+    return createHash("sha256").update(raw).digest("hex").slice(0, 24);
+  }
+
+  function migrateLegacyScope(repoUrl, projectId = null) {
+    const pid = String(projectId || "").trim();
+    if (!pid) return;
+    const current = path.join(storeRoot, proactiveScopeKey(repoUrl, projectId));
+    const legacy = path.join(storeRoot, legacyScopeKey(repoUrl, projectId));
+    if (fs.existsSync(current) || !fs.existsSync(legacy)) return;
+    try {
+      fs.renameSync(legacy, current);
+    } catch {
+      // ignore migration failures — fresh scope will be created
+    }
+  }
+
   function proactiveScopeRoot(repoUrl, projectId = null) {
+    migrateLegacyScope(repoUrl, projectId);
     return path.join(storeRoot, proactiveScopeKey(repoUrl, projectId));
   }
 

@@ -45,7 +45,7 @@ export const DemoMockup = () => {
                 <div className="h-3 w-3 rounded-full bg-emerald-400/80" />
               </div>
               <div className="ml-3 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                workspace/gitflick/review
+                workspace/neodevex/review
               </div>
             </div>
 
@@ -116,7 +116,7 @@ export const DemoMockup = () => {
                 The output is a review surface, not just a rendered clip
               </h2>
               <p className="mt-4 text-base leading-8 text-slate-600">
-                GitFlick keeps the video artifact inside a broader workspace so teams can move from
+                NeoDevEx keeps the video artifact inside a broader workspace so teams can move from
                 walkthrough to structure, questions, and issue operations without starting over.
               </p>
             </div>

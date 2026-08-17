@@ -10,7 +10,8 @@ import {
   runsHaveActiveWork,
 } from "@/components/studio/agent-ops/shared/agentOpsListEquality";
 import { toast } from "@/hooks/use-toast";
-import { resolveAgentBackendAttention } from "@/lib/agentOpsAttention";
+import { resolveAgentBackendAttention, resolveProactiveBackendAttention } from "@/lib/agentOpsAttention";
+import { recordProjectMemory } from "@/lib/projectMemory";
 import {
   approveAgentRun,
   cancelAgentRun,
@@ -208,6 +209,13 @@ export function useAgentRunsLane({
         setIssueUrl(url);
         setApproveBranch(run.approval.branchName ?? "");
         toast({ title: "Run started", description: `Tracking ${run.id.slice(0, 8)}` });
+        if (projectId) {
+          recordProjectMemory(projectId, {
+            kind: "event",
+            source: "agent-ops",
+            content: `Agent run started for issue ${url} (run ${run.id.slice(0, 8)}).`,
+          });
+        }
         return run;
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Failed to start run");

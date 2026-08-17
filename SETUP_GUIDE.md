@@ -1,4 +1,4 @@
-# GitFlick Studio - Setup Guide
+# NeoDevEx Studio - Setup Guide
 
 ## Quick Start
 

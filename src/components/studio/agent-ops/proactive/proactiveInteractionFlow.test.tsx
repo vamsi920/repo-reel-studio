@@ -119,6 +119,10 @@ describe("proactive interaction flow", () => {
       ],
     });
     vi.mocked(proactiveApi.updateProactiveConfig).mockResolvedValue(enabledStatus.config);
+    vi.mocked(proactiveApi.dispatchProactiveDaily).mockResolvedValue({
+      ...enabledStatus,
+      dispatchStatus: "complete",
+    });
     vi.mocked(proactiveApi.getProactiveStatus)
       .mockResolvedValueOnce(makeProactiveStatus({ ready: 0, candidates: [] }))
       .mockResolvedValue(enabledStatus);
@@ -136,6 +140,7 @@ describe("proactive interaction flow", () => {
       projectId: "proj-1",
       enabled: true,
     });
+    expect(proactiveApi.dispatchProactiveDaily).toHaveBeenCalled();
     await waitFor(() => {
       expect(result.current.proactiveStatus?.candidates).toHaveLength(2);
     });

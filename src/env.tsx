@@ -12,11 +12,10 @@ export const GEMINI_MODEL =
 export const GEMINI_API_BASE =
   "https://generativelanguage.googleapis.com/v1beta";
 
-// Google Cloud TTS Configuration
-export const GOOGLE_TTS_API_KEY = import.meta.env.VITE_GOOGLE_TTS_API_KEY || "";
-export const GOOGLE_TTS_ENABLED = Boolean(
-  import.meta.env.VITE_GOOGLE_TTS_API_KEY
-);
+// Google Cloud TTS is proxy-only. Never expose a cloud credential to browser code.
+// The server reads GOOGLE_TTS_API_KEY; the client only receives this feature flag.
+export const GOOGLE_TTS_ENABLED =
+  import.meta.env.VITE_GOOGLE_TTS_ENABLED === "true";
 
 // API Configuration - normalize: strip trailing slash to avoid //api/ingest
 const raw = import.meta.env.VITE_API_URL || "/api";

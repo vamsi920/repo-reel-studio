@@ -20,7 +20,7 @@ const ENTRY_PATTERNS = [
 ];
 
 const TEST_FILE_RE = /(^|\/)(__tests__|tests?|spec|e2e)\//i;
-const TEST_NAME_RE = /(?:^|\/)(?:test_.*|.*(?:_test|_spec)|.*\.(?:test|spec|e2e))\.[^.\/]+$/i;
+const TEST_NAME_RE = /(?:^|\/)(?:test_.*|.*(?:_test|_spec)|.*\.(?:test|spec|e2e))\.[^./]+$/i;
 const DOC_RE = /(^|\/)(readme|docs?|guide|overview|architecture|contributing|changelog)/i;
 const CONFIG_RE = /(^|\/)(\.env|.*config|settings|vite\.config|tailwind\.config|dockerfile|docker-compose|package\.json|tsconfig|eslint|prettier|supabase|auth|ci|workflows?|netlify|vercel|render|\.github)(\/|\.|$)/i;
 const SOURCE_HINT_RE = /(^|\/)(src|lib|app|server|core|pkg|internal|connection|protocol|service|services|components|pages|api)\//i;

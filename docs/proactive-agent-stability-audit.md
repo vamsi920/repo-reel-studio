@@ -437,7 +437,7 @@ Validate: `python3 validate_proactive_sandbox_policy.py`
 
 ## 11.18 Branch naming (pass 21)
 
-`proactive_branch_name.py` builds `gitflick/proactive-{repo}-c{candidate}-r{run}-{slug}` branches (sanitized, ≤64 chars). Materialize seeds `approval.branchName`; PR promotion uses `resolve_approval_branch_name` so manual `branchName` overrides still win.
+`proactive_branch_name.py` builds `neodevex/proactive-{repo}-c{candidate}-r{run}-{slug}` branches (sanitized, ≤64 chars). Materialize seeds `approval.branchName`; PR promotion uses `resolve_approval_branch_name` so manual `branchName` overrides still win.
 
 Validate: `python3 validate_proactive_branch_name.py`
 

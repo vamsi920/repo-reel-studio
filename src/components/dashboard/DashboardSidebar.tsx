@@ -7,6 +7,7 @@ import {
   PlaySquare,
   Settings2,
   User,
+  Zap,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const navItems = [
   { icon: LayoutGrid, label: "Overview", href: "/dashboard" },
   { icon: FolderKanban, label: "Projects", href: "/dashboard" },
   { icon: PlaySquare, label: "Studio", href: "/studio" },
+  { icon: Zap, label: "Token Savings", href: "/token-savings" },
   { icon: User, label: "Profile", href: "/profile" },
   { icon: Settings2, label: "Settings", href: "/profile" },
 ];
@@ -60,11 +62,11 @@ export const DashboardSidebar = ({
         <div className="flex items-center justify-between gap-3">
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(180,197,255,1),rgba(97,139,255,1))] text-[#002469]">
-              <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+              <img src={iconUrl} alt="NeoDevEx" className="h-6 w-6" />
             </div>
             {!collapsed ? (
               <div className="min-w-0">
-                <div className="truncate text-base font-semibold text-sidebar-foreground">GitFlick</div>
+                <div className="truncate text-base font-semibold text-sidebar-foreground">NeoDevEx</div>
                 <div className="truncate text-xs text-muted-foreground">Workspace</div>
               </div>
             ) : null}

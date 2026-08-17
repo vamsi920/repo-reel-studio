@@ -172,7 +172,7 @@ export const HeroSection = () => {
             .
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            Open a repository, let GitFlick process the structure, then continue in Studio with a clean saved workspace.
+            Open a repository, let NeoDevEx process the structure, then continue in Studio with a clean saved workspace.
             Layman-style prompt compression trims setup prose locally with deterministic rules while keeping code, paths, commands,
             and evidence anchors intact.
           </p>

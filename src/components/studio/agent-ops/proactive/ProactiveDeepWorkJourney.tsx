@@ -13,7 +13,10 @@ import {
   Target,
 } from "lucide-react";
 
+import { Bot } from "lucide-react";
+
 import type { ProactiveDeepWorkJourney as Journey } from "@/lib/proactiveAgentOps";
+import { narrateProactiveStage, narrateProactiveVerdict } from "@/lib/agentNarration";
 import { cn } from "@/lib/utils";
 
 const STAGE_ICONS: Record<string, typeof Microscope> = {
@@ -100,6 +103,10 @@ export function ProactiveDeepWorkJourney({ journey, prReady }: ProactiveDeepWork
               />
               <Stat label="Green builds" value={String(greenAttempts)} tone={greenAttempts > 0 ? "good" : "muted"} />
             </div>
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-background/40 px-3 py-2">
+              <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+              <p className="text-xs leading-5 text-foreground/90">{narrateProactiveVerdict(journey)}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -133,7 +140,9 @@ export function ProactiveDeepWorkJourney({ journey, prReady }: ProactiveDeepWork
                   <span className={cn("h-px flex-1", i === journey.stages.length - 1 ? "opacity-0" : "bg-border")} />
                 </div>
                 <div className="mt-2 text-xs font-semibold text-foreground">{stage.label}</div>
-                <div className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">{stage.detail}</div>
+                <div className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+                  {narrateProactiveStage(stage)}
+                </div>
               </li>
             );
           })}

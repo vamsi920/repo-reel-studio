@@ -21,7 +21,23 @@ except ImportError:  # pragma: no cover
 
 _DEFAULT_PROACTIVE_ROOT = Path(__file__).resolve().parent / ".proactive-agent-ops"
 PROACTIVE_ROOT = _DEFAULT_PROACTIVE_ROOT
-STORE_LOCK = threading.RLock()
+
+# Per-scope in-process locks. A single global lock here would mean one repo's
+# multi-minute dispatch (discovery + scoring + executor run, up to
+# PROACTIVE_EXECUTOR_TIMEOUT_SECONDS) blocks every other scope's config/status
+# reads and writes for the lifetime of the process.
+_SCOPE_LOCKS: dict[str, threading.RLock] = {}
+_SCOPE_LOCKS_GUARD = threading.Lock()
+
+
+def _scope_lock(scope_root: Path) -> threading.RLock:
+    key = str(scope_root.resolve())
+    with _SCOPE_LOCKS_GUARD:
+        lock = _SCOPE_LOCKS.get(key)
+        if lock is None:
+            lock = threading.RLock()
+            _SCOPE_LOCKS[key] = lock
+        return lock
 
 _JSON_RECORD_SUFFIX = ".json"
 _SKIP_GLOB_NAMES = {".corrupt", "workspaces"}
@@ -48,9 +64,35 @@ def normalize_repo_url(repo_url: str) -> str:
     return (repo_url or "").strip().rstrip("/")
 
 
-def scope_key(repo_url: str, project_id: Optional[str] = None) -> str:
+def legacy_scope_key(repo_url: str, project_id: Optional[str] = None) -> str:
     raw = f"{normalize_repo_url(repo_url)}::{(project_id or '').strip()}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+
+def scope_key(repo_url: str, project_id: Optional[str] = None) -> str:
+    """Stable scope id — projectId wins when present so repo URL drift cannot reset config."""
+    pid = (project_id or "").strip()
+    if pid:
+        raw = f"project::{pid}"
+    else:
+        raw = f"{normalize_repo_url(repo_url)}::"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+
+def _migrate_legacy_scope(repo_url: str, project_id: Optional[str] = None) -> None:
+    """One-time copy from legacy repoUrl+projectId scope dir to project-scoped dir."""
+    pid = (project_id or "").strip()
+    if not pid:
+        return
+    root = store_root()
+    current = root / scope_key(repo_url, project_id)
+    legacy = root / legacy_scope_key(repo_url, project_id)
+    if current.exists() or not legacy.exists():
+        return
+    try:
+        legacy.rename(current)
+    except OSError:
+        pass
 
 
 def default_config(repo_url: str, project_id: Optional[str] = None) -> dict[str, Any]:
@@ -114,6 +156,7 @@ def _recover_scope_layout(scope_root: Path) -> None:
 
 
 def ensure_scope(repo_url: str, project_id: Optional[str] = None) -> Path:
+    _migrate_legacy_scope(repo_url, project_id)
     root = store_root() / scope_key(repo_url, project_id)
     _recover_scope_layout(root)
     return root
@@ -123,7 +166,7 @@ def ensure_scope(repo_url: str, project_id: Optional[str] = None) -> Path:
 def dispatch_scope_lock(repo_url: str, project_id: Optional[str] = None) -> Iterator[Path]:
     """Serialize dispatch entry for a repo/project scope (in-process + cross-process)."""
     scope = ensure_scope(repo_url, project_id)
-    with STORE_LOCK:
+    with _scope_lock(scope):
         with _scope_file_lock(scope):
             yield scope
 
@@ -175,11 +218,16 @@ def _parse_json_object(raw: str, path: Path) -> Optional[dict[str, Any]]:
 def _read_json(path: Path) -> Optional[dict[str, Any]]:
     if not path.is_file() or not _is_record_json_path(path):
         return None
-    scope_root = _scope_root_for_path(path)
+    # Deliberately lock-free: writers replace files atomically (os.replace in
+    # _write_json), so a concurrent read always sees a fully-old or fully-new
+    # file, never a torn write. Taking the scope lock here would block every
+    # status/candidate read for a scope behind that scope's own in-flight
+    # dispatch (which can run for many minutes) -- exactly the "UI looks
+    # frozen right after enabling proactive" symptom this avoids. Any read
+    # that does land mid-rename on a filesystem without that guarantee falls
+    # back to the existing corrupt-JSON quarantine path below.
     try:
-        with STORE_LOCK:
-            with _scope_file_lock(scope_root):
-                raw = path.read_text(encoding="utf-8")
+        raw = path.read_text(encoding="utf-8")
     except OSError:
         return None
     parsed = _parse_json_object(raw, path)
@@ -199,7 +247,7 @@ def _write_json(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
     serialized = json.dumps(safe_payload, indent=2, sort_keys=True)
     temp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
 
-    with STORE_LOCK:
+    with _scope_lock(scope_root):
         with _scope_file_lock(scope_root):
             fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
             try:

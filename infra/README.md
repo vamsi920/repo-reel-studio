@@ -1,4 +1,4 @@
-# GitFlick AWS infrastructure (Terraform)
+# NeoDevEx AWS infrastructure (Terraform)
 
 Provisions:
 
@@ -30,10 +30,10 @@ terraform apply
 After apply, set real values for SSM parameters (replace `CHANGEME`):
 
 ```bash
-aws ssm put-parameter --name /gitflick/prod/github_token --type SecureString --value "ghp_..." --overwrite
-aws ssm put-parameter --name /gitflick/prod/gemini_api_key --type SecureString --value "..." --overwrite
-aws ssm put-parameter --name /gitflick/prod/google_tts_api_key --type SecureString --value "..." --overwrite
-aws ssm put-parameter --name /gitflick/prod/github_webhook_secret --type SecureString --value "..." --overwrite
+aws ssm put-parameter --name /neodevex/prod/github_token --type SecureString --value "ghp_..." --overwrite
+aws ssm put-parameter --name /neodevex/prod/gemini_api_key --type SecureString --value "..." --overwrite
+aws ssm put-parameter --name /neodevex/prod/google_tts_api_key --type SecureString --value "..." --overwrite
+aws ssm put-parameter --name /neodevex/prod/github_webhook_secret --type SecureString --value "..." --overwrite
 ```
 
 Push container images and deploy ECS services (or use GitHub Actions `deploy-aws.yml`).

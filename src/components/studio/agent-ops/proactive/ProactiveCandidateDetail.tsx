@@ -6,7 +6,7 @@ import { CandidateTypeChip } from "@/components/studio/agent-ops/proactive/Candi
 import { PolicyBanner } from "@/components/studio/agent-ops/proactive/PolicyBanner";
 import { ProactiveCandidateFactStrip } from "@/components/studio/agent-ops/proactive/ProactiveCandidateFactStrip";
 import { ProactiveInspectorTabBar } from "@/components/studio/agent-ops/proactive/ProactiveInspectorTabBar";
-import { ProactiveLiveConsole } from "@/components/studio/agent-ops/proactive/ProactiveLiveConsole";
+import { ProactiveLiveConsole, type ProactiveConsoleMode } from "@/components/studio/agent-ops/proactive/ProactiveLiveConsole";
 import { ProactiveDeepWorkJourney } from "@/components/studio/agent-ops/proactive/ProactiveDeepWorkJourney";
 import {
   proactiveInspectorPanelId,
@@ -41,6 +41,7 @@ export function ProactiveCandidateDetail({
   onRefresh,
 }: ProactiveCandidateDetailProps) {
   const [activeTab, setActiveTab] = useState<ProactiveInspectorTab>("overview");
+  const [consoleMode, setConsoleMode] = useState<ProactiveConsoleMode>("raw");
 
   if (!candidate) {
     return (
@@ -257,7 +258,14 @@ export function ProactiveCandidateDetail({
           </div>
         )}
 
-        {activeTab === "log" && <ProactiveLiveConsole candidate={candidate} batch={batch} />}
+        {activeTab === "log" && (
+          <ProactiveLiveConsole
+            candidate={candidate}
+            batch={batch}
+            mode={consoleMode}
+            onModeChange={setConsoleMode}
+          />
+        )}
       </div>
     </AgentOpsPanel>
   );

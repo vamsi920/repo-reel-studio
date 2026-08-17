@@ -226,7 +226,10 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
     if (!isDiscovering) return;
     
     // Simulate discovery phases
-    const phases = [
+    const phases: Array<{
+      name: "scanning" | "discovering" | "organizing" | "complete";
+      duration: number;
+    }> = [
       { name: "scanning", duration: 2000 },
       { name: "discovering", duration: 3000 },
       { name: "organizing", duration: 2000 },
@@ -242,7 +245,7 @@ export const ConceptDiscovery = ({ concepts, isDiscovering, onComplete }: Props)
     
     const phaseTimer = setInterval(() => {
       if (currentPhaseIndex < phases.length) {
-        setPhase(phases[currentPhaseIndex].name as any);
+        setPhase(phases[currentPhaseIndex].name);
         
         if (phases[currentPhaseIndex].name === "discovering") {
           // Gradually reveal concepts

@@ -75,6 +75,46 @@ STACK_DETECTORS = {
         "build_commands": ["cargo build"],
         "install_command_map": {"cargo": "cargo fetch"},
     },
+    "java-maven": {
+        "indicators": ["pom.xml"],
+        "package_managers": {"pom.xml": "maven"},
+        "test_commands": ["mvn -B test"],
+        "lint_commands": [],
+        "build_commands": [],
+        "install_command_map": {"maven": "mvn -B -q -DskipTests package"},
+    },
+    "java-gradle": {
+        "indicators": ["build.gradle", "build.gradle.kts"],
+        "package_managers": {"build.gradle": "gradle", "build.gradle.kts": "gradle"},
+        "test_commands": ["./gradlew test"],
+        "lint_commands": [],
+        "build_commands": [],
+        "install_command_map": {"gradle": "./gradlew build -x test"},
+    },
+    "ruby": {
+        "indicators": ["Gemfile"],
+        "package_managers": {"Gemfile.lock": "bundler"},
+        "test_commands": ["bundle exec rspec", "bundle exec rake test"],
+        "lint_commands": [],
+        "build_commands": [],
+        "install_command_map": {"bundler": "bundle install"},
+    },
+    "php": {
+        "indicators": ["composer.json"],
+        "package_managers": {"composer.lock": "composer"},
+        "test_commands": ["composer test", "vendor/bin/phpunit"],
+        "lint_commands": [],
+        "build_commands": [],
+        "install_command_map": {"composer": "composer install --no-interaction"},
+    },
+    "dotnet": {
+        "indicators": ["*.csproj", "*.sln", "*.fsproj"],
+        "package_managers": {"packages.lock.json": "dotnet"},
+        "test_commands": ["dotnet test"],
+        "lint_commands": [],
+        "build_commands": [],
+        "install_command_map": {"dotnet": "dotnet restore && dotnet build -c Release"},
+    },
 }
 
 BASE_IMAGES = {
@@ -82,11 +122,121 @@ BASE_IMAGES = {
     "python": "python:3.12-slim",
     "go": "golang:1.22-bookworm",
     "rust": "rust:1.78-slim",
+    "java-maven": "maven:3.9-eclipse-temurin-21",
+    "java-gradle": "gradle:8-jdk21",
+    "ruby": "ruby:3.3-slim",
+    "php": "php:8.3-cli",
+    "dotnet": "mcr.microsoft.com/dotnet/sdk:8.0",
 }
 
 
-def detect_stack(workspace_path: str) -> dict[str, Any]:
-    """Detect languages, package manager, and baseline commands for a repo."""
+def _indicator_exists(ws: Path, indicator: str) -> bool:
+    """Check a stack indicator, which may be a glob pattern (e.g. "*.csproj")."""
+    if "*" in indicator or "?" in indicator:
+        return next(ws.glob(indicator), None) is not None
+    return (ws / indicator).exists()
+
+
+def _strip_jsonc_comments(text: str) -> str:
+    """Strip // and /* */ comments from a JSONC document, respecting string literals."""
+    out: list[str] = []
+    i, n, in_string = 0, len(text), False
+    while i < n:
+        ch = text[i]
+        if in_string:
+            out.append(ch)
+            if ch == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == '"':
+            in_string = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "/":
+            while i < n and text[i] not in "\r\n":
+                i += 1
+            continue
+        if ch == "/" and i + 1 < n and text[i + 1] == "*":
+            i += 2
+            while i + 1 < n and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def parse_devcontainer(workspace_path: str) -> Optional[dict[str, Any]]:
+    """Parse .devcontainer/devcontainer.json if present.
+
+    Only `image` and `postCreateCommand`/`onCreateCommand` are honored today.
+    `build.dockerfile` and `features` are detected but not applied — surfaced
+    via `warnings` so callers can say so instead of silently ignoring them.
+    """
+    ws = Path(workspace_path)
+    for candidate in (ws / ".devcontainer" / "devcontainer.json", ws / ".devcontainer.json"):
+        if not candidate.exists():
+            continue
+        try:
+            data = json.loads(_strip_jsonc_comments(candidate.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(data, dict):
+            return None
+
+        warnings: list[str] = []
+        if isinstance(data.get("build"), dict) and data["build"].get("dockerfile"):
+            warnings.append("devcontainer uses build.dockerfile — detected but not applied")
+        if data.get("features"):
+            warnings.append("devcontainer defines features — detected but not applied")
+
+        install_cmd = data.get("postCreateCommand") or data.get("onCreateCommand")
+        if isinstance(install_cmd, list):
+            install_cmd = " && ".join(str(c) for c in install_cmd)
+
+        return {
+            "source": "devcontainer",
+            "path": str(candidate.relative_to(ws)),
+            "base_image": data.get("image"),
+            "install_command": install_cmd,
+            "warnings": warnings,
+        }
+    return None
+
+
+def load_repo_env_config(workspace_path: str) -> Optional[dict[str, Any]]:
+    """Read a company-committed build recipe from `.neodevex/env.json`, if present.
+
+    Shape: {"install_command": str, "build_commands": [str], "test_commands": [str], "base_image": str}
+    Lets a company adopt the product without waiting on auto-detection to
+    support their stack — they just check in how to build/test themselves.
+    """
+    path = Path(workspace_path) / ".neodevex" / "env.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    return {"source": "repo_config", "path": ".neodevex/env.json", **data}
+
+
+def detect_stack(workspace_path: str, overrides: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """Detect languages, package manager, and baseline commands for a repo.
+
+    Precedence, high to low: explicit `overrides` (project settings) >
+    `.neodevex/env.json` checked into the repo > `.devcontainer/devcontainer.json`
+    > STACK_DETECTORS auto-detection > bare unknown/ubuntu fallback.
+    """
     ws = Path(workspace_path)
     detected: dict[str, Any] = {
         "languages": [],
@@ -98,6 +248,9 @@ def detect_stack(workspace_path: str) -> dict[str, Any]:
         "build_commands": [],
         "has_devcontainer": False,
         "devcontainer_path": None,
+        "devcontainer_warnings": [],
+        "base_image_override": None,
+        "override_source": None,
     }
 
     # Check for devcontainer
@@ -113,7 +266,7 @@ def detect_stack(workspace_path: str) -> dict[str, Any]:
 
     # Detect each language stack
     for lang, config in STACK_DETECTORS.items():
-        has_indicator = any((ws / ind).exists() for ind in config["indicators"])
+        has_indicator = any(_indicator_exists(ws, ind) for ind in config["indicators"])
         if not has_indicator:
             continue
 
@@ -142,13 +295,49 @@ def detect_stack(workspace_path: str) -> dict[str, Any]:
         detected["languages"] = ["unknown"]
         detected["primary_language"] = "unknown"
 
+    # Layer: devcontainer.json (lowest-precedence override)
+    devcontainer = parse_devcontainer(workspace_path)
+    if devcontainer:
+        detected["devcontainer_warnings"] = devcontainer.get("warnings", [])
+        if devcontainer.get("base_image"):
+            detected["base_image_override"] = devcontainer["base_image"]
+            detected["override_source"] = "devcontainer"
+        if devcontainer.get("install_command"):
+            detected["install_command"] = devcontainer["install_command"]
+            detected["override_source"] = "devcontainer"
+
+    # Layer: repo-checked-in config (.neodevex/env.json)
+    repo_config = load_repo_env_config(workspace_path)
+    if repo_config:
+        if repo_config.get("base_image"):
+            detected["base_image_override"] = repo_config["base_image"]
+        if repo_config.get("install_command"):
+            detected["install_command"] = repo_config["install_command"]
+        if repo_config.get("build_commands"):
+            detected["build_commands"] = repo_config["build_commands"]
+        if repo_config.get("test_commands"):
+            detected["test_commands"] = repo_config["test_commands"]
+        detected["override_source"] = "repo_config"
+
+    # Layer: explicit project-level override (highest precedence)
+    if overrides:
+        if overrides.get("base_image"):
+            detected["base_image_override"] = overrides["base_image"]
+        if overrides.get("install_command"):
+            detected["install_command"] = overrides["install_command"]
+        if overrides.get("build_commands"):
+            detected["build_commands"] = overrides["build_commands"]
+        if overrides.get("test_commands"):
+            detected["test_commands"] = overrides["test_commands"]
+        detected["override_source"] = "project_override"
+
     return detected
 
 
 def generate_dockerfile(stack_info: dict[str, Any], workspace_path: str) -> str:
     """Generate a Dockerfile for the detected stack."""
     lang = stack_info.get("primary_language", "unknown")
-    base_image = BASE_IMAGES.get(lang, "ubuntu:22.04")
+    base_image = stack_info.get("base_image_override") or BASE_IMAGES.get(lang, "ubuntu:22.04")
     install_cmd = stack_info.get("install_command", "")
 
     lines = [
@@ -160,8 +349,13 @@ def generate_dockerfile(stack_info: dict[str, Any], workspace_path: str) -> str:
         "",
         "WORKDIR /workspace",
         "",
-        "# Copy dependency files first for layer caching",
     ]
+
+    if lang == "php":
+        lines.append("RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer")
+        lines.append("")
+
+    lines.append("# Copy dependency files first for layer caching")
 
     # Copy lockfiles/manifests for caching
     ws = Path(workspace_path)
@@ -182,6 +376,22 @@ def generate_dockerfile(stack_info: dict[str, Any], workspace_path: str) -> str:
         lines.append("COPY go.mod go.sum ./")
     elif lang == "rust":
         lines.append("COPY Cargo.toml Cargo.lock ./")
+    elif lang == "java-maven":
+        lines.append("COPY pom.xml ./")
+    elif lang == "java-gradle":
+        lines.append("COPY build.gradle* settings.gradle* gradlew ./")
+        if (ws / "gradle").exists():
+            lines.append("COPY gradle ./gradle")
+    elif lang == "ruby":
+        lines.append("COPY Gemfile ./")
+        if (ws / "Gemfile.lock").exists():
+            lines.append("COPY Gemfile.lock ./")
+    elif lang == "php":
+        lines.append("COPY composer.json ./")
+        if (ws / "composer.lock").exists():
+            lines.append("COPY composer.lock ./")
+    elif lang == "dotnet":
+        lines.append("COPY *.csproj *.sln *.fsproj ./")
 
     lines.append("")
 
@@ -214,6 +424,8 @@ def compute_env_fingerprint(workspace_path: str, stack_info: dict[str, Any]) -> 
         "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
         "requirements.txt", "Pipfile.lock", "poetry.lock",
         "go.sum", "Cargo.lock",
+        "pom.xml", "build.gradle", "build.gradle.kts",
+        "Gemfile.lock", "composer.lock", "packages.lock.json",
     ]
     for lf in lockfiles:
         path = ws / lf
@@ -233,13 +445,14 @@ def build_env_image(
     repo_url: str,
     commit_sha: Optional[str] = None,
     force_rebuild: bool = False,
+    project_overrides: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """
     Build and cache a Docker image for the repo environment.
     Returns image metadata including tag, build status, and commands.
     """
     ws = Path(workspace_path)
-    stack_info = detect_stack(workspace_path)
+    stack_info = detect_stack(workspace_path, overrides=project_overrides)
     fingerprint = compute_env_fingerprint(workspace_path, stack_info)
 
     # Generate image tag
@@ -268,15 +481,10 @@ def build_env_image(
             result["built_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             return result
 
-    # Use devcontainer if available
-    if stack_info.get("has_devcontainer"):
-        result["dockerfile_content"] = f"# Using devcontainer: {stack_info['devcontainer_path']}"
-        # In production, use devcontainer CLI to build
-        # For now, fall back to generated Dockerfile
-        dockerfile_content = generate_dockerfile(stack_info, workspace_path)
-    else:
-        dockerfile_content = generate_dockerfile(stack_info, workspace_path)
-
+    # `stack_info` already carries the effective base image/install command —
+    # detect_stack() applies devcontainer.json, .neodevex/env.json, and any
+    # project-level override before we ever get here.
+    dockerfile_content = generate_dockerfile(stack_info, workspace_path)
     result["dockerfile_content"] = dockerfile_content
 
     # Write Dockerfile to a temp location (not in the repo)
@@ -390,13 +598,19 @@ def ensure_agent_ready_environment(
     workspace_path: str,
     commit_sha: Optional[str] = None,
     force_rebuild: bool = False,
+    project_overrides: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """
     Main entry point: detect stack + build/cache env image + save artifacts.
     Call this at the end of ingestion Phase 1.
+
+    `project_overrides` (install_command/build_commands/test_commands/base_image)
+    lets a per-project "Stack & Environment" setting take precedence over
+    everything auto-detected, so a company can adopt this for a stack we
+    don't recognize out of the box.
     """
     # 1. Detect stack
-    stack_info = detect_stack(workspace_path)
+    stack_info = detect_stack(workspace_path, overrides=project_overrides)
 
     # 2. Build/cache Docker image
     image_result = build_env_image(
@@ -405,6 +619,7 @@ def ensure_agent_ready_environment(
         repo_url=repo_url,
         commit_sha=commit_sha,
         force_rebuild=force_rebuild,
+        project_overrides=project_overrides,
     )
 
     # 3. Save artifacts

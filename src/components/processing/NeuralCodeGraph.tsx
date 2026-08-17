@@ -155,7 +155,6 @@ function GraphEdge({
   targetPos: THREE.Vector3;
   isHighlighted: boolean;
 }) {
-  const lineRef = useRef<any>(null);
   const particlesRef = useRef<THREE.Points>(null);
   const [particles, setParticles] = useState<Float32Array | null>(null);
   
@@ -206,7 +205,6 @@ function GraphEdge({
     <>
       {/* Main connection line */}
       <Line
-        ref={lineRef}
         points={[sourcePos, targetPos]}
         color={edgeColor}
         lineWidth={isHighlighted ? 2 : 1}

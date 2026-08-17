@@ -2,12 +2,12 @@ import type { VideoManifest } from "@/lib/types";
 
 /**
  * Sample video manifest for the landing page demo.
- * This showcases GitFlick's capabilities with a real, impressive example.
+ * This showcases NeoDevEx's capabilities with a real, impressive example.
  * Based on a React component library structure.
  */
 export const demoVideoManifest: VideoManifest = {
-  title: "GitFlick: Repo to Reel - Demo",
-  repo_url: "https://github.com/gitflick/demo",
+  title: "NeoDevEx: Repo to Reel - Demo",
+  repo_url: "https://github.com/neodevex/demo",
   total_duration_seconds: 45,
   repo_files: [
     "README.md",
@@ -22,9 +22,9 @@ export const demoVideoManifest: VideoManifest = {
       type: "intro",
       file_path: "README.md",
       highlight_lines: [1, 15],
-      narration_text: "Welcome to GitFlick. This demo showcases how we transform any GitHub repository into an engaging video walkthrough. Watch as we explore a modern React component library, understanding its architecture through AI-powered narration.",
+      narration_text: "Welcome to NeoDevEx. This demo showcases how we transform any GitHub repository into an engaging video walkthrough. Watch as we explore a modern React component library, understanding its architecture through AI-powered narration.",
       duration_seconds: 8,
-      code: `# GitFlick Demo
+      code: `# NeoDevEx Demo
 
 A modern React component library built with TypeScript and Tailwind CSS.
 
@@ -39,7 +39,7 @@ A modern React component library built with TypeScript and Tailwind CSS.
 ## Quick Start
 
 \`\`\`bash
-npm install @gitflick/components
+npm install @neodevex/components
 \`\`\``,
     },
     {
@@ -50,7 +50,7 @@ npm install @gitflick/components
       narration_text: "The project structure begins with package.json, defining dependencies and scripts. Notice how we use modern tooling like Vite for bundling and TypeScript for type safety.",
       duration_seconds: 7,
       code: `{
-  "name": "@gitflick/components",
+  "name": "@neodevex/components",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -171,9 +171,9 @@ export type { InputProps } from './components/Input';`,
       type: "outro",
       file_path: "README.md",
       highlight_lines: [1, 5],
-      narration_text: "And that's how GitFlick transforms code into stories. In just 60 seconds, we've created an engaging walkthrough that helps developers understand any codebase instantly. Try it with your own repository today.",
+      narration_text: "And that's how NeoDevEx transforms code into stories. In just 60 seconds, we've created an engaging walkthrough that helps developers understand any codebase instantly. Try it with your own repository today.",
       duration_seconds: 5,
-      code: `# GitFlick Demo
+      code: `# NeoDevEx Demo
 
 Transform your code into engaging video walkthroughs.
 

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useCallback, useRef, memo, type ElementType } from "react";
 import AgentRunsPanel from "@/components/studio/AgentRunsPanel";
+import ProjectMemoryPanel from "@/components/studio/ProjectMemoryPanel";
+import StackEnvironmentPanel from "@/components/studio/StackEnvironmentPanel";
+import StudioOverview from "@/components/studio/StudioOverview";
 import SmePanel from "@/components/sme/SmePanel";
 import SmeStatusIndicator from "@/components/sme/SmeStatusIndicator";
-import { ProjectJourney } from "@/components/journey/ProjectJourney";
-import { ShieldCheck } from "lucide-react";
 import { recordProjectEvent } from "@/lib/projectMemory";
 import type { Project } from "@/lib/db";
 import { agentOpsStudioSectionClass } from "@/components/studio/agent-ops/shared/agentOpsLayout";
@@ -27,6 +28,10 @@ import {
   Network,
   Search,
   LayoutGrid,
+  Brain,
+  Command,
+  ShieldCheck,
+  Boxes,
 } from "lucide-react";
 import { Player, PlayerRef } from "@remotion/player";
 import { Button } from "@/components/ui/button";
@@ -65,7 +70,7 @@ import iconUrl from "../../icon.png";
 const SESSION_REPO_CONTENT_MAX_BYTES = 4 * 1024 * 1024;
 
 type LoadingPhase = "idle" | "loading" | "hydrating" | "generating-voice" | "rendering" | "complete" | "error";
-type WorkspaceView = "video" | "graph" | "ask" | "runs" | "sme";
+type WorkspaceView = "overview" | "video" | "graph" | "ask" | "runs" | "sme" | "memory" | "environment";
 type SyncState = "idle" | "checking" | "updating" | "error";
 
 interface LogEntry {
@@ -88,6 +93,13 @@ const WORKSPACE_VIEWS: Array<{
   icon: ElementType;
   accent: string;
 }> = [
+  {
+    id: "overview",
+    label: "Overview",
+    description: "See project state, recent activity, and the next useful action.",
+    icon: Command,
+    accent: "",
+  },
   {
     id: "video",
     label: "Walkthrough",
@@ -122,6 +134,20 @@ const WORKSPACE_VIEWS: Array<{
     description: "Upload domain truths and audit the SME agent's fact-checks.",
     icon: ShieldCheck,
     accent: "from-rose-300/14 via-[#eef6fb] to-pink-300/8",
+  },
+  {
+    id: "memory",
+    label: "Memory",
+    description: "Curate the durable context shared across every agent and AI step.",
+    icon: Brain,
+    accent: "",
+  },
+  {
+    id: "environment",
+    label: "Stack & Environment",
+    description: "See how NeoDevEx reads this repo's stack and override it if needed.",
+    icon: Boxes,
+    accent: "from-sky-300/14 via-[#eef6fb] to-cyan-300/8",
   },
 ];
 
@@ -556,7 +582,7 @@ const Studio = () => {
         setProgress(0);
       }
     }
-  }, [addLog, projectQuery, repoLabel, user?.uid]);
+  }, [addLog, logLaymanCompressionStatus, projectQuery, repoLabel, user?.uid]);
 
   useEffect(() => {
     loadManifest();
@@ -584,6 +610,11 @@ const Studio = () => {
   const mockHydratedManifest = useHydrateManifest(mockManifest, 30, audioUrls);
 
   const effectiveHydratedManifest = hydratedManifest || fallbackHydratedManifest || mockHydratedManifest;
+  const studioDisplayName = useMemo(
+    () => extractRepoNameFromSource(repoLabel) || repoLabel || "Repository",
+    [repoLabel]
+  );
+
   /** Bumps when Git sync finishes or manifest narrative changes — Remotion must remount to pick up new composition reliably. */
   const playerCompositionKey = useMemo(() => {
     if (!manifest?.scenes?.length) return "no-manifest";
@@ -1037,9 +1068,19 @@ const Studio = () => {
     effectiveHydratedManifest?.scenes?.[currentSceneIndex]?.file_path;
   const workspaceView: WorkspaceView = (() => {
     const view = searchParams.get("view");
-    return view === "graph" || view === "ask" || view === "video" || view === "runs" || view === "sme" ? view : "video";
+    return WORKSPACE_VIEWS.some((candidate) => candidate.id === view)
+      ? (view as WorkspaceView)
+      : "overview";
   })();
   const highlightedRepoFilePath = focusedRepoFilePath || activeSceneFilePath;
+
+  useEffect(() => {
+    if (phase !== "complete") return;
+    // Workspace changes should open at their own heading instead of inheriting
+    // the previous panel's or loading log's scroll position beneath the sticky
+    // mobile header.
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [phase, workspaceView]);
 
   const evidenceBundle = manifest?.evidence_bundle;
   const knowledgeGraph = manifest?.knowledge_graph;
@@ -1143,7 +1184,7 @@ const Studio = () => {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-xl opacity-50 animate-pulse" />
             <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
-              <img src={iconUrl} alt="GitFlick" className="h-8 w-8 object-contain" />
+              <img src={iconUrl} alt="NeoDevEx" className="h-8 w-8 object-contain" />
             </div>
           </div>
           <div>
@@ -1251,23 +1292,22 @@ const Studio = () => {
     <div className="min-h-screen bg-background noise-overlay">
       <div className="flex min-h-screen">
         <StudioSidebar
-          repoLabel={repoLabel}
+          repoLabel={studioDisplayName}
           activeView={workspaceView}
           onChangeView={setWorkspaceView}
         />
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-0 z-30 glass border-b border-border">
-            <div className="flex flex-col gap-3 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
+          <header className="sticky top-0 z-30 border-b border-border/80 bg-background/92 backdrop-blur-xl">
+            <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
-                <Link to="/dashboard" className="btn-ghost p-2">
+                <Link to="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Back to dashboard">
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
-                <div className="h-8 w-px bg-border" />
                 <div>
-                  <div className="text-lg font-bold gradient-text">{repoLabel}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {manifest?.scenes?.length || 0} scenes • {totalDuration}
+                  <div className="text-sm font-semibold text-foreground">{studioDisplayName}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {WORKSPACE_VIEWS.find((view) => view.id === workspaceView)?.label} · {manifest?.scenes?.length || 0} scenes · {totalDuration}
                   </div>
                 </div>
               </div>
@@ -1286,7 +1326,7 @@ const Studio = () => {
                   <span>Share</span>
                 </button>
                 <button
-                  className="btn-premium flex items-center gap-2"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-foreground px-3 text-sm font-medium text-background transition hover:bg-foreground/90 active:translate-y-px"
                   onClick={() => navigate(projectIdState ? `/export?project=${projectIdState}` : "/export")}
                 >
                   <Download className="h-4 w-4" />
@@ -1296,10 +1336,7 @@ const Studio = () => {
             </div>
           </header>
 
-          <main className="w-full px-5 py-5">
-            {journeyProject && (
-              <ProjectJourney project={journeyProject} compact className="mb-4" />
-            )}
+          <main className="mx-auto w-full max-w-[1500px] px-4 py-4 sm:px-6 sm:py-5">
             <StudioWorkspaceTabs
               activeView={workspaceView}
               onChange={setWorkspaceView}
@@ -1327,6 +1364,18 @@ const Studio = () => {
                 </div>
               ) : (
                 <div className="space-y-5">
+                  {workspaceView === "overview" && (
+                    <StudioOverview
+                      project={journeyProject}
+                      projectId={projectIdState}
+                      manifest={manifest}
+                      graphData={studioGraphData}
+                      repoContent={repoContent}
+                      repoLabel={studioDisplayName}
+                      onNavigate={setWorkspaceView}
+                    />
+                  )}
+
                   {workspaceView === "video" && (
               <section
                 className={cn(
@@ -1532,6 +1581,14 @@ const Studio = () => {
                 }
               />
                   )}
+
+                  {workspaceView === "memory" && (
+                    <ProjectMemoryPanel projectId={projectIdState} />
+                  )}
+
+                  {workspaceView === "environment" && (
+                    <StackEnvironmentPanel projectId={projectIdState} />
+                  )}
                 </div>
               )}
             </div>
@@ -1551,28 +1608,24 @@ const StudioSidebar = ({
   activeView: WorkspaceView;
   onChangeView: (view: WorkspaceView) => void;
 }) => (
-  <aside className="hidden lg:flex lg:flex-col w-64 glass border-r border-border">
-    <div className="p-6">
+  <aside className="hidden w-[228px] shrink-0 border-r border-border bg-[#f7f8fa] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+    <div className="px-4 pb-3 pt-5">
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-lg opacity-60" />
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
-            <img src={iconUrl} alt="GitFlick" className="h-7 w-7 object-contain" />
-          </div>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground">
+          <img src={iconUrl} alt="NeoDevEx" className="h-5 w-5 object-contain" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-lg font-bold gradient-text">GitFlick</div>
-          <div className="truncate text-xs text-muted-foreground">{repoLabel}</div>
+          <div className="truncate text-sm font-semibold text-foreground">Repo Reel Studio</div>
+          <div className="truncate text-[11px] text-muted-foreground">{repoLabel}</div>
         </div>
       </div>
     </div>
 
-    <div className="px-4 pb-4">
-      <div className="glass rounded-xl p-3">
-        <div className="px-2 pb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Workspace
-        </div>
-        <div className="space-y-1">
+    <div className="px-3 py-3">
+      <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Workspace
+      </div>
+      <nav className="space-y-0.5" aria-label="Studio workspace">
           {WORKSPACE_VIEWS.map((view) => {
             const isActive = view.id === activeView;
             return (
@@ -1581,28 +1634,33 @@ const StudioSidebar = ({
                 type="button"
                 onClick={() => onChangeView(view.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-foreground shadow-lg shadow-primary/10"
-                    : "text-muted-foreground hover:bg-black/[0.03] hover:text-foreground",
+                    ? "bg-white text-foreground shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    : "text-muted-foreground hover:bg-black/[0.035] hover:text-foreground",
                 )}
               >
                 <view.icon className="h-4 w-4 shrink-0" />
                 <span>{view.label}</span>
                 {isActive && (
-                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
                 )}
               </button>
             );
           })}
-        </div>
-      </div>
+      </nav>
     </div>
 
     <div className="flex-1" />
 
-    <div className="px-6 py-4 text-xs text-muted-foreground/60">
-      Premium Studio Experience
+    <div className="mx-3 mb-3 rounded-lg border border-border/80 bg-white/70 p-3">
+      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+        Project context active
+      </div>
+      <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
+        Memory and repository evidence follow every agent run.
+      </p>
     </div>
   </aside>
 );
@@ -1613,37 +1671,49 @@ const StudioWorkspaceTabs = ({
 }: {
   activeView: WorkspaceView;
   onChange: (view: WorkspaceView) => void;
-}) => (
-  <section className="premium-card px-6 py-4">
-    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Workspace Views
-      </div>
+}) => {
+  const trackRef = useRef<HTMLDivElement>(null);
 
-      <div className="flex flex-wrap gap-2">
-        {WORKSPACE_VIEWS.map((view) => {
-          const isActive = view.id === activeView;
-          return (
-            <button
-              key={view.id}
-              type="button"
-              onClick={() => onChange(view.id)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all",
-                isActive
-                  ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/20"
-                  : "glass hover:bg-black/[0.04] text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <view.icon className="h-4 w-4" />
-              {view.label}
-            </button>
-          );
-        })}
+  useEffect(() => {
+    const track = trackRef.current;
+    const active = track?.querySelector<HTMLElement>("[data-active='true']");
+    if (!track || !active) return;
+    const left = active.offsetLeft - (track.clientWidth - active.offsetWidth) / 2;
+    track.scrollTo({ left: Math.max(0, left), behavior: "auto" });
+  }, [activeView]);
+
+  return (
+    <section className="gf-panel overflow-hidden rounded-xl px-2 py-2 lg:hidden">
+      <div className="min-w-0">
+        <div
+          ref={trackRef}
+          className="flex min-w-0 snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {WORKSPACE_VIEWS.map((view) => {
+            const isActive = view.id === activeView;
+            return (
+              <button
+                key={view.id}
+                type="button"
+                data-active={isActive}
+                onClick={() => onChange(view.id)}
+                className={cn(
+                  "inline-flex shrink-0 snap-start items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <view.icon className="h-4 w-4" />
+                {view.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // Phase Card Component
 const PhaseCard = ({

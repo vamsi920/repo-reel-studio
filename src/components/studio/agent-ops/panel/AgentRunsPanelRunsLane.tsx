@@ -117,7 +117,6 @@ export function AgentRunsPanelRunsLane(props: AgentRunsPanelRunsLaneProps) {
           onRunFilterChange={onRunFilterChange}
           onSelectRun={onSelectRun}
           onRefresh={onRefreshRuns}
-          onStartRun={onFocusComposer}
         />
       }
       inspector={

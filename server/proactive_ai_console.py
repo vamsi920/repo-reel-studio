@@ -8,6 +8,9 @@ import urllib.error
 import urllib.request
 from typing import Any, Optional
 
+from layman_compress_helper import compress_prompt_prose_safe
+import token_savings
+
 AI_LOG_STAGES = frozenset(
     {"selected", "preparing", "patching", "validating", "review_ready", "needs_execution"}
 )
@@ -59,6 +62,16 @@ def sanitize_console_text(value: str, *, max_len: int = MAX_DETAIL_LEN) -> str:
 
 def contains_invented_tool_action(text: str) -> bool:
     return any(pattern.search(text or "") for pattern in INVENTED_TOOL_PATTERNS)
+
+
+def _compress_field(text: str) -> str:
+    """Strip filler words from a single free-text field before it's embedded
+    in a `key=value` prompt line. compress_prompt_prose_safe preserves whole
+    `key=value` lines verbatim (by design, for diffs/commands/paths), so
+    compression has to happen on the bare value, not the assembled line."""
+    if not text:
+        return text
+    return compress_prompt_prose_safe(text)
 
 
 def build_fallback_console_log(
@@ -119,6 +132,23 @@ def generate_ai_console_log(
         or os.getenv("GEMINI_FLASH_LITE_MODEL")
         or "gemini-2.5-flash-lite"
     ).replace("google:", "").strip()
+
+    # Compress the free-text field VALUES before they're embedded in
+    # `key=value` lines — compress_prompt_prose_safe preserves whole
+    # key=value lines verbatim (by design), so compressing after assembly
+    # would be a no-op.
+    raw_hypothesis = str(candidate.get("hypothesis") or "")
+    event_text = _compress_field(source_title)
+    detail_text = _compress_field(source_detail)
+    hypothesis_text = _compress_field(raw_hypothesis)
+
+    original_field_len = len(source_title or "") + len(source_detail or "") + len(raw_hypothesis)
+    compressed_field_len = len(event_text) + len(detail_text) + len(hypothesis_text)
+    token_savings.record_savings(
+        "proactive", "console_log", original_field_len, compressed_field_len,
+        run_id=str(candidate.get("runId") or "") or None,
+    )
+
     prompt = f"""
 You write one live console log line for a proactive coding operator.
 Return strict JSON only:
@@ -132,13 +162,14 @@ Rules:
 
 State:
 stage={sanitize_console_text(stage, max_len=40)}
-event={sanitize_console_text(source_title, max_len=120)}
-detail={sanitize_console_text(source_detail, max_len=160)}
+event={sanitize_console_text(event_text, max_len=120)}
+detail={sanitize_console_text(detail_text, max_len=160)}
 candidate_title={sanitize_console_text(str(candidate.get("title") or ""), max_len=80)}
-hypothesis={sanitize_console_text(str(candidate.get("hypothesis") or ""), max_len=120)}
+hypothesis={sanitize_console_text(hypothesis_text, max_len=120)}
 status={sanitize_console_text(str(candidate.get("status") or ""), max_len=40)}
 run_id={sanitize_console_text(str(candidate.get("runId") or ""), max_len=24)}
 """.strip()
+
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {

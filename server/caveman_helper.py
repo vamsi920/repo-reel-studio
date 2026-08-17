@@ -20,7 +20,10 @@ _TRUTHY = {"1", "true", "yes"}
 
 
 def is_enabled() -> bool:
-    return os.environ.get("CAVEMAN_HELPER_ENABLED", "0").lower().strip() in _TRUTHY
+    # Defaults ON: token-saving compression is a first-class, always-visible
+    # feature (see /token-savings dashboard), not an opt-in experiment.
+    # Set CAVEMAN_HELPER_ENABLED=0 to disable.
+    return os.environ.get("CAVEMAN_HELPER_ENABLED", "1").lower().strip() in _TRUTHY
 
 
 def get_config() -> dict:

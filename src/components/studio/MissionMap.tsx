@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { narrateMissionMapEvent } from "@/lib/agentNarration";
 import type { AgentRunTimelineEvent, AgentRun } from "@/lib/agentRuns";
 
 // ─── Stage definitions ─────────────────────────────────────────────
@@ -284,7 +285,7 @@ function StageNode({
           </div>
           {stage.events.length > 0 && (
             <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {stage.events[stage.events.length - 1].title}
+              {narrateMissionMapEvent(stage.events[stage.events.length - 1])}
             </p>
           )}
         </div>

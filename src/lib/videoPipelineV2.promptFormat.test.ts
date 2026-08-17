@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { __videoPipelineV2PromptTestables } from "@/lib/videoPipelineV2";
 
+type PromptScene = Parameters<
+  typeof __videoPipelineV2PromptTestables.buildSceneWriterPrompt
+>[1];
+
 describe("videoPipelineV2 scene prompt format", () => {
   const scene = {
     id: 7,
@@ -29,7 +33,7 @@ describe("videoPipelineV2 scene prompt format", () => {
     generationKind: "master",
     moduleTitle: undefined,
     narrationWordTarget: [120, 210],
-  } as any;
+  } satisfies PromptScene;
 
   it("keeps scene writer schema and evidence JSON parseable", () => {
     const prompt = __videoPipelineV2PromptTestables.buildSceneWriterPrompt("demo-repo", scene, [
@@ -78,7 +82,7 @@ describe("videoPipelineV2 scene prompt format", () => {
   });
 
   it("keeps high-risk scene goal and claim text exact", () => {
-    const exactScene: any = {
+    const exactScene: PromptScene = {
       ...scene,
       sceneGoal: "Keep EXACT phrase: do not rewrite this goal sentence.",
       claim: "Keep EXACT claim text: auth guard enforces token expiry checks.",

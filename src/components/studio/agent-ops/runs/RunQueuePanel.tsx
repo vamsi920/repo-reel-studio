@@ -27,7 +27,6 @@ export type RunQueuePanelProps = {
   onRunFilterChange: (value: string) => void;
   onSelectRun: (runId: string) => void;
   onRefresh: () => void;
-  onStartRun: () => void;
 };
 
 export function RunQueuePanel({
@@ -40,7 +39,6 @@ export function RunQueuePanel({
   onRunFilterChange,
   onSelectRun,
   onRefresh,
-  onStartRun,
 }: RunQueuePanelProps) {
   const queueBusy = loadingRuns || syncingRuns;
   const hasFilter = runFilter.trim().length > 0;
@@ -86,8 +84,7 @@ export function RunQueuePanel({
         {emptyAll ? (
           <AgentOpsEmptyState
             title={AGENT_OPS_COPY.noRunsTitle}
-            message={AGENT_OPS_COPY.noRunsMessage}
-            action={{ label: AGENT_OPS_ACTION_LABEL.startRun, onClick: onStartRun, intent: "primary" }}
+            message="Runs appear here after you submit an issue above."
             compact
             className="text-center sm:text-left"
           />

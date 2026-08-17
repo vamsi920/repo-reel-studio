@@ -1,4 +1,4 @@
-GitFlick — start frontend + backend (full stack)
+NeoDevEx — start frontend + backend (full stack)
 ================================================
 
 From the repo root (this project’s top-level folder where package.json lives).
@@ -59,7 +59,7 @@ Optional: deep import/symbol graph during ingest (slow on large repos)
 -----------------------------------------------------------------------
 Default ingest uses a fast “header-only” graph. For the old deep graph:
 
-  GITFLICK_DEEP_INGEST_GRAPH=1 npm run ingest:server:python
+  NEODEVEX_DEEP_INGEST_GRAPH=1 npm run ingest:server:python
 
 Benchmark quick vs deep (no network, same venv as backend):
 

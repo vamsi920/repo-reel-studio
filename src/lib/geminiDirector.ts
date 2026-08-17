@@ -441,7 +441,7 @@ export async function generateManifestWithGemini(
       }));
 
       return finalManifest;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (blueprint) {
         console.warn("Gemini output unusable; falling back to graph-backed blueprint manifest.", error);
         return buildManifestFromBlueprint(blueprint, repoName);
@@ -452,8 +452,8 @@ export async function generateManifestWithGemini(
 
   try {
     return await generateWithConfig(true);
-  } catch (error: any) {
-    if (error.message?.includes("VALIDATION_FAILED")) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes("VALIDATION_FAILED")) {
       console.warn("Manifest validation failed with graph context. Retrying in digest-only mode.");
       return generateWithConfig(false);
     }

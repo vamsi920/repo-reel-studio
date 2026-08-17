@@ -83,6 +83,7 @@ Thumbs.db
 server/.repo-workspaces/
 server/.agent-runs/
 server/.proactive-agent-ops/
+server/.sandbox-test-tmp/
 
 # Governance audit log (tamper-evident, local runtime data)
 server/.governance/

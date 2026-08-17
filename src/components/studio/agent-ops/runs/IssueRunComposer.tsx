@@ -59,7 +59,7 @@ export function IssueRunComposer({
     submitting,
   });
   const showEmptyHint = isGitHub && !trimmedUrl && !error && !agentBackendAttention;
-  const formErrorAttention = error ? parseAgentOpsAttention(error, "agent") : null;
+  const formErrorAttention = error && !agentBackendAttention ? parseAgentOpsAttention(error, "agent") : null;
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -78,8 +78,6 @@ export function IssueRunComposer({
           </>
         }
       />
-
-      <AgentOpsAttentionPanel attention={agentBackendAttention} className="mt-3" />
 
       {!isGitHub ? (
         <div

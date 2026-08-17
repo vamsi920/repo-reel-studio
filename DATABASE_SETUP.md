@@ -1,6 +1,6 @@
 # Database setup (Firebase)
 
-GitFlick uses **Firebase Firestore** for the `projects` collection (replacing Supabase Postgres).
+NeoDevEx uses **Firebase Firestore** for the `projects` collection (replacing Supabase Postgres).
 
 1. Follow **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** to create the Firebase project, enable Firestore, and deploy `firestore.rules` + `firestore.indexes.json`.
 2. Set all `VITE_FIREBASE_*` variables in your host (see [.env.example](.env.example)).

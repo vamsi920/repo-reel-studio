@@ -115,10 +115,10 @@ const handleUpdateProfile = async (e: React.FormEvent) => {
           <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:px-8">
             <Link to="/" className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-                <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+                <img src={iconUrl} alt="NeoDevEx" className="h-6 w-6" />
               </div>
               <div>
-                <div className="font-headline text-[1.35rem] font-semibold text-foreground">GitFlick</div>
+                <div className="font-headline text-[1.35rem] font-semibold text-foreground">NeoDevEx</div>
                 <div className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Account workspace</div>
               </div>
             </Link>

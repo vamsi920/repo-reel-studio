@@ -1,5 +1,5 @@
 {
-  "name": "gitflick-proactive-governance",
+  "name": "neodevex-proactive-governance",
   "version": "1.0",
   "defaults": { "action": "allow" },
   "rules": [

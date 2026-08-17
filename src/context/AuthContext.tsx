@@ -8,7 +8,7 @@ const LOCAL_USER = {
   emailVerified: true,
   metadata: { creationTime: "2024-01-01T00:00:00.000Z" },
   providerData: [{ providerId: "password" }],
-} as any;
+};
 
 interface AuthContextType {
   user: typeof LOCAL_USER;

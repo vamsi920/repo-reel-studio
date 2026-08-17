@@ -1616,7 +1616,7 @@ export const generateManifestWithQualityPipeline = async (
 };
 
 export const __videoPipelineV2PromptTestables = {
-  buildSceneWriterPrompt: (repoName: string, scene: SceneSpec, evidencePack: any) =>
+  buildSceneWriterPrompt: (repoName: string, scene: SceneSpec, evidencePack: unknown) =>
     buildSceneWriterPrompt(repoName, scene, evidencePack, { compress: true }),
   buildScriptEditorPrompt: (repoName: string, scene: SceneSpec, draft: SceneWriterResponse) =>
     buildScriptEditorPrompt(repoName, scene, draft, { compress: true }),

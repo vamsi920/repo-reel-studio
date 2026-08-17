@@ -36,6 +36,9 @@ export default function AgentRunsPanel({
   }, []);
 
   const proactiveHealthRef = useRef<(fromHealth: AgentOpsAttention | null) => void>(() => {});
+  const handleProactiveHealthAttention = useCallback((attention: AgentOpsAttention | null) => {
+    proactiveHealthRef.current(attention);
+  }, []);
 
   const runs = useAgentRunsLane({
     repoUrl,
@@ -43,7 +46,7 @@ export default function AgentRunsPanel({
     projectId,
     manifest,
     graphData,
-    onProactiveHealthAttention: (attention) => proactiveHealthRef.current(attention),
+    onProactiveHealthAttention: handleProactiveHealthAttention,
   });
 
   const proactive = useAgentOpsProactive({
@@ -64,6 +67,9 @@ export default function AgentRunsPanel({
   });
 
   proactiveHealthRef.current = proactive.applyProactiveHealthAttention;
+
+  const setAgentBackendAttentionRef = useRef(runs.setAgentBackendAttention);
+  setAgentBackendAttentionRef.current = runs.setAgentBackendAttention;
 
   const loadProactiveRef = useRef(proactive.loadProactive);
   loadProactiveRef.current = proactive.loadProactive;
@@ -92,32 +98,36 @@ export default function AgentRunsPanel({
       const raw = await fetchIngestionHealth();
       if (cancelled) return;
       const normalized = normalizeIngestionHealth(raw);
-      runs.setAgentBackendAttention(resolveAgentBackendAttention(normalized));
-      proactive.applyProactiveHealthAttention(resolveProactiveBackendAttention(normalized));
+      setAgentBackendAttentionRef.current(resolveAgentBackendAttention(normalized));
+      proactiveHealthRef.current(resolveProactiveBackendAttention(normalized));
     };
     void probe();
     return () => {
       cancelled = true;
     };
-  }, [proactive.applyProactiveHealthAttention, runs.setAgentBackendAttention, workspaceTab]);
+  }, [workspaceTab]);
+
+  const startRun = runs.startRun;
+  const loadProactive = proactive.loadProactive;
+  const toggleProactive = proactive.toggleProactive;
 
   const handleStartRun = useCallback(() => {
     void (async () => {
-      const started = await runs.startRun();
+      const started = await startRun();
       if (started) {
         setActiveTab("summary");
         setWorkspaceTab("runs");
       }
     })();
-  }, [runs.startRun]);
+  }, [setActiveTab, startRun]);
 
   const handleRefreshProactive = useCallback(() => {
-    void proactive.loadProactive({ manual: true });
-  }, [proactive.loadProactive]);
+    void loadProactive({ manual: true });
+  }, [loadProactive]);
 
   const handleEnableProactive = useCallback(() => {
-    void proactive.toggleProactive(true);
-  }, [proactive.toggleProactive]);
+    void toggleProactive(true);
+  }, [toggleProactive]);
 
   const proactiveCandidates = useMemo(
     () => (proactive.proactiveStatus?.candidates ?? []).slice(0, 6),
@@ -163,6 +173,7 @@ export default function AgentRunsPanel({
       pendingReview={runs.pendingReview}
       proactiveReadyCount={proactive.proactiveReadyCount}
       proactiveTarget={proactive.proactiveTarget}
+      attention={workspaceTab === "runs" ? runs.agentBackendAttention : null}
       operation={workspaceOperation}
     >
       {workspaceTab === "runs" ? (

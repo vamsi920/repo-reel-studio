@@ -90,9 +90,9 @@ const ForgotPassword = () => {
             <div className="mt-14 max-w-xl">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-muted">
-                  <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+                  <img src={iconUrl} alt="NeoDevEx" className="h-6 w-6" />
                 </div>
-                <div className="font-headline text-2xl font-semibold text-foreground">GitFlick</div>
+                <div className="font-headline text-2xl font-semibold text-foreground">NeoDevEx</div>
               </div>
 
               <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">

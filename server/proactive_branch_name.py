@@ -4,11 +4,11 @@ import re
 from typing import Any, Optional
 
 PROACTIVE_ISSUE_PREFIX = "proactive://"
-BRANCH_PREFIX = "gitflick/proactive"
+BRANCH_PREFIX = "neodevex/proactive"
 
 
 def sanitize_branch_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9._/-]+", "-", (value or "").lower()).strip("-/")[:64] or "gitflick/agent-run"
+    return re.sub(r"[^a-z0-9._/-]+", "-", (value or "").lower()).strip("-/")[:64] or "neodevex/agent-run"
 
 
 def slugify_branch_component(value: str, *, max_len: int = 32) -> str:

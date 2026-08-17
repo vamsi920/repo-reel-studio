@@ -411,7 +411,7 @@ function WelcomeState({
         <Bot className="h-6 w-6" />
       </div>
       <div>
-        <div className="text-sm font-semibold text-primary">GitFlick Repo Q&amp;A</div>
+        <div className="text-sm font-semibold text-primary">NeoDevEx Repo Q&amp;A</div>
         <h3 className="mt-2 text-2xl font-semibold text-foreground">
           Ask anything narrow about {repoDisplayName}
         </h3>
@@ -484,7 +484,7 @@ function AssistantMessage({
 
       <div className="min-w-0 flex-1">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <div className="text-sm font-semibold text-foreground">GitFlick Assistant</div>
+          <div className="text-sm font-semibold text-foreground">NeoDevEx Assistant</div>
           <Pill className={modeStyles[answer.mode] || modeStyles.general}>
             {titleCase(answer.mode)}
           </Pill>

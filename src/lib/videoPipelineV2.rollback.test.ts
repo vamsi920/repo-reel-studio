@@ -11,6 +11,16 @@ vi.mock("@/env", async (importOriginal) => {
 import { clearLaymanCompressionInstrumentation, getLaymanCompressionInstrumentationReport } from "@/lib/laymanCompressionPolicy";
 import { __videoPipelineV2GeminiRollbackTestables } from "@/lib/videoPipelineV2";
 
+type RollbackScene = Parameters<
+  typeof __videoPipelineV2GeminiRollbackTestables.writeScene
+>[1];
+
+const geminiResponse = (text: string) =>
+  new Response(
+    JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+
 afterEach(() => {
   clearLaymanCompressionInstrumentation();
   vi.restoreAllMocks();
@@ -24,47 +34,26 @@ describe("videoPipelineV2 layman rollback retry", () => {
 
       const callIndex = fetchSpy.mock.calls.length;
       if (callIndex === 1) {
-        return {
-          ok: true,
-          json: async () => ({
-            candidates: [{ content: { parts: [{ text: "not json at all" }] } }],
-          }),
-          text: async () => "",
-          status: 200,
-        } as any;
+        return geminiResponse("not json at all");
       }
 
       // Second call should be rollback prompt (uncompressed goal present verbatim)
       expect(promptText).toContain("Scene goal: ORIGINAL GOAL WITH FILLER WORDS PLEASE KINDLY ACTUALLY");
 
-      return {
-        ok: true,
-        json: async () => ({
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    text: JSON.stringify({
-                      title: "Ok",
-                      claim: "Ok",
-                      sentences: [{ text: "Sentence one.", evidence_indexes: [0], on_screen_focus: ["x"] }],
-                    }),
-                  },
-                ],
-              },
-            },
+      return geminiResponse(
+        JSON.stringify({
+          title: "Ok",
+          claim: "Ok",
+          sentences: [
+            { text: "Sentence one.", evidence_indexes: [0], on_screen_focus: ["x"] },
           ],
         }),
-        text: async () => "",
-        status: 200,
-      } as any;
+      );
     });
 
-    // @ts-expect-error test override
-    globalThis.fetch = fetchSpy;
+    globalThis.fetch = fetchSpy as typeof fetch;
 
-    const scene: any = {
+    const scene: RollbackScene = {
       id: 1,
       phase: "deep_dive",
       type: "feature",
@@ -104,4 +93,3 @@ describe("videoPipelineV2 layman rollback retry", () => {
     expect(report.byContext.video_prose_context.skipped).toBeGreaterThanOrEqual(1);
   });
 });
-

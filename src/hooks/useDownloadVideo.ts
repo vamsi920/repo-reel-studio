@@ -132,7 +132,9 @@ export function useDownloadVideo({
         try {
           recorder.stop();
           playerRef.current?.pause();
-        } catch (_) {}
+        } catch (error) {
+          console.warn("[useDownloadVideo] Recorder cleanup failed", error);
+        }
       }, durationMs + 500);
     };
 

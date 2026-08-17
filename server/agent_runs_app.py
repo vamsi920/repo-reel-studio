@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent_runs import create_agent_run_router
+from env_settings_api import create_env_settings_router
 from github_webhook import create_webhook_router
 from governance_api import create_governance_router
 from proactive_api import create_proactive_router
@@ -66,7 +67,7 @@ async def lifespan(_app: FastAPI):
         stop_proactive_scheduler()
 
 
-app = FastAPI(title="GitFlick Agent Runs API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="NeoDevEx Agent Runs API", version="1.0.0", lifespan=lifespan)
 register_proactive_exception_handlers(app)
 
 
@@ -105,6 +106,7 @@ app.include_router(create_agent_run_router(), prefix="/api")
 app.include_router(create_webhook_router(), prefix="/api")
 app.include_router(create_proactive_router(), prefix="/api")
 app.include_router(create_governance_router(), prefix="/api")
+app.include_router(create_env_settings_router(), prefix="/api")
 
 
 @app.get("/api/health-agent")

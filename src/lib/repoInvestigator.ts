@@ -781,7 +781,7 @@ const buildPrompt = ({
     )
     .join("\n");
 
-  return `You are GitFlick Repo Q&A, a principal engineer assistant answering questions about one repository only.
+  return `You are NeoDevEx Repo Q&A, a principal engineer assistant answering questions about one repository only.
 
 Repository: ${repoName}
 Question: ${question}

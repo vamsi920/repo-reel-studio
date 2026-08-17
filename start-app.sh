@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the full GitFlick / Repo Reel Studio stack (UI + all backend services).
+# Start the full NeoDevEx / Repo Reel Studio stack (UI + all backend services).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,7 +31,7 @@ AGENT_RUNS_PROXY_URL="${AGENT_RUNS_PROXY_URL:-http://127.0.0.1:${AGENT_API_PORT}
 export AGENT_API_PORT REQUIREMENTS_API_PORT AGENT_RUNS_PROXY_URL
 
 echo ""
-echo "🚀 Starting GitFlick full stack"
+echo "🚀 Starting NeoDevEx full stack"
 echo "   UI (Vite):        http://localhost:${VITE_PORT}"
 echo "   Ingest API:       http://localhost:${INGEST_PORT}/api/health"
 echo "   Agent Ops API:    http://localhost:${AGENT_API_PORT}/api/health-agent"

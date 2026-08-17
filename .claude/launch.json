@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 8080
+    },
+    {
+      "name": "full",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:with-agent"],
+      "port": 8080
     }
   ]
 }

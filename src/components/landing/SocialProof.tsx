@@ -55,7 +55,7 @@ export const SocialProof = () => {
             </p>
           </div>
           <p className="max-w-xl text-sm leading-6 text-slate-600">
-            GitFlick is not just a video generator. It is a repository workspace that keeps walkthroughs,
+            NeoDevEx is not just a video generator. It is a repository workspace that keeps walkthroughs,
             structural views, Q&amp;A, and agent-run evidence aligned to the same repo memory.
           </p>
         </div>

@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from agent_runs import create_agent_run_router
+from env_settings_api import create_env_settings_router
 from proactive_api import create_proactive_router
 from proactive_api_errors import register_proactive_exception_handlers
 
@@ -435,15 +436,34 @@ def build_code_graph_quick(content: str) -> dict | None:
     }
 
 
+from contextlib import asynccontextmanager
+from proactive_scheduler import start_proactive_scheduler, stop_proactive_scheduler
+from sandbox_runner import sweep_orphaned_sandboxes
+
+
+@asynccontextmanager
+async def _proactive_lifespan(_app: FastAPI):
+    swept = sweep_orphaned_sandboxes()
+    if swept:
+        print(f"🧹 Removed {swept} orphaned sandbox container(s) from a previous run")
+    start_proactive_scheduler()
+    try:
+        yield
+    finally:
+        stop_proactive_scheduler()
+
+
 # FastAPI app setup
 app = FastAPI(
-    title="GitFlick Ingestion Server",
+    title="NeoDevEx Ingestion Server",
     description="Repository ingestion service powered by gitingest + GitNexus",
-    version="3.0.0"
+    version="3.0.0",
+    lifespan=_proactive_lifespan,
 )
 register_proactive_exception_handlers(app)
 app.include_router(create_agent_run_router(), prefix="/api")
 app.include_router(create_proactive_router(), prefix="/api")
+app.include_router(create_env_settings_router(), prefix="/api")
 
 # CORS middleware
 app.add_middleware(
@@ -488,7 +508,6 @@ class TTSRequest(BaseModel):
     input: dict
     voice: dict
     audioConfig: dict
-    apiKey: Optional[str] = None
 
 
 class EnsureRepoWorkspaceRequest(BaseModel):
@@ -644,11 +663,7 @@ async def sync_repo_workspace_endpoint(request: EnsureRepoWorkspaceRequest):
 @app.post("/api/tts")
 def synthesize_tts(request: TTSRequest):
     """Proxy Google TTS requests to avoid browser CORS issues."""
-    api_key = (
-        os.getenv("GOOGLE_TTS_API_KEY")
-        or os.getenv("VITE_GOOGLE_TTS_API_KEY")
-        or request.apiKey
-    )
+    api_key = os.getenv("GOOGLE_TTS_API_KEY")
 
     if not api_key:
         raise HTTPException(status_code=400, detail="Google TTS API key not configured")
@@ -760,7 +775,7 @@ async def ingest_repository(request: IngestRequest):
 
         # ── Step 2: Graph (default: quick header-only scan — ms, not minutes) ──
         graph_data = None
-        deep_graph = os.environ.get("GITFLICK_DEEP_INGEST_GRAPH", "").strip().lower() in (
+        deep_graph = os.environ.get("NEODEVEX_DEEP_INGEST_GRAPH", "").strip().lower() in (
             "1",
             "true",
             "yes",
@@ -886,7 +901,7 @@ if __name__ == "__main__":
     
     print(f"""
 ╔══════════════════════════════════════════════════════════════╗
-║  🚀 GitFlick Ingestion Server v3.0                          ║
+║  🚀 NeoDevEx Ingestion Server v3.0                          ║
 ║  Powered by gitingest + GitNexus                             ║
 ║  Running on http://localhost:{port}                        ║
 ╚══════════════════════════════════════════════════════════════╝

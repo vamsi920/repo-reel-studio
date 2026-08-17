@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
+
 import { humanizeRunValidation } from "@/components/studio/agent-ops/runs/runPipeline";
 import type { RunDetailTab } from "@/components/studio/agent-ops/runs/runInspectorTabs";
 import { AgentOpsFactChip } from "@/components/studio/agent-ops/shared/AgentOpsFactChip";
 import { agentOpsFactStripClass } from "@/components/studio/agent-ops/shared/agentOpsLayout";
 import type { AgentRun } from "@/lib/agentRuns";
+import { getTokenSavingsForRun } from "@/lib/tokenSavings";
 import { cn } from "@/lib/utils";
 
 type RunInspectorFactStripProps = {
@@ -12,6 +15,18 @@ type RunInspectorFactStripProps = {
 };
 
 export function RunInspectorFactStrip({ run, isReview, onOpenTab }: RunInspectorFactStripProps) {
+  const [tokensSaved, setTokensSaved] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getTokenSavingsForRun(run.id).then((value) => {
+      if (!cancelled) setTokensSaved(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [run.id]);
+
   const validationStatus = run.artifacts.validation.overallStatus;
   const validationLabel = humanizeRunValidation(validationStatus);
   const fileCount = run.artifacts.changedFiles.length;
@@ -68,6 +83,14 @@ export function RunInspectorFactStrip({ run, isReview, onOpenTab }: RunInspector
         tabTarget="ship"
         onOpenTab={onOpenTab}
       />
+      {tokensSaved > 0 && (
+        <AgentOpsFactChip
+          label="Tokens Saved"
+          shortLabel="Saved"
+          value={tokensSaved.toLocaleString()}
+          tone="ok"
+        />
+      )}
       <AgentOpsFactChip label="Map" shortLabel="Map" value="Open" tabTarget="map" onOpenTab={onOpenTab} />
     </div>
   );

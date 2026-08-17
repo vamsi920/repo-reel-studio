@@ -1,4 +1,4 @@
-import { GOOGLE_TTS_API_KEY, GOOGLE_TTS_ENABLED } from '@/env';
+import { GOOGLE_TTS_ENABLED } from '@/env';
 import type { VideoScene } from './types';
 
 interface GoogleTTSRequest {
@@ -95,11 +95,6 @@ const normalizeNarrationText = (text: string) => {
   return deduped.join(" ");
 };
 
-const buildProxyPayload = (requestBody: GoogleTTSRequest) => ({
-  ...requestBody,
-  apiKey: GOOGLE_TTS_API_KEY || undefined,
-});
-
 const parseErrorResponse = async (response: Response) => {
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -118,7 +113,7 @@ const requestTTS = async (requestBody: GoogleTTSRequest): Promise<GoogleTTSRespo
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(buildProxyPayload(requestBody)),
+      body: JSON.stringify(requestBody),
     });
 
     if (!proxyResponse.ok) {
@@ -135,33 +130,9 @@ const requestTTS = async (requestBody: GoogleTTSRequest): Promise<GoogleTTSRespo
     proxyError = error;
   }
 
-  if (!GOOGLE_TTS_API_KEY) {
-    throw proxyError instanceof Error ? proxyError : new Error("Google TTS API key not configured");
-  }
-
-  const directResponse = await fetch(
-    `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    }
-  );
-
-  if (!directResponse.ok) {
-    const errorText = await parseErrorResponse(directResponse);
-    const proxyMessage = proxyError instanceof Error ? proxyError.message : "";
-    const combined = proxyMessage ? `${proxyMessage}; Direct TTS error: ${directResponse.status} - ${errorText}` : `Google TTS API error: ${directResponse.status} - ${errorText}`;
-    throw new Error(combined);
-  }
-
-  const data: GoogleTTSResponse = await directResponse.json();
-  if (!data.audioContent) {
-    throw new Error("No audio content in direct response");
-  }
-  return data;
+  throw proxyError instanceof Error
+    ? proxyError
+    : new Error("TTS proxy is not available");
 };
 
 /**
@@ -174,8 +145,8 @@ export async function generateSceneAudio(
   scene: VideoScene,
   voiceName: string = 'en-US-Standard-D'
 ): Promise<string> {
-  if (!GOOGLE_TTS_ENABLED && !GOOGLE_TTS_API_KEY) {
-    throw new Error('Google TTS API key not configured. Set VITE_GOOGLE_TTS_API_KEY in your .env file.');
+  if (!GOOGLE_TTS_ENABLED) {
+    throw new Error('Google TTS is disabled. Enable the server proxy with VITE_GOOGLE_TTS_ENABLED=true.');
   }
 
   const narrationText = normalizeNarrationText(scene.narration_text || "");
@@ -237,9 +208,9 @@ export async function generateAllSceneAudio(
   onProgress?: (completed: number, total: number) => void,
   batchSize: number = 3
 ): Promise<TTSGenerationResult> {
-  if (!GOOGLE_TTS_ENABLED && !GOOGLE_TTS_API_KEY) {
+  if (!GOOGLE_TTS_ENABLED) {
     console.warn('Google TTS not enabled, skipping audio generation');
-    console.warn('To enable TTS, set VITE_GOOGLE_TTS_API_KEY in your .env file');
+    console.warn('To enable TTS, set VITE_GOOGLE_TTS_ENABLED=true and configure GOOGLE_TTS_API_KEY on the server');
     return { audioUrls: new Map(), failures: [] };
   }
 
@@ -313,23 +284,11 @@ export async function generateAllSceneAudio(
  * @returns Array of voice names
  */
 export async function getAvailableVoices(): Promise<string[]> {
-  if (!GOOGLE_TTS_ENABLED || !GOOGLE_TTS_API_KEY) {
-    return [];
-  }
-
-  try {
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/voices?key=${GOOGLE_TTS_API_KEY}&languageCode=en-US`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch voices: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.voices?.map((v: any) => v.name) || [];
-  } catch (error) {
-    console.error('Failed to fetch available voices:', error);
-    return [];
-  }
+  if (!GOOGLE_TTS_ENABLED) return [];
+  return [
+    "en-US-Standard-C",
+    "en-US-Standard-D",
+    "en-US-Standard-E",
+    "en-US-Standard-F",
+  ];
 }

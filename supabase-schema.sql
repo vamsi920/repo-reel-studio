@@ -1,5 +1,7 @@
--- DEPRECATED: This schema was for Supabase Postgres. GitFlick now uses Firebase Firestore.
--- See FIREBASE_SETUP.md and firestore.rules. Kept for reference only.
+-- Core Supabase Postgres schema — this is the live data layer (src/lib/supabaseClient.ts,
+-- src/lib/db.ts, and others). A prior attempt to migrate to Firebase Firestore was
+-- abandoned; no firestore.rules or firebase.json exist in this repo. Run this (and the
+-- other supabase-*-migration.sql files) against your Supabase project.
 
 -- Projects table
 CREATE TABLE IF NOT EXISTS projects (

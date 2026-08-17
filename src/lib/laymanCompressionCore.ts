@@ -398,10 +398,10 @@ function isCodeLikeLine(line: string): boolean {
     /^\s*(import |from .+ import |require\(|const |let |var )/.test(line) ||
     /^\s*(def |class |function |async function |export )/.test(line) ||
     /^\s*(if\s*\(|for\s*\(|while\s*\(|switch\s*\(|try\s*\{)/.test(line) ||
-    /^\s*[\}\]\);]+\s*$/.test(line) ||
+    /^\s*[}\]);]+\s*$/.test(line) ||
     /^\s*@\w+/.test(line) ||
     /^\s*"[^"]+"\s*:\s*/.test(line) ||
-    /^\s*\w+\s*=\s*[{\[("']/.test(line)
+    /^\s*\w+\s*=\s*[{[("']/.test(line)
   );
 }
 

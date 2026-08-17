@@ -12,7 +12,7 @@ const STEPS = [
     step: "01",
     title: "Bind the repository",
     description:
-      "Start from a Git URL or a local folder. GitFlick indexes the repo and stores a reusable project workspace.",
+      "Start from a Git URL or a local folder. NeoDevEx indexes the repo and stores a reusable project workspace.",
   },
   {
     icon: PlayCircle,

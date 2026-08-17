@@ -23,7 +23,7 @@ resource "aws_ecs_cluster" "main" {
 
 resource "aws_service_discovery_private_dns_namespace" "main" {
   name        = var.service_discovery_namespace
-  description = "Internal DNS for GitFlick ECS services"
+  description = "Internal DNS for NeoDevEx ECS services"
   vpc         = data.aws_vpc.default.id
 
   tags = local.common_tags

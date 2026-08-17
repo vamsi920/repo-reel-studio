@@ -118,7 +118,7 @@ Then `./scripts/deploy-aws.sh` again.
 | `Unable to locate credentials` | Run `aws configure` with IAM keys |
 | `AccessDenied` on terraform | Admin must attach `iam-deploy-policy.json` |
 | `Docker not running` | `colima start -f` |
-| ECS tasks not healthy | Push images first; check CloudWatch logs `/ecs/gitflick-prod-*` |
+| ECS tasks not healthy | Push images first; check CloudWatch logs `/ecs/neodevex-prod-*` |
 | Blank app / CORS | Use CloudFront URL only (not raw ALB URL) |
 
 ---

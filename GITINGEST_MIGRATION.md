@@ -46,7 +46,7 @@ npm run ingest:server
 Expected output:
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  🚀 GitFlick Ingestion Server v2.0                          ║
+║  🚀 NeoDevEx Ingestion Server v2.0                          ║
 ║  Powered by gitingest library                                ║
 ║  Running on http://localhost:8787                          ║
 ╚══════════════════════════════════════════════════════════════╝

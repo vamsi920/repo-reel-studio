@@ -1,0 +1,156 @@
+/* =============================================================
+   INSTRUMENT THEME — signature visual language for the ported
+   Requirements Engine (guided onboarding interview).
+   Flat hairline panels · corner-tick framing · mono micro-labels ·
+   status pips · cyan HUD accent · thin scrollbars.
+
+   Ported verbatim from document-query-flow/src/index.css. Scoped
+   entirely under "onb-" prefixed classes plus locally-scoped CSS
+   variables, so it can't collide with NeoDevEx's own design tokens.
+   ============================================================= */
+.onb-root {
+  --hud: #22e0ff;            /* instrument cyan */
+  --hud-dim: #3be9ff;
+  --ink-900: #070b12;        /* app canvas */
+  --ink-850: #0b111c;
+  --ink-800: #0e1623;        /* panel surface */
+  --ink-750: #131d2e;        /* raised surface */
+  --line: rgba(120, 150, 190, 0.16);  /* hairline border */
+  --line-strong: rgba(120, 160, 200, 0.28);
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(34, 224, 255, 0.06), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(99, 102, 241, 0.05), transparent 55%),
+    var(--ink-900);
+  color: #e7eef7;
+}
+
+.onb-root ::selection { background: rgba(34, 224, 255, 0.30); color: inherit; }
+
+/* Mono eyebrow / micro-label */
+.onb-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hud);
+}
+
+/* Oversized tabular figure for metrics */
+.onb-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Flat instrument panel with hairline border */
+.onb-panel {
+  background: var(--ink-800);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+/* Corner-tick framing — instrument signature for hero panels */
+.onb-ticks { position: relative; }
+.onb-ticks::before,
+.onb-ticks::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  border: 0 solid var(--hud);
+  opacity: 0.85;
+}
+.onb-ticks::before { top: 9px; left: 9px; border-top-width: 2px; border-left-width: 2px; }
+.onb-ticks::after { bottom: 9px; right: 9px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* Status pip */
+.onb-pip {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--hud);
+  box-shadow: 0 0 0 3px rgba(34, 224, 255, 0.15);
+}
+.onb-pip.live { animation: onb-pip-pulse 1.8s ease-in-out infinite; }
+@keyframes onb-pip-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(34, 224, 255, 0.18); }
+  50%      { box-shadow: 0 0 0 7px rgba(34, 224, 255, 0); }
+}
+
+/* Primary HUD button accent */
+.onb-btn-hud {
+  background: var(--hud);
+  color: #06212a;
+  font-weight: 700;
+  box-shadow: 0 6px 18px -8px rgba(34, 224, 255, 0.5);
+  transition: all 0.2s ease;
+}
+.onb-btn-hud:hover:not(:disabled) {
+  background: var(--hud-dim);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -8px rgba(34, 224, 255, 0.6);
+}
+.onb-btn-hud:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.onb-scroll { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.onb-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.onb-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+@keyframes onb-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.onb-rise { animation: onb-rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Markdown rendering inside chat bubbles & generated documents */
+.onb-prose { color: #cdd8e6; font-size: 0.9rem; line-height: 1.7; }
+.onb-prose > :first-child { margin-top: 0; }
+.onb-prose > :last-child { margin-bottom: 0; }
+.onb-prose h1 {
+  font-size: 1.6rem; font-weight: 700; color: #fff;
+  margin: 0 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--line);
+}
+.onb-prose h2 {
+  font-size: 1.15rem; font-weight: 700; color: #eaf2fb;
+  margin: 1.6rem 0 0.6rem;
+}
+.onb-prose h3 { font-size: 1rem; font-weight: 600; color: #d7e3f2; margin: 1.1rem 0 0.4rem; }
+.onb-prose p { margin: 0.6rem 0; }
+.onb-prose ul, .onb-prose ol { margin: 0.5rem 0; padding-left: 1.25rem; }
+.onb-prose li { margin: 0.3rem 0; }
+.onb-prose ul li { list-style: none; position: relative; padding-left: 0.25rem; }
+.onb-prose ul li::before {
+  content: ""; position: absolute; left: -0.85rem; top: 0.6em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--hud);
+}
+.onb-prose ol { list-style: decimal; }
+.onb-prose strong { color: #fff; font-weight: 600; }
+.onb-prose a { color: var(--hud); text-decoration: underline; }
+.onb-prose code {
+  font-family: var(--font-mono); font-size: 0.82em;
+  background: var(--ink-750); color: #8fe7ff;
+  padding: 0.1rem 0.35rem; border-radius: 4px;
+}
+.onb-prose blockquote {
+  border-left: 3px solid var(--hud); margin: 0.8rem 0;
+  padding: 0.2rem 0 0.2rem 0.9rem; color: #aebccd; font-style: italic;
+}
+.onb-prose table {
+  width: 100%; border-collapse: collapse; margin: 0.9rem 0; font-size: 0.85rem;
+  border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+}
+.onb-prose th, .onb-prose td {
+  border: 1px solid var(--line); padding: 0.5rem 0.7rem; text-align: left;
+}
+.onb-prose th { background: var(--ink-750); color: #d7e3f2; font-weight: 600; }
+.onb-prose hr { border: none; border-top: 1px solid var(--line); margin: 1.4rem 0; }

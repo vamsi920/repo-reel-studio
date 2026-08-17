@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Boxes,
   Download,
@@ -99,7 +99,7 @@ export default function GraphExplorer({
     return () => window.removeEventListener("message", handleMessage);
   }, [fileNodeLookup, onNodeClick]);
 
-  const postHighlight = () => {
+  const postHighlight = useCallback(() => {
     const frame = iframeRef.current?.contentWindow;
     if (!frame) return;
     if (highlightPath?.nodeLabels?.length) {
@@ -114,11 +114,11 @@ export default function GraphExplorer({
     } else {
       frame.postMessage({ type: "clearHighlight" }, "*");
     }
-  };
+  }, [highlightPath]);
 
   useEffect(() => {
     postHighlight();
-  }, [highlightPath, srcDoc]);
+  }, [postHighlight, srcDoc]);
 
   if (codegraph) {
     return (

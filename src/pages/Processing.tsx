@@ -58,7 +58,65 @@ import {
   mergeChapterManifests,
 } from "@/lib/videoPipelineEpic";
 import { getLaymanCompressionInstrumentationReport } from "@/lib/laymanCompressionPolicy";
+import { recordProjectEvent, recordProjectMemory } from "@/lib/projectMemory";
+import { runSmeReview } from "@/lib/smeAgent";
+import SmeStatusIndicator from "@/components/sme/SmeStatusIndicator";
 import iconUrl from "../../icon.png";
+
+type ErrorBody = {
+  error?: string;
+  detail?: string | { error?: string; detail?: string };
+  code?: string;
+  url?: string;
+};
+
+type ProcessingRequestError = Error & {
+  detail?: string;
+  errorBody?: ErrorBody;
+  code?: string;
+  url?: string;
+};
+
+type ErrorMetadata = {
+  message?: string;
+  error_description?: string;
+  code?: string;
+  status?: string | number;
+  hint?: string;
+  name?: string;
+};
+
+const getErrorMetadata = (error: unknown): ErrorMetadata =>
+  error && typeof error === "object" ? (error as ErrorMetadata) : {};
+
+/** Fire-and-forget SME fact-check of generated narration; never blocks the pipeline. */
+function queueSmeManifestReview(
+  projectId: string | null,
+  manifest: VideoManifest,
+  log: (message: string) => void
+) {
+  if (!projectId) return;
+  const narration = manifest.scenes
+    .map((s) => s.narration_text)
+    .filter(Boolean)
+    .join("\n\n");
+  if (!narration) return;
+  log("SME agent: fact-checking generated narration...");
+  void runSmeReview({
+    projectId,
+    step: "manifest",
+    label: "video narration",
+    content: narration,
+  }).then((review) => {
+    if (review.status === "no_material") {
+      log("SME agent: no domain material uploaded yet — skipping fact-check (add docs in Studio → SME Desk).");
+    } else if (review.status === "verified") {
+      log("✓ SME agent verified the narration against your domain knowledge.");
+    } else if (review.status === "flagged" || review.status === "attention") {
+      log(`⚠️  SME agent ${review.status === "flagged" ? "flagged issues in" : "wants attention on"} the narration: ${review.summary}`);
+    }
+  });
+}
 
 const phase1Steps = [
   { text: "Initializing ingestion pipeline...", duration: 400 },
@@ -296,8 +354,9 @@ const Processing = () => {
             throw new Error(connectionCheck.error || 'Database connection failed');
           }
           addLog("✓ Database connection verified");
-        } catch (checkError: any) {
-          addLog(`WARNING: Database check failed: ${checkError.message}`);
+        } catch (checkError: unknown) {
+          const checkMetadata = getErrorMetadata(checkError);
+          addLog(`WARNING: Database check failed: ${checkMetadata.message || "Unknown error"}`);
           addLog(`  → Deploy Firestore rules and indexes (see FIREBASE_SETUP.md)`);
           addLog(`  → Run: npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes`);
           addLog(`  → Continuing without database save...`);
@@ -365,12 +424,19 @@ const Processing = () => {
             setProjectId(project.id);
             syncProjectWorkspaceToSession(project);
             addLog(`✓ Project created successfully: ${project.id.substring(0, 8)}...`);
+            recordProjectEvent(
+              project.id,
+              "onboarding",
+              "created",
+              `Project onboarded from ${isFolderMode ? "a local folder upload" : repoUrl} on ${new Date().toLocaleDateString()}.`
+            );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Failed to create project:', error);
-          const errorMessage = error?.message || error?.error_description || 'Unknown error';
-          const errorCode = error?.code || error?.status || '';
-          const errorHint = error?.hint || '';
+          const metadata = getErrorMetadata(error);
+          const errorMessage = metadata.message || metadata.error_description || 'Unknown error';
+          const errorCode = metadata.code || metadata.status || '';
+          const errorHint = metadata.hint || '';
 
           addLog(`ERROR: Could not create project in database`);
           addLog(`  Error: ${errorMessage}`);
@@ -439,7 +505,7 @@ const Processing = () => {
       try {
         // Determine if folder mode or git mode
         let ingestUrl: string;
-        let requestBody: any;
+        let requestBody: Record<string, unknown>;
 
         if (isFolderMode && folderData) {
           // Folder upload mode
@@ -495,7 +561,7 @@ const Processing = () => {
         if (!response.ok) {
           // Clone response to read body multiple times if needed
           const responseClone = response.clone();
-          let errorBody: any = {};
+          let errorBody: ErrorBody = {};
           try {
             errorBody = await response.json();
           } catch {
@@ -544,11 +610,11 @@ const Processing = () => {
             }
           }
 
-          const error = new Error(errorMsg);
-          (error as any).detail = errorDetail;
-          (error as any).errorBody = errorBody;
-          (error as any).code = errorBody.code || "";
-          (error as any).url = ingestUrl;
+          const error = new Error(errorMsg) as ProcessingRequestError;
+          error.detail = errorDetail;
+          error.errorBody = errorBody;
+          error.code = errorBody.code || "";
+          error.url = ingestUrl;
           throw error;
         }
 
@@ -574,7 +640,7 @@ const Processing = () => {
             try {
               sessionStorage.setItem("repo-content", payload.content);
               sessionStorage.setItem("repo-url", repoUrl || payload.repoUrl || `local://${repoName}`);
-            } catch (storageError: any) {
+            } catch (storageError: unknown) {
               console.warn('Failed to store in sessionStorage:', storageError);
             }
           } else {
@@ -602,12 +668,13 @@ const Processing = () => {
               },
               graph_data: payload.graphData || null,
               phase1_completed_at: new Date().toISOString(),
-            } as any); // Use 'as any' to allow optional fields
+            });
             addLog("✓ Phase 1 data saved to database");
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Failed to save Phase 1 data:', error);
+            const metadata = getErrorMetadata(error);
             // If it's a column error, try without the new fields
-            if (error?.code === 'PGRST204' || error?.message?.includes('column')) {
+            if (metadata.code === 'PGRST204' || metadata.message?.includes('column')) {
               try {
                 // Fallback: only update basic fields
                 await projectsService.update(currentProjectId, user.uid, {
@@ -669,6 +736,15 @@ const Processing = () => {
               "⚠️ Workspace cache setup failed (network). Agent runs will clone on demand.",
             );
           }
+        }
+
+        if (currentProjectId && payload.stats) {
+          recordProjectEvent(
+            currentProjectId,
+            "ingestion",
+            "complete",
+            `Ingested ${payload.stats.includedFiles || 0} files (${payload.stats.totalBytesFormatted || "0 B"}); ${payload.stats.skippedFiles || 0} skipped.`
+          );
         }
 
         setPhase1Status("complete");
@@ -740,11 +816,12 @@ const Processing = () => {
                 ingestGraphData.codegraph.stats.moduleCount ||
                 ingestGraphData.nodes.length ||
                 0,
-            } as any);
-          } catch (storageError: any) {
+            });
+          } catch (storageError: unknown) {
+            const storageMetadata = getErrorMetadata(storageError);
             addLog(
               `Warning: graph artifact upload skipped: ${
-                storageError?.message || "storage unavailable"
+                storageMetadata.message || "storage unavailable"
               }`
             );
           }
@@ -787,17 +864,18 @@ const Processing = () => {
         } else if (error instanceof Error) {
           errorMsg = error.message;
           // Check if error has detail attached
-          if ((error as any).detail) {
-            errorDetail = (error as any).detail;
-          } else if ((error as any).errorBody) {
-            const errorBody = (error as any).errorBody;
+          const requestError = error as ProcessingRequestError;
+          if (requestError.detail) {
+            errorDetail = requestError.detail;
+          } else if (requestError.errorBody) {
+            const errorBody = requestError.errorBody;
             errorMsg = errorBody.error || errorMsg;
-            errorDetail = errorBody.detail || "";
+            errorDetail = typeof errorBody.detail === "string" ? errorBody.detail : errorBody.detail?.detail || "";
           }
-          if ((error as any).code) {
-            errorCode = (error as any).code;
-          } else if ((error as any).errorBody?.code) {
-            errorCode = (error as any).errorBody.code;
+          if (requestError.code) {
+            errorCode = requestError.code;
+          } else if (requestError.errorBody?.code) {
+            errorCode = requestError.errorBody.code;
           }
         }
 
@@ -816,8 +894,9 @@ const Processing = () => {
           code: errorCode || undefined,
         });
         // Show URL if available
-        if ((error as any).url) {
-          addLog(`  Attempted URL: ${(error as any).url}`);
+        const attemptedUrl = (error as ProcessingRequestError)?.url;
+        if (attemptedUrl) {
+          addLog(`  Attempted URL: ${attemptedUrl}`);
         }
         // Show helpful message for 404 with proxy
         if (errorMsg.includes("404") && API_URL === "/api") {
@@ -969,7 +1048,7 @@ const Processing = () => {
               repoName,
               repoContent,
               fileContents,
-              graphData
+              ingestGraphData
             );
 
             await new Promise(r => setTimeout(r, 500));
@@ -1005,7 +1084,7 @@ const Processing = () => {
               repoUrl,
               repoName,
               repoContent,
-              graphData
+              ingestGraphData
             );
 
             await new Promise(r => setTimeout(r, 500));
@@ -1054,7 +1133,7 @@ const Processing = () => {
               genericFallback,
               fileContents,
               repoName,
-              graphData
+              ingestGraphData
             );
             // If no files were parsed, add one intro scene so we don't show empty/mock content
             if (manifestWithCode.scenes.length === 0) {
@@ -1094,7 +1173,7 @@ const Processing = () => {
             manifestWithCode,
             fileContents,
             repoName,
-            graphData
+            ingestGraphData
           );
           if (afterCut.scenes.length > 0) {
             manifestWithCode = afterCut;
@@ -1193,13 +1272,14 @@ const Processing = () => {
               duration_seconds: totalDuration,
               repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
               phase2_completed_at: new Date().toISOString(),
-            } as any); // Use 'as any' to allow optional fields
+            });
             addLog("✓ Project saved successfully to database!");
             addLog("✓ Project is now available in your Dashboard!");
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Failed to save project:', error);
-            const errorMessage = error?.message || error?.error_description || 'Unknown error';
-            const errorCode = error?.code || '';
+            const metadata = getErrorMetadata(error);
+            const errorMessage = metadata.message || metadata.error_description || 'Unknown error';
+            const errorCode = metadata.code || '';
 
             // If it's a column error, try without the optional fields
             if (errorCode === 'PGRST204' || errorMessage?.includes('column') || errorMessage?.includes('phase2_completed_at')) {
@@ -1213,9 +1293,10 @@ const Processing = () => {
                 });
                 addLog("✓ Project saved successfully (without optional fields)!");
                 addLog("✓ Project is now available in your Dashboard!");
-              } catch (fallbackError: any) {
+              } catch (fallbackError: unknown) {
+                const fallbackMetadata = getErrorMetadata(fallbackError);
                 addLog(`WARNING: Could not update project in database`);
-                addLog(`  Error: ${fallbackError?.message || errorMessage}`);
+                addLog(`  Error: ${fallbackMetadata.message || errorMessage}`);
                 addLog(`  → Manifest is ready and saved to session storage`);
                 addLog(`  → You can still use Studio, but project won't appear in Dashboard`);
               }
@@ -1241,14 +1322,15 @@ const Processing = () => {
             repo_url: repoUrl,
             manifest: manifestWithCode,
             repo_content: repoContent || null,
-            graph_data: graphData,
+            graph_data: ingestGraphData,
             repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
           });
-        } catch (storageError: any) {
+        } catch (storageError: unknown) {
+          const storageMetadata = getErrorMetadata(storageError);
           // Handle quota exceeded gracefully
-          if (storageError?.name === 'QuotaExceededError' ||
-            storageError?.message?.includes('quota') ||
-            storageError?.message?.includes('exceeded')) {
+          if (storageMetadata.name === 'QuotaExceededError' ||
+            storageMetadata.message?.includes('quota') ||
+            storageMetadata.message?.includes('exceeded')) {
             addLog("⚠️  Manifest too large for sessionStorage");
             addLog("   Manifest is saved in database and will be loaded from there");
           } else {
@@ -1264,6 +1346,16 @@ const Processing = () => {
             // Ignore if even small items fail
           }
         }
+
+        if (currentProjectId) {
+          recordProjectEvent(
+            currentProjectId,
+            "manifest",
+            "generated",
+            `Video walkthrough generated: ${manifestWithCode.scenes.length} scenes, ~${Math.round(totalDuration / 60)} min ("${manifestWithCode.title}").`
+          );
+        }
+        queueSmeManifestReview(currentProjectId, manifestWithCode, addLog);
 
         setPhase2Status("complete");
         setProgress(100);
@@ -1283,7 +1375,7 @@ const Processing = () => {
             repo_url: repoUrl,
             manifest: manifestWithCode,
             repo_content: repoContent || null,
-            graph_data: graphData,
+            graph_data: ingestGraphData,
             repo_knowledge_graph: manifestWithCode.knowledge_graph || null,
           });
         } catch { /* non-fatal */ }
@@ -1312,6 +1404,7 @@ const Processing = () => {
     repoUrl,
     retryKey,
     requestedProjectId,
+    logLaymanCompressionStatus,
     user?.uid,
   ]);
 
@@ -1348,6 +1441,16 @@ const Processing = () => {
       addLog(`✓ Intelligence ready: ${intelligence.modules.length} modules, ${intelligence.total_source_files} source files`);
       addLog(`  Architecture: ${intelligence.architecture_pattern ?? "not detected"}`);
       addLog(`  Technologies: ${intelligence.technologies.join(", ") || "none detected"}`);
+
+      const memoryProjectId = projectIdRef.current || projectId;
+      if (memoryProjectId) {
+        recordProjectMemory(memoryProjectId, {
+          kind: "fact",
+          source: "ingestion",
+          content: `Repo intelligence: ${intelligence.modules.length} modules, ${intelligence.total_source_files} source files. Architecture: ${intelligence.architecture_pattern ?? "not detected"}. Technologies: ${intelligence.technologies.join(", ") || "none detected"}.`,
+          dedupeKey: "ingestion:intelligence",
+        });
+      }
     } catch (err) {
       console.error("Intelligence build failed:", err);
       addLog(`WARNING: Intelligence build failed: ${err instanceof Error ? err.message : "unknown"}`);
@@ -1355,7 +1458,7 @@ const Processing = () => {
       // Fall back to classic mode
       setProcessingMode("classic");
     }
-  }, [processingMode, phase1Status, repoIntelligence, repoName, repoUrl, graphData, addLog]);
+  }, [processingMode, phase1Status, repoIntelligence, repoName, repoUrl, graphData, addLog, projectId]);
 
   // -- Handle the user clicking "Continue to Onboarding" from the dashboard
   const handleContinueToOnboarding = useCallback(() => {
@@ -1455,6 +1558,17 @@ const Processing = () => {
         sessionStorage.setItem("generation-plan", JSON.stringify(updatedPlan));
       } catch { /* non-fatal */ }
 
+      const completedProjectId = projectIdRef.current || projectId;
+      if (completedProjectId && merged) {
+        recordProjectEvent(
+          completedProjectId,
+          "manifest",
+          "generated",
+          `Video walkthrough generated (${updatedPlan.chapters.length} chapters, ${merged.scenes.length} scenes).`
+        );
+        queueSmeManifestReview(completedProjectId, merged, addLog);
+      }
+
       setEpicPhase("complete");
       setPhase2Status("complete");
       setProgress(100);
@@ -1501,10 +1615,10 @@ const Processing = () => {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-xl opacity-50 animate-pulse" />
               <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent">
-                <img src={iconUrl} alt="GitFlick" className="h-7 w-7" />
+                <img src={iconUrl} alt="NeoDevEx" className="h-7 w-7" />
               </div>
             </div>
-            <span className="text-2xl font-bold gradient-text">GitFlick</span>
+            <span className="text-2xl font-bold gradient-text">NeoDevEx</span>
           </div>
         </div>
 
@@ -1512,6 +1626,11 @@ const Processing = () => {
         <div className="text-center mb-8">
           <p className="text-sm font-medium text-muted-foreground mb-2">Processing Repository</p>
           <h2 className="text-2xl font-bold gradient-text">{repoName}</h2>
+          {projectId && (
+            <div className="mt-3 flex justify-center">
+              <SmeStatusIndicator projectId={projectId} />
+            </div>
+          )}
         </div>
 
         {/* Phase indicators */}

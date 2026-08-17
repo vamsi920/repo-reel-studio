@@ -49,6 +49,7 @@ VALIDATOR_SCRIPTS: tuple[str, ...] = (
     "validate_proactive_review_ready.py",
     "validate_proactive_retention.py",
     "validate_proactive_sandbox_policy.py",
+    "validate_proactive_scheduler.py",
     "validate_proactive_status_summary.py",
     "validate_proactive_store.py",
     "validate_proactive_synthetic_issue.py",

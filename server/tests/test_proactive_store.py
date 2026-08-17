@@ -1,10 +1,75 @@
 from __future__ import annotations
 
+import threading
+import time
 import uuid
 
 from proactive_candidate_score import SELECT_THRESHOLD
 from proactive_status_summary import build_status_summary, resolve_status_batch
 from tests.proactive_test_harness import PROJECT_ID, REPO_URL, ProactiveTempStoreMixin
+
+
+class ProactiveScopeLockConcurrencyTests(ProactiveTempStoreMixin):
+    """A long dispatch for one scope must never block reads/writes for another.
+
+    dispatch_scope_lock is held for an entire dispatch (discovery + scoring +
+    materialize + executor run, up to PROACTIVE_EXECUTOR_TIMEOUT_SECONDS). If
+    the in-process lock backing it were global rather than per-scope, one busy
+    repo would freeze every other project's config/status calls for the same
+    duration -- exactly the "proactive looks frozen" symptom this guards against.
+    """
+
+    OTHER_REPO = "https://github.com/example/proactive-store-lock-other.git"
+    OTHER_PROJECT = "lock-other"
+
+    def test_unrelated_scope_is_not_blocked_by_a_long_dispatch(self) -> None:
+        release = threading.Event()
+        entered = threading.Event()
+
+        def hold_scope_a() -> None:
+            with self.store.dispatch_scope_lock(REPO_URL, PROJECT_ID):
+                entered.set()
+                release.wait(timeout=5)
+
+        holder = threading.Thread(target=hold_scope_a)
+        holder.start()
+        self.assertTrue(entered.wait(timeout=5), "holder thread never acquired the scope lock")
+        try:
+            started = time.monotonic()
+            self.store.update_config(self.OTHER_REPO, self.OTHER_PROJECT, {"targetCount": 3})
+            elapsed = time.monotonic() - started
+            self.assertLess(elapsed, 1.0, "unrelated scope write was blocked by another scope's dispatch lock")
+        finally:
+            release.set()
+            holder.join(timeout=5)
+
+    def test_same_scope_operations_remain_serialized(self) -> None:
+        release = threading.Event()
+        entered = threading.Event()
+        write_done = threading.Event()
+
+        def hold_scope() -> None:
+            with self.store.dispatch_scope_lock(REPO_URL, PROJECT_ID):
+                entered.set()
+                release.wait(timeout=5)
+
+        holder = threading.Thread(target=hold_scope)
+        holder.start()
+        self.assertTrue(entered.wait(timeout=5), "holder thread never acquired the scope lock")
+        try:
+            def write_same_scope() -> None:
+                self.store.update_config(REPO_URL, PROJECT_ID, {"targetCount": 4})
+                write_done.set()
+
+            writer = threading.Thread(target=write_same_scope)
+            writer.start()
+            # The writer must still be waiting on the same scope's lock.
+            self.assertFalse(write_done.wait(timeout=0.3), "same-scope write proceeded while dispatch lock was held")
+        finally:
+            release.set()
+            holder.join(timeout=5)
+            writer.join(timeout=5)
+        self.assertTrue(write_done.is_set(), "same-scope write never completed after lock release")
 
 
 class ProactiveStoreTests(ProactiveTempStoreMixin):

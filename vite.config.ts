@@ -15,8 +15,24 @@ export default defineConfig({
       overlay: false,
     },
     proxy: {
+      // More specific prefix must be registered before the generic "/api"
+      // fallback below, since Vite matches proxy keys in insertion order.
+      "/api/requirements": {
+        // Prefer 127.0.0.1 — on macOS `localhost` can resolve to ::1 where
+        // another process (e.g. Cursor) may already own :8787/:8790.
+        target: "http://127.0.0.1:8790",
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on("error", (err, _req, _res) => {
+            console.log("Requirements Engine proxy error:", err);
+            console.log("\n⚠️  Make sure the requirements engine API is running:");
+            console.log("   npm run requirements:server\n");
+          });
+        },
+      },
       "/api": {
-        target: "http://localhost:8787",
+        target: "http://127.0.0.1:8787",
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
@@ -82,7 +98,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage"],
+    include: ["@supabase/supabase-js"],
     // Force pre-bundling of dependencies
     force: false,
   },

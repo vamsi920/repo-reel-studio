@@ -27,7 +27,7 @@ function WordNode({
   isAnimating: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const textRef = useRef<any>(null);
+  const textRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [basePosition] = useState(() => {
     // Distribute nodes in a spherical pattern

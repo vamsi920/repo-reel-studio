@@ -62,13 +62,24 @@ class ProactiveApiRouteTests(ProactiveTempStoreMixin):
         self.assertEqual(get_resp.status_code, 200)
         self.assertFalse(get_resp.json()["config"]["enabled"])
 
-        patch_resp = self.client.post(
-            "/api/proactive/config",
-            json={"repoUrl": REPO_URL, "projectId": PROJECT_ID, "enabled": True, "targetCount": 4},
-        )
+        with patch("proactive_scheduler.schedule_proactive_dispatch") as dispatch_mock:
+            patch_resp = self.client.post(
+                "/api/proactive/config",
+                json={"repoUrl": REPO_URL, "projectId": PROJECT_ID, "enabled": True, "targetCount": 4},
+            )
         self.assertEqual(patch_resp.status_code, 200)
         self.assertTrue(patch_resp.json()["config"]["enabled"])
         self.assertEqual(patch_resp.json()["config"]["targetCount"], 4)
+        dispatch_mock.assert_called_once_with(REPO_URL, project_id=PROJECT_ID, repo_name=None)
+
+        # Flipping enabled while already-enabled must not re-trigger an immediate dispatch.
+        with patch("proactive_scheduler.schedule_proactive_dispatch") as dispatch_mock_again:
+            unchanged_resp = self.client.post(
+                "/api/proactive/config",
+                json={"repoUrl": REPO_URL, "projectId": PROJECT_ID, "enabled": True, "targetCount": 5},
+            )
+        self.assertEqual(unchanged_resp.status_code, 200)
+        dispatch_mock_again.assert_not_called()
 
         bad = self.client.post(
             "/api/proactive/config",

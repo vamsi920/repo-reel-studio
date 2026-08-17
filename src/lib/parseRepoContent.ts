@@ -51,7 +51,7 @@ export function parseRepoContent(content: string): Record<string, string> {
       continue;
     }
     if (currentPath) {
-      if (/^[=\-]{3,}$/.test(line.trim())) continue; // Strip raw visual demarcations
+      if (/^[=-]{3,}$/.test(line.trim())) continue; // Strip raw visual demarcations
       buffer.push(line);
     }
   }

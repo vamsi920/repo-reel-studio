@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { AgentOpsAttentionPanel } from "@/components/studio/agent-ops/shared/AgentOpsAttentionPanel";
 import { AgentOpsMetricCell } from "@/components/studio/agent-ops/shared/AgentOpsMetricCell";
@@ -15,6 +15,7 @@ import { AgentOpsActionButton } from "@/components/studio/agent-ops/shared/Agent
 import { agentOpsActionMinWidth } from "@/components/studio/agent-ops/shared/agentOpsDimensions";
 import type { AgentOpsAttention } from "@/lib/agentOpsAttention";
 import type { ProactiveStatus } from "@/lib/proactiveAgentOps";
+import { getTokenSavingsForSource } from "@/lib/tokenSavings";
 import { cn } from "@/lib/utils";
 
 export type ProactiveDashboardHeaderProps = {
@@ -45,6 +46,17 @@ export function ProactiveDashboardHeader({
   const refreshBusy = loading || syncing;
   const controlsLocked = dispatching;
   const metricsPending = loading && !status;
+
+  const [tokensSaved, setTokensSaved] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    void getTokenSavingsForSource("proactive").then(({ savedTokens }) => {
+      if (!cancelled) setTokensSaved(savedTokens);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const metricValue = (value: string) =>
     metricsPending ? (
@@ -103,6 +115,12 @@ export function ProactiveDashboardHeader({
           <span className="text-muted-foreground">Passed </span>
           <span className="font-medium text-foreground/80">{metricValue(`${progress?.ready ?? 0}`)}</span>
         </span>
+        {tokensSaved > 0 && (
+          <span>
+            <span className="text-muted-foreground">Tokens saved </span>
+            <span className="font-semibold text-emerald-700">{tokensSaved.toLocaleString()}</span>
+          </span>
+        )}
       </div>
 
       {progress ? (

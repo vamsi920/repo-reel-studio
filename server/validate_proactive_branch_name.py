@@ -70,7 +70,7 @@ def main() -> int:
         candidate_type="improvement",
     )
     _assert(branch_a == branch_b, "repeat build should be stable")
-    _assert(branch_a.startswith("gitflick/proactive-"), "proactive branch prefix")
+    _assert(branch_a.startswith("neodevex/proactive-"), "proactive branch prefix")
     _assert(len(branch_a) <= 64, "branch must respect sanitize max length")
     _assert(re.fullmatch(r"[a-z0-9._/-]+", branch_a), "branch must avoid invalid characters")
     _assert("acme" in branch_a and "corp" in branch_a, "repo punctuation should slugify")
@@ -117,7 +117,7 @@ def main() -> int:
         "approval": {},
     }
     github_branch = build_branch_name_for_run(github_run)
-    _assert(github_branch.startswith("gitflick/issue-42-"), "github issues keep issue branch format")
+    _assert(github_branch.startswith("neodevex/issue-42-"), "github issues keep issue branch format")
 
     print("OK: proactive branch naming")
     return 0

@@ -152,7 +152,7 @@ export const executeGenerationPlan = async (
   onChapterProgress: ChapterProgressCallback
 ): Promise<VideoGenerationPlan> => {
   const updatedChapters = [...plan.chapters];
-  let aggregateStart = 0;
+  const aggregateStart = 0;
 
   for (let i = 0; i < updatedChapters.length; i++) {
     const chapter = updatedChapters[i];

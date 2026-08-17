@@ -16,7 +16,7 @@ const NotFound = () => {
 
       <div className="relative z-10 w-full max-w-[760px] rounded-[32px] gf-panel p-8 text-center shadow-[0_24px_56px_rgba(8,14,30,0.28)] sm:p-10">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-          <img src={iconUrl} alt="GitFlick" className="h-8 w-8" />
+          <img src={iconUrl} alt="NeoDevEx" className="h-8 w-8" />
         </div>
         <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
           <Sparkles className="h-3.5 w-3.5" />

@@ -102,7 +102,7 @@ const Watch = () => {
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-6 xl:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-              <img src={iconUrl} alt="GitFlick" className="h-6 w-6" />
+              <img src={iconUrl} alt="NeoDevEx" className="h-6 w-6" />
             </div>
             <div className="min-w-0">
               <div className="truncate text-[1rem] font-semibold text-foreground">{project.repo_name}</div>

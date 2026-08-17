@@ -75,7 +75,7 @@ app.use((req, res, next) => {
 // AWS: set CORS_ORIGINS on the Node ECS task (comma-separated), e.g.
 //   https://app.example.com,https://d123.cloudfront.net
 const BASE_ORIGINS = [
-  'https://gitflick.netlify.app',
+  'https://neodevex.netlify.app',
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:3000',
@@ -454,6 +454,22 @@ app.use(async (req, res, next) => {
   return res.status(404).json({ detail: "Not found" });
 });
 
+// Stack & Environment overrides: Python implements `env_settings_api.py`; Node proxies when AGENT_RUNS_PROXY_URL is set.
+app.use(async (req, res, next) => {
+  if (!req.path.startsWith("/api/env-settings")) return next();
+
+  const base = normalizeAgentProxyBase(process.env.AGENT_RUNS_PROXY_URL || "");
+  if (base) {
+    return forwardAgentOpsToUpstream(req, res, base, "env-settings");
+  }
+
+  return res.status(503).json({
+    error: true,
+    detail:
+      "Stack & Environment settings require the Python Agent Ops API. Run `npm run agent:server` in another terminal (port 8788), then restart ingestion with AGENT_RUNS_PROXY_URL=http://127.0.0.1:8788 — or run `npm run studio:backend` for both together.",
+  });
+});
+
 app.use(async (req, res, next) => {
   if (!req.path.startsWith("/api/proactive")) return next();
 
@@ -540,7 +556,7 @@ app.use(async (req, res, next) => {
 
 app.post("/api/tts", async (req, res) => {
   try {
-    const apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.VITE_GOOGLE_TTS_API_KEY || req.body?.apiKey;
+    const apiKey = process.env.GOOGLE_TTS_API_KEY;
     if (!apiKey) {
       return res.status(400).json({ error: "Google TTS API key not configured" });
     }
@@ -663,7 +679,7 @@ const ALLOWED_EXTS = new Set([
 const githubApiHeaders = (token, accept = "application/vnd.github+json") => {
   const headers = {
     Accept: accept,
-    "User-Agent": "GitFlick-Ingest/1.0",
+    "User-Agent": "NeoDevEx-Ingest/1.0",
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (token) {
@@ -1215,7 +1231,7 @@ async function fetchGitHubArchive(owner, repo, branch, destDir) {
   try {
     res = await fetch(url, {
       redirect: "follow",
-      headers: { "User-Agent": "GitFlick-Ingest/1.0" },
+      headers: { "User-Agent": "NeoDevEx-Ingest/1.0" },
       signal: controller.signal,
     });
   } catch (error) {

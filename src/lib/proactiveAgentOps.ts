@@ -4,6 +4,7 @@ import { serializeProactiveContextHints } from "@/lib/proactiveContextHints";
 import {
   clampTargetCount,
   normalizeProactiveConfig,
+  normalizeProactiveRepoUrl,
   PROACTIVE_TARGET_COUNT_MAX,
   validateProactiveConfigPatch,
   type ProactiveConfigPatchInput,
@@ -425,8 +426,10 @@ export async function getProactiveConfig(params: {
   repoUrl: string;
   projectId?: string | null;
 }): Promise<ProactiveConfig> {
-  const search = new URLSearchParams({ repoUrl: params.repoUrl });
-  if (params.projectId) search.set("projectId", params.projectId);
+  const repoUrl = normalizeProactiveRepoUrl(params.repoUrl);
+  const projectId = params.projectId?.trim() || null;
+  const search = new URLSearchParams({ repoUrl });
+  if (projectId) search.set("projectId", projectId);
   const payload = await requestJson<{ config: ProactiveConfig }>(`/proactive/config?${search}`);
   return normalizeProactiveConfig(payload.config) as ProactiveConfig;
 }
@@ -435,6 +438,8 @@ export async function updateProactiveConfig(input: Partial<ProactiveConfig> & {
   repoUrl: string;
   projectId?: string | null;
 }): Promise<ProactiveConfig> {
+  const repoUrl = normalizeProactiveRepoUrl(input.repoUrl);
+  const projectId = input.projectId?.trim() || null;
   const patchInput: ProactiveConfigPatchInput = {};
   if (input.enabled !== undefined) patchInput.enabled = input.enabled;
   if (input.targetCount !== undefined) patchInput.targetCount = input.targetCount;
@@ -446,8 +451,8 @@ export async function updateProactiveConfig(input: Partial<ProactiveConfig> & {
   const payload = await requestJson<{ config: ProactiveConfig }>("/proactive/config", {
     method: "POST",
     body: JSON.stringify({
-      repoUrl: input.repoUrl,
-      projectId: input.projectId ?? null,
+      repoUrl,
+      projectId,
       ...patch,
     }),
   });
@@ -458,8 +463,10 @@ export async function getProactiveStatus(params: {
   repoUrl: string;
   projectId?: string | null;
 }): Promise<ProactiveStatus> {
-  const search = new URLSearchParams({ repoUrl: params.repoUrl });
-  if (params.projectId) search.set("projectId", params.projectId);
+  const repoUrl = normalizeProactiveRepoUrl(params.repoUrl);
+  const projectId = params.projectId?.trim() || null;
+  const search = new URLSearchParams({ repoUrl });
+  if (projectId) search.set("projectId", projectId);
   const payload = await requestJson<unknown>(`/proactive/status?${search}`);
   return normalizeProactiveStatus(payload);
 }
@@ -493,10 +500,12 @@ export async function dispatchProactiveDaily(input: {
   targetCount?: number;
   githubToken?: string | null;
 }): Promise<ProactiveDispatchResult> {
+  const repoUrl = normalizeProactiveRepoUrl(input.repoUrl);
+  const projectId = input.projectId?.trim() || null;
   const body: Record<string, unknown> = {
-    repoUrl: input.repoUrl,
+    repoUrl,
     repoName: input.repoName ?? null,
-    projectId: input.projectId ?? null,
+    projectId,
     contextHints: input.contextHints ? serializeProactiveContextHints(input.contextHints) : null,
   };
   const githubToken = typeof input.githubToken === "string" ? input.githubToken.trim() : "";

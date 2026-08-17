@@ -123,7 +123,14 @@ export function FixStoryPreview({ run }: FixStoryPreviewProps) {
             {/* Scene-specific data */}
             {currentScene.type === "diff_walkthrough" && (
               <div className="mt-4 grid grid-cols-3 gap-3">
-                <Stat label="Files" value={String((currentScene.data.changedFiles as any[])?.length || 0)} />
+                <Stat
+                  label="Files"
+                  value={String(
+                    Array.isArray(currentScene.data.changedFiles)
+                      ? currentScene.data.changedFiles.length
+                      : 0,
+                  )}
+                />
                 <Stat label="Added" value={`+${currentScene.data.totalAdditions}`} color="text-emerald-400" />
                 <Stat label="Removed" value={`-${currentScene.data.totalDeletions}`} color="text-red-400" />
               </div>

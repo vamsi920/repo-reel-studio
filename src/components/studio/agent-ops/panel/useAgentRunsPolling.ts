@@ -111,5 +111,16 @@ export function useAgentRunsPolling({
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [repoUrl]);
+  }, [
+    loadProactiveRef,
+    loadRunsRef,
+    proactiveActionRef,
+    proactiveBackendDownRef,
+    proactivePollFailuresRef,
+    proactiveStatusRef,
+    repoUrl,
+    runsPollFailuresRef,
+    runsWorkActiveRef,
+    selectedIdRef,
+  ]);
 }

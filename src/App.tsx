@@ -20,6 +20,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
 import Watch from "./pages/Watch";
+import RequirementsOnboarding from "./pages/RequirementsOnboarding";
+import TokenSavings from "./pages/TokenSavings";
 
 const queryClient = new QueryClient();
 
@@ -62,7 +64,7 @@ const App = () => (
               path="/dashboard" 
               element={
                 <AuthGate 
-                  title="Welcome to GitFlick" 
+                  title="Welcome to NeoDevEx" 
                   message="Sign in to access your dashboard and manage your video projects."
                   featureName="Dashboard"
                 >
@@ -70,8 +72,20 @@ const App = () => (
                 </AuthGate>
               } 
             />
-            <Route 
-              path="/studio" 
+            <Route
+              path="/token-savings"
+              element={
+                <AuthGate
+                  title="Welcome to NeoDevEx"
+                  message="Sign in to see how many tokens Agent Ops and the Proactive Agent have saved."
+                  featureName="Token Savings"
+                >
+                  <TokenSavings />
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/studio"
               element={
                 <AuthGate 
                   title="Almost there!" 
@@ -82,8 +96,20 @@ const App = () => (
                 </AuthGate>
               } 
             />
-            <Route 
-              path="/export" 
+            <Route
+              path="/requirements/new"
+              element={
+                <AuthGate
+                  title="Start from scratch"
+                  message="Sign in to run the Requirements Engine and create a project from your idea."
+                  featureName="Requirements Engine"
+                >
+                  <RequirementsOnboarding />
+                </AuthGate>
+              }
+            />
+            <Route
+              path="/export"
               element={
                 <AuthGate 
                   title="Export Your Video" 

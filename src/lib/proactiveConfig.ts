@@ -1,9 +1,14 @@
+export function normalizeProactiveRepoUrl(repoUrl: string): string {
+  return typeof repoUrl === "string" ? repoUrl.trim().replace(/\/+$/, "") : "";
+}
+
 export const PROACTIVE_TARGET_COUNT_MIN = 1;
 export const PROACTIVE_TARGET_COUNT_MAX = 6;
 export const PROACTIVE_TIMEZONE_MAX_LEN = 64;
 export const PROACTIVE_QUALITY_MODE_MAX_LEN = 32;
 export const MORNING_DEADLINE_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const MORNING_DEADLINE_LOOSE_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
+// eslint-disable-next-line no-control-regex -- control characters are exactly what this sanitizer removes.
 const CONTROL_CHAR_PATTERN = /[\u0000-\u001f\u007f]/g;
 
 export type ProactiveConfigPatchInput = {

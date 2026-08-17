@@ -48,7 +48,7 @@ const FIXTURES: BenchmarkFixture[] = [
     context: "repo_investigator_memory",
     path: "/repo-investigator-memory/prompt.md",
     text: [
-      "You are GitFlick Repo Q&A.",
+      "You are NeoDevEx Repo Q&A.",
       "Rules:",
       "- You should always answer from evidence.",
       "- Return ONLY valid JSON.",

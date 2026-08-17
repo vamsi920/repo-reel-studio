@@ -1,4 +1,4 @@
-# GitFlick
+# NeoDevEx
 
 Repo to Reel
 
@@ -14,9 +14,9 @@ Turn GitHub repositories into cinematic onboarding videos with Gemini 2.0.
 
 ### Demo video
 
-**[▶ Live demo](https://gitflick.netlify.app/studio?project=4600de3d-947b-4df6-b5fa-1bcf81ac058a)** — See GitFlick Studio in action.
+**[▶ Live demo](https://gitflick.netlify.app/studio?project=4600de3d-947b-4df6-b5fa-1bcf81ac058a)** — See NeoDevEx Studio in action. (Live demo URL still points at the old `gitflick.netlify.app` deployment — update this once the Netlify site itself is renamed.)
 
-## What GitFlick does
+## What NeoDevEx does
 
 - Ingests a public GitHub repository and builds a structured content map.
 - Generates a scene-by-scene video manifest with Gemini 3.0.
@@ -109,4 +109,4 @@ INGEST_MAX_FILE_BYTES=524288
 
 ---
 
-GitFlick: Repo to Reel.
+NeoDevEx: Repo to Reel.

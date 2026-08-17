@@ -5,8 +5,8 @@ const Privacy = () => {
     <LegalLayout
       title="Privacy Policy"
       updated="January 2026"
-      summary="How GitFlick handles account data, repository context, generated media, and the vendors involved in running the product."
-      contactEmail="privacy@gitflick.app"
+      summary="How NeoDevEx handles account data, repository context, generated media, and the vendors involved in running the product."
+      contactEmail="privacy@neodevex.app"
       highlights={[
         {
           label: "Repository access",
@@ -23,7 +23,7 @@ const Privacy = () => {
       ]}
     >
       <p>
-        GitFlick ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service to transform GitHub repositories into video walkthroughs.
+        NeoDevEx ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service to transform GitHub repositories into video walkthroughs.
       </p>
 
       <section>
@@ -41,13 +41,13 @@ const Privacy = () => {
       <section>
         <h2>2. How We Use Your Information</h2>
         <p>
-          We use the information we collect to provide, maintain, and improve GitFlick; generate videos from your repositories using AI, including Google Gemini and text-to-speech services; authenticate you and manage your account; send you service-related communications; and comply with legal obligations.
+          We use the information we collect to provide, maintain, and improve NeoDevEx; generate videos from your repositories using AI, including Google Gemini and text-to-speech services; authenticate you and manage your account; send you service-related communications; and comply with legal obligations.
         </p>
       </section>
 
       <section>
         <h2>3. Third-Party Services</h2>
-        <p>We use trusted third parties to run GitFlick:</p>
+        <p>We use trusted third parties to run NeoDevEx:</p>
         <ul>
           <li><strong>Supabase:</strong> Authentication, database, and storage. Their privacy policy applies to data they process on our behalf.</li>
           <li><strong>Google (Gemini, Cloud TTS):</strong> AI analysis and narration. Repository and script content may be sent to Google APIs to generate videos and voice. Google’s privacy policy applies to that processing.</li>
@@ -79,14 +79,14 @@ const Privacy = () => {
       <section>
         <h2>7. Changes</h2>
         <p>
-          We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy on this page and updating the "Last updated" date. Your continued use of GitFlick after changes constitutes acceptance of the revised policy.
+          We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy on this page and updating the "Last updated" date. Your continued use of NeoDevEx after changes constitutes acceptance of the revised policy.
         </p>
       </section>
 
       <section>
         <h2>8. Contact</h2>
         <p>
-          For privacy-related questions or requests, contact us at <a href="mailto:privacy@gitflick.app">privacy@gitflick.app</a>.
+          For privacy-related questions or requests, contact us at <a href="mailto:privacy@neodevex.app">privacy@neodevex.app</a>.
         </p>
       </section>
     </LegalLayout>

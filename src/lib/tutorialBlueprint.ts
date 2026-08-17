@@ -52,7 +52,7 @@ const ENTRY_PATTERNS = [
 ];
 
 const TEST_FILE_RE = /(^|\/)(__tests__|tests?|spec|e2e)\//i;
-const TEST_NAME_RE = /(?:^|\/)(?:test_.*|.*(?:_test|_spec)|.*\.(?:test|spec|e2e))\.[^.\/]+$/i;
+const TEST_NAME_RE = /(?:^|\/)(?:test_.*|.*(?:_test|_spec)|.*\.(?:test|spec|e2e))\.[^./]+$/i;
 const CONFIG_RE = /(^|\/)(\.env|.*config|settings|vite\.config|tailwind\.config|netlify\.toml|fly\.toml|dockerfile|docker-compose|package\.json|tsconfig|supabase|auth|ci|workflows?|\.github)(\/|\.|$)/i;
 const DOC_RE = /(^|\/)(readme|docs?|guide|overview|architecture)/i;
 const SOURCE_HINT_RE = /(^|\/)(src|lib|app|server|core|pkg|internal|connection|protocol|service|services|components|pages)\//i;
@@ -830,7 +830,7 @@ export function mergeManifestWithBlueprint(
   // Group by phase since there can be multiple deep_dive scenes
   const candidatesByPhase = new Map<string, VideoScene[]>();
   candidateScenes.forEach((s) => {
-    const phase = (s as any).phase || '';
+    const phase = s.phase || "";
     if (phase) {
       const arr = candidatesByPhase.get(phase) || [];
       arr.push(s);

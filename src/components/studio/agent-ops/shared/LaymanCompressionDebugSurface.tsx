@@ -16,12 +16,7 @@ const CONTEXT_LABELS: Record<LaymanCompressionContext, string> = {
 const REPORT_REFRESH_INTERVAL_MS = 1500;
 
 function shouldRenderDebugSurface(): boolean {
-  if (LAYMAN_PROMPT_DEBUG) return true;
-  try {
-    return Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
-  } catch {
-    return false;
-  }
+  return LAYMAN_PROMPT_DEBUG;
 }
 
 export function LaymanCompressionDebugSurface() {

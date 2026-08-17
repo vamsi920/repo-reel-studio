@@ -45,7 +45,7 @@ describe("layman prompt fixture safety", () => {
   it("preserves repo-investigator question/evidence anchors while shrinking memory prose", () => {
     resetLaymanCompressionPolicy();
     const fixture = [
-      "You are GitFlick Repo Q&A, a principal engineer assistant.",
+      "You are NeoDevEx Repo Q&A, a principal engineer assistant.",
       "",
       "Rules:",
       "- You should always answer from evidence and you could consider keeping responses concise.",
@@ -131,7 +131,7 @@ describe("layman prompt fixture safety", () => {
     ].join("\n");
 
     const fixture = [
-      "You are GitFlick Repo Q&A, a principal engineer assistant.",
+      "You are NeoDevEx Repo Q&A, a principal engineer assistant.",
       "",
       "Keep output tight and evidence-backed. Please make sure to stay concise.",
       "",

@@ -1,4 +1,4 @@
-# 🎬 GitFlick Studio
+# 🎬 NeoDevEx Studio
 
 > Transform GitHub repositories into engaging video content using AI
 

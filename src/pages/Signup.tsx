@@ -130,13 +130,13 @@ const Signup = () => {
             <div className="flex justify-center mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-                  <img src={iconUrl} alt="GitFlick" className="h-7 w-7" />
+                  <img src={iconUrl} alt="NeoDevEx" className="h-7 w-7" />
                 </div>
               </div>
             </div>
             <CardTitle className="text-2xl">Create an account</CardTitle>
             <CardDescription>
-              Get started with GitFlick for free
+              Get started with NeoDevEx for free
             </CardDescription>
           </CardHeader>
 

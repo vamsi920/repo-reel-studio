@@ -33,6 +33,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { SummaryStatCard } from "@/components/dashboard/SummaryStatCard";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -52,6 +53,7 @@ import {
 } from "@/lib/projectSource";
 import { cn } from "@/lib/utils";
 import { listWorkspaceVideoEntries } from "@/lib/videoWorkspace";
+import { ProjectJourney } from "@/components/journey/ProjectJourney";
 
 type StatusFilter = "all" | Project["status"];
 
@@ -185,7 +187,11 @@ const ProjectCard = ({
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge variant="secondary" className="capitalize">
-            {sourceType === "folder" ? "Folder Upload" : sourceType}
+            {sourceType === "folder"
+              ? "Folder Upload"
+              : sourceType === "scratch"
+                ? "Blueprint"
+                : sourceType}
           </Badge>
           {stats.sceneCount > 0 ? <Badge variant="outline">{stats.sceneCount} scenes</Badge> : null}
           {readyVideoCount > 0 ? <Badge variant="outline">{readyVideoCount} videos</Badge> : null}
@@ -210,33 +216,6 @@ const ProjectCard = ({
     </Card>
   );
 };
-
-const SummaryStatCard = ({
-  icon: Icon,
-  label,
-  value,
-  description,
-  accentClass,
-}: {
-  icon: ElementType;
-  label: string;
-  value: string;
-  description: string;
-  accentClass: string;
-}) => (
-  <div className="rounded-[20px] gf-panel-soft p-4">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-        <div className="mt-2 text-2xl font-semibold text-foreground">{value}</div>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
-      </div>
-      <div className={cn("rounded-2xl p-2", accentClass)}>
-        <Icon className="h-5 w-5" />
-      </div>
-    </div>
-  </div>
-);
 
 const WorkspaceMetricTile = ({
   icon: Icon,
@@ -271,6 +250,7 @@ const Dashboard = () => {
   const [isPreparingFolder, setIsPreparingFolder] = useState(false);
   const [uploadedFolder, setUploadedFolder] = useState<FolderUploadPayload | null>(null);
   const [folderProjectId, setFolderProjectId] = useState<string | null>(null);
+  const [attachRepoInput, setAttachRepoInput] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -287,7 +267,10 @@ const Dashboard = () => {
       console.error("Failed to load projects:", error);
       toast({
         title: "Failed to load projects",
-        description: "Could not fetch your saved workspaces from Supabase.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not fetch your saved workspaces from Supabase.",
         variant: "destructive",
       });
     } finally {
@@ -382,8 +365,50 @@ const Dashboard = () => {
     setSearchParams(next, { replace: true });
   };
 
-  const openProjectInStudio = (project: Project) => {
-    if (!project.manifest || !hasPlayableWorkspaceVideo(project)) {
+  const loadFullProject = useCallback(
+    async (project: Project): Promise<Project | null> => {
+      if (!user?.uid) return null;
+      try {
+        return await projectsService.getById(project.id, user.uid);
+      } catch (error) {
+        toast({
+          title: "Could not open project",
+          description: error instanceof Error ? error.message : "Failed to load project details.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    },
+    [user?.uid],
+  );
+
+  const attachRepoToScratchProject = async (project: Project) => {
+    if (!user?.uid) return;
+    try {
+      const source = resolveRepoSourceFromInput(attachRepoInput);
+      await projectsService.update(project.id, user.uid, {
+        repo_url: source.repoUrl,
+        repo_name: source.repoName,
+        status: "processing",
+      });
+      setAttachRepoInput("");
+      navigate(
+        `/processing?repo=${encodeURIComponent(source.repoUrl)}&project=${project.id}`
+      );
+    } catch (error) {
+      toast({
+        title: "Could not attach repository",
+        description:
+          error instanceof Error ? error.message : "Invalid repository URL.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openProjectInStudio = async (project: Project) => {
+    const full = await loadFullProject(project);
+    if (!full) return;
+    if (!full.manifest || !hasPlayableWorkspaceVideo(full)) {
       toast({
         title: "Workspace not ready",
         description:
@@ -393,12 +418,14 @@ const Dashboard = () => {
       return;
     }
 
-    syncProjectWorkspaceToSession(project);
-    navigate(`/studio?project=${project.id}`);
+    syncProjectWorkspaceToSession(full);
+    navigate(`/studio?project=${full.id}`);
   };
 
-  const openProjectPlayer = (project: Project) => {
-    if (!project.manifest?.scenes?.length) {
+  const openProjectPlayer = async (project: Project) => {
+    const full = await loadFullProject(project);
+    if (!full) return;
+    if (!full.manifest?.scenes?.length) {
       toast({
         title: "Master video not ready",
         description:
@@ -407,7 +434,7 @@ const Dashboard = () => {
       });
       return;
     }
-    navigate(`/v/${project.id}`);
+    navigate(`/v/${full.id}`);
   };
 
   const openProjectProcessing = (project: Project) => {
@@ -615,12 +642,15 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <Tabs defaultValue="repo" className="w-full">
-                    <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg bg-muted p-1">
+                    <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg bg-muted p-1">
                       <TabsTrigger value="repo" className="rounded-md">
                         Git Repository
                       </TabsTrigger>
                       <TabsTrigger value="folder" className="rounded-md">
                         Folder Upload
+                      </TabsTrigger>
+                      <TabsTrigger value="scratch" className="rounded-md">
+                        From Scratch
                       </TabsTrigger>
                     </TabsList>
 
@@ -718,6 +748,31 @@ const Dashboard = () => {
                           </Button>
                         </div>
                       )}
+                    </TabsContent>
+
+                    <TabsContent value="scratch" className="mt-4 space-y-4">
+                      <div className="rounded-lg bg-muted p-5 text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-foreground">
+                          <WandSparkles className="h-6 w-6" />
+                        </div>
+                        <div className="mt-4 text-sm font-semibold text-foreground">
+                          No repository yet? Start with the idea.
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          The Requirements Engine interviews you one question at a
+                          time, then generates a BRD, FRD, and Application
+                          Summary. On completion it pins the requirements into
+                          project memory and the SME agent fact-checks them.
+                          Attach a repository later when the build starts.
+                        </p>
+                        <Button
+                          className="mt-5"
+                          onClick={() => navigate("/requirements/new")}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Open the requirements engine
+                        </Button>
+                      </div>
                     </TabsContent>
                   </Tabs>
 
@@ -831,7 +886,11 @@ const Dashboard = () => {
                             {STATUS_META[selectedProject.status].label}
                           </Badge>
                           <Badge variant="secondary" className="capitalize">
-                            {selectedSourceType === "folder" ? "Folder Upload" : selectedSourceType}
+                            {selectedSourceType === "folder"
+                              ? "Folder Upload"
+                              : selectedSourceType === "scratch"
+                                ? "Blueprint"
+                                : selectedSourceType}
                           </Badge>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -841,6 +900,8 @@ const Dashboard = () => {
                           {selectedProject.repo_url}
                         </div>
                       </div>
+
+                      <ProjectJourney project={selectedProject} />
 
                       <div className="grid grid-cols-3 gap-3">
                         <WorkspaceMetricTile
@@ -863,6 +924,43 @@ const Dashboard = () => {
                         />
                       </div>
 
+                      {selectedSourceType === "scratch" ? (
+                        <div className="space-y-3">
+                          <div className="rounded-[18px] bg-muted p-4">
+                            <div className="text-sm font-semibold text-foreground">
+                              Blueprint stage
+                            </div>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                              Requirements live in project memory (see Studio →
+                              SME Desk once a repo is attached). Attach the
+                              repository to continue the journey.
+                            </p>
+                            <div className="mt-3 flex flex-col gap-2">
+                              <Input
+                                value={attachRepoInput}
+                                placeholder="github.com/user/repo"
+                                onChange={(event) =>
+                                  setAttachRepoInput(event.target.value)
+                                }
+                                onKeyDown={(event) =>
+                                  event.key === "Enter" &&
+                                  void attachRepoToScratchProject(selectedProject)
+                                }
+                              />
+                              <Button
+                                className="w-full"
+                                onClick={() =>
+                                  void attachRepoToScratchProject(selectedProject)
+                                }
+                                disabled={!attachRepoInput.trim()}
+                              >
+                                <GitBranch className="h-4 w-4" />
+                                Attach repository & analyze
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
                       <div className="space-y-3">
                         <Button
                           className="w-full"
@@ -904,6 +1002,7 @@ const Dashboard = () => {
                           </Button>
                         )}
                       </div>
+                      )}
 
                       <div className="rounded-[20px] bg-muted p-4">
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">

@@ -83,13 +83,21 @@ def create_proactive_router() -> APIRouter:
             )
         except ProactiveConfigValidationError as exc:
             raise _config_validation_error(exc) from exc
-        return {
-            "config": store_update_config(
+        previous = store_get_config(repo_url, request.projectId)
+        config = store_update_config(
+            repo_url,
+            request.projectId,
+            patch,
+        )
+        if patch.get("enabled") is True and not previous.get("enabled"):
+            from proactive_scheduler import schedule_proactive_dispatch
+
+            schedule_proactive_dispatch(
                 repo_url,
-                request.projectId,
-                patch,
+                project_id=request.projectId,
+                repo_name=None,
             )
-        }
+        return {"config": config}
 
     @router.get("/proactive/status")
     def get_status(repoUrl: RepoUrlQuery, projectId: Optional[str] = None):

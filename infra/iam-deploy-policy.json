@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "GitFlickDeploy",
+      "Sid": "NeoDevExDeploy",
       "Effect": "Allow",
       "Action": [
         "ec2:Describe*",

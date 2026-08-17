@@ -342,9 +342,9 @@ def create_agent_run_router() -> APIRouter:
         promotion_log.append(f"git push origin {branch_name}: exit={push_result['exitCode']}")
 
         if push_result["exitCode"] == 0:
-            pr_title = shell_quote(pr_draft.get("title") or "GitFlick agent run")
+            pr_title = shell_quote(pr_draft.get("title") or "NeoDevEx agent run")
             pr_create_result = run_subprocess(
-                ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
+                ["gh", "pr", "create", "--title", pr_draft.get("title") or "NeoDevEx agent run", "--body-file", str(pr_body_path)],
                 cwd=workspace_path,
                 timeout_seconds=30,
                 governed=True,
@@ -376,7 +376,7 @@ def create_agent_run_router() -> APIRouter:
                 f"cd {workspace_path}",
                 "git status",
                 f"git push origin {branch_name}",
-                f"gh pr create --title {shell_quote(pr_draft.get('title') or 'GitFlick agent run')} --body-file {shell_quote(str(pr_body_path))}",
+                f"gh pr create --title {shell_quote(pr_draft.get('title') or 'NeoDevEx agent run')} --body-file {shell_quote(str(pr_body_path))}",
             ]
 
         run["status"] = "approved"
@@ -446,7 +446,7 @@ def shell_quote(value: str) -> str:
 
 
 def sanitize_branch_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9._/-]+", "-", (value or "").lower()).strip("-/")[:64] or "gitflick/agent-run"
+    return re.sub(r"[^a-z0-9._/-]+", "-", (value or "").lower()).strip("-/")[:64] or "neodevex/agent-run"
 
 
 def build_branch_name(issue: Optional[dict[str, Any]], repo_name: str) -> str:
@@ -454,8 +454,8 @@ def build_branch_name(issue: Optional[dict[str, Any]], repo_name: str) -> str:
     title = issue.get("title") if issue else repo_name
     slug = re.sub(r"[^a-z0-9]+", "-", (title or repo_name).lower()).strip("-")[:38] or "agent-run"
     if issue_number:
-        return sanitize_branch_name(f"gitflick/issue-{issue_number}-{slug}")
-    return sanitize_branch_name(f"gitflick/{slug}")
+        return sanitize_branch_name(f"neodevex/issue-{issue_number}-{slug}")
+    return sanitize_branch_name(f"neodevex/{slug}")
 
 
 def read_required_run(run_id: str) -> dict[str, Any]:
@@ -515,7 +515,7 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
 
     if push_result["exitCode"] == 0:
         pr_create_result = run_subprocess(
-            ["gh", "pr", "create", "--title", pr_draft.get("title") or "GitFlick agent run", "--body-file", str(pr_body_path)],
+            ["gh", "pr", "create", "--title", pr_draft.get("title") or "NeoDevEx agent run", "--body-file", str(pr_body_path)],
             cwd=workspace_path,
             timeout_seconds=30,
             governed=True,
@@ -546,7 +546,7 @@ def approve_agent_run_for_pr(run_id: str, branch_name: Optional[str] = None) -> 
             f"cd {workspace_path}",
             "git status",
             f"git push origin {branch_name}",
-            f"gh pr create --title {shell_quote(pr_draft.get('title') or 'GitFlick agent run')} --body-file {shell_quote(str(pr_body_path))}",
+            f"gh pr create --title {shell_quote(pr_draft.get('title') or 'NeoDevEx agent run')} --body-file {shell_quote(str(pr_body_path))}",
         ]
 
     run["status"] = "approved"
@@ -1146,7 +1146,7 @@ def fetch_issue_details(issue_url: str, github_token: Optional[str]) -> dict[str
 
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "GitFlick-AgentRuns/1.0",
+        "User-Agent": "NeoDevEx-AgentRuns/1.0",
     }
     token = github_token or os.getenv("GITHUB_TOKEN")
     if token:
@@ -1219,7 +1219,7 @@ def fetch_issue_details_via_html(
     request = urllib.request.Request(
         issue_url,
         headers={
-            "User-Agent": "GitFlick-AgentRuns/1.0",
+            "User-Agent": "NeoDevEx-AgentRuns/1.0",
             "Accept": "text/html,application/xhtml+xml",
         },
         method="GET",
@@ -1351,7 +1351,7 @@ def collect_repo_context(
 
     documents = []
     if runner_notes:
-        documents.append({"path": "__gitflick__/runner-notes.md", "content": runner_notes})
+        documents.append({"path": "__neodevex__/runner-notes.md", "content": runner_notes})
     for relative_path in candidate_files:
         content = read_text_safe(workspace_path / relative_path, 14000)
         if content:
@@ -1625,7 +1625,7 @@ def build_execution_plan(
         (repo_context.get("contextHints") or {}).get("architecture") or "unknown"
     )
     prompt = f"""
-You are GitFlick's planning pass for an autonomous issue fix run.
+You are NeoDevEx's planning pass for an autonomous issue fix run.
 Return strict JSON with keys:
 - summary: string
 - strategy: string
@@ -1688,7 +1688,7 @@ def build_change_set(
 
     for attempt in range(3):
         prompt = f"""
-You are GitFlick's mini-SWE executor.
+You are NeoDevEx's mini-SWE executor.
 Return strict JSON in one of these shapes:
 
 Success:
@@ -1716,7 +1716,7 @@ Rules:
 - Prefer modifying the files shown below. If you need more context from other tracked files, return blocked with `needed_files`.
 - Prefer updating tests when that is the cheapest reliable validation path.
 - The repository checkout may be incomplete. If a workspace package or sibling monorepo package is missing, do not block on that alone. Infer the narrowest local patch from neighboring files or add a small local helper/shim when that is the safest path.
-- Synthetic `__gitflick__/runner-notes.md` is read-only guidance, not a target for edits.
+- Synthetic `__neodevex__/runner-notes.md` is read-only guidance, not a target for edits.
 - Do not include markdown fences.
 
 Issue title: {issue.get("title")}
@@ -1868,7 +1868,7 @@ def self_critique_patch(
         compressed_notes = validation_notes
 
     prompt = f"""
-You are GitFlick's self-critique pass. You just generated a patch for a GitHub issue.
+You are NeoDevEx's self-critique pass. You just generated a patch for a GitHub issue.
 Review the patch critically and return strict JSON:
 {{
   "hypothesis": "One sentence: what is the root cause and how does the patch fix it?",
@@ -1924,7 +1924,7 @@ def generate_deep_work_approaches(
     try:
         repo_analysis = (repo_context or {}).get("repoAnalysis", {})
         prompt = f"""
-You are GitFlick's brainstorming pass. Propose 2 to 4 genuinely different ways to
+You are NeoDevEx's brainstorming pass. Propose 2 to 4 genuinely different ways to
 fix or improve the target — vary the actual strategy (minimal surgical patch vs.
 test-first vs. refactor-and-fix vs. add a guard/lifecycle cleanup, etc), not just
 wording of the same patch.
@@ -1993,10 +1993,10 @@ def _slugify_approach_id(text: str, fallback: str) -> str:
 
 
 def load_repo_policy(workspace_path: Path) -> dict[str, Any]:
-    """Load .gitflick-agent.yaml or return defaults."""
-    policy_path = workspace_path / ".gitflick-agent.yaml"
+    """Load .neodevex-agent.yaml or return defaults."""
+    policy_path = workspace_path / ".neodevex-agent.yaml"
     if not policy_path.exists():
-        policy_path = workspace_path / ".gitflick-agent.yml"
+        policy_path = workspace_path / ".neodevex-agent.yml"
     if not policy_path.exists():
         return {
             "allowedCommands": [],
@@ -2433,7 +2433,7 @@ def build_pr_draft(
     run_id: Optional[str] = None,
     project_id: Optional[str] = None,
 ) -> dict[str, Any]:
-    title = issue.get("title") or "GitFlick agent patch"
+    title = issue.get("title") or "NeoDevEx agent patch"
     if not title.lower().startswith("fix"):
         title = f"Fix: {title}"
 
@@ -2495,7 +2495,7 @@ def build_pr_readable(
     run_id: Optional[str] = None,
     project_id: Optional[str] = None,
 ) -> dict[str, Any]:
-    title = issue.get("title") or "GitFlick agent patch"
+    title = issue.get("title") or "NeoDevEx agent patch"
     if not title.lower().startswith("fix"):
         title = f"Fix: {title}"
 

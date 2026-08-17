@@ -1,7 +1,7 @@
 variable "project_name" {
   type        = string
   description = "Short project slug used in resource names."
-  default     = "gitflick"
+  default     = "neodevex"
 }
 
 variable "environment" {
@@ -55,7 +55,7 @@ variable "cloudfront_url" {
 variable "service_discovery_namespace" {
   type        = string
   description = "Private DNS namespace for internal ECS service discovery."
-  default     = "gitflick.local"
+  default     = "neodevex.local"
 }
 
 variable "node_container_port" {
@@ -107,7 +107,7 @@ variable "enable_efs" {
 variable "ssm_parameter_prefix" {
   type        = string
   description = "Prefix for SSM Parameter Store secrets consumed by ECS tasks."
-  default     = "/gitflick/prod"
+  default     = "/neodevex/prod"
 }
 
 variable "create_ssm_placeholders" {

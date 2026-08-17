@@ -11,26 +11,71 @@ import {
   agentOpsConsoleViewportClass,
 } from "@/components/studio/agent-ops/shared/agentOpsDimensions";
 import { fmtTime } from "@/components/studio/agent-ops/shared/timeFormat";
+import { AgentNarrationFeed, type AgentNarrationLine } from "@/components/studio/agent-ops/shared/AgentNarrationFeed";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { narrateLiveEvent } from "@/lib/agentNarration";
 import type { ProactiveCandidate, ProactiveStatus } from "@/lib/proactiveAgentOps";
 import { cn } from "@/lib/utils";
+
+export type ProactiveConsoleMode = "raw" | "narrated";
 
 export type ProactiveLiveConsoleProps = {
   candidate: ProactiveCandidate | null;
   batch: ProactiveStatus["batch"] | null;
+  mode?: ProactiveConsoleMode;
+  onModeChange?: (mode: ProactiveConsoleMode) => void;
 };
 
-export function ProactiveLiveConsole({ candidate, batch }: ProactiveLiveConsoleProps) {
+export function ProactiveLiveConsole({ candidate, batch, mode = "raw", onModeChange }: ProactiveLiveConsoleProps) {
   const groups = useMemo(() => buildProactiveLiveGroups(candidate, batch), [candidate, batch]);
   const eventCount = groups.reduce((sum, group) => sum + group.events.length, 0);
+
+  const narrationLines: AgentNarrationLine[] = useMemo(
+    () =>
+      groups.flatMap((group) =>
+        group.events.map((event) => ({
+          id: event.id,
+          text: narrateLiveEvent(event),
+          at: event.at,
+          tone: event.level === "error" ? "error" : "neutral",
+        })),
+      ),
+    [groups],
+  );
 
   return (
     <section aria-label="Live console" className="min-w-0">
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <h4 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Live console</h4>
-        {eventCount > 0 ? (
-          <span className="text-[10px] tabular-nums text-muted-foreground">{eventCount} events</span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {eventCount > 0 ? (
+            <span className="text-[10px] tabular-nums text-muted-foreground">{eventCount} events</span>
+          ) : null}
+          {onModeChange ? (
+            <div className="flex items-center rounded-md border border-border p-0.5 text-[10px]">
+              <button
+                type="button"
+                onClick={() => onModeChange("raw")}
+                className={cn(
+                  "rounded px-1.5 py-0.5 font-medium uppercase tracking-wide transition-colors",
+                  mode === "raw" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Raw log
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange("narrated")}
+                className={cn(
+                  "rounded px-1.5 py-0.5 font-medium uppercase tracking-wide transition-colors",
+                  mode === "narrated" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Plain English
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {eventCount === 0 ? (
@@ -42,6 +87,14 @@ export function ProactiveLiveConsole({ candidate, batch }: ProactiveLiveConsoleP
         >
           {AGENT_OPS_COPY.liveConsoleEmpty}
         </p>
+      ) : mode === "narrated" ? (
+        <ScrollArea
+          className={cn(agentOpsConsoleViewportClass, "rounded-md border border-border bg-card/60")}
+        >
+          <div className="p-2">
+            <AgentNarrationFeed lines={narrationLines} />
+          </div>
+        </ScrollArea>
       ) : (
         <ScrollArea
           className={cn(

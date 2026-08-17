@@ -813,9 +813,9 @@ def ensure_git_baseline(workspace: Path) -> None:
         [
             "git",
             "-c",
-            "user.name=GitFlick Proactive",
+            "user.name=NeoDevEx Proactive",
             "-c",
-            "user.email=proactive@gitflick.local",
+            "user.email=proactive@neodevex.local",
             "commit",
             "-m",
             "Baseline proactive workspace",

@@ -1017,21 +1017,21 @@ export const IdeWindow = ({
         : getLanguageFromPath(activeScene?.file_path || "").toUpperCase();
 
   // Calculate scroll position for highlighted lines
-  const sentenceHighlightRefs = (activeSentence?.source_refs || []).filter(
-    (ref) => ref.file_path === activeScene.file_path
-  );
-  const rawHighlightLines =
-    sentenceHighlightRefs.length > 0
-      ? [
-          Math.min(...sentenceHighlightRefs.map((ref) => ref.start_line)),
-          Math.max(...sentenceHighlightRefs.map((ref) => ref.end_line)),
-        ]
-      : activeScene?.highlight_lines ?? [];
   const totalLines = codeToRender.split("\n").length;
   const lineHeight = 24;
   const codePadding = 32;
 
   const highlightLines = useMemo(() => {
+    const sentenceHighlightRefs = (activeSentence?.source_refs || []).filter(
+      (ref) => ref.file_path === activeScene.file_path,
+    );
+    const rawHighlightLines =
+      sentenceHighlightRefs.length > 0
+        ? [
+            Math.min(...sentenceHighlightRefs.map((ref) => ref.start_line)),
+            Math.max(...sentenceHighlightRefs.map((ref) => ref.end_line)),
+          ]
+        : activeScene.highlight_lines ?? [];
     if (!rawHighlightLines.length || totalLines === 0) return [];
     const sanitized = rawHighlightLines
       .map((line) => (Number.isFinite(line) ? clamp(Math.round(line), 1, totalLines) : null))
@@ -1041,7 +1041,7 @@ export const IdeWindow = ({
       return [Math.min(...sanitized), Math.max(...sanitized)];
     }
     return Array.from(new Set(sanitized));
-  }, [rawHighlightLines, totalLines]);
+  }, [activeScene.file_path, activeScene.highlight_lines, activeSentence?.source_refs, totalLines]);
 
   const highlightCenter =
     highlightLines.length > 0

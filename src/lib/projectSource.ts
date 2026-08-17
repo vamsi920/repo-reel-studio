@@ -120,6 +120,10 @@ export function extractRepoNameFromSource(repoUrl: string): string {
       return parsed.searchParams.get("name") || "Uploaded folder";
     }
 
+    if (parsed.protocol === "scratch:") {
+      return parsed.searchParams.get("name") || "New project";
+    }
+
     if (GITHUB_HOSTS.has(parsed.hostname)) {
       const [owner, repo] = parsed.pathname
         .split("/")
@@ -224,11 +228,23 @@ export function getProjectSourceType(repoUrl?: string | null) {
   try {
     const parsed = new URL(repoUrl);
     if (parsed.protocol === "local:") return "folder" as const;
+    if (parsed.protocol === "scratch:") return "scratch" as const;
     if (GITHUB_HOSTS.has(parsed.hostname)) return "github" as const;
     return "url" as const;
   } catch {
     return "unknown" as const;
   }
+}
+
+export function buildScratchProjectSource(name: string): {
+  repoUrl: string;
+  repoName: string;
+} {
+  const trimmed = name.trim() || "New project";
+  return {
+    repoName: trimmed,
+    repoUrl: `scratch://blueprint?name=${encodeURIComponent(trimmed)}&ts=${Date.now().toString(36)}`,
+  };
 }
 
 export async function buildFolderUploadPayload(

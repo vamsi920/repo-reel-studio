@@ -5,7 +5,7 @@
 
 set -e
 REPO_URL="https://github.com/octocat/Hello-World"
-echo "🧪 GitFlick ingestion — small repo test"
+echo "🧪 NeoDevEx ingestion — small repo test"
 echo "========================================"
 echo ""
 

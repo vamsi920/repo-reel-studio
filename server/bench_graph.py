@@ -27,7 +27,7 @@ def load_ingestion_module():
     if str(SERVER_DIR) not in sys.path:
         sys.path.insert(0, str(SERVER_DIR))
     path = SERVER_DIR / "ingestion-server.py"
-    spec = importlib.util.spec_from_file_location("_gitflick_ingestion_bench", path)
+    spec = importlib.util.spec_from_file_location("_neodevex_ingestion_bench", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("Cannot load ingestion-server.py")
     mod = importlib.util.module_from_spec(spec)
@@ -59,7 +59,7 @@ def main() -> None:
         ("one_400kb_line_plus_small", mega_line),
     ]
 
-    print("GitFlick graph benchmark (local CPU only)\n")
+    print("NeoDevEx graph benchmark (local CPU only)\n")
     for name, blob in cases:
         t0 = time.perf_counter()
         q = m.build_code_graph_quick(blob)

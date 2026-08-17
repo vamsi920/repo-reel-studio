@@ -1,5 +1,5 @@
 /**
- * Firebase integration smoke test (local .env + live gitflick project).
+ * Firebase integration smoke test (local .env + live neodevex project).
  * Run: node scripts/firebase-smoke.mjs
  */
 import { readFileSync } from "node:fs";
@@ -48,10 +48,10 @@ if (!config.apiKey || !config.projectId || !config.appId) {
 }
 pass("env config", `project=${config.projectId}`);
 
-if (config.projectId !== "gitflick") {
-  fail("project id", `expected gitflick, got ${config.projectId}`);
+if (config.projectId !== "neodevex") {
+  fail("project id", `expected neodevex, got ${config.projectId}`);
 } else {
-  pass("project id", "gitflick");
+  pass("project id", "neodevex");
 }
 
 const app = initializeApp(config);
@@ -65,7 +65,7 @@ if (!auth.app.name) {
 }
 
 try {
-  const methods = await fetchSignInMethodsForEmail(auth, "smoke-test@gitflick.local");
+  const methods = await fetchSignInMethodsForEmail(auth, "smoke-test@neodevex.local");
   pass("auth API reachable", `sign-in methods query ok (${methods.length} methods for probe email)`);
 } catch (error) {
   const code = error?.code ?? error?.message ?? String(error);

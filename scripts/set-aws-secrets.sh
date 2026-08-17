@@ -10,7 +10,7 @@ set -euo pipefail
 
 export PATH="/opt/homebrew/bin:$PATH"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-PREFIX="${SSM_PREFIX:-/gitflick/prod}"
+PREFIX="${SSM_PREFIX:-/neodevex/prod}"
 
 put() {
   local name="$1" val="$2"

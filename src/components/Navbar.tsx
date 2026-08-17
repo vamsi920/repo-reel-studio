@@ -57,10 +57,10 @@ export const Navbar = () => {
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity" />
-              <img src={iconUrl} alt="GitFlick" className="relative h-8 w-8" />
+              <img src={iconUrl} alt="NeoDevEx" className="relative h-8 w-8" />
             </div>
             <span className="text-xl font-bold gradient-text">
-              GitFlick
+              NeoDevEx
             </span>
           </Link>
 

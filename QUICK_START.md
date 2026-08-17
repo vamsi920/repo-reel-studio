@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide - GitFlick Studio
+# 🚀 Quick Start Guide - NeoDevEx Studio
 
 ## ✅ Prerequisites Check
 
@@ -41,7 +41,7 @@ npm run ingest:server
 **Expected Output:**
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  🚀 GitFlick Ingestion Server v2.0                          ║
+║  🚀 NeoDevEx Ingestion Server v2.0                          ║
 ║  Powered by gitingest library                                ║
 ║  Running on http://localhost:8787                          ║
 ╚══════════════════════════════════════════════════════════════╝

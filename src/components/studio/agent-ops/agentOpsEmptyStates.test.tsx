@@ -8,14 +8,15 @@ import { AGENT_OPS_COPY } from "@/components/studio/agent-ops/shared/agentOpsCop
 import { makeProactiveCandidate } from "@/components/studio/agent-ops/test/proactiveTestFixtures";
 
 describe("Agent Ops empty states", () => {
-  it("RunsInspectorEmpty shows run selection copy and start action", () => {
+  it("RunsInspectorEmpty explains the lifecycle and focuses the composer", () => {
     const onStartRun = vi.fn();
     render(<RunsInspectorEmpty onStartRun={onStartRun} />);
 
-    expect(screen.getByText(AGENT_OPS_COPY.noRunSelectedTitle)).toBeInTheDocument();
-    expect(screen.getByText(AGENT_OPS_COPY.noRunSelectedMessage)).toBeInTheDocument();
+    expect(screen.getByText("From issue to reviewed change")).toBeInTheDocument();
+    expect(screen.getByText("Understand")).toBeInTheDocument();
+    expect(screen.getByText("Review and ship")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /start run/i }));
+    fireEvent.click(screen.getByRole("button", { name: /focus issue url/i }));
     expect(onStartRun).toHaveBeenCalledTimes(1);
   });
 

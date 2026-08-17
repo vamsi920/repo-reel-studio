@@ -1,6 +1,6 @@
-# Supabase Auth for Hosted App (e.g. GitFlick on Netlify)
+# Supabase Auth for Hosted App (e.g. NeoDevEx on Netlify)
 
-After deploying to https://gitflick.netlify.app, configure Supabase so signup and redirects use your real domain instead of localhost.
+After deploying to your real domain (still `https://gitflick.netlify.app` until the Netlify site itself is renamed to NeoDevEx), configure Supabase so signup and redirects use it instead of localhost.
 
 ## 1. Fix redirect / verify links (no more localhost)
 
@@ -13,7 +13,7 @@ In [Supabase Dashboard](https://supabase.com/dashboard) → your project:
    - `https://gitflick.netlify.app/auth/callback`
    - (Optional for local dev: `http://localhost:8080/**`, `http://localhost:5173/**`)
 
-The app also sends `emailRedirectTo: window.location.origin + '/auth/callback'` on signup, so the verification link in the email will use the domain the user signed up from (gitflick or localhost).
+The app also sends `emailRedirectTo: window.location.origin + '/auth/callback'` on signup, so the verification link in the email will use the domain the user signed up from (the hosted deployment or localhost).
 
 ## 2. Disable email verification (sign in without confirming email)
 

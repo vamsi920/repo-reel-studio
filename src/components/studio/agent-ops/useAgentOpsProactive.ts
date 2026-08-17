@@ -24,6 +24,7 @@ import {
   type ProactiveCandidate,
   type ProactiveStatus,
 } from "@/lib/proactiveAgentOps";
+import { normalizeProactiveRepoUrl } from "@/lib/proactiveConfig";
 import {
   areProactiveStatusesEqual,
   proactiveCandidateIdsKey,
@@ -59,6 +60,9 @@ export function useAgentOpsProactive({
   setActiveTab,
   loadRuns,
 }: UseAgentOpsProactiveOptions) {
+  const scopedRepoUrl = useMemo(() => normalizeProactiveRepoUrl(repoUrl), [repoUrl]);
+  const scopedProjectId = useMemo(() => projectId?.trim() || null, [projectId]);
+
   const [proactiveStatus, setProactiveStatus] = useState<ProactiveStatus | null>(null);
   const [proactiveLoading, setProactiveLoading] = useState(false);
   const [proactiveSyncing, setProactiveSyncing] = useState(false);
@@ -80,13 +84,13 @@ export function useAgentOpsProactive({
 
   const loadProactive = useCallback(
     async (options?: { manual?: boolean; silent?: boolean }) => {
-      if (!repoUrl) return false;
+      if (!scopedRepoUrl) return false;
       const result = await proactiveTaskRunnerRef.current.run(async () => {
         const silent = options?.silent ?? !options?.manual;
         if (options?.manual) setProactiveLoading(true);
         else if (!silent) setProactiveSyncing(true);
         try {
-          const status = await getProactiveStatus({ repoUrl, projectId });
+          const status = await getProactiveStatus({ repoUrl: scopedRepoUrl, projectId: scopedProjectId });
           setProactiveStatus((previous) => (areProactiveStatusesEqual(previous, status) ? previous : status));
           setProactiveBackendAttention(null);
           proactivePollFailuresRef.current = 0;
@@ -107,7 +111,7 @@ export function useAgentOpsProactive({
       });
       return result.status === "completed" ? Boolean(result.value) : false;
     },
-    [projectId, repoUrl],
+    [scopedProjectId, scopedRepoUrl],
   );
 
   useEffect(() => {
@@ -134,37 +138,14 @@ export function useAgentOpsProactive({
     );
   }, []);
 
-  const toggleProactive = useCallback(
-    async (enabled: boolean) => {
-      if (!repoUrl) return;
-      setProactiveAction("toggle");
-      try {
-        const config = await updateProactiveConfig({ repoUrl, projectId, enabled });
-        setProactiveStatus((previous) => mergeProactiveStatusAfterToggle(previous, config));
-        setProactiveBackendAttention(null);
-        await loadProactive({ manual: false });
-      } catch (nextError) {
-        setProactiveBackendAttention(
-          parseAgentOpsAttention(
-            nextError instanceof Error ? nextError.message : "Could not update proactive mode.",
-            "proactive",
-          ),
-        );
-      } finally {
-        setProactiveAction(null);
-      }
-    },
-    [loadProactive, projectId, repoUrl],
-  );
-
   const dispatchProactive = useCallback(async () => {
-    if (!repoUrl) return;
+    if (!scopedRepoUrl) return;
     setProactiveAction("dispatch");
     try {
       const status = await dispatchProactiveDaily({
-        repoUrl,
+        repoUrl: scopedRepoUrl,
         repoName,
-        projectId,
+        projectId: scopedProjectId,
         contextHints,
         targetCount: proactiveStatus?.config.targetCount ?? 6,
       });
@@ -202,7 +183,33 @@ export function useAgentOpsProactive({
     } finally {
       setProactiveAction(null);
     }
-  }, [contextHints, loadRuns, projectId, proactiveStatus?.config.targetCount, repoName, repoUrl, selectedRunId]);
+  }, [contextHints, loadRuns, scopedProjectId, proactiveStatus?.config.targetCount, repoName, scopedRepoUrl, selectedRunId]);
+
+  const toggleProactive = useCallback(
+    async (enabled: boolean) => {
+      if (!scopedRepoUrl) return;
+      setProactiveAction("toggle");
+      try {
+        const config = await updateProactiveConfig({ repoUrl: scopedRepoUrl, projectId: scopedProjectId, enabled });
+        setProactiveStatus((previous) => mergeProactiveStatusAfterToggle(previous, config));
+        setProactiveBackendAttention(null);
+        await loadProactive({ manual: false });
+        if (enabled) {
+          void dispatchProactive();
+        }
+      } catch (nextError) {
+        setProactiveBackendAttention(
+          parseAgentOpsAttention(
+            nextError instanceof Error ? nextError.message : "Could not update proactive mode.",
+            "proactive",
+          ),
+        );
+      } finally {
+        setProactiveAction(null);
+      }
+    },
+    [dispatchProactive, loadProactive, scopedProjectId, scopedRepoUrl],
+  );
 
   const approveCandidate = useCallback(
     async (candidate: ProactiveCandidate) => {

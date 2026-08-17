@@ -134,6 +134,16 @@ export function useVideoTree({
     }
   }, [tree, userProgress, enableCaching]);
   
+  // Enhance dialogues for better narration
+  const enhanceAllNodeDialogues = useCallback(
+    async (tree: VideoTree, personality: DialoguePersonality, audienceLevel: AudienceLevel) => {
+      // This would enhance all video manifest dialogues in the tree
+      // For performance, this runs in the background
+      console.log("Enhancing dialogues for", tree.totalVideos, "videos", personality, audienceLevel);
+    },
+    [],
+  );
+
   // Generate tree from intelligence data
   const generateTree = useCallback(async () => {
     if (!intelligence || !evidence || !knowledgeGraph) {
@@ -186,17 +196,7 @@ export function useVideoTree({
     } finally {
       setIsGenerating(false);
     }
-  }, [intelligence, evidence, knowledgeGraph, audienceLevel, personality, repoUrl, repoName]);
-  
-  // Enhance dialogues for better narration
-  const enhanceAllNodeDialogues = useCallback(
-    async (tree: VideoTree, personality: DialoguePersonality, audienceLevel: AudienceLevel) => {
-      // This would enhance all video manifest dialogues in the tree
-      // For performance, this runs in the background
-      console.log("Enhancing dialogues for", tree.totalVideos, "videos");
-    },
-    []
-  );
+  }, [intelligence, evidence, knowledgeGraph, audienceLevel, personality, repoUrl, repoName, enhanceAllNodeDialogues]);
   
   // Select a node
   const selectNode = useCallback((nodeId: string) => {
@@ -461,7 +461,9 @@ export function usePerformanceMonitor() {
         const renderTime = performance.now() - renderStart;
         
         // Get memory usage if available
-        const memoryUsage = (performance as any).memory?.usedJSHeapSize || 0;
+        const memoryUsage = (
+          performance as Performance & { memory?: { usedJSHeapSize?: number } }
+        ).memory?.usedJSHeapSize || 0;
         
         // Calculate FPS (simplified)
         const fps = Math.round(1000 / Math.max(16.67, renderTime));

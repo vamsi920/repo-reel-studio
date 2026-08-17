@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test script for verifying ingestion server
-echo "🧪 Testing GitFlick Ingestion Server"
+echo "🧪 Testing NeoDevEx Ingestion Server"
 echo "========================================"
 echo ""
 

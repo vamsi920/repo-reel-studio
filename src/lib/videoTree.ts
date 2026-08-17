@@ -16,6 +16,7 @@ import type {
   DialogueConfig,
   VisualConfig,
   AudienceLevel,
+  RepoContextCapsule,
 } from "@/lib/types";
 
 const CONCEPT_CATEGORIES = [
@@ -435,7 +436,7 @@ function extractKeyTerms(text: string): string[] {
   return Array.from(new Set(terms)).slice(0, 5);
 }
 
-function extractConceptsFromCapsule(capsule: any): string[] {
+function extractConceptsFromCapsule(capsule: RepoContextCapsule): string[] {
   const concepts: string[] = [];
   
   if (capsule.summary) {
