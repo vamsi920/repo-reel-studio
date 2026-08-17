@@ -88,3 +88,10 @@ server/.sandbox-test-tmp/
 # Governance audit log (tamper-evident, local runtime data)
 server/.governance/
 .governance/
+
+# Legacy app runtime/generated data (not source)
+legacy/server/.agent-runs/
+legacy/server/.repo-workspaces/
+legacy/server/.proactive-agent-ops/
+legacy/server/.governance/
+legacy/server/__pycache__/
