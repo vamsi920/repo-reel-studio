@@ -63,7 +63,7 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   /* NeoDevEx brand — cyan-blue/teal, replacing OpenHands' default gold */
   --oh-color-primary: #0b81b7;
   --oh-color-logo: #0b81b7;
@@ -84,7 +84,7 @@
   --oh-surface-deep: var(--cool-grey-975);    /* deep inset, context menus */
   --oh-overlay: var(--cool-grey-925);
   --oh-overlay-foreground: var(--cool-grey-100);
-  --oh-modal-title-foreground: #ffffff;
+  --oh-modal-title-foreground: #0b0e14;
   --oh-muted: var(--cool-grey-400);
   --oh-text-secondary: var(--cool-grey-300);  /* readable secondary text */
   --oh-text-tertiary: var(--cool-grey-200);   /* tertiary, slightly dimmer */
@@ -114,7 +114,7 @@
   --oh-border-input: var(--cool-grey-700);   /* unified with --oh-border; same stroke weight everywhere */
   --oh-border-subtle: var(--cool-grey-800);  /* within-panel separators, list dividers */
   --oh-separator: rgba(113, 120, 136, 0.5);
-  --oh-focus: #ffffff;
+  --oh-focus: #0b81b7;
   --oh-status-success: #1FBD53;
   --oh-status-error: #FF684E;
   --oh-link: var(--cool-grey-100);

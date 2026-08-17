@@ -24,20 +24,26 @@
   --bg-neutral-muted: var(--oh-bg-neutral-muted);
   background-color: var(--oh-color-base) !important;
 
-  /* ── Cool Grey Scale (13 shades + 2 pure anchors: white / black) ──────── */
-  --cool-grey-50:  #F7F9FC;
-  --cool-grey-100: #EEF2F7;
-  --cool-grey-200: #DCE3EE;
-  --cool-grey-300: #C3CDDC;
-  --cool-grey-400: #A3B0C4;
-  --cool-grey-500: #7E8A9E;
+  /* ── Cool Grey Scale — LIGHT theme ──────────────────────────────────────
+     Same 13 named stops as the original dark ramp, but with lightness order
+     inverted (darkest ↔ lightest swapped pairwise) so every existing
+     var(--cool-grey-N) / var(--oh-*) reference resolves to a light-mode-
+     appropriate color with no other file needing to change. See hero.ts for
+     the matching HeroUI theme inversion.
+     ────────────────────────────────────────────────────────────────────── */
+  --cool-grey-50:  #05070A;
+  --cool-grey-100: #0B0E14;
+  --cool-grey-200: #21252F;
+  --cool-grey-300: #2C313F;
+  --cool-grey-400: #383F50;
+  --cool-grey-500: #4B5468;
   --cool-grey-600: #626D82;
-  --cool-grey-700: #4B5468;
-  --cool-grey-800: #383F50;
-  --cool-grey-900: #2C313F;
-  --cool-grey-925: #21252F;
-  --cool-grey-950: #0B0E14; /* intentional override: preserves original app-shell depth */
-  --cool-grey-975: #05070A;
+  --cool-grey-700: #7E8A9E;
+  --cool-grey-800: #A3B0C4;
+  --cool-grey-900: #C3CDDC;
+  --cool-grey-925: #DCE3EE;
+  --cool-grey-950: #EEF2F7;
+  --cool-grey-975: #F7F9FC;
   /* ─────────────────────────────────────────────────────────────────────── */
 }
 

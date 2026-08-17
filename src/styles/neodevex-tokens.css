@@ -49,4 +49,19 @@
   --neutral-300: var(--cool-grey-700);
   --neutral-400: var(--cool-grey-600);
   --neutral-700: var(--cool-grey-300);
+
+  /*
+   * Light-theme rescue for literal `text-white` / `bg-white` / `border-white`
+   * Tailwind utilities scattered across the vendored (dark-only-designed)
+   * component tree. Those utilities compile to `var(--color-white)` in
+   * Tailwind v4, so redefining it here flips every literal-white usage to
+   * our ink color app-wide without hunting each file individually.
+   * Translucent forms (bg-white/10, hover:bg-white/5, etc.) become a dark-ink
+   * tint instead of a white tint — the correct direction for light mode.
+   * Known trade-off: a handful of colored badges/accent chips that chose
+   * literal white specifically for contrast against a SATURATED accent
+   * background (not the app canvas) may now read low-contrast — flag any you
+   * spot as a follow-up, this wasn't audited component-by-component.
+   */
+  --color-white: #0b0e14;
 }
