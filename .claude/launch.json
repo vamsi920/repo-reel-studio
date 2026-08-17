@@ -4,13 +4,13 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 8080
+      "runtimeArgs": ["run", "dev:minimal"],
+      "port": 3001
     },
     {
-      "name": "full",
+      "name": "legacy",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:with-agent"],
+      "runtimeArgs": ["run", "dev"],
       "port": 8080
     }
   ]

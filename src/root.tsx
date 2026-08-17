@@ -12,6 +12,8 @@ import {
 } from "react-router";
 import "./tailwind.css";
 import "./index.css";
+import "./styles/neodevex-tokens.css";
+import "./styles/neodevex-design-system.css";
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";

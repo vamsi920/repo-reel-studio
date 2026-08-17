@@ -1,0 +1,839 @@
+/* =============================================
+   AME UNIFIED DESIGN SYSTEM
+   Version: 1.0
+
+   This file provides consistent styling for all
+   UI components. Use ONLY these classes for
+   buttons, cards, and other common elements.
+   ============================================= */
+
+/* =============================================
+   BUTTONS - Use these classes consistently!
+
+   Primary Actions:   .ame-btn-primary
+   Secondary Actions: .ame-btn-secondary
+   Danger Actions:    .ame-btn-danger
+   Success Actions:   .ame-btn-success
+   Ghost/Subtle:      .ame-btn-ghost
+   Link Style:        .ame-btn-link
+
+   Sizes: .ame-btn-sm, .ame-btn-lg, .ame-btn-xl
+   Icon Only: .ame-btn-icon, .ame-btn-icon-sm, .ame-btn-icon-lg
+   Full Width: .ame-btn-block
+   Loading: add .loading class
+   ============================================= */
+
+/* Base button reset and common styles */
+.ame-btn,
+[class*="ame-btn-"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-sans, 'Segoe UI', sans-serif);
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+[class*="ame-btn-"]:focus {
+    outline: none;
+}
+
+[class*="ame-btn-"]:focus-visible {
+    outline: 2px solid var(--primary-500, #3b82f6);
+    outline-offset: 2px;
+}
+
+[class*="ame-btn-"]:disabled,
+[class*="ame-btn-"].disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Primary Button - Main call to action (INSTRUMENT cyan HUD: bright fill + ink text) */
+.ame-btn-primary {
+    background: var(--primary-400);
+    color: #06212a;
+    font-weight: 700;
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px rgba(10,13,20,.18), 0 6px 18px -8px rgba(34, 224, 255, 0.5);
+}
+
+.ame-btn-primary:hover:not(:disabled) {
+    background: #3be9ff;
+    color: #06212a;
+    box-shadow: 0 2px 4px rgba(10,13,20,.20), 0 10px 24px -8px rgba(34, 224, 255, 0.6);
+    transform: translateY(-1px);
+}
+
+.ame-btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    background: var(--primary-500);
+    box-shadow: 0 1px 3px rgba(34, 224, 255, 0.45);
+}
+
+/* Secondary Button - Secondary actions */
+.ame-btn-secondary {
+    background: var(--background-primary);
+    color: var(--neutral-700);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ame-btn-secondary:hover:not(:disabled) {
+    background: var(--background-secondary);
+    border-color: var(--neutral-300);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ame-btn-secondary:active:not(:disabled) {
+    background: var(--background-tertiary);
+}
+
+/* Danger Button - Destructive actions */
+.ame-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.ame-btn-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Success Button - Positive/confirm actions */
+.ame-btn-success {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.ame-btn-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Warning Button */
+.ame-btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.ame-btn-warning:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Ghost Button - Minimal/subtle actions */
+.ame-btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 10px 16px;
+}
+
+.ame-btn-ghost:hover:not(:disabled) {
+    background: var(--background-tertiary);
+    color: var(--text-primary);
+}
+
+/* Link Button - Looks like a link */
+.ame-btn-link {
+    background: transparent;
+    color: #3b82f6;
+    padding: 10px 16px;
+    text-decoration: none;
+}
+
+.ame-btn-link:hover:not(:disabled) {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+/* Outline variants */
+.ame-btn-outline-primary {
+    background: transparent;
+    color: #3b82f6;
+    border: 1.5px solid #3b82f6;
+}
+
+.ame-btn-outline-primary:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.ame-btn-outline-danger {
+    background: transparent;
+    color: #ef4444;
+    border: 1.5px solid #ef4444;
+}
+
+.ame-btn-outline-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Button Sizes */
+.ame-btn-xs {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    gap: 4px;
+}
+
+.ame-btn-sm {
+    padding: 8px 16px;
+    font-size: 0.8125rem;
+    gap: 6px;
+}
+
+.ame-btn-lg {
+    padding: 14px 28px;
+    font-size: 1rem;
+}
+
+.ame-btn-xl {
+    padding: 16px 36px;
+    font-size: 1.125rem;
+}
+
+/* Full width button */
+.ame-btn-block {
+    width: 100%;
+}
+
+/* Icon-only Buttons */
+.ame-btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+}
+
+.ame-btn-icon:hover:not(:disabled) {
+    background: var(--background-tertiary);
+    color: var(--text-primary);
+}
+
+.ame-btn-icon-sm {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+}
+
+.ame-btn-icon-sm:hover:not(:disabled) {
+    background: var(--background-tertiary);
+    color: var(--text-primary);
+}
+
+.ame-btn-icon-lg {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 10px;
+}
+
+.ame-btn-icon-lg:hover:not(:disabled) {
+    background: var(--background-tertiary);
+    color: var(--text-primary);
+}
+
+/* Icon button with primary styling */
+.ame-btn-icon-primary {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 8px;
+}
+
+.ame-btn-icon-primary:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+}
+
+.ame-btn-icon-danger {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+}
+
+.ame-btn-icon-danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Loading State */
+[class*="ame-btn-"].loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+[class*="ame-btn-"].loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: ame-btn-spin 0.6s linear infinite;
+}
+
+.ame-btn-primary.loading::after,
+.ame-btn-danger.loading::after,
+.ame-btn-success.loading::after,
+.ame-btn-warning.loading::after {
+    border-top-color: currentColor;
+}
+
+.ame-btn-secondary.loading::after,
+.ame-btn-ghost.loading::after {
+    border-top-color: var(--text-secondary);
+}
+
+@keyframes ame-btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Button Group */
+.ame-btn-group {
+    display: inline-flex;
+    gap: 0;
+}
+
+.ame-btn-group > [class*="ame-btn-"] {
+    border-radius: 0;
+}
+
+.ame-btn-group > [class*="ame-btn-"]:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.ame-btn-group > [class*="ame-btn-"]:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+.ame-btn-group > [class*="ame-btn-"]:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* =============================================
+   CARDS - Consistent card styling
+   ============================================= */
+
+.ame-card {
+    background: var(--background-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.ame-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ame-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ame-card-body {
+    padding: 20px;
+}
+
+.ame-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--background-secondary);
+}
+
+/* Card variants */
+.ame-card-elevated {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.ame-card-interactive {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ame-card-interactive:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+/* =============================================
+   TABS - Consistent tab styling
+   ============================================= */
+
+.ame-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--background-tertiary);
+    border-radius: 10px;
+}
+
+.ame-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ame-tab:hover:not(.active):not(:disabled) {
+    color: var(--text-primary);
+    background: var(--background-tertiary);
+}
+
+.ame-tab.active {
+    color: var(--text-primary);
+    background: var(--background-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .ame-tab:hover:not(.active):not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Underline tab variant */
+.ame-tabs-underline {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ame-tabs-underline .ame-tab {
+    padding: 12px 20px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.ame-tabs-underline .ame-tab.active {
+    color: #3b82f6;
+    background: transparent;
+    border-bottom-color: #3b82f6;
+    box-shadow: none;
+}
+
+/* =============================================
+   BADGES & TAGS
+   ============================================= */
+
+.ame-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+}
+
+.ame-badge-primary {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ame-badge-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.ame-badge-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.ame-badge-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.ame-badge-neutral {
+    background: var(--background-tertiary);
+    color: var(--text-secondary);
+}
+
+/* =============================================
+   INPUT FIELDS - Consistent form styling
+   ============================================= */
+
+.ame-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.ame-input:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-bg-subtle);
+}
+
+.ame-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* =============================================
+   ALERTS / MESSAGES
+   ============================================= */
+
+.ame-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+}
+
+.ame-alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1e40af;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ame-alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.ame-alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.ame-alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* =============================================
+   PAGE LAYOUT HELPERS
+   ============================================= */
+
+.ame-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.ame-page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.ame-page-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.ame-page-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* =============================================
+   MODAL / DIALOG
+   ============================================= */
+
+.ame-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: ame-fade-in 0.2s ease;
+}
+
+.ame-modal {
+    background: var(--background-primary);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: ame-slide-up 0.3s ease;
+}
+
+.ame-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ame-modal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.ame-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.ame-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--background-secondary);
+}
+
+/* Modal sizes */
+.ame-modal-sm { width: 400px; }
+.ame-modal-md { width: 560px; }
+.ame-modal-lg { width: 720px; }
+.ame-modal-xl { width: 900px; }
+
+/* =============================================
+   ANIMATIONS
+   ============================================= */
+
+@keyframes ame-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ame-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes ame-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* =============================================
+   UTILITY CLASSES
+   ============================================= */
+
+.ame-flex { display: flex; }
+.ame-flex-col { flex-direction: column; }
+.ame-items-center { align-items: center; }
+.ame-justify-between { justify-content: space-between; }
+.ame-justify-end { justify-content: flex-end; }
+.ame-gap-1 { gap: 4px; }
+.ame-gap-2 { gap: 8px; }
+.ame-gap-3 { gap: 12px; }
+.ame-gap-4 { gap: 16px; }
+.ame-mt-2 { margin-top: 8px; }
+.ame-mt-4 { margin-top: 16px; }
+.ame-mb-2 { margin-bottom: 8px; }
+.ame-mb-4 { margin-bottom: 16px; }
+.ame-text-sm { font-size: 0.875rem; }
+.ame-text-muted { color: var(--text-secondary); }
+.ame-text-center { text-align: center; }
+.ame-w-full { width: 100%; }
+.ame-hidden { display: none; }
+
+/* =================================================================
+   INSTRUMENT — signature visual language
+   Flat hairline panels · corner-tick framing · mono micro-labels ·
+   status pips · glow focus · cyan selection · thin scrollbars.
+   Loaded after app.css so these win the cascade.
+   ================================================================= */
+
+::selection { background: rgba(34, 224, 255, 0.30); color: inherit; }
+
+:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+* { scrollbar-width: thin; scrollbar-color: var(--neutral-300) transparent; }
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-thumb {
+    background: var(--neutral-300);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--neutral-400); background-clip: content-box; }
+
+/* Surfaces — flat planes with hairline borders + accent-on-hover (no soft blobs) */
+fluent-card,
+.ame-card,
+.metric-card,
+.stat-card,
+.dashboard-card,
+.glass-card {
+    /* Note: background intentionally NOT forced — themes set card surface differently
+       (in dark, --background-primary is the canvas, not the panel). We only unify the
+       border / radius / depth so cards read as crisp instrument planes in both themes. */
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base) !important;
+}
+fluent-card:hover,
+.ame-card:hover,
+.metric-card:hover,
+.stat-card:hover,
+.dashboard-card:hover {
+    border-color: var(--primary-300) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Corner-tick framing — opt-in instrument signature for key panels */
+.instrument-panel { position: relative; }
+.instrument-panel::before,
+.instrument-panel::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+    border: 0 solid var(--primary-500);
+    opacity: 0.9;
+}
+.instrument-panel::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.instrument-panel::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* App-wide subtle instrument framing: hover-reveal corner ticks on the common card
+   surfaces. Inset a touch so overflow:hidden cards don't clip them. Scoped to
+   fluent-card / .ame-card so pages that define their own .stat-card/.card ticks
+   (Dashboard, SecurityDashboard) are not double-framed. */
+fluent-card,
+.ame-card { position: relative; }
+fluent-card::before,
+fluent-card::after,
+.ame-card::before,
+.ame-card::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    border: 0 solid var(--primary-500);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    z-index: 1;
+}
+fluent-card::before,
+.ame-card::before { top: 7px; left: 7px; border-top-width: 2px; border-left-width: 2px; }
+fluent-card::after,
+.ame-card::after { bottom: 7px; right: 7px; border-bottom-width: 2px; border-right-width: 2px; }
+fluent-card:hover::before,
+fluent-card:hover::after,
+.ame-card:hover::before,
+.ame-card:hover::after { opacity: 0.8; }
+
+/* Mono eyebrow / micro-label — a first-class type role */
+.ame-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--primary-600);
+}
+[data-theme="dark"] .ame-eyebrow { color: var(--primary-400); }
+
+/* Status pip (set .live to pulse) */
+.ame-pip {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--primary-bg-subtle);
+    vertical-align: middle;
+}
+.ame-pip.ame-pip-success { background: var(--success-500); box-shadow: 0 0 0 3px var(--success-bg-subtle); }
+.ame-pip.ame-pip-warning { background: var(--warning-500); box-shadow: 0 0 0 3px var(--warning-bg-subtle); }
+.ame-pip.ame-pip-error   { background: var(--error-500);   box-shadow: 0 0 0 3px var(--error-bg-subtle); }
+.ame-pip.live { animation: ame-pip-pulse 1.8s ease-in-out infinite; }
+@keyframes ame-pip-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--primary-bg-subtle); }
+    50%      { box-shadow: 0 0 0 6px rgba(34, 224, 255, 0); }
+}
+
+/* Data figure — oversized tabular mono for metrics */
+.ame-figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}

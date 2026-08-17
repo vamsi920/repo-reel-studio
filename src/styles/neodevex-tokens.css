@@ -1,0 +1,52 @@
+/*
+ * Bridges the vendored AME/NeoDevEx design system (src/styles/neodevex-design-system.css,
+ * sourced from the neodevex/ parent workspace's design-system.css) onto this
+ * app's existing dark palette (--oh-*, --cool-grey-*, defined in tailwind.css
+ * and index.css). The design system expects these token names; we don't have
+ * them yet under this app's own dark theme, so define them here rather than
+ * editing the vendored file.
+ */
+:root {
+  /* Brand ramp — cyan-blue, matches hero.ts / tailwind.css --oh-color-primary */
+  --primary-100: #0a2a35;
+  --primary-200: #0f3f4f;
+  --primary-300: #6ff2ff;
+  --primary-400: #22e0ff;
+  --primary-500: #0b81b7;
+  --primary-600: #096a97;
+  --primary-700: #075277;
+  --primary-bg-subtle: rgba(34, 224, 255, 0.08);
+
+  --background-primary: var(--oh-surface-raised);
+  --background-secondary: var(--oh-surface);
+  --background-tertiary: var(--oh-interactive-hover-low);
+
+  --text-primary: var(--oh-foreground);
+  --text-secondary: var(--oh-text-secondary);
+  --text-tertiary: var(--oh-text-tertiary);
+
+  --border-color: var(--oh-border);
+
+  --font-sans:
+    "Outfit", -apple-system, "SF Pro", BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", source-code-pro, Menlo, Monaco, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+
+  --success-500: #188c42;
+  --success-bg-subtle: rgba(24, 140, 66, 0.12);
+  --warning-500: #db7706;
+  --warning-bg-subtle: rgba(219, 119, 6, 0.12);
+  --error-500: #d32222;
+  --error-bg-subtle: rgba(211, 34, 34, 0.12);
+
+  --neutral-300: var(--cool-grey-700);
+  --neutral-400: var(--cool-grey-600);
+  --neutral-700: var(--cool-grey-300);
+}
