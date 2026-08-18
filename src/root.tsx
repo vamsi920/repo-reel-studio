@@ -301,17 +301,25 @@ export default function App() {
       (!isActiveLockedCloudBackend ||
         (lockedCloudAuthMode !== "cookie" && !onboardingCompleted))
     : !onboardingCompleted;
+  // Only the locked-to-Cloud case needs a full-page takeover (it owns the
+  // Cloud login, and there may not be any usable local backend to render the
+  // app shell against yet). In the normal local-backend case, don't blank out
+  // the whole app for onboarding — the sidebar/shell renders as usual and
+  // OnboardingHost (mounted inside HomeScreen, under the same shell) shows
+  // the same modal on top of it, keeping the sidebar visible the whole time.
+  const showFirstRunOnboardingBlocking =
+    showFirstRunOnboarding && isLockedToCloud;
   const mainAppAuth = useQuery({
     queryKey: QUERY_KEYS.MAIN_APP_COOKIE_AUTH,
     queryFn: authenticateWithMainAppCookie,
-    enabled: shouldCheckMainAppAuth && !showFirstRunOnboarding,
+    enabled: shouldCheckMainAppAuth && !showFirstRunOnboardingBlocking,
     retry: false,
     staleTime: 1000 * 60 * 5,
     meta: { disableToast: true },
   });
   const waitingForMainAppAuth =
     shouldCheckMainAppAuth &&
-    !showFirstRunOnboarding &&
+    !showFirstRunOnboardingBlocking &&
     mainAppAuth.isPending &&
     !mainAppAuth.isError;
   const redirectingToMainAppLogin =
@@ -325,13 +333,13 @@ export default function App() {
 
   // Skip the /server_info probe entirely when we already know auth is
   // required and missing — it would just 401 and waste time. Also keep the
-  // root bootstrap quiet while the first-run onboarding modal owns backend
-  // collection; the onboarding steps issue their own backend-specific queries.
+  // root bootstrap quiet while the locked-Cloud first-run modal owns backend
+  // collection; its onboarding steps issue their own backend-specific queries.
   const config = useConfig({
     enabled:
       !isWelcomePage &&
       !authMissing &&
-      !showFirstRunOnboarding &&
+      !showFirstRunOnboardingBlocking &&
       mainAppAuthAllowsBackendQueries,
   });
   const activeCloudHealth = useBackendsHealth(
@@ -359,7 +367,7 @@ export default function App() {
     return <Outlet />;
   }
 
-  if (showFirstRunOnboarding) {
+  if (showFirstRunOnboardingBlocking) {
     return (
       <>
         <FirstRunOnboardingScreen onClose={markCompleted} />

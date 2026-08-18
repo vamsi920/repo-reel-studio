@@ -17,15 +17,22 @@
   --primary-700: #075277;
   --primary-bg-subtle: rgba(34, 224, 255, 0.08);
 
-  --background-primary: var(--oh-surface-raised);
-  --background-secondary: var(--oh-surface);
-  --background-tertiary: var(--oh-interactive-hover-low);
+  /* Cards/panels want the CRISPEST surface in the ramp (near-white), not the
+     "raised" mid-tone — that mid-tone reads as dull grey-blue on a light
+     canvas. --oh-surface-deep is cool-grey-975 (lightest stop), reused here
+     as the card fill; --oh-background (the page canvas) becomes the
+     secondary tone, one step darker, so cards visibly pop off the page. */
+  --background-primary: var(--oh-surface-deep);
+  --background-secondary: var(--oh-background);
+  --background-tertiary: var(--oh-surface);
 
   --text-primary: var(--oh-foreground);
   --text-secondary: var(--oh-text-secondary);
   --text-tertiary: var(--oh-text-tertiary);
 
-  --border-color: var(--oh-border);
+  /* A lighter hairline than --oh-border (which is tuned for dark-mode
+     contrast and reads too heavy/saturated against a near-white card). */
+  --border-color: var(--oh-surface);
 
   --font-sans:
     "Outfit", -apple-system, "SF Pro", BlinkMacSystemFont, "Segoe UI", sans-serif;
