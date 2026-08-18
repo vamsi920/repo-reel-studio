@@ -230,6 +230,15 @@ export const meta: MetaFunction = () => [
 ];
 
 export default function App() {
+  // The marketing page ("/") is fully standalone — no backend/auth/
+  // onboarding state required to render it. All the gating below exists to
+  // get a user into a *working console*, which the welcome page never needs;
+  // gating it would mean a backend hiccup blocks the marketing page too.
+  // Hooks below still run unconditionally (rules of hooks) but their
+  // `enabled` flags account for this so they don't fire pointless queries.
+  const location = useLocation();
+  const isWelcomePage = location.pathname === "/";
+
   // Flag-based gate: in public mode (VITE_AUTH_REQUIRED=true) with no
   // session key yet, show the auth screen immediately — no network
   // round-trip needed.
@@ -320,12 +329,15 @@ export default function App() {
   // collection; the onboarding steps issue their own backend-specific queries.
   const config = useConfig({
     enabled:
+      !isWelcomePage &&
       !authMissing &&
       !showFirstRunOnboarding &&
       mainAppAuthAllowsBackendQueries,
   });
   const activeCloudHealth = useBackendsHealth(
-    active.backend.kind === "cloud" && mainAppAuthAllowsBackendQueries
+    !isWelcomePage &&
+      active.backend.kind === "cloud" &&
+      mainAppAuthAllowsBackendQueries
       ? [active.backend]
       : [],
   )[active.backend.id];
@@ -342,6 +354,10 @@ export default function App() {
     active.backend.kind === "cloud" &&
     activeCloudHealth?.disabled === true &&
     isCloudBackendApiKeyOrNetworkHealthError(activeCloudHealth.lastError);
+
+  if (isWelcomePage) {
+    return <Outlet />;
+  }
 
   if (showFirstRunOnboarding) {
     return (

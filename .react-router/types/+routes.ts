@@ -100,13 +100,13 @@ type RouteFiles = {
     id: "root";
     page: "/" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/shared/conversations/:conversationId";
   };
+  "routes/welcome.tsx": {
+    id: "routes/welcome";
+    page: "/";
+  };
   "routes/root-layout.tsx": {
     id: "routes/root-layout";
-    page: "/" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId";
-  };
-  "routes/index-home.tsx": {
-    id: "routes/index-home";
-    page: "/";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -208,8 +208,8 @@ type RouteFiles = {
 
 type RouteModules = {
   "root": typeof import("./src/root.tsx");
+  "routes/welcome": typeof import("./src/routes/welcome.tsx");
   "routes/root-layout": typeof import("./src/routes/root-layout.tsx");
-  "routes/index-home": typeof import("./src/routes/index-home.tsx");
   "routes/home": typeof import("./src/routes/home.tsx");
   "routes/conversation-panel": typeof import("./src/routes/conversation-panel.tsx");
   "routes/conversation": typeof import("./src/routes/conversation.tsx");
