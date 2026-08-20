@@ -11,6 +11,7 @@ import { handleEventForUI } from "#/utils/handle-event-for-ui";
 import { OpenHandsEvent } from "#/types/agent-server/core";
 import OpenHandsLogo from "#/assets/branding/openhands-logo.svg?react";
 import { useInfiniteScroll } from "#/hooks/use-infinite-scroll";
+import { stripLeadingEmoji } from "#/utils/strip-title-emoji";
 
 export default function SharedConversation() {
   const { t } = useTranslation("openhands");
@@ -84,11 +85,11 @@ export default function SharedConversation() {
             className="flex-shrink-0"
             aria-label={t(I18nKey.BRANDING$OPENHANDS_LOGO)}
           >
-            <OpenHandsLogo width={46} height={30} />
+            <OpenHandsLogo width={32} height={32} />
           </Link>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-medium mb-2">
-              {conversation?.title ||
+              {(conversation?.title && stripLeadingEmoji(conversation.title)) ||
                 t(I18nKey.CONVERSATION$SHARED_CONVERSATION)}
             </h1>
             {conversation?.selected_branch && (

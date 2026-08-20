@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { LandingTerminal } from "./landing-terminal";
+import { LandingAgentGraph } from "./landing-agent-graph";
 import { HERO } from "./landing-copy";
 
 export function LandingHero() {
@@ -27,8 +28,9 @@ export function LandingHero() {
             </span>
           </div>
         </div>
-        <div className="flex w-full justify-center lg:justify-end">
+        <div className="flex w-full flex-col items-center gap-5 lg:items-end">
           <LandingTerminal />
+          <LandingAgentGraph />
         </div>
       </div>
     </section>

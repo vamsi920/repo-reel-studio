@@ -88,6 +88,56 @@ type Pages = {
       "automationId": string;
     };
   };
+  "/security": {
+    params: {};
+  };
+  "/usage": {
+    params: {};
+  };
+  "/agentops": {
+    params: {};
+  };
+  "/agentops/live": {
+    params: {};
+  };
+  "/agentops/approvals": {
+    params: {};
+  };
+  "/agentops/history": {
+    params: {};
+  };
+  "/agentops/budgets": {
+    params: {};
+  };
+  "/agentops/runs/:runId": {
+    params: {
+      "runId": string;
+    };
+  };
+  "/kt": {
+    params: {};
+  };
+  "/kt/:repositoryId": {
+    params: {
+      "repositoryId": string;
+    };
+  };
+  "/kt/:repositoryId/graph": {
+    params: {
+      "repositoryId": string;
+    };
+  };
+  "/kt/:repositoryId/video": {
+    params: {
+      "repositoryId": string;
+    };
+  };
+  "/kt/:repositoryId/:pageId": {
+    params: {
+      "repositoryId": string;
+      "pageId": string;
+    };
+  };
   "/shared/conversations/:conversationId": {
     params: {
       "conversationId": string;
@@ -98,7 +148,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/shared/conversations/:conversationId";
+    page: "/" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
   };
   "routes/welcome.tsx": {
     id: "routes/welcome";
@@ -106,7 +156,7 @@ type RouteFiles = {
   };
   "routes/root-layout.tsx": {
     id: "routes/root-layout";
-    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -200,6 +250,62 @@ type RouteFiles = {
     id: "routes/automation-detail";
     page: "/automations/:automationId";
   };
+  "routes/security.tsx": {
+    id: "routes/security";
+    page: "/security";
+  };
+  "routes/usage.tsx": {
+    id: "routes/usage";
+    page: "/usage";
+  };
+  "routes/agentops.tsx": {
+    id: "routes/agentops";
+    page: "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId";
+  };
+  "routes/agentops-overview.tsx": {
+    id: "routes/agentops-overview";
+    page: "/agentops";
+  };
+  "routes/agentops-live-runs.tsx": {
+    id: "routes/agentops-live-runs";
+    page: "/agentops/live";
+  };
+  "routes/agentops-approvals.tsx": {
+    id: "routes/agentops-approvals";
+    page: "/agentops/approvals";
+  };
+  "routes/agentops-history.tsx": {
+    id: "routes/agentops-history";
+    page: "/agentops/history";
+  };
+  "routes/agentops-budgets.tsx": {
+    id: "routes/agentops-budgets";
+    page: "/agentops/budgets";
+  };
+  "routes/agentops-run.tsx": {
+    id: "routes/agentops-run";
+    page: "/agentops/runs/:runId";
+  };
+  "routes/kt-list.tsx": {
+    id: "routes/kt-list";
+    page: "/kt";
+  };
+  "routes/kt-repository.tsx": {
+    id: "routes/kt-repository";
+    page: "/kt/:repositoryId";
+  };
+  "routes/kt-graph.tsx": {
+    id: "routes/kt-graph";
+    page: "/kt/:repositoryId/graph";
+  };
+  "routes/kt-video-list.tsx": {
+    id: "routes/kt-video-list";
+    page: "/kt/:repositoryId/video";
+  };
+  "routes/kt-page.tsx": {
+    id: "routes/kt-page";
+    page: "/kt/:repositoryId/:pageId";
+  };
   "routes/shared-conversation.tsx": {
     id: "routes/shared-conversation";
     page: "/shared/conversations/:conversationId";
@@ -233,5 +339,19 @@ type RouteModules = {
   "routes/automation-templates": typeof import("./src/routes/automation-templates.tsx");
   "routes/automation-setup-route": typeof import("./src/routes/automation-setup-route.tsx");
   "routes/automation-detail": typeof import("./src/routes/automation-detail.tsx");
+  "routes/security": typeof import("./src/routes/security.tsx");
+  "routes/usage": typeof import("./src/routes/usage.tsx");
+  "routes/agentops": typeof import("./src/routes/agentops.tsx");
+  "routes/agentops-overview": typeof import("./src/routes/agentops-overview.tsx");
+  "routes/agentops-live-runs": typeof import("./src/routes/agentops-live-runs.tsx");
+  "routes/agentops-approvals": typeof import("./src/routes/agentops-approvals.tsx");
+  "routes/agentops-history": typeof import("./src/routes/agentops-history.tsx");
+  "routes/agentops-budgets": typeof import("./src/routes/agentops-budgets.tsx");
+  "routes/agentops-run": typeof import("./src/routes/agentops-run.tsx");
+  "routes/kt-list": typeof import("./src/routes/kt-list.tsx");
+  "routes/kt-repository": typeof import("./src/routes/kt-repository.tsx");
+  "routes/kt-graph": typeof import("./src/routes/kt-graph.tsx");
+  "routes/kt-video-list": typeof import("./src/routes/kt-video-list.tsx");
+  "routes/kt-page": typeof import("./src/routes/kt-page.tsx");
   "routes/shared-conversation": typeof import("./src/routes/shared-conversation.tsx");
 };

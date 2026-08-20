@@ -33,6 +33,8 @@ import { DeleteConfirmationModal } from "#/components/features/automations/delet
 import { EditAutomationModal } from "#/components/features/automations/detail/edit-automation-modal";
 import { useTracking } from "#/hooks/use-tracking";
 import AutomationService from "#/api/automation-service/automation-service.api";
+import { parseProactivationMarker } from "#/utils/proactivation-prompt";
+import { ProactivationSummaryBanner } from "#/components/features/automations/proactivation/proactivation-summary-banner";
 import {
   getAutomationExportFilename,
   serializeAutomation,
@@ -181,12 +183,16 @@ export default function AutomationDetail() {
   // Edit is a local-backend-only feature in MVP — cloud automations
   // are managed elsewhere and we don't yet surface them here.
   const canEdit = active.backend.kind === "local";
+  const proactivationConfig = parseProactivationMarker(automation.prompt);
 
   return (
     <div className="min-h-full">
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex flex-col gap-4">
           <BackLink />
+          {proactivationConfig && (
+            <ProactivationSummaryBanner config={proactivationConfig} />
+          )}
           <DetailHeader
             automation={automation}
             onToggle={handleToggle}

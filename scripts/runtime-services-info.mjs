@@ -55,6 +55,14 @@ import { pathToFileURL } from "node:url";
  *   prefix all automation routes are mounted under.
  * @param {string} [options.automation.authEnvVar="OPENHANDS_AUTOMATION_API_KEY"]
  *   - Env var holding the API key.
+ * @param {object} [options.agentops] - AgentOps Control Tower info. Skipped
+ *   entirely unless `.url` or `.port` is provided, so passing `{}` is safe.
+ * @param {string} [options.agentops.url] - Explicit AgentOps base URL, from the
+ *   agent's POV. Takes precedence over `.port`.
+ * @param {number} [options.agentops.port] - AgentOps collector port (used to
+ *   derive the base URL when `.url` is not given).
+ * @param {string} [options.agentops.apiPrefix="/api/agentops"] - Path prefix
+ *   all AgentOps routes are mounted under.
  * @returns {object} A JSON-serializable runtime services info object.
  */
 export function buildRuntimeServicesInfo(options) {
@@ -69,6 +77,7 @@ export function buildRuntimeServicesInfo(options) {
     frontendPort = vitePort,
     frontendKind = "vite",
     automation,
+    agentops,
   } = options;
 
   // Prefer an explicit URL (containers reach the agent-server over a specific
@@ -141,6 +150,26 @@ export function buildRuntimeServicesInfo(options) {
     };
   }
 
+  const agentOpsBaseUrl =
+    agentops?.url ??
+    (agentops?.port != null
+      ? `http://${agentHostAlias}:${agentops.port}`
+      : null);
+  if (agentOpsBaseUrl) {
+    const apiPrefix = agentops.apiPrefix ?? "/api/agentops";
+    const authEnvVar = agentops.authEnvVar ?? "OPENHANDS_AUTOMATION_API_KEY";
+    services.agentops = {
+      description:
+        "NeoDevEx AgentOps Control Tower — read-only observability plus " +
+        "governance (runs, spans, approvals, budgets, audit) over this " +
+        `agent-server. All routes are mounted under '${apiPrefix}'. ` +
+        `Authenticate with header 'X-Session-API-Key: $${authEnvVar}'.`,
+      url_from_agent: agentOpsBaseUrl,
+      api_prefix: apiPrefix,
+      auth_env_var: authEnvVar,
+    };
+  }
+
   return {
     mode,
     agent_host_alias: agentHostAlias,
@@ -153,7 +182,7 @@ export function buildRuntimeServicesInfo(options) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function parseArgs(argv) {
-  const options = { automation: {} };
+  const options = { automation: {}, agentops: {} };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     switch (flag) {
@@ -175,6 +204,12 @@ export function parseArgs(argv) {
       case "--automation-auth-env":
         options.automation.authEnvVar = argv[++i];
         break;
+      case "--agentops-url":
+        options.agentops.url = argv[++i] || undefined;
+        break;
+      case "--agentops-api-prefix":
+        options.agentops.apiPrefix = argv[++i];
+        break;
       default:
         throw new Error(`Unknown flag: ${flag}`);
     }
@@ -182,6 +217,7 @@ export function parseArgs(argv) {
   // Omit the automation entry entirely when no URL was supplied, rather than
   // advertising a backend the agent cannot reach.
   if (!options.automation.url) delete options.automation;
+  if (!options.agentops.url) delete options.agentops;
   return options;
 }
 

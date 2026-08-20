@@ -10,7 +10,7 @@ export function LandingNav() {
           to="/"
           className="flex items-center gap-2 text-[var(--text-primary)]"
         >
-          <NeoDevExLogo width={28} height={18} className="shrink-0" />
+          <NeoDevExLogo width={22} height={22} className="shrink-0" />
           <span className="font-mono text-sm font-semibold tracking-wide">
             {NAV.wordmark}
           </span>

@@ -1,0 +1,18 @@
+{
+  "builtAt": "2026-08-19T20:27:09.104Z",
+  "entry": "analyze.mjs",
+  "runtime": [
+    "node_modules/web-tree-sitter/package.json",
+    "node_modules/web-tree-sitter/web-tree-sitter.js",
+    "node_modules/web-tree-sitter/web-tree-sitter.wasm"
+  ],
+  "grammars": [
+    "grammars/tree-sitter-typescript.wasm",
+    "grammars/tree-sitter-tsx.wasm",
+    "grammars/tree-sitter-javascript.wasm",
+    "grammars/tree-sitter-python.wasm",
+    "grammars/tree-sitter-go.wasm",
+    "grammars/tree-sitter-java.wasm",
+    "grammars/tree-sitter-rust.wasm"
+  ]
+}

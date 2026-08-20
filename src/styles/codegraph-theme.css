@@ -1,0 +1,126 @@
+/**
+ * Theme tokens for the vendored Understand-Anything graph components.
+ *
+ * Those components are vendored verbatim (see `vendor/understand-anything/`)
+ * and reference Tailwind colour utilities from upstream's own palette —
+ * `bg-elevated`, `text-text-primary`, `text-node-file`, `ring-accent` and so
+ * on. Upstream ships a dark, gold-accented theme; NeoDevEx is light. Rather
+ * than editing the vendored components (which would make every upstream bump a
+ * merge), we define the tokens they ask for and point them at NeoDevEx values.
+ *
+ * Node *type* colours are kept close to upstream's hues, because the whole
+ * point of a colour-coded graph is that file/class/function stay visually
+ * distinct — but they are darkened so they read on a light surface.
+ */
+
+@theme inline {
+  /* Surfaces the vendored nodes paint themselves with. */
+  --color-elevated: var(--oh-surface-raised);
+  --color-panel: var(--oh-surface);
+  --color-root: var(--oh-color-base);
+
+  /* Text ramp. `--color-text-secondary` already exists in tailwind.css. */
+  --color-text-primary: var(--oh-foreground);
+  --color-text-muted: var(--oh-muted);
+
+  /* Selection / search accents. */
+  --color-accent: var(--oh-color-primary);
+  --color-accent-dim: var(--oh-color-primary);
+  --color-accent-bright: var(--oh-color-primary);
+  --color-gold-dim: var(--oh-color-primary);
+
+  /* Node type palette, darkened from upstream for a light background. */
+  --color-node-file: #2f6a8c;
+  --color-node-function: #3f8a55;
+  --color-node-class: #6f52a0;
+  --color-node-module: #a87c3c;
+  --color-node-concept: #9a5f70;
+  --color-node-config: #2f9a8c;
+  --color-node-document: #3a86b8;
+  --color-node-service: #7a5fd0;
+  --color-node-table: #2f9a70;
+  --color-node-endpoint: #c47a2f;
+  --color-node-pipeline: #c45f70;
+  --color-node-schema: #b08a1f;
+  --color-node-resource: #5f6fc4;
+  --color-node-article: #a87c3c;
+  --color-node-entity: #4a7c9b;
+  --color-node-topic: #a8903c;
+  --color-node-claim: #4f8a5f;
+  --color-node-source: #6b6b6b;
+
+  /* Diff overlay — unused today, defined so the vendored classes resolve. */
+  --color-diff-changed: #c23c3c;
+  --color-diff-affected: #b0801f;
+}
+
+/*
+ * Upstream utilities the vendored node components apply. Defined here rather
+ * than in the vendored files so the components stay byte-comparable to
+ * upstream. `font-heading` deliberately inherits NeoDevEx's own font stack —
+ * the graph should look like the rest of the app, not like upstream's demo.
+ */
+.node-glow {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oh-color-primary) 22%, transparent);
+}
+
+.diff-changed-glow {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-diff-changed) 22%, transparent);
+}
+
+.diff-affected-glow {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-diff-affected) 22%, transparent);
+}
+
+.diff-faded {
+  opacity: 0.35;
+}
+
+.font-heading {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+@keyframes codegraph-accent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--oh-color-primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.animate-accent-pulse {
+  animation: codegraph-accent-pulse 1.8s ease-in-out infinite;
+}
+
+/*
+ * React Flow's own stylesheet paints a white canvas and dark controls. Scope a
+ * few overrides so the canvas sits on NeoDevEx surfaces in both themes.
+ */
+.codegraph-canvas .react-flow__background {
+  background-color: var(--oh-color-base);
+}
+
+.codegraph-canvas .react-flow__controls-button {
+  background: var(--oh-surface-raised);
+  border-bottom: 1px solid var(--oh-border);
+  color: var(--oh-foreground);
+  fill: currentColor;
+}
+
+.codegraph-canvas .react-flow__controls-button:hover {
+  background: var(--oh-interactive-hover);
+}
+
+.codegraph-canvas .react-flow__minimap {
+  background-color: var(--oh-surface);
+  border: 1px solid var(--oh-border);
+  border-radius: 0.5rem;
+}
+
+.codegraph-canvas .react-flow__attribution {
+  background: transparent;
+  color: var(--oh-muted);
+}

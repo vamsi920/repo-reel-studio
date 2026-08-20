@@ -55,6 +55,7 @@ RUN node -e " \
   const lines = [ \
     'CONFIG_AGENT_SERVER_PORT=' + c.ports.agentServer, \
     'CONFIG_AUTOMATION_PORT=' + c.ports.automation, \
+    'CONFIG_AGENTOPS_PORT=' + c.ports.agentops, \
     'CONFIG_PROXY_PORT=' + c.ports.proxy, \
     'CONFIG_STATE_SUBDIR=' + c.paths.stateSubdir, \
     'CONFIG_CONVERSATIONS=' + c.paths.conversations, \
@@ -130,6 +131,15 @@ COPY --from=frontend-build /build/node_modules/totalist /opt/agent-canvas/node_m
 # Copy the runtime-services-info builder (entrypoint.sh runs it as a CLI to
 # emit the agent's <RUNTIME_SERVICES> block; same builder the dev stack uses).
 COPY scripts/runtime-services-info.mjs /opt/agent-canvas/runtime-services-info.mjs
+
+# Copy the NeoDevEx AgentOps Control Tower collector and the vendored AgentOps
+# semantic conventions it emits spans in. Dependency-free (node: builtins and
+# fetch only), so no node_modules come with it.
+# The repo's `scripts/` ↔ `vendor/` relative layout is preserved here because
+# the collector imports the vendored semconv as `../../vendor/agentops/…`.
+COPY scripts/agentops-server.mjs /opt/agent-canvas/scripts/agentops-server.mjs
+COPY scripts/agentops/ /opt/agent-canvas/scripts/agentops/
+COPY vendor/agentops/ /opt/agent-canvas/vendor/agentops/
 
 # Persisted conversations created before the client_tools migration still
 # import canvas_ui_tool by qualname. Keep the compatibility module available;

@@ -1,12 +1,7 @@
-import {
-  Bot,
-  TerminalSquare,
-  SlidersHorizontal,
-  HardDrive,
-} from "lucide-react";
+import { Bot, TerminalSquare, ShieldCheck, Server } from "lucide-react";
 import { FEATURES } from "./landing-copy";
 
-const ICONS = [Bot, TerminalSquare, SlidersHorizontal, HardDrive];
+const ICONS = [Bot, TerminalSquare, ShieldCheck, Server];
 
 export function LandingFeatures() {
   return (

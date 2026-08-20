@@ -35,6 +35,23 @@ export default [
     route("automations/templates", "routes/automation-templates.tsx"),
     route("automations/new/:automationId", "routes/automation-setup-route.tsx"),
     route("automations/:automationId", "routes/automation-detail.tsx"),
+    route("security", "routes/security.tsx"),
+    route("usage", "routes/usage.tsx"),
+    route("agentops", "routes/agentops.tsx", [
+      index("routes/agentops-overview.tsx"),
+      route("live", "routes/agentops-live-runs.tsx"),
+      route("approvals", "routes/agentops-approvals.tsx"),
+      route("history", "routes/agentops-history.tsx"),
+      route("budgets", "routes/agentops-budgets.tsx"),
+      route("runs/:runId", "routes/agentops-run.tsx"),
+    ]),
+    route("kt", "routes/kt-list.tsx"),
+    route("kt/:repositoryId", "routes/kt-repository.tsx"),
+    // The two static Knowledge tabs must be declared before the `:pageId`
+    // wildcard, or "graph"/"video" would be matched as page ids.
+    route("kt/:repositoryId/graph", "routes/kt-graph.tsx"),
+    route("kt/:repositoryId/video", "routes/kt-video-list.tsx"),
+    route("kt/:repositoryId/:pageId", "routes/kt-page.tsx"),
   ]),
   route(
     "shared/conversations/:conversationId",

@@ -11,7 +11,8 @@ export type ConversationTab =
   | "terminal"
   | "planner"
   | "tasklist"
-  | "usage";
+  | "usage"
+  | "kt-video";
 
 export type ConversationMode = "code" | "plan";
 

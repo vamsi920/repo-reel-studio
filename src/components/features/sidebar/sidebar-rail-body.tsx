@@ -6,6 +6,10 @@ import {
   Plus,
   Server,
   Settings,
+  Activity,
+  BookOpen,
+  Gauge,
+  ShieldCheck,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
@@ -35,8 +39,8 @@ import {
 } from "./sidebar-layout";
 
 const ICON_SIZE = 18;
-const SIDEBAR_LOGO_WIDTH = 34;
-const SIDEBAR_LOGO_HEIGHT = Math.round((SIDEBAR_LOGO_WIDTH * 30) / 46);
+const SIDEBAR_LOGO_WIDTH = 24;
+const SIDEBAR_LOGO_HEIGHT = SIDEBAR_LOGO_WIDTH;
 
 export interface SidebarRailBodyProps {
   collapsed: boolean;
@@ -210,6 +214,34 @@ export function SidebarRailBody({
           testId="sidebar-automations-link"
           collapsed={collapsed}
           icon={<AutomationsIcon width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/security"
+          label={t(I18nKey.SIDEBAR$SECURITY)}
+          testId="sidebar-security-link"
+          collapsed={collapsed}
+          icon={<ShieldCheck width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/agentops"
+          label={t(I18nKey.SIDEBAR$AGENTOPS)}
+          testId="sidebar-agentops-link"
+          collapsed={collapsed}
+          icon={<Activity width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/kt"
+          label={t(I18nKey.SIDEBAR$KNOWLEDGE)}
+          testId="sidebar-kt-link"
+          collapsed={collapsed}
+          icon={<BookOpen width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/usage"
+          label={t(I18nKey.SIDEBAR$USAGE)}
+          testId="sidebar-usage-link"
+          collapsed={collapsed}
+          icon={<Gauge width={ICON_SIZE} height={ICON_SIZE} />}
         />
       </nav>
 

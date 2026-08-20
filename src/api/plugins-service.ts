@@ -82,7 +82,11 @@ class PluginsService {
       const response = await new PluginsClient(
         getAgentServerClientOptions(),
       ).getPluginsMarketplace();
-      return (response.plugins ?? []) as MarketplacePlugin[];
+      const plugins = (response.plugins ?? []) as MarketplacePlugin[];
+      // The marketplace's own self-referential "openhands" entry (Cloud CLI /
+      // REST API / Automations bundle) describes OpenHands Cloud features this
+      // local-only deployment doesn't run, so it's excluded here.
+      return plugins.filter((plugin) => plugin.name !== "openhands");
     } catch {
       // Agent-server may not support the plugins endpoint or be unreachable;
       // surface an empty catalog rather than throwing.

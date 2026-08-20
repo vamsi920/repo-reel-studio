@@ -56,6 +56,71 @@ One Canvas-owned PostHog client owns telemetry and app analytics.
 ### Env vars
 `VITE_POSTHOG_API_KEY` is the sole build-time PostHog key. Unconfigured source builds use staging; official release workflows set production explicitly. Precompiled consumers use runtime configuration instead.
 
+## AgentOps Control Tower
+
+Observability + governance over agent runs, at `/agentops`. Three distinct
+layers, and it matters which is which:
+
+- **OpenHands agent-server is the runtime.** It is not modified, wrapped, or
+  replaced by any of this.
+- **AgentOps supplies the observability vocabulary.** `vendor/agentops/semconv/`
+  is the MIT semantic-convention set (span kinds, `gen_ai.*` / `tool.*`
+  attribute names), ported from Python to ESM JavaScript. The AgentOps
+  **dashboard** (upstream `app/`) is **Elastic License 2.0** and is not
+  vendored — the Control Tower UI is NeoDevEx's own. See
+  `THIRD_PARTY_NOTICES.md` and `vendor/agentops/README.md` before taking
+  anything else from that repo.
+- **NeoDevEx is the control layer**: policy, budgets, approvals, audit.
+
+### Collector (`scripts/agentops-server.mjs`, port 18002)
+
+A NeoDevEx-owned Node sidecar, mounted behind the same ingress as the
+agent-server and the automation backend at `/api/agentops`, authenticated with
+the same `X-Session-API-Key`. It polls the agent-server's REST API server-side
+— **not** from the browser — so runs, spans, budgets and audit are recorded
+whether or not a tab is open and survive a reload.
+
+- `scripts/agentops/map-events.mjs` — pure event → span mapper. Tool spans come
+  from `ActionEvent`/`ObservationEvent` pairs; LLM spans come from
+  `ConversationStats.usage_to_metrics` (per-completion `token_usages`, `costs`,
+  `response_latencies`). **Do not add an LLM instrumentor**: the runtime already
+  reports every call, and a second one would double-count.
+- `scripts/agentops/policy.mjs` — pure budget accounting and policy evaluation.
+- `scripts/agentops/store.mjs` — append-only JSONL under `~/.neodevex/agentops`.
+  Append-only is deliberate: the audit log is the point, and rewriting history
+  means rewriting the file.
+- `scripts/agentops/collector.mjs` — the poll loop, budget enforcement, and the
+  approvals it raises.
+
+Wired into `scripts/dev-with-automation.mjs` (and therefore `dev:static`),
+`scripts/ingress.mjs` routing, `scripts/runtime-services-info.mjs`, and
+`docker/entrypoint.sh`. Port lives in `config/defaults.json` under
+`ports.agentops`.
+
+### Rules this feature must keep
+
+- **Never manufacture cost.** Dollar figures come from the runtime's reported
+  `accumulated_cost` / `costs[]`. A run whose provider reported no cost is
+  counted as `runsWithoutReportedCost` and labelled, never shown as free.
+- **Never show a control that doesn't act.** Pause/Resume/Stop call the
+  agent-server's real `/interrupt` and `/run`. A control whose precondition
+  isn't met is not rendered, rather than rendered disabled.
+- **Never store chain-of-thought.** `thought`, `reasoning_content` and
+  `thinking_blocks` are stripped in the mapper. There is a test asserting it
+  (`__tests__/scripts/agentops-map-events.test.ts`); keep it passing.
+- **Never fall back to sample data.** If the collector is down the UI says so
+  and shows the command to start it.
+- Approvals are generic (`kind` + what/why/artifacts) so Proactive can raise
+  entries without a new surface. The `confirmation` kind is backed by the
+  runtime's own blocking `waiting_for_confirmation` state; answering it calls
+  `respond_to_confirmation`.
+- Autonomy level maps onto the runtime's `confirmation_mode`; run budgets map
+  onto `max_budget_per_task`. Both are real, server-side enforcement.
+
+Audit milestones are mirrored into the platform activity feed through
+`src/lib/activity/workspace-activity.ts` (the contract CodeGraph previously
+owned and now re-exports).
+
 ## Runtime Services in Dev Stacks
 
 - When the agent-canvas dev launchers (`npm run dev` / `dev:static` / the published `agent-canvas` binary) start a stack with ingress/static-server, the backend-facing server appends runtime service metadata to `/server_info` as the optional `runtime_services` field. The frontend reads that backend-provided value when creating conversations and forwards it as `AgentContext.system_message_suffix` on `POST /api/conversations`, so conversations land with a `<RUNTIME_SERVICES>` block appended to the system prompt.

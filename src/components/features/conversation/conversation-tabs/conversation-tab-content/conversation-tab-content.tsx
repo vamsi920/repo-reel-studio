@@ -15,6 +15,7 @@ const PlannerTab = lazy(() => import("#/routes/planner-tab"));
 const TaskListTab = lazy(() => import("#/routes/task-list-tab"));
 const UsageTab = lazy(() => import("#/routes/usage-tab"));
 const Terminal = lazy(() => import("#/components/features/terminal/terminal"));
+const KtVideoTab = lazy(() => import("#/routes/kt-video-tab"));
 
 const TAB_CONFIG = {
   tasklist: { component: TaskListTab },
@@ -23,6 +24,7 @@ const TAB_CONFIG = {
   terminal: { component: Terminal },
   planner: { component: PlannerTab },
   usage: { component: UsageTab },
+  "kt-video": { component: KtVideoTab },
 };
 
 export function ConversationTabContent() {

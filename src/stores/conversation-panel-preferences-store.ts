@@ -66,7 +66,12 @@ const initialState: ConversationPanelPreferencesState = {
   showLlmProfiles: false,
   showTagsMetadata: false,
   showHoverMetadata: true,
-  organizeMode: "chronological",
+  // Default to grouping conversations by workspace/repo (like Claude Code
+  // and Codex CLI's per-project session history), not one flat
+  // chronological list — the grouped view already exists as a toggle, this
+  // just makes it the out-of-the-box experience. Still a normal preference:
+  // switching to "chronological" in the filter menu persists like any other.
+  organizeMode: "grouped",
   conversationSort: "updated",
   threadScope: "all",
   automationFilterMode: "all",

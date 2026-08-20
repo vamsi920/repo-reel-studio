@@ -9,6 +9,13 @@ import {
 } from "#/types/automation";
 import { RunStatusBadge } from "./run-status-badge";
 import { RunLogsModal } from "./run-logs-modal";
+import { parseProactivationMarker } from "#/utils/proactivation-prompt";
+import { getCreatePRPrompt } from "#/utils/utils";
+import { setConversationState } from "#/utils/conversation-local-storage";
+import { useNavigation } from "#/context/navigation-context";
+import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
+import { submitMemoryCandidate } from "#/lib/workspace-memory/memory-updater";
+import { BrandButton } from "#/components/features/settings/brand-button";
 
 interface ActivityLogItemProps {
   run: AutomationRun;
@@ -51,8 +58,68 @@ function formatRunCost(cost: number | null | undefined): string | null {
   return `$${cost.toFixed(4)}`;
 }
 
+function DismissReasonModal({
+  isOpen,
+  onCancel,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const { t } = useTranslation("openhands");
+  const [reason, setReason] = useState("");
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={onCancel}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onCancel();
+        }}
+        role="presentation"
+      />
+      <div className="relative w-full max-w-sm rounded-xl border border-[var(--oh-border)] bg-[var(--oh-surface)] p-5">
+        <h3 className="text-sm font-semibold text-content">
+          {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_TITLE)}
+        </h3>
+        <label className="mt-3 flex flex-col gap-1.5 text-xs text-muted">
+          {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_LABEL)}
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder={t(
+              I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+            )}
+            className="rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] p-2 text-sm text-content"
+          />
+        </label>
+        <div className="mt-3 flex justify-end gap-2">
+          <BrandButton type="button" variant="secondary" onClick={onCancel}>
+            {t(I18nKey.AUTOMATIONS$CANCEL)}
+          </BrandButton>
+          <BrandButton
+            type="button"
+            variant="primary"
+            isDisabled={reason.trim().length === 0}
+            onClick={() => onConfirm(reason.trim())}
+          >
+            {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_SUBMIT)}
+          </BrandButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
   const { t, i18n } = useTranslation("openhands");
+  const { navigate } = useNavigation();
+  const activeWorkspaceId = useWorkspaceMemoryStore((s) => s.activeWorkspaceId);
   const hasConversation = !!run.conversation_id;
   const hasBashCommand = !!run.bash_command_id;
   // Only surface "Conversation not created" when the run has reached a
@@ -66,6 +133,65 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
     run.status === AutomationRunStatus.FAILED;
   const showNoConversationLabel = !hasConversation && isTerminal;
   const [logsOpen, setLogsOpen] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissModalOpen, setIsDismissModalOpen] = useState(false);
+
+  const proactivationConfig = parseProactivationMarker(automation?.prompt);
+  const showProactivationActions =
+    !!proactivationConfig &&
+    proactivationConfig.autonomyLevel === "prepare-fix" &&
+    run.status === AutomationRunStatus.COMPLETED &&
+    hasConversation &&
+    !isDismissed;
+
+  const handleCreatePr = (
+    e:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!run.conversation_id) return;
+    // The automation's repository has no persisted git provider today, so
+    // this follows the same GitHub-default assumption the setup wizard's
+    // repo picker makes for the MVP. Prefilling the draft (rather than
+    // sending straight to a possibly-inactive conversation runtime) reuses
+    // the exact pattern recommended-automations-launcher.tsx already uses.
+    setConversationState(run.conversation_id, {
+      draftMessage: `${getCreatePRPrompt("github")} You already prepared this change on a branch earlier in this conversation — use that branch and diff.`,
+    });
+    navigate?.(getConversationUrl(run.conversation_id));
+  };
+
+  const handleDismissClick = (
+    e:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsDismissModalOpen(true);
+  };
+
+  const handleDismissConfirm = (reason: string) => {
+    if (activeWorkspaceId) {
+      submitMemoryCandidate({
+        workspaceId: activeWorkspaceId,
+        kind: "outcome",
+        subject: `proactivation:${automation?.id ?? "unknown"}:${run.id}`,
+        statement: `A Proactivation candidate from run ${run.id} was dismissed. Reason: ${reason}`,
+        tags: ["proactivation", "dismissed"],
+        provenance: {
+          source: "user-decision",
+          sourceId: run.id,
+          conversationId: run.conversation_id,
+          observedAt: new Date().toISOString(),
+        },
+      });
+    }
+    setIsDismissModalOpen(false);
+    setIsDismissed(true);
+  };
   // The backend leaves started_at unset (epoch/zero) while a run is Pending
   // and only populates it once execution begins. Show the user's local time
   // at first render in that window so the row doesn't read "Jan 1, 1970".
@@ -126,6 +252,29 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
             {formattedCost}
           </span>
         )}
+        {showProactivationActions && (
+          <>
+            <button
+              type="button"
+              onClick={handleDismissClick}
+              className="rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground"
+            >
+              {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS)}
+            </button>
+            <button
+              type="button"
+              onClick={handleCreatePr}
+              className="rounded-md border border-[var(--oh-border)] px-2 py-1 text-xs font-medium text-content hover:bg-surface-raised"
+            >
+              {t(I18nKey.AUTOMATIONS$PROACTIVATION_CREATE_PR)}
+            </button>
+          </>
+        )}
+        {isDismissed && (
+          <span className="text-xs text-muted">
+            {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISSED)}
+          </span>
+        )}
         {logsButton}
         <RunStatusBadge status={run.status} />
       </div>
@@ -158,6 +307,12 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
           automation={automation}
         />
       )}
+
+      <DismissReasonModal
+        isOpen={isDismissModalOpen}
+        onCancel={() => setIsDismissModalOpen(false)}
+        onConfirm={handleDismissConfirm}
+      />
     </>
   );
 }

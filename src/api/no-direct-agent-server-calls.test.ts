@@ -8,6 +8,14 @@ const ALLOWED_AD_HOC_HTTP_FILES = new Set([
   "api/automation-service/automation-service.api.ts",
   "api/cloud/proxy.ts",
   "api/main-app-auth.ts",
+  // DeepWiki-Open is a standalone local companion service (not the
+  // agent-server this guard protects) — see
+  // docs/deepwiki-video-kt-integration.md.
+  "api/deepwiki-service/deepwiki-service.api.ts",
+  // The AgentOps Control Tower collector (scripts/agentops-server.mjs) is a
+  // NeoDevEx-owned companion service, not the agent-server this guard protects.
+  // It has no generated SDK client — see AGENTS.md, "AgentOps Control Tower".
+  "api/agentops-service/agentops-service.api.ts",
 ]);
 
 function collectSourceFiles(dir: string): string[] {

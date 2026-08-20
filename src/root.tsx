@@ -222,11 +222,47 @@ export const links: LinksFunction = () => [
     type: "image/svg+xml",
     href: buildAgentCanvasPath("/favicon.svg"),
   },
+  {
+    rel: "icon",
+    type: "image/png",
+    sizes: "32x32",
+    href: buildAgentCanvasPath("/favicon-32x32.png"),
+  },
+  {
+    rel: "icon",
+    type: "image/png",
+    sizes: "16x16",
+    href: buildAgentCanvasPath("/favicon-16x16.png"),
+  },
+  {
+    rel: "apple-touch-icon",
+    sizes: "180x180",
+    href: buildAgentCanvasPath("/apple-touch-icon.png"),
+  },
+  {
+    rel: "mask-icon",
+    href: buildAgentCanvasPath("/safari-pinned-tab.svg"),
+    color: "#0b81b7",
+  },
+  {
+    rel: "manifest",
+    href: buildAgentCanvasPath("/site.webmanifest"),
+  },
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "NeoDevEx" },
-  { name: "description", content: "Let's Start Building!" },
+  { title: "NeoDevEx — AI Native SDLC Platform" },
+  {
+    name: "description",
+    content:
+      "Describe what you're building or point it at a repo. NeoDevEx reads the code, plans the change, and does the work — real bash commands, real file edits, real browser tools.",
+  },
+  { name: "theme-color", content: "#0b81b7" },
+  { name: "msapplication-TileColor", content: "#0b81b7" },
+  {
+    name: "msapplication-config",
+    content: buildAgentCanvasPath("/browserconfig.xml"),
+  },
 ];
 
 export default function App() {

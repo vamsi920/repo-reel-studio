@@ -14,6 +14,7 @@ import { HooksModal } from "../conversation-panel/hooks-modal";
 import { ConfirmDeleteModal } from "../conversation-panel/confirm-delete-modal";
 import { ConfirmStopModal } from "../conversation-panel/confirm-stop-modal";
 import { TranscriptExportModal } from "./transcript-export-modal";
+import { stripLeadingEmoji } from "#/utils/strip-title-emoji";
 
 export function ConversationName() {
   const { t } = useTranslation("openhands");
@@ -162,9 +163,9 @@ export function ConversationName() {
             className="text-white leading-5 truncate"
             data-testid="conversation-name-title"
             onDoubleClick={handleDoubleClick}
-            title={conversation.title || ""}
+            title={stripLeadingEmoji(conversation.title || "")}
           >
-            {conversation.title}
+            {stripLeadingEmoji(conversation.title || "")}
           </div>
         )}
 

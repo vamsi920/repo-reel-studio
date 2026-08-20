@@ -1,17 +1,20 @@
-import { PrefetchPageLinks, useLocation } from "react-router";
+import { PrefetchPageLinks } from "react-router";
 import { HomeChatLauncher } from "#/components/features/home/home-chat-launcher";
 import { LlmNotConfiguredBanner } from "#/components/features/home/llm-not-configured-banner";
-import {
-  isOnboardingPreviewActive,
-  OnboardingHost,
-} from "#/components/features/onboarding";
 
 <PrefetchPageLinks page="/conversations/:conversationId" />;
 
+/**
+ * `HomeChatLauncher` below is already a full "what are you building?"
+ * screen — heading, prompt input, repo picker — inline on this page. The
+ * first-run onboarding modal used to layer a near-duplicate popup on top of
+ * it; removed so this screen is the one and only "new session" surface
+ * (matching how e.g. Devin's new-session page works: it's the page, not a
+ * dialog floating over it). `useOnboardingCompletion`'s flag is still read
+ * by the separate locked-Cloud full-page takeover in root.tsx, which has no
+ * shell to embed into yet and keeps its own modal for that reason.
+ */
 function HomeScreen() {
-  const location = useLocation();
-  const isPreview = isOnboardingPreviewActive(location.search);
-
   return (
     <div
       data-testid="home-screen"
@@ -22,8 +25,6 @@ function HomeScreen() {
       </div>
 
       <HomeChatLauncher />
-
-      {!isPreview ? <OnboardingHost /> : null}
     </div>
   );
 }

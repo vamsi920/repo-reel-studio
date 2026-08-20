@@ -28,6 +28,8 @@ import { WebSocketProviderWrapper } from "#/contexts/websocket-provider-wrapper"
 import { useErrorMessageStore } from "#/stores/error-message-store";
 import { I18nKey } from "#/i18n/declaration";
 import { resumeCloudSandbox } from "#/api/cloud/conversation-service.api";
+import { useMemoryObserver } from "#/hooks/use-memory-observer";
+import { useMemoryUpdater } from "#/hooks/use-memory-updater";
 
 function AppContent() {
   const { t } = useTranslation("openhands");
@@ -52,6 +54,12 @@ function AppContent() {
 
   const { data: conversation, isFetched } = useActiveConversation();
   const { data: isAuthed } = useIsAuthed();
+
+  // Workspace memory: learn from this conversation's grounded observations and
+  // drain what we learned to the workspace file. Both are silent and
+  // best-effort; neither gates rendering.
+  useMemoryObserver();
+  useMemoryUpdater();
   const { resetConversationState } = useConversationStore();
   const navigate = useNavigate();
   const location = useLocation();

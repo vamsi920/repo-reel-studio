@@ -322,6 +322,31 @@ export default defineConfig(({ mode }) => {
         "uuid",
         "zustand",
         "zustand/middleware",
+        // CodeGraph (Understand-Anything vendor): @xyflow/react ships its own
+        // nested zustand copy that default-imports the CJS
+        // use-sync-external-store shim. With noDiscovery true, an
+        // un-pre-bundled @xyflow/react gets served as raw ESM and the browser
+        // can't resolve that default export, blanking the whole route
+        // ("does not provide an export named 'default'"). Pre-bundling here
+        // routes it through esbuild's CJS/ESM interop.
+        "@xyflow/react",
+        "elkjs/lib/elk.bundled.js",
+        "graphology",
+        "graphology-communities-louvain",
+        "fuse.js",
+        "d3-force",
+        // KT docs diagram rendering (mermaid-code-block.tsx, diagram-panel.tsx).
+        // mermaid pulls in dayjs for its gantt-chart date handling; with
+        // noDiscovery true, dayjs never gets pre-bundled since it's only
+        // reachable through mermaid's own internal import graph, not a
+        // direct app import — same "does not provide an export named
+        // 'default'" route-blanking failure as the @xyflow/react case above.
+        "mermaid",
+        "dayjs",
+        "dayjs/plugin/isoWeek",
+        "dayjs/plugin/customParseFormat",
+        "dayjs/plugin/advancedFormat",
+        "dayjs/plugin/weekOfYear",
         // Syntax highlighter language definitions - Safari fails if these are
         // optimized at runtime. Include all commonly used languages.
         "react-syntax-highlighter/dist/esm/languages/prism/bash",

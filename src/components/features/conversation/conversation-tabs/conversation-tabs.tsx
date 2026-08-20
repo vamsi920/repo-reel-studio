@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutGroup } from "framer-motion";
-import { Gauge, Globe, ListTodo, SquareChevronRight } from "lucide-react";
+import { Film, Gauge, Globe, ListTodo, SquareChevronRight } from "lucide-react";
 import DocumentIcon from "#/icons/document.svg?react";
 import DoubleCheckIcon from "#/icons/double-check.svg?react";
 import { EllipsisButton } from "#/components/features/conversation-panel/ellipsis-button";
@@ -127,6 +127,15 @@ export function ConversationTabs({
       tooltipContent: t(I18nKey.COMMON$USAGE),
       tooltipAriaLabel: t(I18nKey.COMMON$USAGE),
       label: t(I18nKey.COMMON$USAGE),
+    },
+    {
+      tabValue: "kt-video",
+      isActive: isTabActive("kt-video"),
+      icon: Film,
+      onClick: () => selectTab("kt-video"),
+      tooltipContent: t(I18nKey.COMMON$KT_VIDEO),
+      tooltipAriaLabel: t(I18nKey.COMMON$KT_VIDEO),
+      label: t(I18nKey.COMMON$KT_VIDEO),
     },
   ];
 

@@ -86,6 +86,7 @@ const DEFAULT_AUTOMATION_VERSION = SHARED_DEFAULTS.versions.automation;
 const DEFAULT_AUTOMATION_SDK_VERSION = SHARED_DEFAULTS.versions.agentServer;
 const DEFAULT_BACKEND_PORT = SHARED_DEFAULTS.ports.agentServer;
 const DEFAULT_AUTOMATION_PORT = SHARED_DEFAULTS.ports.automation;
+const DEFAULT_AGENTOPS_PORT = SHARED_DEFAULTS.ports.agentops;
 const DEFAULT_POSTHOG_API_KEY = SHARED_DEFAULTS.telemetry.posthogApiKey;
 const DEFAULT_POSTHOG_HOST = SHARED_DEFAULTS.telemetry.posthogHost;
 
@@ -347,6 +348,9 @@ async function buildConfig(args, env = process.env) {
   const launchFrontend = !backendOnly;
   const launchAgentServer = !frontendOnly;
   const launchAutomation = !frontendOnly;
+  // The AgentOps collector tails the agent-server, so it only makes sense in
+  // stacks that actually run one.
+  const launchAgentOps = !frontendOnly;
   const isPublic = args.public;
 
   if (isPublic && frontendOnly) {
@@ -372,6 +376,8 @@ async function buildConfig(args, env = process.env) {
     parseInt(env.OH_CANVAS_SAFE_BACKEND_PORT, 10) || DEFAULT_BACKEND_PORT;
   const preferredAutomationPort =
     parseInt(env.OH_CANVAS_SAFE_AUTOMATION_PORT, 10) || DEFAULT_AUTOMATION_PORT;
+  const preferredAgentOpsPort =
+    parseInt(env.OH_CANVAS_SAFE_AGENTOPS_PORT, 10) || DEFAULT_AGENTOPS_PORT;
   const preferredVitePort = parseInt(env.OH_CANVAS_SAFE_VITE_PORT, 10) || 3001;
 
   // Fail fast if any preferred port for a service in this mode is already in use.
@@ -381,6 +387,9 @@ async function buildConfig(args, env = process.env) {
   }
   if (launchAutomation) {
     requiredPorts.push({ name: "automation", port: preferredAutomationPort });
+  }
+  if (launchAgentOps) {
+    requiredPorts.push({ name: "agentops", port: preferredAgentOpsPort });
   }
   if (launchFrontend) {
     requiredPorts.push({ name: "frontend", port: preferredVitePort });
@@ -427,6 +436,7 @@ async function buildConfig(args, env = process.env) {
     // Service ports (internal)
     agentServerPort: preferredBackendPort,
     autoBackendPort: preferredAutomationPort,
+    agentOpsPort: preferredAgentOpsPort,
     vitePort: preferredVitePort,
     vscodePort,
 
@@ -454,6 +464,7 @@ async function buildConfig(args, env = process.env) {
     launchFrontend,
     launchAgentServer,
     launchAutomation,
+    launchAgentOps,
 
     verbose: args.verbose,
   };
@@ -667,6 +678,7 @@ async function waitForService(name, url, timeoutMs = 30000) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AUTOMATION_ROUTE_PREFIX = "/api/automation";
+const AGENTOPS_ROUTE_PREFIX = "/api/agentops";
 const AGENT_SERVER_ROUTE_PREFIXES = [
   "/api",
   "/sockets",
@@ -687,6 +699,13 @@ function getLocalServiceRoutes(config) {
     routes.push([
       AUTOMATION_ROUTE_PREFIX,
       `http://127.0.0.1:${config.autoBackendPort}`,
+    ]);
+  }
+
+  if (config.launchAgentOps) {
+    routes.push([
+      AGENTOPS_ROUTE_PREFIX,
+      `http://127.0.0.1:${config.agentOpsPort}`,
     ]);
   }
 
@@ -712,6 +731,9 @@ function getRejectPrefixes(config) {
   const prefixes = [];
   if (!config.launchAutomation) {
     prefixes.push(AUTOMATION_ROUTE_PREFIX);
+  }
+  if (!config.launchAgentOps) {
+    prefixes.push(AGENTOPS_ROUTE_PREFIX);
   }
   if (!config.launchAgentServer) {
     for (const prefix of AGENT_SERVER_ROUTE_PREFIXES) {
@@ -961,6 +983,34 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 process.on("SIGHUP", shutdown);
 
+/**
+ * Start the NeoDevEx AgentOps Control Tower collector.
+ *
+ * This is a NeoDevEx-owned Node service, not an upstream one: it tails the
+ * agent-server's REST API and records runs, spans, budgets, approvals and the
+ * audit log under ~/.neodevex/agentops. Running it here (rather than in the
+ * browser) is what makes the Control Tower survive a page reload and record
+ * runs nobody is watching.
+ */
+function startAgentOpsCollector(config) {
+  logService("agentops", `Starting on port ${config.agentOpsPort}...`, c.cyan);
+
+  spawnService(
+    "agentops",
+    "node",
+    [join(projectRoot, "scripts", "agentops-server.mjs")],
+    {
+      cwd: projectRoot,
+      color: c.cyan,
+      env: {
+        AGENTOPS_PORT: config.agentOpsPort.toString(),
+        AGENT_SERVER_URL: `http://127.0.0.1:${config.agentServerPort}`,
+        LOCAL_BACKEND_API_KEY: config.sessionApiKey,
+      },
+    },
+  );
+}
+
 function startIngress(config) {
   logService("ingress", `Starting on port ${config.ingressPort}...`, c.yellow);
 
@@ -1010,6 +1060,7 @@ export function buildAutomationRuntimeServicesInfo(config) {
     automation: config.launchAutomation
       ? { port: config.autoBackendPort }
       : undefined,
+    agentops: config.launchAgentOps ? { port: config.agentOpsPort } : undefined,
   });
 }
 
@@ -1409,6 +1460,12 @@ async function main(options = {}) {
   // 3. Start automation backend
   if (config.launchAutomation) {
     startAutomationBackend(config);
+  }
+
+  // 3b. Start the AgentOps collector (reads the agent-server; no dependency
+  // on the automation backend).
+  if (config.launchAgentOps) {
+    startAgentOpsCollector(config);
   }
 
   // 4. Start frontend server (Vite dev server OR static server)

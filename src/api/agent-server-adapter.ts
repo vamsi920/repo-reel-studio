@@ -1,9 +1,9 @@
 import { ACP_SETTINGS_KEYS } from "@openhands/typescript-client";
 import { ServerClient } from "@openhands/typescript-client/clients";
-import { SKILLS_CATALOG } from "@openhands/extensions/skills";
 import { DEFAULT_SETTINGS } from "#/services/settings";
 import { ExecutionStatus } from "#/types/agent-server/core";
 import { AgentKind, Settings, SettingsValue } from "#/types/settings";
+import { SUPPORTED_SKILLS_CATALOG } from "#/utils/skills-catalog";
 import {
   getAcpPreferredDefaultModel,
   getAcpProvider,
@@ -14,8 +14,15 @@ import {
   getCachedAgentServerInfo,
   isAgentServerToolAvailable,
 } from "./agent-server-compatibility";
+import {
+  computeWorkspaceId,
+  WorkspaceContextService,
+} from "#/lib/workspace-memory";
 import { getAgentServerWorkingDir } from "./agent-server-config";
-import { getEffectiveLocalBackend } from "./backend-registry/active-store";
+import {
+  getActiveBackend,
+  getEffectiveLocalBackend,
+} from "./backend-registry/active-store";
 import { buildAuthHeaders } from "./backend-registry/auth";
 import {
   GetHooksResponse,
@@ -708,7 +715,7 @@ interface BundledSkill {
  * Skills with no triggers get `trigger: null` (always-active / on-demand).
  */
 function buildBundledSkills(): BundledSkill[] {
-  return SKILLS_CATALOG.map((entry) => {
+  return SUPPORTED_SKILLS_CATALOG.map((entry) => {
     const trigger: BundledSkill["trigger"] =
       entry.triggers?.length > 0
         ? { type: "keyword", keywords: entry.triggers }
@@ -734,13 +741,48 @@ function buildBundledSkills(): BundledSkill[] {
   });
 }
 
+/**
+ * Renders the workspace's pinned constraints and conventions into a system
+ * prompt suffix, so a conversation starts already knowing the rules it must
+ * work within rather than rediscovering them.
+ *
+ * Deliberately small and stable: only pinned `constraint`/`policy`/
+ * `convention` records, capped hard. Task-specific memory rides on the message
+ * instead (`use-send-message.ts`), which is the path that always applies --
+ * this suffix is dropped entirely when a conversation launches from an agent
+ * profile, because the adapter then omits `agent_settings` altogether.
+ */
+/** Keeps the launch-time block small: standing rules only, not the task. */
+const WORKSPACE_MEMORY_SUFFIX_TOKEN_BUDGET = 800;
+
+export function buildWorkspaceMemorySystemSuffix(
+  workspaceId: string | null,
+): string | undefined {
+  if (!workspaceId) return undefined;
+
+  const context = WorkspaceContextService.buildContext({
+    workspaceId,
+    task: "workspace conventions, constraints and standing policies",
+    conversationId: null,
+    tokenBudget: WORKSPACE_MEMORY_SUFFIX_TOKEN_BUDGET,
+  });
+
+  return context.text || undefined;
+}
+
 function buildAgentContext(
   agentSettings: SettingsRecord,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   disabledSkills: string[] = [],
+  workspaceId: string | null = null,
 ): SettingsRecord {
   const runtimeServicesSuffix =
     buildRuntimeServicesSystemSuffix(runtimeServicesInfo);
+  const workspaceMemorySuffix = buildWorkspaceMemorySystemSuffix(workspaceId);
+  const systemMessageSuffix =
+    [runtimeServicesSuffix, workspaceMemorySuffix]
+      .filter(Boolean)
+      .join("\n\n") || undefined;
   const existingContext = toRecord(agentSettings.agent_context);
 
   // Merge bundled public skills with any skills already present in the
@@ -769,8 +811,8 @@ function buildAgentContext(
     load_public_skills: false,
     load_user_skills: true,
     load_project_skills: true,
-    ...(runtimeServicesSuffix
-      ? { system_message_suffix: runtimeServicesSuffix }
+    ...(systemMessageSuffix
+      ? { system_message_suffix: systemMessageSuffix }
       : {}),
   };
 }
@@ -805,6 +847,7 @@ function resolveAcpCommand(agentSettings: SettingsRecord): unknown {
 function buildConfiguredAcpAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
+  workspaceId: string | null = null,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const payload: AgentSettingsPayload = {
@@ -813,6 +856,7 @@ function buildConfiguredAcpAgentSettings(
       agentSettings,
       runtimeServicesInfo,
       settings.disabled_skills,
+      workspaceId,
     ),
   };
 
@@ -871,6 +915,7 @@ function buildConfiguredAcpAgentSettings(
 function buildConfiguredOpenHandsAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
+  workspaceId: string | null = null,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const llm = toRecord(agentSettings.llm);
@@ -929,6 +974,7 @@ function buildConfiguredOpenHandsAgentSettings(
       agentSettings,
       runtimeServicesInfo,
       settings.disabled_skills,
+      workspaceId,
     ),
     tools: getAgentTools(agentSettings),
   };
@@ -937,10 +983,19 @@ function buildConfiguredOpenHandsAgentSettings(
 function buildConfiguredAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
+  workspaceId: string | null = null,
 ): AgentSettingsPayload {
   return isAcpAgent(settings)
-    ? buildConfiguredAcpAgentSettings(settings, runtimeServicesInfo)
-    : buildConfiguredOpenHandsAgentSettings(settings, runtimeServicesInfo);
+    ? buildConfiguredAcpAgentSettings(
+        settings,
+        runtimeServicesInfo,
+        workspaceId,
+      )
+    : buildConfiguredOpenHandsAgentSettings(
+        settings,
+        runtimeServicesInfo,
+        workspaceId,
+      );
 }
 
 function buildConfiguredConversationSettings(options: {
@@ -1051,6 +1106,12 @@ export function buildStartConversationRequest(
   const agentSettings = buildConfiguredAgentSettings(
     sourceAgentSettings,
     options.runtimeServicesInfo,
+    // The workspace is known here (it is what the conversation will run in),
+    // so launch-time memory is scoped to it exactly as message-time memory is.
+    computeWorkspaceId(
+      getActiveBackend().backend.id,
+      options.workingDir ?? getAgentServerWorkingDir(),
+    ),
   );
   const acpServerTag = acpMode
     ? getAcpServerTag(sourceAgentSettings)

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAutomationSubPageNav } from "#/components/features/automations/dashboard/use-automation-sub-page-nav";
 import { RecommendedAutomationsLauncher } from "#/components/features/automations/recommended-automations-launcher";
+import { BugFixerConnectors } from "#/components/features/automations/bug-fixer-connectors";
 import { SearchInput } from "#/components/features/automations/search-input";
 import { ManifestSubpageLayout } from "#/components/features/manifest/manifest-subpage-layout";
 import { getTemplatesPageSpec } from "#/manifests/automation-interface";
@@ -37,6 +38,7 @@ export default function AutomationTemplates() {
       <div className="flex max-w-xl items-stretch">
         <SearchInput value={searchQuery} onChange={setSearchQuery} />
       </div>
+      {!searchQuery && <BugFixerConnectors />}
       <RecommendedAutomationsLauncher query={searchQuery} />
     </ManifestSubpageLayout>
   );

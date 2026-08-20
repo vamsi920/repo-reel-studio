@@ -1,8 +1,6 @@
 import { SkillsClient } from "@openhands/typescript-client/clients";
-import {
-  SKILLS_CATALOG,
-  type SkillCatalogEntry,
-} from "@openhands/extensions/skills";
+import type { SkillCatalogEntry } from "@openhands/extensions/skills";
+import { SUPPORTED_SKILLS_CATALOG } from "#/utils/skills-catalog";
 import { SkillInfo } from "#/types/settings";
 import { getAgentServerWorkingDir } from "./agent-server-config";
 import { getActiveBackend } from "./backend-registry/active-store";
@@ -31,7 +29,9 @@ function catalogEntryToSkillInfo(entry: SkillCatalogEntry): SkillInfo {
  * runtime. Updating the catalog requires bumping the `@openhands/extensions`
  * dependency and rebuilding.
  */
-const PUBLIC_SKILLS: SkillInfo[] = SKILLS_CATALOG.map(catalogEntryToSkillInfo);
+const PUBLIC_SKILLS: SkillInfo[] = SUPPORTED_SKILLS_CATALOG.map(
+  catalogEntryToSkillInfo,
+);
 
 class SkillsService {
   static async getSkills(projectDir?: string): Promise<SkillInfo[]> {

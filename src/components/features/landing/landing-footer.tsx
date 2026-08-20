@@ -6,7 +6,7 @@ export function LandingFooter() {
     <footer className="border-t border-[var(--border-color)] px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 text-center">
         <div className="flex items-center gap-2 text-[var(--text-primary)]">
-          <NeoDevExLogo width={22} height={14} className="shrink-0" />
+          <NeoDevExLogo width={18} height={18} className="shrink-0" />
           <span className="font-mono text-sm font-semibold">
             {FOOTER.wordmark}
           </span>

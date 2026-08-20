@@ -41,6 +41,7 @@ import { EditAutomationModal } from "#/components/features/automations/detail/ed
 import { AddAutomationModal } from "#/components/features/automations/add-automation-modal";
 import { ImportAutomationModal } from "#/components/features/automations/import-automation-modal";
 import { RecommendedAutomationsLauncher } from "#/components/features/automations/recommended-automations-launcher";
+import { ProactivationFeatureCard } from "#/components/features/automations/proactivation/proactivation-feature-card";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { useTracking } from "#/hooks/use-tracking";
 import type { Automation, AutomationSpec } from "#/types/automation";
@@ -400,6 +401,11 @@ export default function AutomationsList() {
             {t(I18nKey.AUTOMATIONS$ADD_AUTOMATION)}
           </BrandButton>
         </div>
+      </div>
+
+      {/* Proactivation — highlighted first-class automation */}
+      <div className={cn(dashboard ? "mt-4" : "mt-6")}>
+        <ProactivationFeatureCard automations={data?.automations ?? []} />
       </div>
 
       {/* Overview tiles — dashboard mode only */}

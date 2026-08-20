@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @plugin '../hero.ts';
+@plugin '@tailwindcss/typography';
 @config "../tailwind.config.js";
 @source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 
@@ -8,6 +9,12 @@
   nocompatible: true;
   preferredstrategy: "pseudoelements";
 }
+
+/* Tokens the vendored Understand-Anything graph components ask for. */
+@import "./styles/codegraph-theme.css";
+
+/* The vendored graph components live outside src/, so Tailwind needs telling. */
+@source '../vendor/understand-anything/dashboard/**/*.{ts,tsx}';
 
 @theme inline {
   --color-primary: var(--oh-color-primary);
@@ -60,6 +67,29 @@
   --color-cool-grey-925: var(--cool-grey-925);
   --color-cool-grey-950: var(--cool-grey-950);
   --color-cool-grey-975: var(--cool-grey-975);
+}
+
+/*
+ * `--color-base` above (the bg-base / bg-base-secondary modal-surface
+ * tokens) collides with Tailwind's own built-in `text-base` font-size
+ * utility: Tailwind v4 auto-generates a `text-base` COLOR utility for
+ * every `--color-*` theme key, and — since that auto-generated utility is
+ * emitted *after* the real one in Tailwind's internal ordering — it wins
+ * on every plain `text-base` usage across the app (meant as "16px text"),
+ * silently recoloring the text to the near-white surface color instead.
+ * That's what read as invisible/white-on-white text on light backgrounds.
+ *
+ * `@utility` redefinitions still land inside the `utilities` cascade
+ * layer, so they lose that same ordering fight. A plain, unlayered rule
+ * (outside `@layer`, deliberately not `@utility`) always beats every
+ * layered rule regardless of specificity or source order — the only way
+ * to reliably win here — so bg-base/bg-base-secondary keep working and
+ * text-base goes back to sizing text instead of recoloring it.
+ */
+.text-base {
+  font-size: var(--text-base) !important;
+  line-height: var(--tw-leading, var(--text-base--line-height)) !important;
+  color: inherit !important;
 }
 
 :root {

@@ -56,6 +56,7 @@ fi
 PORT="${PORT:-${CONFIG_PROXY_PORT:-8000}}"
 AGENT_SERVER_PORT="${AGENT_SERVER_PORT:-${CONFIG_AGENT_SERVER_PORT:-18000}}"
 AUTOMATION_PORT="${AUTOMATION_PORT:-${CONFIG_AUTOMATION_PORT:-18001}}"
+AGENTOPS_PORT="${AGENTOPS_PORT:-${CONFIG_AGENTOPS_PORT:-18002}}"
 AGENT_CANVAS_BASE_PATH="${AGENT_CANVAS_BASE_PATH:-${CONFIG_CANVAS_BASE_PATH:-/canvas}}"
 
 # Persistence paths — keep settings, conversations, bash history under a
@@ -237,6 +238,20 @@ else
   log "WARNING: Automation server not found, skipping."
 fi
 
+# ── 2b. Start the NeoDevEx AgentOps Control Tower collector ──────────────────
+# NeoDevEx-owned observability + governance over the agent-server. It tails the
+# agent-server's REST API server-side, so runs, spans, budgets, approvals and
+# the audit log are recorded whether or not anyone has the UI open. It does not
+# modify or wrap the agent-server.
+log "Starting AgentOps collector on port $AGENTOPS_PORT..."
+export AGENTOPS_STORE_DIR="${AGENTOPS_STORE_DIR:-${OPENHANDS_DIR}/agentops}"
+mkdir -p "$AGENTOPS_STORE_DIR"
+AGENTOPS_PORT="$AGENTOPS_PORT" \
+AGENT_SERVER_URL="http://127.0.0.1:${AGENT_SERVER_PORT}" \
+LOCAL_BACKEND_API_KEY="$EFFECTIVE_SESSION_KEY" \
+  node /opt/agent-canvas/scripts/agentops-server.mjs &
+PIDS+=($!)
+
 # ── 3. Wait for backends to be ready ─────────────────────────────────────────
 wait_for_port() {
   local port=$1 name=$2 max_wait=${3:-30}
@@ -272,7 +287,8 @@ RUNTIME_SERVICES_INFO="$(node /opt/agent-canvas/runtime-services-info.mjs \
   --mode docker \
   --agent-host-alias 127.0.0.1 \
   --agent-server-url "$AGENT_SERVER_URL" \
-  --automation-url "$AUTOMATION_BASE_URL")"
+  --automation-url "$AUTOMATION_BASE_URL" \
+  --agentops-url "http://127.0.0.1:${PORT}")"
 
 # EFFECTIVE_SESSION_KEY is set above from LOCAL_BACKEND_API_KEY or the persisted api-key.txt
 node /opt/agent-canvas/static-server.mjs \
@@ -283,6 +299,7 @@ node /opt/agent-canvas/static-server.mjs \
   --session-api-key "$EFFECTIVE_SESSION_KEY" \
   --runtime-services-info "$RUNTIME_SERVICES_INFO" \
   --route "/api/automation=http://127.0.0.1:${AUTOMATION_PORT}" \
+  --route "/api/agentops=http://127.0.0.1:${AGENTOPS_PORT}" \
   --route "/api=http://127.0.0.1:${AGENT_SERVER_PORT}" \
   --route "/server_info=http://127.0.0.1:${AGENT_SERVER_PORT}" \
   --route "/sockets=http://127.0.0.1:${AGENT_SERVER_PORT}" \
