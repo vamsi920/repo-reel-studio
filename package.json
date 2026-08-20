@@ -59,7 +59,7 @@
     "remark-breaks": "4.0.0",
     "remark-gfm": "4.0.1",
     "remotion": "^4.0.512",
-    "shell-quote": "1.9.0",
+    "shell-quote": "1.10.0",
     "sirv": "3.0.2",
     "sirv-cli": "3.0.1",
     "socket.io-client": "4.8.3",
