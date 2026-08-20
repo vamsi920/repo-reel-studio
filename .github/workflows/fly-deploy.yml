@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --config vendor/deepwiki-open/fly.toml --app neo-deepwiki --remote-only
+      - run: flyctl deploy --config fly.toml --app neo-deepwiki --remote-only
         working-directory: vendor/deepwiki-open
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_DEEPWIKI }}
