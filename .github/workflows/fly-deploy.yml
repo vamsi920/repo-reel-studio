@@ -1,20 +1,33 @@
-name: Deploy Agent Server to Fly.io
+name: Deploy to Fly.io
 
 on:
   push:
     branches: [main]
 
-concurrency:
-  group: fly-deploy-neo-agent-server
-  cancel-in-progress: true
-
 jobs:
-  deploy:
-    name: Deploy
+  deploy-agent-server:
+    name: Deploy Agent Server
     runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy-neo-agent-server
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --config fly.agent-server.toml --app neo-agent-server --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-deepwiki:
+    name: Deploy DeepWiki
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy-neo-deepwiki
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --config vendor/deepwiki-open/fly.toml --app neo-deepwiki --remote-only
+        working-directory: vendor/deepwiki-open
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_DEEPWIKI }}
