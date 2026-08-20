@@ -37,3 +37,13 @@ Thumbs.db
 artifacts/
 *.tgz
 *.log
+*.zip
+
+# Not needed in any Docker build context: legacy retired app, Python venvs,
+# local infra tooling. vendor/understand-anything/ IS needed (imported
+# directly by src/lib/codegraph/* at frontend build time) — only
+# vendor/deepwiki-open/ (385M) is a standalone process, safe to exclude.
+legacy/
+venv/
+infra/
+vendor/deepwiki-open/
