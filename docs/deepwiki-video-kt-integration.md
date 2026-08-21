@@ -134,6 +134,68 @@ Gemini models in `generator.json` (read by `_stream.py`'s
 `post_process_wiki_content` (`api/services/wiki/content.py`) that collapses
 any run of 200+ consecutive whitespace characters.
 
+### 3.5 Hardcoded taxonomy in the structure-determination prompt
+
+Even after 3.1-3.4, every repository still produced roughly the same
+taxonomy (Overview / System Architecture / Core Features / Data Management
+/ Frontend Components / Backend Systems / Model Integration / Extensibility).
+Root cause: `_COMPREHENSIVE_STRUCTURE` in
+`api/services/wiki/prompts.py` literally instructed the model to "Create a
+structured wiki with the following main sections," naming those 8-9 labels
+verbatim — a direct anchor, not a neutral example, run on every generation
+since `comprehensive` defaults to `True` and NeoDevEx never overrides it.
+Fixed by replacing that prose block with instructions to discover the
+repository's own subsystems from evidence, explicitly warning against
+reaching for a generic template, and dropping the old prompt's leftover
+example page names ("Home Page", "Ask Component" — DeepWiki's own upstream
+demo project bleeding into every generation).
+
+### 3.6 Wiki cache/task keys excluded commit SHA
+
+`get_wiki_cache_path` (`api/services/wiki/io.py`) and `WikiTaskRequest.repo_key`
+(`api/schemas/repo.py`) both keyed on `{repo_type}_{owner}_{repo}_{language}`
+with no commit component — regenerating a repo after a commit change could
+silently serve a stale cached wiki, which then got stamped with the *new*
+commit SHA on the frontend at normalization time, misrepresenting what
+commit the content actually reflects. This also meant "Regenerate" was
+effectively a no-op whenever the commit hadn't changed (the cache
+short-circuit fires unconditionally). Fixed by adding `commit_sha` to
+`WikiTaskRequest` (threaded into the cache filename, `list_wiki_cache`'s
+parser, and the task-registry key) and a `force: bool` flag that bypasses
+the cache short-circuit; NeoDevEx's client always sends the real
+`snapshot.commitSha`, and the manual "Regenerate" control now sends
+`force: true`. Pre-fix cache files simply stop matching any key under the
+new scheme and become harmless orphans — no migration needed.
+
+### 3.7 Structure determination saw only the file tree and README
+
+Even with 3.5's fix, structure determination is a single LLM call grounded
+in nothing but a file-tree listing and README text — no real code, no
+symbol/import/call evidence — so it had weak signal to invent a
+repository-specific taxonomy from. NeoDevEx already vendors a real
+tree-sitter-based static analysis engine for CodeGraph
+(`vendor/understand-anything/`), producing real detected subsystems,
+architectural layers, and import/call edges, but nothing fed that into
+Knowledge generation. Fixed by adding an optional `code_evidence: str | None`
+field to `WikiTaskRequest`, inserted as a third evidence block (alongside
+file_tree/readme) in `build_structure_prompt` when present. On the NeoDevEx
+side, `src/lib/knowledge/pre-analysis.ts` runs (or reuses a cached) analyzer
+pass before generation and condenses its output
+(`src/lib/knowledge/code-evidence.ts`) into a compact text summary —
+best-effort; any analyzer failure/timeout falls back to the pre-3.7 behavior
+rather than blocking generation.
+
+### 3.8 Per-page rationale was discarded before reaching the frontend
+
+The structure XML the model writes includes a per-page `<description>`
+explaining why that page exists, but `WikiPage` (`api/schemas/wiki.py`) had
+no field for it — `_page_from_element`/`_pages_via_regex`
+(`api/services/wiki/structure.py`) simply never captured it, so the
+frontend fell back to a crude heuristic (the first non-blank line of the
+*generated content*) instead of the model's real rationale. Fixed by adding
+`description: str = ""` to `WikiPage` (additive, safe for old cached JSON)
+and populating it in both parse paths.
+
 ## 4. Integration boundary
 
 ```
@@ -236,12 +298,20 @@ than spec'd out further.
 ```bash
 cd vendor/deepwiki-open
 poetry install
-poetry run uvicorn api.main:app --port 8001
+DEEPWIKI_EMBEDDER_TYPE=google GOOGLE_API_KEY=<your Gemini key> \
+  poetry run uvicorn api.main:app --port 8001
 ```
 
 Set `VITE_DEEPWIKI_SERVICE_URL` if not using the default `http://localhost:8001`.
 DeepWiki needs LLM credentials of its own for the `provider`/`model` it's
-called with — this integration passes `provider: "google"`, reusing
-whichever Gemini credentials are already configured for NeoDevEx, per the
-same environment variable convention DeepWiki's own README documents for
-its Google provider.
+called with — this integration passes `provider: "google"` for chat/generation,
+reusing whichever Gemini credentials are already configured for NeoDevEx, per
+the same environment variable convention DeepWiki's own README documents for
+its Google provider. The **embedder** is selected separately and defaults to
+OpenAI (`DEEPWIKI_EMBEDDER_TYPE` unset), so it must be set to `google`
+explicitly — otherwise the "Writing knowledge" step fails with
+`Environment variable OPENAI_API_KEY must be set`. `GOOGLE_API_KEY` is the
+variable name DeepWiki's own config reads (not `VITE_GEMINI_API_KEY`); reuse
+the same key value as `VITE_GEMINI_API_KEY` in `.env`. Production (Fly) sets
+both `DEEPWIKI_EMBEDDER_TYPE=google` and the `GOOGLE_API_KEY` secret already —
+see `vendor/deepwiki-open/fly.toml`.
