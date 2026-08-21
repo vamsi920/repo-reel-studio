@@ -28,7 +28,14 @@ logger = get_logger(__name__)
 # Get API keys from environment variables
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 LITELLM_API_KEY = os.environ.get("LITELLM_API_KEY")
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+# NeoDevEx is Gemini-only end-to-end; the rest of the app reads the key as
+# VITE_GEMINI_API_KEY (see .env.example). Reuse it here so DeepWiki works
+# out of the box without a separate GOOGLE_API_KEY export.
+GOOGLE_API_KEY = (
+    os.environ.get("GOOGLE_API_KEY")
+    or os.environ.get("GEMINI_API_KEY")
+    or os.environ.get("VITE_GEMINI_API_KEY")
+)
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -62,7 +69,11 @@ WIKI_AUTH_MODE = raw_auth_mode.lower() in ["true", "1", "t"]
 WIKI_AUTH_CODE = os.environ.get("DEEPWIKI_AUTH_CODE", "")
 
 # Embedder settings
-EMBEDDER_TYPE = os.environ.get("DEEPWIKI_EMBEDDER_TYPE", "openai").lower()
+# NeoDevEx runs DeepWiki as a Gemini-only integration (see
+# docs/deepwiki-video-kt-integration.md); default here matches that instead
+# of upstream DeepWiki-Open's OpenAI default, so local runs work without
+# manually setting DEEPWIKI_EMBEDDER_TYPE.
+EMBEDDER_TYPE = os.environ.get("DEEPWIKI_EMBEDDER_TYPE", "google").lower()
 
 # Get configuration directory from environment variable, or use default if not set
 CONFIG_DIR = os.environ.get("DEEPWIKI_CONFIG_DIR", None)
