@@ -62,11 +62,16 @@ const readAll = (): StoredMetadata => {
 
 const writeAll = (next: StoredMetadata): void => {
   if (typeof window === "undefined") return;
-  if (Object.keys(next).length === 0) {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return;
+  try {
+    if (Object.keys(next).length === 0) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage unavailable (private browsing / storage blocked) — metadata
+    // is a UX nicety, not required for the conversation to function.
   }
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 };
 
 export const getStoredConversationMetadata = (
