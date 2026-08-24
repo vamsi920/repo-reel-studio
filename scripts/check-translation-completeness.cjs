@@ -13,6 +13,9 @@ const path = require('path');
 // protocol/technical terms, placeholder-only format strings). Add a key here
 // only when the English value is genuinely correct for all languages.
 const IDENTICAL_VALUE_ALLOWLIST = new Set([
+  'CONNECTIONS$GITHUB_LABEL',
+  'CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER',
+  'CONNECTIONS$ENTERPRISE_SERVER_TOGGLE',
   'COMMON$KT_VIDEO',
   'AUTOMATIONS$BUG_FIXER_TITLE',
   'AUTOMATIONS$BUG_FIXER_DESC',

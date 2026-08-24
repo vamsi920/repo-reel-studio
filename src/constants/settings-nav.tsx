@@ -1,4 +1,5 @@
 import { AppWindow, Brain, Shield } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import KeyIcon from "#/icons/key.svg?react";
 import MemoryIcon from "#/icons/memory_icon.svg?react";
 import CircuitIcon from "#/icons/u-circuit.svg?react";
@@ -58,6 +59,12 @@ export const OSS_NAV_ITEMS: SettingsNavItem[] = [
     to: "/settings/app",
     text: "SETTINGS$NAV_APPLICATION",
     subtitle: "SETTINGS$PAGE_APPLICATION_SUBLINE",
+  },
+  {
+    icon: <FaGithub size={16} aria-hidden />,
+    to: "/settings/connections",
+    text: "SETTINGS$NAV_CONNECTIONS",
+    subtitle: "SETTINGS$PAGE_CONNECTIONS_SUBLINE",
   },
   {
     icon: <KeyIcon width={16} height={16} />,

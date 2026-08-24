@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "Descriu què hauria de fer l'agent.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "Prefereixes descriure-ho en una conversa?",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "Crea automatització",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "Xat guiat"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "Xat guiat",
+  "SETTINGS$NAV_CONNECTIONS": "Connexions",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "Connecta GitHub i altres comptes",
+  "CONNECTIONS$PAGE_DESCRIPTION": "Connecta un compte de GitHub perquè l'agent pugui explorar i clonar els teus repositoris, inclosos els privats.",
+  "CONNECTIONS$NOT_CONNECTED": "No connectat",
+  "CONNECTIONS$CONNECTED_AS": "Connectat com a @{{username}}",
+  "CONNECTIONS$DISCONNECT": "Desconnecta",
+  "CONNECTIONS$DISCONNECTING": "Desconnectant…",
+  "CONNECTIONS$CONNECT_GITHUB": "Connecta GitHub",
+  "CONNECTIONS$REDIRECTING": "Redirigint…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Amfitrió empresarial",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }

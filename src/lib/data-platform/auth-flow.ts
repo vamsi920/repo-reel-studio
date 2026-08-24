@@ -1,3 +1,4 @@
+import type { NavigateFunction } from "react-router";
 import { supabase, isSupabaseConfigured } from "./client";
 
 export const NEODEVEX_EMAIL_DOMAIN = "neodevex.com";
@@ -96,6 +97,21 @@ export async function signUpWithPassword(
       message: error instanceof Error ? error.message : "Something went wrong.",
     };
   }
+}
+
+/**
+ * Signs out of Supabase (if configured) and sends the browser to /login.
+ * Shared by the Settings "Account" section and the sidebar user menu so
+ * there is exactly one sign-out code path to keep in sync with future auth
+ * changes (e.g. clearing other client-side caches on logout).
+ */
+export async function signOutAndRedirect(
+  navigate: NavigateFunction,
+): Promise<void> {
+  if (isSupabaseConfigured && supabase) {
+    await supabase.auth.signOut();
+  }
+  navigate("/login", { replace: true });
 }
 
 /**

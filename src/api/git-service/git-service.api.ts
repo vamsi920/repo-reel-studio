@@ -11,10 +11,26 @@ import {
   getCloudRepositoryBranches,
   searchCloudRepositories,
 } from "../cloud/git-service.api";
+import { isLocalGithubConnected } from "./github-connection-flag";
+import {
+  getLocalGithubRepositoryBranches,
+  retrieveLocalGithubRepositories,
+  searchLocalGithubRepositories,
+} from "./local-github-service.api";
 
 const safeProvider = (value: string): Provider => value as Provider;
 
 const isCloudActive = () => getActiveBackend().backend.kind === "cloud";
+
+/**
+ * A local (non-Cloud) GitHub connection, established via Settings ->
+ * Connections and Supabase Edge Functions -- see
+ * local-github-service.api.ts / github-connection-flag.ts. Only relevant
+ * for provider === "github"; other providers still return empty outside
+ * Cloud, matching the pre-existing behavior.
+ */
+const isLocalGithubActive = (provider: string) =>
+  provider === "github" && !isCloudActive() && isLocalGithubConnected();
 
 /**
  * Guard against null/undefined provider values that would result in
@@ -39,9 +55,11 @@ class GitService {
     pageId?: string,
     installationId?: string,
   ): Promise<RepositoryPage> {
-    if (isInvalidProvider(provider) || !isCloudActive()) {
-      return EMPTY_REPOSITORY_PAGE;
+    if (isInvalidProvider(provider)) return EMPTY_REPOSITORY_PAGE;
+    if (isLocalGithubActive(provider)) {
+      return searchLocalGithubRepositories({ query, limit, pageId });
     }
+    if (!isCloudActive()) return EMPTY_REPOSITORY_PAGE;
     return searchCloudRepositories({
       provider: safeProvider(provider),
       query: query || undefined,
@@ -57,9 +75,11 @@ class GitService {
     limit = 30,
     installationId?: string,
   ): Promise<RepositoryPage> {
-    if (isInvalidProvider(provider) || !isCloudActive()) {
-      return EMPTY_REPOSITORY_PAGE;
+    if (isInvalidProvider(provider)) return EMPTY_REPOSITORY_PAGE;
+    if (isLocalGithubActive(provider)) {
+      return retrieveLocalGithubRepositories({ pageId });
     }
+    if (!isCloudActive()) return EMPTY_REPOSITORY_PAGE;
     return searchCloudRepositories({
       provider: safeProvider(provider),
       limit,
@@ -95,9 +115,15 @@ class GitService {
     pageId?: string,
     limit = 30,
   ): Promise<BranchPage> {
-    if (isInvalidProvider(provider) || !isCloudActive()) {
-      return EMPTY_BRANCH_PAGE;
+    if (isInvalidProvider(provider)) return EMPTY_BRANCH_PAGE;
+    if (isLocalGithubActive(provider)) {
+      return getLocalGithubRepositoryBranches({
+        repository,
+        query: query || undefined,
+        pageId,
+      });
     }
+    if (!isCloudActive()) return EMPTY_BRANCH_PAGE;
     return getCloudRepositoryBranches({
       provider: safeProvider(provider),
       repository,
@@ -114,9 +140,11 @@ class GitService {
     pageId?: string,
     limit = 30,
   ): Promise<BranchPage> {
-    if (isInvalidProvider(provider) || !isCloudActive()) {
-      return EMPTY_BRANCH_PAGE;
+    if (isInvalidProvider(provider)) return EMPTY_BRANCH_PAGE;
+    if (isLocalGithubActive(provider)) {
+      return getLocalGithubRepositoryBranches({ repository, query, pageId });
     }
+    if (!isCloudActive()) return EMPTY_BRANCH_PAGE;
     return getCloudRepositoryBranches({
       provider: safeProvider(provider),
       repository,

@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "Aracının ne yapması gerektiğini açıklayın.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "Bunun yerine bir konuşmada anlatmayı mı tercih edersiniz?",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "Otomasyon oluşturur",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "Yönlendirmeli sohbet"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "Yönlendirmeli sohbet",
+  "SETTINGS$NAV_CONNECTIONS": "Bağlantılar",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "GitHub ve diğer hesapları bağlayın",
+  "CONNECTIONS$PAGE_DESCRIPTION": "Aracının, özel olanlar dahil depolarınıza göz atıp klonlayabilmesi için bir GitHub hesabı bağlayın.",
+  "CONNECTIONS$NOT_CONNECTED": "Bağlı değil",
+  "CONNECTIONS$CONNECTED_AS": "@{{username}} olarak bağlandı",
+  "CONNECTIONS$DISCONNECT": "Bağlantıyı kes",
+  "CONNECTIONS$DISCONNECTING": "Bağlantı kesiliyor…",
+  "CONNECTIONS$CONNECT_GITHUB": "GitHub'ı bağla",
+  "CONNECTIONS$REDIRECTING": "Yönlendiriliyor…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Kurumsal ana bilgisayar",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }

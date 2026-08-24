@@ -28,6 +28,59 @@ import {
   toPluginCoordinates,
   type WorkspaceMode,
 } from "#/api/conversation-metadata-store";
+import { SecretsService } from "#/api/secrets-service";
+import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
+
+const GITHUB_CLONE_SECRET_NAME = "GITHUB_TOKEN";
+
+/**
+ * The self-hosted agent-server has no route back to Supabase, so the only
+ * way to get a locally-connected GitHub token into its sandbox is a brief
+ * browser pass-through: mint the decrypted token, save it straight into the
+ * agent-server's own secret store, and prepend a clone instruction. The
+ * token variable is discarded immediately after -- never persisted, never
+ * logged. See supabase/functions/github-mint-clone-credential and the
+ * plan doc's explicitly-confirmed tradeoff.
+ */
+async function buildLocalGithubCloneInstructions(repository: {
+  name: string;
+  gitProvider: Provider;
+  branch?: string;
+}): Promise<string | null> {
+  if (
+    repository.gitProvider !== "github" ||
+    !isLocalGithubConnected() ||
+    !isSupabaseConfigured ||
+    !supabase
+  ) {
+    return null;
+  }
+
+  const { data, error } = await supabase.functions.invoke<{
+    token: string;
+    host: string;
+  }>("github-mint-clone-credential", { body: {} });
+  if (error || !data?.token || !data?.host) return null;
+
+  try {
+    await SecretsService.createSecret(
+      GITHUB_CLONE_SECRET_NAME,
+      data.token,
+      "GitHub clone credential (auto-managed)",
+    );
+  } catch {
+    return null;
+  }
+
+  const checkout = repository.branch
+    ? ` && git checkout ${repository.branch}`
+    : "";
+  return (
+    `Before doing anything else, run: ` +
+    `git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${data.host}/${repository.name}.git .${checkout}`
+  );
+}
 
 export interface CreateConversationVariables {
   query?: string;
@@ -193,13 +246,26 @@ export const useCreateConversation = () => {
         }
       }
 
+      // Local (non-Cloud) GitHub connections have no server-side clone path
+      // like Cloud does -- inject the credential + a clone instruction here.
+      // No-op (returns null) unless a repo is selected, it's GitHub, and a
+      // local connection is active; see buildLocalGithubCloneInstructions.
+      const cloneInstructions = repository
+        ? await buildLocalGithubCloneInstructions(repository)
+        : null;
+      const effectiveConversationInstructions = cloneInstructions
+        ? [cloneInstructions, conversationInstructions]
+            .filter(Boolean)
+            .join("\n\n")
+        : conversationInstructions;
+
       // Only extend the call with the profile fields when launching from a
       // profile, so a plain create stays byte-identical to the legacy
       // agent_settings path (#3727). sandboxId is unused here.
       const conversation =
         await AgentServerConversationService.createConversation({
           initialUserMsg: query,
-          conversationInstructions,
+          conversationInstructions: effectiveConversationInstructions,
           plugins,
           metadata: repository
             ? {

@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "صِف ما ينبغي على الوكيل فعله.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "أتفضل وصف ذلك في محادثة بدلاً من ذلك؟",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "ينشئ أتمتة",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "محادثة موجهة"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "محادثة موجهة",
+  "SETTINGS$NAV_CONNECTIONS": "الاتصالات",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "اربط GitHub وحسابات أخرى",
+  "CONNECTIONS$PAGE_DESCRIPTION": "اربط حساب GitHub حتى يتمكن الوكيل من تصفح واستنساخ مستودعاتك، بما في ذلك المستودعات الخاصة.",
+  "CONNECTIONS$NOT_CONNECTED": "غير متصل",
+  "CONNECTIONS$CONNECTED_AS": "متصل كـ @{{username}}",
+  "CONNECTIONS$DISCONNECT": "قطع الاتصال",
+  "CONNECTIONS$DISCONNECTING": "جارٍ قطع الاتصال…",
+  "CONNECTIONS$CONNECT_GITHUB": "ربط GitHub",
+  "CONNECTIONS$REDIRECTING": "جارٍ إعادة التوجيه…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "مضيف المؤسسة",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }

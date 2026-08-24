@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "Describe what the agent should do.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "Prefer to describe it in a conversation instead?",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "Creates automation",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "Guided chat"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "Guided chat",
+  "SETTINGS$NAV_CONNECTIONS": "Connections",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "Connect GitHub and other accounts",
+  "CONNECTIONS$PAGE_DESCRIPTION": "Connect a GitHub account so the agent can browse and clone your repositories, including private ones.",
+  "CONNECTIONS$NOT_CONNECTED": "Not connected",
+  "CONNECTIONS$CONNECTED_AS": "Connected as @{{username}}",
+  "CONNECTIONS$DISCONNECT": "Disconnect",
+  "CONNECTIONS$DISCONNECTING": "Disconnecting…",
+  "CONNECTIONS$CONNECT_GITHUB": "Connect GitHub",
+  "CONNECTIONS$REDIRECTING": "Redirecting…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Enterprise host",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }

@@ -8,7 +8,7 @@
     "**/.client/**/*.tsx",
     ".react-router/types/**/*"
   ],
-  "exclude": ["legacy", "node_modules", "dist", "build"],
+  "exclude": ["legacy", "node_modules", "dist", "build", "supabase/functions"],
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "es2022"],
     "target": "es2022",

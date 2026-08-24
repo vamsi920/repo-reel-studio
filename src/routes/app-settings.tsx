@@ -23,15 +23,17 @@ import { NavigationLink } from "#/components/shared/navigation-link";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
-import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
+import { signOutAndRedirect } from "#/lib/data-platform/auth-flow";
 
 const AUTOMATIC_TITLE_LLM_PROFILE_KEY = "__automatic__";
 
 export function AppSettingsScreen() {
   const { t } = useTranslation("openhands");
   const navigate = useNavigate();
-  const { user: supabaseUser } = useSupabaseSession();
+  const { status: supabaseSessionStatus, user: supabaseUser } =
+    useSupabaseSession();
 
   const { mutate: saveSettings, isPending } = useSaveSettings();
   const { data: settings, isLoading } = useSettings();
@@ -170,10 +172,7 @@ export function AppSettingsScreen() {
     setGitUserEmailHasChanged(value !== currentValue);
   };
 
-  const handleSignOut = async () => {
-    await supabase?.auth.signOut();
-    navigate("/login", { replace: true });
-  };
+  const handleSignOut = () => signOutAndRedirect(navigate);
 
   const formIsClean =
     !languageInputHasChanged &&
@@ -303,7 +302,9 @@ export function AppSettingsScreen() {
             </div>
           </div>
 
-          {isSupabaseConfigured && supabaseUser ? (
+          {isSupabaseConfigured &&
+          supabaseSessionStatus === "real" &&
+          supabaseUser ? (
             <div className="border-t border-[var(--oh-border)] pt-6 mt-2">
               <h3 className="text-lg font-medium mb-2">
                 {t(I18nKey.SETTINGS$ACCOUNT_SECTION_TITLE)}

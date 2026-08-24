@@ -69,6 +69,9 @@ type Pages = {
   "/settings/app": {
     params: {};
   };
+  "/settings/connections": {
+    params: {};
+  };
   "/settings/secrets": {
     params: {};
   };
@@ -151,7 +154,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
+    page: "/" | "/login" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
   };
   "routes/welcome.tsx": {
     id: "routes/welcome";
@@ -163,7 +166,7 @@ type RouteFiles = {
   };
   "routes/root-layout.tsx": {
     id: "routes/root-layout";
-    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -199,7 +202,7 @@ type RouteFiles = {
   };
   "routes/settings.tsx": {
     id: "routes/settings";
-    page: "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/secrets";
+    page: "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets";
   };
   "routes/settings-index.tsx": {
     id: "routes/settings-index";
@@ -232,6 +235,10 @@ type RouteFiles = {
   "routes/app-settings.tsx": {
     id: "routes/app-settings";
     page: "/settings/app";
+  };
+  "routes/connections-settings.tsx": {
+    id: "routes/connections-settings";
+    page: "/settings/connections";
   };
   "routes/secrets-settings.tsx": {
     id: "routes/secrets-settings";
@@ -341,6 +348,7 @@ type RouteModules = {
   "routes/agent-context-settings": typeof import("./src/routes/agent-context-settings.tsx");
   "routes/verification-settings": typeof import("./src/routes/verification-settings.tsx");
   "routes/app-settings": typeof import("./src/routes/app-settings.tsx");
+  "routes/connections-settings": typeof import("./src/routes/connections-settings.tsx");
   "routes/secrets-settings": typeof import("./src/routes/secrets-settings.tsx");
   "routes/device-verify": typeof import("./src/routes/device-verify.tsx");
   "routes/automations-list": typeof import("./src/routes/automations-list.tsx");

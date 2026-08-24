@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "Опишіть, що має робити агент.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "Волієте описати це в розмові натомість?",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "Створює автоматизацію",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "Керований чат"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "Керований чат",
+  "SETTINGS$NAV_CONNECTIONS": "З'єднання",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "Підключіть GitHub та інші облікові записи",
+  "CONNECTIONS$PAGE_DESCRIPTION": "Підключіть обліковий запис GitHub, щоб агент міг переглядати та клонувати ваші репозиторії, зокрема приватні.",
+  "CONNECTIONS$NOT_CONNECTED": "Не підключено",
+  "CONNECTIONS$CONNECTED_AS": "Підключено як @{{username}}",
+  "CONNECTIONS$DISCONNECT": "Відключити",
+  "CONNECTIONS$DISCONNECTING": "Відключення…",
+  "CONNECTIONS$CONNECT_GITHUB": "Підключити GitHub",
+  "CONNECTIONS$REDIRECTING": "Перенаправлення…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Корпоративний хост",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }

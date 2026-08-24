@@ -26,6 +26,7 @@ import { BackendSelector } from "#/components/features/backends/backend-selector
 import { BackendStatusDot } from "#/components/features/backends/backend-status-dot";
 import { CommandMenuTrigger } from "#/components/features/command-menu/command-menu-trigger";
 import { SidebarConversationList } from "./sidebar-conversation-list";
+import { SidebarUserMenu } from "./sidebar-user-menu";
 import AutomationsIcon from "#/icons/automations.svg?react";
 import {
   SIDEBAR_COLLAPSE_TOGGLE_OVERLAY_CLASS,
@@ -254,6 +255,7 @@ export function SidebarRailBody({
             "mt-auto pb-2 cursor-pointer",
           )}
         >
+          <SidebarUserMenu collapsed />
           <StyledTooltip
             content={t(I18nKey.SIDEBAR$SETTINGS)}
             placement="right"
@@ -346,6 +348,7 @@ export function SidebarRailBody({
             "-ml-2.5 w-[calc(100%+0.625rem)] border-t border-[var(--oh-border)] pt-2 px-2.5",
           )}
         >
+          <SidebarUserMenu collapsed={collapsed} />
           <BackendSelector sidebarCollapsed={collapsed} openUpward />
         </div>
       ) : null}

@@ -2631,5 +2631,18 @@
   "AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED": "Beschreibe, was der Agent tun soll.",
   "AUTOMATIONS$CREATE_FROM_CHAT": "Möchtest du es lieber in einer Unterhaltung beschreiben?",
   "AUTOMATIONS$CARD_CREATES_AUTOMATION": "Erstellt Automatisierung",
-  "AUTOMATIONS$CARD_GUIDED_CHAT": "Geführter Chat"
+  "AUTOMATIONS$CARD_GUIDED_CHAT": "Geführter Chat",
+  "SETTINGS$NAV_CONNECTIONS": "Verbindungen",
+  "SETTINGS$PAGE_CONNECTIONS_SUBLINE": "GitHub und andere Konten verbinden",
+  "CONNECTIONS$PAGE_DESCRIPTION": "Verbinde ein GitHub-Konto, damit der Agent deine Repositories durchsuchen und klonen kann, einschließlich privater.",
+  "CONNECTIONS$NOT_CONNECTED": "Nicht verbunden",
+  "CONNECTIONS$CONNECTED_AS": "Verbunden als @{{username}}",
+  "CONNECTIONS$DISCONNECT": "Trennen",
+  "CONNECTIONS$DISCONNECTING": "Trenne…",
+  "CONNECTIONS$CONNECT_GITHUB": "GitHub verbinden",
+  "CONNECTIONS$REDIRECTING": "Weiterleiten…",
+  "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Enterprise-Host",
+  "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
+  "CONNECTIONS$GITHUB_LABEL": "GitHub",
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
 }
