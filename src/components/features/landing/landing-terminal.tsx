@@ -16,7 +16,7 @@ const SCENARIOS: TerminalScenario[] = [
     id: "bugfix",
     label: "Fixing a bug",
     lines: [
-      { prefix: "$", text: "neodevex: fix the flaky checkout test" },
+      { prefix: "$", text: "neo: fix the flaky checkout test" },
       { prefix: "→", text: "reading src/checkout/CartSummary.test.tsx" },
       { prefix: "→", text: "reproducing failure in sandboxed agent-server" },
       { prefix: "→", text: "found race condition in useCartTotals()" },
@@ -30,7 +30,7 @@ const SCENARIOS: TerminalScenario[] = [
     id: "ticket",
     label: "Working a ticket",
     lines: [
-      { prefix: "$", text: "neodevex: pick up ENG-4831 from Jira" },
+      { prefix: "$", text: "neo: pick up ENG-4831 from Jira" },
       { prefix: "→", text: 'reading ticket "Add SSO session refresh"' },
       { prefix: "→", text: "mapping requirements to src/auth/session.ts" },
       { prefix: "→", text: "drafting implementation plan" },
@@ -44,7 +44,7 @@ const SCENARIOS: TerminalScenario[] = [
     id: "connector",
     label: "Querying a data source",
     lines: [
-      { prefix: "$", text: "neodevex: why did checkout conversion drop?" },
+      { prefix: "$", text: "neo: why did checkout conversion drop?" },
       { prefix: "→", text: "connecting to Snowflake: analytics.checkout" },
       { prefix: "→", text: "querying conversion_events (last 14 days)" },
       { prefix: "→", text: "correlating with deploy log in GitHub" },
@@ -58,7 +58,7 @@ const SCENARIOS: TerminalScenario[] = [
     id: "memory",
     label: "Recalling context",
     lines: [
-      { prefix: "$", text: "neodevex: touch base on the billing service" },
+      { prefix: "$", text: "neo: touch base on the billing service" },
       { prefix: "→", text: "recalling repo memory: billing-service" },
       { prefix: "→", text: "last touched 12 days ago — 3 open threads" },
       { prefix: "→", text: "remembered: invoice retries use idempotency keys" },

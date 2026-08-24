@@ -30,6 +30,10 @@ import { I18nKey } from "#/i18n/declaration";
 import { resumeCloudSandbox } from "#/api/cloud/conversation-service.api";
 import { useMemoryObserver } from "#/hooks/use-memory-observer";
 import { useMemoryUpdater } from "#/hooks/use-memory-updater";
+import { useTrackRealUsage } from "#/hooks/use-track-real-usage";
+import { useSupabaseIdentity } from "#/hooks/use-supabase-identity";
+import { useRealUsageRealtime } from "#/hooks/use-real-usage-realtime";
+import { useWorkspaceId } from "#/hooks/use-workspace-id";
 
 function AppContent() {
   const { t } = useTranslation("openhands");
@@ -56,10 +60,18 @@ function AppContent() {
   const { data: isAuthed } = useIsAuthed();
 
   // Workspace memory: learn from this conversation's grounded observations and
-  // drain what we learned to the workspace file. Both are silent and
-  // best-effort; neither gates rendering.
+  // drain what we learned to the workspace file. Real usage: record genuine
+  // per-turn spend, unconditionally, so Usage has real numbers regardless of
+  // whether memory ever triggers. Supabase identity: silent anonymous
+  // sign-in + org/workspace bootstrap, so the RLS-gated Supabase writes above
+  // (and the existing memory/activity sync) actually persist. All four are
+  // silent and best-effort; none gate rendering.
+  const workspaceId = useWorkspaceId();
   useMemoryObserver();
   useMemoryUpdater();
+  useTrackRealUsage();
+  useSupabaseIdentity();
+  useRealUsageRealtime(workspaceId);
   const { resetConversationState } = useConversationStore();
   const navigate = useNavigate();
   const location = useLocation();

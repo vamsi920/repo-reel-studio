@@ -126,6 +126,18 @@ export interface KtScene {
   mermaid?: string;
   /** File paths for "repo-tree" scenes. */
   tree_files?: string[];
+  /** Multi-file call-chain steps for "concept" scenes — a real cross-file
+   * flow walked from CodeGraph's cached dependency/usedBy edges, each step
+   * a real file/line-range/symbol, never invented. */
+  segments?: KtConceptSegment[];
+}
+
+export interface KtConceptSegment {
+  file_path: string;
+  start_line: number;
+  end_line: number;
+  symbol?: string;
+  code: string;
 }
 
 export interface KtManifest {
@@ -838,6 +850,93 @@ function buildRepoTreeScene(
   };
 }
 
+export interface KtConceptHop {
+  path: string;
+  startLine: number;
+  endLine: number;
+  symbol?: string;
+}
+
+/**
+ * A real multi-file call-chain walkthrough — each `hop` is a real file/line
+ * range/symbol from a cross-file dependency/usedBy edge the CodeGraph
+ * analyzer actually detected (see kt-page.tsx's cached-handle lookup).
+ * Purely deterministic like every other scene builder here: it renders the
+ * hops it's given, it never discovers or invents the chain itself.
+ */
+function buildConceptScene(
+  id: number,
+  pageTitle: string,
+  hops: KtConceptHop[],
+  fileContents: Record<string, string>,
+): KtScene | null {
+  const segments: KtConceptSegment[] = hops
+    .map((hop): KtConceptSegment | null => {
+      const content = fileContents[hop.path];
+      if (!content) return null;
+      const lines = content.split("\n");
+      const start = Math.max(1, hop.startLine);
+      const end = Math.min(lines.length, Math.max(start, hop.endLine));
+      return {
+        file_path: hop.path,
+        start_line: start,
+        end_line: end,
+        symbol: hop.symbol,
+        code: lines.slice(start - 1, end).join("\n"),
+      };
+    })
+    .filter((s): s is KtConceptSegment => s !== null);
+
+  if (segments.length < 2) return null;
+
+  const sentences: KtSentence[] = segments.map((seg, i) => {
+    const who = seg.symbol ?? baseName(seg.file_path);
+    const sentence =
+      i === 0
+        ? `Follow the flow starting at ${who} in ${baseName(seg.file_path)}.`
+        : i === segments.length - 1
+          ? `...which leads to ${who} in ${baseName(seg.file_path)} — the last real step in this chain.`
+          : `...which calls into ${who}, in ${baseName(seg.file_path)}.`;
+    return {
+      sentence,
+      source_refs: [
+        {
+          file_path: seg.file_path,
+          start_line: seg.start_line,
+          end_line: seg.end_line,
+          symbol_name: seg.symbol,
+        },
+      ],
+      on_screen_focus: seg.symbol ? [seg.symbol] : [],
+    };
+  });
+
+  const narration_text = sentences.map((s) => s.sentence).join(" ");
+  const words = narration_text.trim().split(/\s+/).filter(Boolean).length;
+  const duration_seconds = Math.max(
+    MIN_SCENE_SECONDS * segments.length,
+    Math.ceil(words / WORDS_PER_SECOND) + 2 * segments.length,
+  );
+
+  return {
+    id,
+    type: "concept",
+    file_path: segments[0].file_path,
+    title: `${pageTitle}: real flow`,
+    code: segments[0].code,
+    highlight_lines: [segments[0].start_line, segments[0].end_line],
+    narration_text,
+    sentences,
+    focus_symbols: segments
+      .map((s) => s.symbol)
+      .filter((s): s is string => Boolean(s)),
+    durationInFrames: Math.round(duration_seconds * FPS),
+    startFrame: 0,
+    endFrame: 0,
+    segments,
+  };
+}
+
 /**
  * Builds a deterministic KT-video manifest from a DeepWiki-normalized
  * KnowledgePage instead of hand-picked conversation files. No LLM call —
@@ -855,6 +954,7 @@ export function buildKtManifestFromKnowledgePage(
   fileContents: Record<string, string>,
   repoFiles: string[] = [],
   maxCodeScenes = 5,
+  conceptHops: KtConceptHop[] = [],
 ): KtManifest {
   const scenes: KtScene[] = [];
   let id = 0;
@@ -875,11 +975,34 @@ export function buildKtManifestFromKnowledgePage(
     }
   }
 
+  if (conceptHops.length >= 2) {
+    const conceptScene = buildConceptScene(
+      id,
+      page.title,
+      conceptHops,
+      fileContents,
+    );
+    if (conceptScene) {
+      scenes.push(conceptScene);
+      id += 1;
+    }
+  }
+
+  // Rank the page's own declared relevant files instead of taking them in
+  // DeepWiki's declared order — the same in-degree/entry-hint/line-count
+  // scorer buildKtManifest already uses, just scoped to this narrower,
+  // higher-signal population (files DeepWiki already curated for this page)
+  // rather than the whole repo.
+  const loadedFiles = Object.fromEntries(
+    page.relevantFiles
+      .map(({ path }) => [path, fileContents[path]] as const)
+      .filter((entry): entry is [string, string] => Boolean(entry[1]?.trim())),
+  );
+  const rankedPaths = rankFiles(loadedFiles, maxCodeScenes);
+
   const codeScenes: KtScene[] = [];
-  for (const { path } of page.relevantFiles.slice(0, maxCodeScenes)) {
-    const content = fileContents[path];
-    if (!content?.trim()) continue;
-    const scene = buildCodeScene(id, path, content);
+  for (const path of rankedPaths) {
+    const scene = buildCodeScene(id, path, loadedFiles[path]);
     scenes.push(scene);
     codeScenes.push(scene);
     id += 1;

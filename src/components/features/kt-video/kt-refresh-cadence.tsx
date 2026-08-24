@@ -8,6 +8,7 @@ import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
 import { formatRelativeTime } from "#/utils/format-relative-time";
 import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 
 const CADENCE_MS: Record<Exclude<RefreshCadence, "manual">, number> = {
   daily: 24 * 60 * 60 * 1000,
@@ -23,15 +24,16 @@ const CADENCE_LABEL_KEY: Record<RefreshCadence, I18nKey> = {
 };
 
 /**
- * A preference, not a scheduler. This app has no background process to run
- * a cron job in — "due for a refresh" is computed on render from the chosen
- * cadence + the knowledge's generatedAt timestamp, and only ever surfaces as
- * a one-click prompt while someone has this page open. It never
- * regenerates silently.
+ * Cadence is a preference, not a scheduler — this app has no background
+ * process to run a cron job in. "Due for a refresh" is computed on render
+ * from the chosen cadence + the knowledge's generatedAt timestamp, and only
+ * changes the button's label/urgency, never triggers anything silently. The
+ * Regenerate button itself is always available, independent of cadence.
  */
 export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
   const { t, i18n } = useTranslation("openhands");
   const { navigate } = useNavigation();
+  const { backend } = useActiveBackend();
   const state = useKnowledgeStore((s) => s.byRepositoryId[repositoryId]);
   const setRefreshCadence = useKnowledgeStore((s) => s.setRefreshCadence);
   const startGenerating = useKnowledgeStore((s) => s.startGenerating);
@@ -57,6 +59,11 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
       state.sessionApiKey,
       { startGenerating, setProgress, setReady, setError },
       (path) => navigate?.(path),
+      // Without this, regenerating a repo whose commit hasn't changed is a
+      // no-op — DeepWiki's own cache short-circuit returns the same result
+      // instantly, which is exactly why this button exists to bypass.
+      { force: true },
+      backend.id,
     );
   };
 
@@ -85,16 +92,19 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
           </option>
         ))}
       </select>
-      {isDue && !isRegenerating && (
-        <button
-          type="button"
-          onClick={handleRegenerate}
-          className="ame-btn-secondary ame-btn-sm flex items-center gap-1"
-        >
-          <RefreshCw className="size-3.5" aria-hidden />
-          {t(I18nKey.KT$REFRESH_DUE)}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleRegenerate}
+        disabled={isRegenerating}
+        data-testid="kt-regenerate-button"
+        className="ame-btn-secondary ame-btn-sm flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <RefreshCw
+          className={`size-3.5 ${isRegenerating ? "animate-spin" : ""}`}
+          aria-hidden
+        />
+        {t(isDue ? I18nKey.KT$REFRESH_DUE : I18nKey.KT$REGENERATE)}
+      </button>
     </div>
   );
 }

@@ -153,8 +153,10 @@ describe("AutomationsList — manifest-declared dashboard", () => {
     // Arrange & Act
     await renderDashboardWithSettledInsights();
 
-    // Assert — navigation, tiles, and controls all carry manifest captions;
-    // the catalog launcher has moved off this page.
+    // Assert — navigation, tiles, and controls all carry manifest captions,
+    // and the catalog launcher is on this page: hiding it in dashboard mode
+    // left a new user with an empty screen and no way to see that ready-made
+    // automations existed.
     const nav = screen.getByTestId("automations-navbar-desktop");
     const automationsTile = screen.getByTestId("overview-tile-automations");
     expect({
@@ -171,7 +173,7 @@ describe("AutomationsList — manifest-declared dashboard", () => {
     }).toMatchObject({
       navLabels: 2,
       statsCaptions: 2,
-      launcher: null,
+      launcher: expect.anything(),
     });
   });
 

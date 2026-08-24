@@ -1,13 +1,13 @@
 export const AGENT_SERVER_UI_SCOPE_ATTRIBUTE = "data-agent-server-ui";
 export const AGENT_SERVER_UI_SCOPE_SELECTOR = `[${AGENT_SERVER_UI_SCOPE_ATTRIBUTE}]`;
-// The app has been light-themed since the NeoDevEx rebrand (see
-// src/styles/neodevex-tokens.css) — "dark" was the pre-rebrand default and
+// The app has been light-themed since the Neo rebrand (see
+// src/styles/neo-tokens.css) — "dark" was the pre-rebrand default and
 // left every AgentServerUIRoot consumer carrying a stale `data-theme="dark"`
 // / `.dark` class, which any `[data-theme="dark"]` rule (this app's own, or
 // HeroUI's) still matches regardless of the actual light palette in use.
 // That silently overrode readable colors with dark-mode ones in a few
 // spots (e.g. `.ame-eyebrow`'s light/dark color split in
-// neodevex-design-system.css).
+// neo-design-system.css).
 export const AGENT_SERVER_UI_DEFAULT_THEME = "light" as const;
 
 export type AgentServerUITheme = "dark" | "light" | "default";

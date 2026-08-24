@@ -94,7 +94,7 @@
 
 :root {
   color-scheme: light;
-  /* NeoDevEx brand — cyan-blue/teal, replacing OpenHands' default gold */
+  /* Neo brand — cyan-blue/teal, replacing OpenHands' default gold */
   --oh-color-primary: #0b81b7;
   --oh-color-logo: #0b81b7;
   --oh-color-base: var(--cool-grey-950);

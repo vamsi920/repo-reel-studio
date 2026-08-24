@@ -134,7 +134,12 @@ describe("buildHierarchy", () => {
     expect(names).not.toContain("pay");
   });
 
-  it("gives a contested file to the more focused section, not the overview", () => {
+  it("keeps real folder-mates in the same subsystem even when hints disagree", () => {
+    // Two files that really do live together under src/pay/ must land in
+    // the SAME level-1 box — membership is decided by code structure, never
+    // by which DeepWiki page happens to cite a file. Only the box's label
+    // may come from a hint, and only when it substantially overlaps the
+    // box's real (already-settled) membership.
     const nodes = [
       file("src/pay/webhooks/stripe.ts"),
       file("src/pay/charge.ts"),
@@ -143,7 +148,6 @@ describe("buildHierarchy", () => {
       {
         id: "overview",
         title: "Architecture Overview",
-        // A sprawling page that cites most of the repo, including our file.
         filePaths: [
           "src/pay/webhooks/stripe.ts",
           "src/pay/charge.ts",
@@ -160,13 +164,15 @@ describe("buildHierarchy", () => {
     ];
 
     const result = buildHierarchy(graphOf(nodes), hints);
-    const owner = result.parentById["file:src/pay/webhooks/stripe.ts"];
+    const stripeOwner = result.parentById["file:src/pay/webhooks/stripe.ts"];
+    const chargeOwner = result.parentById["file:src/pay/charge.ts"];
 
-    expect(result.nodesById[owner!].name).toBe("Webhooks");
-    // The file the overview alone cites still lands under the overview.
-    expect(
-      result.nodesById[result.parentById["file:src/pay/charge.ts"]!].name,
-    ).toBe("Architecture Overview");
+    // Same real folder → same subsystem box, regardless of hint disagreement.
+    expect(stripeOwner).toBe(chargeOwner);
+    // The winning label is whichever hint overlaps the box's real files
+    // more (here, "Architecture Overview" claims both files; "Webhooks"
+    // claims only one) — never a per-file split.
+    expect(result.nodesById[stripeOwner!].name).toBe("Architecture Overview");
   });
 
   it("falls back to detected layers before folders", () => {

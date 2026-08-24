@@ -6,7 +6,7 @@ import type {
   WorkspaceActivityEvent,
 } from "#/lib/workspace-memory";
 
-const STORAGE_KEY = "neodevex-workspace-memory-telemetry";
+const STORAGE_KEY = "neo-workspace-memory-telemetry";
 
 /** Bounded so a long-running tab cannot grow the persisted blob without limit. */
 const MAX_ACTIVITY = 100;

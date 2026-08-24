@@ -33,7 +33,7 @@ const outDir = join(root, "public", "codegraph-analyzer");
 /**
  * Grammars we ship. Deliberately a subset: every grammar is ~1-3 MB that has to
  * be uploaded into the sandbox on first analysis, so we cover the languages
- * NeoDevEx workspaces actually contain and let the analyzer skip the rest
+ * Neo workspaces actually contain and let the analyzer skip the rest
  * gracefully (upstream's plugin already degrades per-language).
  *
  * Dart and Swift are excluded on licensing grounds — see THIRD_PARTY_NOTICES.md.

@@ -59,7 +59,7 @@ per its license terms.
   page generation, Mermaid diagram generation). The upstream repo's Next.js
   frontend was intentionally not vendored — NeoDevEx implements its own
   Knowledge UI (`/kt` routes) rather than reusing DeepWiki's own frontend.
-- **Local modifications**: four bug fixes, all documented with full root
+- **Local modifications**: eight bug fixes, all documented with full root
   cause in `docs/deepwiki-video-kt-integration.md`:
   - §3.1 — `_determine_structure`'s file list was interpolated as a raw
     Python list repr instead of a real newline-separated tree.
@@ -72,12 +72,24 @@ per its license terms.
   - §3.4 — no `max_output_tokens` cap and `temperature: 1.0` let a known
     LLM degenerate-repetition failure mode produce pages over 1M characters,
     corrupting markdown tables and Mermaid blocks.
+  - §3.5 — `_COMPREHENSIVE_STRUCTURE` hardcoded a 9-section taxonomy as a
+    prose instruction, anchoring every generation to the same generic
+    section names regardless of what the repository actually contains.
+  - §3.6 — the wiki cache/task-registry key excluded commit SHA, so
+    regenerating after a commit change could silently serve stale content
+    (and "Regenerate" was a no-op without a commit change).
+  - §3.7 — structure determination saw only the file tree and README, with
+    no real code/symbol evidence; added an optional `code_evidence` field
+    sourced from NeoDevEx's own CodeGraph analyzer.
+  - §3.8 — the model's own per-page rationale (`<description>` in the
+    structure XML) had no field on `WikiPage` and was discarded before
+    reaching the frontend.
   Otherwise integrated entirely through DeepWiki's own public HTTP API
   (`POST /wiki/tasks`, `GET /wiki/tasks/{id}`, `GET /wiki/tasks/{id}/stream`)
   using its existing `type: "local"` repository mode.
 - **How to update**: re-download the `api/` directory from a newer upstream
   commit, replace `vendor/deepwiki-open/api/`, then reapply the fixes
-  described in §§3.1-3.4 of the integration doc (check first whether
+  described in §§3.1-3.8 of the integration doc (check first whether
   upstream has since
   fixed it themselves).
 

@@ -16,7 +16,9 @@ import { resetMirrorQueue } from "#/api/workspace-memory/workspace-memory-mirror
 import { computeWorkspaceId, type SavingsSample } from "#/lib/workspace-memory";
 import { I18nKey } from "#/i18n/declaration";
 import { makeRecord } from "#/lib/workspace-memory/test-fixtures";
+import type { RealUsageEvent } from "#/lib/real-usage/types";
 import useWorkspaceMemoryStore from "#/stores/workspace-memory-store";
+import useRealUsageStore from "#/stores/real-usage-store";
 
 const BACKEND_ID = "backend-1";
 const WORKSPACE = computeWorkspaceId(BACKEND_ID, "/w/a")!;
@@ -63,6 +65,27 @@ function sample(
   };
 }
 
+function realEvent(
+  workspaceId: string,
+  overrides: Partial<RealUsageEvent> = {},
+): RealUsageEvent {
+  return {
+    id: `evt-${workspaceId}-${Math.random().toString(36).slice(2)}`,
+    workspaceId,
+    conversationId: "conv-1",
+    at: new Date().toISOString(),
+    costUsd: 0.02,
+    usage: {
+      promptTokens: 1000,
+      completionTokens: 600,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
+    model: "claude-sonnet-4-5",
+    ...overrides,
+  };
+}
+
 function selectWorkspace(workspaceId: string) {
   fireEvent.change(screen.getByTestId("usage-workspace-select"), {
     target: { value: workspaceId },
@@ -79,6 +102,7 @@ beforeEach(() => {
     samplesByWorkspace: {},
     lastMirrorByWorkspace: {},
   });
+  useRealUsageStore.setState({ eventsByWorkspace: {} });
 });
 
 describe("Usage route", () => {
@@ -95,17 +119,27 @@ describe("Usage route", () => {
     expect(screen.getByText(/Nothing measured yet/i)).toBeInTheDocument();
   });
 
-  it("shows the aggregate immediately when data exists in more than one workspace", () => {
-    useWorkspaceMemoryStore.getState().recordSavings(sample(WORKSPACE));
-    useWorkspaceMemoryStore.getState().recordSavings(sample(OTHER_WORKSPACE));
+  it("shows real usage immediately from ordinary use, with no memory ever triggering", () => {
+    // The bug this guards against: heavy real use with zero memory-savings
+    // samples (the only thing the page used to read) must still populate.
+    useRealUsageStore.getState().recordUsageEvent(realEvent(WORKSPACE));
+    useRealUsageStore.getState().recordUsageEvent(realEvent(OTHER_WORKSPACE));
 
     render(<UsageRoute />);
 
-    // 1.6k + 1.6k sent, formatted by formatCompactTokenCount.
+    // 1.6k + 1.6k tokens (1000 prompt + 600 completion each), formatted by
+    // formatCompactTokenCount.
     expect(screen.getByText("3.2k")).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing measured yet/i)).toBeNull();
   });
 
   it("renders a dash instead of a cost for an unpriced model", async () => {
+    useRealUsageStore.getState().recordUsageEvent(
+      realEvent(WORKSPACE, {
+        costUsd: null,
+        model: "some-internal-model-v9",
+      }),
+    );
     useWorkspaceMemoryStore
       .getState()
       .recordSavings(sample(WORKSPACE, { model: "some-internal-model-v9" }));

@@ -19,6 +19,9 @@ export function BackendUnavailable({ onRetry }: BackendUnavailableProps) {
       <p className="mt-2 text-sm text-muted text-center max-w-md">
         {t(I18nKey.AUTOMATIONS$BACKEND_UNAVAILABLE_MESSAGE)}
       </p>
+      <p className="mt-2 text-xs text-muted text-center max-w-md">
+        {t(I18nKey.AUTOMATIONS$BACKEND_UNAVAILABLE_HINT)}
+      </p>
       <BrandButton
         type="button"
         variant="secondary"

@@ -9,7 +9,7 @@ import { LandingFooter } from "#/components/features/landing/landing-footer";
 
 /**
  * The marketing/splash page at "/" — fully standalone, no backend/auth
- * required (see the isWelcomePage bypass in src/root.tsx). "Hire NeoDevEx"
+ * required (see the isWelcomePage bypass in src/root.tsx). "Hire Neo"
  * links go to /conversations, the real product console.
  */
 export default function Welcome() {

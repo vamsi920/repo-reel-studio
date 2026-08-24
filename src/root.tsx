@@ -12,8 +12,8 @@ import {
 } from "react-router";
 import "./tailwind.css";
 import "./index.css";
-import "./styles/neodevex-tokens.css";
-import "./styles/neodevex-design-system.css";
+import "./styles/neo-tokens.css";
+import "./styles/neo-design-system.css";
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
@@ -54,6 +54,8 @@ import {
   applyColorTheme,
   readPersistedColorTheme,
 } from "#/themes/color-themes";
+import { isSupabaseConfigured } from "#/lib/data-platform/client";
+import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
 
 /** Applies the persisted color-theme palette to document.body on mount. */
 function ColorThemeApplier() {
@@ -251,11 +253,11 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "NeoDevEx — AI Native SDLC Platform" },
+  { title: "Neo — Autonomous Coding Agent" },
   {
     name: "description",
     content:
-      "Describe what you're building or point it at a repo. NeoDevEx reads the code, plans the change, and does the work — real bash commands, real file edits, real browser tools.",
+      "Describe what you're building or point it at a repo. Neo reads the code, plans the change, and does the work — real bash commands, real file edits, real browser tools.",
   },
   { name: "theme-color", content: "#0b81b7" },
   { name: "msapplication-TileColor", content: "#0b81b7" },
@@ -273,7 +275,10 @@ export default function App() {
   // Hooks below still run unconditionally (rules of hooks) but their
   // `enabled` flags account for this so they don't fire pointless queries.
   const location = useLocation();
+  const navigate = useNavigate();
   const isWelcomePage = location.pathname === "/";
+  const isLoginPage = location.pathname === "/login";
+  const { status: supabaseSessionStatus } = useSupabaseSession();
 
   // Flag-based gate: in public mode (VITE_AUTH_REQUIRED=true) with no
   // session key yet, show the auth screen immediately — no network
@@ -367,6 +372,21 @@ export default function App() {
     if (redirectingToMainAppLogin) redirectToMainAppLogin();
   }, [redirectingToMainAppLogin]);
 
+  // Everything except the marketing page and /login itself requires a real
+  // (non-anonymous) Supabase session once Supabase is configured -- an
+  // anonymous-only session (the silent per-browser bootstrap) does not
+  // count as signed in. Skipped entirely when Supabase isn't configured so
+  // local dev/tests without those env vars are unaffected.
+  const requiresSupabaseSession =
+    isSupabaseConfigured && !isWelcomePage && !isLoginPage;
+  const supabaseSessionMissing =
+    requiresSupabaseSession &&
+    (supabaseSessionStatus === "none" || supabaseSessionStatus === "anonymous");
+
+  React.useEffect(() => {
+    if (supabaseSessionMissing) navigate("/login", { replace: true });
+  }, [supabaseSessionMissing, navigate]);
+
   // Skip the /server_info probe entirely when we already know auth is
   // required and missing — it would just 401 and waste time. Also keep the
   // root bootstrap quiet while the locked-Cloud first-run modal owns backend
@@ -399,8 +419,15 @@ export default function App() {
     activeCloudHealth?.disabled === true &&
     isCloudBackendApiKeyOrNetworkHealthError(activeCloudHealth.lastError);
 
-  if (isWelcomePage) {
+  if (isWelcomePage || isLoginPage) {
     return <Outlet />;
+  }
+
+  if (
+    requiresSupabaseSession &&
+    (supabaseSessionStatus === "loading" || supabaseSessionMissing)
+  ) {
+    return <AgentServerBootstrapLoading />;
   }
 
   if (showFirstRunOnboardingBlocking) {

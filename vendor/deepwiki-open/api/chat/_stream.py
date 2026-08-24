@@ -327,8 +327,20 @@ class GoogleGenerativeChatStreamer(ChatStreamer):
     async def respond_stream(self, prompt: str) -> AsyncIterator[str]:
         response = await self.client.generate_content_async(prompt, stream=True)
         async for chunk in response:
-            if hasattr(chunk, "text"):
-                yield chunk.text
+            # `chunk.text` is a property that RAISES (not just absent) when a
+            # chunk has no valid Part -- a known Gemini streaming quirk, seen
+            # even on a normal finish_reason. `hasattr` does not protect
+            # against this: it only swallows AttributeError, and this raises
+            # ValueError, which previously propagated out of the whole
+            # stream and got woven into page content as literal error text
+            # by research.py's catch-all fallback. Skip the malformed chunk
+            # and keep streaming instead.
+            try:
+                text = chunk.text
+            except ValueError:
+                continue
+            if text:
+                yield text
 
 
 class AnthropicChatStreamer(ChatStreamer):

@@ -512,12 +512,14 @@ export default function AutomationsList() {
           ))}
       </div>
 
-      {/* The launcher lives on the templates sub-page in dashboard mode */}
-      {!dashboard && (
-        <div className="mt-6">
-          <RecommendedAutomationsLauncher query={searchQuery} />
-        </div>
-      )}
+      {/* Suggested automations. Previously dashboard mode hid these entirely,
+          leaving a new user staring at an empty page while every ready-made
+          automation sat one unmarked tab away. The templates sub-page is still
+          the full browse surface; this is the same launcher, shown where
+          people actually land. */}
+      <div className="mt-6">
+        <RecommendedAutomationsLauncher query={searchQuery} />
+      </div>
 
       {/* Delete confirmation modal */}
       <DeleteConfirmationModal

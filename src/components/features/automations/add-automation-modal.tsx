@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { ModalCloseButton } from "#/components/shared/modals/modal-close-button";
@@ -5,6 +6,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
 import { CreateInstructionsContent } from "./create-instructions";
+import { CreateAutomationForm } from "./create-automation-form";
 
 interface AddAutomationModalProps {
   isOpen: boolean;
@@ -16,6 +18,10 @@ export function AddAutomationModal({
   onClose,
 }: AddAutomationModalProps) {
   const { t } = useTranslation("openhands");
+  // The modal used to only explain how to ask an agent to build an automation,
+  // which left "Add Automation" as a dead end. The form is now the primary
+  // path; describing it in a conversation stays available underneath.
+  const [showChatInstructions, setShowChatInstructions] = useState(false);
 
   if (!isOpen) return null;
 
@@ -26,7 +32,7 @@ export function AddAutomationModal({
     >
       <div
         data-testid="add-automation-modal"
-        className="relative flex w-full max-w-lg flex-col rounded-xl border border-[var(--oh-border)] bg-base-secondary"
+        className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[var(--oh-border)] bg-base-secondary"
       >
         <ModalCloseButton
           onClose={onClose}
@@ -37,11 +43,27 @@ export function AddAutomationModal({
             id="add-automation-modal-title"
             className={cn("pr-6", modalTitleLgClassName)}
           >
-            {t(I18nKey.AUTOMATIONS$EMPTY_HOW_TO_CREATE_TITLE)}
+            {showChatInstructions
+              ? t(I18nKey.AUTOMATIONS$EMPTY_HOW_TO_CREATE_TITLE)
+              : t(I18nKey.AUTOMATIONS$CREATE_TITLE)}
           </h2>
         </header>
-        <div className="px-6 pb-6">
-          <CreateInstructionsContent onLaunch={onClose} />
+        <div className="overflow-y-auto px-6 pb-6">
+          {showChatInstructions ? (
+            <CreateInstructionsContent onLaunch={onClose} />
+          ) : (
+            <>
+              <CreateAutomationForm onCreated={onClose} onCancel={onClose} />
+              <button
+                type="button"
+                data-testid="add-automation-use-chat"
+                onClick={() => setShowChatInstructions(true)}
+                className="mt-4 text-xs text-muted underline hover:text-content"
+              >
+                {t(I18nKey.AUTOMATIONS$CREATE_FROM_CHAT)}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </ModalBackdrop>

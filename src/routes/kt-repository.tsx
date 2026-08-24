@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { FileText } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
 import { useNavigation } from "#/context/navigation-context";
@@ -8,6 +9,86 @@ import { I18nKey } from "#/i18n/declaration";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
 import { KtRefreshCadence } from "#/components/features/kt-video/kt-refresh-cadence";
 import type { KnowledgeImportance } from "#/lib/knowledge/knowledge-engine";
+import {
+  resolveOrgId,
+  findRepositoryUuid,
+} from "#/lib/data-platform/repositories/repository-identity";
+import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+
+/** Parses the `"owner/repo@branch"` repositoryId shape produced by
+ * kt-list.tsx's useConnectedRepositories/AddRepositoryTrigger. */
+function parseRepositoryId(
+  repositoryId: string,
+): { owner: string; repo: string; branch: string } | null {
+  const atIdx = repositoryId.lastIndexOf("@");
+  if (atIdx === -1) return null;
+  const branch = repositoryId.slice(atIdx + 1);
+  const [owner, repo] = repositoryId.slice(0, atIdx).split("/");
+  if (!owner || !repo || !branch) return null;
+  return { owner, repo, branch };
+}
+
+/** On a cold page load (direct navigation, reload) the in-memory knowledge
+ * store starts empty even for a repo generated in an earlier session — this
+ * checks Supabase for a previously-persisted generation and seeds the store
+ * from it, so Docs renders real content instead of "hasn't been generated
+ * yet". Best-effort: any failure (unconfigured, RLS, nothing found) just
+ * leaves today's empty-state fallback in place. */
+function useColdRehydration(repositoryId: string | undefined) {
+  const hasEntry = useKnowledgeStore((s) =>
+    repositoryId ? Boolean(s.byRepositoryId[repositoryId]) : true,
+  );
+  const hydrate = useKnowledgeStore((s) => s.hydrate);
+  const [checked, setChecked] = useState(hasEntry);
+
+  useEffect(() => {
+    if (hasEntry || !repositoryId) {
+      setChecked(true);
+      return;
+    }
+    const parsed = parseRepositoryId(repositoryId);
+    if (!parsed) {
+      setChecked(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const orgId = await resolveOrgId();
+      if (!orgId || cancelled) return;
+      const repositoryUuid = await findRepositoryUuid(
+        orgId,
+        parsed.owner,
+        parsed.repo,
+      );
+      if (!repositoryUuid || cancelled) return;
+      const knowledge =
+        await knowledgePersistenceRepository.getLatestGenerationForRepository(
+          repositoryUuid,
+        );
+      if (!knowledge || cancelled) return;
+      hydrate(
+        repositoryId,
+        {
+          repositoryId,
+          owner: parsed.owner,
+          repo: parsed.repo,
+          branch: parsed.branch,
+          commitSha: knowledge.commitSha,
+          localPath: "",
+        },
+        knowledge,
+        [],
+      );
+    })().finally(() => {
+      if (!cancelled) setChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repositoryId, hasEntry, hydrate]);
+
+  return checked;
+}
 
 const IMPORTANCE_KEY: Record<KnowledgeImportance, string> = {
   high: I18nKey.KT$IMPORTANCE_HIGH,
@@ -25,20 +106,27 @@ function KtRepository() {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
   const { repositoryId } = useParams<{ repositoryId: string }>();
+  const decodedId = repositoryId ? decodeURIComponent(repositoryId) : undefined;
   const state = useKnowledgeStore((s) =>
-    repositoryId
-      ? s.byRepositoryId[decodeURIComponent(repositoryId)]
-      : undefined,
+    decodedId ? s.byRepositoryId[decodedId] : undefined,
   );
+  const rehydrationChecked = useColdRehydration(decodedId);
 
   if (!state?.knowledge) {
     return (
       <main className="min-h-full" data-testid="kt-repository">
         <div className="mx-auto max-w-4xl p-6">
           <KtBreadcrumb />
-          <p className="text-sm text-[var(--oh-muted)]">
-            {t(I18nKey.KT$NOT_FOUND)}
-          </p>
+          {rehydrationChecked ? (
+            <p className="text-sm text-[var(--oh-muted)]">
+              {t(I18nKey.KT$NOT_FOUND)}
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-[var(--oh-muted)]">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              {t(I18nKey.KT$STARTING)}
+            </p>
+          )}
         </div>
       </main>
     );

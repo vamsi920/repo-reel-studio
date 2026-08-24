@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "#/context/navigation-context";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { useIsCreatingConversation } from "#/hooks/use-is-creating-conversation";
+import { useLlmConfigured } from "#/hooks/use-llm-configured";
+import { LlmNotConfiguredBanner } from "#/components/features/home/llm-not-configured-banner";
 import { I18nKey } from "#/i18n/declaration";
 
 interface ProjectIntakeStepProps {
@@ -12,7 +14,7 @@ interface ProjectIntakeStepProps {
 }
 
 /**
- * The entire NeoDevEx onboarding flow: one question, no choices. No agent
+ * The entire Neo onboarding flow: one question, no choices. No agent
  * picker, no LLM picker, no "say hello" placeholder — those are all
  * auto-resolved in the background (default agent profile, Gemini LLM profile
  * seeded by useSeedGeminiDefaultProfile). Onboarding only "starts" — i.e. a
@@ -33,13 +35,18 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
   const isLaunching = isPending || isSuccess || isCreatingElsewhere;
   const launchInFlightRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const { isConfigured: isLlmConfigured, isLoading: isLlmConfigLoading } =
+    useLlmConfigured();
 
   React.useEffect(() => {
     textareaRef.current?.focus();
   }, []);
 
   const canSubmit =
-    project.trim().length > 0 && !isLaunching && !launchInFlightRef.current;
+    project.trim().length > 0 &&
+    !isLaunching &&
+    !launchInFlightRef.current &&
+    (isLlmConfigured || isLlmConfigLoading);
 
   const launch = () => {
     if (!canSubmit || launchInFlightRef.current) return;
@@ -120,6 +127,9 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
           >
             {t(I18nKey.ONBOARDING$PROJECT_START)}
           </button>
+          {!isLlmConfigLoading && !isLlmConfigured ? (
+            <LlmNotConfiguredBanner />
+          ) : null}
         </div>
       </form>
     </div>

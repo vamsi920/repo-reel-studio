@@ -117,12 +117,12 @@ export class Collector {
     return hasActive;
   }
 
-  #trackerFor(conversation, observedAt) {
+  async #trackerFor(conversation, observedAt) {
     const runId = conversation.id;
     const existing = this.tracked.get(runId);
     if (existing) return existing;
 
-    const stored = this.store.getRun(runId);
+    const stored = await this.store.getRun(runId);
     const run =
       stored ??
       createRun(
@@ -153,7 +153,7 @@ export class Collector {
 
   async #syncConversation(conversation, observedAt) {
     const runId = conversation.id;
-    const tracker = this.#trackerFor(conversation, observedAt);
+    const tracker = await this.#trackerFor(conversation, observedAt);
     const { aggregator } = tracker;
     const run = aggregator.run;
 
@@ -190,12 +190,14 @@ export class Collector {
     audit.push(...budgetAudit);
 
     if (aggregator.run.status === "waiting_for_confirmation") {
-      audit.push(...this.#raiseConfirmationApproval(aggregator, observedAt));
+      audit.push(
+        ...(await this.#raiseConfirmationApproval(aggregator, observedAt)),
+      );
     }
 
-    this.store.appendSpans(runId, spans);
+    await this.store.appendSpans(runId, spans);
     for (const record of audit) {
-      this.store.appendAudit({
+      await this.store.appendAudit({
         at: observedAt,
         actor: "system",
         ...record,
@@ -204,7 +206,7 @@ export class Collector {
         workspaceId: run.workspaceId,
       });
     }
-    this.store.upsertRun(run);
+    await this.store.upsertRun(run);
     tracker.isNew = false;
 
     if (isTerminalStatus(run.status)) {
@@ -267,10 +269,12 @@ export class Collector {
   async #enforceBudgets(run, observedAt) {
     if (!isActiveStatus(run.status)) return [];
 
-    const policy = this.store.getWorkspacePolicy(run.workspaceId);
-    const agentBudgetUsd = this.store.getAgentBudget(run.agentName);
+    const [policy, agentBudgetUsd, runs] = await Promise.all([
+      this.store.getWorkspacePolicy(run.workspaceId),
+      this.store.getAgentBudget(run.agentName),
+      this.store.listRuns({ limit: 10000 }),
+    ]);
     const since = monthStart(observedAt);
-    const runs = this.store.listRuns({ limit: 10000 });
     const workspaceSpend = computeSpend(runs, {
       workspaceId: run.workspaceId,
       since,
@@ -303,9 +307,10 @@ export class Collector {
 
     if (!breaches.length) return audit;
 
-    const existing = this.store
-      .listApprovals({ state: "pending" })
-      .find((a) => a.kind === "budget" && a.runId === run.runId);
+    const pendingApprovals = await this.store.listApprovals({ state: "pending" });
+    const existing = pendingApprovals.find(
+      (a) => a.kind === "budget" && a.runId === run.runId,
+    );
     if (existing) return audit;
 
     const breach = breaches[0];
@@ -332,7 +337,7 @@ export class Collector {
       });
     }
 
-    this.store.upsertApproval({
+    await this.store.upsertApproval({
       id: `budget:${run.runId}:${observedAt}`,
       kind: "budget",
       state: "pending",
@@ -365,18 +370,19 @@ export class Collector {
    * `/events/respond_to_confirmation` answers. The queue entry is a view onto
    * that, not a second gate of our own.
    */
-  #raiseConfirmationApproval(aggregator, observedAt) {
+  async #raiseConfirmationApproval(aggregator, observedAt) {
     const run = aggregator.run;
-    const existing = this.store
-      .listApprovals({ state: "pending" })
-      .find((a) => a.kind === "confirmation" && a.runId === run.runId);
+    const pendingApprovals = await this.store.listApprovals({ state: "pending" });
+    const existing = pendingApprovals.find(
+      (a) => a.kind === "confirmation" && a.runId === run.runId,
+    );
     if (existing) return [];
 
     // The open tool span is exactly the action the runtime is waiting on.
     const [pending] = [...aggregator.openToolSpans.values()].slice(-1);
-    const policy = this.store.getWorkspacePolicy(run.workspaceId);
+    const policy = await this.store.getWorkspacePolicy(run.workspaceId);
 
-    this.store.upsertApproval({
+    await this.store.upsertApproval({
       id: `confirmation:${run.runId}:${observedAt}`,
       kind: "confirmation",
       state: "pending",

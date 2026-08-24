@@ -5,6 +5,8 @@ import { I18nKey } from "#/i18n/declaration";
 import type { GitRepository } from "#/types/git";
 import type { Provider } from "#/types/settings";
 import { useUserProviders } from "#/hooks/use-user-providers";
+import { useActiveBackend } from "#/contexts/active-backend-context";
+import { SettingsInput } from "#/components/features/settings/settings-input";
 import { useResolvedWorkspaces } from "#/hooks/query/use-resolved-workspaces";
 import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
 import { GitProviderDropdown } from "#/components/features/home/git-provider-dropdown/git-provider-dropdown";
@@ -143,6 +145,12 @@ export function ProactivationSetupWizard({
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     providers[0] ?? null,
   );
+  // Repository search is a cloud-backend capability: on a local backend
+  // `GitService` returns an empty page by design, so the dropdown would list
+  // nothing and the wizard could never be completed. Fall back to typing
+  // owner/repo, exactly as `manifest-form-field.tsx` does for repo-picker.
+  const canListRepositories = useActiveBackend().backend.kind === "cloud";
+  const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
     () => new Set(["dependency", "test", "code-quality"]),
@@ -170,6 +178,18 @@ export function ProactivationSetupWizard({
     setSelectedRepos((prev) =>
       prev.some((r) => repoKey(r) === repoKey(repo)) ? prev : [...prev, repo],
     );
+  };
+
+  const handleAddManualRepo = () => {
+    const trimmed = manualRepo.trim().replace(/^\/+|\/+$/g, "");
+    if (!trimmed) return;
+    handleAddRepo({
+      id: trimmed,
+      full_name: trimmed,
+      git_provider: selectedProvider ?? "github",
+      is_public: false,
+    });
+    setManualRepo("");
   };
 
   const handleRemoveRepo = (repo: GitRepository) => {
@@ -308,7 +328,7 @@ export function ProactivationSetupWizard({
                   onChange={setSelectedProvider}
                 />
               )}
-              {selectedProvider && (
+              {selectedProvider && canListRepositories && (
                 <GitRepoDropdown
                   provider={selectedProvider}
                   onChange={handleAddRepo}
@@ -316,6 +336,38 @@ export function ProactivationSetupWizard({
                     I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY,
                   )}
                 />
+              )}
+              {!canListRepositories && (
+                <div className="flex items-end gap-2">
+                  <div className="min-w-0 flex-1">
+                    <SettingsInput
+                      testId="proactivation-manual-repo"
+                      name="manualRepo"
+                      type="text"
+                      label={t(
+                        I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY,
+                      )}
+                      value={manualRepo}
+                      onChange={setManualRepo}
+                      placeholder={t(I18nKey.SETUP$REPOSITORY_PLACEHOLDER)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleAddManualRepo();
+                        }
+                      }}
+                    />
+                  </div>
+                  <BrandButton
+                    type="button"
+                    variant="secondary"
+                    testId="proactivation-manual-repo-add"
+                    onClick={handleAddManualRepo}
+                    isDisabled={manualRepo.trim().length === 0}
+                  >
+                    {t(I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY)}
+                  </BrandButton>
+                </div>
               )}
               <div className="flex flex-col gap-2">
                 {selectedRepos.length === 0 && (

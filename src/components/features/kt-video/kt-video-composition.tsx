@@ -1,13 +1,15 @@
 import {
   AbsoluteFill,
-  Easing,
   Sequence,
   interpolate,
+  spring,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
 import type { KtManifest, KtScene } from "#/lib/kt-video/build-manifest";
 import { DiagramPanel } from "./diagram-panel";
 import { RepoTreePanel } from "./repo-tree-panel";
+import { ConceptPanel } from "./concept-panel";
 
 /* eslint-disable i18next/no-literal-string -- Remotion composition chrome */
 
@@ -40,13 +42,26 @@ function CodePanel({
   scene: KtScene;
   relativeFrame: number;
 }) {
+  const { fps } = useVideoConfig();
   const { lines, firstLineNumber, highlightStart, highlightEnd } =
     getActiveLines(scene, 22);
-  const enter = interpolate(relativeFrame, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
+  // A spring-eased "camera settling onto the highlighted lines" zoom, rather
+  // than a flat linear fade — starts slightly zoomed out/down, springs to
+  // rest. `spring` is core `remotion`, no new dependency.
+  const enterSpring = spring({
+    frame: relativeFrame,
+    fps,
+    config: { damping: 26, mass: 0.6 },
   });
+  const exitFrames = 12;
+  const exit = interpolate(
+    relativeFrame,
+    [scene.durationInFrames - exitFrames, scene.durationInFrames],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const scale = 0.94 + enterSpring * 0.06;
+  const opacity = Math.min(enterSpring, exit);
 
   return (
     <div
@@ -55,8 +70,8 @@ function CodePanel({
         maxWidth: 1100,
         borderRadius: 12,
         overflow: "hidden",
-        opacity: enter,
-        transform: `translateY(${(1 - enter) * 16}px)`,
+        opacity,
+        transform: `scale(${scale}) translateY(${(1 - enterSpring) * 20}px)`,
         boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
         border: "1px solid rgba(34,224,255,0.25)",
       }}
@@ -340,6 +355,8 @@ function ScenePanel({
       return <DiagramPanel scene={scene} relativeFrame={relativeFrame} />;
     case "repo-tree":
       return <RepoTreePanel scene={scene} relativeFrame={relativeFrame} />;
+    case "concept":
+      return <ConceptPanel scene={scene} relativeFrame={relativeFrame} />;
     default:
       return <CodePanel scene={scene} relativeFrame={relativeFrame} />;
   }

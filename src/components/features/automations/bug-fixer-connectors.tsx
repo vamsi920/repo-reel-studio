@@ -212,7 +212,7 @@ function RepositoryPromptModal({
 }
 
 /**
- * NeoDevEx Bug Fixer connectors. One click creates a real, persisted
+ * Neo Bug Fixer connectors. One click creates a real, persisted
  * automation (via the same `createAutomation` API the Import flow uses) with
  * a GitHub- or Jira-issue event trigger and an agent-ops-style prompt
  * (research → patch → test loop → verify → PR only when green) baked in.

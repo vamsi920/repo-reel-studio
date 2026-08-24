@@ -4,7 +4,7 @@ import { useConversationStateStore } from "#/stores/conversation-state-store";
 import { getAgentStateEmoji } from "#/utils/agent-state-emoji";
 import { stripLeadingEmoji } from "#/utils/strip-title-emoji";
 
-const APP_TITLE = "NeoDevEx";
+const APP_TITLE = "Neo";
 
 export const useAppTitle = () => {
   const { conversationId } = useParams<{ conversationId: string }>();

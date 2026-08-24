@@ -47,6 +47,15 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+// These cases exercise the section against the published catalog, so the
+// fork's own entries are isolated out: with none declared, nothing is
+// superseded and the published entries render exactly as they ship.
+vi.mock("#/manifests/local-automation-catalog", () => ({
+  LOCAL_AUTOMATION_CATALOG: [],
+  LOCAL_FEATURED_AUTOMATION_IDS: [],
+  SUPERSEDES_PUBLISHED_ID: {},
+}));
+
 vi.mock("#/hooks/mutation/use-create-conversation", () => ({
   useCreateConversation: () => ({
     mutate: mockCreateConversationMutate,

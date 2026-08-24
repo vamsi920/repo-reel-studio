@@ -22,7 +22,7 @@ import {
  * the AgentOps dashboard is Elastic-License-2.0 (see `vendor/agentops/README.md`).
  * The span *vocabulary* on the right-hand panel is the MIT semconv we vendored,
  * which is why the attribute keys read `gen_ai.usage.prompt_tokens` and
- * `tool.parameters` rather than something NeoDevEx invented.
+ * `tool.parameters` rather than something Neo invented.
  */
 
 const SPAN_KIND_COLORS: Record<string, string> = {

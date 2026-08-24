@@ -24390,10 +24390,10 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
   languages;
   configs;
   /**
-   * NeoDevEx modification.
+   * Neo modification.
    *
    * Upstream locates grammar `.wasm` files with `require.resolve(...)` against
-   * the analyzer's own `node_modules`. NeoDevEx runs this bundled inside an
+   * the analyzer's own `node_modules`. Neo runs this bundled inside an
    * agent-server sandbox, where the grammars are uploaded next to the bundle
    * and there is no installed package tree to resolve against. When supplied,
    * this resolver is used instead; when omitted, upstream behaviour is
@@ -24419,7 +24419,7 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
    *
    * @param configs Language configurations to load
    * @param extractors Optional language extractors; if none provided, registers all builtin extractors
-   * @param wasmResolver NeoDevEx modification — see `wasmResolver` below.
+   * @param wasmResolver Neo modification — see `wasmResolver` below.
    */
   constructor(configs, extractors, wasmResolver) {
     this.wasmResolver = wasmResolver;
@@ -24471,7 +24471,7 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
     return this._extensionToLang.get(ext) ?? null;
   }
   /**
-   * NeoDevEx modification — routes grammar lookup through the injected
+   * Neo modification — routes grammar lookup through the injected
    * resolver when one was supplied, falling back to upstream's
    * `require.resolve` otherwise.
    */
@@ -25044,26 +25044,27 @@ function commonDirPrefix(paths) {
   }
   return prefix ? `${prefix}/` : "";
 }
-function assignByHints(units, hints) {
-  const claims = /* @__PURE__ */ new Map();
-  for (const hint of hints) {
-    const breadth = hint.filePaths.length;
-    for (const rawPath of hint.filePaths) {
-      const path = normalizePath(rawPath);
-      if (!path) continue;
-      const existing = claims.get(path);
-      if (!existing || breadth < existing.breadth) {
-        claims.set(path, { sectionId: hint.id, breadth });
+var HINT_LABEL_OVERLAP_THRESHOLD = 0.5;
+function relabelBucketsWithHints(buckets, hints) {
+  if (!hints.length) return;
+  const hintFileSets = hints.map((hint) => ({
+    title: hint.title,
+    files: new Set(hint.filePaths.map(normalizePath))
+  })).filter((hint) => hint.files.size > 0);
+  if (!hintFileSets.length) return;
+  for (const bucket of buckets.values()) {
+    const bucketFiles = bucket.nodes.map((node) => node.filePath ? normalizePath(node.filePath) : null).filter((path) => path !== null);
+    if (!bucketFiles.length) continue;
+    let best = null;
+    for (const hint of hintFileSets) {
+      const matched = bucketFiles.filter((path) => hint.files.has(path)).length;
+      const overlap = matched / bucketFiles.length;
+      if (overlap >= HINT_LABEL_OVERLAP_THRESHOLD && (!best || overlap > best.overlap)) {
+        best = { title: hint.title, overlap };
       }
     }
+    if (best) bucket.name = best.title;
   }
-  const assignment = /* @__PURE__ */ new Map();
-  for (const unit of units) {
-    if (!unit.filePath) continue;
-    const claim = claims.get(normalizePath(unit.filePath));
-    if (claim) assignment.set(unit.id, claim.sectionId);
-  }
-  return assignment;
 }
 function aggregateFilePaths(nodes) {
   const seen = /* @__PURE__ */ new Set();
@@ -25340,39 +25341,48 @@ function buildHierarchy(graph, hints = []) {
       (id) => layerOf.set(id, { id: layer.id, name: layer.name })
     );
   });
-  const hintAssignment = assignByHints(placedUnits, hints);
-  const hintById = new Map(hints.map((hint) => [hint.id, hint]));
   const buckets = /* @__PURE__ */ new Map();
   const push = (key, name, node) => {
     const bucket = buckets.get(key) ?? { name, nodes: [] };
     bucket.nodes.push(node);
     buckets.set(key, bucket);
   };
-  const unassigned = [];
-  for (const unit of placedUnits) {
-    const sectionId = hintAssignment.get(unit.id);
-    if (!sectionId) {
-      unassigned.push(unit);
-      continue;
-    }
-    push(
-      `subsystem:${slug(sectionId)}`,
-      hintById.get(sectionId)?.title ?? sectionId,
-      unit
-    );
-  }
   const layerless = [];
-  for (const unit of unassigned) {
+  for (const unit of placedUnits) {
     const layer = layerOf.get(unit.id);
     if (layer) push(`subsystem:layer-${slug(layer.id)}`, layer.name, unit);
     else layerless.push(unit);
   }
-  for (const unit of layerless) {
-    const path = unit.filePath ? normalizePath(unit.filePath) : "";
-    const segment = path.includes("/") ? path.slice(0, path.indexOf("/")) : "";
-    if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
-    else push("subsystem:other", "Other", unit);
+  const layerlessWithPath = layerless.filter((unit) => unit.filePath);
+  const layerlessWithoutPath = layerless.filter((unit) => !unit.filePath);
+  for (const unit of layerlessWithoutPath) push("subsystem:other", "Other", unit);
+  const DERIVE_CONTAINERS_MIN_NODES = 4;
+  if (layerlessWithPath.length >= DERIVE_CONTAINERS_MIN_NODES) {
+    const { containers, ungrouped } = deriveContainers(
+      layerlessWithPath,
+      allEdges
+    );
+    const byId = new Map(layerlessWithPath.map((unit) => [unit.id, unit]));
+    for (const container of containers) {
+      for (const nodeId of container.nodeIds) {
+        const unit = byId.get(nodeId);
+        if (!unit) continue;
+        push(`subsystem:folder-${slug(container.id)}`, container.name, unit);
+      }
+    }
+    for (const nodeId of ungrouped) {
+      const unit = byId.get(nodeId);
+      if (unit) push("subsystem:other", "Other", unit);
+    }
+  } else {
+    for (const unit of layerlessWithPath) {
+      const path = normalizePath(unit.filePath);
+      const segment = path.includes("/") ? path.slice(0, path.indexOf("/")) : "";
+      if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
+      else push("subsystem:other", "Other", unit);
+    }
   }
+  relabelBucketsWithHints(buckets, hints);
   const ctx = {
     nodesById: {},
     childrenByParent: { [ROOT]: [] },
@@ -25579,7 +25589,7 @@ async function main() {
       continue;
     }
     builder.addFileWithAnalysis(path, structure, {
-      // Node prose is intentionally left empty here. NeoDevEx fills summaries
+      // Node prose is intentionally left empty here. Neo fills summaries
       // from the DeepWiki pages it already generated for this same commit
       // rather than prompting an LLM a second time — see deepwiki-bridge.ts.
       summary: "",

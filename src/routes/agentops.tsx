@@ -9,7 +9,7 @@ import { useAgentOpsWorkspaceActivity } from "#/hooks/use-agentops-workspace-act
  * AgentOps Control Tower.
  *
  * OpenHands agent-server remains the agent runtime; AgentOps supplies the
- * observability vocabulary (vendored MIT semantic conventions); NeoDevEx adds
+ * observability vocabulary (vendored MIT semantic conventions); Neo adds
  * the control layer — policy, budgets, approvals and audit. See AGENTS.md,
  * "AgentOps Control Tower".
  */

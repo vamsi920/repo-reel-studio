@@ -113,3 +113,87 @@ out; nothing else in the app inspects the marker format.
   status badge and a link into the live conversation, rather than a new
   stage-tracker UI — the automation-run model has no stage granularity to
   drive one honestly.
+
+---
+
+# Phase 2 — making Automations actually work
+
+## What was broken
+
+Three separate problems, all confirmed against the running stack rather than assumed:
+
+1. **"Automations Unavailable" on a healthy service.** The registry stores one
+   host per backend, and this machine's `default-local` entry pointed at
+   `http://127.0.0.1:18000` — the bare agent-server, which has **no**
+   `/api/automation` routes (verified: 404). The automation service was healthy
+   the whole time on `:18001`, reachable through the ingress (`:8000`) and the
+   Vite dev proxy (`:3001`). `dev:minimal` registers the agent-server directly,
+   and that host survives in localStorage into a full `npm run dev` session, so
+   every automation call went to a service that does not serve them.
+   Fixed in `automation-service.api.ts`: resolve the automation base URL once by
+   probing the registered host, falling back to the app's own origin only when a
+   probe proves it answers.
+2. **Suggested automations were invisible on the Dashboard.** `automations-list.tsx`
+   rendered the launcher only under `{!dashboard && ...}`, so in dashboard mode
+   (which the published `interface.json` enables) every ready-made automation sat
+   behind the Templates tab. Now rendered on both.
+3. **Most templates created nothing.** Only 3 of the 9 published entries had a
+   `direct` setup block; the rest opened a seeded chat and persisted nothing.
+
+Two further blockers found only by driving the real UI:
+
+- The setup dialog's **Continue was disabled** whenever a declared integration
+  was not installed as an MCP, so none of the new templates could be created.
+  Local entries now declare `required: false` (the only value the schema
+  permits), which keeps the integration visible and explained without blocking.
+- The Proactivation wizard's repo dropdown is **always empty on a local backend**
+  (`GitService` returns an empty page unless the backend is cloud), so the wizard
+  could not be completed. It now falls back to typing `owner/repo`, matching
+  `manifest-form-field.tsx`.
+
+## Deployment reality that shaped the design
+
+`GET /v1/capabilities` on this deployment reports:
+
+```
+triggerKinds: ["cron"]        eventSources: []      eventTypes: []
+features: [conversationDispatch, kvStore, mcpTools, presetPlugin, presetPrompt, repoClone]
+cron.minIntervalSeconds: 60   maxAutomationTimeoutSeconds: 1800
+```
+
+There is **no event/webhook support at all** here, and no `webhookDelivery`
+feature. Every locally-authored entry therefore polls on cron, and none declares
+`requires.features` — a feature the deployment does not report renders the card
+unavailable, which is worse than a card that runs.
+
+## What was added
+
+- `src/manifests/local-automation-catalog.ts` — 12 fork-owned entries, all
+  `direct` + cron, so completing a form performs one
+  `POST /api/automation/v1/preset/prompt` and returns a live automation.
+  Five are new (Proactive Engineering, Continuous Improvement Agent, GitHub Issue
+  Fixer, Dependency Updater, CI Failure Fixer); seven replace published entries
+  that only opened a chat.
+- A merge seam in `manifest-sources.ts`. The setup registry keeps **both**
+  published and local entries — the package pins contract fixtures against ids
+  it publishes, and those must keep resolving — while the displayed catalog drops
+  a published entry that a local one supersedes, so no duplicate cards appear.
+- `create-automation-form.tsx` — a real "New automation" form (name,
+  instructions, repository, schedule, model, timeout, enabled) replacing the
+  previous instructions-only dead end. The conversation route is still offered.
+- A "Creates automation" / "Guided chat" badge on every card, and a test
+  asserting every displayed entry is `direct` so a future package bump cannot
+  silently reintroduce a dead card.
+
+## Verified end to end against the live service
+
+- Created an automation via `POST /v1/preset/prompt` → returned `enabled: true`
+  with a real cron trigger, tarball and entrypoint.
+- Dispatched it → the run went `PENDING → RUNNING → COMPLETED` and was assigned a
+  real `bash_command_id` and `conversation_id`, i.e. the service genuinely
+  spawned an agent conversation in the sandbox.
+- Drove the **GitHub Issue Fixer** template through the browser: prerequisites →
+  form → review → confirm created a real automation and landed on its detail page
+  showing "Active" with the fully interpolated prompt, confirmed present and
+  enabled via `GET /v1`.
+- Both verification automations were deleted afterwards.

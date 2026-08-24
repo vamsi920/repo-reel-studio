@@ -209,7 +209,7 @@ function getDirSizeBytes(dir) {
 /** @type {import('electron-builder').Configuration} */
 const config = {
   appId: "dev.neodevex.agent-canvas",
-  productName: "NeoDevEx",
+  productName: "Neo",
   copyright: "Copyright © 2025 All Hands AI",
 
   // Stamp the packaged app with the released version (see rootPackageJson
@@ -312,16 +312,16 @@ const config = {
   },
 
   dmg: {
-    title: "NeoDevEx",
+    title: "Neo",
     contents: [
       { x: 130, y: 220 },
       { x: 410, y: 220, type: "link", path: "/Applications" },
     ],
     window: { width: 540, height: 380 },
-    // Default is "NeoDevEx-<version>-<arch>.dmg"; GitHub release
+    // Default is "Neo-<version>-<arch>.dmg"; GitHub release
     // assets mangle spaces, so keep the asset name literal (matches the nsis
     // convention). ${version}/${arch}/${ext} are electron-builder macros.
-    artifactName: "NeoDevEx-${version}-${arch}.${ext}",
+    artifactName: "Neo-${version}-${arch}.${ext}",
   },
 
   // ── Windows ────────────────────────────────────────────────────────────────
@@ -338,10 +338,10 @@ const config = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    // The default artifact name is "NeoDevEx Setup <version>.exe";
+    // The default artifact name is "Neo Setup <version>.exe";
     // GitHub release assets mangle spaces, so ship a space-free name.
     // ${version}/${ext} are electron-builder macros, not JS interpolation.
-    artifactName: "NeoDevEx-Setup-${version}.${ext}",
+    artifactName: "Neo-Setup-${version}.${ext}",
   },
 
   // ── Linux ──────────────────────────────────────────────────────────────────

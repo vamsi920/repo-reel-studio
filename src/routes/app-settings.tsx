@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
 import { useSettings } from "#/hooks/query/use-settings";
@@ -22,11 +23,15 @@ import { NavigationLink } from "#/components/shared/navigation-link";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
+import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
 
 const AUTOMATIC_TITLE_LLM_PROFILE_KEY = "__automatic__";
 
 export function AppSettingsScreen() {
   const { t } = useTranslation("openhands");
+  const navigate = useNavigate();
+  const { user: supabaseUser } = useSupabaseSession();
 
   const { mutate: saveSettings, isPending } = useSaveSettings();
   const { data: settings, isLoading } = useSettings();
@@ -165,6 +170,11 @@ export function AppSettingsScreen() {
     setGitUserEmailHasChanged(value !== currentValue);
   };
 
+  const handleSignOut = async () => {
+    await supabase?.auth.signOut();
+    navigate("/login", { replace: true });
+  };
+
   const formIsClean =
     !languageInputHasChanged &&
     !analyticsSwitchHasChanged &&
@@ -292,6 +302,27 @@ export function AppSettingsScreen() {
               </BrandButton>
             </div>
           </div>
+
+          {isSupabaseConfigured && supabaseUser ? (
+            <div className="border-t border-[var(--oh-border)] pt-6 mt-2">
+              <h3 className="text-lg font-medium mb-2">
+                {t(I18nKey.SETTINGS$ACCOUNT_SECTION_TITLE)}
+              </h3>
+              <p className="mb-4 text-sm leading-5 text-tertiary-light">
+                {t(I18nKey.SETTINGS$ACCOUNT_SIGNED_IN_AS, {
+                  email: supabaseUser.email,
+                })}
+              </p>
+              <BrandButton
+                testId="sign-out-button"
+                variant="secondary"
+                type="button"
+                onClick={handleSignOut}
+              >
+                {t(I18nKey.SETTINGS$SIGN_OUT)}
+              </BrandButton>
+            </div>
+          ) : null}
         </div>
       )}
     </form>

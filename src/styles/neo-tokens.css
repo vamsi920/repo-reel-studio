@@ -1,5 +1,5 @@
 /*
- * Bridges the vendored AME/NeoDevEx design system (src/styles/neodevex-design-system.css,
+ * Bridges the vendored AME/Neo design system (src/styles/neo-design-system.css,
  * sourced from the neodevex/ parent workspace's design-system.css) onto this
  * app's existing dark palette (--oh-*, --cool-grey-*, defined in tailwind.css
  * and index.css). The design system expects these token names; we don't have

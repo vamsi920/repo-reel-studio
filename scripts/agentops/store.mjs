@@ -1,17 +1,25 @@
 /**
  * Append-only JSONL store for the AgentOps Control Tower.
  *
- * Deliberately not a database. The audit log is the point of this feature, and
- * an append-only file is both tamper-evident (rewriting history means rewriting
- * the file) and dependency-free, which matters because this sidecar ships in
- * the same npm package and Docker image as the app and must start with no
- * setup. Runs and spans live in the same format so that a support request can
- * be answered with `cat`.
+ * This is the **local fallback** store, used when `SUPABASE_URL`/
+ * `SUPABASE_SERVICE_ROLE_KEY` are not configured (see
+ * `scripts/agentops-server.mjs`'s store selection at startup). The primary
+ * store is `scripts/agentops/supabase-store.mjs`, backed by the project's real
+ * Postgres database. This one exists so the feature works with zero external
+ * setup: dependency-free (node: builtins only), ships in the same npm package
+ * and Docker image as the app.
+ *
+ * An append-only file is tamper-evident (rewriting history means rewriting the
+ * file) and lets a support request be answered with `cat`.
  *
  * On boot the whole store is read once to rebuild an in-memory index; from then
  * on reads are served from memory and writes are appends. Policies are the one
  * exception — they are edited, not accumulated, so they live in a plain JSON
  * file that is rewritten atomically.
+ *
+ * Every method is `async` even though the underlying I/O is synchronous, so
+ * that this store and `SupabaseAgentOpsStore` are drop-in interchangeable —
+ * callers always `await`.
  */
 
 import {
@@ -111,17 +119,17 @@ export class AgentOpsStore {
 
   // ── Runs ────────────────────────────────────────────────────────────────
 
-  upsertRun(run) {
+  async upsertRun(run) {
     this.runs.set(run.runId, run);
     appendFileSync(this.runsPath, `${JSON.stringify(run)}\n`, "utf-8");
     return run;
   }
 
-  getRun(runId) {
+  async getRun(runId) {
     return this.runs.get(runId) ?? null;
   }
 
-  listRuns({ status, workspaceId, since, limit = 200 } = {}) {
+  async listRuns({ status, workspaceId, since, limit = 200 } = {}) {
     let runs = [...this.runs.values()];
     if (status) {
       const wanted = new Set(String(status).split(","));
@@ -151,7 +159,7 @@ export class AgentOpsStore {
     return join(this.spansDir, `${runId}.jsonl`);
   }
 
-  appendSpans(runId, spans) {
+  async appendSpans(runId, spans) {
     if (!spans.length) return;
     const payload = spans.map((span) => JSON.stringify(span)).join("\n");
     appendFileSync(this.#spanPath(runId), `${payload}\n`, "utf-8");
@@ -162,7 +170,7 @@ export class AgentOpsStore {
    * the earlier one — a tool span is appended when it opens and again when it
    * closes, and the closed version is the truth.
    */
-  listSpans(runId) {
+  async listSpans(runId) {
     const byId = new Map();
     for (const span of readJsonl(this.#spanPath(runId))) {
       if (!span?.spanId) continue;
@@ -176,7 +184,7 @@ export class AgentOpsStore {
 
   // ── Audit ───────────────────────────────────────────────────────────────
 
-  appendAudit(record) {
+  async appendAudit(record) {
     const entry = {
       id: `${record.entityId ?? "system"}:${record.action}:${record.at}:${this.audit.length}`,
       ...record,
@@ -186,7 +194,7 @@ export class AgentOpsStore {
     return entry;
   }
 
-  listAudit({ entityId, workspaceId, since, limit = 500 } = {}) {
+  async listAudit({ entityId, workspaceId, since, limit = 500 } = {}) {
     let records = this.audit;
     if (entityId) records = records.filter((r) => r.entityId === entityId);
     if (workspaceId)
@@ -200,7 +208,7 @@ export class AgentOpsStore {
 
   // ── Approvals ───────────────────────────────────────────────────────────
 
-  upsertApproval(approval) {
+  async upsertApproval(approval) {
     this.approvals.set(approval.id, approval);
     appendFileSync(
       this.approvalsPath,
@@ -210,11 +218,11 @@ export class AgentOpsStore {
     return approval;
   }
 
-  getApproval(id) {
+  async getApproval(id) {
     return this.approvals.get(id) ?? null;
   }
 
-  listApprovals({ state = "pending" } = {}) {
+  async listApprovals({ state = "pending" } = {}) {
     const approvals = [...this.approvals.values()];
     const filtered =
       state === "all" ? approvals : approvals.filter((a) => a.state === state);
@@ -226,7 +234,7 @@ export class AgentOpsStore {
 
   // ── Policies ────────────────────────────────────────────────────────────
 
-  getWorkspacePolicy(workspaceId) {
+  async getWorkspacePolicy(workspaceId) {
     return {
       ...DEFAULT_POLICY,
       ...(this.policies.workspaces[workspaceId] ?? {}),
@@ -234,16 +242,16 @@ export class AgentOpsStore {
     };
   }
 
-  getAgentBudget(agentName) {
+  async getAgentBudget(agentName) {
     const value = this.policies.agents?.[agentName]?.agentBudgetUsd;
     return typeof value === "number" ? value : null;
   }
 
-  getPolicies() {
+  async getPolicies() {
     return this.policies;
   }
 
-  setPolicies(policies) {
+  async setPolicies(policies) {
     this.policies = {
       workspaces: policies?.workspaces ?? {},
       agents: policies?.agents ?? {},

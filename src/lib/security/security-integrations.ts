@@ -1,7 +1,7 @@
 /**
  * Integration seams for Security.
  *
- * Each interface names how a neighbouring NeoDevEx system will plug into
+ * Each interface names how a neighbouring Neo system will plug into
  * Security later. None of them are implemented or wired up here — they exist
  * so the eventual engine has a fixed shape to build against, and so nothing
  * has to reach into those systems ad hoc.
@@ -34,7 +34,7 @@ export interface SecurityCodeGraphIntegration {
   ): Promise<{ componentId: string; label: string }[]>;
 }
 
-/** NeoDevEx agent runtime: "Fix with Agent" hands a finding to a conversation. */
+/** Neo agent runtime: "Fix with Agent" hands a finding to a conversation. */
 export interface SecurityAgentRuntimeIntegration {
   startFixConversation(
     finding: SecurityFinding,

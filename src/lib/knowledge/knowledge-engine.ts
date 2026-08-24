@@ -5,6 +5,8 @@ import type {
   DeepWikiWikiStructure,
   DeepWikiWikiTaskStatus,
 } from "#/api/deepwiki-service/deepwiki-service.types";
+import { extractCitedRanges } from "./citation-parser";
+import type { EvidenceSubsystemEntry } from "./code-evidence";
 
 /** Every generation must resolve to an immutable commit. */
 export interface RepositorySnapshot {
@@ -62,8 +64,25 @@ export interface KnowledgeRepository {
   generatedAt: string;
 }
 
+export interface GenerateOptions {
+  /** Bypass any cached result for this exact commit and regenerate. */
+  force?: boolean;
+  /** Condensed real-code-structure evidence (subsystems, layers, import/call
+   * edges) from the CodeGraph analyzer, to ground structure determination
+   * beyond the file tree and README alone. Best-effort — omit if unavailable. */
+  codeEvidence?: string;
+  /** Full per-subsystem file lists (distinct from `codeEvidence`'s truncated
+   * summary) — lets the backend match a page's own declared files against
+   * real subsystems and ground per-page generation, not just the one-shot
+   * structure/taxonomy decision. Best-effort — omit if unavailable. */
+  codeEvidenceSubsystems?: EvidenceSubsystemEntry[];
+}
+
 export interface RepositoryKnowledgeEngine {
-  generate(snapshot: RepositorySnapshot): Promise<KnowledgeRepository>;
+  generate(
+    snapshot: RepositorySnapshot,
+    options?: GenerateOptions,
+  ): Promise<KnowledgeRepository>;
 }
 
 /** Progress callback fired as the underlying DeepWiki task advances through
@@ -133,17 +152,28 @@ function coerceImportance(value: string): KnowledgeImportance {
 }
 
 function normalizePage(page: DeepWikiWikiPage): KnowledgePage {
+  const citedRanges = extractCitedRanges(page.content);
   return {
     id: page.id,
-    title: page.title,
+    // Real per-page rationale the model writes during structure planning —
+    // falls back to the old first-line-of-content heuristic only for cached
+    // wikis generated before the backend started keeping this field.
     description:
+      page.description?.trim() ||
       page.content
         .split("\n")
         .find((line) => line.trim().length > 0)
-        ?.trim() ?? "",
+        ?.trim() ||
+      "",
+    title: page.title,
     contentMarkdown: page.content,
     importance: coerceImportance(page.importance),
-    relevantFiles: page.filePaths.map((path) => ({ path })),
+    relevantFiles: page.filePaths.map((path) => {
+      const range = citedRanges.get(path);
+      return range
+        ? { path, startLine: range.startLine, endLine: range.endLine }
+        : { path };
+    }),
     diagrams: extractDiagrams(page.id, page.content),
     relatedPageIds: page.relatedPages,
   };
@@ -190,7 +220,7 @@ function normalizeStructure(
  * has no job-queue infrastructure of its own to build one in (see
  * docs/deepwiki-video-kt-integration.md). DeepWiki's `type: "local"` repo
  * mode means no second GitHub auth or clone step is introduced either: it
- * reads the exact local checkout NeoDevEx already resolved for this commit.
+ * reads the exact local checkout Neo already resolved for this commit.
  */
 export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
   constructor(
@@ -201,7 +231,10 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
     } = {},
   ) {}
 
-  async generate(snapshot: RepositorySnapshot): Promise<KnowledgeRepository> {
+  async generate(
+    snapshot: RepositorySnapshot,
+    options: GenerateOptions = {},
+  ): Promise<KnowledgeRepository> {
     const repoType = "local";
     const submitResult = await DeepWikiService.submitWikiTask({
       repo_url: snapshot.localPath,
@@ -210,6 +243,10 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
       repo: snapshot.repo,
       provider: this.options.provider ?? "google",
       model: this.options.model,
+      commit_sha: snapshot.commitSha,
+      force: options.force,
+      code_evidence: options.codeEvidence,
+      code_evidence_subsystems: options.codeEvidenceSubsystems,
     });
 
     // `from_cache: true` means this exact repo/commit/provider variant was
@@ -243,6 +280,8 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
       snapshot.owner,
       snapshot.repo,
       repoType,
+      "en",
+      snapshot.commitSha,
     );
     if (!cache) {
       throw new Error(

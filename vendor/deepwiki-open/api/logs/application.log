@@ -3811,3 +3811,739 @@ ValueError: Invalid operation: The `response.text` quick accessor requires the r
 2026-08-19 17:37:14,773 - INFO - deepwiki.api.routers.wiki - wiki.py:151 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en
 2026-08-19 17:41:29,694 - INFO - deepwiki.api.routers.wiki - wiki.py:151 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en
 2026-08-19 21:58:29,581 - INFO - deepwiki.api.routers.wiki - wiki.py:151 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en
+2026-08-20 15:48:35,075 - INFO - deepwiki.__main__ - main.py:107 - Starting Streaming API on port 8001
+2026-08-20 15:48:40,864 - INFO - deepwiki.api.routers.wiki - wiki.py:151 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en
+2026-08-20 16:46:27,238 - INFO - deepwiki.__main__ - main.py:107 - Starting Streaming API on port 8001
+2026-08-20 16:48:56,417 - INFO - deepwiki.api.services.wiki.tasks - tasks.py:228 - Determining structure for local_local_blueprintai-navigator_b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-20 16:49:11,318 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 3516 tokens
+2026-08-20 16:49:11,349 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:49:11,349 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:49:11,350 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:49:11,350 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:49:11,354 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:49:11,460 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:49:11,461 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:49:11,463 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:49:11,464 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:49:11,464 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:49:11,574 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:49:11,582 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:49:11,589 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 14639}
+2026-08-20 16:49:12,262 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 16:49:12,320 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 16:49:12,322 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:49:12,322 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:49:46,879 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 5065 tokens
+2026-08-20 16:49:46,898 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:49:46,899 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:49:46,900 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:49:46,900 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:49:46,901 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:49:47,093 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:49:47,093 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:49:47,094 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:49:47,094 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:49:47,095 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:49:47,305 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:49:47,310 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:49:47,314 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 21182}
+2026-08-20 16:49:47,878 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 16:49:47,906 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 16:49:47,907 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:49:47,908 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:50:16,022 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 7793 tokens
+2026-08-20 16:50:16,024 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (7793 > 7500)
+2026-08-20 16:50:16,031 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:50:16,031 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:50:16,031 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:50:16,031 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:50:16,032 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:50:16,316 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:50:16,317 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:50:16,318 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:50:16,318 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:50:16,318 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:50:16,643 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:50:16,644 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:50:16,645 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:50:16,647 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:50:16,688 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:50:42,531 - ERROR - deepwiki.api.services.research - research.py:285 - Error with google API: Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned. The candidate's [finish_reason](https://ai.google.dev/api/generate-content#finishreason) is 1.
+Traceback (most recent call last):
+  File "/Users/vamsi/Desktop/neodevex/repo-reel-studio/vendor/deepwiki-open/api/services/research.py", line 267, in stream_and_fallback
+    async for chunk in streamer.respond_stream(prompt_func()):
+  File "/Users/vamsi/Desktop/neodevex/repo-reel-studio/vendor/deepwiki-open/api/chat/_stream.py", line 330, in respond_stream
+    if hasattr(chunk, "text"):
+       ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vamsi/Desktop/neodevex/repo-reel-studio/vendor/deepwiki-open/.venv/lib/python3.12/site-packages/google/generativeai/types/generation_types.py", line 479, in text
+    raise ValueError(msg)
+ValueError: Invalid operation: The `response.text` quick accessor requires the response to contain a valid `Part`, but none were returned. The candidate's [finish_reason](https://ai.google.dev/api/generate-content#finishreason) is 1.
+2026-08-20 16:50:42,704 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 6550 tokens
+2026-08-20 16:50:42,736 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:50:42,736 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:50:42,737 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:50:42,737 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:50:42,737 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:50:43,164 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:50:43,165 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:50:43,166 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:50:43,166 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:50:43,167 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:50:43,366 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:50:43,367 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:50:43,374 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 26750}
+2026-08-20 16:50:44,021 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 16:50:44,058 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 16:50:44,065 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:50:44,068 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:51:27,180 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 11583 tokens
+2026-08-20 16:51:27,196 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (11583 > 7500)
+2026-08-20 16:51:27,557 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:51:27,569 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:51:27,574 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:51:27,574 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:51:27,577 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:51:28,945 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:51:28,960 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:51:28,975 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:51:28,978 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:51:28,980 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:51:29,661 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:51:29,673 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:51:29,679 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:51:29,681 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:51:29,816 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:52:04,269 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 10521 tokens
+2026-08-20 16:52:04,277 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (10521 > 7500)
+2026-08-20 16:52:04,332 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:52:04,332 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:52:04,333 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:52:04,333 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:52:04,334 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:52:04,676 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:52:04,676 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:52:04,677 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:52:04,677 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:52:04,677 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:52:04,910 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:52:04,910 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:52:04,911 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:52:04,911 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:52:04,966 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:52:38,436 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 8986 tokens
+2026-08-20 16:52:38,441 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (8986 > 7500)
+2026-08-20 16:52:38,544 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:52:38,548 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:52:38,562 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:52:38,570 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:52:38,574 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:52:39,759 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:52:39,761 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:52:39,774 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:52:39,778 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:52:39,781 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:52:40,832 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:52:40,849 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:52:40,857 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:52:40,862 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:52:41,303 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:53:12,820 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 8721 tokens
+2026-08-20 16:53:12,838 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (8721 > 7500)
+2026-08-20 16:53:13,023 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:53:13,028 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:53:13,033 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:53:13,034 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:53:13,040 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:53:14,384 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:53:14,386 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:53:14,397 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:53:14,399 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:53:14,399 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:53:14,800 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:53:14,810 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:53:14,812 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:53:14,818 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:53:14,880 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:53:49,078 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 22715 tokens
+2026-08-20 16:53:49,093 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (22715 > 7500)
+2026-08-20 16:53:49,199 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:53:49,200 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:53:49,201 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:53:49,201 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:53:49,208 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:53:49,852 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:53:49,852 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:53:49,854 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:53:49,854 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:53:49,855 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:53:50,341 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:53:50,350 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:53:50,352 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:53:50,353 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:53:50,415 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 16:54:28,607 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 6041 tokens
+2026-08-20 16:54:28,639 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:54:28,642 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:54:28,642 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:54:28,643 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:54:28,646 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:54:30,513 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:54:30,513 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:54:30,514 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:54:30,514 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:54:30,515 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:54:30,659 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:54:30,660 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:54:30,661 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 24420}
+2026-08-20 16:54:31,195 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 16:54:31,238 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 16:54:31,238 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:54:31,239 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:55:06,469 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 7065 tokens
+2026-08-20 16:55:06,653 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/blueprintai-navigator...
+2026-08-20 16:55:06,658 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: blueprintai-navigator
+2026-08-20 16:55:06,659 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/blueprintai-navigator. Using existing repository.
+2026-08-20 16:55:06,661 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/blueprintai-navigator', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/blueprintai-navigator.pkl'}
+2026-08-20 16:55:06,662 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 16:55:08,129 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 528 documents from existing database (embeddings: 528 non-empty, 0 empty; sample_dims=[3072])
+2026-08-20 16:55:08,130 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 528 documents for retrieval
+2026-08-20 16:55:08,134 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 528 documents)
+2026-08-20 16:55:08,135 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 528/528 documents have valid embeddings.
+2026-08-20 16:55:08,135 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 528 documents with valid embeddings for retrieval
+2026-08-20 16:55:10,269 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 16:55:10,303 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/blueprintai-navigator
+2026-08-20 16:55:10,555 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 27128}
+2026-08-20 16:55:12,332 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 16:55:12,514 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 16:55:12,538 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 16:55:12,544 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 16:55:45,902 - INFO - deepwiki.api.services.wiki.io - io.py:100 - Attempting to save wiki cache. Path: /Users/vamsi/.adalflow/wikicache/deepwiki_cache_local_local_blueprintai-navigator_en_b149ebebda32ef691a95c3f75cfe5a271ec76bc9.json
+2026-08-20 16:55:46,184 - INFO - deepwiki.api.services.wiki.io - io.py:103 - Wiki cache successfully saved to /Users/vamsi/.adalflow/wikicache/deepwiki_cache_local_local_blueprintai-navigator_en_b149ebebda32ef691a95c3f75cfe5a271ec76bc9.json
+2026-08-20 16:55:46,185 - INFO - deepwiki.api.services.wiki.tasks - tasks.py:237 - Wiki task completed for local_local_blueprintai-navigator_b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-20 16:57:21,835 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en, commit: b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-20 17:05:00,700 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en, commit: b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-20 17:08:04,804 - INFO - deepwiki.api.services.wiki.tasks - tasks.py:223 - Indexing local_local_restaurant-agent_87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-20 17:08:04,910 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:08:04,910 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:08:04,911 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:08:04,911 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:08:04,913 - INFO - deepwiki.api.rag.pipeline - pipeline.py:461 - Creating new database...
+2026-08-20 17:08:04,914 - INFO - deepwiki.api.rag.pipeline - pipeline.py:109 - Reading documents from /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:08:07,653 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file package-lock.json: Token count (114686) exceeds limit
+2026-08-20 17:08:08,144 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/server/app/page.js: Token count (244516) exceeds limit
+2026-08-20 17:08:08,506 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/server/vendor-chunks/next.js: Token count (1081342) exceeds limit
+2026-08-20 17:08:08,612 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/server/app/blog/page.js: Token count (534542) exceeds limit
+2026-08-20 17:08:09,209 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/static/chunks/main-app.js: Token count (2803872) exceeds limit
+2026-08-20 17:08:09,485 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/static/chunks/app/page.js: Token count (326824) exceeds limit
+2026-08-20 17:08:09,531 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/static/chunks/app/not-found.js: Token count (212839) exceeds limit
+2026-08-20 17:08:09,619 - WARNING - deepwiki.api.rag.pipeline - pipeline.py:127 - Skipping large file .next/static/chunks/app/blog/page.js: Token count (430540) exceeds limit
+2026-08-20 17:08:09,927 - INFO - deepwiki.api.rag.pipeline - pipeline.py:159 - Found 939 documents
+2026-08-20 17:08:10,725 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:12,662 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:12,920 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:14,510 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:14,762 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:16,309 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:16,556 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:17,980 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:18,233 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:19,722 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:19,970 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:21,391 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:21,640 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:23,012 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:23,258 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:24,541 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:24,788 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:26,220 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:26,467 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:27,899 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:28,167 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:29,646 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:29,923 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:31,440 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:31,720 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:33,264 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:33,551 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:34,928 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:35,225 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:36,593 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:36,857 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:38,488 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:38,742 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:40,213 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:40,472 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:42,133 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:08:42,387 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:42,850 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:42,882 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:43,261 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:44,432 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:44,800 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:47,758 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:48,202 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:48,211 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:48,737 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:49,417 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:49,899 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:51,402 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:51,875 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:53,296 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:53,695 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:53,703 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:54,069 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:54,564 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:54,978 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:56,862 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:57,179 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:59,025 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:59,501 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:08:59,511 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:08:59,802 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:00,536 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:00,891 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:01,471 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:01,753 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:04,796 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:05,117 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:05,128 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:06,517 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:06,779 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:07,040 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:07,162 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:07,437 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:09,128 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:09,391 - ERROR - deepwiki.api.clients.google_embedder - google_embedder.py:265 - Error calling Google AI Embeddings API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.  [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+]
+2026-08-20 17:09:12,048 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:13,487 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:13,744 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:15,119 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:15,372 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:16,777 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:17,047 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:18,450 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:18,710 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:20,168 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:20,442 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:21,945 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:22,245 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:23,700 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:23,954 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:25,387 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:25,720 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:27,178 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:27,449 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:28,856 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:29,116 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:30,548 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:30,808 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 100}
+2026-08-20 17:09:32,306 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 100 embedding(s) (dim=3072)
+2026-08-20 17:09:32,562 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'contents_count': 58}
+2026-08-20 17:09:33,623 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 58 embedding(s) (dim=3072)
+2026-08-20 17:09:34,082 - INFO - deepwiki.api.rag.pipeline - pipeline.py:473 - Total documents: 939
+2026-08-20 17:09:34,082 - INFO - deepwiki.api.rag.pipeline - pipeline.py:475 - Total transformed documents: 3558
+2026-08-20 17:09:34,082 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:09:34,086 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:09:34,086 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:09:34,086 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:09:34,377 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:09:34,378 - INFO - deepwiki.api.services.wiki.tasks - tasks.py:228 - Determining structure for local_local_restaurant-agent_87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-20 17:09:36,297 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 11815 tokens
+2026-08-20 17:09:36,298 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (11815 > 7500)
+2026-08-20 17:09:36,299 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:09:36,299 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:09:36,299 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:09:36,299 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:09:36,299 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:09:36,485 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:09:36,486 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:09:36,487 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:09:36,487 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:09:36,487 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:09:36,669 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:09:36,669 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:09:36,670 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:09:36,670 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:09:36,731 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 17:10:24,104 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 3245 tokens
+2026-08-20 17:10:24,109 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:10:24,109 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:10:24,110 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:10:24,110 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:10:24,110 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:10:24,394 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:10:24,394 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:10:24,396 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:10:24,396 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:10:24,396 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:10:24,602 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:10:24,603 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:10:24,604 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 13097}
+2026-08-20 17:10:25,084 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:10:25,102 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:10:25,103 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:10:25,103 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:10:59,925 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 5697 tokens
+2026-08-20 17:10:59,927 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:10:59,928 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:10:59,928 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:10:59,928 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:10:59,929 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:11:00,231 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:11:00,232 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:11:00,233 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:11:00,233 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:11:00,233 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:11:00,430 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:11:00,431 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:11:00,432 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 21131}
+2026-08-20 17:11:00,929 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:11:00,940 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:11:00,941 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:11:00,941 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:11:25,754 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 3233 tokens
+2026-08-20 17:11:25,757 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:11:25,757 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:11:25,757 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:11:25,757 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:11:25,758 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:11:26,068 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:11:26,069 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:11:26,070 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:11:26,070 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:11:26,070 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:11:26,264 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:11:26,264 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:11:26,265 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 13441}
+2026-08-20 17:11:26,708 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:11:26,717 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:11:26,718 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:11:26,719 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:12:01,220 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 5037 tokens
+2026-08-20 17:12:01,223 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:12:01,224 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:12:01,225 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:12:01,225 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:12:01,225 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:12:01,546 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:12:01,546 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:12:01,547 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:12:01,548 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:12:01,548 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:12:01,739 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:12:01,740 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:12:01,740 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 20460}
+2026-08-20 17:12:02,317 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:12:02,328 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:12:02,328 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:12:02,329 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:12:34,325 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 8093 tokens
+2026-08-20 17:12:34,325 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (8093 > 7500)
+2026-08-20 17:12:34,328 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:12:34,328 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:12:34,329 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:12:34,329 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:12:34,329 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:12:34,659 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:12:34,659 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:12:34,661 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:12:34,661 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:12:34,661 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:12:34,856 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:12:34,857 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:12:34,857 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:12:34,858 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:12:34,922 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 17:13:15,644 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 15299 tokens
+2026-08-20 17:13:15,645 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (15299 > 7500)
+2026-08-20 17:13:15,646 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:13:15,647 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:13:15,647 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:13:15,647 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:13:15,647 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:13:15,936 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:13:15,937 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:13:15,938 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:13:15,938 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:13:15,939 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:13:16,140 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:13:16,141 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:13:16,141 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:13:16,141 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:13:16,205 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 17:14:19,392 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 12543 tokens
+2026-08-20 17:14:19,393 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (12543 > 7500)
+2026-08-20 17:14:19,396 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:14:19,396 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:14:19,397 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:14:19,397 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:14:19,397 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:14:19,709 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:14:19,710 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:14:19,711 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:14:19,711 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:14:19,711 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:14:19,933 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:14:19,934 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:14:19,934 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:14:19,934 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:14:19,997 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 17:15:07,248 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 3795 tokens
+2026-08-20 17:15:07,252 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:15:07,252 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:15:07,253 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:15:07,253 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:15:07,253 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:15:07,582 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:15:07,582 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:15:07,584 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:15:07,584 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:15:07,584 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:15:07,789 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:15:07,790 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:15:07,792 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 15323}
+2026-08-20 17:15:08,269 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:15:08,286 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:15:08,286 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:15:08,286 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:15:44,262 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 5805 tokens
+2026-08-20 17:15:44,266 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:15:44,266 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:15:44,267 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:15:44,267 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:15:44,267 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:15:44,556 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:15:44,556 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:15:44,557 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:15:44,557 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:15:44,557 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:15:44,762 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:15:44,762 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:15:44,763 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 22879}
+2026-08-20 17:15:45,306 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-20 17:15:45,327 - INFO - deepwiki.api.services.research - research.py:160 - Retrieved 20 documents
+2026-08-20 17:15:45,327 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:15:45,327 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:16:19,365 - INFO - deepwiki.api.services.research - research.py:68 - Request size: 9115 tokens
+2026-08-20 17:16:19,366 - WARNING - deepwiki.api.services.research - research.py:70 - Request exceeds recommended token limit (9115 > 7500)
+2026-08-20 17:16:19,368 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-20 17:16:19,369 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-20 17:16:19,369 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-20 17:16:19,369 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-20 17:16:19,369 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-20 17:16:19,738 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-20 17:16:19,738 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-20 17:16:19,739 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-20 17:16:19,739 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-20 17:16:19,740 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-20 17:16:19,938 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-20 17:16:19,939 - INFO - deepwiki.api.services.research - research.py:84 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-20 17:16:19,939 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-20 17:16:19,939 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-pro
+2026-08-20 17:16:20,003 - INFO - deepwiki.chat - _prompts.py:24 - No context available from RAG
+2026-08-20 17:17:02,478 - INFO - deepwiki.api.services.wiki.io - io.py:100 - Attempting to save wiki cache. Path: /Users/vamsi/.adalflow/wikicache/deepwiki_cache_local_local_restaurant-agent_en_87f8e23dd11053b2151fb0119d935c7d77af4030.json
+2026-08-20 17:17:02,482 - INFO - deepwiki.api.services.wiki.io - io.py:103 - Wiki cache successfully saved to /Users/vamsi/.adalflow/wikicache/deepwiki_cache_local_local_restaurant-agent_en_87f8e23dd11053b2151fb0119d935c7d77af4030.json
+2026-08-20 17:17:02,482 - INFO - deepwiki.api.services.wiki.tasks - tasks.py:237 - Wiki task completed for local_local_restaurant-agent_87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-20 17:17:03,286 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/restaurant-agent (local), lang: en, commit: 87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-20 17:38:31,980 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en, commit: b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-20 17:40:36,278 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/restaurant-agent (local), lang: en, commit: 87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-20 18:18:09,611 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/blueprintai-navigator (local), lang: en, commit: b149ebebda32ef691a95c3f75cfe5a271ec76bc9
+2026-08-24 12:38:15,867 - INFO - deepwiki.api.routers.wiki - wiki.py:154 - Attempting to retrieve wiki cache for local/restaurant-agent (local), lang: en, commit: 87f8e23dd11053b2151fb0119d935c7d77af4030
+2026-08-24 12:38:16,219 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 174 tokens
+2026-08-24 12:38:16,228 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:16,228 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:16,229 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:16,229 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:16,229 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:16,231 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 318 tokens
+2026-08-24 12:38:16,234 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 544 tokens
+2026-08-24 12:38:16,235 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:16,235 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:16,235 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:16,235 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:16,235 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:16,238 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 318 tokens
+2026-08-24 12:38:16,240 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:16,240 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:16,241 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 423 tokens
+2026-08-24 12:38:16,241 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:16,242 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:16,242 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:16,243 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:16,243 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:16,243 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 294 tokens
+2026-08-24 12:38:16,244 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:16,244 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:16,244 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:17,977 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:17,987 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:17,994 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:17,994 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:17,994 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:18,004 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:18,006 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:18,006 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:18,007 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:18,007 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:18,007 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:18,009 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:18,009 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:18,009 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:18,010 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:18,010 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:18,010 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:18,353 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:18,353 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:18,681 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:19,376 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:19,376 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:19,378 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:19,383 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 690}
+2026-08-24 12:38:19,383 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:19,383 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:19,400 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:19,411 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:19,411 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 1156}
+2026-08-24 12:38:19,411 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:19,411 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:19,411 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 2009}
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:19,412 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 1282}
+2026-08-24 12:38:19,413 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:19,413 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:19,413 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:21,115 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:21,172 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:21,172 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:21,187 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:21,302 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:21,303 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:21,303 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:21,544 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:21,546 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:21,546 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:21,765 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:21,767 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:21,768 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:21,969 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:21,970 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:21,971 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:22,266 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:22,266 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:22,269 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:22,269 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:22,271 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:22,467 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:22,468 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:22,470 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:22,470 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:22,470 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:22,679 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:22,679 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:22,680 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 1773}
+2026-08-24 12:38:22,690 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:22,690 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:22,691 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 1004}
+2026-08-24 12:38:23,097 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:23,107 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:23,108 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:23,108 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:23,195 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:157 - Parsed 1 embedding(s) (dim=3072)
+2026-08-24 12:38:23,200 - INFO - deepwiki.api.services.research - research.py:167 - Retrieved 20 documents
+2026-08-24 12:38:23,200 - INFO - deepwiki.api.rag.rag - rag.py:92 - Returning 0 dialog turns from memory
+2026-08-24 12:38:23,200 - INFO - deepwiki.chat - _stream.py:44 - Using google with model: gemini-2.5-flash
+2026-08-24 12:38:24,801 - INFO - deepwiki.api.services.research - research.py:69 - Request size: 294 tokens
+2026-08-24 12:38:24,802 - INFO - deepwiki.api.rag.pipeline - pipeline.py:355 - Preparing repo storage for /Users/vamsi/Desktop/restaurant-agent...
+2026-08-24 12:38:24,802 - INFO - deepwiki.api.rag.pipeline - pipeline.py:365 - Extracted repo name: restaurant-agent
+2026-08-24 12:38:24,803 - INFO - deepwiki.api.rag.pipeline - pipeline.py:369 - Repository already exists at /Users/vamsi/Desktop/restaurant-agent. Using existing repository.
+2026-08-24 12:38:24,803 - INFO - deepwiki.api.rag.pipeline - pipeline.py:381 - Repo paths: {'save_repo_dir': '/Users/vamsi/Desktop/restaurant-agent', 'save_db_file': '/Users/vamsi/.adalflow/repo/databases/restaurant-agent.pkl'}
+2026-08-24 12:38:24,803 - INFO - deepwiki.api.rag.pipeline - pipeline.py:433 - Loading existing database...
+2026-08-24 12:38:25,079 - INFO - deepwiki.api.rag.pipeline - pipeline.py:442 - Loaded 3558 documents from existing database (embeddings: 3158 non-empty, 400 empty; sample_dims=[3072])
+2026-08-24 12:38:25,079 - INFO - deepwiki.api.rag.rag - rag.py:272 - Loaded 3558 documents for retrieval
+2026-08-24 12:38:25,081 - INFO - deepwiki.api.rag.rag - rag.py:210 - Target embedding size: 3072 (found in 3158 documents)
+2026-08-24 12:38:25,081 - INFO - deepwiki.api.rag.rag - rag.py:231 - Embedding validation complete: 3158/3558 documents have valid embeddings.
+2026-08-24 12:38:25,081 - INFO - deepwiki.api.rag.rag - rag.py:284 - Using 3158 documents with valid embeddings for retrieval
+2026-08-24 12:38:25,275 - INFO - deepwiki.api.rag.rag - rag.py:296 - FAISS retriever created successfully
+2026-08-24 12:38:25,275 - INFO - deepwiki.api.services.research - research.py:85 - Retriever prepared for /Users/vamsi/Desktop/restaurant-agent
+2026-08-24 12:38:25,275 - INFO - deepwiki.api.clients.google_embedder - google_embedder.py:246 - Google AI Embeddings call kwargs (sanitized): {'model': 'gemini-embedding-001', 'task_type': 'SEMANTIC_SIMILARITY', 'content_chars': 1352}

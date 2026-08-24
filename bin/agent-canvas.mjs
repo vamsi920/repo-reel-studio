@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * CLI entry point for neodevex
+ * CLI entry point for neo
  *
  * Runs the full Agent Canvas stack locally by default:
  * - Agent-server via uvx
@@ -32,7 +32,7 @@ if (args.includes("-v") || args.includes("--version")) {
 if (args.includes("--info")) {
   const { version } = JSON.parse(readFileSync(PKG_JSON, "utf-8"));
   const defaults = JSON.parse(readFileSync(DEFAULTS_JSON, "utf-8"));
-  console.log(`neodevex ${version}
+  console.log(`neo ${version}
 
 Default stack versions:
   agent-server:    ${defaults.versions.agentServer}
@@ -57,13 +57,13 @@ const isBackendOnly = args.includes("--backend-only");
 
 if (args.includes("-h") || args.includes("--help")) {
   console.log(`
-neodevex - Run the Agent Canvas UI with agent-server
+neo - Run the Agent Canvas UI with agent-server
 
 Runs the full stack with agent-server and automation backend via uvx,
 and serves pre-built static frontend assets.
 
 USAGE:
-  npx neodevex [options]
+  npx neo [options]
 
 AUTH MODES:
   By default the server auto-generates an API key that is injected into
@@ -96,28 +96,28 @@ not environment variables.
 
 EXAMPLES:
   # Start full stack (local mode, auto-generated key)
-  npx neodevex
+  npx neo
 
   # Pin a specific key (local mode, key auto-injected into frontend)
-  LOCAL_BACKEND_API_KEY=my-key npx neodevex
+  LOCAL_BACKEND_API_KEY=my-key npx neo
 
   # Public mode — users must enter the API key in the browser
-  LOCAL_BACKEND_API_KEY=my-secret npx neodevex --public
+  LOCAL_BACKEND_API_KEY=my-secret npx neo --public
 
   # Use a specific port
-  npx neodevex --port 3000
+  npx neo --port 3000
 
   # Start only the static frontend behind ingress
-  npx neodevex --frontend-only
+  npx neo --frontend-only
 
   # Start only the agent-server and automation backend behind ingress
-  npx neodevex --backend-only
+  npx neo --backend-only
 
   # Show default stack versions and ports
-  npx neodevex --info
+  npx neo --info
 
   # Use local SDK checkout for development
-  OH_AGENT_SERVER_LOCAL_PATH=/path/to/sdk npx neodevex
+  OH_AGENT_SERVER_LOCAL_PATH=/path/to/sdk npx neo
 `);
   process.exit(0);
 }
@@ -153,7 +153,7 @@ try {
   ({ main } = await import("../scripts/dev-with-automation.mjs"));
 } catch (err) {
   console.error("Failed to load required scripts. Try reinstalling:");
-  console.error("  npm install -g neodevex@latest");
+  console.error("  npm install -g neo@latest");
   console.error(`\nError: ${err.message}`);
   process.exit(1);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Loader2, Plus, RefreshCw } from "lucide-react";
 import { usePaginatedConversations } from "#/hooks/query/use-paginated-conversations";
@@ -10,6 +10,10 @@ import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 import { waitForWorkspaceReady } from "#/lib/knowledge/conversation-provisioning";
 import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
+import {
+  knowledgePersistenceRepository,
+  type PersistedRepositorySummary,
+} from "#/lib/data-platform/repositories/knowledge-repository";
 import { useNavigation } from "#/context/navigation-context";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
@@ -28,9 +32,14 @@ interface RepoCandidate {
   conversationUrl: string | null;
   sessionApiKey: string | null;
   workingDir: string | null;
+  /** True for a repo sourced from Supabase with no live store entry and no
+   * open conversation — RepoCard treats this the same as "ready" (real
+   * knowledge exists, just not loaded into memory yet; opening it triggers
+   * kt-repository.tsx's cold rehydration). */
+  knownGenerated?: boolean;
 }
 
-/** One card per distinct repository already connected to NeoDevEx, sourced
+/** One card per distinct repository already connected to Neo, sourced
  * from real conversation history. Repositories added via the "Add
  * Repository" trigger show up here automatically once their conversation is
  * created (usePaginatedConversations picks it up on refetch), but they're
@@ -68,8 +77,28 @@ function useConnectedRepositories(): RepoCandidate[] {
  * never finds them — without this, a locally-added repo would vanish from
  * /kt the moment its provisioning/generating card clears (on success OR
  * error), even though its knowledge-store entry is still there. */
+/** Repos with real, previously-generated Knowledge in Supabase but no open
+ * conversation right now — without this, they'd vanish from /kt entirely on
+ * reload, exactly the empty-page problem this is fixing at the list level. */
+function usePersistedRepositories(): PersistedRepositorySummary[] {
+  const [summaries, setSummaries] = useState<PersistedRepositorySummary[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const list =
+        await knowledgePersistenceRepository.listGeneratedRepositories();
+      if (!cancelled) setSummaries(list);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return summaries;
+}
+
 function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
+  const persisted = usePersistedRepositories();
   return useMemo(() => {
     const connectedIds = new Set(connected.map((c) => c.repositoryId));
     const extra: RepoCandidate[] = [];
@@ -85,8 +114,28 @@ function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
         workingDir: state.snapshot.localPath,
       });
     }
+    const known = new Set([
+      ...connectedIds,
+      ...extra.map((c) => c.repositoryId),
+    ]);
+    for (const summary of persisted) {
+      const branch = summary.branch ?? "main";
+      const repositoryId = `${summary.owner}/${summary.repo}@${branch}`;
+      if (known.has(repositoryId)) continue;
+      known.add(repositoryId);
+      extra.push({
+        repositoryId,
+        owner: summary.owner,
+        repo: summary.repo,
+        branch,
+        conversationUrl: null,
+        sessionApiKey: null,
+        workingDir: null,
+        knownGenerated: true,
+      });
+    }
     return [...connected, ...extra];
-  }, [connected, byRepositoryId]);
+  }, [connected, byRepositoryId, persisted]);
 }
 
 async function resolveCommitSha(
@@ -139,6 +188,7 @@ async function resolveSnapshot(
 function RepoCard({ candidate }: { candidate: RepoCandidate }) {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
+  const { backend } = useActiveBackend();
   const state = useKnowledgeStore(
     (s) => s.byRepositoryId[candidate.repositoryId],
   );
@@ -149,6 +199,8 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isGenerating = state?.status === "generating" || isSubmitting;
+  const isReady =
+    state?.status === "ready" || (!state && candidate.knownGenerated);
 
   const handleGenerate = async () => {
     setIsSubmitting(true);
@@ -160,6 +212,8 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
         candidate.sessionApiKey,
         { startGenerating, setProgress, setReady, setError },
         (path) => navigate?.(path),
+        {},
+        backend.id,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -185,7 +239,7 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
         </span>
       </div>
 
-      {state?.status === "ready" ? (
+      {isReady ? (
         <button
           type="button"
           onClick={() =>
@@ -332,6 +386,8 @@ function AddRepositoryTrigger() {
         conversation.session_api_key,
         { startGenerating, setProgress, setReady, setError },
         (path) => navigate?.(path),
+        {},
+        backend.id,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

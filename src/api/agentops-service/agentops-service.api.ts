@@ -1,5 +1,5 @@
 /**
- * HTTP client for the NeoDevEx AgentOps Control Tower collector
+ * HTTP client for the Neo AgentOps Control Tower collector
  * (`scripts/agentops-server.mjs`), mounted behind the same ingress as the
  * agent-server at `/api/agentops`.
  *

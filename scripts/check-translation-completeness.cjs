@@ -393,6 +393,8 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   'SETUP$REPOSITORY_PLACEHOLDER',
   'VSCODE$TITLE',
   'WORKSPACE$JUPYTER_TAB_LABEL',
+  'NEODEVEX_AUTH$EMAIL_PLACEHOLDER',
+  'NEODEVEX_AUTH$PASSWORD_PLACEHOLDER',
 ]);
 
 // Extract the language codes from the AvailableLanguages array in the i18n index file

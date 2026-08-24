@@ -30,7 +30,17 @@ export function useSeedGeminiDefaultProfile(): void {
     if (profilesData.profiles.length > 0) return;
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-    if (!apiKey) return;
+    if (!apiKey || apiKey === "your_gemini_api_key_here") {
+      // No key baked in (or the .env.sample placeholder was never replaced) —
+      // zero profiles remain zero profiles. The onboarding submit gate
+      // (useLlmConfigured, in project-intake-step.tsx) is what catches this
+      // for the user; this warning is only a cheap diagnostic aid for anyone
+      // debugging why no profile was seeded.
+      console.warn(
+        "No Gemini API key found (VITE_GEMINI_API_KEY) — skipping default LLM profile seed. Set it in .env, or configure an LLM manually in Settings.",
+      );
+      return;
+    }
 
     const rawModel =
       (import.meta.env.VITE_GEMINI_MODEL as string | undefined) ||

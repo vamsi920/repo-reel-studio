@@ -142,6 +142,9 @@ async def read_wiki(
     repo: str = Query(..., description="Repository name"),
     repo_type: str = Query(..., description="Repository type (e.g., github, gitlab)"),
     language: str = Query(..., description="Language of the wiki content"),
+    commit_sha: Optional[str] = Query(
+        None, description="Commit SHA the cached wiki should be scoped to"
+    ),
 ):
     """Retrieve cached wiki data (structure and generated pages) for a repository."""
     supported_langs = configs["lang_config"]["supported_languages"]
@@ -149,14 +152,14 @@ async def read_wiki(
         language = configs["lang_config"]["default"]
 
     logger.info(
-        f"Attempting to retrieve wiki cache for {owner}/{repo} ({repo_type}), lang: {language}"
+        f"Attempting to retrieve wiki cache for {owner}/{repo} ({repo_type}), lang: {language}, commit: {commit_sha}"
     )
-    cached_data = await read_wiki_cache(owner, repo, repo_type, language)
+    cached_data = await read_wiki_cache(owner, repo, repo_type, language, commit_sha)
     if cached_data:
         return cached_data
     # Return 200 with null body if not found (frontend expects this behavior)
     logger.info(
-        f"Wiki cache not found for {owner}/{repo} ({repo_type}), lang: {language}"
+        f"Wiki cache not found for {owner}/{repo} ({repo_type}), lang: {language}, commit: {commit_sha}"
     )
     return None
 
@@ -167,6 +170,9 @@ async def delete_wiki(
     repo: str = Query(..., description="Repository name"),
     repo_type: str = Query(..., description="Repository type (e.g., github, gitlab)"),
     language: str = Query(..., description="Language of the wiki content"),
+    commit_sha: Optional[str] = Query(
+        None, description="Commit SHA the cached wiki should be scoped to"
+    ),
     authorization_code: Optional[str] = Query(None, description="Authorization code"),
 ):
     """
@@ -183,11 +189,11 @@ async def delete_wiki(
             raise HTTPException(status_code=401, detail="Authorization code is invalid")
 
     logger.info(
-        f"Attempting to delete wiki cache for {owner}/{repo} ({repo_type}), lang: {language}"
+        f"Attempting to delete wiki cache for {owner}/{repo} ({repo_type}), lang: {language}, commit: {commit_sha}"
     )
 
     try:
-        deleted = await delete_wiki_cache(owner, repo, repo_type, language)
+        deleted = await delete_wiki_cache(owner, repo, repo_type, language, commit_sha)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to delete wiki cache: {str(e)}"

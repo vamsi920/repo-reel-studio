@@ -44,8 +44,15 @@ const LIVE_REFETCH_MS = 3000;
 const SLOW_REFETCH_MS = 30000;
 
 // The collector either answers or it doesn't; retrying a connection-refused
-// three times only delays the "collector not running" message.
-const NO_RETRY = { retry: false } as const;
+// three times only delays the "collector not running" message. And
+// `disableToast` is set because a down collector already has a dedicated,
+// explanatory `CollectorUnavailable` card (see agentops-panel.tsx) — the
+// global query-error toast handler in query-client-config.ts would otherwise
+// stack a redundant toast per parallel query on top of it.
+const NO_RETRY = {
+  retry: false,
+  meta: { disableToast: true },
+} as const;
 
 export function useAgentOpsSummary(): UseQueryResult<AgentOpsSummary> {
   return useQuery({

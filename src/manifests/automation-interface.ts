@@ -16,9 +16,10 @@
  * declares it, and the sub-pages simply do not render.
  */
 
-import { AUTOMATION_CATALOG } from "@openhands/extensions/automations";
 import { validateInterfaceManifest } from "./interface-validation";
+import { AUTOMATION_CATALOG } from "@openhands/extensions/automations";
 import { AUTOMATION_INTERFACE_CANDIDATE } from "./manifest-sources";
+import { LOCAL_AUTOMATION_CATALOG } from "./local-automation-catalog";
 import type {
   AutomationAttributeName,
   InterfaceDashboardFilter,
@@ -156,11 +157,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function getCatalogIds(): ReadonlySet<string> {
-  return new Set(
-    (AUTOMATION_CATALOG as readonly unknown[]).flatMap((entry) =>
+  // Every id the host knows, published and local — not just the ones the cards
+  // render. A published entry replaced by a local one is still a valid target
+  // for the manifest to reference, and rejecting the manifest over it would
+  // take the whole sub-page surface down with it. Read from the sources
+  // directly rather than through `manifest-sources`, which callers mock.
+  return new Set([
+    ...(AUTOMATION_CATALOG as readonly unknown[]).flatMap((entry) =>
       isRecord(entry) && typeof entry.id === "string" ? [entry.id] : [],
     ),
-  );
+    ...LOCAL_AUTOMATION_CATALOG.map((entry) => entry.id),
+  ]);
 }
 
 function admitInterfaceManifest(candidate: unknown): InterfaceManifest | null {

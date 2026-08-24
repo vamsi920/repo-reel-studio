@@ -22,11 +22,15 @@
  *     path to split on, where upstream's connectivity-based clustering is the
  *     better answer.
  *
- * Subsystem *naming* prefers DeepWiki's section titles when available:
- * DeepWiki already named this repository's architecture in product terms
- * ("Payment Service"), which reads far better than the folder name `src/pay`.
- * When no section matches, we fall back to Understand-Anything's detected
- * layers, then to top-level folders.
+ * Subsystem *membership* at level 1 always comes from real code structure —
+ * Understand-Anything's detected architectural layers first, falling back to
+ * top-level folders — never from which DeepWiki section happens to cite a
+ * file. Knowledge is supporting metadata for this graph, not its source.
+ * Subsystem *naming* only, separately, prefers a DeepWiki section title when
+ * one substantially overlaps an already-formed bucket's real files: DeepWiki
+ * already named this repository's architecture in product terms ("Payment
+ * Service"), which reads far better than the folder name `src/pay` — but the
+ * bucket's contents were never decided by that title.
  *
  * This module is pure — same graph in, same tree out — and runs both bundled
  * into the sandbox analyzer and directly in tests.
@@ -142,31 +146,48 @@ function commonDirPrefix(paths: string[]): string {
  * sprawling overview swallow it, which would collapse the whole system view
  * into one giant subsystem.
  */
-function assignByHints(
-  units: GraphNode[],
-  hints: SubsystemHint[],
-): Map<string, string> {
-  const claims = new Map<string, { sectionId: string; breadth: number }>();
+const HINT_LABEL_OVERLAP_THRESHOLD = 0.5;
 
-  for (const hint of hints) {
-    const breadth = hint.filePaths.length;
-    for (const rawPath of hint.filePaths) {
-      const path = normalizePath(rawPath);
-      if (!path) continue;
-      const existing = claims.get(path);
-      if (!existing || breadth < existing.breadth) {
-        claims.set(path, { sectionId: hint.id, breadth });
+/**
+ * Relabels level-1 buckets in place with a DeepWiki section title, when one
+ * substantially overlaps the bucket's real (already-determined) file
+ * membership. This never changes which files belong in which bucket — only
+ * the display name — so the graph's top level stays grounded in real code
+ * structure (detected layers, then folders) even when Knowledge data is
+ * generic, missing, or simply doesn't exist yet for this commit.
+ */
+function relabelBucketsWithHints(
+  buckets: Map<string, { name: string; nodes: GraphNode[] }>,
+  hints: SubsystemHint[],
+): void {
+  if (!hints.length) return;
+  const hintFileSets = hints
+    .map((hint) => ({
+      title: hint.title,
+      files: new Set(hint.filePaths.map(normalizePath)),
+    }))
+    .filter((hint) => hint.files.size > 0);
+  if (!hintFileSets.length) return;
+
+  for (const bucket of buckets.values()) {
+    const bucketFiles = bucket.nodes
+      .map((node) => (node.filePath ? normalizePath(node.filePath) : null))
+      .filter((path): path is string => path !== null);
+    if (!bucketFiles.length) continue;
+
+    let best: { title: string; overlap: number } | null = null;
+    for (const hint of hintFileSets) {
+      const matched = bucketFiles.filter((path) => hint.files.has(path)).length;
+      const overlap = matched / bucketFiles.length;
+      if (
+        overlap >= HINT_LABEL_OVERLAP_THRESHOLD &&
+        (!best || overlap > best.overlap)
+      ) {
+        best = { title: hint.title, overlap };
       }
     }
+    if (best) bucket.name = best.title;
   }
-
-  const assignment = new Map<string, string>();
-  for (const unit of units) {
-    if (!unit.filePath) continue;
-    const claim = claims.get(normalizePath(unit.filePath));
-    if (claim) assignment.set(unit.id, claim.sectionId);
-  }
-  return assignment;
 }
 
 function aggregateFilePaths(nodes: CodeGraphNode[]): string[] {
@@ -575,9 +596,13 @@ export function buildHierarchy(
   });
 
   // --- Level 1: subsystems -------------------------------------------------
-  const hintAssignment = assignByHints(placedUnits, hints);
-  const hintById = new Map(hints.map((hint) => [hint.id, hint]));
-
+  // Real detected architectural layers are the PRIMARY grouping signal —
+  // which files belong together is always decided by actual code structure,
+  // never by which DeepWiki section happens to cite a file (Knowledge is
+  // supporting metadata for this graph, not its source). Layerless units
+  // fall back to folder segments. DeepWiki hints are applied afterward,
+  // below, purely to relabel an already-formed bucket with a friendlier
+  // name when it substantially overlaps a wiki section's real files.
   const buckets = new Map<string, { name: string; nodes: GraphNode[] }>();
   const push = (key: string, name: string, node: GraphNode) => {
     const bucket = buckets.get(key) ?? { name, nodes: [] };
@@ -585,34 +610,63 @@ export function buildHierarchy(
     buckets.set(key, bucket);
   };
 
-  const unassigned: GraphNode[] = [];
-  for (const unit of placedUnits) {
-    const sectionId = hintAssignment.get(unit.id);
-    if (!sectionId) {
-      unassigned.push(unit);
-      continue;
-    }
-    push(
-      `subsystem:${slug(sectionId)}`,
-      hintById.get(sectionId)?.title ?? sectionId,
-      unit,
-    );
-  }
-
-  // Whatever DeepWiki didn't cover falls back to detected layers, then folders.
   const layerless: GraphNode[] = [];
-  for (const unit of unassigned) {
+  for (const unit of placedUnits) {
     const layer = layerOf.get(unit.id);
     if (layer) push(`subsystem:layer-${slug(layer.id)}`, layer.name, unit);
     else layerless.push(unit);
   }
 
-  for (const unit of layerless) {
-    const path = unit.filePath ? normalizePath(unit.filePath) : "";
-    const segment = path.includes("/") ? path.slice(0, path.indexOf("/")) : "";
-    if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
-    else push("subsystem:other", "Other", unit);
+  // Layerless units without a real repo-relative file to split on can't be
+  // folder-grouped at all.
+  const layerlessWithPath = layerless.filter((unit) => unit.filePath);
+  const layerlessWithoutPath = layerless.filter((unit) => !unit.filePath);
+  for (const unit of layerlessWithoutPath)
+    push("subsystem:other", "Other", unit);
+
+  // Reuse the same vendored folder/community clustering `buildModuleTree`
+  // already uses one level down (`deriveContainers`), instead of a naive
+  // first-path-segment split — for a typical `src/`-rooted repo, taking
+  // only the first segment would collapse every subsystem into one "src"
+  // bucket now that this fallback runs far more often (real layer/folder
+  // grouping is primary, not just what DeepWiki hints missed). Below
+  // `deriveContainers`'s own internal community-detection threshold it
+  // produces synthetic "Cluster A"-style names instead — worse than the
+  // plain folder name for a small handful of outlier files, so those stay
+  // on the simple first-segment path.
+  const DERIVE_CONTAINERS_MIN_NODES = 4;
+  if (layerlessWithPath.length >= DERIVE_CONTAINERS_MIN_NODES) {
+    const { containers, ungrouped } = deriveContainers(
+      layerlessWithPath,
+      allEdges,
+    );
+    const byId = new Map(layerlessWithPath.map((unit) => [unit.id, unit]));
+    for (const container of containers) {
+      for (const nodeId of container.nodeIds) {
+        const unit = byId.get(nodeId);
+        if (!unit) continue;
+        push(`subsystem:folder-${slug(container.id)}`, container.name, unit);
+      }
+    }
+    // A node too small/disconnected to earn its own container — still real,
+    // still must stay reachable, so it joins the shared catch-all rather
+    // than silently vanishing.
+    for (const nodeId of ungrouped) {
+      const unit = byId.get(nodeId);
+      if (unit) push("subsystem:other", "Other", unit);
+    }
+  } else {
+    for (const unit of layerlessWithPath) {
+      const path = normalizePath(unit.filePath!);
+      const segment = path.includes("/")
+        ? path.slice(0, path.indexOf("/"))
+        : "";
+      if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
+      else push("subsystem:other", "Other", unit);
+    }
   }
+
+  relabelBucketsWithHints(buckets, hints);
 
   // --- Assemble the tree ---------------------------------------------------
   const ctx: TreeContext = {

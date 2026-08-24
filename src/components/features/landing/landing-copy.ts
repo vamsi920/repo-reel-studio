@@ -8,16 +8,16 @@
  */
 
 export const NAV = {
-  wordmark: "NeoDevEx",
-  cta: "Try NeoDevEx",
+  wordmark: "Neo",
+  cta: "Try Neo",
 };
 
 export const HERO = {
-  eyebrow: "Hire NeoDevEx",
-  title: "Meet NeoDevEx — your autonomous software engineer.",
+  eyebrow: "Hire Neo",
+  title: "Meet Neo — your autonomous software engineer.",
   subtitle:
-    "Describe what you're building, hand it a repo, or assign it a ticket. NeoDevEx reads the code, plans the change, and does the work — real commands, real file edits, real browser tools — inside a governed, isolated sandbox deployed in your infrastructure or ours.",
-  cta: "Try NeoDevEx",
+    "Describe what you're building, hand it a repo, or assign it a ticket. Neo reads the code, plans the change, and does the work — real commands, real file edits, real browser tools — inside a governed, isolated sandbox deployed in your infrastructure or ours.",
+  cta: "Try Neo",
   ctaSub: "Enterprise-grade models included — no API keys, nothing to bring.",
 };
 
@@ -25,7 +25,7 @@ export const PROBLEM = {
   eyebrow: "Why teams stall",
   title: "Context lives in people. It should live in the system.",
   subtitle:
-    "Architecture knowledge, prior decisions, and the reasoning behind past changes end up scattered across chat threads, tickets, and the one engineer who remembers. NeoDevEx keeps that context attached to the repo, not a person.",
+    "Architecture knowledge, prior decisions, and the reasoning behind past changes end up scattered across chat threads, tickets, and the one engineer who remembers. Neo keeps that context attached to the repo, not a person.",
   items: [
     {
       title: "Rebuilding context is expensive",
@@ -57,7 +57,7 @@ export const FEATURES = {
     {
       title: "Any stack, any repo",
       description:
-        "GitHub, GitLab, or a bare repo — TypeScript, Python, Java, Go. NeoDevEx investigates the codebase before it touches anything, flexible with any enterprise tech stack.",
+        "GitHub, GitLab, or a bare repo — TypeScript, Python, Java, Go. Neo investigates the codebase before it touches anything, flexible with any enterprise tech stack.",
     },
     {
       title: "Real tool use",
@@ -67,7 +67,7 @@ export const FEATURES = {
     {
       title: "Enterprise-grade models, included",
       description:
-        "NeoDevEx provisions and manages best-in-class models for every session — governed model access, nothing to configure, nothing to bring.",
+        "Neo provisions and manages best-in-class models for every session — governed model access, nothing to configure, nothing to bring.",
     },
     {
       title: "Your infrastructure, your control",
@@ -139,10 +139,10 @@ export const CTA_BAND = {
   title: "Onboard your first digital engineer today.",
   subtitle:
     "Open the console, hand it a repo or a ticket, and watch it work — governed, audited, and ready to ship.",
-  cta: "Try NeoDevEx",
+  cta: "Try Neo",
 };
 
 export const FOOTER = {
-  wordmark: "NeoDevEx",
+  wordmark: "Neo",
   tagline: "An autonomous AI engineer for enterprise engineering teams.",
 };

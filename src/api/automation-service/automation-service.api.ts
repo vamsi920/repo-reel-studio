@@ -70,6 +70,77 @@ async function buildAutomationRequestHeaders(
   };
 }
 
+/**
+ * Where local automation calls actually go.
+ *
+ * The registry stores one host per backend, and the local dev stacks do not all
+ * put the automation service behind that host: `dev:minimal` registers the bare
+ * agent-server (`:18000`), which has no `/api/automation` routes at all, while
+ * the full stack fronts both services with an ingress. A host registered by one
+ * stack survives in localStorage into the other, so every automation call 404s
+ * against a service that is running perfectly well a port away — the page
+ * reports the backend as unavailable and nothing can be created.
+ *
+ * Rather than make the user find and edit the backend entry, probe once: if the
+ * registered host does not serve the automation mount but this app's own origin
+ * does, use the origin. Both the ingress and the Vite dev proxy route it to the
+ * automation service. The fallback is only ever this app's own origin, and only
+ * after a probe proves it answers, so nothing is redirected somewhere unproven.
+ * When neither answers the registered host is kept, so a genuine outage still
+ * surfaces as itself rather than as an error against a different URL.
+ */
+let resolvedBaseUrlForHost: { host: string; baseUrl: string } | null = null;
+let inFlightResolution: Promise<string> | null = null;
+
+function getAppOrigin(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.location?.origin || null;
+}
+
+async function servesAutomationMount(baseURL: string): Promise<boolean> {
+  const path = `${AUTOMATION_BASE_PATH}${getAutomationEndpoint("health")}`;
+  try {
+    // An explicit baseURL makes the interceptor pass this straight through,
+    // so this cannot recurse back into resolution.
+    const response = await localAutomationAxios.get<AutomationHealthResponse>(
+      path,
+      { baseURL, timeout: 5000 },
+    );
+    return response?.data?.status === "ok";
+  } catch {
+    return false;
+  }
+}
+
+async function resolveAutomationBaseUrl(host: string): Promise<string> {
+  if (resolvedBaseUrlForHost?.host === host) {
+    return resolvedBaseUrlForHost.baseUrl;
+  }
+  if (inFlightResolution) return inFlightResolution;
+
+  inFlightResolution = (async () => {
+    const origin = getAppOrigin();
+    let baseUrl = host;
+    if (origin && origin !== host && !(await servesAutomationMount(host))) {
+      if (await servesAutomationMount(origin)) baseUrl = origin;
+    }
+    resolvedBaseUrlForHost = { host, baseUrl };
+    return baseUrl;
+  })();
+
+  try {
+    return await inFlightResolution;
+  } finally {
+    inFlightResolution = null;
+  }
+}
+
+/** Exposed for tests, which need each case to start from a clean resolution. */
+export function __resetAutomationBaseUrlForTests(): void {
+  resolvedBaseUrlForHost = null;
+  inFlightResolution = null;
+}
+
 localAutomationAxios.interceptors.request.use(async (config) => {
   const requestHeaders = await buildAutomationRequestHeaders();
   Object.entries(requestHeaders).forEach(([name, value]) => {
@@ -91,7 +162,7 @@ localAutomationAxios.interceptors.request.use(async (config) => {
   const backend = getEffectiveLocalBackend();
   if (!backend) throw new NoBackendAvailableError();
   // eslint-disable-next-line no-param-reassign
-  config.baseURL = backend.host;
+  config.baseURL = await resolveAutomationBaseUrl(backend.host);
 
   const apiKey = backend.apiKey?.trim();
   if (apiKey) {

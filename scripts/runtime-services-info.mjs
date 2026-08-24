@@ -160,7 +160,7 @@ export function buildRuntimeServicesInfo(options) {
     const authEnvVar = agentops.authEnvVar ?? "OPENHANDS_AUTOMATION_API_KEY";
     services.agentops = {
       description:
-        "NeoDevEx AgentOps Control Tower — read-only observability plus " +
+        "Neo AgentOps Control Tower — read-only observability plus " +
         "governance (runs, spans, approvals, budgets, audit) over this " +
         `agent-server. All routes are mounted under '${apiPrefix}'. ` +
         `Authenticate with header 'X-Session-API-Key: $${authEnvVar}'.`,

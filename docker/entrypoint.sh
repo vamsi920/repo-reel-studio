@@ -238,12 +238,19 @@ else
   log "WARNING: Automation server not found, skipping."
 fi
 
-# ── 2b. Start the NeoDevEx AgentOps Control Tower collector ──────────────────
-# NeoDevEx-owned observability + governance over the agent-server. It tails the
+# ── 2b. Start the Neo AgentOps Control Tower collector ──────────────────
+# Neo-owned observability + governance over the agent-server. It tails the
 # agent-server's REST API server-side, so runs, spans, budgets, approvals and
 # the audit log are recorded whether or not anyone has the UI open. It does not
 # modify or wrap the agent-server.
 log "Starting AgentOps collector on port $AGENTOPS_PORT..."
+# AGENTOPS_STORE_DIR only matters for the local JSONL fallback store. If
+# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are exported in the container's
+# environment (e.g. via `docker run -e SUPABASE_URL=... -e
+# SUPABASE_SERVICE_ROLE_KEY=...`), the collector uses the real Postgres store
+# instead — no entrypoint change needed, since they inherit through
+# automatically (this VAR=value prefix form only adds vars, it doesn't clear
+# the rest of the exported environment).
 export AGENTOPS_STORE_DIR="${AGENTOPS_STORE_DIR:-${OPENHANDS_DIR}/agentops}"
 mkdir -p "$AGENTOPS_STORE_DIR"
 AGENTOPS_PORT="$AGENTOPS_PORT" \

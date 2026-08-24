@@ -3,6 +3,7 @@ import type {
   KnowledgeRepository,
   RepositorySnapshot,
 } from "#/lib/knowledge/knowledge-engine";
+import type { PageQualityFlag } from "#/lib/knowledge/quality-review";
 import type { DeepWikiWikiTaskStatus } from "#/api/deepwiki-service/deepwiki-service.types";
 
 export type KnowledgeGenerationStatus =
@@ -38,6 +39,9 @@ export interface KnowledgeRepositoryState {
   progress: DeepWikiWikiTaskStatus | null;
   knowledge: KnowledgeRepository | null;
   error: string | null;
+  /** Cheap post-generation grounding checks (weak/no citations, files outside
+   * any detected real subsystem) — surfaced as a heads-up, never blocking. */
+  qualityFlags: PageQualityFlag[];
   /** A preference, not a scheduler — this app has no background process to
    * run one against (see docs/deepwiki-video-kt-integration.md). "Due for a
    * refresh" is computed from this + `knowledge.generatedAt` whenever the
@@ -54,7 +58,21 @@ interface KnowledgeStore {
     sessionApiKey: string | null,
   ) => void;
   setProgress: (repositoryId: string, progress: DeepWikiWikiTaskStatus) => void;
-  setReady: (repositoryId: string, knowledge: KnowledgeRepository) => void;
+  setReady: (
+    repositoryId: string,
+    knowledge: KnowledgeRepository,
+    qualityFlags?: PageQualityFlag[],
+  ) => void;
+  /** Seeds a full `ready` entry directly, for cold rehydration from
+   * persisted (Supabase) data where no live conversation/session exists yet
+   * to have called `startGenerating` first -- `setReady` alone is a no-op in
+   * that case (it only ever updates an existing entry). */
+  hydrate: (
+    repositoryId: string,
+    snapshot: RepositorySnapshot,
+    knowledge: KnowledgeRepository,
+    qualityFlags: PageQualityFlag[],
+  ) => void;
   setError: (repositoryId: string, error: string) => void;
   setRefreshCadence: (repositoryId: string, cadence: RefreshCadence) => void;
 
@@ -77,11 +95,10 @@ interface KnowledgeStore {
 }
 
 /**
- * In-memory only for this vertical slice — NeoDevEx has no database to
- * persist to (see docs/deepwiki-video-kt-integration.md). Persisting the
- * normalized KnowledgeRepository as a workspace file (the same mechanism
- * every other artifact in this app uses) is a documented, trivial follow-up
- * once the pipeline itself is proven end-to-end.
+ * The store itself is in-memory-only, but `hydrate` lets a cold page load
+ * seed a full entry from Supabase (src/lib/data-platform/repositories/
+ * knowledge-repository.ts) without needing to re-run generation first. See
+ * `src/routes/kt-repository.tsx` for the rehydration call site.
  */
 export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
   byRepositoryId: {},
@@ -101,6 +118,7 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
           refreshCadence:
             state.byRepositoryId[snapshot.repositoryId]?.refreshCadence ??
             "manual",
+          qualityFlags: [],
         },
       },
     })),
@@ -117,7 +135,7 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       };
     }),
 
-  setReady: (repositoryId, knowledge) =>
+  setReady: (repositoryId, knowledge, qualityFlags = []) =>
     set((state) => {
       const existing = state.byRepositoryId[repositoryId];
       if (!existing) return state;
@@ -129,10 +147,30 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
             status: "ready",
             knowledge,
             error: null,
+            qualityFlags,
           },
         },
       };
     }),
+
+  hydrate: (repositoryId, snapshot, knowledge, qualityFlags) =>
+    set((state) => ({
+      byRepositoryId: {
+        ...state.byRepositoryId,
+        [repositoryId]: {
+          snapshot,
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "ready",
+          progress: null,
+          knowledge,
+          error: null,
+          qualityFlags,
+          refreshCadence:
+            state.byRepositoryId[repositoryId]?.refreshCadence ?? "manual",
+        },
+      },
+    })),
 
   setError: (repositoryId, error) =>
     set((state) => {

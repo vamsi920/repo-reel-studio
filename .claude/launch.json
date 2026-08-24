@@ -4,6 +4,12 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 8000
+    },
+    {
+      "name": "dev-minimal",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:minimal"],
       "port": 3001
     },

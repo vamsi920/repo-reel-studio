@@ -52,6 +52,7 @@ function seedRepository(
         knowledge: null,
         error: null,
         refreshCadence: "manual",
+        qualityFlags: [],
       },
     },
   }));

@@ -11,7 +11,7 @@ import { getGitPath } from "#/utils/get-git-path";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 
 /**
- * A NeoDevEx workspace *is* the checkout directory the agent-server provisioned
+ * A Neo workspace *is* the checkout directory the agent-server provisioned
  * — that is what `RepositorySnapshot.localPath` holds, and what every other
  * workspace-scoped call in this app (`RemoteWorkspace`, `getGitPath`) keys on.
  * Using it directly avoids inventing a parallel workspace identifier that

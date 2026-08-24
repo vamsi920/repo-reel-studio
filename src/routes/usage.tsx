@@ -19,6 +19,7 @@ import {
   UsageWorkspaceSelect,
   useUsageWorkspaceOptions,
 } from "#/components/features/usage/usage-workspace-select";
+import { useRealUsageRealtime } from "#/hooks/use-real-usage-realtime";
 import useWorkspaceMemoryStore from "#/stores/workspace-memory-store";
 
 const TABS = [
@@ -79,6 +80,9 @@ export default function UsageRoute() {
   const { labelByWorkspaceId } = useUsageWorkspaceOptions();
   const data = useUsageData(selection);
   const activity = useWorkspaceMemoryStore((state) => state.activity);
+  // Live cross-tab updates for whichever single workspace is selected -- a
+  // second tab's usage shows up here without a reload.
+  useRealUsageRealtime(data.workspaceId);
 
   const handleSelectionChange = React.useCallback((next: UsageSelection) => {
     setSelection(next);

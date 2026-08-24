@@ -1,4 +1,5 @@
 import type {
+  DeepWikiChatCompletionRequest,
   DeepWikiWikiCacheData,
   DeepWikiWikiTaskRequest,
   DeepWikiWikiTaskStatus,
@@ -46,6 +47,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
   return response.json() as Promise<T>;
+}
+
+/** `/chat/completions/stream` responds with `text/event-stream` but its body
+ * is just plain concatenated text chunks (see research.py's respond_stream
+ * implementations), not real SSE `data:` framing — so a plain awaited
+ * `.text()` correctly collects the whole response for a one-off,
+ * non-incremental call like the narrative pass or a repair retry. */
+async function requestText(path: string, init?: RequestInit): Promise<string> {
+  const response = await fetch(`${DEEPWIKI_SERVICE_URL}${path}`, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      ...init?.headers,
+    },
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new DeepWikiServiceError(
+      `DeepWiki request to ${path} failed: ${response.status} ${text}`,
+      response.status,
+    );
+  }
+  return response.text();
 }
 
 class DeepWikiService {
@@ -115,14 +139,30 @@ class DeepWikiService {
     repo: string,
     repoType: string,
     language = "en",
+    commitSha?: string,
   ): Promise<DeepWikiWikiCacheData | null> {
     const query = new URLSearchParams({
       owner,
       repo,
       repo_type: repoType,
       language,
+      ...(commitSha ? { commit_sha: commitSha } : {}),
     });
     return request<DeepWikiWikiCacheData | null>(`/api/wiki_cache?${query}`);
+  }
+
+  /** One-off, non-streamed chat completion against an already-indexed repo —
+   * reuses the same DeepWiki/Gemini config Knowledge generation already
+   * uses, no new API-key handling. Requires the repo to already be indexed
+   * (real for any repo Knowledge has been generated for); throws
+   * `DeepWikiServiceError` with status 425 otherwise. */
+  static async chatCompletion(
+    request_: DeepWikiChatCompletionRequest,
+  ): Promise<string> {
+    return requestText("/chat/completions/stream", {
+      method: "POST",
+      body: JSON.stringify(request_),
+    });
   }
 }
 

@@ -23,25 +23,57 @@ os.makedirs(WIKI_CACHE_DIR, exist_ok=True)
 WIKI_PREFIX = "deepwiki_cache_"
 
 
-def get_wiki_cache_path(owner: str, repo: str, repo_type: str, language: str) -> str:
-    """Generates the file path for a given wiki cache."""
-    filename = f"{WIKI_PREFIX}{repo_type}_{owner}_{repo}_{language}.json"
+def get_wiki_cache_path(
+    owner: str,
+    repo: str,
+    repo_type: str,
+    language: str,
+    commit_sha: str | None = None,
+) -> str:
+    """Generates the file path for a given wiki cache.
+
+    `commit_sha` is appended as a trailing suffix so a wiki generated for one
+    commit is never silently served for a later commit of the same repo (the
+    two share every other component of the key). Requests that omit it
+    (compatibility with other raw-API callers) fall back to a fixed
+    "__nocommit__" suffix rather than one blank component, so
+    ``list_wiki_cache``'s filename parser always sees a stable component
+    count.
+    """
+    suffix = commit_sha or "__nocommit__"
+    filename = f"{WIKI_PREFIX}{repo_type}_{owner}_{repo}_{language}_{suffix}.json"
     return os.path.join(WIKI_CACHE_DIR, filename)
 
 
-def wiki_cache_exists(owner: str, repo: str, repo_type: str, language: str) -> bool:
+def wiki_cache_exists(
+    owner: str,
+    repo: str,
+    repo_type: str,
+    language: str,
+    commit_sha: str | None = None,
+) -> bool:
     return os.path.exists(
-        get_wiki_cache_path(owner, repo=repo, repo_type=repo_type, language=language)
+        get_wiki_cache_path(
+            owner,
+            repo=repo,
+            repo_type=repo_type,
+            language=language,
+            commit_sha=commit_sha,
+        )
     )
 
 
 async def read_wiki_cache(
-    owner: str, repo: str, repo_type: str, language: str
+    owner: str,
+    repo: str,
+    repo_type: str,
+    language: str,
+    commit_sha: str | None = None,
 ) -> WikiCacheData | None:
     """Reads wiki cache data from the file system."""
-    if not wiki_cache_exists(owner, repo, repo_type, language):
+    if not wiki_cache_exists(owner, repo, repo_type, language, commit_sha):
         return None
-    cache_path = get_wiki_cache_path(owner, repo, repo_type, language)
+    cache_path = get_wiki_cache_path(owner, repo, repo_type, language, commit_sha)
     try:
         return await aload(WikiCacheData, cache_path, encoding="utf-8")
     except Exception:
@@ -50,7 +82,12 @@ async def read_wiki_cache(
 
 
 async def save_wiki_cache(
-    owner: str, repo: str, repo_type: str, language: str, wiki_cache: WikiCacheData
+    owner: str,
+    repo: str,
+    repo_type: str,
+    language: str,
+    wiki_cache: WikiCacheData,
+    commit_sha: str | None = None,
 ) -> bool:
     """Saves wiki cache data to the file system."""
     cache_path = get_wiki_cache_path(
@@ -58,6 +95,7 @@ async def save_wiki_cache(
         repo=repo,
         repo_type=repo_type,
         language=language,
+        commit_sha=commit_sha,
     )
     logger.info(f"Attempting to save wiki cache. Path: {cache_path}")
     try:
@@ -72,12 +110,19 @@ async def save_wiki_cache(
         return False
 
 
-async def delete_wiki_cache(owner: str, repo: str, repo_type: str, language: str):
+async def delete_wiki_cache(
+    owner: str,
+    repo: str,
+    repo_type: str,
+    language: str,
+    commit_sha: str | None = None,
+):
     cache_path = get_wiki_cache_path(
         owner,
         repo,
         repo_type,
         language,
+        commit_sha,
     )
 
     if not os.path.exists(cache_path):
@@ -104,9 +149,22 @@ async def list_wiki_cache() -> list[WikiTaskSummary]:
         file_path = os.path.join(WIKI_CACHE_DIR, filename)
         try:
             stats = await asyncio.to_thread(os.stat, file_path)
-            repo_type, owner, *repo, language = (
+            # {repo_type}_{owner}_{repo}_{language}_{commit_sha}.json — repo
+            # itself may contain underscores, so only the fixed positions at
+            # each end are peeled off; everything in between is the repo
+            # name. NOTE: a cache file saved before the commit-scoping fix
+            # (one fewer trailing component) is NOT reliably distinguishable
+            # from a post-fix file purely by component count when the repo
+            # name has no underscores — it can misparse as language=<repo>,
+            # commit_sha=<language> instead of failing outright. This
+            # endpoint currently has zero frontend consumers, so a stale
+            # pre-fix entry showing up with garbled fields is a latent
+            # cosmetic issue, not a functional one; not worth a filename
+            # version marker for a function nothing reads yet.
+            repo_type, owner, *rest = (
                 os.path.splitext(filename)[0].removeprefix(WIKI_PREFIX).split("_")
             )
+            *repo, language, _commit_sha = rest
             entries.append(
                 WikiTaskSummary(
                     id=filename,

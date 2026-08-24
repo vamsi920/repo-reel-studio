@@ -174,11 +174,12 @@ class TaskRegistry:
                     joined=True,
                 )
 
-            if wiki_cache_exists(
+            if not task.request.force and wiki_cache_exists(
                 owner=task.request.owner,
                 repo=task.request.repo,
                 repo_type=task.request.type,
                 language=task.request.language,
+                commit_sha=task.request.commit_sha,
             ):
                 return WikiTaskSubmitResult(
                     task_id=key,
@@ -220,7 +221,28 @@ async def generate_repo_wiki(task: WikiTask) -> None:
         if not repo_index_exist(repo):
             task.status = TaskStatus.INDEXING
             logger.info("Indexing %s", task.repo_key)
-            await prepare_repo_index(r)
+            # Indexing is where embedding-quota 429s actually happen, and a
+            # single failure here previously killed the entire task before
+            # any page generation could start -- the highest-leverage place
+            # to retry, since every page-generation call downstream depends
+            # on this succeeding first.
+            index_backoffs = (5, 15, 45)
+            for index_attempt in range(len(index_backoffs) + 1):
+                try:
+                    await prepare_repo_index(r)
+                    break
+                except Exception as e:  # noqa: BLE001 - transient vs permanent handled by retry budget
+                    if index_attempt == len(index_backoffs):
+                        raise
+                    logger.warning(
+                        "Indexing %s failed (attempt %d/%d), retrying in %ds: %s",
+                        task.repo_key,
+                        index_attempt + 1,
+                        len(index_backoffs) + 1,
+                        index_backoffs[index_attempt],
+                        e,
+                    )
+                    await asyncio.sleep(index_backoffs[index_attempt])
 
         # Req 1.2 + no-persistence: index present -> (re)generate the whole wiki.
         task.status = TaskStatus.DETERMINING_STRUCTURE
@@ -250,6 +272,7 @@ async def _save(
         repo=task.request.repo,
         repo_type=task.request.type,
         language=task.request.language,
+        commit_sha=task.request.commit_sha,
         wiki_cache=WikiCacheData(
             wiki_structure=task.wiki_structure,
             generated_pages=pages,
@@ -280,6 +303,10 @@ async def _generate_page_with_retry(task: WikiTask, page: WikiPage) -> WikiPage:
                 WIKI_PAGE_RETRIES + 1,
                 e,
             )
+            # A 429 quota error needs real time to clear, not an immediate
+            # retry -- back off before the next attempt (none after the last).
+            if attempt < WIKI_PAGE_RETRIES:
+                await asyncio.sleep(2**attempt)
     # Give up: return an error-placeholder page so the wiki still completes.
     return page.model_copy(
         update={"content": f"Error generating content: {last_error}"}
@@ -345,7 +372,16 @@ async def _determine_structure(task: WikiTask) -> WikiStructureModel:
     file_tree = "\n".join(sorted(file_paths))
 
     prompt = build_structure_prompt(
-        r.owner, r.repo, file_tree, readme, r.comprehensive, r.language
+        r.owner,
+        r.repo,
+        file_tree,
+        readme,
+        r.comprehensive,
+        r.language,
+        code_evidence=r.code_evidence,
+        subsystem_count=(
+            len(r.code_evidence_subsystems) if r.code_evidence_subsystems else None
+        ),
     )
     chat_request = ChatCompletionRequest(
         repo_url=r.repo_url,
@@ -441,6 +477,29 @@ def _build_file_contents_block(
     return "\n\n".join(blocks)
 
 
+def _page_code_evidence(r: WikiTaskRequest, page: WikiPage) -> str | None:
+    """Short, page-scoped slice of the same CodeGraph evidence structure
+    determination sees in full -- real subsystems whose files overlap this
+    page's own declared filePaths. Explicitly non-citable: it has no line
+    numbers, so it's structural context only, never a `Sources:` source.
+    """
+    if not r.code_evidence_subsystems:
+        return None
+    page_files = set(page.filePaths)
+    matched = [
+        s
+        for s in r.code_evidence_subsystems
+        if page_files.intersection(s.get("filePaths") or [])
+    ]
+    if not matched:
+        return None
+    lines = ["Real detected subsystems this page's files belong to:"]
+    for s in matched[:5]:
+        layer = f" [layer: {s['layerId']}]" if s.get("layerId") else ""
+        lines.append(f"- {s.get('name', 'unknown')}{layer}")
+    return "\n".join(lines)
+
+
 async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
     """Generate one wiki page: build the prompt, stream from the LLM (reusing the
     RAG chat pipeline), strip fences, and resolve citations.
@@ -455,7 +514,13 @@ async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
         f"- [{p}]({generate_file_url(p, ctx)})" for p in page.filePaths
     )
     file_contents = _build_file_contents_block(r, list(page.filePaths))
-    prompt = build_page_prompt(page.title, file_links, file_contents, r.language)
+    prompt = build_page_prompt(
+        page.title,
+        file_links,
+        file_contents,
+        r.language,
+        code_evidence=_page_code_evidence(r, page),
+    )
 
     chat_request = ChatCompletionRequest(
         repo_url=r.repo_url,
@@ -472,9 +537,22 @@ async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
     )
 
     content = ""
-    async for chunk in await research_chat(chat_request):
+    # skip_rag=True: this page's prompt already carries an explicit,
+    # budgeted, line-numbered set of files (_build_file_contents_block
+    # above) -- the generic unscoped RAG retrieval research_chat otherwise
+    # does was surfacing undeclared files with unreliable chunk-level line
+    # numbers as citations, contradicting the "ONLY these files" contract
+    # build_page_prompt gives the model.
+    async for chunk in await research_chat(chat_request, skip_rag=True):
         content += chunk
 
     content = _strip_markdown_fences(content)
     content = post_process_wiki_content(content, list(page.filePaths), ctx)
+    if not content.strip():
+        # An empty response usually means every chunk in the stream hit a
+        # Gemini empty-candidate/finish_reason quirk -- previously this
+        # silently produced a near-blank page with no retry, since no
+        # exception was raised. Raising here lets _generate_page_with_retry's
+        # existing budget actually engage for this failure mode.
+        raise RuntimeError(f"Empty content generated for page {page.id!r}")
     return page.model_copy(update={"content": content})

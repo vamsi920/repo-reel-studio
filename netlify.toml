@@ -7,6 +7,12 @@
   NPM_FLAGS = "--legacy-peer-deps"
   # Ensure proper module resolution
   NODE_OPTIONS = "--experimental-specifier-resolution=node"
+  # Live backends this static build talks to (both on Fly.io). Without these,
+  # the app falls back to window.location.origin for the agent server (a
+  # static site with no /api routes — every request fails) and localhost:8001
+  # for DeepWiki (unreachable from a production browser).
+  VITE_BACKEND_BASE_URL = "https://neo-agent-server.fly.dev"
+  VITE_DEEPWIKI_SERVICE_URL = "https://neo-deepwiki.fly.dev"
 
 [[redirects]]
   from = "/*"
@@ -25,4 +31,4 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' https: https://generativelanguage.googleapis.com https://texttospeech.googleapis.com https://*.googleapis.com; worker-src 'self' blob:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' https: wss: https://generativelanguage.googleapis.com https://texttospeech.googleapis.com https://*.googleapis.com; worker-src 'self' blob:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"

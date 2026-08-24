@@ -72,6 +72,7 @@ def _page_from_element(el: ET.Element, index: int) -> WikiPage:
         id=el.get("id") or f"page-{index + 1}",
         title=(el.findtext("title") or "").strip(),
         content="",
+        description=(el.findtext("description") or "").strip(),
         filePaths=[
             e.text.strip() for e in el.iter("file_path") if e.text and e.text.strip()
         ],
@@ -88,6 +89,7 @@ def _pages_via_regex(xml_text: str) -> list[WikiPage]:
     for i, block in enumerate(re.findall(r"<page\b[\s\S]*?</page>", xml_text)):
         pid = re.search(r'<page\s+id="([^"]+)"', block)
         title = re.search(r"<title>([\s\S]*?)</title>", block)
+        description = re.search(r"<description>([\s\S]*?)</description>", block)
         importance = re.search(r"<importance>([\s\S]*?)</importance>", block)
         file_paths = [
             m.strip()
@@ -104,6 +106,7 @@ def _pages_via_regex(xml_text: str) -> list[WikiPage]:
                 id=pid.group(1) if pid else f"page-{i + 1}",
                 title=title.group(1).strip() if title else "",
                 content="",
+                description=description.group(1).strip() if description else "",
                 filePaths=file_paths,
                 importance=_normalize_importance(
                     importance.group(1) if importance else None

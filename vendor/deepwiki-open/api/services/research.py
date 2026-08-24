@@ -59,6 +59,7 @@ async def prepare_repo_index(
 
 async def research_chat(
     request: ChatCompletionRequest,
+    skip_rag: bool = False,
 ) -> AsyncIterator[str]:
     input_too_large = False
     if request.messages and len(request.messages) > 0:
@@ -144,7 +145,13 @@ async def research_chat(
     # Only retrieve documents if input is not too large
     context_text = ""
 
-    if not input_too_large:
+    # Page generation already builds its prompt from an explicit, budgeted,
+    # line-numbered set of files (_build_file_contents_block in tasks.py) --
+    # this generic retrieval is designed for open-ended chat and, left on,
+    # unconditionally re-searches the ENTIRE repo unscoped to that declared
+    # file set, surfacing undeclared files with unreliable chunk-level line
+    # numbers as if they were as trustworthy as the explicit citations.
+    if not input_too_large and not skip_rag:
         try:
             rag_query = query
             # Try to perform RAG retrieval

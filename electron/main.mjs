@@ -62,7 +62,7 @@ const projectRoot = app.isPackaged ? __dirname : join(__dirname, "..");
 const buildDir = join(projectRoot, "build");
 const scriptsDir = join(projectRoot, "scripts");
 
-// NeoDevEx app icon, used as the BrowserWindow.icon option.
+// Neo app icon, used as the BrowserWindow.icon option.
 // Windows gets the multi-size icon.ico (16→256, small sizes as classic BMP
 // entries — the Windows shell needs those); Linux uses the 1024×1024 PNG
 // for its taskbar. On macOS the dock icon comes from the .app bundle's
@@ -605,7 +605,7 @@ async function startStack() {
   //   onServiceLog: stream uvx/agent-server output to the loading window so
   //     the user sees progress instead of an indefinite spinner.
   const result = await main({
-    bannerTitle: "NeoDevEx",
+    bannerTitle: "Neo",
     staticMode: true,
     staticDir: buildDir,
     mode: "agent-canvas",
@@ -634,7 +634,7 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = "dark";
 
   // Set the dock icon explicitly on macOS so `npm run desktop` shows the
-  // NeoDevEx logo instead of the default Electron logo. In a packaged
+  // Neo logo instead of the default Electron logo. In a packaged
   // build the .app bundle's icon.icns already provides this, but
   // app.dock.setIcon() is a cheap idempotent override that also fixes
   // the dev workflow.
@@ -649,7 +649,7 @@ app.whenReady().then(async () => {
     dialog.showErrorBox(
       "Missing prerequisite: uv",
       app.isPackaged
-        ? "The bundled uv binary could not be found. Please reinstall NeoDevEx."
+        ? "The bundled uv binary could not be found. Please reinstall Neo."
         : "uv (uvx) is not installed.\n\nInstall it from https://docs.astral.sh/uv/ then restart.",
     );
     app.quit();
@@ -692,7 +692,7 @@ app.whenReady().then(async () => {
     const errorTail = recentServiceErrors.length
       ? `\n\nRecent service errors:\n${recentServiceErrors.join("\n")}`
       : "";
-    dialog.showErrorBox("NeoDevEx failed to start", summary + errorTail);
+    dialog.showErrorBox("Neo failed to start", summary + errorTail);
     app.quit();
   }
 });

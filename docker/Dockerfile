@@ -132,14 +132,23 @@ COPY --from=frontend-build /build/node_modules/totalist /opt/agent-canvas/node_m
 # emit the agent's <RUNTIME_SERVICES> block; same builder the dev stack uses).
 COPY scripts/runtime-services-info.mjs /opt/agent-canvas/runtime-services-info.mjs
 
-# Copy the NeoDevEx AgentOps Control Tower collector and the vendored AgentOps
-# semantic conventions it emits spans in. Dependency-free (node: builtins and
-# fetch only), so no node_modules come with it.
+# Copy the Neo AgentOps Control Tower collector and the vendored AgentOps
+# semantic conventions it emits spans in.
 # The repo's `scripts/` ↔ `vendor/` relative layout is preserved here because
 # the collector imports the vendored semconv as `../../vendor/agentops/…`.
 COPY scripts/agentops-server.mjs /opt/agent-canvas/scripts/agentops-server.mjs
 COPY scripts/agentops/ /opt/agent-canvas/scripts/agentops/
 COPY vendor/agentops/ /opt/agent-canvas/vendor/agentops/
+
+# The collector's only real dependency: the Supabase client used by
+# scripts/agentops/supabase-store.mjs (the real Postgres store — used
+# whenever SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are set; the JSONL fallback
+# in store.mjs remains dependency-free). Node resolves the bare `@supabase/
+# supabase-js` import by walking up from scripts/agentops/, so these land as
+# siblings of the frontend's own node_modules copies above.
+COPY --from=frontend-build /build/node_modules/@supabase /opt/agent-canvas/node_modules/@supabase
+COPY --from=frontend-build /build/node_modules/tslib /opt/agent-canvas/node_modules/tslib
+COPY --from=frontend-build /build/node_modules/iceberg-js /opt/agent-canvas/node_modules/iceberg-js
 
 # Persisted conversations created before the client_tools migration still
 # import canvas_ui_tool by qualname. Keep the compatibility module available;

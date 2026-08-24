@@ -1,13 +1,13 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="/icon.png" alt="NeoDevEx logo" width="200">
-  <h1 align="center" style="border-bottom: none">NeoDevEx</h1>
+  <img src="/icon.png" alt="Neo logo" width="200">
+  <h1 align="center" style="border-bottom: none">Neo</h1>
   <p align="center">
     <strong>The self-hosted developer control center for coding agents and automations.</strong>
   </p>
   <p align="center">
-    Run NeoDevEx's built-in agent, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
+    Run Neo's built-in agent, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
   </p>
 </div>
 <div align="center">
@@ -24,11 +24,11 @@
 </div>
 <hr>
 
-NeoDevEx turns your coding agents into a self-hosted, always-on engineering team. It's a developer control center for starting conversations and automating everyday tasks — like generating reports that publish to Slack or automatically decomposing GitHub issues into tasks.
+Neo turns your coding agents into a self-hosted, always-on engineering team. It's a developer control center for starting conversations and automating everyday tasks — like generating reports that publish to Slack or automatically decomposing GitHub issues into tasks.
 
 It runs locally on your machine by default, and can connect to multiple "agent backends" — e.g. running agents in Docker containers, on VMs, or within your company infrastructure.
 
-NeoDevEx runs its own built-in agent out-of-the-box, powered by Gemini by default, but can use any third-party agent like Claude Code and Codex.
+Neo runs its own built-in agent out-of-the-box, powered by Gemini by default, but can use any third-party agent like Claude Code and Codex.
 
 |                                                                                                                      |                                                                                                                                          |
 | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -37,15 +37,15 @@ NeoDevEx runs its own built-in agent out-of-the-box, powered by Gemini by defaul
 | [**Create automations**](https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations)               | Create automations and workflows that integrate with Slack, GitHub, Linear, and more. Run on a schedule or in response to webhook events |
 | [**Integrate with the tools you use**](https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations) | Connect your automations with third-party services like Slack, GitHub, Notion, and more to automate workflows                            |
 | [**Bring your own model**](https://docs.openhands.dev/openhands/usage/settings/llm-settings#llm-profiles)            | Use with any LLM (Gemini by default)                                                                                                     |
-| [**Use with any agent**](https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents)                         | Use NeoDevEx's built-in agent, Claude Code, Codex, Gemini, or any agent with Agent-Client Protocol (ACP).                                |
+| [**Use with any agent**](https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents)                         | Use Neo's built-in agent, Claude Code, Codex, Gemini, or any agent with Agent-Client Protocol (ACP).                                |
 
 ## Quickstart
 
-You can run NeoDevEx on any machine: on your laptop, on a dedicated computer like a Mac Mini,
+You can run Neo on any machine: on your laptop, on a dedicated computer like a Mac Mini,
 or on a server in the cloud.
 
 Notably, you can run the backend in _multiple different environments_, and switch between
-them from the same NeoDevEx frontend. E.g. you can share an Agent Server with your team for agents doing
+them from the same Neo frontend. E.g. you can share an Agent Server with your team for agents doing
 code review and dependency updates, then have your personal agents running on your laptop.
 
 ### Option 1: Without a Sandbox
@@ -57,8 +57,12 @@ code review and dependency updates, then have your personal agents running on yo
 
 ```sh
 npm install
+cp .env.sample .env   # then set VITE_GEMINI_API_KEY — see below
 npm run dev:minimal
 ```
+
+> [!IMPORTANT]
+> Set `VITE_GEMINI_API_KEY` in `.env` before first run (free key: https://aistudio.google.com/apikey). Neo seeds a default Gemini LLM profile from it on first boot; without it, onboarding will prompt you to configure an LLM before you can start a conversation, instead of silently falling through to an unconfigured default.
 
 The `npm run dev:minimal` command starts the local frontend + agent server. See `package.json` for other `dev:*` variants (`dev`, `dev:static`, `dev:extra-backend`) when you want to run pieces separately or add automation support.
 
@@ -82,6 +86,9 @@ docker run -it --rm \
   ghcr.io/openhands/agent-canvas:1.13.0 # x-release-please-version
 ```
 
+> [!IMPORTANT]
+> The published image is prebuilt, so `VITE_GEMINI_API_KEY` can't be baked in at `docker run` time. On first launch, the app will prompt you to configure an LLM (a Gemini key, free at https://aistudio.google.com/apikey, or any other provider) via Settings → LLM before you can start a conversation.
+
 **Windows (PowerShell / Windows Terminal):** See [README.windows.md](./README.windows.md) for the equivalent commands.
 
 The agent will be able to access any project under `PROJECTS_PATH`.
@@ -97,6 +104,7 @@ This repository *is* the source — from the repo root:
 
 ```sh
 npm install
+cp .env.sample .env   # then set VITE_GEMINI_API_KEY — see Option 1 above
 npm run dev
 ```
 
@@ -106,7 +114,7 @@ Access the UI at [http://localhost:8000](http://localhost:8000) for the npm/sour
 
 # Architecture
 
-NeoDevEx is powered by the [OpenHands Agent Server](https://github.com/OpenHands/software-agent-sdk/tree/main/openhands-agent-server/openhands/agent_server) — a real, open-source REST API for running multiple agents on a single machine, vendored in as this fork's execution backend. Each Agent Server runs on a single host/port; the frontend can connect to multiple Agent Servers and easily flip between them.
+Neo is powered by the [OpenHands Agent Server](https://github.com/OpenHands/software-agent-sdk/tree/main/openhands-agent-server/openhands/agent_server) — a real, open-source REST API for running multiple agents on a single machine, vendored in as this fork's execution backend. Each Agent Server runs on a single host/port; the frontend can connect to multiple Agent Servers and easily flip between them.
 
 You can run an Agent Server anywhere:
 
@@ -122,4 +130,4 @@ The Agent Server is often paired with an [Automation Server](https://github.com/
 - [Architecture overview](./docs/architecture.md)
 - [Development guide](./docs/DEVELOPMENT.md)
 - [Self-hosting guide](./docs/SELF_HOSTING.md)
-- [Fork notes: what NeoDevEx changed from upstream OpenHands](./UPSTREAM.md)
+- [Fork notes: what Neo changed from upstream OpenHands](./UPSTREAM.md)

@@ -1,6 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Filter, Maximize2, Search } from "lucide-react";
+import {
+  ChevronRight,
+  Filter,
+  Maximize2,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import type {
   CodeGraphCrumb,
   CodeGraphNode,
@@ -22,6 +28,10 @@ interface Props {
   onSelectResult: (entry: SearchEntry) => void;
   /** Level nodes, used to show which results are on screen already. */
   levelNodes: CodeGraphNode[];
+  /** Rebuild the graph from scratch, overriding the current one — reachable
+   * even when the graph is fresh/ready, not just when stale or errored. */
+  onRebuild: () => void;
+  isRebuilding?: boolean;
 }
 
 export function CodeGraphToolbar({
@@ -37,6 +47,8 @@ export function CodeGraphToolbar({
   searchResults,
   onSelectResult,
   levelNodes,
+  onRebuild,
+  isRebuilding = false,
 }: Props) {
   const { t } = useTranslation("openhands");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -117,6 +129,20 @@ export function CodeGraphToolbar({
               {hiddenTypes.length}
             </span>
           ) : null}
+        </button>
+
+        <button
+          type="button"
+          data-testid="codegraph-rebuild"
+          onClick={onRebuild}
+          disabled={isRebuilding}
+          className="flex shrink-0 items-center gap-1 rounded-md border border-[var(--oh-border)] px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCw
+            className={`size-3 ${isRebuilding ? "animate-spin" : ""}`}
+            aria-hidden
+          />
+          {t(I18nKey.CODEGRAPH$REBUILD)}
         </button>
       </div>
 

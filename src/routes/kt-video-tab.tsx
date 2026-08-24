@@ -1,74 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { Film, Volume2, VolumeX } from "lucide-react";
 import { useWorkspaceFiles } from "#/hooks/query/use-workspace-files";
 import { useUnifiedGetGitChanges } from "#/hooks/query/use-unified-get-git-changes";
 import { useWorkspaceFileContent } from "#/hooks/query/use-workspace-file-content";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
-import {
-  buildKtManifest,
-  type KtManifest,
-} from "#/lib/kt-video/build-manifest";
+import { buildKtManifest } from "#/lib/kt-video/build-manifest";
+import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
 
 /* eslint-disable i18next/no-literal-string -- KT video tab chrome pending full i18n pass */
 
 const MAX_SELECTABLE_FILES = 8;
-
-/**
- * Reads each scene's real narration text aloud as the video plays, using the
- * browser's built-in speech synthesis — no API key, no backend proxy, so it
- * works the same everywhere this app runs. Speaks a scene once per visit
- * (tracked by scene id), so looping playback doesn't re-trigger the same
- * line mid-sentence.
- */
-function useSceneNarration(
-  manifest: KtManifest,
-  playerRef: React.RefObject<PlayerRef | null>,
-  enabled: boolean,
-) {
-  const lastSpokenSceneId = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!enabled || typeof window === "undefined" || !window.speechSynthesis) {
-      return undefined;
-    }
-    const player = playerRef.current;
-    if (!player) return undefined;
-
-    const handleFrameUpdate = (event: { detail: { frame: number } }) => {
-      const { frame } = event.detail;
-      const scene = manifest.scenes.find(
-        (s) => frame >= s.startFrame && frame < s.endFrame,
-      );
-      if (!scene || scene.id === lastSpokenSceneId.current) return;
-      lastSpokenSceneId.current = scene.id;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(scene.narration_text);
-      utterance.rate = 1.05;
-      window.speechSynthesis.speak(utterance);
-    };
-
-    player.addEventListener("frameupdate", handleFrameUpdate);
-    return () => {
-      player.removeEventListener("frameupdate", handleFrameUpdate);
-    };
-  }, [manifest, enabled, playerRef]);
-
-  useEffect(() => {
-    if (!enabled && typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      lastSpokenSceneId.current = null;
-    }
-  }, [enabled]);
-
-  useEffect(
-    () => () => {
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-    },
-    [],
-  );
-}
 
 /** Fetches text content for a bounded set of workspace files, keyed by path. */
 function useSelectedFileContents(paths: string[]): {

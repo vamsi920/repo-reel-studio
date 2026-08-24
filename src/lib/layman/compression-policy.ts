@@ -80,7 +80,7 @@ export type LaymanIntegrationSafetyPolicy = {
 };
 
 /**
- * Upstream layman ships compression opt-in. NeoDevEx enables it by default and
+ * Upstream layman ships compression opt-in. Neo enables it by default and
  * lets callers/tests turn it off through `configureLaymanCompressionPolicy`,
  * because the only consumer (workspace memory) always validates the result and
  * rolls back to the uncompressed text on any validation error.

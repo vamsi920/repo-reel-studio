@@ -49,6 +49,7 @@ function renderToolbar(
     searchResults: [] as SearchEntry[],
     onSelectResult: vi.fn(),
     levelNodes: [node("a"), node("b")],
+    onRebuild: vi.fn(),
     ...overrides,
   };
   render(<CodeGraphToolbar {...props} />);
@@ -170,6 +171,7 @@ describe("CodeGraphToolbar", () => {
         searchResults={results}
         onSelectResult={vi.fn()}
         levelNodes={[]}
+        onRebuild={vi.fn()}
       />,
     );
 
@@ -191,6 +193,7 @@ describe("CodeGraphToolbar", () => {
         searchResults={results}
         onSelectResult={vi.fn()}
         levelNodes={[]}
+        onRebuild={vi.fn()}
       />,
     );
 

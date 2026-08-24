@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
+import { type RecommendedAutomation } from "@openhands/extensions/automations";
 import {
-  AUTOMATION_CATALOG,
-  type RecommendedAutomation,
-} from "@openhands/extensions/automations";
+  AUTOMATION_CATALOG_ALL,
+  SETUP_REGISTRY,
+} from "#/manifests/manifest-sources";
 import {
   INTEGRATION_CATALOG as MCP_MARKETPLACE,
   type IntegrationCatalogEntry as MarketplaceEntry,
@@ -34,6 +35,7 @@ import {
   extensionModuleCardGridContainerClassName,
   extensionModuleCardPillClassName,
 } from "#/utils/extension-module-card-classes";
+import { LOCAL_FEATURED_AUTOMATION_IDS } from "#/manifests/local-automation-catalog";
 import { StatusBadge } from "./status-badge";
 
 interface RecommendedAutomationsSectionProps {
@@ -58,14 +60,22 @@ export function getAutomationsByPopularity(
     .map(({ automation }) => automation);
 }
 
-const RECOMMENDED_AUTOMATIONS = getAutomationsByPopularity(AUTOMATION_CATALOG);
+const RECOMMENDED_AUTOMATIONS = getAutomationsByPopularity([
+  ...AUTOMATION_CATALOG_ALL,
+]);
 
 // Proven automations are featured above the Beta group. The set is owned by
 // the interface manifest (falling back to the host default), not derived from
 // popularityRank: slack-standup-digest@94 outranks slack-channel-monitor@92
 // yet is Beta.
 function isProvenAutomation(automation: RecommendedAutomation): boolean {
-  return getFeaturedAutomationIds().includes(automation.id);
+  // The published manifest can only name published ids, so locally-owned
+  // entries are promoted here rather than by rewriting the manifest seam —
+  // which is contracted to serve what the manifest actually says.
+  return (
+    getFeaturedAutomationIds().includes(automation.id) ||
+    LOCAL_FEATURED_AUTOMATION_IDS.includes(automation.id)
+  );
 }
 
 export interface AutomationIntegration {
@@ -127,7 +137,18 @@ function isAutomationAvailable(automation: RecommendedAutomation) {
   return getIntegrationIds(automation).length > 0;
 }
 
+/**
+ * Whether selecting this card creates a real, scheduled automation rather than
+ * opening a chat. Only a `direct` setup block posts to the automation service;
+ * an `assisted` one, or no setup block at all, just seeds a conversation. The
+ * card says which, so it never over-promises.
+ */
+function createsRealAutomation(automationId: string): boolean {
+  return SETUP_REGISTRY.findById(automationId)?.setup.mode === "direct";
+}
+
 function buildRecommendedAutomationPills(
+  automationId: string,
   integrations: AutomationIntegration[],
   installedServers: MCPServerConfig[],
   missingCount: number,
@@ -169,6 +190,20 @@ function buildRecommendedAutomationPills(
       };
     },
   );
+
+  pills.unshift({
+    id: "creates-automation",
+    node: (
+      <span
+        className={extensionModuleCardPillClassName}
+        data-testid={`recommended-automation-kind-${automationId}`}
+      >
+        {createsRealAutomation(automationId)
+          ? translate(I18nKey.AUTOMATIONS$CARD_CREATES_AUTOMATION)
+          : translate(I18nKey.AUTOMATIONS$CARD_GUIDED_CHAT)}
+      </span>
+    ),
+  });
 
   if (missingCount > 0) {
     pills.push({
@@ -251,6 +286,7 @@ function AutomationCardGrid({
 
                 <SkillCardPillRow
                   pills={buildRecommendedAutomationPills(
+                    automation.id,
                     integrations,
                     installedServers,
                     missingCount,

@@ -107,8 +107,8 @@ const NEO_WHITE_BUTTON_TOKENS: Record<
 
 export const COLOR_THEMES: Record<ColorThemeKey, ColorThemeDefinition> = {
   "openhands-deepsea": {
-    label: "NeoDevEx-DeepSea",
-    // Matches the values already set by index.css (LIGHT NeoDevEx palette —
+    label: "Neo-DeepSea",
+    // Matches the values already set by index.css (LIGHT Neo palette —
     // index.css's cool-grey ramp has its lightness order inverted from
     // upstream's dark original; these mirror that inversion 1:1, so
     // switching back from another theme restores this light palette).
@@ -167,7 +167,7 @@ export const COLOR_THEMES: Record<ColorThemeKey, ColorThemeDefinition> = {
   },
 
   "openhands-neutral": {
-    label: "NeoDevEx-Neutral",
+    label: "Neo-Neutral",
     scale: NEUTRAL_SCALE,
     // Each stop follows the same positional mapping as hero.ts:
     //   heroui-default-100 ← cool-grey-950 position ← neutral-950 (#181818)
@@ -177,7 +177,7 @@ export const COLOR_THEMES: Record<ColorThemeKey, ColorThemeDefinition> = {
   },
 
   "openhands-neo": {
-    label: "NeoDevEx-Neo",
+    label: "Neo-Neo",
     scale: NEUTRAL_SCALE,
     heroui: NEUTRAL_HEROUI,
     tokens: NEO_WHITE_BUTTON_TOKENS,

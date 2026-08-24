@@ -1,6 +1,6 @@
 # Windows quickstart (PowerShell)
 
-This doc contains **Windows-specific** command syntax for running NeoDevEx with the **Docker sandbox**.
+This doc contains **Windows-specific** command syntax for running Neo with the **Docker sandbox**.
 
 For the main install options and overall context, see [README.md](./README.md).
 

@@ -19,16 +19,27 @@ export type {
   HistoricalAgentOpsRun,
 } from "#/lib/data-platform/repositories/agentops-repository";
 export { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+export type { KnowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+export { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
+export type { CodegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
+export {
+  resolveOrgId,
+  findRepositoryUuid,
+  resolvePersistenceIds,
+  ensureWorkspaceAccess,
+} from "#/lib/data-platform/repositories/repository-identity";
 export type {
-  KnowledgePersistenceRepository,
-  KnowledgeGenerationInput,
-} from "#/lib/data-platform/repositories/knowledge-repository";
+  PersistenceIds,
+  PersistenceIdentityInput,
+  WorkspaceAccessInput,
+} from "#/lib/data-platform/repositories/repository-identity";
 export { automationMetadataRepository } from "#/lib/data-platform/repositories/automation-metadata-repository";
 export type { AutomationMetadataRepository } from "#/lib/data-platform/repositories/automation-metadata-repository";
 export { usageRepository } from "#/lib/data-platform/repositories/usage-repository";
 export type {
   UsageRepository,
   UsageEventInput,
+  UsageEventRow,
   UsageSource,
 } from "#/lib/data-platform/repositories/usage-repository";
 export { artifactStore } from "#/lib/data-platform/artifact-store";

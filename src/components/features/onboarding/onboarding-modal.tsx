@@ -10,7 +10,7 @@ import { ProjectIntakeStep } from "./steps/project-intake-step";
  * sessionStorage flag marking that the one-time "onboarding started" analytics
  * event has already been captured for this browser session.
  */
-const ONBOARDING_STARTED_TRACKED_KEY = "neodevex-onboarding-started";
+const ONBOARDING_STARTED_TRACKED_KEY = "neo-onboarding-started";
 
 interface OnboardingModalProps {
   /** Called when the user dismisses the modal (skip / X / launch). */
@@ -22,7 +22,7 @@ interface OnboardingModalProps {
 }
 
 /**
- * NeoDevEx onboarding: a single question ("what are you building?"), no
+ * Neo onboarding: a single question ("what are you building?"), no
  * agent/model choice surfaced to the user. Agent and LLM are auto-resolved in
  * the background (default agent profile; Gemini LLM profile seeded by
  * useSeedGeminiDefaultProfile in root.tsx) — onboarding only "starts" once

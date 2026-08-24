@@ -23,7 +23,11 @@ def language_name(language: str) -> str:
 
 
 def build_page_prompt(
-    title: str, file_links: str, file_contents: str, language: str
+    title: str,
+    file_links: str,
+    file_contents: str,
+    language: str,
+    code_evidence: str | None = None,
 ) -> str:
     """Prompt for generating a single wiki page (port of generatePageContent).
 
@@ -32,8 +36,18 @@ def build_page_prompt(
     line-numbered content of those same files, read off disk by the caller —
     without it the model has nothing but a list of filenames and falls back
     to paraphrasing whatever prose (READMEs) it can find instead of citing
-    real code.
+    real code. `code_evidence`, when present, is a short page-scoped slice of
+    real detected subsystems this page's files belong to — structural
+    context only, never a citation source of its own (it has no line
+    numbers; citations still come exclusively from SOURCE FILE CONTENTS).
     """
+    evidence_block = (
+        f"\n\nADDITIONAL STRUCTURAL CONTEXT (not a citation source — use it "
+        f"only to understand how this page's files relate to the rest of "
+        f"the codebase, never to cite a line number):\n\n{code_evidence}\n"
+        if code_evidence
+        else ""
+    )
     return f"""You are an expert technical writer and software architect.
 Your task is to generate a comprehensive and accurate technical wiki page in Markdown format about a specific feature, system, or module within a given software project.
 
@@ -62,10 +76,12 @@ when you cite `path:start-end` — do not count lines yourself, use the
 numbers shown.
 
 {file_contents}
+{evidence_block}
+Based ONLY on the content shown above under SOURCE FILE CONTENTS (the
+ADDITIONAL STRUCTURAL CONTEXT above, if present, is for your own
+understanding only — never cite it as a source):
 
-Based ONLY on the content shown above under SOURCE FILE CONTENTS:
-
-1.  **Introduction:** Start with a concise introduction (1-2 paragraphs) explaining the purpose, scope, and high-level overview of "{title}" within the context of the overall project. If relevant, and if information is available in the provided files, link to other potential wiki pages using the format `[Link Text](#page-anchor-or-id)`.
+1.  **Introduction:** Start with a concise introduction (1-2 paragraphs) explaining the purpose, scope, and high-level overview of "{title}" within the context of the overall project. If relevant, and if information is available in the provided files, link to other potential wiki pages using the format `[Link Text](#page-anchor-or-id)`. Do NOT open with a templated preamble sentence like "This document outlines..." or "This document provides a comprehensive guide/overview..." — open with something concrete and specific to what "{title}" actually is or does, grounded in the source files above.
 
 2.  **Detailed Sections:** Break down "{title}" into logical sections using H2 (`##`) and H3 (`###`) Markdown headings. For each section:
     *   Explain the architecture, components, data flow, or logic relevant to the section's focus, as evidenced in the source files.
@@ -75,6 +91,7 @@ Based ONLY on the content shown above under SOURCE FILE CONTENTS:
     *   EXTENSIVELY use Mermaid diagrams (e.g., `flowchart TD`, `sequenceDiagram`, `classDiagram`, `erDiagram`, `graph TD`) to visually represent architectures, flows, relationships, and schemas found in the source files.
     *   Ensure diagrams are accurate and directly derived from information in the `[RELEVANT_SOURCE_FILES]`.
     *   Provide a brief explanation before or after each diagram to give context.
+    *   CRITICAL: node labels containing parentheses MUST be wrapped in double quotes, e.g. `A["CAD Files (.dxf/.dwg)"]`, NOT `A[CAD Files (.dxf/.dwg)]` — an unquoted `(` inside a `[...]`/`{{...}}` label breaks the parser. This applies to file extensions, framework names, and function-call syntax alike — quote the whole label whenever it contains a `(`.
     *   CRITICAL: All diagrams MUST follow strict vertical orientation:
        - Use "graph TD" (top-down) directive for flow diagrams
        - NEVER use "graph LR" (left-right)
@@ -82,7 +99,7 @@ Based ONLY on the content shown above under SOURCE FILE CONTENTS:
        - For sequence diagrams:
          - Start with "sequenceDiagram" directive on its own line
          - Define ALL participants at the beginning using "participant" keyword
-         - Optionally specify participant types: actor, boundary, control, entity, database, collections, queue
+         - Mermaid supports exactly two participant keywords: "participant" and "actor" — there are no other typed participant keywords (no "boundary"/"control"/"entity"/"database"/"collections"/"queue"; that is PlantUML syntax, not Mermaid, and will fail to parse)
          - Use descriptive but concise participant names, or use aliases: "participant A as Alice"
          - Use the correct Mermaid arrow syntax (8 types available):
            - -> solid line without arrow (rarely used)
@@ -146,18 +163,32 @@ Remember:
 
 
 _COMPREHENSIVE_STRUCTURE = """
-Create a structured wiki with the following main sections:
-- Overview (general information about the project)
-- System Architecture (how the system is designed)
-- Core Features (key functionality)
-- Data Management/Flow: If applicable, how data is stored, processed, accessed, and managed (e.g., database schema, data pipelines, state management).
-- Frontend Components (UI elements, if applicable.)
-- Backend Systems (server-side components)
-- Model Integration (AI model connections)
-- Deployment/Infrastructure (how to deploy, what's the infrastructure like)
-- Extensibility and Customization: If the project architecture supports it, explain how to extend or customize its functionality (e.g., plugins, theming, custom modules, hooks).
+Determine the wiki's sections yourself, grounded in what THIS repository
+actually contains. Do not reuse a generic template — reaching for the same
+handful of section names ("Data Management", "Model Integration", "Backend
+Systems") on every repository regardless of whether it actually has one is
+the single most common failure mode to avoid here.
 
-Each section should contain relevant pages. For example, the "Frontend Components" section might include pages for "Home Page", "Repository Wiki Page", "Ask Component", etc.
+Use the evidence given above (the file tree, the README, and — when present
+— the CODE STRUCTURE EVIDENCE block from real static analysis) to find this
+repository's own distinct subsystems: its real business flows, runtime
+components, external integrations, persistence layer, background/agent
+systems, UI surfaces, build/deploy tooling — but only the ones this
+repository actually has, named the way its own code and directories name
+them, not picked from a fixed checklist. A small single-purpose library may
+warrant 3 sections; a large multi-service platform may warrant 12. Let the
+evidence decide both the count and the names.
+
+Two organizing principles, not a template to fill in:
+- Prefer names grounded in real module/directory boundaries (and, when given,
+  the detected architectural layers) over abstract category labels.
+- Each section should give a new engineer a mental model of one coherent
+  part of this codebase — not an arbitrary slice of files.
+
+Each section should contain relevant pages. For example, a UI-heavy
+repository's front-end section might include pages for its actual named
+screens or components — whatever they are actually called in this repo, not
+placeholder names copied from an unrelated example project.
 
 Return your analysis in the following XML format:
 
@@ -230,11 +261,42 @@ def build_structure_prompt(
     readme: str,
     comprehensive: bool,
     language: str,
+    code_evidence: str | None = None,
+    subsystem_count: int | None = None,
 ) -> str:
-    """Prompt for determining the wiki structure (port of determineWikiStructure)."""
+    """Prompt for determining the wiki structure (port of determineWikiStructure).
+
+    `code_evidence` is optional, condensed real-code-structure evidence
+    (detected subsystems, architectural layers, import/call edges) from
+    NeoDevEx's own CodeGraph analyzer — real parsed-code signal, not
+    guessed from file paths. When present it gives the model genuine
+    bottom-up grounding beyond the file tree and README alone; when absent
+    (analyzer unavailable/timed out), structure determination proceeds
+    exactly as before.
+    """
     structure_format = _COMPREHENSIVE_STRUCTURE if comprehensive else _CONCISE_STRUCTURE
-    page_count = "8-12" if comprehensive else "4-6"
+    if subsystem_count and subsystem_count > 0:
+        # Scale from real detected subsystem count instead of a flat cap
+        # regardless of repo size — a small single-purpose repo and a large
+        # multi-service one were both landing at the same ~10 pages before.
+        low = max(4, subsystem_count) if comprehensive else max(3, subsystem_count // 2)
+        high = min(20, subsystem_count + 4) if comprehensive else min(8, subsystem_count + 2)
+        page_count = f"{low}-{max(low, high)}"
+    else:
+        page_count = "8-12" if comprehensive else "4-6"
     kind = "comprehensive" if comprehensive else "concise"
+    evidence_block = (
+        f"""
+3. Real code-structure evidence from static analysis (more reliable than
+the file tree alone — it comes from parsing every file, not guessing from
+paths):
+<code_structure_evidence>
+{code_evidence}
+</code_structure_evidence>
+"""
+        if code_evidence
+        else ""
+    )
     return f"""Analyze this GitHub repository {owner}/{repo} and create a wiki structure for it.
 
 1. The complete file tree of the project:
@@ -246,7 +308,7 @@ def build_structure_prompt(
 <readme>
 {readme}
 </readme>
-
+{evidence_block}
 I want to create a wiki for this repository. Determine the most logical structure for a wiki based on the repository's content.
 
 IMPORTANT: The wiki content will be generated in {language_name(language)} language.

@@ -16,6 +16,10 @@ class WikiPage(BaseModel):
     filePaths: list[str]
     importance: str  # Should ideally be Literal['high', 'medium', 'low']
     relatedPages: list[str]
+    # The model's own rationale for this page, written during structure
+    # planning (the structure XML's <description> per page) — additive with
+    # a default so older cached JSON without this key still loads.
+    description: str = ""
 
 
 class WikiSection(BaseModel):

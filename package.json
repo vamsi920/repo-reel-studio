@@ -1,7 +1,7 @@
 {
-  "name": "neodevex",
+  "name": "neo",
   "version": "1.13.0",
-  "description": "NeoDevEx Agent Canvas UI - run AI coding agents with a visual interface",
+  "description": "Neo Agent Canvas UI - run AI coding agents with a visual interface",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -98,7 +98,7 @@
     "prelint": "npm run make-i18n",
     "lint": "npm run typecheck && eslint src && prettier --check src/**/*.{ts,tsx}",
     "lint:fix": "eslint src --fix && prettier --write src/**/*.{ts,tsx}",
-    "postinstall": "node -e \"if (process.env.npm_config_global === 'true') { console.log('\\n\\x1b[32m\\x1b[1m\\u2713 NeoDevEx installed!\\x1b[0m\\n\\nTo start NeoDevEx, run:\\n\\n  \\x1b[36m\\x1b[1magent-canvas\\x1b[0m\\n\\nThis launches the full stack at \\x1b[36mhttp://localhost:8000\\x1b[0m.\\n') }\"",
+    "postinstall": "node -e \"if (process.env.npm_config_global === 'true') { console.log('\\n\\x1b[32m\\x1b[1m\\u2713 Neo installed!\\x1b[0m\\n\\nTo start Neo, run:\\n\\n  \\x1b[36m\\x1b[1magent-canvas\\x1b[0m\\n\\nThis launches the full stack at \\x1b[36mhttp://localhost:8000\\x1b[0m.\\n') }\"",
     "prepare": "husky",
     "typecheck": "react-router typegen && tsc",
     "typecheck:staged": "react-router typegen && npx tsc --noEmit --skipLibCheck",

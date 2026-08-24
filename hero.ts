@@ -3,7 +3,7 @@ import { heroui } from "@heroui/react";
 export default heroui({
   // NOTE: this theme is keyed "dark" (matching AGENT_SERVER_UI_DEFAULT_THEME
   // and the [data-theme=dark] selectors in src/themes/color-themes.ts /
-  // src/tailwind.css) but its actual colors are NeoDevEx's LIGHT palette —
+  // src/tailwind.css) but its actual colors are Neo's LIGHT palette —
   // the cool-grey ramp below is index.css's dark ramp with its lightness
   // order inverted (see index.css comment), so every existing dark-mode
   // selector keeps working unchanged while the app renders light end-to-end.
@@ -17,7 +17,7 @@ export default heroui({
   themes: {
     dark: {
       colors: {
-        primary: "#0B81B7", // NeoDevEx cyan-blue
+        primary: "#0B81B7", // Neo cyan-blue
 
         // Map HeroUI's zinc-based semantic colours to our cool-grey palette.
         // This ensures every HeroUI component that uses bg-default, bg-content*,

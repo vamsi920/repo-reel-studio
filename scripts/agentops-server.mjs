@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * NeoDevEx AgentOps Control Tower — collector + governance API.
+ * Neo AgentOps Control Tower — collector + governance API.
  *
  * OpenHands agent-server remains the agent runtime and is not modified by this
  * process. AgentOps supplies the observability vocabulary (vendored under
- * `vendor/agentops/semconv/`, MIT). This sidecar is the NeoDevEx control layer:
+ * `vendor/agentops/semconv/`, MIT). This sidecar is the Neo control layer:
  * it tails the runtime, records runs/spans/audit, evaluates budget and autonomy
  * policy, and exposes the approvals queue and the run controls the UI drives.
  *
@@ -16,12 +16,19 @@
  *   node scripts/agentops-server.mjs
  *
  * Env:
- *   AGENTOPS_PORT          Port to listen on (default 18002)
- *   AGENT_SERVER_URL       agent-server base URL (default http://127.0.0.1:18000)
- *   AGENTOPS_STORE_DIR     Store directory (default ~/.neodevex/agentops)
- *   LOCAL_BACKEND_API_KEY  Overrides the auto-discovered session API key
- *                          (falls back to the same persisted key file the dev
- *                          launchers already generate and use)
+ *   AGENTOPS_PORT              Port to listen on (default 18002)
+ *   AGENT_SERVER_URL           agent-server base URL (default http://127.0.0.1:18000)
+ *   SUPABASE_URL                )  Both set → the real Postgres store
+ *   SUPABASE_SERVICE_ROLE_KEY   )  (scripts/agentops/supabase-store.mjs) is used.
+ *                                  Either unset → falls back to the local
+ *                                  JSONL store (scripts/agentops/store.mjs),
+ *                                  so the feature still works with zero
+ *                                  external setup.
+ *   AGENTOPS_STORE_DIR         JSONL store directory, only used by the local
+ *                              fallback (default ~/.neodevex/agentops)
+ *   LOCAL_BACKEND_API_KEY      Overrides the auto-discovered session API key
+ *                              (falls back to the same persisted key file the
+ *                              dev launchers already generate and use)
  */
 
 import { createServer } from "node:http";
@@ -30,6 +37,10 @@ import process from "node:process";
 import { AgentServerClient } from "./agentops/agent-server-client.mjs";
 import { Collector } from "./agentops/collector.mjs";
 import { AgentOpsStore, DEFAULT_STORE_DIR } from "./agentops/store.mjs";
+import {
+  SupabaseAgentOpsStore,
+  isSupabaseConfigured,
+} from "./agentops/supabase-store.mjs";
 import {
   computeSpend,
   monthStart,
@@ -111,10 +122,10 @@ function readBody(req) {
 }
 
 /** Budget rollup for one workspace: used / remaining / projected. */
-function budgetForWorkspace(store, workspaceId, now) {
-  const policy = store.getWorkspacePolicy(workspaceId);
+async function budgetForWorkspace(store, workspaceId, now) {
+  const policy = await store.getWorkspacePolicy(workspaceId);
   const since = monthStart(now);
-  const runs = store.listRuns({ limit: 10000 });
+  const runs = await store.listRuns({ limit: 10000 });
   const spend = computeSpend(runs, { workspaceId, since });
   const projectedUsd = projectMonthlySpend(spend.usedUsd, now);
 
@@ -138,9 +149,22 @@ function budgetForWorkspace(store, workspaceId, now) {
   };
 }
 
+function createStore() {
+  if (isSupabaseConfigured()) {
+    console.log("[agentops] store: Supabase (real, durable Postgres)");
+    return new SupabaseAgentOpsStore();
+  }
+  console.log(
+    "[agentops] store: local JSONL fallback (set SUPABASE_URL + " +
+      "SUPABASE_SERVICE_ROLE_KEY to use the real database instead)",
+  );
+  return new AgentOpsStore();
+}
+
 async function main() {
   const apiKey = await resolveSessionApiKey();
-  const store = new AgentOpsStore();
+  const store = createStore();
+  const storeKind = isSupabaseConfigured() ? "supabase" : "jsonl";
   const client = new AgentServerClient({
     baseUrl: AGENT_SERVER_URL,
     sessionApiKey: apiKey,
@@ -160,7 +184,8 @@ async function main() {
     if (path === "/health") {
       sendJson(res, 200, {
         status: "ok",
-        storeDir: DEFAULT_STORE_DIR,
+        store: storeKind,
+        storeDir: storeKind === "jsonl" ? DEFAULT_STORE_DIR : null,
         agentServerUrl: AGENT_SERVER_URL,
         collector: collector.health(),
       });
@@ -205,12 +230,12 @@ function createRouter({ store, client, collector }) {
     const now = new Date().toISOString();
 
     if (method === "GET" && path === "/summary") {
+      const [summaryRuns, summaryApprovals] = await Promise.all([
+        store.listRuns({ limit: 10000 }),
+        store.listApprovals({ state: "all" }),
+      ]);
       sendJson(res, 200, {
-        ...summarize(
-          store.listRuns({ limit: 10000 }),
-          store.listApprovals({ state: "all" }),
-          now,
-        ),
+        ...summarize(summaryRuns, summaryApprovals, now),
         collector: collector.health(),
       });
       return true;
@@ -218,7 +243,7 @@ function createRouter({ store, client, collector }) {
 
     if (method === "GET" && path === "/runs") {
       sendJson(res, 200, {
-        runs: store.listRuns({
+        runs: await store.listRuns({
           status: url.searchParams.get("status") ?? undefined,
           workspaceId: url.searchParams.get("workspace") ?? undefined,
           since: url.searchParams.get("since") ?? undefined,
@@ -231,11 +256,11 @@ function createRouter({ store, client, collector }) {
     const runSpansMatch = path.match(/^\/runs\/([^/]+)\/spans$/);
     if (method === "GET" && runSpansMatch) {
       const runId = decodeURIComponent(runSpansMatch[1]);
-      if (!store.getRun(runId)) {
+      if (!(await store.getRun(runId))) {
         sendJson(res, 404, { error: `Unknown run ${runId}` });
         return true;
       }
-      sendJson(res, 200, { spans: store.listSpans(runId) });
+      sendJson(res, 200, { spans: await store.listSpans(runId) });
       return true;
     }
 
@@ -245,7 +270,7 @@ function createRouter({ store, client, collector }) {
     if (method === "POST" && runControlMatch) {
       const runId = decodeURIComponent(runControlMatch[1]);
       const action = runControlMatch[2];
-      const run = store.getRun(runId);
+      const run = await store.getRun(runId);
       if (!run) {
         sendJson(res, 404, { error: `Unknown run ${runId}` });
         return true;
@@ -258,7 +283,7 @@ function createRouter({ store, client, collector }) {
       if (action === "resume") await client.runConversation(runId);
       else await client.interruptConversation(runId);
 
-      store.appendAudit({
+      await store.appendAudit({
         at: now,
         actor: "user",
         action: action === "resume" ? "run.resumed" : `run.${action}`,
@@ -278,25 +303,28 @@ function createRouter({ store, client, collector }) {
     const runMatch = path.match(/^\/runs\/([^/]+)$/);
     if (method === "GET" && runMatch) {
       const runId = decodeURIComponent(runMatch[1]);
-      const run = store.getRun(runId);
+      const run = await store.getRun(runId);
       if (!run) {
         sendJson(res, 404, { error: `Unknown run ${runId}` });
         return true;
       }
+      const [runSpans, runAudit, runApprovals] = await Promise.all([
+        store.listSpans(runId),
+        store.listAudit({ entityId: runId }),
+        store.listApprovals({ state: "all" }),
+      ]);
       sendJson(res, 200, {
         run,
-        spans: store.listSpans(runId),
-        audit: store.listAudit({ entityId: runId }),
-        approvals: store
-          .listApprovals({ state: "all" })
-          .filter((approval) => approval.runId === runId),
+        spans: runSpans,
+        audit: runAudit,
+        approvals: runApprovals.filter((approval) => approval.runId === runId),
       });
       return true;
     }
 
     if (method === "GET" && path === "/approvals") {
       sendJson(res, 200, {
-        approvals: store.listApprovals({
+        approvals: await store.listApprovals({
           state: url.searchParams.get("state") ?? "pending",
         }),
       });
@@ -309,7 +337,7 @@ function createRouter({ store, client, collector }) {
     if (method === "POST" && approvalMatch) {
       const approvalId = decodeURIComponent(approvalMatch[1]);
       const decision = approvalMatch[2];
-      const approval = store.getApproval(approvalId);
+      const approval = await store.getApproval(approvalId);
       if (!approval) {
         sendJson(res, 404, { error: `Unknown approval ${approvalId}` });
         return true;
@@ -339,7 +367,7 @@ function createRouter({ store, client, collector }) {
             typeof body?.additionalBudgetUsd === "number"
               ? body.additionalBudgetUsd
               : 0;
-          const policies = store.getPolicies();
+          const policies = await store.getPolicies();
           const workspace = policies.workspaces[approval.workspaceId] ?? {};
           const breach = approval.breaches?.[0];
           if (breach?.scope === "run") {
@@ -353,20 +381,20 @@ function createRouter({ store, client, collector }) {
             };
           }
           policies.workspaces[approval.workspaceId] = workspace;
-          store.setPolicies(policies);
+          await store.setPolicies(policies);
           await client.runConversation(approval.runId);
         }
         // Rejecting leaves the run halted — it is already interrupted.
       }
 
-      store.upsertApproval({
+      await store.upsertApproval({
         ...approval,
         state: decision === "approve" ? "approved" : "rejected",
         decidedAt: now,
         decisionReason: reason ?? null,
       });
 
-      store.appendAudit({
+      await store.appendAudit({
         at: now,
         actor: "user",
         action:
@@ -387,7 +415,7 @@ function createRouter({ store, client, collector }) {
     }
 
     if (method === "GET" && path === "/policies") {
-      sendJson(res, 200, store.getPolicies());
+      sendJson(res, 200, await store.getPolicies());
       return true;
     }
 
@@ -397,8 +425,8 @@ function createRouter({ store, client, collector }) {
         sendJson(res, 400, { error: "Expected a JSON policies object" });
         return true;
       }
-      const saved = store.setPolicies(body);
-      store.appendAudit({
+      const saved = await store.setPolicies(body);
+      await store.appendAudit({
         at: now,
         actor: "user",
         action: "policy.updated",
@@ -411,23 +439,24 @@ function createRouter({ store, client, collector }) {
     }
 
     if (method === "GET" && path === "/budgets") {
-      const runs = store.listRuns({ limit: 10000 });
+      const [runs, policies] = await Promise.all([
+        store.listRuns({ limit: 10000 }),
+        store.getPolicies(),
+      ]);
       const workspaceIds = new Set(runs.map((run) => run.workspaceId));
-      for (const id of Object.keys(store.getPolicies().workspaces)) {
+      for (const id of Object.keys(policies.workspaces)) {
         workspaceIds.add(id);
       }
-      sendJson(res, 200, {
-        budgets: [...workspaceIds].map((id) =>
-          budgetForWorkspace(store, id, now),
-        ),
-        agents: store.getPolicies().agents,
-      });
+      const budgets = await Promise.all(
+        [...workspaceIds].map((id) => budgetForWorkspace(store, id, now)),
+      );
+      sendJson(res, 200, { budgets, agents: policies.agents });
       return true;
     }
 
     if (method === "GET" && path === "/audit") {
       sendJson(res, 200, {
-        audit: store.listAudit({
+        audit: await store.listAudit({
           entityId: url.searchParams.get("entity") ?? undefined,
           workspaceId: url.searchParams.get("workspace") ?? undefined,
           since: url.searchParams.get("since") ?? undefined,

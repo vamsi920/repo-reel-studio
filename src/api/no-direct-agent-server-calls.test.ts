@@ -13,7 +13,7 @@ const ALLOWED_AD_HOC_HTTP_FILES = new Set([
   // docs/deepwiki-video-kt-integration.md.
   "api/deepwiki-service/deepwiki-service.api.ts",
   // The AgentOps Control Tower collector (scripts/agentops-server.mjs) is a
-  // NeoDevEx-owned companion service, not the agent-server this guard protects.
+  // Neo-owned companion service, not the agent-server this guard protects.
   // It has no generated SDK client — see AGENTS.md, "AgentOps Control Tower".
   "api/agentops-service/agentops-service.api.ts",
 ]);

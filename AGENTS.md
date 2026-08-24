@@ -86,16 +86,62 @@ whether or not a tab is open and survive a reload.
   `response_latencies`). **Do not add an LLM instrumentor**: the runtime already
   reports every call, and a second one would double-count.
 - `scripts/agentops/policy.mjs` — pure budget accounting and policy evaluation.
-- `scripts/agentops/store.mjs` — append-only JSONL under `~/.neodevex/agentops`.
-  Append-only is deliberate: the audit log is the point, and rewriting history
-  means rewriting the file.
 - `scripts/agentops/collector.mjs` — the poll loop, budget enforcement, and the
-  approvals it raises.
+  approvals it raises. Every store call is `await`ed — both stores below
+  present the same async interface, so the collector doesn't know which one
+  is live.
+
+**Storage: two interchangeable stores, selected at startup** (see
+`createStore()` in `scripts/agentops-server.mjs`):
+
+- `scripts/agentops/supabase-store.mjs` — the **primary** store, used
+  automatically when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are both
+  set. Real, durable Postgres in the project's `agentops_runs`/`agentops_spans`/
+  `agentops_audit`/`agentops_approvals`/`agentops_policies`/
+  `agentops_agent_budgets` tables (see the `agentops` and `rls_agentops`
+  migrations). Authenticates as the service role — a trusted backend process,
+  RLS bypassed by design — not as a signed-in end user.
+  - **Workspace identity is shared with the rest of the platform.**
+    `workspaces.id` — and therefore every `agentops_*.workspace_id` FK — is
+    always `computeWorkspaceId(backendId, path)`
+    (`scripts/agentops/workspace-id.mjs`, a byte-for-byte port of
+    `src/lib/workspace-memory/workspace-id.ts`, cross-checked against it in
+    `__tests__/scripts/agentops-workspace-id.test.ts`), never a raw path.
+    Using anything else creates a second, unlinked `workspaces` row for the
+    same real folder — invisible to every other workspace-scoped query and
+    RLS policy in the schema, including
+    `src/lib/data-platform/repositories/agentops-repository.ts`'s historical
+    queries. Reads join back to `workspaces.path` so the REST API and UI
+    still see a real folder path, not the hash — see the `runToRow`/
+    `rowToRun` pair and their siblings for the exact contract. **Do not
+    revert this to a raw-path `workspace_id` — that was tried and found to
+    silently orphan AgentOps data from the rest of the platform.**
+  - **Org bootstrap is a known, temporary gap.** The rest of the platform
+    gives every signed-in browser its own real "Personal" org via anonymous
+    Supabase Auth
+    (`src/lib/data-platform/repositories/repository-identity.ts`). This
+    collector has no browser session, so it bootstraps a single fixed
+    default org (`DEFAULT_ORG_ID`) instead — meaning AgentOps workspace rows
+    aren't yet visible to a real per-user org's membership-gated queries.
+    Fixing this needs the frontend to tell the collector which org it
+    resolved (a new endpoint), which hasn't been built — don't assume it's
+    already wired.
+  - Row mapping functions (`runToRow`/`rowToRun`, etc.) are pure and take an
+    already-resolved workspace id as an explicit parameter, exported for
+    testing without a network call.
+- `scripts/agentops/store.mjs` — the **local fallback**, append-only JSONL
+  under `~/.neodevex/agentops`, used only when the two Supabase env vars are
+  absent. Dependency-free (node: builtins only) so the feature still works
+  with zero external setup. Append-only is deliberate: the audit log is the
+  point, and rewriting history means rewriting the file.
 
 Wired into `scripts/dev-with-automation.mjs` (and therefore `dev:static`),
 `scripts/ingress.mjs` routing, `scripts/runtime-services-info.mjs`, and
 `docker/entrypoint.sh`. Port lives in `config/defaults.json` under
-`ports.agentops`.
+`ports.agentops`. `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` need no launcher
+wiring — both dev and Docker spawn the collector with the parent process's
+full environment, so they pass through once set in `.env` (dev) or via
+`docker run -e` (Docker).
 
 ### Rules this feature must keep
 

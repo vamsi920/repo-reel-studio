@@ -34,12 +34,16 @@ import {
   resolveHeadCommitSha,
   workspaceIdForSnapshot,
 } from "#/lib/codegraph/workspace-identity";
+import { useActiveBackend } from "#/contexts/active-backend-context";
+import { resolvePersistenceIds } from "#/lib/data-platform/repositories/repository-identity";
+import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
 
 const MAX_SEARCH_RESULTS = 20;
 
 function KtGraph() {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
+  const { backend } = useActiveBackend();
   const { repositoryId: rawRepositoryId } = useParams<{
     repositoryId: string;
   }>();
@@ -156,6 +160,29 @@ function KtGraph() {
           subsystemCount: result.root.nodes.length,
           ...(result.meta.reducedAnalysis ? { reduced: true } : {}),
         });
+
+        // Fire-and-forget: records that a graph exists for this commit so a
+        // later cold page load can auto-check instead of always showing
+        // "Build code graph". The real payload stays on disk (workspaceId
+        // here) -- this row is metadata only.
+        void resolvePersistenceIds({
+          owner: snapshot.owner,
+          repo: snapshot.repo,
+          branch: snapshot.branch,
+          localPath: snapshot.localPath,
+          backendId: backend.id,
+        }).then((ids) => {
+          if (!ids) return;
+          void codegraphPersistenceRepository.saveSnapshot({
+            workspaceId: ids.workspaceId,
+            repositoryUuid: ids.repositoryUuid,
+            commitSha: snapshot.commitSha,
+            nodeCount: result.root.nodes.length,
+            edgeCount: result.root.edges.length,
+            analyzerVersion: "understand-anything",
+            outputPath: `.neodevex/codegraph/out/${snapshot.commitSha}`,
+          });
+        });
       } catch (error) {
         const reason =
           error instanceof CodeGraphAnalyzerError
@@ -169,6 +196,42 @@ function KtGraph() {
     },
     [snapshot, knowledgeState],
   );
+
+  // On a fresh page load (no in-memory graph state yet), check whether a
+  // graph already exists for this commit before showing "Build code graph".
+  // `openExistingAnalysis` (via `analyze(false)`) hard-requires a live
+  // agent-server session since the payload only lives in the sandbox file
+  // tree, so this only fires when one is present -- same scope boundary as
+  // Watch KT, not a bug.
+  React.useEffect(() => {
+    if (!snapshot || !key || state) return;
+    if (!knowledgeState?.conversationUrl || !knowledgeState?.sessionApiKey) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const ids = await resolvePersistenceIds({
+        owner: snapshot.owner,
+        repo: snapshot.repo,
+        branch: snapshot.branch,
+        localPath: snapshot.localPath,
+        backendId: backend.id,
+      });
+      if (!ids || cancelled) return;
+      const exists = await codegraphPersistenceRepository.hasSnapshot(
+        ids.workspaceId,
+        ids.repositoryUuid,
+        snapshot.commitSha,
+      );
+      if (!exists || cancelled) return;
+      analyze(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+
+    // itself depends on `snapshot`/`knowledgeState`, already covered here.
+  }, [snapshot, key, state, knowledgeState, backend.id]);
 
   const drillDown = React.useCallback(
     async (nodeId: string) => {
@@ -393,6 +456,7 @@ function KtGraph() {
               searchResults={searchResults}
               onSelectResult={selectSearchResult}
               levelNodes={level.nodes}
+              onRebuild={() => analyze(true)}
             />
             <div className="min-h-0 flex-1">
               <CodeGraphCanvas

@@ -1,5 +1,5 @@
 /**
- * NeoDevEx-normalized CodeGraph types.
+ * Neo-normalized CodeGraph types.
  *
  * Everything downstream of the analyzer — store, components, routes — consumes
  * only these types, never the vendored Understand-Anything `KnowledgeGraph`

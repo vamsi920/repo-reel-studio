@@ -14,10 +14,39 @@ class WikiTaskRequest(RepoRequestBase):
     owner: str
     repo: str
     comprehensive: bool = Field(True, description="Comprehensive vs concise wiki")
+    commit_sha: str | None = Field(
+        None,
+        description="Immutable commit SHA this generation is scoped to. "
+        "Without it, cache/task keys are only {type}_{owner}_{repo} and a "
+        "later commit of the same repo can silently serve a stale cached "
+        "wiki. Optional at the schema level for compatibility with other "
+        "callers of the raw API, but NeoDevEx's own client always sends it.",
+    )
+    force: bool = Field(
+        False,
+        description="Bypass any existing cache/active task for this exact "
+        "key and regenerate from scratch.",
+    )
+    code_evidence: str | None = Field(
+        None,
+        description="Condensed real-code-structure evidence (subsystems, "
+        "architectural layers, import/call graph) from NeoDevEx's CodeGraph "
+        "analyzer, used to ground structure determination beyond the file "
+        "tree and README alone.",
+    )
+    code_evidence_subsystems: list[dict] | None = Field(
+        None,
+        description="Full per-subsystem file lists from the same analyzer "
+        "pass (distinct from code_evidence's truncated summary), used to "
+        "ground individual page generation by matching a page's own "
+        "declared files against real subsystems. Each entry: "
+        "{name, layerId, filePaths}.",
+    )
 
     @property
     def repo_key(self) -> str:
-        return f"{self.type}_{self.owner}_{self.repo}"
+        commit = self.commit_sha or "__nocommit__"
+        return f"{self.type}_{self.owner}_{self.repo}_{commit}"
 
 
 class TaskStatus(str, Enum):

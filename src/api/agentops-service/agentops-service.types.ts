@@ -1,5 +1,5 @@
 /**
- * Wire types for the NeoDevEx AgentOps Control Tower collector
+ * Wire types for the Neo AgentOps Control Tower collector
  * (`scripts/agentops-server.mjs`).
  *
  * The collector owns these shapes; this file is the client-side mirror. Span

@@ -984,9 +984,9 @@ process.on("SIGTERM", shutdown);
 process.on("SIGHUP", shutdown);
 
 /**
- * Start the NeoDevEx AgentOps Control Tower collector.
+ * Start the Neo AgentOps Control Tower collector.
  *
- * This is a NeoDevEx-owned Node service, not an upstream one: it tails the
+ * This is a Neo-owned Node service, not an upstream one: it tails the
  * agent-server's REST API and records runs, spans, budgets, approvals and the
  * audit log under ~/.neodevex/agentops. Running it here (rather than in the
  * browser) is what makes the Control Tower survive a page reload and record

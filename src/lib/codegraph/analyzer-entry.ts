@@ -186,7 +186,7 @@ async function main(): Promise<void> {
     }
 
     builder.addFileWithAnalysis(path, structure, {
-      // Node prose is intentionally left empty here. NeoDevEx fills summaries
+      // Node prose is intentionally left empty here. Neo fills summaries
       // from the DeepWiki pages it already generated for this same commit
       // rather than prompting an LLM a second time — see deepwiki-bridge.ts.
       summary: "",
