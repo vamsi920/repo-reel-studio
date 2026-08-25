@@ -101,6 +101,20 @@ function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
   const persisted = usePersistedRepositories();
   return useMemo(() => {
+    // Repos already generated in Supabase, regardless of whether they also
+    // have a live conversation right now -- without this, a repo that's
+    // BOTH connected (found via useConnectedRepositories) AND previously
+    // generated would only ever match the connected branch below, which
+    // has no way to know it was already generated after a reload wipes the
+    // in-memory store; it would show "Generate Knowledge" (misleadingly
+    // re-triggering a real generation attempt) instead of "View Knowledge".
+    const persistedIds = new Set(
+      persisted.map(
+        (summary) =>
+          `${summary.owner}/${summary.repo}@${summary.branch ?? "main"}`,
+      ),
+    );
+
     const connectedIds = new Set(connected.map((c) => c.repositoryId));
     const extra: RepoCandidate[] = [];
     for (const [id, state] of Object.entries(byRepositoryId)) {
@@ -135,9 +149,26 @@ function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
         knownGenerated: true,
       });
     }
-    return [...connected, ...extra];
+    return [...connected, ...extra].map((candidate) => ({
+      ...candidate,
+      knownGenerated:
+        candidate.knownGenerated || persistedIds.has(candidate.repositoryId),
+    }));
   }, [connected, byRepositoryId, persisted]);
 }
+
+const COMMIT_POLL_INTERVAL_MS = 2000;
+// A real `git clone` for a GitHub-connected repo isn't a provisioning-layer
+// step -- it's delegated to the agent's first conversational turn (a
+// prepended "run: git clone ..." instruction), which only starts running
+// after the agent loop spins up and the LLM decides to invoke its terminal
+// tool. `waitForWorkspaceReady` resolves as soon as a working_dir PATH
+// exists (often near-instantly for the local backend), well before that
+// clone has had any time to run -- confirmed by direct reproduction: a real
+// repo with real commits returned `{commits: [], has_more: false}` seconds
+// after being added, and had real commits moments later once the clone
+// actually finished. Poll instead of a single one-shot check.
+const COMMIT_POLL_TIMEOUT_MS = 90_000;
 
 async function resolveCommitSha(
   owner: string,
@@ -147,18 +178,26 @@ async function resolveCommitSha(
   sessionApiKey: string | null,
 ): Promise<string> {
   const gitPath = getGitPath(`${owner}/${repo}`, workingDir);
-  const commitsPage = await AgentServerGitService.getGitCommits(
-    conversationUrl,
-    sessionApiKey,
-    gitPath,
-  );
-  const commitSha = commitsPage?.commits[0]?.sha;
-  if (!commitSha) {
-    throw new Error(
-      "Couldn't resolve a commit for this repository — it may not have any commits yet.",
+  const deadline = Date.now() + COMMIT_POLL_TIMEOUT_MS;
+
+  for (;;) {
+    const commitsPage = await AgentServerGitService.getGitCommits(
+      conversationUrl,
+      sessionApiKey,
+      gitPath,
+    );
+    const commitSha = commitsPage?.commits[0]?.sha;
+    if (commitSha) return commitSha;
+
+    if (Date.now() >= deadline) {
+      throw new Error(
+        "Couldn't resolve a commit for this repository after waiting for the clone to finish — it may not have any commits yet, or the clone may have failed. Check the conversation for details.",
+      );
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, COMMIT_POLL_INTERVAL_MS),
     );
   }
-  return commitSha;
 }
 
 async function resolveSnapshot(
