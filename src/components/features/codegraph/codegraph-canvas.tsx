@@ -158,6 +158,23 @@ function CodeGraphCanvasInner({
     [nodes],
   );
 
+  // A single click drills straight into any node with children (subsystem →
+  // module → file → symbol), matching the vendored reference dashboard's own
+  // click-to-navigate convention — no extra "Explore" step required. Leaf
+  // nodes (symbols/functions, `childCount === 0`) have nothing to drill into,
+  // so a click there selects instead, showing real source in the side panel.
+  const handleNodeClick = React.useCallback(
+    (nodeId: string) => {
+      const target = nodeById.get(nodeId);
+      if (target && target.childCount > 0) {
+        onDrillDown(nodeId);
+      } else {
+        onSelect(nodeId);
+      }
+    },
+    [nodeById, onDrillDown, onSelect],
+  );
+
   // Styling is applied here rather than baked into layout state so search and
   // selection stay instant.
   const styledNodes = React.useMemo<Node<CustomNodeData>[]>(
@@ -189,7 +206,7 @@ function CodeGraphCanvasInner({
             incomingCount: degrees.incoming.get(node.id) ?? 0,
             outgoingCount: degrees.outgoing.get(node.id) ?? 0,
             tags: node.tags,
-            onNodeClick: onSelect,
+            onNodeClick: handleNodeClick,
           } satisfies CustomNodeData,
         };
       }),
@@ -201,7 +218,7 @@ function CodeGraphCanvasInner({
       downstream,
       highlightedIds,
       degrees,
-      onSelect,
+      handleNodeClick,
     ],
   );
 
