@@ -19,6 +19,7 @@ import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
 import { OpenWorkspaceDialog } from "#/components/features/home/open-workspace-dialog";
 import { OpenRepositoryDialog } from "#/components/features/home/open-repository-dialog";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
 import { ProvisioningCard } from "#/components/features/kt-video/provisioning-card";
 import type { LocalWorkspace } from "#/types/workspace";
 import type { Branch, GitRepository } from "#/types/git";
@@ -336,7 +337,13 @@ function AddRepositoryTrigger() {
   const { navigate } = useNavigation();
   const { backend } = useActiveBackend();
   const isLocal = backend.kind === "local";
+  const canPickGithubRepo = isLocal && isLocalGithubConnected();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogModeOverride, setDialogModeOverride] = useState<
+    "workspace" | "repository" | null
+  >(null);
+  const dialogMode =
+    dialogModeOverride ?? (canPickGithubRepo ? "repository" : "workspace");
   const { mutateAsync: createConversation } = useCreateConversation();
 
   const startProvisioning = useKnowledgeStore((s) => s.startProvisioning);
@@ -438,7 +445,10 @@ function AddRepositoryTrigger() {
     <>
       <button
         type="button"
-        onClick={() => setIsDialogOpen(true)}
+        onClick={() => {
+          setDialogModeOverride(null);
+          setIsDialogOpen(true);
+        }}
         data-testid="kt-add-repository-button"
         className="ame-btn-primary ame-btn-sm flex items-center gap-1.5"
       >
@@ -446,17 +456,41 @@ function AddRepositoryTrigger() {
         {t(I18nKey.KT$ADD_REPOSITORY)}
       </button>
 
-      {isLocal ? (
+      {dialogMode === "workspace" ? (
         <OpenWorkspaceDialog
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           onConfirm={handleWorkspaceConfirm}
+          footer={
+            canPickGithubRepo ? (
+              <button
+                type="button"
+                data-testid="switch-to-repository-picker"
+                onClick={() => setDialogModeOverride("repository")}
+                className="w-full text-center text-xs text-[var(--oh-muted)] hover:text-white hover:underline underline-offset-2"
+              >
+                {t(I18nKey.CONNECTIONS$SWITCH_TO_REPOSITORY)}
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <OpenRepositoryDialog
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           onConfirm={handleRepositoryConfirm}
+          footer={
+            isLocal ? (
+              <button
+                type="button"
+                data-testid="switch-to-workspace-picker"
+                onClick={() => setDialogModeOverride("workspace")}
+                className="w-full text-center text-xs text-[var(--oh-muted)] hover:text-white hover:underline underline-offset-2"
+              >
+                {t(I18nKey.CONNECTIONS$SWITCH_TO_WORKSPACE)}
+              </button>
+            ) : undefined
+          }
         />
       )}
     </>

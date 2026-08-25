@@ -2644,5 +2644,7 @@
   "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Enterprise-vert",
   "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
   "CONNECTIONS$GITHUB_LABEL": "GitHub",
-  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com",
+  "CONNECTIONS$SWITCH_TO_WORKSPACE": "Bla gjennom en lokal mappe i stedet",
+  "CONNECTIONS$SWITCH_TO_REPOSITORY": "Bla gjennom et GitHub-repositorium i stedet"
 }

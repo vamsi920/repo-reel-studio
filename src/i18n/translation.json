@@ -44980,5 +44980,39 @@
     "uk": "github.mycompany.com",
     "zh-CN": "github.mycompany.com",
     "zh-TW": "github.mycompany.com"
+  },
+  "CONNECTIONS$SWITCH_TO_WORKSPACE": {
+    "ar": "تصفح مجلدًا محليًا بدلاً من ذلك",
+    "ca": "Explora una carpeta local en el seu lloc",
+    "de": "Stattdessen einen lokalen Ordner durchsuchen",
+    "en": "Browse a local folder instead",
+    "es": "Explorar una carpeta local en su lugar",
+    "fr": "Parcourir un dossier local à la place",
+    "it": "Sfoglia invece una cartella locale",
+    "ja": "代わりにローカルフォルダを参照",
+    "ko-KR": "대신 로컬 폴더 찾아보기",
+    "no": "Bla gjennom en lokal mappe i stedet",
+    "pt": "Procurar uma pasta local em vez disso",
+    "tr": "Bunun yerine yerel bir klasöre göz at",
+    "uk": "Натомість переглянути локальну папку",
+    "zh-CN": "改为浏览本地文件夹",
+    "zh-TW": "改為瀏覽本機資料夾"
+  },
+  "CONNECTIONS$SWITCH_TO_REPOSITORY": {
+    "ar": "تصفح مستودع GitHub بدلاً من ذلك",
+    "ca": "Explora un repositori de GitHub en el seu lloc",
+    "de": "Stattdessen ein GitHub-Repository durchsuchen",
+    "en": "Browse a GitHub repository instead",
+    "es": "Explorar un repositorio de GitHub en su lugar",
+    "fr": "Parcourir un dépôt GitHub à la place",
+    "it": "Sfoglia invece un repository GitHub",
+    "ja": "代わりにGitHubリポジトリを参照",
+    "ko-KR": "대신 GitHub 저장소 찾아보기",
+    "no": "Bla gjennom et GitHub-repositorium i stedet",
+    "pt": "Procurar um repositório do GitHub em vez disso",
+    "tr": "Bunun yerine bir GitHub deposuna göz at",
+    "uk": "Натомість переглянути репозиторій GitHub",
+    "zh-CN": "改为浏览 GitHub 仓库",
+    "zh-TW": "改為瀏覽 GitHub 儲存庫"
   }
 }

@@ -20,6 +20,7 @@ import { Branch, GitRepository } from "#/types/git";
 import { Provider } from "#/types/settings";
 import { LocalWorkspace } from "#/types/workspace";
 import { I18nKey } from "#/i18n/declaration";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
 import {
   displayErrorToast,
   TOAST_OPTIONS,
@@ -41,8 +42,17 @@ export function HomeChatLauncher() {
   const { backend } = useActiveBackend();
   const { navigate } = useNavigation();
   const isLocal = backend.kind === "local";
+  // Local backend + a connected GitHub account: default to the repo picker
+  // instead of the local-folder picker (both stay reachable via the
+  // dialogs' cross-link footer below).
+  const canPickGithubRepo = isLocal && isLocalGithubConnected();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogModeOverride, setDialogModeOverride] = useState<
+    "workspace" | "repository" | null
+  >(null);
+  const dialogMode =
+    dialogModeOverride ?? (canPickGithubRepo ? "repository" : "workspace");
   const [pendingWorkspace, setPendingWorkspace] =
     useState<LocalWorkspace | null>(null);
   const [pendingRepository, setPendingRepository] =
@@ -71,9 +81,11 @@ export function HomeChatLauncher() {
     ? getWorkspacesUnsupportedMessage(workspacesError, t)
     : null;
 
-  const hasSelection = isLocal
-    ? !!pendingWorkspace
-    : !!pendingRepository && !!pendingBranch;
+  // Not keyed off `isLocal`/`dialogMode`: with GitHub connected on a local
+  // backend, either a workspace OR a repository can end up selected via the
+  // dialogs' cross-link switch, so check what's actually populated.
+  const hasSelection =
+    !!pendingWorkspace || (!!pendingRepository && !!pendingBranch);
 
   const handleSubmit = (message: string) => {
     const trimmed = message.trim();
@@ -100,13 +112,13 @@ export function HomeChatLauncher() {
       query: hasAttachments ? undefined : trimmed || undefined,
       entryPoint: "home_chat_launcher",
     };
-    if (isLocal && pendingWorkspace) {
+    if (pendingWorkspace) {
       variables = {
         ...variables,
         workingDir: pendingWorkspace.path,
         workspaceMode,
       };
-    } else if (!isLocal && pendingRepository && pendingBranch) {
+    } else if (pendingRepository && pendingBranch) {
       variables = {
         ...variables,
         repository: {
@@ -248,8 +260,13 @@ export function HomeChatLauncher() {
             />
           ) : (
             <OpenLauncherButton
-              kind={isLocal ? "local" : "cloud"}
-              onClick={() => setIsDialogOpen(true)}
+              kind={dialogMode === "workspace" ? "local" : "cloud"}
+              onClick={() => {
+                // Re-derive the default each time the dialog opens fresh, in
+                // case the GitHub connection status changed since last open.
+                setDialogModeOverride(null);
+                setIsDialogOpen(true);
+              }}
               disabled={isCreating || Boolean(workspacesUnsupportedMessage)}
               disabledTooltip={workspacesUnsupportedMessage}
             />
@@ -267,7 +284,7 @@ export function HomeChatLauncher() {
         </div>
       </div>
 
-      {isLocal ? (
+      {dialogMode === "workspace" ? (
         <OpenWorkspaceDialog
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
@@ -278,6 +295,18 @@ export function HomeChatLauncher() {
             setPendingProvider(null);
             setWorkspaceMode("local_repo");
           }}
+          footer={
+            canPickGithubRepo ? (
+              <button
+                type="button"
+                data-testid="switch-to-repository-picker"
+                onClick={() => setDialogModeOverride("repository")}
+                className="w-full text-center text-xs text-[var(--oh-muted)] hover:text-white hover:underline underline-offset-2"
+              >
+                {t(I18nKey.CONNECTIONS$SWITCH_TO_REPOSITORY)}
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <OpenRepositoryDialog
@@ -290,6 +319,18 @@ export function HomeChatLauncher() {
             setPendingWorkspace(null);
             setWorkspaceMode("local_repo");
           }}
+          footer={
+            isLocal ? (
+              <button
+                type="button"
+                data-testid="switch-to-workspace-picker"
+                onClick={() => setDialogModeOverride("workspace")}
+                className="w-full text-center text-xs text-[var(--oh-muted)] hover:text-white hover:underline underline-offset-2"
+              >
+                {t(I18nKey.CONNECTIONS$SWITCH_TO_WORKSPACE)}
+              </button>
+            ) : undefined
+          }
         />
       )}
 

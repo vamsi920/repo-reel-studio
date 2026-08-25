@@ -203,16 +203,23 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
     );
   };
 
-  // Local backends never use the remote-repo "Connect Repo" CTA, so suppress the
-  // empty-state button there. A repo or workspace label inferred from local git
-  // metadata is still informational and stays visible.
+  // Local backends historically never used the remote-repo "Connect Repo" CTA
+  // (that flow was cloud-only) -- but a local backend with a GitHub account
+  // connected (Settings > Connections) can use it too, via the same
+  // OpenRepositoryModal cloud conversations use.
+  const isLocalGithubReady = isLocalBackend && providers.includes("github");
   const showRepoButton =
-    !isLocalBackend || !!selectedRepository || !!workspaceName;
-  // On a local backend the informational pill (e.g. workspace name, or a repo
-  // detected without a recognized provider) should not open the remote-repo
-  // modal — that flow is cloud-only. Disable the button in that case so the
-  // click is a no-op. Linkable repos render as <a> and ignore `disabled`.
-  const isRepoButtonInert = isLocalBackend && !hasRepository;
+    !isLocalBackend ||
+    isLocalGithubReady ||
+    !!selectedRepository ||
+    !!workspaceName;
+  // On a local backend with no GitHub connection, the informational pill
+  // (e.g. workspace name, or a repo detected without a recognized provider)
+  // should not open the remote-repo modal. Disable the button in that case
+  // so the click is a no-op. Linkable repos render as <a> and ignore
+  // `disabled`.
+  const isRepoButtonInert =
+    isLocalBackend && !isLocalGithubReady && !hasRepository;
 
   // True when the bar will render at least one chip (cloud always shows
   // "Open Repository"; local needs a repo or a workspace name; selected

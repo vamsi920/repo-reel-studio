@@ -12,12 +12,16 @@ interface OpenWorkspaceDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (workspace: LocalWorkspace) => void;
+  /** Optional link/button rendered below the form -- e.g. a "browse a
+   * GitHub repository instead" switch when a connection is available. */
+  footer?: React.ReactNode;
 }
 
 export function OpenWorkspaceDialog({
   isOpen,
   onClose,
   onConfirm,
+  footer,
 }: OpenWorkspaceDialogProps) {
   const { t } = useTranslation("openhands");
   const { isLoadingSettings } = useUserProviders();
@@ -47,6 +51,7 @@ export function OpenWorkspaceDialog({
             }}
           />
         </div>
+        {footer}
       </ModalBody>
     </ModalBackdrop>
   );

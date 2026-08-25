@@ -2644,5 +2644,7 @@
   "CONNECTIONS$ENTERPRISE_HOST_LABEL": "Amfitrió empresarial",
   "CONNECTIONS$ENTERPRISE_SERVER_TOGGLE": "GitHub Enterprise Server",
   "CONNECTIONS$GITHUB_LABEL": "GitHub",
-  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com"
+  "CONNECTIONS$ENTERPRISE_HOST_PLACEHOLDER": "github.mycompany.com",
+  "CONNECTIONS$SWITCH_TO_WORKSPACE": "Explora una carpeta local en el seu lloc",
+  "CONNECTIONS$SWITCH_TO_REPOSITORY": "Explora un repositori de GitHub en el seu lloc"
 }

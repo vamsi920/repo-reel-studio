@@ -17,12 +17,16 @@ interface OpenRepositoryDialogProps {
     branch: Branch;
     provider: Provider | null;
   }) => void;
+  /** Optional link/button rendered below the form -- e.g. a "browse a local
+   * folder instead" switch on deployments where both are available. */
+  footer?: React.ReactNode;
 }
 
 export function OpenRepositoryDialog({
   isOpen,
   onClose,
   onConfirm,
+  footer,
 }: OpenRepositoryDialogProps) {
   const { t } = useTranslation("openhands");
   const { isLoadingSettings } = useUserProviders();
@@ -52,6 +56,7 @@ export function OpenRepositoryDialog({
             }}
           />
         </div>
+        {footer}
       </ModalBody>
     </ModalBackdrop>
   );
