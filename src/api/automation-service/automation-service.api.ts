@@ -671,6 +671,46 @@ class AutomationService {
     return data;
   }
 
+  /**
+   * Registers a custom webhook source with the automation service (fixed
+   * platform endpoint, not part of the manifest-declared `InterfaceEndpoints`
+   * -- every deployment of this automation-service version has it). Used
+   * once per user to wire up Jira's instant triggers: `source: "jira"`
+   * becomes the shared ingress every Jira-triggered automation's own
+   * `trigger.on`/`trigger.filter` matches against.
+   */
+  static async createCustomWebhook(body: {
+    name: string;
+    source: string;
+    event_key_expr: string;
+  }): Promise<{
+    id: string;
+    org_id: string;
+    webhook_url: string;
+    webhook_secret: string | null;
+    signature_header: string;
+  }> {
+    const active = getActiveBackend();
+    const path = `${AUTOMATION_BASE_PATH}/v1/webhooks`;
+
+    if (active.backend.kind === "cloud") {
+      return callCloudProxy({
+        backend: active.backend,
+        method: "POST",
+        path,
+        body,
+        headers: await buildPinnedCloudHeaders(active),
+      });
+    }
+
+    const { data } = await localAutomationAxios.post(
+      path,
+      body,
+      await buildPinnedLocalConfig(active.backend),
+    );
+    return data;
+  }
+
   static async checkHealth(): Promise<AutomationHealthResponse> {
     const active = getActiveBackend().backend;
     const path = `${AUTOMATION_BASE_PATH}${getAutomationEndpoint("health")}`;

@@ -35,7 +35,7 @@ import type { RecommendedAutomation } from "@openhands/extensions/automations";
 import type { SetupFormField } from "./types";
 
 /** Shared closing rule so no automation fabricates work it could not do. */
-const HONESTY_RULE =
+export const HONESTY_RULE =
   "If a required integration or tool is not connected, or you cannot access the repository, stop immediately and report exactly what is missing. Never invent findings, issues, or results.";
 
 /** Shared cron trigger fields. Kept identical so schedules read the same everywhere. */

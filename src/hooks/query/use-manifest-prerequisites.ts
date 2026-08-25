@@ -15,6 +15,7 @@ import type {
   SetupIntegrationRequirement,
 } from "#/manifests/types";
 import { useSettings } from "./use-settings";
+import { useJiraConnection } from "./use-jira-connection";
 
 export interface MissingSetupIntegration {
   id: string;
@@ -44,6 +45,12 @@ export function useSetupPrerequisites(
 ): SetupPrerequisitesResult {
   const integrations = entry.requires.integrations;
   const { data: settings, isLoading } = useSettings();
+  // A real Jira OAuth connection (Settings > Connections) satisfies the
+  // "jira" integration requirement just as well as a Jira MCP server would --
+  // presets like `neodevex-jira-issue-to-pr` shouldn't warn about a missing
+  // MCP server when the OAuth connection this app now offers already works.
+  const { data: jiraConnection, isLoading: isJiraLoading } =
+    useJiraConnection();
 
   const installedServers = useMemo(
     () =>
@@ -59,12 +66,14 @@ export function useSetupPrerequisites(
         requirement,
         entry: getMarketplaceEntryById(id, catalog) ?? null,
       }))
-      .filter(
-        ({ entry: catalogEntry }) =>
+      .filter(({ id, entry: catalogEntry }) => {
+        if (id === "jira" && jiraConnection) return false;
+        return (
           !catalogEntry ||
-          !findInstalledEntryMatch(catalogEntry, installedServers),
-      );
-  }, [integrations, installedServers]);
+          !findInstalledEntryMatch(catalogEntry, installedServers)
+        );
+      });
+  }, [integrations, installedServers, jiraConnection]);
 
   const blockingIntegrations = missingIntegrations.filter(
     ({ requirement }) => requirement.required !== false,
@@ -77,6 +86,6 @@ export function useSetupPrerequisites(
     blockingIntegrations,
     warningIntegrations,
     isBlocked: blockingIntegrations.length > 0,
-    isLoading,
+    isLoading: isLoading || isJiraLoading,
   };
 }
