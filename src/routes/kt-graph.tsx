@@ -18,6 +18,7 @@ import { CodeGraphToolbar } from "#/components/features/codegraph/codegraph-tool
 import { CodeGraphNodeDetails } from "#/components/features/codegraph/codegraph-node-details";
 import {
   CodeGraphAnalyzerError,
+  codegraphStoragePrefix,
   openExistingAnalysis,
   runAnalysis,
   type AnalysisHandle,
@@ -110,16 +111,48 @@ function KtGraph() {
         repositoryId: snapshot.repositoryId,
         commitSha: snapshot.commitSha,
       });
+
+      // A cold-rehydrated (Supabase) Docs entry has real content but
+      // `localPath: ""` and no live session -- confirmed real: without this
+      // guard, `runAnalysis` (needed whenever no cached graph exists yet
+      // for this commit) tried to mkdir a workspace-relative path with an
+      // empty root, producing a confusing "/.neodevex: Read-only file
+      // system" error instead of a clear one. Same scope boundary as Watch
+      // KT: analysis needs a live sandbox to actually run in.
+      if (
+        !snapshot.localPath ||
+        !knowledgeState?.conversationUrl ||
+        !knowledgeState?.sessionApiKey
+      ) {
+        useCodeGraphStore
+          .getState()
+          .setError(
+            analysisKey,
+            "Open this repository's conversation to build the code graph — analysis needs a live workspace session.",
+          );
+        return;
+      }
       const context = {
         workspaceId,
         repositoryId: snapshot.repositoryId,
         commitSha: snapshot.commitSha,
       };
+      // Resolved up front (not just after a successful run) so the Storage
+      // fast path in `openExistingAnalysis` works even without a live
+      // sandbox -- that's the whole point of mirroring to Storage.
+      const persistenceIds = await resolvePersistenceIds({
+        owner: snapshot.owner,
+        repo: snapshot.repo,
+        branch: snapshot.branch,
+        localPath: snapshot.localPath,
+        backendId: backend.id,
+      });
       const shared = {
         snapshot,
         conversationUrl: knowledgeState?.conversationUrl ?? null,
         sessionApiKey: knowledgeState?.sessionApiKey ?? null,
         workspaceId,
+        storageIds: persistenceIds,
       };
 
       try {
@@ -163,26 +196,24 @@ function KtGraph() {
 
         // Fire-and-forget: records that a graph exists for this commit so a
         // later cold page load can auto-check instead of always showing
-        // "Build code graph". The real payload stays on disk (workspaceId
-        // here) -- this row is metadata only.
-        void resolvePersistenceIds({
-          owner: snapshot.owner,
-          repo: snapshot.repo,
-          branch: snapshot.branch,
-          localPath: snapshot.localPath,
-          backendId: backend.id,
-        }).then((ids) => {
-          if (!ids) return;
+        // "Build code graph". `outputPath` points at the Storage mirror
+        // `runAnalysis` just wrote (when `persistenceIds` resolved) -- that's
+        // the payload a future visit actually reads, live sandbox or not.
+        if (persistenceIds) {
           void codegraphPersistenceRepository.saveSnapshot({
-            workspaceId: ids.workspaceId,
-            repositoryUuid: ids.repositoryUuid,
+            workspaceId: persistenceIds.workspaceId,
+            repositoryUuid: persistenceIds.repositoryUuid,
             commitSha: snapshot.commitSha,
             nodeCount: result.root.nodes.length,
             edgeCount: result.root.edges.length,
             analyzerVersion: "understand-anything",
-            outputPath: `.neodevex/codegraph/out/${snapshot.commitSha}`,
+            outputPath: codegraphStoragePrefix(
+              persistenceIds.workspaceId,
+              persistenceIds.repositoryUuid,
+              snapshot.commitSha,
+            ),
           });
-        });
+        }
       } catch (error) {
         const reason =
           error instanceof CodeGraphAnalyzerError
@@ -199,15 +230,12 @@ function KtGraph() {
 
   // On a fresh page load (no in-memory graph state yet), check whether a
   // graph already exists for this commit before showing "Build code graph".
-  // `openExistingAnalysis` (via `analyze(false)`) hard-requires a live
-  // agent-server session since the payload only lives in the sandbox file
-  // tree, so this only fires when one is present -- same scope boundary as
-  // Watch KT, not a bug.
+  // `openExistingAnalysis` (via `analyze(false)`) checks the Supabase Storage
+  // mirror first, so this can succeed even without a live agent-server
+  // session -- it only falls back to needing one if that commit was analyzed
+  // before Storage mirroring existed, or the mirror upload failed.
   React.useEffect(() => {
     if (!snapshot || !key || state) return;
-    if (!knowledgeState?.conversationUrl || !knowledgeState?.sessionApiKey) {
-      return;
-    }
     let cancelled = false;
     (async () => {
       const ids = await resolvePersistenceIds({

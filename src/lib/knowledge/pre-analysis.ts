@@ -35,7 +35,16 @@ export async function ensureCodeEvidence(
   sessionApiKey: string | null,
 ): Promise<EvidencePass | null> {
   const workspaceId = workspaceIdForSnapshot(snapshot);
-  const shared = { snapshot, conversationUrl, sessionApiKey, workspaceId };
+  // No real Supabase ids resolved here -- this is a best-effort internal
+  // evidence pass, not the user-facing CodeGraph tab, so it always goes
+  // through the sandbox rather than the Storage mirror.
+  const shared = {
+    snapshot,
+    conversationUrl,
+    sessionApiKey,
+    workspaceId,
+    storageIds: null,
+  };
   try {
     const handle =
       (await openExistingAnalysis(shared)) ??
@@ -70,5 +79,6 @@ export function upgradeCodeEvidenceInBackground(
     sessionApiKey,
     workspaceId,
     hints: toSubsystemHints(knowledge),
+    storageIds: null,
   }).catch(() => {});
 }

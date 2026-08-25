@@ -14,6 +14,7 @@
  */
 import { RemoteWorkspace } from "@openhands/typescript-client/workspace/remote-workspace";
 import { getAgentServerClientOptions } from "#/api/agent-server-client-options";
+import { artifactStore } from "#/lib/data-platform/artifact-store";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 import type {
   CodeGraphLevel,
@@ -234,6 +235,14 @@ export interface RunAnalysisOptions {
   onProgress?: (progress: AnalyzerProgress) => void;
   /** Analyzer wall-clock budget, in seconds. */
   timeoutSeconds?: number;
+  /**
+   * Real Supabase workspace/repository row ids, when resolvable. Enables the
+   * Storage fast path (mirror-after-analyze, read-without-a-sandbox on
+   * revisit). `null` when Supabase isn't configured or the ids couldn't be
+   * resolved — analysis still works, it just always goes through the
+   * sandbox, same as before this existed.
+   */
+  storageIds: { workspaceId: string; repositoryUuid: string } | null;
 }
 
 export interface AnalysisHandle {
@@ -272,6 +281,92 @@ async function readJson<T>(
   }
 }
 
+const ARTIFACT_BUCKET = "workspace-artifacts";
+
+/**
+ * Where a commit's graph lives in Supabase Storage, mirroring the sandbox's
+ * `out/<commitSha>` layout. `workspaceId`/`repositoryId` here must be the real
+ * Supabase row ids (`PersistenceIds`), not `workspaceIdForSnapshot()`'s
+ * sandbox-path stand-in — the bucket's RLS checks path segment 1 against
+ * `is_workspace_member`.
+ */
+export function codegraphStoragePrefix(
+  workspaceId: string,
+  repositoryId: string,
+  commitSha: string,
+): string {
+  return `${workspaceId}/codegraph/${repositoryId}/${commitSha}`;
+}
+
+async function readJsonFromStorage<T>(path: string): Promise<T | null> {
+  try {
+    const url = await artifactStore.getSignedUrl(ARTIFACT_BUCKET, path);
+    if (!url) return null;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Best-effort mirror of a finished analysis into Storage so a later visit can
+ * render the graph without a live sandbox. Never throws — a failed upload
+ * just means the next `openExistingAnalysis` falls back to the sandbox (or,
+ * if that's gone too, to re-analysis) instead of the Storage fast path.
+ */
+async function uploadArtifactsToStorage(
+  workspace: RemoteWorkspace,
+  dir: string,
+  prefix: string,
+): Promise<void> {
+  try {
+    const listing = await workspace.executeCommand(
+      `find ${quote(dir)} -type f`,
+      undefined,
+      60,
+    );
+    if (listing.exit_code !== 0) return;
+    const files = (listing.stdout ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    await Promise.all(
+      files.map(async (file) => {
+        const relative = file.slice(dir.length + 1);
+        try {
+          const text = await workspace.downloadAsText(file);
+          await artifactStore.put(
+            ARTIFACT_BUCKET,
+            `${prefix}/${relative}`,
+            new Blob([text], { type: "application/json" }),
+            { contentType: "application/json" },
+          );
+        } catch {
+          // One shard failing to mirror shouldn't stop the others.
+        }
+      }),
+    );
+  } catch {
+    // Storage mirroring is an optimization, not a requirement for analysis
+    // to succeed.
+  }
+}
+
+function mapSearchEntries(
+  raw: [string, string, string, string, string, string][],
+): SearchEntry[] {
+  return raw.map(([id, name, type, filePath, parentId, level]) => ({
+    id,
+    name,
+    type,
+    filePath,
+    parentId,
+    level,
+  }));
+}
+
 /**
  * Opens an already-analyzed graph for this exact commit, or `null` if none
  * exists. Lets a revisit skip re-analysis without ever falling back to a graph
@@ -280,6 +375,34 @@ async function readJson<T>(
 export async function openExistingAnalysis(
   options: Omit<RunAnalysisOptions, "hints" | "onProgress">,
 ): Promise<AnalysisHandle | null> {
+  const { snapshot, storageIds } = options;
+
+  if (storageIds) {
+    const prefix = codegraphStoragePrefix(
+      storageIds.workspaceId,
+      storageIds.repositoryUuid,
+      snapshot.commitSha,
+    );
+    const meta = await readJsonFromStorage<CodeGraphMeta>(
+      `${prefix}/meta.json`,
+    );
+    const root = meta
+      ? await readJsonFromStorage<CodeGraphLevelPayload>(
+          `${prefix}/levels/root.json`,
+        )
+      : null;
+    if (meta && root) {
+      return makeStorageHandle(
+        prefix,
+        snapshot,
+        options.conversationUrl,
+        options.sessionApiKey,
+        meta,
+        root,
+      );
+    }
+  }
+
   const workspace = workspaceFor(
     options.snapshot,
     options.conversationUrl,
@@ -294,6 +417,47 @@ export async function openExistingAnalysis(
   );
   if (!root) return null;
   return makeHandle(workspace, options.snapshot, meta, root);
+}
+
+function makeStorageHandle(
+  prefix: string,
+  snapshot: RepositorySnapshot,
+  conversationUrl: string | null,
+  sessionApiKey: string | null,
+  meta: CodeGraphMeta,
+  root: CodeGraphLevelPayload,
+): AnalysisHandle {
+  return {
+    meta,
+    root,
+    loadLevel: (parentId) =>
+      readJsonFromStorage<CodeGraphLevelPayload>(
+        `${prefix}/levels/${shardName(parentId)}.json`,
+      ),
+    loadSearchIndex: async () => {
+      const raw = await readJsonFromStorage<
+        [string, string, string, string, string, string][]
+      >(`${prefix}/search.json`);
+      return raw ? mapSearchEntries(raw) : [];
+    },
+    readSource: async (filePath) => {
+      // Raw source is never mirrored to Storage (only the derived graph is)
+      // — this still needs a live sandbox, and degrades to structural facts
+      // when there isn't one, same as the sandbox-backed handle below.
+      try {
+        const workspace = workspaceFor(
+          snapshot,
+          conversationUrl,
+          sessionApiKey,
+        );
+        return await workspace.downloadAsText(
+          inWorkspace(snapshot.localPath, filePath),
+        );
+      } catch {
+        return null;
+      }
+    },
+  };
 }
 
 function makeHandle(
@@ -315,15 +479,7 @@ function makeHandle(
       const raw = await readJson<
         [string, string, string, string, string, string][]
       >(workspace, `${dir}/search.json`);
-      if (!raw) return [];
-      return raw.map(([id, name, type, filePath, parentId, level]) => ({
-        id,
-        name,
-        type,
-        filePath,
-        parentId,
-        level,
-      }));
+      return raw ? mapSearchEntries(raw) : [];
     },
     readSource: async (filePath) => {
       try {
@@ -352,6 +508,7 @@ export async function runAnalysis(
     hints,
     onProgress,
     timeoutSeconds = 900,
+    storageIds,
   } = options;
 
   const workspace = workspaceFor(snapshot, conversationUrl, sessionApiKey);
@@ -421,6 +578,18 @@ export async function runAnalysis(
     throw new CodeGraphAnalyzerError(
       "analysis",
       "analyzer finished but produced no readable graph",
+    );
+  }
+
+  if (storageIds) {
+    await uploadArtifactsToStorage(
+      workspace,
+      dir,
+      codegraphStoragePrefix(
+        storageIds.workspaceId,
+        storageIds.repositoryUuid,
+        snapshot.commitSha,
+      ),
     );
   }
 
