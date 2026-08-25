@@ -60,16 +60,14 @@ function makeFakeClient(config: {
       insert: (_payload: unknown) => {
         calls.push(`${table}.insert`);
         return {
-          select: (_cols: string) => ({
-            single: async () => {
-              calls.push(`${table}.single`);
-              if (table === "orgs") return config.orgInsert;
-              return fail("unexpected insert.select().single()");
-            },
-          }),
-          // Bare insert with no chained select (org_members path).
+          // Bare insert, no chained .select() -- `orgs` and `org_members`
+          // both use this shape now (chaining .select() on `orgs` is
+          // exactly the bug that made the real org bootstrap silently fail
+          // for every user: its SELECT policy can't be satisfied until the
+          // org_members self-join row exists yet).
           then: (resolve: (r: FakeResult) => void) => {
-            if (table === "org_members") resolve(config.orgMemberInsert);
+            if (table === "orgs") resolve(config.orgInsert);
+            else if (table === "org_members") resolve(config.orgMemberInsert);
             else resolve(fail("unexpected bare insert"));
           },
         };
@@ -172,7 +170,6 @@ describe("ensureWorkspaceAccess", () => {
       "org_members.select",
       "org_members.maybeSingle",
       "orgs.insert",
-      "orgs.single",
       "org_members.insert",
       "workspaces.upsert",
       "workspace_members.upsert",
@@ -215,20 +212,31 @@ describe("ensureWorkspaceAccess", () => {
     expect(calls).not.toContain("workspaces.upsert");
   });
 
-  it("short-circuits when org creation fails", async () => {
+  it("short-circuits when org creation fails, and logs it instead of failing silently", async () => {
     const { client } = makeFakeClient({
       session: { userId: "user-1" },
       signInResult: "ok",
       orgMembership: null,
-      orgInsert: fail(),
+      orgInsert: fail("42501: new row violates row-level security policy"),
       orgMemberInsert: ok(),
       workspaceUpsert: ok(),
       workspaceMemberUpsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     expect(await ensureWorkspaceAccess(INPUT)).toBe(false);
+    // The whole point of this fix: a real, permanent failure must never be
+    // silently indistinguishable from "Supabase isn't configured."
+    expect(consoleError).toHaveBeenCalledWith(
+      "[repository-identity] orgs insert failed",
+      expect.anything(),
+    );
+
+    consoleError.mockRestore();
   });
 
   it("short-circuits when the workspace upsert fails", async () => {
