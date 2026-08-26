@@ -1,6 +1,14 @@
 # Fly.io configuration for the Agent Server (agent-server + automation,
 # unified behind docker/Dockerfile's ingress proxy). Distinct from fly.toml,
 # which targets the separate ingestion backend (app "repo-reel-backend").
+#
+# This app's LOCAL_BACKEND_API_KEY secret (set via `fly secrets set`, not
+# tracked here) MUST match the Netlify frontend's VITE_SESSION_API_KEY env
+# var (see netlify.toml) -- nothing keeps the two in sync automatically. If
+# you ever rotate this secret, update Netlify's value too and trigger a
+# fresh Netlify build, or every authenticated call from production silently
+# starts 401ing while unauthenticated endpoints (e.g. /api/settings) keep
+# working fine, which looks like random breakage rather than one drifted key.
 app = "neo-agent-server"
 primary_region = "iad"
 

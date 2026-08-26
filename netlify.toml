@@ -13,6 +13,14 @@
   # for DeepWiki (unreachable from a production browser).
   VITE_BACKEND_BASE_URL = "https://neo-agent-server.fly.dev"
   VITE_DEEPWIKI_SERVICE_URL = "https://neo-deepwiki.fly.dev"
+  # VITE_SESSION_API_KEY is set as a Netlify dashboard env var, not here (it's
+  # a live credential). It MUST match the Fly app's LOCAL_BACKEND_API_KEY
+  # secret (see fly.agent-server.toml) -- nothing keeps the two in sync
+  # automatically. If either is ever rotated, update the other and trigger a
+  # fresh Netlify build (env var changes alone don't re-bake an already-built
+  # bundle). A mismatch here causes every authenticated agent-server/
+  # automation-service call from production to 401 while unauthenticated
+  # endpoints keep working, which looks like random breakage.
 
 [[redirects]]
   from = "/*"
