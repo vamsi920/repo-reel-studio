@@ -6,6 +6,8 @@ import type { GitRepository } from "#/types/git";
 import type { Provider } from "#/types/settings";
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useActiveBackend } from "#/contexts/active-backend-context";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
+import { isCloudActive } from "#/api/backend-registry/active-store";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { useResolvedWorkspaces } from "#/hooks/query/use-resolved-workspaces";
 import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
@@ -149,7 +151,7 @@ export function ProactivationSetupWizard({
   // `GitService` returns an empty page by design, so the dropdown would list
   // nothing and the wizard could never be completed. Fall back to typing
   // owner/repo, exactly as `manifest-form-field.tsx` does for repo-picker.
-  const canListRepositories = useActiveBackend().backend.kind === "cloud";
+  const canListRepositories = isCloudActive() || isLocalGithubConnected();
   const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
