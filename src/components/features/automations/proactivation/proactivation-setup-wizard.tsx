@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { I18nKey } from "#/i18n/declaration";
@@ -149,7 +150,7 @@ export function ProactivationSetupWizard({
   // `GitService` returns an empty page by design, so the dropdown would list
   // nothing and the wizard could never be completed. Fall back to typing
   // owner/repo, exactly as `manifest-form-field.tsx` does for repo-picker.
-  const canListRepositories = useActiveBackend().backend.kind === "cloud";
+  const canListRepositories = useActiveBackend().backend.kind === "cloud" || isLocalGithubConnected();
   const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
