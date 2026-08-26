@@ -6,6 +6,7 @@ import type { GitRepository } from "#/types/git";
 import type { Provider } from "#/types/settings";
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useActiveBackend } from "#/contexts/active-backend-context";
+import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { useResolvedWorkspaces } from "#/hooks/query/use-resolved-workspaces";
 import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
@@ -145,11 +146,15 @@ export function ProactivationSetupWizard({
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     providers[0] ?? null,
   );
-  // Repository search is a cloud-backend capability: on a local backend
-  // `GitService` returns an empty page by design, so the dropdown would list
-  // nothing and the wizard could never be completed. Fall back to typing
-  // owner/repo, exactly as `manifest-form-field.tsx` does for repo-picker.
-  const canListRepositories = useActiveBackend().backend.kind === "cloud";
+  // Repository search only works on a cloud backend OR a local backend with
+  // GitHub connected via Settings -> Connections (see `isLocalGithubActive`
+  // in `git-service.api.ts`, which `GitRepoDropdown` relies on under the
+  // hood). Without either, `GitService` returns an empty page by design, so
+  // the dropdown would list nothing and the wizard could never be completed
+  // -- fall back to typing owner/repo, exactly as `manifest-form-field.tsx`
+  // does for repo-picker.
+  const canListRepositories =
+    useActiveBackend().backend.kind === "cloud" || isLocalGithubConnected();
   const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
@@ -244,6 +249,11 @@ export function ProactivationSetupWizard({
           trigger: { type: "cron", schedule, timezone },
           timezone,
           enabled: true,
+          // Without an explicit timeout this silently runs at the service's
+          // 600s default -- too short for a real investigate/fix/test/PR
+          // cycle. "create-pr" pushes and opens a PR on top of everything
+          // "prepare-fix" already does, so it gets a little more room.
+          timeout: autonomyLevel === "create-pr" ? 1500 : 1200,
         };
 
         const created = await AutomationService.createAutomation(spec);

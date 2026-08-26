@@ -24,6 +24,7 @@ import {
 } from "#/hooks/query/use-automations";
 import { useAutomationHealth } from "#/hooks/query/use-automation-health";
 import { useActiveBackend } from "#/contexts/active-backend-context";
+import { useNavigation } from "#/context/navigation-context";
 import { SearchInput } from "#/components/features/automations/search-input";
 import { AutomationGroup } from "#/components/features/automations/automation-group";
 import { AutomationViewToggle } from "#/components/features/automations/automation-view-toggle";
@@ -79,6 +80,7 @@ const PAGE_SIZE = 50;
 
 export default function AutomationsList() {
   const { t } = useTranslation("openhands");
+  const { navigate } = useNavigation();
   const interfaceCopy = getInterfaceCopy();
   // Admission is stable for the session; memo just keeps one identity.
   const dashboardSpec = useMemo(() => getDashboardSpec(), []);
@@ -373,6 +375,15 @@ export default function AutomationsList() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <BrandButton
+            type="button"
+            variant="secondary"
+            testId="automations-pull-requests-link"
+            className="whitespace-nowrap"
+            onClick={() => navigate?.("/automations/pull-requests")}
+          >
+            {t(I18nKey.AUTOMATIONS$PULL_REQUESTS$NAV_LABEL)}
+          </BrandButton>
           <BrandButton
             type="button"
             variant="secondary"

@@ -35,6 +35,9 @@ export default [
     route("oauth/device/verify", "routes/device-verify.tsx"),
     route("automations", "routes/automations-list.tsx"),
     route("automations/templates", "routes/automation-templates.tsx"),
+    // Must stay ahead of the `:automationId` catch-all below, or a literal
+    // "pull-requests" segment would be swallowed as an automation id instead.
+    route("automations/pull-requests", "routes/automation-pull-requests.tsx"),
     route("automations/new/:automationId", "routes/automation-setup-route.tsx"),
     route("automations/:automationId", "routes/automation-detail.tsx"),
     route("security", "routes/security.tsx"),

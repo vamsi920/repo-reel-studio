@@ -33,10 +33,13 @@
 
 import type { RecommendedAutomation } from "@openhands/extensions/automations";
 import type { SetupFormField } from "./types";
+import {
+  branchNamingRule,
+  HONESTY_RULE,
+  PR_BODY_RULE,
+} from "./automation-prompt-rules";
 
-/** Shared closing rule so no automation fabricates work it could not do. */
-export const HONESTY_RULE =
-  "If a required integration or tool is not connected, or you cannot access the repository, stop immediately and report exactly what is missing. Never invent findings, issues, or results.";
+export { HONESTY_RULE, PR_BODY_RULE } from "./automation-prompt-rules";
 
 /** Shared cron trigger fields. Kept identical so schedules read the same everywhere. */
 function cronTrigger(
@@ -93,10 +96,10 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       version: "1.0",
       mode: "direct",
       form: {
-        note: "Proactivation finishes a run with 'No meaningful improvements found' when nothing is worth changing. That is a successful run.",
+        note: "Runs up to six times a day. Most runs finish with 'No meaningful improvements found' when nothing is worth changing -- that is a successful run, not a shortfall.",
         triggers: {
           cron: cronTrigger(
-            "0 9 * * 1-5",
+            "0 */4 * * *",
             "How often Neo reviews the repository.",
           ),
         },
@@ -144,7 +147,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "You are running a Proactivation pass for {{form.repository}} on behalf of the user who enabled it.\n\n1. Load repository context and understand the current state before looking for problems.\n2. Check '.neodevex/memory' for previously dismissed candidates and previous Proactivation fixes. Do not re-propose something already dismissed, and check 'gh pr list' and existing branches so you never duplicate open work.\n3. Look for improvement candidates only in this area selection: {{form.watchAreas}}.\n4. Rank what you find and pick the single strongest candidate. Quality beats quantity. If nothing is genuinely worth changing, end the run by stating 'No meaningful improvements found' — that is a valid, successful outcome. Never invent a vague suggestion such as 'improve code quality'; name specific files, functions or configuration and explain why it matters.\n5. Verify the candidate is a real issue before proposing anything.\n6. Report what you found, why it matters, the evidence, the suggested change, and the risk level.\n\nAutonomy level for this run is {{form.autonomyLevel}}. If it is 'recommend', do not modify any files. If it is 'prepare-fix', create an isolated branch, make the change, run the relevant tests, and leave it committed locally without pushing or opening a pull request. If it is 'create-pr', do all of that and then push the branch and open a pull request following the repository conventions. Never merge a pull request and never deploy.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("proactive-engineering"),
     },
   },
   {
@@ -205,7 +212,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "You are the continuous improvement agent for {{form.repository}}. Standing focus: {{form.focus}}\n\nEach run does a small amount of genuinely verified work, then stops cleanly so the next run can resume.\n\n1. Read '.neodevex/memory' and any notes from your previous runs to see what you already did, already proposed, and what was rejected. Check 'gh pr list' and existing branches so you never repeat open work.\n2. Choose exactly one worthwhile item that fits the standing focus. If there is nothing worth doing right now, end the run stating 'No meaningful improvements found' and stop. Do not manufacture work.\n3. Investigate it properly and confirm it is real.\n4. Apply the change policy {{form.changePolicy}}: 'recommend' means do not modify files; 'prepare-fix' means branch, change, run the relevant tests, and leave it committed locally without pushing; 'create-pr' means also push and open a pull request. Never merge and never deploy.\n5. Record what you did and what you would pick up next, so the following run continues rather than restarts.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("continuous-agent"),
     },
   },
   {
@@ -232,7 +243,7 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       form: {
         triggers: {
           cron: cronTrigger(
-            "*/15 * * * *",
+            "*/30 * * * *",
             "How often to poll for newly labelled issues.",
           ),
         },
@@ -261,7 +272,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Poll {{form.repository}} for open issues labelled '{{form.issueLabel}}' and fix up to {{form.maxIssues}} of them this run.\n\nFor each issue you take on:\n1. Read the full issue, including comments and any linked context.\n2. Skip it if a pull request or branch already addresses it — check 'gh pr list' and existing branches first, and never open a duplicate.\n3. Reproduce the problem and find the true root cause. Do not guess from the title.\n4. Make the smallest correct fix. Add or update a regression test that fails before the fix and passes after it.\n5. Run the relevant test suite and keep working until it is green. If you cannot make it green, do not open a pull request — report what blocked you.\n6. Open a pull request that explains the root cause, the fix, and the tests you ran, and links the issue so it closes on merge. Never merge it yourself.\n\nIf there are no matching issues, end the run stating that there was nothing to do. That is a successful run.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("github-issue-fixer"),
     },
   },
   {
@@ -321,7 +336,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Check {{form.repository}} for outdated and deprecated dependencies. Update scope: {{form.updateScope}}.\n\n1. Detect the ecosystem and run its outdated check. Do not assume a package manager.\n2. Check 'gh pr list' for an existing dependency update pull request and do not open a duplicate.\n3. For every candidate upgrade, read the changelog or release notes and identify breaking changes. Exclude anything outside the update scope.\n4. Apply the upgrades, then run the full relevant test suite.\n5. If tests fail, follow the policy {{form.challengeMode}}: 'fix' means investigate and repair the breakage; 'drop' means remove that dependency from the batch and re-run.\n6. Open a pull request listing each package with its old and new version, the reason it was upgraded, notable changelog entries, the tests you ran, and any risk worth a reviewer's attention. Never merge it yourself.\n\nIf everything is already current, end the run stating that no upgrades were needed.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("dependency-updater"),
     },
   },
   {
@@ -375,7 +394,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Inspect recent CI runs for the '{{form.watchBranch}}' branch of {{form.repository}}. Act on failures of kind: {{form.failureKind}}.\n\n1. List recent workflow runs and find the failing ones. If CI history is not accessible, stop and say so rather than guessing.\n2. Group failures by job and error signature so you fix a cause, not a symptom. Distinguish a genuinely flaky test from a real regression by comparing runs on the same commit.\n3. Check 'gh pr list' for an existing fix and do not duplicate it.\n4. Read the actual failure logs, reproduce the failure locally where possible, and find the root cause.\n5. Fix it, then run the relevant tests until green. A flaky test should be made deterministic, not retried or skipped, unless skipping is genuinely the right call and you explain why.\n6. Open a pull request explaining the failure, the root cause, the fix, and the evidence it is resolved. Never merge it yourself.\n\nIf CI is healthy, end the run stating that no failures needed attention.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("ci-failure-fixer"),
     },
   },
   // ── Replacements for published entries that ship no runnable setup ─────────
@@ -434,7 +457,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Poll the Jira project {{form.projectKey}} for issues in status '{{form.readyStatus}}' and implement them in {{form.repository}}.\n\n1. Use the Jira integration to list matching issues. If Jira is not connected, stop and say exactly that.\n2. For each issue, check 'gh pr list' and existing branches for the Jira key and skip anything already in progress. Never open a duplicate.\n3. Take the highest-priority unstarted issue. Read its full description and acceptance criteria. If the requirements are too ambiguous to implement safely, comment on the issue asking the specific question and move on rather than guessing.\n4. Implement the change on a branch named for the Jira key, and add tests that prove the acceptance criteria are met.\n5. Run the relevant test suite until green. If you cannot get it green, do not open a pull request; report what blocked you.\n6. Open a pull request titled with the Jira key, describing what you implemented and the tests you ran. Comment the pull request link on the Jira issue. Never merge it yourself.\n\nIf no issues match, end the run stating there was nothing ready. That is a successful run.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("jira-issue-to-pr"),
     },
   },
   {
@@ -490,7 +517,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Review the untriaged issues for the Linear team {{form.teamKey}}.\n\n1. Use the Linear integration to list issues awaiting triage. If Linear is not connected, stop and say exactly that.\n2. For each issue decide: is it a bug, a feature, or a question? Is there enough detail to act on? What priority does the described impact justify?\n3. Apply the policy {{form.triageDepth}}. With 'comment-only' do not modify any issue field; only leave a comment with your recommendation. With 'label-and-comment' set the labels and priority you determined, and comment explaining why.\n4. When an issue lacks reproduction steps, expected behaviour, or scope, ask for precisely what is missing rather than closing it.\n5. Escalate anything that needs a human product decision instead of guessing, and say why.\n\nSummarise what you triaged and what still needs a human. If the queue is empty, say so.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("linear-triage"),
     },
   },
   {
@@ -540,7 +571,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Read the recent messages in the Slack channel '{{form.channelName}}' and surface what matters: {{form.watchFor}}\n\n1. Use the Slack integration to read messages since your previous run. If Slack is not connected, stop and say exactly that.\n2. Identify only the items that genuinely match what matters. An active discussion with a clear answer is not an open item.\n3. For each open item note who raised it, when, a one-line summary, and whether anyone has responded.\n4. Post a single short digest to the channel listing the open items oldest first, and say plainly when there are none.\n\nDo not post a digest of everything that was said. Only what still needs someone.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("slack-channel-monitor"),
     },
   },
   {
@@ -599,7 +634,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Post a standup digest for {{form.repository}} to the Slack channel '{{form.channelName}}', covering the last {{form.lookbackHours}} hours.\n\n1. Read merged pull requests, notable commits, and pull requests still awaiting review in that window. If the repository or Slack is not accessible, stop and say exactly which one.\n2. Group the digest into what shipped, what is in review, and what looks stuck — a pull request open far longer than the rest of the window is stuck.\n3. Write it for people who were not watching the repository. Say what changed and why it matters, not just the pull request titles. Keep it short.\n4. Post it as a single message. If nothing merged in the window, say that plainly instead of padding the digest.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("slack-standup-digest"),
     },
   },
   {
@@ -660,7 +699,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Research this topic and write a brief: {{form.topic}}\n\nDepth: {{form.depth}}.\n\n1. Search from several different angles rather than one query, so you are not seeing a single slice of the topic. If the search integration is not connected, stop and say exactly that.\n2. Open and read the strongest sources. Do not write the brief from search snippets alone.\n3. Write the brief: what changed, why it matters, and what it implies. Cite every substantive claim with its source link.\n4. State plainly what you could not determine and where sources disagreed. Never fill a gap with a confident guess.\n5. File the brief to Notion if that integration is connected; otherwise return it in full in the run output.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("research-brief"),
     },
   },
   {
@@ -721,7 +764,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Look for recent incident channels matching '{{form.channelPattern}}' and draft a blameless retrospective for any that do not have one yet.\n\n1. Use the Slack integration to find matching channels and read the discussion. If Slack is not connected, stop and say exactly that. If there was no recent incident, end the run saying so — that is the normal, successful case.\n2. Reconstruct the timeline from the messages: when it started, how it was detected, what was tried, what actually resolved it, and when.\n3. Identify contributing causes, not a single root cause, and never attribute fault to a person. Describe what the system allowed to happen.\n4. Derive concrete follow-up actions. Each one must be specific enough to act on and say what it prevents. Vague actions such as 'improve monitoring' are not acceptable.\n5. Apply the policy {{form.fileActions}}: 'draft-only' means list the actions in the draft; 'file-issues' means also file each as an issue if that integration is connected.\n6. Mark clearly anything you inferred rather than read directly, so reviewers know what to check.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("incident-retrospective"),
     },
   },
   {
@@ -748,7 +795,7 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       form: {
         note: "Polls rather than using webhooks, so it works on a local deployment with no public endpoint.",
         triggers: {
-          cron: cronTrigger("*/10 * * * *", "How often to check for mentions."),
+          cron: cronTrigger("*/30 * * * *", "How often to check for mentions."),
         },
         args: {
           repository: repositoryField,
@@ -779,7 +826,11 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
       },
       prompt:
         "Poll {{form.repository}} for recent issue and pull request comments containing '{{form.triggerPhrase}}' and respond to each.\n\n1. List recent comments and find the ones containing the phrase. If the repository is not accessible, stop and say exactly that.\n2. Skip any comment you have already replied to — check for an existing reply from this automation in the same thread first. Never answer the same comment twice.\n3. Read the surrounding context properly: the whole issue or pull request, and the code it refers to. Answer the question that was actually asked.\n4. Apply the scope {{form.responseScope}}. With 'answer-only' never modify the repository, even if asked to. With 'answer-and-fix', when the comment asks for a change, make it on a branch, run the relevant tests, and open a pull request linked from your reply.\n5. Reply in the same thread. If you are not confident, say what you would need to be sure instead of guessing. Never merge a pull request.\n\nIf there are no new mentions, end the run stating that. That is a successful run.\n\n" +
-        HONESTY_RULE,
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("mention-responder"),
     },
   },
 ];
@@ -812,4 +863,34 @@ export const SUPERSEDES_PUBLISHED_ID: Readonly<Record<string, string>> = {
   "neodevex-research-brief": "research-brief-writer",
   "neodevex-incident-retrospective": "incident-retrospective-drafter",
   "neodevex-mention-responder": "github-repo-monitor",
+};
+
+/**
+ * Default `timeout` (seconds) for a local automation, keyed by id.
+ *
+ * The generic setup-form schema has no field type for a timeout, so none of
+ * these entries can express one through `form.args` -- `buildCreatePayload`
+ * in `automation-setup.ts` never emits a `timeout` key at all, meaning every
+ * automation silently runs at whatever the service defaults to (600s / 10
+ * min). That is too short for a real clone -> fix -> test -> PR cycle, so
+ * this is host-derived data consulted directly by `buildCreatePayload` for
+ * entries whose id appears here; a published entry without an override keeps
+ * relying on the service default, unchanged.
+ *
+ * Values are sized to the realistic shape of the task, with the schedule of
+ * every entry in this file spaced to leave a comfortable margin above its own
+ * timeout -- see the schedule table in each entry's `cronTrigger` call. An
+ * entry not listed here does no repository cloning or test running and is
+ * fine on the service default.
+ */
+export const DEFAULT_TIMEOUT_SECONDS_BY_ID: Readonly<Record<string, number>> = {
+  "neodevex-github-issue-fixer": 1200,
+  "neodevex-continuous-agent": 1200,
+  "neodevex-jira-issue-to-pr": 1200,
+  "neodevex-mention-responder": 1200,
+  "neodevex-dependency-updater": 1500,
+  "neodevex-ci-failure-fixer": 1500,
+  "neodevex-proactive-engineering": 1500,
+  "neodevex-research-brief": 900,
+  "neodevex-incident-retrospective": 900,
 };

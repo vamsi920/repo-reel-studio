@@ -9,6 +9,12 @@
  * prompt-driven in this app (`getCreatePRPrompt` in `#/utils/utils.ts`).
  */
 
+import {
+  branchNamingRule,
+  HONESTY_RULE,
+  PR_BODY_RULE,
+} from "#/manifests/automation-prompt-rules";
+
 export type ProactivationWatchArea =
   | "dependency"
   | "test"
@@ -150,7 +156,9 @@ ${areaGuidance}
 
 ${AUTONOMY_GUIDANCE[autonomyLevel]}
 
-Keep your final summary concise and evidence-based.`;
+Keep your final summary concise and evidence-based.
+
+${HONESTY_RULE} ${PR_BODY_RULE} ${branchNamingRule("proactivation")}`;
 
   return `${buildMarker(config)}\n\n${instruction}`;
 }

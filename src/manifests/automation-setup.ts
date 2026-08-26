@@ -15,6 +15,7 @@
 
 import { findAutomationCommand } from "#/utils/automation-catalog";
 import { getAutomationEndpoint } from "./automation-interface";
+import { DEFAULT_TIMEOUT_SECONDS_BY_ID } from "./local-automation-catalog";
 import { collectFields } from "./manifest-local-validation";
 import { interpolateText } from "./manifest-template";
 import type {
@@ -95,6 +96,11 @@ export function buildCreatePayload(
     name: repository ? `${entry.name} - ${repository}` : entry.name,
     prompt: interpolateText(setup.prompt, scope),
   };
+
+  const defaultTimeout = DEFAULT_TIMEOUT_SECONDS_BY_ID[entry.id];
+  if (defaultTimeout !== undefined) {
+    payload.timeout = defaultTimeout;
+  }
 
   if (repository && repoPicker?.field.provider) {
     const declared = REPO_PROPERTIES.filter((name) => name in values);

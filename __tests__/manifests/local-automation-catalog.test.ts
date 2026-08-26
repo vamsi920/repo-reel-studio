@@ -1,15 +1,26 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TIMEOUT_SECONDS_BY_ID,
+  HONESTY_RULE,
   LOCAL_AUTOMATION_CATALOG,
   LOCAL_FEATURED_AUTOMATION_IDS,
+  PR_BODY_RULE,
   SUPERSEDES_PUBLISHED_ID,
 } from "#/manifests/local-automation-catalog";
+import * as promptRules from "#/manifests/automation-prompt-rules";
 import {
   AUTOMATION_CATALOG_ALL,
   SETUP_REGISTRY,
 } from "#/manifests/manifest-sources";
 import { validateSetupEntry } from "#/manifests/manifest-validation";
 import { AUTOMATION_CATALOG } from "@openhands/extensions/automations";
+
+/** A cron minute field's implied interval in minutes, or null if it isn't a star-slash-N pattern. */
+function impliedIntervalMinutes(schedule: string): number | null {
+  const minuteField = schedule.trim().split(/\s+/)[0];
+  const everyN = /^\*\/(\d+)$/.exec(minuteField);
+  return everyN ? Number(everyN[1]) : null;
+}
 
 describe("local automation catalog", () => {
   it("declares at least one entry", () => {
@@ -69,6 +80,90 @@ describe("local automation catalog", () => {
     // A feature the deployment does not report renders the card unavailable.
     LOCAL_AUTOMATION_CATALOG.forEach((entry) => {
       expect(entry.requires.features, `${entry.id}`).toBeUndefined();
+    });
+  });
+
+  it("reuses the shared rule constants rather than redefining them", () => {
+    // Regression guard for the exact drift that left the Proactivation wizard
+    // without PR_BODY_RULE: HONESTY_RULE/PR_BODY_RULE must be the one copy in
+    // automation-prompt-rules.ts, re-exported here, not a second definition.
+    expect(HONESTY_RULE).toBe(promptRules.HONESTY_RULE);
+    expect(PR_BODY_RULE).toBe(promptRules.PR_BODY_RULE);
+  });
+
+  it("names a predictable neodevex/<slug> branch in every prompt", () => {
+    // Both the duplicate-PR dedup instruction and the Pull Requests review
+    // page's automation attribution depend on every branch this fork's
+    // automations create following this exact prefix.
+    LOCAL_AUTOMATION_CATALOG.forEach((entry) => {
+      expect(
+        entry.setup?.prompt,
+        `${entry.id} prompt must instruct a neodevex/<slug> branch name`,
+      ).toMatch(/neodevex\/[a-z0-9-]+\//);
+    });
+  });
+
+  it("gives every test-running automation an explicit timeout", () => {
+    // buildCreatePayload only sends a timeout when the id is in this map --
+    // an automation whose prompt runs a test suite (implying clone + install +
+    // test, the slow path) must not be left on the service's 600s default. A
+    // `repository` field alone isn't the right signal: slack-standup-digest
+    // has one but only reads PR/commit data through the API, no cloning.
+    const testRunningIds = LOCAL_AUTOMATION_CATALOG.filter((entry) =>
+      /run (the )?(relevant |full )*test/i.test(entry.setup?.prompt ?? ""),
+    ).map((entry) => entry.id);
+    expect(testRunningIds.length).toBeGreaterThan(0); // sanity: the regex matches something
+
+    testRunningIds.forEach((id) => {
+      expect(
+        DEFAULT_TIMEOUT_SECONDS_BY_ID[id],
+        `${id} clones a repository but has no default timeout`,
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it("spaces every cron schedule safely above its own timeout", () => {
+    // The automation service has no built-in guard against two runs of the
+    // same automation overlapping -- this exact gap caused a real OOM crash
+    // when a 2-minute schedule overlapped a run that needed far longer. The
+    // only defense available is spacing the schedule comfortably beyond the
+    // timeout, with margin for scheduler jitter.
+    const MARGIN_SECONDS = 5 * 60;
+
+    LOCAL_AUTOMATION_CATALOG.forEach((entry) => {
+      const timeoutSeconds = DEFAULT_TIMEOUT_SECONDS_BY_ID[entry.id];
+      if (!timeoutSeconds) return; // no repo cloning, service default is fine
+
+      const schedule = String(
+        entry.setup?.form.triggers?.cron?.schedule?.default ?? "",
+      );
+      const intervalMinutes = impliedIntervalMinutes(schedule);
+      // A non-`*/N` schedule (hourly/daily/weekly) always clears the margin.
+      if (intervalMinutes === null) return;
+
+      const intervalSeconds = intervalMinutes * 60;
+      expect(
+        intervalSeconds,
+        `${entry.id}: ${schedule} (every ${intervalMinutes}m = ${intervalSeconds}s) leaves no ${MARGIN_SECONDS}s margin above its ${timeoutSeconds}s timeout`,
+      ).toBeGreaterThanOrEqual(timeoutSeconds + MARGIN_SECONDS);
+    });
+  });
+
+  it("uses only even divisors of 60 for every-N-minute schedules", () => {
+    // A schedule like */25 fires at :00/:25/:50 then again at :00 -- a 10
+    // minute gap once an hour, not the nominal 25. Any interval must divide
+    // 60 evenly so every gap is actually uniform.
+    LOCAL_AUTOMATION_CATALOG.forEach((entry) => {
+      const schedule = String(
+        entry.setup?.form.triggers?.cron?.schedule?.default ?? "",
+      );
+      const intervalMinutes = impliedIntervalMinutes(schedule);
+      if (intervalMinutes === null) return;
+
+      expect(
+        60 % intervalMinutes,
+        `${entry.id}: */${intervalMinutes} does not evenly divide 60, so its gaps are uneven`,
+      ).toBe(0);
     });
   });
 });

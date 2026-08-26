@@ -16,6 +16,11 @@ import { useNavigation } from "#/context/navigation-context";
 import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
 import { submitMemoryCandidate } from "#/lib/workspace-memory/memory-updater";
 import { BrandButton } from "#/components/features/settings/brand-button";
+import { useCancelAutomationRun } from "#/hooks/query/use-automations";
+import { isInFlightAutomationRun } from "#/hooks/use-home-automation-actions";
+import { useHasPermission } from "#/hooks/use-has-permission";
+import { getApiErrorMessage } from "#/utils/api-error-message";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 interface ActivityLogItemProps {
   run: AutomationRun;
@@ -120,6 +125,8 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
   const { t, i18n } = useTranslation("openhands");
   const { navigate } = useNavigation();
   const activeWorkspaceId = useWorkspaceMemoryStore((s) => s.activeWorkspaceId);
+  const canManage = useHasPermission("manage_automations");
+  const cancelMutation = useCancelAutomationRun();
   const hasConversation = !!run.conversation_id;
   const hasBashCommand = !!run.bash_command_id;
   // Only surface "Conversation not created" when the run has reached a
@@ -171,6 +178,36 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
     e.stopPropagation();
     e.preventDefault();
     setIsDismissModalOpen(true);
+  };
+
+  // No sweep anywhere -- server or client -- ever cancels a run left RUNNING
+  // after a crash (e.g. the automation service being OOM-killed mid-run); it
+  // just sits there until someone does this by hand.
+  const canCancel = canManage && !!automation && isInFlightAutomationRun(run);
+  const isCancelling =
+    cancelMutation.isPending && cancelMutation.variables?.runId === run.id;
+
+  const handleCancelClick = (
+    e:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!automation) return;
+    cancelMutation.mutate(
+      { automationId: automation.id, runId: run.id },
+      {
+        onError: (error) => {
+          displayErrorToast(
+            getApiErrorMessage(
+              error,
+              t(I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN_ERROR),
+            ),
+          );
+        },
+      },
+    );
   };
 
   const handleDismissConfirm = (reason: string) => {
@@ -274,6 +311,20 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
           <span className="text-xs text-muted">
             {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISSED)}
           </span>
+        )}
+        {canCancel && (
+          <button
+            type="button"
+            onClick={handleCancelClick}
+            disabled={isCancelling}
+            aria-busy={isCancelling}
+            className="rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-danger disabled:opacity-60"
+            title={t(I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN_HINT)}
+          >
+            {isCancelling
+              ? t(I18nKey.AUTOMATIONS$DETAIL$CANCELLING_RUN)
+              : t(I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN)}
+          </button>
         )}
         {logsButton}
         <RunStatusBadge status={run.status} />

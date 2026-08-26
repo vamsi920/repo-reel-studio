@@ -97,6 +97,113 @@ async function handleRepos(
   };
 }
 
+/**
+ * The prefix every automation this fork owns names its branches with -- see
+ * `branchNamingRule` in `src/manifests/automation-prompt-rules.ts`. This is
+ * the only link between a real GitHub PR and the automation that opened it:
+ * there is no durable id on either side to join on.
+ */
+const NEODEVEX_BRANCH_PREFIX = "neodevex/";
+
+interface PullRequestDetail {
+  id: number;
+  number: number;
+  title: string;
+  html_url: string;
+  base: { repo: { full_name: string } };
+  head: { ref: string };
+  draft: boolean;
+  created_at: string;
+  updated_at: string;
+  merged_at: string | null;
+  closed_at: string | null;
+}
+
+function toNeodevexPullRequest(pr: PullRequestDetail) {
+  const state = pr.merged_at ? "merged" : pr.closed_at ? "closed" : "open";
+  return {
+    id: String(pr.id),
+    number: pr.number,
+    title: pr.title,
+    url: pr.html_url,
+    repository: pr.base.repo.full_name,
+    branch: pr.head.ref,
+    state,
+    isDraft: pr.draft,
+    createdAt: pr.created_at,
+    updatedAt: pr.updated_at,
+    mergedAt: pr.merged_at,
+    closedAt: pr.closed_at,
+  };
+}
+
+/** Parses "https://api.github.com/repos/{owner}/{repo}" -> "{owner}/{repo}". */
+function fullNameFromRepositoryUrl(repositoryUrl: string): string | null {
+  const match = /\/repos\/([^/]+\/[^/]+)$/.exec(repositoryUrl);
+  return match ? match[1] : null;
+}
+
+/**
+ * GitHub's PR search results don't include the head branch name or an
+ * authoritative merged state, so each candidate is confirmed with one
+ * `GET /pulls/{number}` call. The `head:` search qualifier is a best-effort
+ * partial match, not a guarantee, so results are filtered again here against
+ * the exact prefix before anything is returned to the client.
+ */
+async function handlePulls(
+  apiBase: string,
+  token: string,
+  page: number,
+) {
+  const params = new URLSearchParams({
+    q: `is:pr head:${NEODEVEX_BRANCH_PREFIX}`,
+    per_page: "50",
+    page: String(page),
+    sort: "created",
+    order: "desc",
+  });
+  const searchResponse = await fetch(`${apiBase}/search/issues?${params}`, {
+    headers: githubHeaders(token),
+  });
+  if (!searchResponse.ok) {
+    throw new Error(`GitHub API error (${searchResponse.status})`);
+  }
+  const search = (await searchResponse.json()) as {
+    items: { number: number; repository_url: string }[];
+  };
+
+  const candidates = search.items
+    .map((item) => ({
+      number: item.number,
+      fullName: fullNameFromRepositoryUrl(item.repository_url),
+    }))
+    .filter(
+      (candidate): candidate is { number: number; fullName: string } =>
+        candidate.fullName !== null,
+    );
+
+  const details = await Promise.all(
+    candidates.map(async (candidate) => {
+      const response = await fetch(
+        `${apiBase}/repos/${candidate.fullName}/pulls/${candidate.number}`,
+        { headers: githubHeaders(token) },
+      );
+      if (!response.ok) return null;
+      return (await response.json()) as PullRequestDetail;
+    }),
+  );
+
+  const items = details
+    .filter((pr): pr is PullRequestDetail => pr !== null)
+    .filter((pr) => pr.head.ref.startsWith(NEODEVEX_BRANCH_PREFIX))
+    .map(toNeodevexPullRequest);
+
+  return {
+    items,
+    next_page_id: hasNextPage(searchResponse) ? String(page + 1) : null,
+  };
+}
+
 async function handleBranches(
   apiBase: string,
   token: string,
@@ -157,6 +264,10 @@ Deno.serve(async (req) => {
         page,
         body.query,
       );
+      return jsonResponse(result);
+    }
+    if (action === "list_prs") {
+      const result = await handlePulls(apiBase, connection.token, page);
       return jsonResponse(result);
     }
     if (action === "branches") {

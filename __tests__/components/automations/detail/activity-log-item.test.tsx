@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router";
 import { ActivityLogItem } from "#/components/features/automations/detail/activity-log-item";
 import {
   AutomationRunStatus,
+  type Automation,
   type AutomationRun,
 } from "#/types/automation";
 import {
@@ -25,27 +26,24 @@ const LOGS_BUTTON_NAME = (name: string) =>
 // The modal is wired to react-query + the conversation lookup. The
 // ActivityLogItem tests focus on the trigger button; we mock the modal so
 // they don't need to bring up the entire query stack.
-vi.mock(
-  "#/components/features/automations/detail/run-logs-modal",
-  () => ({
-    RunLogsModal: ({
-      isOpen,
-      onClose,
-      bashCommandId,
-    }: {
-      isOpen: boolean;
-      onClose: () => void;
-      bashCommandId: string | null;
-    }) =>
-      isOpen ? (
-        <div data-testid="logs-modal" data-bash-command-id={bashCommandId}>
-          <button type="button" onClick={onClose}>
-            close
-          </button>
-        </div>
-      ) : null,
-  }),
-);
+vi.mock("#/components/features/automations/detail/run-logs-modal", () => ({
+  RunLogsModal: ({
+    isOpen,
+    onClose,
+    bashCommandId,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    bashCommandId: string | null;
+  }) =>
+    isOpen ? (
+      <div data-testid="logs-modal" data-bash-command-id={bashCommandId}>
+        <button type="button" onClick={onClose}>
+          close
+        </button>
+      </div>
+    ) : null,
+}));
 
 const localBackend: Backend = {
   id: "local-1",
@@ -68,7 +66,7 @@ function makeRun(overrides: Partial<AutomationRun> = {}): AutomationRun {
   };
 }
 
-function renderItem(run: AutomationRun) {
+function renderItem(run: AutomationRun, automation?: Automation) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -76,11 +74,24 @@ function renderItem(run: AutomationRun) {
     <QueryClientProvider client={queryClient}>
       <ActiveBackendProvider>
         <MemoryRouter>
-          <ActivityLogItem run={run} />
+          <ActivityLogItem run={run} automation={automation} />
         </MemoryRouter>
       </ActiveBackendProvider>
     </QueryClientProvider>,
   );
+}
+
+function makeAutomation(overrides: Partial<Automation> = {}): Automation {
+  return {
+    id: "automation-1",
+    name: "Test automation",
+    trigger: { type: "cron", schedule: "0 9 * * *" },
+    enabled: true,
+    prompt: "Do the thing.",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
 }
 
 describe("ActivityLogItem — logs button", () => {
@@ -285,6 +296,69 @@ describe("ActivityLogItem — run cost", () => {
     // Assert
     expect(
       screen.queryByText((content) => content.startsWith("$")),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("ActivityLogItem — cancel a stuck run", () => {
+  beforeEach(() => {
+    __resetActiveStoreForTests();
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    __resetActiveStoreForTests();
+  });
+
+  it("offers Cancel for a RUNNING run left behind after a crash", () => {
+    const run = makeRun({ status: AutomationRunStatus.RUNNING });
+    renderItem(run, makeAutomation());
+
+    expect(
+      screen.getByRole("button", {
+        name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers Cancel for a still-PENDING run", () => {
+    const run = makeRun({
+      status: AutomationRunStatus.PENDING,
+      conversation_id: null,
+      bash_command_id: null,
+    });
+    renderItem(run, makeAutomation());
+
+    expect(
+      screen.getByRole("button", {
+        name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer Cancel for a run that already finished", () => {
+    renderItem(
+      makeRun({ status: AutomationRunStatus.COMPLETED }),
+      makeAutomation(),
+    );
+
+    expect(
+      screen.queryByRole("button", {
+        name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not offer Cancel without the automation the run belongs to", () => {
+    // Cancelling needs the automation id to invalidate the right queries;
+    // without it the action has nowhere to send the request.
+    renderItem(makeRun({ status: AutomationRunStatus.RUNNING }));
+
+    expect(
+      screen.queryByRole("button", {
+        name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
+      }),
     ).not.toBeInTheDocument();
   });
 });

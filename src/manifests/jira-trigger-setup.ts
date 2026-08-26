@@ -16,7 +16,20 @@
  */
 
 import type { SetupRequestBody } from "./types";
-import { HONESTY_RULE } from "./local-automation-catalog";
+import {
+  branchNamingRule,
+  HONESTY_RULE,
+  PR_BODY_RULE,
+} from "./automation-prompt-rules";
+
+/**
+ * Explicit timeout for this run. This path bypasses `buildCreatePayload` (see
+ * the module comment above) so it also bypasses `DEFAULT_TIMEOUT_SECONDS_BY_ID`
+ * in `local-automation-catalog.ts` -- without setting one here this automation
+ * would silently run at the service's 600s default, too short for a real
+ * clone -> implement -> test -> PR cycle.
+ */
+const JIRA_INSTANT_TRIGGER_TIMEOUT_SECONDS = 1200;
 
 export interface JiraTriggerFormValues {
   projectKey: string;
@@ -60,7 +73,7 @@ function buildPrompt(values: JiraTriggerFormValues, cloudId: string): string {
     `4. Implement the change on a branch named for the Jira key, in ${values.repository}${values.branch ? ` (base branch ${values.branch})` : ""}, and add tests that prove the acceptance criteria are met.\n` +
     `5. Run the relevant test suite until green. If you cannot get it green, do not open a pull request; report what blocked you.\n` +
     `6. Open a pull request titled with the Jira key, describing what you implemented and the tests you ran. Comment the pull request link back on the Jira issue via curl. Never merge it yourself.\n\n` +
-    `If no issues match, end the run stating there was nothing ready. That is a successful run.\n\n${HONESTY_RULE}`
+    `If no issues match, end the run stating there was nothing ready. That is a successful run.\n\n${HONESTY_RULE} ${PR_BODY_RULE} ${branchNamingRule("jira-instant-trigger")}`
   );
 }
 
@@ -90,5 +103,6 @@ export function buildJiraTriggerPayload(
       on: ["jira:issue_created", "jira:issue_updated"],
       filter: buildFilter(values),
     },
+    timeout: JIRA_INSTANT_TRIGGER_TIMEOUT_SECONDS,
   };
 }
