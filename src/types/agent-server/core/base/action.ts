@@ -1,4 +1,5 @@
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
+import { ONBOARDING_CONTROL_ACTION_KIND } from "#/constants/onboarding-control";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -340,6 +341,40 @@ export interface LaunchChildConversationAction extends ActionBase<
   isolation?: string | null;
 }
 
+/**
+ * Onboarding control action, emitted over the existing WebSocket and
+ * intercepted by handleOnboardingControlAction.
+ *
+ * Fields stay loosely typed for the same reason as
+ * LaunchChildConversationAction: the agent-server validates parameter names
+ * and types against the tool schema but not `enum` values, so the dispatcher
+ * narrows them and returns corrective guidance on a mismatch.
+ *
+ * Note what is absent: there is no field here that can hold a credential
+ * value. `fields` carries field NAMES only. That absence is the security
+ * boundary -- a secret cannot reach the model through a shape that has
+ * nowhere to put one.
+ */
+export interface OnboardingControlAction extends ActionBase<
+  typeof ONBOARDING_CONTROL_ACTION_KIND
+> {
+  command: string;
+  capability?: string | null;
+  provider_id?: string | null;
+  instance_key?: string | null;
+  fields?: string[] | null;
+  probe_kind?: string | null;
+  targets?: string[] | null;
+  vantage?: string | null;
+  profile_patch?: Record<string, unknown> | null;
+  rationale?: string | null;
+  view?: string | null;
+  feature_ids?: string[] | null;
+  requirement_id?: string | null;
+  assignee_email?: string | null;
+  note?: string | null;
+}
+
 export type Action =
   | MCPToolAction
   | FinishAction
@@ -366,4 +401,5 @@ export type Action =
   | TaskAction
   | SwitchLLMAction
   | CanvasUIAction
+  | OnboardingControlAction
   | LaunchChildConversationAction;

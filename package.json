@@ -98,6 +98,7 @@
     "make-i18n": "node scripts/make-i18n-translations.cjs",
     "prelint": "npm run make-i18n",
     "lint": "npm run typecheck && eslint src && prettier --check src/**/*.{ts,tsx}",
+    "preflight": "node scripts/environment-preflight.mjs",
     "lint:fix": "eslint src --fix && prettier --write src/**/*.{ts,tsx}",
     "postinstall": "node -e \"if (process.env.npm_config_global === 'true') { console.log('\\n\\x1b[32m\\x1b[1m\\u2713 Neo installed!\\x1b[0m\\n\\nTo start Neo, run:\\n\\n  \\x1b[36m\\x1b[1magent-canvas\\x1b[0m\\n\\nThis launches the full stack at \\x1b[36mhttp://localhost:8000\\x1b[0m.\\n') }\"",
     "prepare": "husky",
@@ -115,7 +116,10 @@
     "download-uv": "node scripts/download-uv.mjs",
     "download-node": "node scripts/download-node.mjs",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "build:codegraph-analyzer": "node scripts/build-codegraph-analyzer.mjs"
+    "build:codegraph-analyzer": "node scripts/build-codegraph-analyzer.mjs",
+    "docs:env": "node scripts/generate-environment-docs.mjs",
+    "make-connector-registry": "node scripts/generate-connector-registry.mjs",
+    "make-connector-logos": "node scripts/generate-connector-logos.mjs"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx,js}": [

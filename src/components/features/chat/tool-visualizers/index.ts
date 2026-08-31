@@ -3,6 +3,7 @@ import { bashVisualizer } from "./bash/bash";
 import { fileEditorVisualizer } from "./file-editor/file-editor";
 import { searchVisualizer } from "./search/search";
 import { taskVisualizer } from "./task/task";
+import { onboardingVisualizer } from "./onboarding/onboarding";
 
 /**
  * Tool visualizers render a tool call's action / observation card body as React
@@ -24,6 +25,7 @@ const ALL: RegisteredVisualizer[] = [
   fileEditorVisualizer,
   searchVisualizer,
   taskVisualizer,
+  onboardingVisualizer,
 ];
 
 const indexByKind = (

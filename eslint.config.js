@@ -386,4 +386,39 @@ export default [
       "react/react-in-jsx-scope": "off",
     },
   },
+  {
+    // The secret boundary, enforced rather than documented.
+    //
+    // The onboarding dispatcher and the event pipeline are the two places a
+    // credential could plausibly be routed into the model transcript by a
+    // later refactor. Neither is allowed to reach for the credential form's
+    // value types, so the mistake becomes a lint error instead of a quiet
+    // change in what the agent can see.
+    files: [
+      "src/services/onboarding-control.ts",
+      "src/contexts/conversation-websocket-context.tsx",
+      "src/stores/use-event-store.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "#/components/features/environment/copilot/credential-request-sheet",
+              message:
+                "Credential values must stay inside the credential sheet's own component state. Nothing in the dispatch or event path may import it.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["**/credential-request-sheet*"],
+              message:
+                "Credential values must stay inside the credential sheet's own component state.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

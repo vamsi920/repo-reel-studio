@@ -6,6 +6,7 @@ import {
   KeyRound,
   ListTodo,
   PanelsTopLeft,
+  PlugZap,
   Search,
   Settings,
   ShieldCheck,
@@ -33,6 +34,7 @@ export const COMMAND_MENU_ROUTE = {
   verificationSettings: "/settings/verification",
   appSettings: "/settings/app",
   secretsSettings: "/settings/secrets",
+  environment: "/environment",
 } as const;
 
 export type CommandMenuGroupId = "navigation" | "settings" | "actions";
@@ -48,6 +50,8 @@ export type CommandMenuItemId =
   | "verification-settings"
   | "app-settings"
   | "secrets-settings"
+  | "environment"
+  | "onboarding-agent"
   | "toggle-sidebar";
 
 export interface CommandMenuItemDefinition {
@@ -79,9 +83,29 @@ export const COMMAND_MENU_GROUP_ORDER: CommandMenuGroupId[] = [
 
 export const createCommandMenuItems = ({
   toggleSidebar,
+  openOnboardingAgent,
 }: {
   toggleSidebar: () => void;
+  openOnboardingAgent: () => void;
 }): CommandMenuItemDefinition[] => [
+  {
+    id: "environment",
+    group: "navigation",
+    titleKey: I18nKey.COMMAND_MENU$ENVIRONMENT_TITLE,
+    descriptionKey: I18nKey.COMMAND_MENU$ENVIRONMENT_DESCRIPTION,
+    keywordsKey: I18nKey.COMMAND_MENU$ENVIRONMENT_KEYWORDS,
+    icon: <PlugZap size={ICON_SIZE} />,
+    to: COMMAND_MENU_ROUTE.environment,
+  },
+  {
+    id: "onboarding-agent",
+    group: "actions",
+    titleKey: I18nKey.COMMAND_MENU$ONBOARDING_AGENT_TITLE,
+    descriptionKey: I18nKey.COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION,
+    keywordsKey: I18nKey.COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS,
+    icon: <Sparkles size={ICON_SIZE} />,
+    perform: openOnboardingAgent,
+  },
   {
     id: "new-chat",
     group: "navigation",

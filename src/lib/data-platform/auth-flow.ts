@@ -1,20 +1,90 @@
 import type { NavigateFunction } from "react-router";
 import { supabase, isSupabaseConfigured } from "./client";
 
+/**
+ * Seed domain for this deployment. Kept only as the value the
+ * `signup_domain_allowlist` table is seeded with (see
+ * `supabase/migrations/20260830090000_signup_domain_allowlist.sql`); nothing
+ * reads it as a hardcoded rule any more.
+ */
 export const NEODEVEX_EMAIL_DOMAIN = "neodevex.com";
+
+let cachedAllowlist: string[] | null = null;
+let inFlightAllowlist: Promise<string[]> | null = null;
+
+/**
+ * Loads the deployment's signup domain allowlist, cached for the tab's
+ * lifetime. An empty list means "no restriction" -- the same rule the
+ * `enforce_signup_domain_allowlist` trigger applies server-side, so a fresh
+ * customer install accepts any address until an admin narrows it.
+ *
+ * Every failure path resolves to `[]` rather than rejecting: this is a UX
+ * pre-check, and a deployment whose allowlist cannot be read must not be
+ * locked out of its own login screen. The trigger remains the real boundary.
+ */
+export async function loadSignupDomainAllowlist(): Promise<string[]> {
+  if (cachedAllowlist) return cachedAllowlist;
+  if (inFlightAllowlist) return inFlightAllowlist;
+  if (!isSupabaseConfigured || !supabase) {
+    cachedAllowlist = [];
+    return cachedAllowlist;
+  }
+
+  inFlightAllowlist = (async () => {
+    try {
+      const { data, error } = await supabase!
+        .from("signup_domain_allowlist")
+        .select("domain");
+      if (error || !data) return [];
+      return data
+        .map((row) => String((row as { domain: unknown }).domain ?? ""))
+        .map((domain) => domain.trim().toLowerCase())
+        .filter(Boolean);
+    } catch {
+      return [];
+    } finally {
+      inFlightAllowlist = null;
+    }
+  })().then((domains) => {
+    cachedAllowlist = domains;
+    return domains;
+  });
+
+  return inFlightAllowlist;
+}
+
+/** Test seam -- forces the next `loadSignupDomainAllowlist` to re-query. */
+export function resetSignupDomainAllowlistCache(): void {
+  cachedAllowlist = null;
+  inFlightAllowlist = null;
+}
 
 /**
  * Client-side pre-check only, for instant form feedback before a network
  * round-trip. Not the security boundary -- anyone can call the Supabase Auth
  * API directly, bypassing this entirely. The real enforcement is the
- * `enforce_neodevex_email_domain` trigger on `auth.users` (see
- * `supabase/migrations/20260824120000_restrict_signup_domain.sql`), which
+ * `enforce_signup_domain_allowlist` trigger on `auth.users` (see
+ * `supabase/migrations/20260830090000_signup_domain_allowlist.sql`), which
  * fires on both `insert` (signUp) and `update of email` (the anonymous
  * upgrade path below), so it isn't tied to any particular auth method.
+ *
+ * `domains` empty => everything is allowed, matching the trigger.
  */
-export function isAllowedSignupEmail(email: string): boolean {
+export function isEmailInDomainAllowlist(
+  email: string,
+  domains: string[],
+): boolean {
+  if (domains.length === 0) return true;
   const trimmed = email.trim().toLowerCase();
-  return trimmed.endsWith(`@${NEODEVEX_EMAIL_DOMAIN}`);
+  const at = trimmed.lastIndexOf("@");
+  if (at < 0) return false;
+  const domain = trimmed.slice(at + 1);
+  return domains.some((allowed) => allowed.toLowerCase() === domain);
+}
+
+/** Async convenience wrapper that resolves the allowlist first. */
+export async function isAllowedSignupEmail(email: string): Promise<boolean> {
+  return isEmailInDomainAllowlist(email, await loadSignupDomainAllowlist());
 }
 
 export type AuthOutcome =
@@ -53,7 +123,7 @@ export async function signUpWithPassword(
   password: string,
 ): Promise<AuthOutcome> {
   const trimmedEmail = email.trim();
-  if (!isAllowedSignupEmail(trimmedEmail)) {
+  if (!(await isAllowedSignupEmail(trimmedEmail))) {
     return { kind: "domain_rejected" };
   }
   if (!isSupabaseConfigured || !supabase) {
@@ -125,7 +195,7 @@ export async function signInWithPassword(
   password: string,
 ): Promise<AuthOutcome> {
   const trimmedEmail = email.trim();
-  if (!isAllowedSignupEmail(trimmedEmail)) {
+  if (!(await isAllowedSignupEmail(trimmedEmail))) {
     return { kind: "domain_rejected" };
   }
   if (!isSupabaseConfigured || !supabase) {

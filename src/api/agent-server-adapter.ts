@@ -46,6 +46,10 @@ import {
   type ClientToolSpec,
 } from "./canvas-ui-client-tool";
 import {
+  ONBOARDING_CONTROL_CLIENT_TOOL,
+  ONBOARDING_CONTROL_TOOL_NAME,
+} from "./onboarding-control-client-tool";
+import {
   LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
   LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
 } from "./launch-child-conversation-client-tool";
@@ -1164,7 +1168,11 @@ export function buildStartConversationRequest(
     // conversations can start.
     client_tools:
       launchAgentKind === "openhands"
-        ? [CANVAS_UI_CLIENT_TOOL, LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL]
+        ? [
+            CANVAS_UI_CLIENT_TOOL,
+            LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
+            ONBOARDING_CONTROL_CLIENT_TOOL,
+          ]
         : [],
     confirmation_policy:
       getConversationConfirmationPolicy(conversationSettings),
@@ -1234,6 +1242,7 @@ export function buildStartConversationRequest(
   delete toolModuleQualnames[LEGACY_CANVAS_UI_TOOL_NAME];
   delete toolModuleQualnames[CANVAS_UI_CLIENT_TOOL_NAME];
   delete toolModuleQualnames[LAUNCH_CHILD_CONVERSATION_TOOL_NAME];
+  delete toolModuleQualnames[ONBOARDING_CONTROL_TOOL_NAME];
   if (Object.keys(toolModuleQualnames).length > 0) {
     payload.tool_module_qualnames = toolModuleQualnames;
   }

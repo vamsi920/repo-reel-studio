@@ -6,6 +6,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useNavigation } from "#/context/navigation-context";
 import { useCommandMenuStore } from "#/stores/command-menu-store";
 import { useSidebarStore } from "#/stores/sidebar-store";
+import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 import { cn } from "#/utils/utils";
 import {
   COMMAND_MENU_GROUP_LABELS,
@@ -98,6 +99,7 @@ export function CommandMenu() {
     () =>
       createCommandMenuItems({
         toggleSidebar: () => useSidebarStore.getState().toggleCollapsed(),
+        openOnboardingAgent: () => useOnboardingCopilotStore.getState().open_(),
       }),
     [],
   );

@@ -18,6 +18,18 @@ export const SETTINGS_QUERY_KEYS = {
   personal: () => ["settings", "personal"] as const,
 } as const;
 
+export const ENVIRONMENT_QUERY_KEYS = {
+  all: ["environment"] as const,
+  profile: (orgId?: string) =>
+    ["environment", "profile", orgId ?? null] as const,
+  connections: (orgId?: string) =>
+    ["environment", "connections", orgId ?? null] as const,
+  readiness: () => ["environment", "readiness"] as const,
+  checks: (orgId?: string, limit?: number) =>
+    ["environment", "checks", orgId ?? null, limit ?? null] as const,
+  tasks: (orgId?: string) => ["environment", "tasks", orgId ?? null] as const,
+} as const;
+
 export const LLM_PROFILES_QUERY_KEYS = {
   all: ["llm-profiles"] as const,
 } as const;

@@ -8,8 +8,8 @@ import { I18nKey } from "#/i18n/declaration";
 import {
   signUpWithPassword,
   signInWithPassword,
-  isAllowedSignupEmail,
-  NEODEVEX_EMAIL_DOMAIN,
+  isEmailInDomainAllowlist,
+  loadSignupDomainAllowlist,
 } from "#/lib/data-platform/auth-flow";
 
 type Mode = "sign-in" | "sign-up";
@@ -37,6 +37,20 @@ export function PasswordAuthForm() {
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [alreadyExists, setAlreadyExists] = React.useState(false);
+  // Empty until loaded, which means "no restriction" -- the same default the
+  // server-side trigger applies, so a deployment that has not narrowed its
+  // allowlist never blocks its own login form.
+  const [signupDomains, setSignupDomains] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    loadSignupDomainAllowlist().then((domains) => {
+      if (!cancelled) setSignupDomains(domains);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isSignUp = mode === "sign-up";
 
@@ -60,7 +74,7 @@ export function PasswordAuthForm() {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) return;
 
-    if (!isAllowedSignupEmail(trimmedEmail)) {
+    if (!isEmailInDomainAllowlist(trimmedEmail, signupDomains)) {
       clearFieldErrors();
       setDomainRejected(true);
       return;
@@ -105,7 +119,9 @@ export function PasswordAuthForm() {
   return (
     <Card theme="default" gradient="standard" className="flex-col gap-6 p-8">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="ame-eyebrow">{NEODEVEX_EMAIL_DOMAIN}</span>
+        {signupDomains.length > 0 && (
+          <span className="ame-eyebrow">{signupDomains.join(", ")}</span>
+        )}
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">
           {isSignUp
             ? t(I18nKey.NEODEVEX_AUTH$SIGN_UP_TITLE)

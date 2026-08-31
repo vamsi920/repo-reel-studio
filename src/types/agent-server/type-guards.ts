@@ -3,6 +3,7 @@ import {
   LEGACY_CANVAS_UI_TOOL_NAME,
 } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
+import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
 
 import {
   OpenHandsEvent,
@@ -17,6 +18,7 @@ import {
   BrowserNavigateAction,
   SwitchLLMObservation,
   CanvasUIAction,
+  OnboardingControlAction,
   LaunchChildConversationAction,
 } from "./core";
 import { AgentErrorEvent } from "./core/events/observation-event";
@@ -198,6 +200,17 @@ export const isLaunchChildConversationActionEvent = (
 ): event is ActionEvent<LaunchChildConversationAction> =>
   isActionEvent(event) &&
   event.tool_name === LAUNCH_CHILD_CONVERSATION_TOOL_NAME;
+
+/**
+ * Type guard for onboarding-control tool ActionEvents.
+ *
+ * Discriminates on tool_name, like the two guards above, so the SDK-generated
+ * action kind stays contained in the constants module.
+ */
+export const isOnboardingControlActionEvent = (
+  event: OpenHandsEvent,
+): event is ActionEvent<OnboardingControlAction> =>
+  isActionEvent(event) && event.tool_name === ONBOARDING_CONTROL_TOOL_NAME;
 
 /**
  * Type guard function to check if an event is a system prompt event

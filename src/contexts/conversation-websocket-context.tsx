@@ -39,9 +39,14 @@ import {
   isSwitchLLMObservationEvent,
   isCanvasUIActionEvent,
   isLaunchChildConversationActionEvent,
+  isOnboardingControlActionEvent,
 } from "#/types/agent-server/type-guards";
 import { handleCanvasUIAction } from "#/services/canvas-ui";
 import { handleLaunchChildConversationAction } from "#/services/child-conversation-launch";
+import {
+  createConversationResultPoster,
+  handleOnboardingControlAction,
+} from "#/services/onboarding-control";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
   ConversationErrorEvent,
@@ -681,6 +686,21 @@ export function ConversationWebSocketProvider({
           // the actual UI change happens here on the client.
           if (isCanvasUIActionEvent(event)) {
             handleCanvasUIAction(event.action, conversationId ?? null);
+          }
+
+          // Onboarding agent driving the Environment screen. Uses both
+          // dispatch styles: navigation is immediate, while probes and
+          // credential requests post a redacted receipt back as a follow-up
+          // message. No credential is ever carried by this action -- the tool
+          // schema has no field one could occupy.
+          if (conversationId && isOnboardingControlActionEvent(event)) {
+            void handleOnboardingControlAction(event.action, {
+              postResult: createConversationResultPoster(conversationId),
+              navigate: (path: string) => {
+                window.history.pushState({}, "", path);
+                window.dispatchEvent(new PopStateEvent("popstate"));
+              },
+            });
           }
 
           // Same client-tool pattern, but the work is a network call: launch

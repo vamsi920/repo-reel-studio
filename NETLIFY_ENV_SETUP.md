@@ -1,5 +1,12 @@
 # Netlify Environment Variables Setup
 
+> **This file is a Netlify-specific walkthrough. The authoritative, generated
+> list of every variable this deployment reads is
+> [`docs/environment-variables.md`](docs/environment-variables.md)** (regenerate
+> with `npm run docs:env`). Anything below that contradicts it is stale —
+> the Firebase and `VITE_API_URL` variables in particular belong to the retired
+> `legacy/` app and are not read by the current frontend.
+
 ## Required Environment Variables
 
 Make sure these are set in your Netlify dashboard (Site settings → Environment variables):

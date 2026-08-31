@@ -41,6 +41,13 @@ export default [
     route("automations/new/:automationId", "routes/automation-setup-route.tsx"),
     route("automations/:automationId", "routes/automation-detail.tsx"),
     route("security", "routes/security.tsx"),
+    route("environment", "routes/environment.tsx", [
+      index("routes/environment-overview.tsx"),
+      route("connections", "routes/environment-connections.tsx"),
+      route("network", "routes/environment-network.tsx"),
+      route("requirements", "routes/environment-requirements.tsx"),
+      route("runbook", "routes/environment-runbook.tsx"),
+    ]),
     route("usage", "routes/usage.tsx"),
     route("agentops", "routes/agentops.tsx", [
       index("routes/agentops-overview.tsx"),

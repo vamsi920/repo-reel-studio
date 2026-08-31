@@ -9,6 +9,7 @@ import {
   Activity,
   BookOpen,
   Gauge,
+  PlugZap,
   ShieldCheck,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
@@ -86,6 +87,9 @@ export function SidebarRailBody({
 }: SidebarRailBodyProps) {
   const { t } = useTranslation("openhands");
   const backendCloseTimerRef = collapsedBackendCloseTimer;
+  // The Environment section has child routes, and NavLink's own `end`
+  // matching would drop the highlight as soon as one of them is open.
+  const isEnvironmentActive = currentPath.startsWith("/environment");
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -222,6 +226,14 @@ export function SidebarRailBody({
           testId="sidebar-security-link"
           collapsed={collapsed}
           icon={<ShieldCheck width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/environment"
+          label={t(I18nKey.SIDEBAR$ENVIRONMENT)}
+          testId="sidebar-environment-link"
+          collapsed={collapsed}
+          forceActive={isEnvironmentActive}
+          icon={<PlugZap width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
           to="/agentops"

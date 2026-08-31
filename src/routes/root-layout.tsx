@@ -32,6 +32,14 @@ const AlertBanner = React.lazy(() =>
     default: m.AlertBanner,
   })),
 );
+// Lazy like the other always-mounted overlays: the dock carries the connector
+// registry and its logo set, which no other route needs on first paint.
+const OnboardingDock = React.lazy(() =>
+  import("#/components/features/environment/copilot/onboarding-dock").then(
+    (m) => ({ default: m.OnboardingDock }),
+  ),
+);
+
 const CommandMenu = React.lazy(() =>
   import("#/components/features/command-menu/command-menu").then((m) => ({
     default: m.CommandMenu,
@@ -142,6 +150,7 @@ export default function MainApp() {
         <React.Suspense fallback={null}>
           <EnvironmentSwitchOverlay />
           <CommandMenu />
+          <OnboardingDock />
         </React.Suspense>
         {showOnboardingPreview ? <OnboardingHost /> : null}
       </SidebarMobileNavProvider>
