@@ -16,16 +16,30 @@ async function getDecryptedConnection(
     .select("enterprise_host, encrypted_access_token")
     .eq("user_id", userId)
     .maybeSingle<GithubConnectionRow>();
-  if (!connection) return null;
+  if (!connection) {
+    console.error(`No github_connections row for user ${userId}`);
+    return null;
+  }
 
   const encryptionKey = Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY");
-  if (!encryptionKey) return null;
+  if (!encryptionKey) {
+    console.error("GITHUB_TOKEN_ENCRYPTION_KEY is not set");
+    return null;
+  }
 
-  const { data: token } = await admin.rpc("decrypt_github_token", {
-    ciphertext: connection.encrypted_access_token,
-    encryption_key: encryptionKey,
-  });
-  if (!token) return null;
+  const { data: token, error: decryptError } = await admin.rpc(
+    "decrypt_github_token",
+    {
+      ciphertext: connection.encrypted_access_token,
+      encryption_key: encryptionKey,
+    },
+  );
+  if (!token) {
+    console.error(
+      `decrypt_github_token returned no token for user ${userId}: ${decryptError?.message}`,
+    );
+    return null;
+  }
 
   return { token, host: connection.enterprise_host };
 }
@@ -80,6 +94,8 @@ async function handleRepos(
     headers: githubHeaders(token),
   });
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(`GitHub /user/repos failed (${response.status}): ${body}`);
     throw new Error(`GitHub API error (${response.status})`);
   }
   const repos = (await response.json()) as Record<string, unknown>[];
@@ -166,6 +182,10 @@ async function handlePulls(
     headers: githubHeaders(token),
   });
   if (!searchResponse.ok) {
+    const body = await searchResponse.text().catch(() => "");
+    console.error(
+      `GitHub /search/issues failed (${searchResponse.status}): ${body}`,
+    );
     throw new Error(`GitHub API error (${searchResponse.status})`);
   }
   const search = (await searchResponse.json()) as {
@@ -217,6 +237,8 @@ async function handleBranches(
     { headers: githubHeaders(token) },
   );
   if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(`GitHub /branches failed (${response.status}): ${body}`);
     throw new Error(`GitHub API error (${response.status})`);
   }
   const branches = (await response.json()) as Record<string, unknown>[];
