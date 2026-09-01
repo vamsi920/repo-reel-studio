@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
     clientIdEnv: string;
     clientSecretEnv: string;
     extraAuthorizeParams?: Record<string, string>;
+    callbackFunction?: string;
   };
 
   // A self-hosted variant is a different OAuth issuer with its own registered
@@ -94,7 +95,13 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const redirectUri = `${supabaseUrl}/functions/v1/connections-oauth-callback`;
+  // Must match what is registered with the provider's OAuth application, not
+  // what is convenient for us: a GitHub OAuth App has one callback URL and
+  // rejects anything else with `redirect_uri_mismatch`. Providers that predate
+  // this flow keep their original callback, which delegates back here.
+  const redirectUri = `${supabaseUrl}/functions/v1/${
+    oauth.callbackFunction ?? "connections-oauth-callback"
+  }`;
 
   let authorizeBase: string;
   try {

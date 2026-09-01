@@ -1,0 +1,33 @@
+# Supabase project configuration.
+#
+# The only thing declared here is per-function JWT verification, and it is
+# declared because getting it wrong is silent and total.
+
+project_id = "hyirnyyqwyvplwvuekda"
+
+# OAuth callbacks are entered by the provider redirecting the user's BROWSER.
+# That request carries no Supabase JWT, so with the platform default
+# (verify_jwt = true) the gateway rejects it with a 401 before the function
+# body ever runs -- every connection attempt fails at the last step, and the
+# only symptom is a redirect that lands nowhere.
+#
+# `connections-oauth-callback` shipped with the default and had exactly that
+# bug. These three are the only functions in this project that are legitimately
+# entered without a session.
+
+[functions.connections-oauth-callback]
+verify_jwt = false
+
+[functions.github-oauth-callback]
+verify_jwt = false
+
+[functions.jira-oauth-callback]
+verify_jwt = false
+
+# Entered by Jira's servers with a shared secret in a header, not by a user.
+[functions.jira-webhook-receiver]
+verify_jwt = false
+
+# Entered by pg_cron via pg_net with an X-Cron-Secret header.
+[functions.jira-webhook-renew]
+verify_jwt = false

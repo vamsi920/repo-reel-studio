@@ -170,6 +170,19 @@ export interface ConnectorOAuth {
    */
   clientIdEnv: string;
   clientSecretEnv: string;
+  /**
+   * Edge Function that receives the provider's redirect.
+   *
+   * Defaults to `connections-oauth-callback`. GitHub and Jira must override
+   * it: their OAuth applications were registered against the older
+   * `github-oauth-callback` / `jira-oauth-callback` URLs, and a provider
+   * validates `redirect_uri` against that registration -- a GitHub OAuth App
+   * has exactly one callback URL, so pointing the generic flow at a new path
+   * would be rejected with `redirect_uri_mismatch` on every attempt. Those
+   * legacy functions delegate to the shared completer, so the flow is the
+   * same; only the URL differs.
+   */
+  callbackFunction?: string;
   /** Extra static query parameters, e.g. Atlassian's `audience`. */
   extraAuthorizeParams?: Record<string, string>;
   /** Where the provider reports identity after the token exchange. */

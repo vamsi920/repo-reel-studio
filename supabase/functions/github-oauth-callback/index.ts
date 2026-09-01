@@ -1,3 +1,4 @@
+import { completeConnectionsOAuth } from "../_shared/connections-oauth-complete.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { githubApiBaseUrl, githubOAuthCredentials, githubTokenUrl } from "../_shared/github.ts";
 
@@ -25,6 +26,13 @@ Deno.serve(async (req) => {
   if (!code || !state) {
     return redirectTo("/settings/connections?error=missing_code_or_state");
   }
+
+  // This URL is the one registered with the OAuth application, so it is also
+  // the only URL the generic connections flow can use for this provider. If
+  // the state belongs to `oauth_states`, the generic completer owns it;
+  // otherwise it returns null and the legacy path below runs unchanged.
+  const generic = await completeConnectionsOAuth(req);
+  if (generic) return generic;
 
   const admin = createAdminClient();
 

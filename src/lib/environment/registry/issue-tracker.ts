@@ -18,6 +18,7 @@ export const ISSUE_TRACKER_MANIFESTS: ConnectorManifest[] = [
       optionalScopes: ["write:jira-work", "manage:jira-webhook"],
       usesPkce: true,
       refreshable: true,
+      callbackFunction: "jira-oauth-callback",
       clientIdEnv: "JIRA_CLIENT_ID",
       clientSecretEnv: "JIRA_CLIENT_SECRET",
       extraAuthorizeParams: {

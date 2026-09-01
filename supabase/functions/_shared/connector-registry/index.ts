@@ -1049,6 +1049,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
       ],
       "usesPkce": true,
       "refreshable": false,
+      "callbackFunction": "github-oauth-callback",
       "clientIdEnv": "GITHUB_OAUTH_CLIENT_ID",
       "clientSecretEnv": "GITHUB_OAUTH_CLIENT_SECRET",
       "identity": {
@@ -1236,6 +1237,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
       ],
       "usesPkce": true,
       "refreshable": false,
+      "callbackFunction": "github-oauth-callback",
       "clientIdEnv": "GITHUB_ENTERPRISE_OAUTH_CLIENT_ID",
       "clientSecretEnv": "GITHUB_ENTERPRISE_OAUTH_CLIENT_SECRET",
       "identity": {
@@ -1809,6 +1811,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
       ],
       "usesPkce": true,
       "refreshable": true,
+      "callbackFunction": "jira-oauth-callback",
       "clientIdEnv": "JIRA_CLIENT_ID",
       "clientSecretEnv": "JIRA_CLIENT_SECRET",
       "extraAuthorizeParams": {

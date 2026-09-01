@@ -24,6 +24,7 @@ export const SOURCE_CONTROL_MANIFESTS: ConnectorManifest[] = [
       optionalScopes: ["workflow"],
       usesPkce: true,
       refreshable: false,
+      callbackFunction: "github-oauth-callback",
       clientIdEnv: "GITHUB_OAUTH_CLIENT_ID",
       clientSecretEnv: "GITHUB_OAUTH_CLIENT_SECRET",
       identity: {
@@ -130,6 +131,7 @@ export const SOURCE_CONTROL_MANIFESTS: ConnectorManifest[] = [
       // A GHES instance is a different OAuth issuer, so it needs its own
       // application registered on that instance -- the github.com client id
       // is meaningless there.
+      callbackFunction: "github-oauth-callback",
       clientIdEnv: "GITHUB_ENTERPRISE_OAUTH_CLIENT_ID",
       clientSecretEnv: "GITHUB_ENTERPRISE_OAUTH_CLIENT_SECRET",
       identity: {
