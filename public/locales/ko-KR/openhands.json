@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "비밀번호 재설정",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "이메일을 입력하시면 재설정 링크를 보내드립니다.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "해당 이메일이 계정과 연결되어 있다면 곧 재설정 링크가 포함된 메시지를 받으실 것입니다.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "비밀번호를 잊으셨나요?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "재설정 링크 보내기",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "전송 중...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "링크를 확인하는 중...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "링크가 유효하지 않거나 만료되었습니다",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "이 비밀번호 재설정 링크는 오래되었거나 이미 사용되었을 수 있습니다. 로그인 페이지에서 새 링크를 요청하세요.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "로그인으로 돌아가기",
+  "NEODEVEX_AUTH$RESET_TITLE": "새 비밀번호 설정",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "계정의 새 비밀번호를 선택하세요.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "새 비밀번호",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "비밀번호 업데이트",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "업데이트 중..."
 }

@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "パスワードをリセット",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "メールアドレスを入力すると、リセット用のリンクをお送りします。",
+  "NEODEVEX_AUTH$FORGOT_SENT": "そのメールアドレスがアカウントに登録されている場合、まもなくリセット用リンクを含むメッセージが届きます。",
+  "NEODEVEX_AUTH$FORGOT_LINK": "パスワードをお忘れですか？",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "リセットリンクを送信",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "送信中...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "リンクを確認しています...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "リンクが無効または期限切れです",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "このパスワードリセットリンクは古いか、すでに使用されている可能性があります。ログインページから新しいリンクをリクエストしてください。",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "ログインに戻る",
+  "NEODEVEX_AUTH$RESET_TITLE": "新しいパスワードを設定",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "アカウントの新しいパスワードを選択してください。",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "新しいパスワード",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "パスワードを更新",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "更新中..."
 }

@@ -277,7 +277,10 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isWelcomePage = location.pathname === "/";
-  const isLoginPage = location.pathname === "/login";
+  // /reset-password is reached from an emailed link before any session the
+  // rest of the app expects exists -- same standalone treatment as /login.
+  const isStandaloneAuthPage =
+    location.pathname === "/login" || location.pathname === "/reset-password";
   const { status: supabaseSessionStatus } = useSupabaseSession();
 
   // Flag-based gate: in public mode (VITE_AUTH_REQUIRED=true) with no
@@ -372,13 +375,14 @@ export default function App() {
     if (redirectingToMainAppLogin) redirectToMainAppLogin();
   }, [redirectingToMainAppLogin]);
 
-  // Everything except the marketing page and /login itself requires a real
-  // (non-anonymous) Supabase session once Supabase is configured -- an
+  // Everything except the marketing page and the standalone auth pages
+  // (/login, /reset-password) requires a real (non-anonymous) Supabase
+  // session once Supabase is configured -- an
   // anonymous-only session (the silent per-browser bootstrap) does not
   // count as signed in. Skipped entirely when Supabase isn't configured so
   // local dev/tests without those env vars are unaffected.
   const requiresSupabaseSession =
-    isSupabaseConfigured && !isWelcomePage && !isLoginPage;
+    isSupabaseConfigured && !isWelcomePage && !isStandaloneAuthPage;
   const supabaseSessionMissing =
     requiresSupabaseSession &&
     (supabaseSessionStatus === "none" || supabaseSessionStatus === "anonymous");
@@ -419,7 +423,7 @@ export default function App() {
     activeCloudHealth?.disabled === true &&
     isCloudBackendApiKeyOrNetworkHealthError(activeCloudHealth.lastError);
 
-  if (isWelcomePage || isLoginPage) {
+  if (isWelcomePage || isStandaloneAuthPage) {
     return <Outlet />;
   }
 

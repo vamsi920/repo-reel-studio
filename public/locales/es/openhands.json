@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Restablecer contraseña",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "Introduce tu correo y te enviaremos un enlace para restablecerla.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Si ese correo pertenece a una cuenta, recibirás en breve un mensaje con un enlace para restablecerla.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "¿Olvidaste tu contraseña?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Enviar enlace de restablecimiento",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Enviando...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Comprobando tu enlace...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Enlace no válido o caducado",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Este enlace de restablecimiento puede ser antiguo o ya se ha usado. Solicita uno nuevo desde la página de inicio de sesión.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Volver al inicio de sesión",
+  "NEODEVEX_AUTH$RESET_TITLE": "Establece una nueva contraseña",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Elige una nueva contraseña para tu cuenta.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Nueva contraseña",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Actualizar contraseña",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Actualizando..."
 }

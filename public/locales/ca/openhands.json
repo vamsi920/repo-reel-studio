@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Restableix la contrasenya",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "Introdueix el teu correu i t'enviarem un enllaç per restablir-la.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Si aquest correu està associat a un compte, rebràs aviat un missatge amb un enllaç per restablir-la.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "Has oblidat la contrasenya?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Envia l'enllaç de restabliment",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Enviant...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Comprovant l'enllaç...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Enllaç no vàlid o caducat",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Aquest enllaç de restabliment pot ser antic o ja s'ha fet servir. Demana'n un de nou des de la pàgina d'inici de sessió.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Torna a l'inici de sessió",
+  "NEODEVEX_AUTH$RESET_TITLE": "Estableix una contrasenya nova",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Tria una contrasenya nova per al teu compte.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Contrasenya nova",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Actualitza la contrasenya",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Actualitzant..."
 }

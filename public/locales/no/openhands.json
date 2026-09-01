@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Tilbakestill passordet",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "Skriv inn e-posten din, så sender vi deg en lenke for å tilbakestille den.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Hvis den e-posten tilhører en konto, får du snart en melding med en lenke for tilbakestilling.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "Glemt passord?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Send tilbakestillingslenke",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Sender...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Sjekker lenken din...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Lenken er ugyldig eller utløpt",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Denne tilbakestillingslenken kan være gammel eller allerede brukt. Be om en ny fra innloggingssiden.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Tilbake til innlogging",
+  "NEODEVEX_AUTH$RESET_TITLE": "Angi et nytt passord",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Velg et nytt passord for kontoen din.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Nytt passord",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Oppdater passord",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Oppdaterer..."
 }

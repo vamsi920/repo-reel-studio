@@ -5,9 +5,9 @@ import { PasswordAuthForm } from "#/components/features/auth/password-auth-form"
 import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
 
 /**
- * Standalone, no backend/onboarding gating (see the `isLoginPage` bypass in
- * `root.tsx`) -- a user who isn't signed in yet must always be able to reach
- * this page regardless of agent-server/backend state.
+ * Standalone, no backend/onboarding gating (see the `isStandaloneAuthPage`
+ * bypass in `root.tsx`) -- a user who isn't signed in yet must always be
+ * able to reach this page regardless of agent-server/backend state.
  */
 export default function LoginRoute() {
   const navigate = useNavigate();

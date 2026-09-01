@@ -184,6 +184,83 @@ export async function signOutAndRedirect(
   navigate("/login", { replace: true });
 }
 
+export type PasswordResetRequestOutcome =
+  | { kind: "sent" }
+  | { kind: "domain_rejected" }
+  | { kind: "error"; message: string };
+
+/**
+ * Requests a password-reset email. Always returns `"sent"` on a successful
+ * API call, whether or not the address belongs to a real account -- Supabase
+ * itself never reveals that distinction (anti-enumeration), so this doesn't
+ * either. `domain_rejected` is purely the same friendly client-side hint
+ * `signUpWithPassword`/`signInWithPassword` give; it's not a security
+ * boundary (the trigger doesn't fire on this path either way, since
+ * `resetPasswordForEmail` never touches `auth.users.email`).
+ *
+ * `redirectTo` must be on the project's Supabase Auth "Redirect URLs"
+ * allowlist (Authentication -> URL Configuration) or the emailed link will
+ * bounce to a generic Supabase error page instead of `/reset-password`.
+ */
+export async function requestPasswordReset(
+  email: string,
+): Promise<PasswordResetRequestOutcome> {
+  const trimmedEmail = email.trim();
+  if (!(await isAllowedSignupEmail(trimmedEmail))) {
+    return { kind: "domain_rejected" };
+  }
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      kind: "error",
+      message: "Sign-in is not configured for this deployment.",
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) return { kind: "error", message: error.message };
+    return { kind: "sent" };
+  } catch (error) {
+    return {
+      kind: "error",
+      message: error instanceof Error ? error.message : "Something went wrong.",
+    };
+  }
+}
+
+/**
+ * Sets a new password from inside an active `PASSWORD_RECOVERY` session (the
+ * one Supabase's client establishes automatically when a user lands on
+ * `/reset-password` via the emailed link). Requires that session to already
+ * exist -- this doesn't itself verify a recovery token, it just calls
+ * `updateUser`, same as any other authenticated password change.
+ */
+export async function updatePasswordForRecovery(
+  newPassword: string,
+): Promise<AuthOutcome> {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      kind: "error",
+      message: "Sign-in is not configured for this deployment.",
+    };
+  }
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) return { kind: "error", message: error.message };
+    return { kind: "signed_in" };
+  } catch (error) {
+    return {
+      kind: "error",
+      message: error instanceof Error ? error.message : "Something went wrong.",
+    };
+  }
+}
+
 /**
  * Signs in to an existing account. Never treated as an anonymous-session
  * upgrade -- only `signUpWithPassword` does that, since signing in to an

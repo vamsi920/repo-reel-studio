@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Passwort zurücksetzen",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "Gib deine E-Mail-Adresse ein, und wir senden dir einen Link zum Zurücksetzen.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Falls diese E-Mail-Adresse zu einem Konto gehört, erhältst du in Kürze eine Nachricht mit einem Link zum Zurücksetzen.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "Passwort vergessen?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Reset-Link senden",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Wird gesendet...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Link wird überprüft...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Link ungültig oder abgelaufen",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Dieser Passwort-Reset-Link ist möglicherweise abgelaufen oder wurde bereits verwendet. Fordere auf der Anmeldeseite einen neuen an.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Zurück zur Anmeldung",
+  "NEODEVEX_AUTH$RESET_TITLE": "Neues Passwort festlegen",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Wähle ein neues Passwort für dein Konto.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Neues Passwort",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Passwort aktualisieren",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Wird aktualisiert..."
 }

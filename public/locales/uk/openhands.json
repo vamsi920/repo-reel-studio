@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Скинути пароль",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "Введіть свою електронну пошту, і ми надішлемо посилання для скидання.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Якщо ця електронна пошта належить до облікового запису, ви незабаром отримаєте повідомлення з посиланням для скидання.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "Забули пароль?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Надіслати посилання для скидання",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Надсилання...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Перевіряємо ваше посилання...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Посилання недійсне або застаріло",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Це посилання для скидання пароля може бути застарілим або вже використаним. Запросіть нове на сторінці входу.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Повернутися до входу",
+  "NEODEVEX_AUTH$RESET_TITLE": "Встановіть новий пароль",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Виберіть новий пароль для свого облікового запису.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Новий пароль",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Оновити пароль",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Оновлення..."
 }

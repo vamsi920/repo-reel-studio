@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "Şifreni sıfırla",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "E-postanı gir, sıfırlamak için sana bir bağlantı gönderelim.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "Bu e-posta bir hesaba aitse, kısa süre içinde sıfırlama bağlantısı içeren bir mesaj alacaksın.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "Şifreni mi unuttun?",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "Sıfırlama bağlantısı gönder",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "Gönderiliyor...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "Bağlantın kontrol ediliyor...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "Bağlantı geçersiz veya süresi dolmuş",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "Bu şifre sıfırlama bağlantısı eski veya zaten kullanılmış olabilir. Giriş sayfasından yeni bir tane iste.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "Girişe dön",
+  "NEODEVEX_AUTH$RESET_TITLE": "Yeni bir şifre belirle",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "Hesabın için yeni bir şifre seç.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Yeni şifre",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "Şifreyi güncelle",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "Güncelleniyor..."
 }

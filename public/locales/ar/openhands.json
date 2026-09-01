@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "إعادة تعيين كلمة المرور",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة التعيين.",
+  "NEODEVEX_AUTH$FORGOT_SENT": "إذا كان هذا البريد الإلكتروني مرتبطاً بحساب، فستصلك رسالة تحتوي على رابط إعادة التعيين قريباً.",
+  "NEODEVEX_AUTH$FORGOT_LINK": "نسيت كلمة المرور؟",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "إرسال رابط إعادة التعيين",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "جارٍ الإرسال...",
+  "NEODEVEX_AUTH$RESET_CHECKING": "جارٍ التحقق من الرابط...",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "الرابط غير صالح أو منتهي الصلاحية",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "قد يكون رابط إعادة تعيين كلمة المرور هذا قديماً أو مستخدماً بالفعل. اطلب رابطاً جديداً من صفحة تسجيل الدخول.",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "العودة إلى تسجيل الدخول",
+  "NEODEVEX_AUTH$RESET_TITLE": "تعيين كلمة مرور جديدة",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "اختر كلمة مرور جديدة لحسابك.",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "كلمة المرور الجديدة",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "تحديث كلمة المرور",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "جارٍ التحديث..."
 }

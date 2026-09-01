@@ -3140,5 +3140,20 @@
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS": "environment connections onboarding setup readiness network egress providers integrations",
   "COMMAND_MENU$ONBOARDING_AGENT_TITLE": "Set up my environment",
   "COMMAND_MENU$ONBOARDING_AGENT_DESCRIPTION": "Ask the onboarding agent to connect something or explain a failing check",
-  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install"
+  "COMMAND_MENU$ONBOARDING_AGENT_KEYWORDS": "onboarding agent setup connect wizard help configure install",
+  "NEODEVEX_AUTH$FORGOT_TITLE": "重置密码",
+  "NEODEVEX_AUTH$FORGOT_SUBTITLE": "输入你的电子邮箱，我们会发送重置链接给你。",
+  "NEODEVEX_AUTH$FORGOT_SENT": "如果该邮箱与账户关联，你很快会收到一封包含重置链接的邮件。",
+  "NEODEVEX_AUTH$FORGOT_LINK": "忘记密码？",
+  "NEODEVEX_AUTH$FORGOT_SUBMIT": "发送重置链接",
+  "NEODEVEX_AUTH$FORGOT_SENDING": "正在发送…",
+  "NEODEVEX_AUTH$RESET_CHECKING": "正在检查你的链接…",
+  "NEODEVEX_AUTH$RESET_EXPIRED_TITLE": "链接无效或已过期",
+  "NEODEVEX_AUTH$RESET_EXPIRED_SUBTITLE": "此密码重置链接可能已过期或已被使用。请在登录页面重新申请一个。",
+  "NEODEVEX_AUTH$RESET_BACK_TO_LOGIN": "返回登录",
+  "NEODEVEX_AUTH$RESET_TITLE": "设置新密码",
+  "NEODEVEX_AUTH$RESET_SUBTITLE": "为你的账户选择一个新密码。",
+  "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "新密码",
+  "NEODEVEX_AUTH$RESET_SUBMIT": "更新密码",
+  "NEODEVEX_AUTH$RESET_SUBMITTING": "正在更新…"
 }
