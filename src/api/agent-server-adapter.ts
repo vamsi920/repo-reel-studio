@@ -779,12 +779,18 @@ function buildAgentContext(
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   disabledSkills: string[] = [],
   workspaceId: string | null = null,
+  extraSystemSuffix: string | null = null,
 ): SettingsRecord {
   const runtimeServicesSuffix =
     buildRuntimeServicesSystemSuffix(runtimeServicesInfo);
   const workspaceMemorySuffix = buildWorkspaceMemorySystemSuffix(workspaceId);
+  // `extraSystemSuffix` is a real system prompt, unlike
+  // `conversationInstructions` -- which `buildInitialMessage` glues onto the
+  // first *user* message and which the cloud path reuses as the conversation
+  // title. A long standing brief passed that way shows up as a 2 kB title and
+  // gets diluted out of context over a long conversation.
   const systemMessageSuffix =
-    [runtimeServicesSuffix, workspaceMemorySuffix]
+    [runtimeServicesSuffix, workspaceMemorySuffix, extraSystemSuffix]
       .filter(Boolean)
       .join("\n\n") || undefined;
   const existingContext = toRecord(agentSettings.agent_context);
@@ -852,6 +858,7 @@ function buildConfiguredAcpAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   workspaceId: string | null = null,
+  extraSystemSuffix: string | null = null,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const payload: AgentSettingsPayload = {
@@ -861,6 +868,7 @@ function buildConfiguredAcpAgentSettings(
       runtimeServicesInfo,
       settings.disabled_skills,
       workspaceId,
+      extraSystemSuffix,
     ),
   };
 
@@ -920,6 +928,7 @@ function buildConfiguredOpenHandsAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   workspaceId: string | null = null,
+  extraSystemSuffix: string | null = null,
 ): AgentSettingsPayload {
   const agentSettings = toRecord(settings.agent_settings);
   const llm = toRecord(agentSettings.llm);
@@ -979,6 +988,7 @@ function buildConfiguredOpenHandsAgentSettings(
       runtimeServicesInfo,
       settings.disabled_skills,
       workspaceId,
+      extraSystemSuffix,
     ),
     tools: getAgentTools(agentSettings),
   };
@@ -988,17 +998,20 @@ function buildConfiguredAgentSettings(
   settings: Settings,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   workspaceId: string | null = null,
+  extraSystemSuffix: string | null = null,
 ): AgentSettingsPayload {
   return isAcpAgent(settings)
     ? buildConfiguredAcpAgentSettings(
         settings,
         runtimeServicesInfo,
         workspaceId,
+        extraSystemSuffix,
       )
     : buildConfiguredOpenHandsAgentSettings(
         settings,
         runtimeServicesInfo,
         workspaceId,
+        extraSystemSuffix,
       );
 }
 
@@ -1073,6 +1086,12 @@ export interface StartConversationOptions {
   settings: Settings;
   query?: string;
   conversationInstructions?: string;
+  /**
+   * Appended to `agent_context.system_message_suffix` -- a genuine system
+   * prompt, unlike `conversationInstructions`, which is glued onto the first
+   * user message and doubles as the conversation title on the cloud path.
+   */
+  extraSystemSuffix?: string;
   plugins?: PluginSpec[];
   conversationId?: string;
   // Links the new conversation to an existing one as its child. The
@@ -1116,6 +1135,7 @@ export function buildStartConversationRequest(
       getActiveBackend().backend.id,
       options.workingDir ?? getAgentServerWorkingDir(),
     ),
+    options.extraSystemSuffix ?? null,
   );
   const acpServerTag = acpMode
     ? getAcpServerTag(sourceAgentSettings)
@@ -1306,6 +1326,12 @@ export async function buildStartConversationRequestWithEncryptedSettings(options
   settings: Settings;
   query?: string;
   conversationInstructions?: string;
+  /**
+   * Appended to `agent_context.system_message_suffix` -- a genuine system
+   * prompt, unlike `conversationInstructions`, which is glued onto the first
+   * user message and doubles as the conversation title on the cloud path.
+   */
+  extraSystemSuffix?: string;
   plugins?: PluginSpec[];
   conversationId?: string;
   parentConversationId?: string;

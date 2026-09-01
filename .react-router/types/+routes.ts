@@ -17,6 +17,9 @@ type Pages = {
   "/login": {
     params: {};
   };
+  "/reset-password": {
+    params: {};
+  };
   "/conversations": {
     params: {};
   };
@@ -100,6 +103,9 @@ type Pages = {
   "/security": {
     params: {};
   };
+  "/environment/setup": {
+    params: {};
+  };
   "/environment": {
     params: {};
   };
@@ -172,7 +178,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
+    page: "/" | "/login" | "/reset-password" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
   };
   "routes/welcome.tsx": {
     id: "routes/welcome";
@@ -182,9 +188,13 @@ type RouteFiles = {
     id: "routes/login";
     page: "/login";
   };
+  "routes/reset-password.tsx": {
+    id: "routes/reset-password";
+    page: "/reset-password";
+  };
   "routes/root-layout.tsx": {
     id: "routes/root-layout";
-    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -290,6 +300,10 @@ type RouteFiles = {
     id: "routes/security";
     page: "/security";
   };
+  "routes/environment-setup.tsx": {
+    id: "routes/environment-setup";
+    page: "/environment/setup";
+  };
   "routes/environment.tsx": {
     id: "routes/environment";
     page: "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook";
@@ -376,6 +390,7 @@ type RouteModules = {
   "root": typeof import("./src/root.tsx");
   "routes/welcome": typeof import("./src/routes/welcome.tsx");
   "routes/login": typeof import("./src/routes/login.tsx");
+  "routes/reset-password": typeof import("./src/routes/reset-password.tsx");
   "routes/root-layout": typeof import("./src/routes/root-layout.tsx");
   "routes/home": typeof import("./src/routes/home.tsx");
   "routes/conversation-panel": typeof import("./src/routes/conversation-panel.tsx");
@@ -403,6 +418,7 @@ type RouteModules = {
   "routes/automation-setup-route": typeof import("./src/routes/automation-setup-route.tsx");
   "routes/automation-detail": typeof import("./src/routes/automation-detail.tsx");
   "routes/security": typeof import("./src/routes/security.tsx");
+  "routes/environment-setup": typeof import("./src/routes/environment-setup.tsx");
   "routes/environment": typeof import("./src/routes/environment.tsx");
   "routes/environment-overview": typeof import("./src/routes/environment-overview.tsx");
   "routes/environment-connections": typeof import("./src/routes/environment-connections.tsx");

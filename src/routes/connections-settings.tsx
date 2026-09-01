@@ -18,6 +18,7 @@ import {
   displayErrorToast,
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
+import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import AutomationService from "#/api/automation-service/automation-service.api";
 import { buildJiraTriggerPayload } from "#/manifests/jira-trigger-setup";
 import { jiraTriggersRepository } from "#/lib/data-platform/repositories/jira-triggers-repository";
@@ -65,7 +66,7 @@ function GithubConnectionCard() {
         displayErrorToast("Could not disconnect GitHub.");
       } else {
         displaySuccessToast("GitHub disconnected.");
-        queryClient.invalidateQueries({ queryKey: ["github-connection"] });
+        await invalidateConnectionCaches(queryClient);
       }
     } finally {
       setIsDisconnecting(false);
@@ -161,8 +162,7 @@ function JiraConnectionCard() {
         displayErrorToast("Could not disconnect Jira.");
       } else {
         displaySuccessToast("Jira disconnected.");
-        queryClient.invalidateQueries({ queryKey: ["jira-connection"] });
-        queryClient.invalidateQueries({ queryKey: ["jira-issues"] });
+        await invalidateConnectionCaches(queryClient);
       }
     } finally {
       setIsDisconnecting(false);
@@ -440,10 +440,10 @@ export function ConnectionsSettingsScreen() {
     const error = searchParams.get("error");
     if (connected === "github") {
       displaySuccessToast("GitHub connected.");
-      queryClient.invalidateQueries({ queryKey: ["github-connection"] });
+      void invalidateConnectionCaches(queryClient);
     } else if (connected === "jira") {
       displaySuccessToast("Jira connected.");
-      queryClient.invalidateQueries({ queryKey: ["jira-connection"] });
+      void invalidateConnectionCaches(queryClient);
     } else if (error) {
       displayErrorToast(`Connection failed: ${error}`);
     }

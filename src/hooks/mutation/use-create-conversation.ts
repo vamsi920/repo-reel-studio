@@ -91,6 +91,14 @@ export interface CreateConversationVariables {
   };
   suggestedTask?: SuggestedTask;
   conversationInstructions?: string;
+  /**
+   * A real system prompt for this conversation, appended to
+   * `agent_context.system_message_suffix`. Prefer this over
+   * `conversationInstructions` for anything long-lived: that field is glued
+   * onto the first user message and is reused as the conversation title on the
+   * cloud path, so a multi-paragraph brief becomes a multi-paragraph title.
+   */
+  extraSystemSuffix?: string;
   parentConversationId?: string;
   agentType?: "default" | "plan";
   plugins?: PluginSpec[];
@@ -136,6 +144,7 @@ export const useCreateConversation = () => {
       const {
         query,
         conversationInstructions,
+        extraSystemSuffix,
         plugins,
         repository,
         workingDir,
@@ -266,6 +275,7 @@ export const useCreateConversation = () => {
         await AgentServerConversationService.createConversation({
           initialUserMsg: query,
           conversationInstructions: effectiveConversationInstructions,
+          extraSystemSuffix,
           plugins,
           metadata: repository
             ? {

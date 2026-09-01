@@ -7,6 +7,7 @@ import type {
   RequirementStatus,
 } from "./types/requirements";
 import type { DeploymentMode } from "./types/profile";
+import type { DiscoverySection } from "#/constants/onboarding-control";
 
 export const CAPABILITY_LABEL_KEY: Record<Capability, I18nKey> = {
   "source-control": I18nKey.ENVIRONMENT$CAPABILITY_SOURCE_CONTROL,
@@ -121,3 +122,12 @@ export function readinessAccent(score: number, blockingCount: number): string {
   if (score >= 100) return "var(--success-500)";
   return "var(--warning-500)";
 }
+
+export const DISCOVERY_SECTION_LABEL_KEY: Record<DiscoverySection, I18nKey> = {
+  org: I18nKey.ENVIRONMENT$SECTION_ORG,
+  stack: I18nKey.ENVIRONMENT$SECTION_STACK,
+  delivery: I18nKey.ENVIRONMENT$SECTION_DELIVERY,
+  team: I18nKey.ENVIRONMENT$SECTION_TEAM,
+  constraints: I18nKey.ENVIRONMENT$SECTION_CONSTRAINTS,
+  conventions: I18nKey.ENVIRONMENT$SECTION_CONVENTIONS,
+};

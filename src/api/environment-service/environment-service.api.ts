@@ -114,6 +114,27 @@ export const EnvironmentService = {
     return invoke<ProbeResult>("environment-probe", { action: kind, targets });
   },
 
+  /**
+   * Records that an outstanding requirement belongs to someone else.
+   *
+   * Onboarding routinely stalls on something the person in the chair cannot
+   * do -- a firewall rule, an IdP change, an OAuth app only an admin can
+   * register. Without somewhere to put that, the conversation either stops or
+   * the item is silently forgotten.
+   */
+  async assignTask(input: {
+    requirementId: string;
+    assigneeEmail?: string;
+    note?: string;
+  }): Promise<{ ok: true }> {
+    return invoke<{ ok: true }>("environment-profile", {
+      action: "assign-task",
+      requirementId: input.requirementId,
+      assigneeEmail: input.assigneeEmail,
+      note: input.note,
+    });
+  },
+
   async handoffPacket(): Promise<{ markdown: string; allowlistCsv: string }> {
     return invoke<{ markdown: string; allowlistCsv: string }>(
       "environment-profile",

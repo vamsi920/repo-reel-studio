@@ -23,19 +23,41 @@ export const ONBOARDING_RESULT_PREFIX = "[onboarding result] ";
  * documents that the agent-server caches a client tool's schema per tool NAME
  * for the lifetime of its process and rejects re-registration with a different
  * schema -- so growing this enum release by release would break every
- * long-running dev and production agent-server on deploy. Commands that are
- * not implemented yet return a `not_implemented` receipt instead of being
- * absent from the schema.
+ * long-running dev and production agent-server on deploy.
+ * `__tests__/api/onboarding-control-schema.test.ts` snapshots the schema so a
+ * future change has to be a deliberate act rather than an accident.
+ *
+ * If the contract genuinely has to change later, the escape hatch is to
+ * RENAME the tool (`onboarding_control_v2`) rather than edit it in place --
+ * the agent-server's cache is keyed by name, so a new name is a new entry and
+ * running servers keep working. Volatile detail (which providers exist, which
+ * capabilities are unconfigured, what this user may do) is deliberately kept
+ * out of the schema and answered by the `describe` command instead.
  */
 export const ONBOARDING_CONTROL_COMMANDS = [
+  // Orientation. `describe` returns the live catalogue -- commands,
+  // capabilities, providers, what is already connected, and whether this user
+  // is even allowed to write connections. Keeping that answer in a command
+  // rather than in the schema is what stops the provider list from being
+  // frozen into the tool contract forever.
+  "describe",
+  // Interview
+  "record_discovery",
+  "set_setup_plan",
+  "advance_plan",
+  "get_environment_state",
+  // Connecting
   "show_provider_picker",
+  "open_connection_form",
   "request_credentials",
   "run_probe",
+  // Reporting and handoff
   "show_checklist",
   "propose_profile_change",
   "navigate",
   "generate_handoff_packet",
   "assign_task",
+  "complete_setup",
 ] as const;
 
 export type OnboardingControlCommand =
@@ -52,10 +74,44 @@ export const ONBOARDING_PROBE_KINDS = [
   "deployment-defects",
 ] as const;
 
+/**
+ * Where `navigate` can point.
+ *
+ * These are workbench views inside the setup studio, not routes. The agent
+ * cannot navigate the browser away from the conversation -- doing so was the
+ * original defect: showing a provider picker teleported the user to a form
+ * grid mid-sentence.
+ */
 export const ONBOARDING_VIEWS = [
-  "overview",
+  "discovery",
+  "plan",
   "connections",
   "network",
   "requirements",
   "runbook",
 ] as const;
+
+/**
+ * How sure the agent is about a recorded fact. An inferred fact must never be
+ * played back to the user as something they said, so the distinction is
+ * carried in the data rather than in the phrasing.
+ */
+export const DISCOVERY_CONFIDENCE = ["stated", "inferred"] as const;
+
+export type DiscoveryConfidence = (typeof DISCOVERY_CONFIDENCE)[number];
+
+/**
+ * Sections of the company profile a discovered fact can belong to. Keeping
+ * this closed lets the profile stay queryable by other agents later instead of
+ * degenerating into an untyped bag of strings.
+ */
+export const DISCOVERY_SECTIONS = [
+  "org",
+  "stack",
+  "delivery",
+  "team",
+  "constraints",
+  "conventions",
+] as const;
+
+export type DiscoverySection = (typeof DISCOVERY_SECTIONS)[number];

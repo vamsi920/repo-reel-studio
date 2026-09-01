@@ -121,7 +121,13 @@ Deno.serve(async (req: Request) => {
   const userId = await getCallerUserId(req);
   if (!userId) return jsonResponse({ error: "unauthorized" }, { status: 401 });
 
-  let payload: { action?: string; doc?: Record<string, unknown> };
+  let payload: {
+    action?: string;
+    doc?: Record<string, unknown>;
+    requirementId?: string;
+    assigneeEmail?: string;
+    note?: string;
+  };
   try {
     payload = await req.json();
   } catch {
@@ -139,6 +145,33 @@ Deno.serve(async (req: Request) => {
       .eq("org_id", orgId)
       .maybeSingle();
     return jsonResponse(data ?? { doc: null });
+  }
+
+  if (payload.action === "assign-task") {
+    if (!payload.requirementId) {
+      return jsonResponse({ error: "missing_requirement" }, { status: 400 });
+    }
+    // Members, not admins: the whole point is that the person who cannot do
+    // the work is the one recording who can.
+    if (!(await requireOrgRole(admin, userId, orgId, "member"))) {
+      return jsonResponse({ error: "forbidden" }, { status: 403 });
+    }
+    const { error } = await admin.from("environment_onboarding_tasks").upsert(
+      {
+        org_id: orgId,
+        requirement_id: payload.requirementId,
+        assignee_email: payload.assigneeEmail ?? null,
+        note: payload.note ?? null,
+        status: "open",
+        created_by: userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "org_id,requirement_id" },
+    );
+    if (error) {
+      return jsonResponse({ error: "assign_failed", detail: error.message }, { status: 500 });
+    }
+    return jsonResponse({ ok: true });
   }
 
   if (payload.action === "handoff-packet") {

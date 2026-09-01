@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
+import { unmirrorFromLegacy } from "../_shared/legacy-mirror.ts";
 
 /**
  * Removes a connection.
@@ -59,6 +60,15 @@ Deno.serve(async (req: Request) => {
     .eq("org_id", orgId);
 
   if (error) return jsonResponse({ error: "delete_failed" }, { status: 500 });
+
+  // Remove the mirrored legacy row too, or the two stores diverge: the
+  // Environment screen would show the provider as gone while the repo picker
+  // kept working off a connection nobody can see or revoke.
+  await unmirrorFromLegacy(
+    admin,
+    connection.provider_id as string,
+    userId,
+  ).catch(() => undefined);
 
   await admin.from("environment_checks").insert({
     org_id: orgId,

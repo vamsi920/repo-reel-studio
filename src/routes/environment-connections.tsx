@@ -18,7 +18,7 @@ import {
 import { CAPABILITY_LABEL_KEY } from "#/lib/environment/display";
 import { useConnections } from "#/hooks/query/use-connections";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
-import { ENVIRONMENT_QUERY_KEYS } from "#/hooks/query/query-keys";
+import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import {
   EnvironmentService,
@@ -56,9 +56,7 @@ function EnvironmentConnectionsScreen() {
     if (!connected && !error) return;
     if (connected) {
       displaySuccessToast(t(I18nKey.ENVIRONMENT$STATUS_OK));
-      queryClient.invalidateQueries({
-        queryKey: ENVIRONMENT_QUERY_KEYS.all,
-      });
+      void invalidateConnectionCaches(queryClient);
     }
     if (error) displayErrorToast(error);
     const next = new URLSearchParams(searchParams);
@@ -158,9 +156,7 @@ function EnvironmentConnectionsScreen() {
         setLastProbe(receipt.probe ?? null);
         setActiveManifest(null);
         displaySuccessToast(t(I18nKey.ENVIRONMENT$RECEIPT_TITLE));
-        queryClient.invalidateQueries({
-          queryKey: ENVIRONMENT_QUERY_KEYS.all,
-        });
+        await invalidateConnectionCaches(queryClient);
       } catch (error) {
         displayErrorToast(
           error instanceof EnvironmentServiceError
@@ -180,9 +176,7 @@ function EnvironmentConnectionsScreen() {
       try {
         const result = await EnvironmentService.probeConnection(connection.id);
         setLastProbe(result);
-        queryClient.invalidateQueries({
-          queryKey: ENVIRONMENT_QUERY_KEYS.all,
-        });
+        await invalidateConnectionCaches(queryClient);
       } catch (error) {
         displayErrorToast(
           error instanceof EnvironmentServiceError
@@ -201,9 +195,7 @@ function EnvironmentConnectionsScreen() {
       setBusyProvider(connection.providerId);
       try {
         await EnvironmentService.disconnect(connection.id);
-        queryClient.invalidateQueries({
-          queryKey: ENVIRONMENT_QUERY_KEYS.all,
-        });
+        await invalidateConnectionCaches(queryClient);
       } catch (error) {
         displayErrorToast(
           error instanceof EnvironmentServiceError

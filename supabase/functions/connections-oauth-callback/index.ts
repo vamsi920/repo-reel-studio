@@ -5,6 +5,7 @@ import { OAUTH_STATE_TTL_MS } from "../_shared/oauth.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { interpolatePath, resolveBaseUrl } from "../_shared/template.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
+import { mirrorToLegacy } from "../_shared/legacy-mirror.ts";
 
 /**
  * Completes an OAuth authorization for any registry provider, replacing
@@ -131,6 +132,9 @@ Deno.serve(async (req: Request) => {
     : oauth.scopes;
 
   let displayName: string | null = null;
+  // Kept for the legacy mirror: `github_connections.github_user_id` is NOT
+  // NULL, and it is only ever available here, from the identity call.
+  let identityId: string | number | undefined;
   const identityConfig: Record<string, string> = { ...config };
   if (oauth.identity) {
     try {
@@ -161,6 +165,7 @@ Deno.serve(async (req: Request) => {
         const name = read(oauth.identity.namePointer);
         const id = read(oauth.identity.idPointer);
         if (typeof name === "string") displayName = name;
+        if (typeof id === "string" || typeof id === "number") identityId = id;
         // Atlassian's accessible-resources call is where the cloudId comes
         // from, and every later Jira call is addressed by it.
         if (manifest.id === "jira-cloud" && typeof id === "string") {
@@ -213,6 +218,26 @@ Deno.serve(async (req: Request) => {
     return redirect(appOrigin, returnTo, { error: "upsert_failed" });
   }
 
+  // Mirror into the per-vendor legacy table so the rest of the product sees
+  // this connection. Best-effort on purpose: the generic connection is already
+  // committed, and failing the whole flow because a secondary write failed
+  // would be worse than a connection that works everywhere except the repo
+  // picker. The outcome rides back on the redirect so the UI can say so.
+  let mirrorNote = "skipped";
+  try {
+    const outcome = await mirrorToLegacy(admin, {
+      providerId: manifest.id,
+      userId: stateRow.user_id as string,
+      config: identityConfig,
+      credentials,
+      scopes: grantedScopes,
+      identity: { id: identityId, name: displayName ?? undefined },
+    });
+    mirrorNote = outcome.mirrored ?? `skipped:${outcome.reason}`;
+  } catch (error) {
+    mirrorNote = `failed:${(error as Error)?.message ?? "unknown"}`;
+  }
+
   await admin.from("environment_checks").insert({
     org_id: stateRow.org_id,
     kind: "connection",
@@ -225,5 +250,8 @@ Deno.serve(async (req: Request) => {
     actor: stateRow.user_id,
   });
 
-  return redirect(appOrigin, returnTo, { connected: manifest.id });
+  return redirect(appOrigin, returnTo, {
+    connected: manifest.id,
+    mirror: mirrorNote,
+  });
 });

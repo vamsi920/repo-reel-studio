@@ -62,8 +62,13 @@ test("GitHub connector's Connect button reaches the connections-oauth-start Edge
   // resolves as a 404 from Supabase's function gateway. A real 200 with an
   // authorizeUrl means the function is deployed and executing.
   await expect.poll(() => capturedStatus, { timeout: 15_000 }).toBe(200);
-  expect(typeof capturedBody?.authorizeUrl).toBe("string");
-  expect(capturedBody?.authorizeUrl).toContain(
-    "github.com/login/oauth/authorize",
+  // Asserted on the object rather than by member access: the assignment
+  // happens inside the route callback, which TypeScript's control-flow
+  // analysis cannot see, so `capturedBody` narrows to `null` and `?.` on it
+  // resolves to `never`.
+  expect(capturedBody).toEqual(
+    expect.objectContaining({
+      authorizeUrl: expect.stringContaining("github.com/login/oauth/authorize"),
+    }),
   );
 });

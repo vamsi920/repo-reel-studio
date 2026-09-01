@@ -22,6 +22,7 @@ import { LoadingSpinner } from "#/components/shared/loading-spinner";
 import { useAppTitle } from "#/hooks/use-app-title";
 import { ReactRouterNavigationProvider } from "./react-router-navigation-provider";
 import { OnboardingHost } from "#/components/features/onboarding";
+import { ConnectionSyncSentinel } from "#/components/features/environment/connection-sync-sentinel";
 import { isOnboardingPreviewActive } from "#/components/features/onboarding/onboarding-preview";
 
 const EnvironmentSwitchOverlay = React.lazy(
@@ -152,6 +153,7 @@ export default function MainApp() {
           <CommandMenu />
           <OnboardingDock />
         </React.Suspense>
+        <ConnectionSyncSentinel />
         {showOnboardingPreview ? <OnboardingHost /> : null}
       </SidebarMobileNavProvider>
     </ReactRouterNavigationProvider>

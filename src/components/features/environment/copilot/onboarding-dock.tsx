@@ -1,39 +1,36 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Sparkles, X, ArrowUpRight } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
-import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { buildAgentCanvasPath } from "#/utils/base-path";
-import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import {
   createConversationResultPoster,
   type PostResultFn,
 } from "#/services/onboarding-control";
+import { useOnboardingSession } from "#/hooks/query/use-onboarding-session";
 import { CredentialRequestSheet } from "./credential-request-sheet";
-import { ONBOARDING_SYSTEM_BRIEF } from "./onboarding-brief";
 
 /**
- * The onboarding agent's presence across the whole app.
+ * The onboarding agent's presence everywhere except the studio itself.
  *
- * Mounted once in the root layout, so a credential request raised by the agent
- * reaches the user wherever they happen to be -- the setup conversation is not
- * a place you have to be standing in for the agent to be able to ask you
- * something.
+ * The conversation lives at `/environment/setup`, which owns the only live
+ * conversation socket -- the event stores are global and unkeyed, so a second
+ * chat surface would interleave with the first. This dock is the out-of-band
+ * half: it launches the studio, and it surfaces a credential request raised
+ * while the user has wandered off to another screen, because the agent is
+ * blocked until someone answers one.
  *
- * The conversation itself runs in the normal conversation view rather than
- * inside this panel. A second chat surface would mean a second WebSocket
- * connection writing into the same event stores as the open conversation, and
- * the two would interleave. Everything that has to be available everywhere --
- * the credential sheet, the agent's requests, the launcher -- lives here; the
- * transcript lives where transcripts already live.
+ * It hides itself on the studio route. Two credential sheets for the same
+ * request, and a launcher for the page you are already on, are just noise.
  */
 export function OnboardingDock() {
   const { t } = useTranslation("openhands");
   const navigate = useNavigate();
+  const location = useLocation();
   const reduceMotion = useReducedMotion();
 
   const open = useOnboardingCopilotStore((state) => state.open);
@@ -48,40 +45,35 @@ export function OnboardingDock() {
     (state) => state.clearCredentialRequest,
   );
 
-  const { mutate: createConversation, isPending } = useCreateConversation();
-  const [conversationId, setConversationId] = React.useState<string | null>(
-    null,
-  );
-
-  // Falls back to a no-op before a conversation exists: a receipt with nowhere
-  // to go must not throw inside the dispatcher.
+  // A credential entered here still has to reach the agent, which is waiting
+  // in the studio's conversation. Posting through the REST send works even
+  // though this component is not mounted on that conversation's socket.
+  const { data: session } = useOnboardingSession();
   const postResult: PostResultFn = React.useMemo(
     () =>
-      conversationId
-        ? createConversationResultPoster(conversationId)
+      session?.conversationId
+        ? createConversationResultPoster(session.conversationId)
         : () => undefined,
-    [conversationId],
+    [session?.conversationId],
   );
 
-  const launch = React.useCallback(() => {
+  // Launching means going to the studio, which owns the conversation. Opening
+  // it here as well would mount a second provider against the same global
+  // event store and the two transcripts would overwrite each other.
+  const openStudio = React.useCallback(() => {
     const seed = consumeSeed();
-    createConversation(
-      {
-        query: seed ?? t(I18nKey.ENVIRONMENT$COPILOT_SUBTITLE),
-        conversationInstructions: ONBOARDING_SYSTEM_BRIEF,
-        entryPoint: "environment_onboarding_dock",
-      },
-      {
-        onSuccess: (response) => {
-          setConversationId(response.conversation_id);
-          navigate(
-            buildAgentCanvasPath(`/conversations/${response.conversation_id}`),
-          );
-        },
-        onError: () => displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD)),
-      },
+    navigate(
+      buildAgentCanvasPath(
+        seed
+          ? `/environment/setup?seed=${encodeURIComponent(seed)}`
+          : "/environment/setup",
+      ),
     );
-  }, [consumeSeed, createConversation, navigate, t]);
+  }, [consumeSeed, navigate]);
+
+  // The studio has its own workbench and its own credential card; a second
+  // set floating on top would be two views of the same request.
+  if (location.pathname.includes("/environment/setup")) return null;
 
   return (
     <>
@@ -172,25 +164,10 @@ export function OnboardingDock() {
             <button
               type="button"
               data-testid="onboarding-dock-launch"
-              disabled={isPending}
-              onClick={
-                conversationId
-                  ? () =>
-                      navigate(
-                        buildAgentCanvasPath(
-                          `/conversations/${conversationId}`,
-                        ),
-                      )
-                  : launch
-              }
-              className={cn(
-                "ame-btn-primary ame-btn-sm inline-flex items-center justify-center gap-1.5",
-                isPending && "loading",
-              )}
+              onClick={openStudio}
+              className="ame-btn-primary ame-btn-sm inline-flex items-center justify-center gap-1.5"
             >
-              {isPending
-                ? t(I18nKey.ENVIRONMENT$COPILOT_STARTING)
-                : t(I18nKey.ENVIRONMENT$COPILOT_OPEN)}
+              {t(I18nKey.ENVIRONMENT$COPILOT_OPEN)}
               <ArrowUpRight size={12} aria-hidden />
             </button>
           </motion.aside>

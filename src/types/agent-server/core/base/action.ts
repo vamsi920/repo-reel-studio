@@ -366,13 +366,16 @@ export interface OnboardingControlAction extends ActionBase<
   probe_kind?: string | null;
   targets?: string[] | null;
   vantage?: string | null;
-  profile_patch?: Record<string, unknown> | null;
+  /**
+   * Structured, command-specific argument. Deliberately untyped: keeping
+   * per-command shapes out of the tool schema is what lets a new command ship
+   * without forcing every running agent-server to restart.
+   */
+  payload?: Record<string, unknown> | null;
   rationale?: string | null;
-  view?: string | null;
-  feature_ids?: string[] | null;
-  requirement_id?: string | null;
-  assignee_email?: string | null;
   note?: string | null;
+  /** Legacy top-level field, still accepted by `navigate`. */
+  view?: string | null;
 }
 
 export type Action =

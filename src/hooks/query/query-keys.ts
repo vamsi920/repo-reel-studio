@@ -28,6 +28,10 @@ export const ENVIRONMENT_QUERY_KEYS = {
   checks: (orgId?: string, limit?: number) =>
     ["environment", "checks", orgId ?? null, limit ?? null] as const,
   tasks: (orgId?: string) => ["environment", "tasks", orgId ?? null] as const,
+  session: (orgId?: string) =>
+    ["environment", "onboarding-session", orgId ?? null] as const,
+  companyProfile: (orgId?: string) =>
+    ["environment", "company-profile", orgId ?? null] as const,
 } as const;
 
 export const LLM_PROFILES_QUERY_KEYS = {

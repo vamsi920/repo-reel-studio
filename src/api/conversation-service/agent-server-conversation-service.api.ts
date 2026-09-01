@@ -325,6 +325,12 @@ function requireAppConversation(
 export interface CreateConversationOptions {
   initialUserMsg?: string;
   conversationInstructions?: string;
+  /**
+   * A real system prompt, appended to `agent_context.system_message_suffix`.
+   * Kept distinct from `conversationInstructions`, which the cloud path
+   * reuses verbatim as the conversation title.
+   */
+  extraSystemSuffix?: string;
   plugins?: PluginSpec[];
   metadata?: ConversationMetadata | null;
   workingDirOverride?: string;
@@ -393,6 +399,7 @@ class AgentServerConversationService {
     const {
       initialUserMsg,
       conversationInstructions,
+      extraSystemSuffix,
       plugins,
       metadata,
       workingDirOverride,
@@ -458,6 +465,7 @@ class AgentServerConversationService {
       settings,
       query: initialUserMsg,
       conversationInstructions,
+      extraSystemSuffix,
       plugins,
       conversationId,
       // The agent-server rejects a parent in a different workspace, so callers

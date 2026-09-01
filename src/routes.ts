@@ -42,6 +42,12 @@ export default [
     route("automations/new/:automationId", "routes/automation-setup-route.tsx"),
     route("automations/:automationId", "routes/automation-detail.tsx"),
     route("security", "routes/security.tsx"),
+    // Must stay ahead of the `environment` layout below: the setup studio is a
+    // full-bleed two-pane surface, not another tab, and must not inherit the
+    // layout's tab strip or scroll container. Being a sibling also guarantees
+    // it is never mounted at the same time as `conversations/:conversationId`
+    // -- two live conversation sockets would fight over the global event store.
+    route("environment/setup", "routes/environment-setup.tsx"),
     route("environment", "routes/environment.tsx", [
       index("routes/environment-overview.tsx"),
       route("connections", "routes/environment-connections.tsx"),

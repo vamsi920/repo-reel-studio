@@ -688,18 +688,14 @@ export function ConversationWebSocketProvider({
             handleCanvasUIAction(event.action, conversationId ?? null);
           }
 
-          // Onboarding agent driving the Environment screen. Uses both
-          // dispatch styles: navigation is immediate, while probes and
-          // credential requests post a redacted receipt back as a follow-up
-          // message. No credential is ever carried by this action -- the tool
-          // schema has no field one could occupy.
+          // Onboarding agent driving the setup workbench. Everything renders
+          // beside the conversation; nothing navigates. Probes and credential
+          // requests post a redacted receipt back as a follow-up message. No
+          // credential is ever carried by this action -- the tool schema has
+          // no field one could occupy.
           if (conversationId && isOnboardingControlActionEvent(event)) {
             void handleOnboardingControlAction(event.action, {
               postResult: createConversationResultPoster(conversationId),
-              navigate: (path: string) => {
-                window.history.pushState({}, "", path);
-                window.dispatchEvent(new PopStateEvent("popstate"));
-              },
             });
           }
 
