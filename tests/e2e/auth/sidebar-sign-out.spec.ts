@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Regression test for the sidebar account menu: its trigger opened and then
@@ -18,6 +18,17 @@ test.skip(
   "E2E_TEST_EMAIL / E2E_TEST_PASSWORD not set -- see tests/e2e/auth/README.md",
 );
 
+async function dismissAnalyticsModal(page: Page) {
+  try {
+    const form = page.getByTestId("telemetry-consent-form");
+    await form.waitFor({ state: "visible", timeout: 5_000 });
+    await form.getByRole("button", { name: "Confirm preferences" }).click();
+    await form.waitFor({ state: "hidden", timeout: 5_000 });
+  } catch {
+    // Modal didn't appear, or was already dismissed -- fine either way.
+  }
+}
+
 test("sidebar account menu opens on click and offers sign out", async ({
   page,
 }) => {
@@ -30,6 +41,7 @@ test("sidebar account menu opens on click and offers sign out", async ({
       timeout: 30_000,
     })
     .toMatch(/\/conversations/);
+  await dismissAnalyticsModal(page);
 
   await page.getByTestId("user-menu-trigger").click();
 
