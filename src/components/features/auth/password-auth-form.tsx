@@ -8,7 +8,7 @@ import { I18nKey } from "#/i18n/declaration";
 import {
   signUpWithPassword,
   signInWithPassword,
-  requestPasswordReset,
+  directPasswordReset,
   isEmailInDomainAllowlist,
   loadSignupDomainAllowlist,
 } from "#/lib/data-platform/auth-flow";
@@ -38,7 +38,6 @@ export function PasswordAuthForm() {
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [alreadyExists, setAlreadyExists] = React.useState(false);
-  const [resetSent, setResetSent] = React.useState(false);
   // Empty until loaded, which means "no restriction" -- the same default the
   // server-side trigger applies, so a deployment that has not narrowed its
   // allowlist never blocks its own login form.
@@ -66,8 +65,8 @@ export function PasswordAuthForm() {
 
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
+    setPassword("");
     setConfirmPassword("");
-    setResetSent(false);
     clearFieldErrors();
   };
 
@@ -76,7 +75,7 @@ export function PasswordAuthForm() {
     if (submitState === "submitting") return;
 
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || (!isForgot && !password)) return;
+    if (!trimmedEmail || !password) return;
 
     if (!isEmailInDomainAllowlist(trimmedEmail, signupDomains)) {
       clearFieldErrors();
@@ -84,7 +83,7 @@ export function PasswordAuthForm() {
       return;
     }
 
-    if (isSignUp) {
+    if (isSignUp || isForgot) {
       if (password.length < MIN_PASSWORD_LENGTH) {
         clearFieldErrors();
         setPasswordError(t(I18nKey.NEODEVEX_AUTH$PASSWORD_TOO_SHORT));
@@ -101,15 +100,33 @@ export function PasswordAuthForm() {
     setSubmitState("submitting");
 
     if (isForgot) {
-      const outcome = await requestPasswordReset(trimmedEmail);
+      const outcome = await directPasswordReset(trimmedEmail, password);
+      if (outcome.kind === "changed") {
+        // Same new password just set server-side -- sign the user straight
+        // in rather than sending them back to a second, manual login step.
+        const signInOutcome = await signInWithPassword(trimmedEmail, password);
+        setSubmitState("idle");
+        if (signInOutcome.kind === "signed_in") {
+          // login.tsx's useSupabaseSession effect handles the redirect.
+          return;
+        }
+        // Password did change server-side even though this particular
+        // sign-in attempt failed -- send them to a normal sign-in rather
+        // than implying the change itself didn't work.
+        switchMode("sign-in");
+        setEmail(trimmedEmail);
+        return;
+      }
       setSubmitState("idle");
-      if (outcome.kind === "sent") {
-        setResetSent(true);
-      } else if (outcome.kind === "domain_rejected") {
+      if (outcome.kind === "domain_rejected") {
         setDomainRejected(true);
+      } else if (outcome.kind === "no_account") {
+        setErrorMessage(t(I18nKey.NEODEVEX_AUTH$NO_ACCOUNT_FOUND));
       } else {
         setErrorMessage(
-          outcome.message || t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR),
+          outcome.kind === "error"
+            ? outcome.message
+            : t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR),
         );
       }
       return;
@@ -158,165 +175,153 @@ export function PasswordAuthForm() {
         </p>
       </div>
 
-      {isForgot && resetSent ? (
-        <div
-          role="status"
-          data-testid="auth-reset-sent"
-          className="rounded-md border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4 text-sm text-[var(--text-secondary)]"
-        >
-          {t(I18nKey.NEODEVEX_AUTH$FORGOT_SENT)}
+      <form
+        data-testid="password-auth-form"
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
+      >
+        <SettingsInput
+          testId="auth-email"
+          name="email"
+          type="email"
+          label={t(I18nKey.NEODEVEX_AUTH$EMAIL_LABEL)}
+          value={email}
+          onChange={(value) => {
+            setEmail(value);
+            clearFieldErrors();
+          }}
+          placeholder={t(I18nKey.NEODEVEX_AUTH$EMAIL_PLACEHOLDER)}
+          className="w-full"
+          error={
+            domainRejected
+              ? t(I18nKey.NEODEVEX_AUTH$DOMAIN_REJECTED)
+              : undefined
+          }
+        />
+
+        <SettingsInput
+          testId="auth-password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          label={t(
+            isForgot
+              ? I18nKey.NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL
+              : I18nKey.NEODEVEX_AUTH$PASSWORD_LABEL,
+          )}
+          value={password}
+          onChange={(value) => {
+            setPassword(value);
+            clearFieldErrors();
+          }}
+          placeholder={t(I18nKey.NEODEVEX_AUTH$PASSWORD_PLACEHOLDER)}
+          className="w-full"
+        />
+
+        <div className="-mt-3 flex items-center justify-between">
+          {!isSignUp && !isForgot ? (
+            <button
+              type="button"
+              data-testid="auth-forgot-link"
+              onClick={() => switchMode("forgot")}
+              className="text-xs text-[var(--primary-400)] hover:underline"
+            >
+              {t(I18nKey.NEODEVEX_AUTH$FORGOT_LINK)}
+            </button>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+          >
+            {showPassword ? (
+              <EyeOff className="size-3.5" aria-hidden />
+            ) : (
+              <Eye className="size-3.5" aria-hidden />
+            )}
+            {showPassword
+              ? t(I18nKey.NEODEVEX_AUTH$HIDE_PASSWORD)
+              : t(I18nKey.NEODEVEX_AUTH$SHOW_PASSWORD)}
+          </button>
         </div>
-      ) : (
-        <form
-          data-testid="password-auth-form"
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
-        >
+
+        {isSignUp || isForgot ? (
           <SettingsInput
-            testId="auth-email"
-            name="email"
-            type="email"
-            label={t(I18nKey.NEODEVEX_AUTH$EMAIL_LABEL)}
-            value={email}
+            testId="auth-confirm-password"
+            name="confirm-password"
+            type={showPassword ? "text" : "password"}
+            label={t(I18nKey.NEODEVEX_AUTH$CONFIRM_PASSWORD_LABEL)}
+            value={confirmPassword}
             onChange={(value) => {
-              setEmail(value);
+              setConfirmPassword(value);
               clearFieldErrors();
             }}
-            placeholder={t(I18nKey.NEODEVEX_AUTH$EMAIL_PLACEHOLDER)}
+            placeholder={t(I18nKey.NEODEVEX_AUTH$PASSWORD_PLACEHOLDER)}
             className="w-full"
-            error={
-              domainRejected
-                ? t(I18nKey.NEODEVEX_AUTH$DOMAIN_REJECTED)
-                : undefined
-            }
+            error={passwordError ?? undefined}
           />
+        ) : passwordError ? (
+          <p role="alert" className="-mt-2 text-xs text-red-400">
+            {passwordError}
+          </p>
+        ) : null}
 
-          {isForgot ? null : (
-            <>
-              <SettingsInput
-                testId="auth-password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                label={t(I18nKey.NEODEVEX_AUTH$PASSWORD_LABEL)}
-                value={password}
-                onChange={(value) => {
-                  setPassword(value);
-                  clearFieldErrors();
-                }}
-                placeholder={t(I18nKey.NEODEVEX_AUTH$PASSWORD_PLACEHOLDER)}
-                className="w-full"
-              />
-
-              <div className="-mt-3 flex items-center justify-between">
-                {!isSignUp ? (
-                  <button
-                    type="button"
-                    data-testid="auth-forgot-link"
-                    onClick={() => switchMode("forgot")}
-                    className="text-xs text-[var(--primary-400)] hover:underline"
-                  >
-                    {t(I18nKey.NEODEVEX_AUTH$FORGOT_LINK)}
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-3.5" aria-hidden />
-                  ) : (
-                    <Eye className="size-3.5" aria-hidden />
-                  )}
-                  {showPassword
-                    ? t(I18nKey.NEODEVEX_AUTH$HIDE_PASSWORD)
-                    : t(I18nKey.NEODEVEX_AUTH$SHOW_PASSWORD)}
-                </button>
-              </div>
-            </>
-          )}
-
-          {isSignUp ? (
-            <SettingsInput
-              testId="auth-confirm-password"
-              name="confirm-password"
-              type={showPassword ? "text" : "password"}
-              label={t(I18nKey.NEODEVEX_AUTH$CONFIRM_PASSWORD_LABEL)}
-              value={confirmPassword}
-              onChange={(value) => {
-                setConfirmPassword(value);
-                clearFieldErrors();
-              }}
-              placeholder={t(I18nKey.NEODEVEX_AUTH$PASSWORD_PLACEHOLDER)}
-              className="w-full"
-              error={passwordError ?? undefined}
-            />
-          ) : passwordError ? (
-            <p role="alert" className="-mt-2 text-xs text-red-400">
-              {passwordError}
-            </p>
-          ) : null}
-
-          {alreadyExists ? (
-            <div
-              role="alert"
-              data-testid="auth-already-exists"
-              className="flex flex-col gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-200"
-            >
-              <span>{t(I18nKey.NEODEVEX_AUTH$ALREADY_EXISTS)}</span>
-              <button
-                type="button"
-                onClick={() => switchMode("sign-in")}
-                className="self-start font-medium text-[var(--primary-400)] hover:underline"
-              >
-                {t(I18nKey.NEODEVEX_AUTH$SIGN_IN_INSTEAD)}
-              </button>
-            </div>
-          ) : null}
-
-          {errorMessage ? (
-            <div
-              role="alert"
-              data-testid="auth-error"
-              className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300"
-            >
-              {errorMessage}
-            </div>
-          ) : null}
-
-          <BrandButton
-            type="submit"
-            variant="primary"
-            isDisabled={
-              !email.trim() ||
-              (!isForgot && !password) ||
-              submitState === "submitting"
-            }
-            testId="auth-submit"
-            className="w-full justify-center"
+        {alreadyExists ? (
+          <div
+            role="alert"
+            data-testid="auth-already-exists"
+            className="flex flex-col gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-200"
           >
-            {isForgot
+            <span>{t(I18nKey.NEODEVEX_AUTH$ALREADY_EXISTS)}</span>
+            <button
+              type="button"
+              onClick={() => switchMode("sign-in")}
+              className="self-start font-medium text-[var(--primary-400)] hover:underline"
+            >
+              {t(I18nKey.NEODEVEX_AUTH$SIGN_IN_INSTEAD)}
+            </button>
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div
+            role="alert"
+            data-testid="auth-error"
+            className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300"
+          >
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <BrandButton
+          type="submit"
+          variant="primary"
+          isDisabled={
+            !email.trim() || !password || submitState === "submitting"
+          }
+          testId="auth-submit"
+          className="w-full justify-center"
+        >
+          {isForgot
+            ? t(
+                submitState === "submitting"
+                  ? I18nKey.NEODEVEX_AUTH$RESET_SUBMITTING
+                  : I18nKey.NEODEVEX_AUTH$RESET_SUBMIT,
+              )
+            : submitState === "submitting"
               ? t(
-                  submitState === "submitting"
-                    ? I18nKey.NEODEVEX_AUTH$FORGOT_SENDING
-                    : I18nKey.NEODEVEX_AUTH$FORGOT_SUBMIT,
+                  isSignUp
+                    ? I18nKey.NEODEVEX_AUTH$CREATING_ACCOUNT
+                    : I18nKey.NEODEVEX_AUTH$SIGNING_IN,
                 )
-              : submitState === "submitting"
-                ? t(
-                    isSignUp
-                      ? I18nKey.NEODEVEX_AUTH$CREATING_ACCOUNT
-                      : I18nKey.NEODEVEX_AUTH$SIGNING_IN,
-                  )
-                : t(
-                    isSignUp
-                      ? I18nKey.NEODEVEX_AUTH$SIGN_UP_CTA
-                      : I18nKey.NEODEVEX_AUTH$SIGN_IN_CTA,
-                  )}
-          </BrandButton>
-        </form>
-      )}
+              : t(
+                  isSignUp
+                    ? I18nKey.NEODEVEX_AUTH$SIGN_UP_CTA
+                    : I18nKey.NEODEVEX_AUTH$SIGN_IN_CTA,
+                )}
+        </BrandButton>
+      </form>
 
       <button
         type="button"

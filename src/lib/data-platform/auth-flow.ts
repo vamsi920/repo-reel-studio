@@ -230,6 +230,61 @@ export async function requestPasswordReset(
   }
 }
 
+export type DirectPasswordResetOutcome =
+  | { kind: "changed" }
+  | { kind: "domain_rejected" }
+  | { kind: "no_account" }
+  | { kind: "error"; message: string };
+
+/**
+ * POC-only stand-in for `requestPasswordReset`: sets the password for
+ * whatever @neodevex.com account matches `email` immediately, with no
+ * emailed link and no proof the caller controls that inbox. It exists
+ * because this deployment has no working outbound email, so the real
+ * emailed-link flow (`requestPasswordReset` + `/reset-password`, left
+ * intact above) currently can't reach anyone. The domain restriction is
+ * enforced server-side in the `password-direct-reset` Edge Function, not
+ * just here -- see that function's own comment for the full tradeoff.
+ */
+export async function directPasswordReset(
+  email: string,
+  newPassword: string,
+): Promise<DirectPasswordResetOutcome> {
+  const trimmedEmail = email.trim();
+  if (!(await isAllowedSignupEmail(trimmedEmail))) {
+    return { kind: "domain_rejected" };
+  }
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      kind: "error",
+      message: "Sign-in is not configured for this deployment.",
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke<{ ok: true }>(
+      "password-direct-reset",
+      { body: { email: trimmedEmail, newPassword } },
+    );
+    if (error) {
+      const context = (error as { context?: Response }).context;
+      const body = await context?.json?.().catch(() => null);
+      if (body?.error === "domain_rejected") return { kind: "domain_rejected" };
+      if (body?.error === "no_account") return { kind: "no_account" };
+      return { kind: "error", message: error.message };
+    }
+    if (!data?.ok) {
+      return { kind: "error", message: "Something went wrong." };
+    }
+    return { kind: "changed" };
+  } catch (error) {
+    return {
+      kind: "error",
+      message: error instanceof Error ? error.message : "Something went wrong.",
+    };
+  }
+}
+
 /**
  * Sets a new password from inside an active `PASSWORD_RECOVERY` session (the
  * one Supabase's client establishes automatically when a user lands on

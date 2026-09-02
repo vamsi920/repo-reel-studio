@@ -31,3 +31,8 @@ verify_jwt = false
 # Entered by pg_cron via pg_net with an X-Cron-Secret header.
 [functions.jira-webhook-renew]
 verify_jwt = false
+
+# Entered by a browser with no session -- the user is, by definition,
+# locked out. Domain-restricted and rate-limited by intent, not by a JWT.
+[functions.password-direct-reset]
+verify_jwt = false
