@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
 import { FileText, Loader2 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
 import { useNavigation } from "#/context/navigation-context";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 import { I18nKey } from "#/i18n/declaration";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
 import { KtRefreshCadence } from "#/components/features/kt-video/kt-refresh-cadence";
@@ -14,6 +15,11 @@ import {
   findRepositoryUuid,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+import {
+  useConnectedRepositories,
+  resolveCommitSha,
+} from "#/lib/knowledge/connected-repositories";
+import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
 
 /** Parses the `"owner/repo@branch"` repositoryId shape produced by
  * kt-list.tsx's useConnectedRepositories/AddRepositoryTrigger. */
@@ -28,64 +34,161 @@ function parseRepositoryId(
   return { owner, repo, branch };
 }
 
-/** On a cold page load (direct navigation, reload) the in-memory knowledge
- * store starts empty even for a repo generated in an earlier session — this
- * checks Supabase for a previously-persisted generation and seeds the store
- * from it, so Docs renders real content instead of "hasn't been generated
- * yet". Best-effort: any failure (unconfigured, RLS, nothing found) just
+/** Content-only fallback: checks Supabase for a previously-persisted
+ * generation and seeds the store from it, so Docs renders real content
+ * instead of "hasn't been generated yet" even with no live session. Used
+ * only when no live conversation exists for this repo (see
+ * `useKnowledgeRehydration` below) — a hydrated entry this way has
+ * `conversationUrl`/`sessionApiKey: null` and `localPath: ""`, so Watch KT
+ * and CodeGraph correctly ask for a live session rather than silently
+ * failing. Best-effort: any failure (unconfigured, RLS, nothing found) just
  * leaves today's empty-state fallback in place. */
-function useColdRehydration(repositoryId: string | undefined) {
+async function tryColdRehydration(
+  repositoryId: string,
+  parsed: { owner: string; repo: string; branch: string },
+  hydrate: (
+    repositoryId: string,
+    snapshot: Parameters<
+      ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
+    >[1],
+    knowledge: Parameters<
+      ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
+    >[2],
+    qualityFlags: Parameters<
+      ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
+    >[3],
+  ) => void,
+): Promise<boolean> {
+  const orgId = await resolveOrgId();
+  if (!orgId) return false;
+  const repositoryUuid = await findRepositoryUuid(
+    orgId,
+    parsed.owner,
+    parsed.repo,
+  );
+  if (!repositoryUuid) return false;
+  const knowledge =
+    await knowledgePersistenceRepository.getLatestGenerationForRepository(
+      repositoryUuid,
+    );
+  if (!knowledge) return false;
+  hydrate(
+    repositoryId,
+    {
+      repositoryId,
+      owner: parsed.owner,
+      repo: parsed.repo,
+      branch: parsed.branch,
+      commitSha: knowledge.commitSha,
+      localPath: "",
+    },
+    knowledge,
+    [],
+  );
+  return true;
+}
+
+/**
+ * On a cold page load (direct navigation, reload) the in-memory knowledge
+ * store starts empty even for a repo generated in an earlier session. This
+ * prefers a REAL, live entry whenever a conversation for this repo already
+ * exists (found the same way kt-list.tsx finds connected repos) — resolving
+ * its commit and calling `generateKnowledge`, which hits DeepWiki's own
+ * cache for an already-generated commit (fast) and, critically, populates
+ * real `conversationUrl`/`sessionApiKey`/`localPath`, so Watch KT and
+ * CodeGraph work immediately rather than asking the user to "open a live
+ * session" for a repo that already has one open. Only falls back to the
+ * content-only Supabase stub when no live conversation exists at all.
+ */
+function useKnowledgeRehydration(repositoryId: string | undefined) {
   const hasEntry = useKnowledgeStore((s) =>
     repositoryId ? Boolean(s.byRepositoryId[repositoryId]) : true,
   );
   const hydrate = useKnowledgeStore((s) => s.hydrate);
+  const startGenerating = useKnowledgeStore((s) => s.startGenerating);
+  const setProgress = useKnowledgeStore((s) => s.setProgress);
+  const setReady = useKnowledgeStore((s) => s.setReady);
+  const setError = useKnowledgeStore((s) => s.setError);
+  const connected = useConnectedRepositories();
+  const { backend } = useActiveBackend();
   const [checked, setChecked] = useState(hasEntry);
+  const attemptedRef = useRef<string | null>(null);
+
+  const liveMatch = repositoryId
+    ? connected.find((c) => c.repositoryId === repositoryId)
+    : undefined;
 
   useEffect(() => {
     if (hasEntry || !repositoryId) {
       setChecked(true);
-      return;
+      return undefined;
     }
     const parsed = parseRepositoryId(repositoryId);
     if (!parsed) {
       setChecked(true);
-      return;
+      return undefined;
     }
+    // Wait for the connected-repositories query to settle before deciding
+    // there's no live conversation — `connected` starts empty on first
+    // render regardless of whether one actually exists.
+    if (!liveMatch && connected.length === 0) return undefined;
+    if (attemptedRef.current === repositoryId) return undefined;
+    attemptedRef.current = repositoryId;
+
     let cancelled = false;
     (async () => {
-      const orgId = await resolveOrgId();
-      if (!orgId || cancelled) return;
-      const repositoryUuid = await findRepositoryUuid(
-        orgId,
-        parsed.owner,
-        parsed.repo,
-      );
-      if (!repositoryUuid || cancelled) return;
-      const knowledge =
-        await knowledgePersistenceRepository.getLatestGenerationForRepository(
-          repositoryUuid,
-        );
-      if (!knowledge || cancelled) return;
-      hydrate(
-        repositoryId,
-        {
-          repositoryId,
-          owner: parsed.owner,
-          repo: parsed.repo,
-          branch: parsed.branch,
-          commitSha: knowledge.commitSha,
-          localPath: "",
-        },
-        knowledge,
-        [],
-      );
+      if (liveMatch?.workingDir) {
+        try {
+          const commitSha = await resolveCommitSha(
+            liveMatch.owner,
+            liveMatch.repo,
+            liveMatch.workingDir,
+            liveMatch.conversationUrl,
+            liveMatch.sessionApiKey,
+          );
+          if (cancelled) return;
+          await generateKnowledge(
+            {
+              repositoryId,
+              owner: liveMatch.owner,
+              repo: liveMatch.repo,
+              branch: liveMatch.branch,
+              commitSha,
+              localPath: liveMatch.workingDir,
+            },
+            liveMatch.conversationUrl,
+            liveMatch.sessionApiKey,
+            { startGenerating, setProgress, setReady, setError },
+            () => {},
+            {},
+            backend.id,
+          );
+          return;
+        } catch {
+          // Fall through to the content-only Supabase stub below rather
+          // than leaving the page stuck on a live-session attempt that
+          // failed (e.g. the clone never finished).
+        }
+      }
+      if (!cancelled) await tryColdRehydration(repositoryId, parsed, hydrate);
     })().finally(() => {
       if (!cancelled) setChecked(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [repositoryId, hasEntry, hydrate]);
+  }, [
+    repositoryId,
+    hasEntry,
+    hydrate,
+    liveMatch,
+    connected.length,
+    backend.id,
+    startGenerating,
+    setProgress,
+    setReady,
+    setError,
+  ]);
 
   return checked;
 }
@@ -110,7 +213,7 @@ function KtRepository() {
   const state = useKnowledgeStore((s) =>
     decodedId ? s.byRepositoryId[decodedId] : undefined,
   );
-  const rehydrationChecked = useColdRehydration(decodedId);
+  const rehydrationChecked = useKnowledgeRehydration(decodedId);
 
   if (!state?.knowledge) {
     return (
