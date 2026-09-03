@@ -83,7 +83,7 @@ docker run -it --rm \
   -p 8000:8000 \
   -v "$HOME/.openhands:/home/openhands/.openhands" \
   -v "${PROJECTS_PATH}:/projects" \
-  ghcr.io/openhands/agent-canvas:1.13.0 # x-release-please-version
+  ghcr.io/openhands/agent-canvas:latest # x-release-please-version
 ```
 
 > [!IMPORTANT]
