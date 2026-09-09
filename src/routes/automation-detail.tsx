@@ -141,7 +141,25 @@ export default function AutomationDetail() {
 
   const handleToggle = () => {
     const willEnable = !automation.enabled;
-    toggleMutation.mutate({ id: automation.id, enabled: willEnable });
+    toggleMutation.mutate(
+      { id: automation.id, enabled: willEnable },
+      {
+        // Without this a rejected toggle left the switch snapping back with
+        // no explanation, so the automation silently stayed as it was.
+        onError: (error) => {
+          displayErrorToast(
+            getApiErrorMessage(
+              error,
+              t(
+                willEnable
+                  ? I18nKey.AUTOMATIONS$EDIT_ERROR
+                  : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
+              ),
+            ),
+          );
+        },
+      },
+    );
     if (willEnable) {
       trackPrebuiltAutomationEnabled({
         automationId: automation.id,
@@ -154,6 +172,12 @@ export default function AutomationDetail() {
     deleteMutation.mutate(automation.id, {
       onSuccess: () => {
         navigate?.(automationListPath());
+      },
+      // A failed delete used to leave the confirmation modal sitting open with
+      // nothing to say. Close it and report why the automation is still here.
+      onError: (error) => {
+        setShowDeleteModal(false);
+        displayErrorToast(getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)));
       },
     });
   };
@@ -168,6 +192,18 @@ export default function AutomationDetail() {
           getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
         );
       },
+    });
+  };
+
+  // `downloadTarball` is async: returning its promise to the menu left a
+  // rejected download as an unhandled rejection and a menu click that did
+  // nothing at all.
+  const handleDownloadTarball = () => {
+    void AutomationService.downloadTarball(
+      automation.id,
+      automation.name,
+    ).catch((error: unknown) => {
+      displayErrorToast(getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)));
     });
   };
 
@@ -199,9 +235,7 @@ export default function AutomationDetail() {
             onEdit={canEdit ? () => setShowEditModal(true) : undefined}
             onDelete={() => setShowDeleteModal(true)}
             onExport={handleExport}
-            onDownloadTarball={() =>
-              AutomationService.downloadTarball(automation.id, automation.name)
-            }
+            onDownloadTarball={handleDownloadTarball}
             onRunNow={handleRunNow}
             isRunningNow={dispatchMutation.isPending}
           />

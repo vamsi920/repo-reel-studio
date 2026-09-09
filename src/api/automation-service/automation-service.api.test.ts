@@ -5,7 +5,9 @@ import {
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
 import type { Automation, AutomationSpec } from "#/types/automation";
-import AutomationService from "./automation-service.api";
+import AutomationService, {
+  __resetAutomationBaseUrlForTests,
+} from "./automation-service.api";
 
 const {
   localAxios,
@@ -353,5 +355,156 @@ describe("AutomationService.createAutomation", () => {
       expect.objectContaining({ timeout: 1200 }),
       expect.any(Object),
     );
+  });
+});
+
+describe("AutomationService.downloadTarball", () => {
+  beforeEach(() => {
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    setActiveSelection(null);
+    setRegisteredBackends([]);
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+  });
+
+  it("clicks an anchor that is attached to the document", async () => {
+    // Arrange — jsdom has no object-URL support, so stub both halves.
+    const createObjectURL = vi.fn(() => "blob:automation-tarball");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL,
+      revokeObjectURL,
+    });
+    localAxios.get.mockResolvedValueOnce({ data: new Blob(["tar"]) });
+
+    // A detached anchor is a no-op in Firefox, so record whether the element
+    // was in the document at the moment it was clicked.
+    let attachedAtClick = false;
+    let downloadAtClick: string | undefined;
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function click(this: HTMLAnchorElement) {
+        attachedAtClick = document.body.contains(this);
+        downloadAtClick = this.download;
+      });
+
+    // Act
+    await AutomationService.downloadTarball("auto-1", "Daily digest");
+
+    // Assert — attached, named, and only then revoked.
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(attachedAtClick).toBe(true);
+    expect(downloadAtClick).toBe("Daily digest.tar");
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:automation-tarball");
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("automation base URL resolution", () => {
+  // Both hosts differ from this app's origin, so each one has to be probed.
+  const firstLocalBackend: Backend = {
+    ...localBackend,
+    id: "local-first",
+    name: "First local backend",
+    host: "http://localhost:8000",
+  };
+  const secondLocalBackend: Backend = {
+    ...localBackend,
+    id: "local-second",
+    name: "Second local backend",
+    host: "http://localhost:9000",
+    apiKey: "second-session-key",
+  };
+
+  /** The request interceptor the module installs at import time. */
+  const requestInterceptor = localAxios.interceptors.request.use.mock
+    .calls[0][0] as (config: {
+    baseURL?: string;
+    headers: { set: (name: string, value: string) => void };
+  }) => Promise<{ baseURL?: string }>;
+
+  beforeEach(() => {
+    __resetAutomationBaseUrlForTests();
+    localAxios.get.mockReset();
+    getTelemetryDistinctId.mockResolvedValue(null);
+    setRegisteredBackends([firstLocalBackend, secondLocalBackend]);
+  });
+
+  afterEach(() => {
+    __resetAutomationBaseUrlForTests();
+    setActiveSelection(null);
+    setRegisteredBackends([]);
+    vi.clearAllMocks();
+  });
+
+  it("resolves each host independently when two resolutions overlap", async () => {
+    // Arrange — the first backend does not serve the automation mount, so it
+    // falls back to this app's origin; the second serves it directly. Probes
+    // are deferred so both resolutions are in flight at the same time.
+    const origin = window.location.origin;
+    const deferred: Array<() => void> = [];
+    localAxios.get.mockImplementation(
+      (_path: string, config: { baseURL?: string }) =>
+        new Promise((resolve) => {
+          deferred.push(() => {
+            const servesMount =
+              config.baseURL === origin ||
+              config.baseURL === secondLocalBackend.host;
+            resolve({ data: { status: servesMount ? "ok" : "error" } });
+          });
+        }),
+    );
+
+    const makeConfig = () => ({ headers: { set: vi.fn() } });
+    /**
+     * Waits until the interceptor has issued its next health probe. Bounded so
+     * a regression that never probes fails here rather than at the timeout.
+     */
+    const waitForProbe = async (count: number) => {
+      for (let i = 0; i < 50; i += 1) {
+        if (localAxios.get.mock.calls.length >= count) return;
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        });
+      }
+      throw new Error(
+        `Expected ${String(count)} automation health probes, saw ${String(
+          localAxios.get.mock.calls.length,
+        )}`,
+      );
+    };
+
+    // Act — start a request under the first backend and let it reach its
+    // probe, then switch backends and start a second request while the first
+    // resolution is still in flight.
+    setActiveSelection({ backendId: firstLocalBackend.id });
+    const first = requestInterceptor(makeConfig());
+    await waitForProbe(1);
+    setActiveSelection({ backendId: secondLocalBackend.id });
+    const second = requestInterceptor(makeConfig());
+    await waitForProbe(2);
+
+    // Let every pending probe answer; the first resolution queues another one
+    // when it moves on to the origin fallback.
+    for (let i = 0; i < 5; i += 1) {
+      while (deferred.length > 0) deferred.shift()?.();
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    }
+
+    // Assert — the second request keeps its own host. Sharing a single
+    // in-flight promise handed it the first backend's base URL instead, so a
+    // request built for one backend was sent to another.
+    await expect(first).resolves.toMatchObject({ baseURL: origin });
+    await expect(second).resolves.toMatchObject({
+      baseURL: secondLocalBackend.host,
+    });
   });
 });

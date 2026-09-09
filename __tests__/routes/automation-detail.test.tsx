@@ -27,8 +27,14 @@ vi.mock("#/api/automation-service/automation-service.api", () => ({
     toggleAutomation: vi.fn(),
     deleteAutomation: vi.fn(),
     dispatchAutomation: vi.fn(),
+    downloadTarball: vi.fn(),
     checkHealth: vi.fn(),
   },
+}));
+
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displaySuccessToast: vi.fn(),
+  displayErrorToast: vi.fn(),
 }));
 
 const localBackend: Backend = {
@@ -237,5 +243,101 @@ describe("AutomationDetail — backend-change guard", () => {
     // Assert — the off-state gate prevents the dispatch API from firing.
     expect(runNow).toBeDisabled();
     expect(AutomationService.dispatchAutomation).not.toHaveBeenCalled();
+  });
+});
+
+describe("AutomationDetail — failed actions are reported", () => {
+  beforeEach(async () => {
+    const { displaySuccessToast, displayErrorToast } =
+      await import("#/utils/custom-toast-handlers");
+    vi.mocked(displaySuccessToast).mockClear();
+    vi.mocked(displayErrorToast).mockClear();
+    vi.mocked(AutomationService.deleteAutomation).mockReset();
+    vi.mocked(AutomationService.toggleAutomation).mockReset();
+    vi.mocked(AutomationService.downloadTarball).mockReset();
+  });
+
+  it("shows an error toast and closes the modal when the delete fails", async () => {
+    // Arrange — confirmation proceeds but the delete call rejects.
+    vi.mocked(AutomationService.deleteAutomation).mockRejectedValue(
+      new HttpError(409, "Conflict", { detail: "Automation is running" }),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+    });
+
+    // Act — open the kebab, choose Delete, confirm in the modal.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$DELETE }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: I18nKey.AUTOMATIONS$DELETE }),
+    );
+
+    // Assert — the reason surfaces and the modal no longer sits open over a
+    // delete that silently did nothing.
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("Automation is running");
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByText(I18nKey.AUTOMATIONS$DELETE_CONFIRM_TITLE),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows an error toast when the toggle fails", async () => {
+    // Arrange — the automation is enabled, so this turns it off.
+    vi.mocked(AutomationService.toggleAutomation).mockRejectedValue(
+      new Error("scheduler offline"),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+    });
+
+    // Act — flip the header switch.
+    await user.click(
+      screen.getByRole("switch", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("scheduler offline");
+    });
+  });
+
+  it("reports a failed tarball download instead of rejecting unhandled", async () => {
+    // Arrange — the tarball endpoint rejects. Previously the menu handler
+    // returned the promise, so the rejection escaped and the click did
+    // nothing visible.
+    vi.mocked(AutomationService.downloadTarball).mockRejectedValue(
+      new HttpError(404, "Not Found", { detail: "No workspace archive" }),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+    });
+
+    // Act
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", {
+        name: I18nKey.AUTOMATIONS$DOWNLOAD_TARBALL,
+      }),
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("No workspace archive");
+    });
   });
 });

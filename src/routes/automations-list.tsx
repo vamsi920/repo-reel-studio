@@ -176,7 +176,25 @@ export default function AutomationsList() {
 
   const handleToggle = (id: string, currentEnabled: boolean) => {
     const willEnable = !currentEnabled;
-    toggleMutation.mutate({ id, enabled: willEnable });
+    toggleMutation.mutate(
+      { id, enabled: willEnable },
+      {
+        // A rejected toggle used to fail silently: the switch snapped back and
+        // the automation stayed as it was with nothing said about why.
+        onError: (error) => {
+          displayErrorToast(
+            getApiErrorMessage(
+              error,
+              t(
+                willEnable
+                  ? I18nKey.AUTOMATIONS$EDIT_ERROR
+                  : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
+              ),
+            ),
+          );
+        },
+      },
+    );
     if (willEnable) {
       const automation = data?.automations.find((a) => a.id === id);
       trackPrebuiltAutomationEnabled({
@@ -269,7 +287,15 @@ export default function AutomationsList() {
 
   const handleDeleteConfirm = () => {
     if (deleteTarget) {
-      deleteMutation.mutate(deleteTarget.id);
+      deleteMutation.mutate(deleteTarget.id, {
+        // The modal closes either way, so a failed delete previously looked
+        // exactly like a successful one until the list refetched.
+        onError: (error) => {
+          displayErrorToast(
+            getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)),
+          );
+        },
+      });
       setDeleteTarget(null);
     }
   };

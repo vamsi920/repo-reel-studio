@@ -76,7 +76,10 @@ function renderList(queryClient?: QueryClient) {
   const client =
     queryClient ??
     new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
   return render(
     <QueryClientProvider client={client}>
@@ -281,9 +284,7 @@ describe("AutomationsList — Run now toasts", () => {
     });
     const user = userEvent.setup();
     renderList();
-    await screen.findByTestId(
-      `automation-list-row-${disabledAutomation.id}`,
-    );
+    await screen.findByTestId(`automation-list-row-${disabledAutomation.id}`);
     const button = screen.getByTestId(
       `automation-run-now-${disabledAutomation.id}`,
     );
@@ -361,7 +362,10 @@ describe("AutomationsList — list freshness on remount", () => {
         total: 2,
       });
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
 
     // Act — first mount lands on the original list, then unmount and remount
@@ -374,5 +378,66 @@ describe("AutomationsList — list freshness on remount", () => {
     // Assert — the remount refetched and surfaced the newly created
     // automation, which is the user-observable behavior the bug blocked.
     await screen.findByText(newAutomation.name);
+  });
+});
+
+describe("AutomationsList — toggle and delete failures", () => {
+  beforeEach(async () => {
+    const { displaySuccessToast, displayErrorToast } =
+      await import("#/utils/custom-toast-handlers");
+    vi.mocked(displaySuccessToast).mockClear();
+    vi.mocked(displayErrorToast).mockClear();
+    vi.mocked(AutomationService.deleteAutomation).mockReset();
+  });
+
+  it("shows an error toast when turning an automation off fails", async () => {
+    // Arrange — the automation is enabled, so the switch turns it off.
+    vi.mocked(AutomationService.toggleAutomation).mockRejectedValue(
+      new HttpError(500, "Internal Server Error", {
+        message: "Scheduler unavailable",
+      }),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+
+    // Act — open the row kebab and pick "Turn off".
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+
+    // Assert — the failure is reported instead of the row silently staying
+    // enabled with nothing said about why.
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("Scheduler unavailable");
+    });
+  });
+
+  it("shows an error toast when deleting an automation fails", async () => {
+    // Arrange — confirmation proceeds but the delete call rejects.
+    vi.mocked(AutomationService.deleteAutomation).mockRejectedValue(
+      new Error("delete failed"),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+
+    // Act — open the row kebab, choose Delete, then confirm in the modal.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$DELETE }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: I18nKey.AUTOMATIONS$DELETE }),
+    );
+
+    // Assert — the modal closes either way, so without a toast the failure
+    // was indistinguishable from a successful delete.
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("delete failed");
+    });
   });
 });

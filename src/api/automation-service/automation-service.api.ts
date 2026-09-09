@@ -15,6 +15,7 @@ import type {
   AutomationRunsResponse,
 } from "#/types/automation";
 import { AUTOMATION_CREATE_ENDPOINT } from "#/manifests/automation-setup";
+import { downloadBlob } from "#/utils/utils";
 import {
   getAutomationEndpoint,
   getAutomationIdEndpoint,
@@ -90,7 +91,13 @@ async function buildAutomationRequestHeaders(
  * surfaces as itself rather than as an error against a different URL.
  */
 let resolvedBaseUrlForHost: { host: string; baseUrl: string } | null = null;
-let inFlightResolution: Promise<string> | null = null;
+/**
+ * Keyed by host on purpose. A single shared promise meant that a call made for
+ * one host while another host's probe was still in flight received the *other*
+ * host's base URL — so a request built for backend B (carrying B's session key)
+ * was sent to backend A.
+ */
+const inFlightResolutions = new Map<string, Promise<string>>();
 
 function getAppOrigin(): string | null {
   if (typeof window === "undefined") return null;
@@ -116,9 +123,10 @@ async function resolveAutomationBaseUrl(host: string): Promise<string> {
   if (resolvedBaseUrlForHost?.host === host) {
     return resolvedBaseUrlForHost.baseUrl;
   }
-  if (inFlightResolution) return inFlightResolution;
+  const pending = inFlightResolutions.get(host);
+  if (pending) return pending;
 
-  inFlightResolution = (async () => {
+  const resolution = (async () => {
     const origin = getAppOrigin();
     let baseUrl = host;
     if (origin && origin !== host && !(await servesAutomationMount(host))) {
@@ -127,18 +135,19 @@ async function resolveAutomationBaseUrl(host: string): Promise<string> {
     resolvedBaseUrlForHost = { host, baseUrl };
     return baseUrl;
   })();
+  inFlightResolutions.set(host, resolution);
 
   try {
-    return await inFlightResolution;
+    return await resolution;
   } finally {
-    inFlightResolution = null;
+    inFlightResolutions.delete(host);
   }
 }
 
 /** Exposed for tests, which need each case to start from a clean resolution. */
 export function __resetAutomationBaseUrlForTests(): void {
   resolvedBaseUrlForHost = null;
-  inFlightResolution = null;
+  inFlightResolutions.clear();
 }
 
 localAutomationAxios.interceptors.request.use(async (config) => {
@@ -583,12 +592,11 @@ class AutomationService {
       blob = data;
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name}.tar`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Use the shared helper: the previous inline version never attached the
+    // anchor to the document (Firefox ignores `click()` on a detached anchor)
+    // and revoked the object URL in the same tick, which can cancel a download
+    // that has not started yet.
+    downloadBlob(blob, `${name}.tar`);
   }
 
   /**
