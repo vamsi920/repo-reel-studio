@@ -37,9 +37,15 @@ function usePersistedRepositories(): PersistedRepositorySummary[] {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const list =
-        await knowledgePersistenceRepository.listGeneratedRepositories();
-      if (!cancelled) setSummaries(list);
+      try {
+        const list =
+          await knowledgePersistenceRepository.listGeneratedRepositories();
+        if (!cancelled) setSummaries(list);
+      } catch {
+        // Best-effort: an unconfigured/unreachable Supabase must not reject
+        // out of this effect (an unhandled rejection) — the list still
+        // renders every connected and in-memory repository.
+      }
     })();
     return () => {
       cancelled = true;
@@ -145,13 +151,21 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
   const setReady = useKnowledgeStore((s) => s.setReady);
   const setError = useKnowledgeStore((s) => s.setError);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // `setError` in the knowledge store only ever updates an entry that
+  // already exists, so a failure before `startGenerating` runs (no working
+  // dir yet, or the commit never resolves) would leave no visible trace at
+  // all once the toast faded. Keep it on the card too.
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isGenerating = state?.status === "generating" || isSubmitting;
   const isReady =
     state?.status === "ready" || (!state && candidate.knownGenerated);
+  const errorMessage =
+    (state?.status === "error" ? state.error : null) ?? submitError;
 
   const handleGenerate = async () => {
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const snapshot = await resolveSnapshot(candidate);
       await generateKnowledge(
@@ -166,6 +180,7 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setError(candidate.repositoryId, message);
+      setSubmitError(message);
       displayErrorToast(message);
     } finally {
       setIsSubmitting(false);
@@ -217,8 +232,14 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
           )}
         </button>
       )}
-      {state?.status === "error" && (
-        <p className="text-xs text-[var(--error-500)]">{state.error}</p>
+      {errorMessage && (
+        <p
+          data-testid="kt-generate-error"
+          role="alert"
+          className="text-xs text-[var(--error-500)]"
+        >
+          {errorMessage}
+        </p>
       )}
     </div>
   );
@@ -391,7 +412,9 @@ function AddRepositoryTrigger() {
 
 function KtList() {
   const { t } = useTranslation("openhands");
-  const repositories = useAllRepositories(useConnectedRepositories());
+  const repositories = useAllRepositories(
+    useConnectedRepositories().repositories,
+  );
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {

@@ -18,13 +18,22 @@ export interface RepoCandidate {
   knownGenerated?: boolean;
 }
 
+export interface ConnectedRepositories {
+  repositories: RepoCandidate[];
+  /** True until the conversation history query has produced an answer.
+   * Callers must not read an empty `repositories` as "this repo has no live
+   * conversation" while this is true — the list starts empty on the very
+   * first render whether or not one exists. */
+  isLoading: boolean;
+}
+
 /** One entry per distinct repository with a live conversation right now,
  * sourced from real conversation history — shared by kt-list.tsx (to list
  * repos) and kt-repository.tsx (to upgrade a cold/Supabase-only Docs entry
  * to a real live one with a usable session, whenever one is available). */
-export function useConnectedRepositories(): RepoCandidate[] {
-  const { data } = usePaginatedConversations(100);
-  return useMemo(() => {
+export function useConnectedRepositories(): ConnectedRepositories {
+  const { data, isLoading } = usePaginatedConversations(100);
+  const repositories = useMemo(() => {
     const conversations = data?.pages.flatMap((page) => page.items) ?? [];
     const byRepo = new Map<string, RepoCandidate>();
     for (const conversation of conversations) {
@@ -47,6 +56,7 @@ export function useConnectedRepositories(): RepoCandidate[] {
     }
     return Array.from(byRepo.values());
   }, [data]);
+  return { repositories, isLoading };
 }
 
 const COMMIT_POLL_INTERVAL_MS = 2000;

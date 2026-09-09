@@ -109,7 +109,8 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
   const setProgress = useKnowledgeStore((s) => s.setProgress);
   const setReady = useKnowledgeStore((s) => s.setReady);
   const setError = useKnowledgeStore((s) => s.setError);
-  const connected = useConnectedRepositories();
+  const { repositories: connected, isLoading: connectedLoading } =
+    useConnectedRepositories();
   const { backend } = useActiveBackend();
   const [checked, setChecked] = useState(hasEntry);
   const attemptedRef = useRef<string | null>(null);
@@ -130,8 +131,12 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
     }
     // Wait for the connected-repositories query to settle before deciding
     // there's no live conversation — `connected` starts empty on first
-    // render regardless of whether one actually exists.
-    if (!liveMatch && connected.length === 0) return undefined;
+    // render regardless of whether one actually exists. Gate on the query's
+    // own loading flag, not on the list being empty: a user with no open
+    // conversations at all has a permanently empty list, and gating on that
+    // left this page spinning forever instead of falling back to the
+    // persisted Supabase content this hook exists to load.
+    if (!liveMatch && connectedLoading) return undefined;
     if (attemptedRef.current === repositoryId) return undefined;
     attemptedRef.current = repositoryId;
 
@@ -170,7 +175,15 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
           // failed (e.g. the clone never finished).
         }
       }
-      if (!cancelled) await tryColdRehydration(repositoryId, parsed, hydrate);
+      if (!cancelled) {
+        try {
+          await tryColdRehydration(repositoryId, parsed, hydrate);
+        } catch {
+          // Documented best-effort: an unconfigured/unreachable Supabase,
+          // an RLS denial or a missing generation must not reject out of
+          // this effect — the empty-state fallback below covers it.
+        }
+      }
     })().finally(() => {
       if (!cancelled) setChecked(true);
     });
@@ -182,7 +195,7 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
     hasEntry,
     hydrate,
     liveMatch,
-    connected.length,
+    connectedLoading,
     backend.id,
     startGenerating,
     setProgress,
@@ -216,15 +229,29 @@ function KtRepository() {
   const rehydrationChecked = useKnowledgeRehydration(decodedId);
 
   if (!state?.knowledge) {
+    // A failed generation leaves a real entry with `knowledge: null`. Saying
+    // "hasn't been generated yet" there hides the actual reason it failed,
+    // which is the only thing that tells the user what to do next.
+    const failureMessage = state?.status === "error" ? state.error : null;
     return (
       <main className="min-h-full" data-testid="kt-repository">
         <div className="mx-auto max-w-4xl p-6">
           <KtBreadcrumb />
-          {rehydrationChecked ? (
+          {failureMessage ? (
+            <p
+              data-testid="kt-repository-error"
+              role="alert"
+              className="text-sm text-[var(--error-500)]"
+            >
+              {failureMessage}
+            </p>
+          ) : null}
+          {!failureMessage && rehydrationChecked && (
             <p className="text-sm text-[var(--oh-muted)]">
               {t(I18nKey.KT$NOT_FOUND)}
             </p>
-          ) : (
+          )}
+          {!failureMessage && !rehydrationChecked && (
             <p className="flex items-center gap-2 text-sm text-[var(--oh-muted)]">
               <Loader2 className="size-3.5 animate-spin" aria-hidden />
               {t(I18nKey.KT$STARTING)}
