@@ -97,10 +97,31 @@ describe("Security route", () => {
     expect(screen.queryByText(/risk score:/i)).not.toBeInTheDocument();
   });
 
-  it("keeps Fix with Agent visible but disabled", () => {
+  it("keeps Fix with Agent visible, inert and focusable, and says why", () => {
     renderSecurity();
 
-    expect(screen.getByTestId("security-fix-with-agent")).toBeDisabled();
+    const button = screen.getByTestId("security-fix-with-agent");
+    // `aria-disabled` rather than `disabled`: a disabled button is removed from
+    // the tab order, which also takes its explanation out of reach.
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
+
+    const hint = screen.getByTestId("security-fix-with-agent-hint");
+    expect(hint).toHaveTextContent(I18nKey.SECURITY$FIX_WITH_AGENT_DISABLED);
+    expect(button).toHaveAttribute("aria-describedby", hint.id);
+  });
+
+  it("names the severity legend and the future-areas list", () => {
+    renderSecurity();
+
+    expect(
+      screen.getByRole("list", {
+        name: I18nKey.SECURITY$SEVERITY_LEGEND_LABEL,
+      }),
+    ).toBe(screen.getByTestId("security-severity-legend"));
+    expect(
+      screen.getByRole("list", { name: I18nKey.SECURITY$FUTURE_AREAS }),
+    ).toBe(screen.getByTestId("security-future-areas"));
   });
 
   it("lists every future area", () => {
@@ -146,6 +167,30 @@ describe("Security route", () => {
 
       expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
         "acme/web@abcdef1",
+      );
+    });
+
+    it("refuses to fall back to another repository when ?repository= is unknown", () => {
+      seedRepository();
+      renderSecurity("/security?repository=acme%2Fghost%40main");
+
+      // Reporting acme/api's posture under a request for acme/ghost would be a
+      // lie, so the page says the repository is not connected instead.
+      expect(
+        screen.queryByTestId("security-workspace-scope"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("security-repository-not-connected"),
+      ).toBeInTheDocument();
+    });
+
+    it("picks the same default repository regardless of store key order", () => {
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      seedRepository();
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
       );
     });
   });

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
+import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 import { I18nKey } from "#/i18n/declaration";
 import {
   SECURITY_SEVERITIES,
@@ -26,33 +27,70 @@ interface SecurityWorkspaceScope {
 }
 
 /**
- * Security is workspace-scoped, and a workspace here is the same thing it is
- * everywhere else in the app: the checkout a repository snapshot points at
- * (see `workspaceIdForSnapshot`). `?repository=` picks a specific one;
- * otherwise the first connected repository wins. No repositories means there
- * is no workspace to talk about, which the page says plainly rather than
- * inventing one.
+ * What the page is scoped to, as three distinct outcomes rather than one
+ * nullable scope. "no repository is connected" and "the repository you asked
+ * for is not connected" are different situations and need different copy —
+ * collapsing them lets the page stay silent about a `?repository=` that
+ * pointed at nothing.
  */
-export function useSecurityWorkspaceScope(
-  repositoryIdParam: string | null,
-): SecurityWorkspaceScope | null {
-  const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
-  return useMemo(() => {
-    const entries = Object.values(byRepositoryId);
-    if (entries.length === 0) return null;
-    const selected =
-      (repositoryIdParam
-        ? entries.find((e) => e.snapshot.repositoryId === repositoryIdParam)
-        : undefined) ?? entries[0];
-    const { snapshot } = selected;
-    return {
+export type SecurityWorkspaceScopeResult =
+  | { state: "no-repositories" }
+  | { state: "requested-not-connected"; repositoryId: string }
+  | { state: "scoped"; scope: SecurityWorkspaceScope };
+
+function scopedTo(snapshot: RepositorySnapshot): SecurityWorkspaceScopeResult {
+  return {
+    state: "scoped",
+    scope: {
       workspaceId: workspaceIdForSnapshot(snapshot),
       repositoryId: snapshot.repositoryId,
       label: `${snapshot.owner}/${snapshot.repo}`,
       commitSha: snapshot.commitSha,
-    };
+    },
+  };
+}
+
+/**
+ * Security is workspace-scoped, and a workspace here is the same thing it is
+ * everywhere else in the app: the checkout a repository snapshot points at
+ * (see `workspaceIdForSnapshot`). `?repository=` picks a specific one; if it
+ * names a repository that is not connected the page says so, because silently
+ * scoping to some other repository would report one repository's security
+ * posture under another repository's name.
+ *
+ * With no `?repository=`, the connected repositories are ordered by id and the
+ * first wins, so a reload cannot quietly re-scope the page just because the
+ * store rehydrated its keys in a different order.
+ */
+export function useSecurityWorkspaceScope(
+  repositoryIdParam: string | null,
+): SecurityWorkspaceScopeResult {
+  const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
+  return useMemo(() => {
+    const entries = Object.values(byRepositoryId);
+    if (entries.length === 0) return { state: "no-repositories" };
+
+    if (repositoryIdParam) {
+      const requested = entries.find(
+        (e) => e.snapshot.repositoryId === repositoryIdParam,
+      );
+      return requested
+        ? scopedTo(requested.snapshot)
+        : {
+            state: "requested-not-connected",
+            repositoryId: repositoryIdParam,
+          };
+    }
+
+    const [first] = [...entries].sort((a, b) =>
+      a.snapshot.repositoryId.localeCompare(b.snapshot.repositoryId),
+    );
+    return scopedTo(first.snapshot);
   }, [byRepositoryId, repositoryIdParam]);
 }
+
+const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
+const FUTURE_AREAS_HEADING_ID = "security-future-areas-heading";
 
 const SEVERITY_KEY: Record<SecuritySeverity, I18nKey> = {
   critical: I18nKey.SECURITY$SEVERITY_CRITICAL,
@@ -109,19 +147,20 @@ const FUTURE_AREAS: {
 function SeverityLegend() {
   const { t } = useTranslation("openhands");
   return (
-    <div
+    <ul
+      aria-label={t(I18nKey.SECURITY$SEVERITY_LEGEND_LABEL)}
       className="flex flex-wrap items-center gap-2"
       data-testid="security-severity-legend"
     >
       {SECURITY_SEVERITIES.map((severity) => (
-        <span
+        <li
           key={severity}
           className="rounded-full border border-[var(--oh-border)] px-2 py-0.5 text-xs text-[var(--oh-muted)]"
         >
           {t(SEVERITY_KEY[severity])}
-        </span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -148,14 +187,26 @@ function SecurityScreen() {
           {t(I18nKey.SECURITY$SUBTITLE)}
         </p>
 
-        {scope ? (
+        {scope.state === "scoped" && (
           <p
             className="mt-3 font-mono text-xs text-[var(--oh-muted)]"
             data-testid="security-workspace-scope"
           >
-            {scope.label}@{scope.commitSha.slice(0, 7)}
+            {scope.scope.label}@{scope.scope.commitSha.slice(0, 7)}
           </p>
-        ) : (
+        )}
+        {scope.state === "requested-not-connected" && (
+          <p
+            className="mt-3 text-xs text-[var(--oh-muted)]"
+            data-testid="security-repository-not-connected"
+            role="status"
+          >
+            {t(I18nKey.SECURITY$REPOSITORY_NOT_CONNECTED, {
+              repository: scope.repositoryId,
+            })}
+          </p>
+        )}
+        {scope.state === "no-repositories" && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-no-workspace"
@@ -183,19 +234,30 @@ function SecurityScreen() {
           <SeverityLegend />
           <button
             type="button"
-            disabled
-            title={t(I18nKey.SECURITY$FIX_WITH_AGENT_DISABLED)}
-            className="ame-btn-secondary ame-btn-sm mt-1 self-start opacity-50"
+            aria-disabled
+            aria-describedby={FIX_WITH_AGENT_HINT_ID}
+            className="ame-btn-secondary ame-btn-sm mt-1 self-start cursor-not-allowed opacity-50"
             data-testid="security-fix-with-agent"
           >
             {t(I18nKey.SECURITY$FIX_WITH_AGENT)}
           </button>
+          <p
+            className="text-xs text-[var(--oh-muted)]"
+            id={FIX_WITH_AGENT_HINT_ID}
+            data-testid="security-fix-with-agent-hint"
+          >
+            {t(I18nKey.SECURITY$FIX_WITH_AGENT_DISABLED)}
+          </p>
         </section>
 
-        <h2 className="mt-8 mb-3 text-sm font-medium text-[var(--oh-foreground)]">
+        <h2
+          className="mt-8 mb-3 text-sm font-medium text-[var(--oh-foreground)]"
+          id={FUTURE_AREAS_HEADING_ID}
+        >
           {t(I18nKey.SECURITY$FUTURE_AREAS)}
         </h2>
         <ul
+          aria-labelledby={FUTURE_AREAS_HEADING_ID}
           className="grid gap-3 sm:grid-cols-2"
           data-testid="security-future-areas"
         >
