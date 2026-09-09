@@ -32,6 +32,8 @@ export function SecretsSettingsScreen() {
   const {
     data: secrets,
     isLoading: isLoadingSecrets,
+    isError: hasSecretsError,
+    refetch: refetchSecrets,
     hasNextPage,
     isFetchingNextPage,
     onLoadMore,
@@ -62,9 +64,6 @@ export function SecretsSettingsScreen() {
   );
 
   const invalidateSecrets = () => {
-    queryClient.invalidateQueries({
-      queryKey: ["secrets-search"],
-    });
     queryClient.invalidateQueries({
       queryKey: ["secrets"],
     });
@@ -118,7 +117,7 @@ export function SecretsSettingsScreen() {
             variant="primary"
             className="shrink-0 whitespace-nowrap"
             onClick={() => setView("add-secret-form")}
-            isDisabled={isLoadingSecrets}
+            isDisabled={isLoadingSecrets || hasSecretsError}
           >
             {t(I18nKey.SECRETS$ADD_NEW_SECRET)}
           </BrandButton>
@@ -144,16 +143,43 @@ export function SecretsSettingsScreen() {
         </ul>
       )}
 
-      {view === "list" && !isLoadingSecrets && secrets?.length === 0 && (
+      {view === "list" && !isLoadingSecrets && hasSecretsError && (
         <div
-          data-testid="secrets-empty"
-          className={extensionModuleEmptyStateClassName}
+          data-testid="secrets-error"
+          className={cn(
+            extensionModuleEmptyStateClassName,
+            "flex flex-col items-center gap-3",
+          )}
         >
           <p className="text-sm text-[var(--oh-muted)]">
-            {t(I18nKey.SECRETS$EMPTY)}
+            {t(I18nKey.ERROR$GENERIC)}
           </p>
+          <BrandButton
+            testId="retry-secrets-button"
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              refetchSecrets();
+            }}
+          >
+            {t(I18nKey.BUTTON$REFRESH)}
+          </BrandButton>
         </div>
       )}
+
+      {view === "list" &&
+        !isLoadingSecrets &&
+        !hasSecretsError &&
+        secrets?.length === 0 && (
+          <div
+            data-testid="secrets-empty"
+            className={extensionModuleEmptyStateClassName}
+          >
+            <p className="text-sm text-[var(--oh-muted)]">
+              {t(I18nKey.SECRETS$EMPTY)}
+            </p>
+          </div>
+        )}
 
       {view === "list" && !isLoadingSecrets && (secrets?.length ?? 0) > 0 && (
         <div

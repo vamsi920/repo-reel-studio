@@ -64,10 +64,12 @@ function GithubConnectionCard() {
       });
       if (error) {
         displayErrorToast("Could not disconnect GitHub.");
-      } else {
-        displaySuccessToast("GitHub disconnected.");
-        await invalidateConnectionCaches(queryClient);
+        return;
       }
+      displaySuccessToast("GitHub disconnected.");
+      await invalidateConnectionCaches(queryClient);
+    } catch {
+      displayErrorToast("Could not disconnect GitHub.");
     } finally {
       setIsDisconnecting(false);
     }
@@ -160,10 +162,12 @@ function JiraConnectionCard() {
       });
       if (error) {
         displayErrorToast("Could not disconnect Jira.");
-      } else {
-        displaySuccessToast("Jira disconnected.");
-        await invalidateConnectionCaches(queryClient);
+        return;
       }
+      displaySuccessToast("Jira disconnected.");
+      await invalidateConnectionCaches(queryClient);
+    } catch {
+      displayErrorToast("Could not disconnect Jira.");
     } finally {
       setIsDisconnecting(false);
     }
@@ -253,6 +257,9 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
   const [repository, setRepository] = React.useState("");
   const [branch, setBranch] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [pendingTriggerId, setPendingTriggerId] = React.useState<string | null>(
+    null,
+  );
 
   const invalidateTriggers = () =>
     queryClient.invalidateQueries({ queryKey: ["jira-triggers"] });
@@ -317,13 +324,27 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
   };
 
   const handleToggle = async (id: string, enabled: boolean) => {
-    await jiraTriggersRepository.setEnabled(id, enabled);
-    await invalidateTriggers();
+    setPendingTriggerId(id);
+    try {
+      await jiraTriggersRepository.setEnabled(id, enabled);
+      await invalidateTriggers();
+    } catch {
+      displayErrorToast(t(I18nKey.ERROR$GENERIC));
+    } finally {
+      setPendingTriggerId(null);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await jiraTriggersRepository.deleteTrigger(id);
-    await invalidateTriggers();
+    setPendingTriggerId(id);
+    try {
+      await jiraTriggersRepository.deleteTrigger(id);
+      await invalidateTriggers();
+    } catch {
+      displayErrorToast(t(I18nKey.ERROR$GENERIC));
+    } finally {
+      setPendingTriggerId(null);
+    }
   };
 
   return (
@@ -353,8 +374,11 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
                 <button
                   type="button"
                   data-testid={`jira-trigger-toggle-${trigger.id}`}
-                  onClick={() => handleToggle(trigger.id, !trigger.enabled)}
-                  className="text-tertiary-light hover:text-white"
+                  onClick={() => {
+                    void handleToggle(trigger.id, !trigger.enabled);
+                  }}
+                  disabled={pendingTriggerId === trigger.id}
+                  className="text-tertiary-light hover:text-white disabled:opacity-50"
                 >
                   {trigger.enabled
                     ? t(I18nKey.CONNECTIONS$TRIGGER_ENABLED)
@@ -363,8 +387,11 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
                 <button
                   type="button"
                   data-testid={`jira-trigger-delete-${trigger.id}`}
-                  onClick={() => handleDelete(trigger.id)}
-                  className="text-red-500 hover:text-red-400"
+                  onClick={() => {
+                    void handleDelete(trigger.id);
+                  }}
+                  disabled={pendingTriggerId === trigger.id}
+                  className="text-red-500 hover:text-red-400 disabled:opacity-50"
                 >
                   {t(I18nKey.CONNECTIONS$TRIGGER_DELETE)}
                 </button>

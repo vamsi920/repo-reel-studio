@@ -29,8 +29,9 @@ export function SecretForm({
   const { t } = useTranslation("openhands");
 
   const { data: secrets } = useSearchSecrets();
-  const { mutate: createSecret } = useCreateSecret();
-  const { mutate: updateSecret } = useUpdateSecret();
+  const { mutate: createSecret, isPending: isCreating } = useCreateSecret();
+  const { mutate: updateSecret, isPending: isUpdating } = useUpdateSecret();
+  const isSaving = isCreating || isUpdating;
 
   const [error, setError] = React.useState<string | null>(null);
 
@@ -44,9 +45,6 @@ export function SecretForm({
 
   const invalidateSecrets = () => {
     queryClient.invalidateQueries({
-      queryKey: ["secrets-search"],
-    });
-    queryClient.invalidateQueries({
       queryKey: ["secrets"],
     });
   };
@@ -59,8 +57,10 @@ export function SecretForm({
     createSecret(
       { name, value, description },
       {
-        onSettled: onCancel,
-        onSuccess: invalidateSecrets,
+        onSuccess: () => {
+          invalidateSecrets();
+          onCancel();
+        },
       },
     );
   };
@@ -74,8 +74,10 @@ export function SecretForm({
     updateSecret(
       { secretToEdit, name, description, value },
       {
-        onSettled: onCancel,
-        onSuccess: invalidateSecrets,
+        onSuccess: () => {
+          invalidateSecrets();
+          onCancel();
+        },
       },
     );
   };
@@ -184,7 +186,12 @@ export function SecretForm({
         >
           {t(I18nKey.BUTTON$CANCEL)}
         </BrandButton>
-        <BrandButton testId="submit-button" type="submit" variant="primary">
+        <BrandButton
+          testId="submit-button"
+          type="submit"
+          variant="primary"
+          isDisabled={isSaving}
+        >
           {mode === "add" && t(I18nKey.SECRETS$ADD_SECRET)}
           {mode === "edit" && t(I18nKey.SECRETS$EDIT_SECRET)}
         </BrandButton>
