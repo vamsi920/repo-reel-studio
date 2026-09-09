@@ -20,9 +20,14 @@ function AgentOpsOverview() {
   const audit = useAgentOpsAudit();
 
   return (
+    // Every section below reads from a different query. Gating only on the
+    // summary meant a slower `runs`/`audit` response rendered its section's
+    // *empty* state — "no active runs" while runs were still loading — and an
+    // audit failure showed as "no audit records" rather than the collector
+    // being unreachable.
     <AgentOpsPanel
-      isLoading={summary.isLoading}
-      error={summary.error ?? activeRuns.error}
+      isLoading={summary.isLoading || activeRuns.isLoading || audit.isLoading}
+      error={summary.error ?? activeRuns.error ?? audit.error}
     >
       <div className="flex flex-col gap-6">
         {summary.data ? <AgentOpsStatTiles summary={summary.data} /> : null}

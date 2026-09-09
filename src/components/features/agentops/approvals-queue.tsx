@@ -3,7 +3,10 @@ import { Check, FileDiff, ShieldAlert, X } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
-import type { AgentOpsApproval } from "#/api/agentops-service/agentops-service.types";
+import type {
+  AgentOpsApproval,
+  AgentOpsBudgetBreach,
+} from "#/api/agentops-service/agentops-service.types";
 import { useAgentOpsApprovalDecision } from "#/hooks/query/use-agentops";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { getApiErrorMessage } from "#/utils/api-error-message";
@@ -47,6 +50,21 @@ function renderWhat(what: AgentOpsApproval["what"]): string {
   return JSON.stringify(what, null, 2);
 }
 
+/**
+ * Approving a budget breach sets the new limit to `usedUsd + additionalBudgetUsd`
+ * (see the `/approvals/:id/approve` handler in `scripts/agentops-server.mjs`).
+ * With no headroom the new limit is exactly what the run has already spent, and
+ * `evaluateBudgets` breaches on `>=` — so the collector halts the run again on
+ * its very next tick and raises another approval. Approving therefore has to
+ * carry a positive amount, and it defaults to one more budget's worth.
+ */
+function defaultHeadroomUsd(breach: AgentOpsBudgetBreach | null): number {
+  const limit = breach?.limitUsd;
+  return typeof limit === "number" && Number.isFinite(limit) && limit > 0
+    ? limit
+    : 1;
+}
+
 interface ApprovalCardProps {
   approval: AgentOpsApproval;
 }
@@ -57,12 +75,30 @@ function ApprovalCard({ approval }: ApprovalCardProps) {
   const [reason, setReason] = useState("");
   const isPendingState = approval.state === "pending";
 
+  const isBudget = approval.kind === "budget";
+  const breach = approval.breaches?.[0] ?? null;
+  const [headroom, setHeadroom] = useState(() =>
+    String(defaultHeadroomUsd(breach)),
+  );
+  const headroomUsd = Number(headroom.trim());
+  const headroomIsValid =
+    headroom.trim() !== "" && Number.isFinite(headroomUsd) && headroomUsd > 0;
+  const newLimitUsd =
+    breach && headroomIsValid ? breach.usedUsd + headroomUsd : null;
+  const canApprove = !isPending && (!isBudget || headroomIsValid);
+
   const submit = (decision: "approve" | "reject") =>
     decide(
       {
         approvalId: approval.id,
         decision,
         reason: reason.trim() || undefined,
+        // Only meaningful for a budget approval, and only ever sent as a
+        // positive amount — see `defaultHeadroomUsd` above.
+        additionalBudgetUsd:
+          isBudget && decision === "approve" && headroomIsValid
+            ? headroomUsd
+            : undefined,
       },
       {
         onError: (error) =>
@@ -146,6 +182,43 @@ function ApprovalCard({ approval }: ApprovalCardProps) {
         </section>
       ) : null}
 
+      {isBudget && isPendingState ? (
+        <section className="flex flex-col gap-1">
+          <label
+            htmlFor={`agentops-headroom-${approval.id}`}
+            className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]"
+          >
+            {t(I18nKey.AGENTOPS$APPROVAL_ADDITIONAL_BUDGET_LABEL)}
+          </label>
+          <input
+            id={`agentops-headroom-${approval.id}`}
+            data-testid={`agentops-headroom-${approval.id}`}
+            type="text"
+            inputMode="decimal"
+            value={headroom}
+            onChange={(event) => setHeadroom(event.target.value)}
+            aria-invalid={!headroomIsValid}
+            className="w-40 rounded-[var(--radius-md)] border border-[var(--border-color)] bg-[var(--background-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
+          />
+          <span
+            className="text-xs"
+            style={{
+              color: headroomIsValid
+                ? "var(--text-tertiary)"
+                : "var(--error-500)",
+            }}
+          >
+            {!headroomIsValid
+              ? t(I18nKey.AGENTOPS$APPROVAL_HEADROOM_REQUIRED)
+              : newLimitUsd !== null
+                ? t(I18nKey.AGENTOPS$APPROVAL_NEW_LIMIT, {
+                    limit: formatCostUsd(newLimitUsd),
+                  })
+                : null}
+          </span>
+        </section>
+      ) : null}
+
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-color)] pt-3">
         <div className="flex flex-col gap-0.5 text-xs text-[var(--text-tertiary)]">
           <span>
@@ -174,7 +247,7 @@ function ApprovalCard({ approval }: ApprovalCardProps) {
             <button
               type="button"
               data-testid={`agentops-approve-${approval.id}`}
-              disabled={isPending}
+              disabled={!canApprove}
               onClick={() => submit("approve")}
               className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--success-500)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >

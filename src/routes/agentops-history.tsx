@@ -13,7 +13,13 @@ function AgentOpsHistory() {
   const audit = useAgentOpsAudit();
 
   return (
-    <AgentOpsPanel isLoading={runs.isLoading} error={runs.error}>
+    // The audit log has its own query; gating only on `runs` rendered the
+    // "no audit records yet" empty state while it was still loading, and
+    // swallowed an audit-side failure entirely.
+    <AgentOpsPanel
+      isLoading={runs.isLoading || audit.isLoading}
+      error={runs.error ?? audit.error}
+    >
       <div className="flex flex-col gap-6">
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">

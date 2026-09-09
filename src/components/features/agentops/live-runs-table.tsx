@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { AgentOpsRun } from "#/api/agentops-service/agentops-service.types";
@@ -81,8 +81,17 @@ export function LiveRunsTable({
               <td className="whitespace-nowrap px-4 py-3 text-[var(--text-primary)]">
                 {run.agentName}
               </td>
-              <td className="max-w-[280px] truncate px-4 py-3 text-[var(--text-primary)]">
-                {run.task}
+              <td className="max-w-[280px] px-4 py-3 text-[var(--text-primary)]">
+                {/* The row's own onClick is pointer-only. This link is what
+                    makes a run reachable by keyboard and gives it a real
+                    href, so it can also be opened in a new tab. */}
+                <Link
+                  to={`/agentops/runs/${run.runId}`}
+                  onClick={(event) => event.stopPropagation()}
+                  className="block truncate rounded-[var(--radius-sm)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary-500)]"
+                >
+                  {run.task}
+                </Link>
               </td>
               <td
                 className="whitespace-nowrap px-4 py-3 text-[var(--text-secondary)]"
