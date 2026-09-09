@@ -11,6 +11,7 @@ export function RepoTreePanel({
   relativeFrame: number;
 }) {
   const files = scene.tree_files ?? [];
+  const overflow = scene.tree_overflow ?? 0;
   const enter = interpolate(relativeFrame, [0, 15], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -60,6 +61,12 @@ export function RepoTreePanel({
             </div>
           );
         })}
+        {overflow > 0 ? (
+          <div style={{ color: "rgba(255,255,255,0.4)", paddingLeft: 18 }}>
+            {/* eslint-disable-next-line i18next/no-literal-string -- Remotion frame chrome */}
+            {`+${overflow} more file${overflow === 1 ? "" : "s"} in scope`}
+          </div>
+        ) : null}
       </div>
     </div>
   );

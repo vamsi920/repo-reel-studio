@@ -12,6 +12,22 @@ const WORDS_PER_SECOND = 2.3;
 const MIN_SCENE_SECONDS = 6;
 const FPS = 30;
 
+/**
+ * A CodeGraph `lineRange` for a unit/symbol node routinely spans a whole
+ * function or file, and ConceptPanel renders every line it is given. Past
+ * this many lines the code card grows taller than the 1080px composition
+ * and runs off frame under the narration bar, so a segment shows its first
+ * lines and reports the range it actually renders.
+ */
+const MAX_CONCEPT_SEGMENT_LINES = 18;
+
+/**
+ * RepoTreePanel clips at a fixed height, so anything past this many rows
+ * was previously dropped from the frame with nothing to say it happened.
+ * The remainder is reported as an explicit overflow count instead.
+ */
+const MAX_TREE_FILES = 16;
+
 const IGNORE_PATH =
   /(^|\/)(node_modules|dist|build|\.git|coverage|vendor|__pycache__|\.next|\.turbo)(\/|$)/i;
 const NOISE_FILE =
@@ -126,6 +142,9 @@ export interface KtScene {
   mermaid?: string;
   /** File paths for "repo-tree" scenes. */
   tree_files?: string[];
+  /** How many in-scope files a "repo-tree" scene has beyond `tree_files`,
+   * so the frame can say so instead of silently clipping them. */
+  tree_overflow?: number;
   /** Multi-file call-chain steps for "concept" scenes — a real cross-file
    * flow walked from CodeGraph's cached dependency/usedBy edges, each step
    * a real file/line-range/symbol, never invented. */
@@ -820,7 +839,8 @@ function buildRepoTreeScene(
   repoFiles: string[],
 ): KtScene | null {
   if (!repoFiles.length) return null;
-  const shown = repoFiles.slice(0, 40);
+  const shown = repoFiles.slice(0, MAX_TREE_FILES);
+  const overflow = repoFiles.length - shown.length;
   const sentence: KtSentence = {
     sentence: `Here's where ${pageTitle} lives in the repo — ${repoFiles.length} file${repoFiles.length === 1 ? "" : "s"} in scope.`,
     source_refs: [],
@@ -847,6 +867,7 @@ function buildRepoTreeScene(
     startFrame: 0,
     endFrame: 0,
     tree_files: shown,
+    tree_overflow: overflow > 0 ? overflow : undefined,
   };
 }
 
@@ -877,12 +898,15 @@ function buildConceptScene(
       const lines = content.split("\n");
       const start = Math.max(1, hop.startLine);
       const end = Math.min(lines.length, Math.max(start, hop.endLine));
+      // Report the range that is actually rendered, so the on-screen line
+      // numbers and the scene's citation stay the same real range.
+      const shownEnd = Math.min(end, start + MAX_CONCEPT_SEGMENT_LINES - 1);
       return {
         file_path: hop.path,
         start_line: start,
-        end_line: end,
+        end_line: shownEnd,
         symbol: hop.symbol,
-        code: lines.slice(start - 1, end).join("\n"),
+        code: lines.slice(start - 1, shownEnd).join("\n"),
       };
     })
     .filter((s): s is KtConceptSegment => s !== null);

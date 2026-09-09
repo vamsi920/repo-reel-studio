@@ -5,10 +5,7 @@ const page = {
   id: "page-1",
   title: "Auth Flow",
   description: "How auth works.",
-  relevantFiles: [
-    { path: "src/util.ts" },
-    { path: "src/entry.ts" },
-  ],
+  relevantFiles: [{ path: "src/util.ts" }, { path: "src/entry.ts" }],
   diagrams: [],
 };
 
@@ -68,5 +65,73 @@ describe("buildKtManifestFromKnowledgePage", () => {
     );
 
     expect(manifest.scenes.some((s) => s.type === "concept")).toBe(false);
+  });
+
+  it("caps a concept segment's code at what the frame can actually show", () => {
+    // A CodeGraph line range can cover a whole file. ConceptPanel renders
+    // every line it is handed, so an uncapped segment runs off the bottom of
+    // the 1080px composition.
+    const longFile = Array.from(
+      { length: 200 },
+      (_, i) => `const line${i} = ${i};`,
+    ).join("\n");
+    const fileContents = {
+      "src/entry.ts": longFile,
+      "src/util.ts": longFile,
+    };
+
+    const manifest = buildKtManifestFromKnowledgePage(
+      page,
+      fileContents,
+      [],
+      5,
+      [
+        { path: "src/entry.ts", startLine: 1, endLine: 200, symbol: "start" },
+        { path: "src/util.ts", startLine: 10, endLine: 180, symbol: "helper" },
+      ],
+    );
+
+    const concept = manifest.scenes.find((s) => s.type === "concept");
+    const segments = concept?.segments ?? [];
+    expect(segments).toHaveLength(2);
+    for (const segment of segments) {
+      expect(segment.code.split("\n").length).toBeLessThanOrEqual(18);
+      // The reported range must match what is rendered, so the panel's line
+      // numbers and the scene's citation stay a real, single range.
+      expect(segment.end_line - segment.start_line + 1).toBe(
+        segment.code.split("\n").length,
+      );
+    }
+    expect(segments[1].start_line).toBe(10);
+  });
+
+  it("reports repo-tree files it cannot fit instead of clipping them silently", () => {
+    const repoFiles = Array.from({ length: 25 }, (_, i) => `src/file-${i}.ts`);
+    const fileContents = {
+      "src/util.ts": "export function helper() {\n  return 1;\n}\n",
+    };
+
+    const manifest = buildKtManifestFromKnowledgePage(
+      page,
+      fileContents,
+      repoFiles,
+    );
+    const tree = manifest.scenes.find((s) => s.type === "repo-tree");
+
+    expect(tree?.tree_files).toHaveLength(16);
+    expect(tree?.tree_overflow).toBe(9);
+  });
+
+  it("leaves no repo-tree overflow when every file fits", () => {
+    const repoFiles = Array.from({ length: 4 }, (_, i) => `src/file-${i}.ts`);
+    const manifest = buildKtManifestFromKnowledgePage(
+      page,
+      { "src/util.ts": "export function helper() {\n  return 1;\n}\n" },
+      repoFiles,
+    );
+    const tree = manifest.scenes.find((s) => s.type === "repo-tree");
+
+    expect(tree?.tree_files).toHaveLength(4);
+    expect(tree?.tree_overflow).toBeUndefined();
   });
 });

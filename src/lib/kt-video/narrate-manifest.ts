@@ -52,12 +52,25 @@ Respond with ONLY a JSON array, one entry per scene, in this exact shape (no oth
 
 function retimeManifest(manifest: KtManifest): KtManifest {
   let cursor = 0;
-  for (const scene of manifest.scenes) {
-    scene.startFrame = cursor;
+  // Copy each scene rather than reassigning frames in place: scenes this
+  // pass left un-narrated are still the deterministic builder's own objects,
+  // and retiming them would silently move the caller's original manifest.
+  const scenes = manifest.scenes.map((scene) => {
+    const startFrame = cursor;
     cursor += scene.durationInFrames;
-    scene.endFrame = cursor;
-  }
-  return { ...manifest, totalFrames: Math.max(1, cursor) };
+    return { ...scene, startFrame, endFrame: cursor };
+  });
+  return { ...manifest, scenes, totalFrames: Math.max(1, cursor) };
+}
+
+/**
+ * Lower bound on a narrated scene's runtime. A "concept" scene steps through
+ * one code segment per hop, so its floor scales with the number of hops —
+ * otherwise a terse narration can retime a four-hop chain down to six
+ * seconds and leave each segment on screen for well under two.
+ */
+function minSecondsFor(scene: KtScene): number {
+  return MIN_SCENE_SECONDS * Math.max(1, scene.segments?.length ?? 1);
 }
 
 /**
@@ -123,7 +136,7 @@ export async function narrateManifest(
 
     const words = narration.split(/\s+/).filter(Boolean).length;
     const duration_seconds = Math.max(
-      MIN_SCENE_SECONDS,
+      minSecondsFor(scene),
       Math.ceil(words / WORDS_PER_SECOND) + 2,
     );
 
