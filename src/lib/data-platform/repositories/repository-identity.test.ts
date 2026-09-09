@@ -9,7 +9,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 interface FakeResult {
   data?: unknown;
-  error?: { message: string } | null;
+  // `code` matters: the real bootstrap treats 23505 (unique violation) on the
+  // membership inserts as "already a member", not as a failure.
+  error?: { message: string; code?: string } | null;
 }
 
 function ok(data: unknown = null): FakeResult {
@@ -23,8 +25,7 @@ function fail(message = "denied"): FakeResult {
 /**
  * Minimal fake query builder covering exactly the call shapes
  * `repository-identity.ts` and `workspace-repository.ts` make:
- *   .from(t).select(...).eq(...).limit(...).maybeSingle()
- *   .from(t).insert(...).select(...).single()
+ *   .from(t).select(...).eq(...).order(...).limit(...).maybeSingle()
  *   .from(t).insert(...)
  *   .from(t).upsert(...)
  */
@@ -35,7 +36,7 @@ function makeFakeClient(config: {
   orgInsert: FakeResult;
   orgMemberInsert: FakeResult;
   workspaceUpsert: FakeResult;
-  workspaceMemberUpsert: FakeResult;
+  workspaceMemberInsert: FakeResult;
 }) {
   const calls: string[] = [];
 
@@ -43,17 +44,23 @@ function makeFakeClient(config: {
     const builder = {
       select: (_cols: string) => {
         calls.push(`${table}.select`);
+        const maybeSingle = async () => {
+          calls.push(`${table}.maybeSingle`);
+          if (table === "org_members") {
+            return ok(config.orgMembership);
+          }
+          return ok(null);
+        };
         return {
           eq: () => ({
-            limit: () => ({
-              maybeSingle: async () => {
-                calls.push(`${table}.maybeSingle`);
-                if (table === "org_members") {
-                  return ok(config.orgMembership);
-                }
-                return ok(null);
-              },
-            }),
+            // `.order()` before `.limit()` is what makes a user who is
+            // already in several orgs resolve to the same one every time.
+            order: (column: string, opts: { ascending: boolean }) => {
+              calls.push(
+                `${table}.order:${column}:${opts.ascending ? "asc" : "desc"}`,
+              );
+              return { limit: () => ({ maybeSingle }) };
+            },
           }),
         };
       },
@@ -68,6 +75,8 @@ function makeFakeClient(config: {
           then: (resolve: (r: FakeResult) => void) => {
             if (table === "orgs") resolve(config.orgInsert);
             else if (table === "org_members") resolve(config.orgMemberInsert);
+            else if (table === "workspace_members")
+              resolve(config.workspaceMemberInsert);
             else resolve(fail("unexpected bare insert"));
           },
         };
@@ -77,8 +86,6 @@ function makeFakeClient(config: {
         return {
           then: (resolve: (r: FakeResult) => void) => {
             if (table === "workspaces") resolve(config.workspaceUpsert);
-            else if (table === "workspace_members")
-              resolve(config.workspaceMemberUpsert);
             else resolve(fail("unexpected upsert"));
           },
         };
@@ -130,7 +137,12 @@ vi.mock("#/lib/data-platform/client", () => ({
   },
 }));
 
-import { ensureWorkspaceAccess } from "./repository-identity";
+import {
+  ensureWorkspaceAccess,
+  resetPersonalOrgBootstrap,
+  resolveOrgId,
+} from "./repository-identity";
+import { resetSupabaseSessionBootstrap } from "#/lib/data-platform/auth-bootstrap";
 
 const INPUT = {
   workspaceId: "ws_test",
@@ -141,7 +153,13 @@ const INPUT = {
 beforeEach(() => {
   clientState.client = null;
   clientState.isSupabaseConfigured = false;
+  resetSupabaseSessionBootstrap();
+  resetPersonalOrgBootstrap();
 });
+
+function countCalls(calls: string[], name: string): number {
+  return calls.filter((call) => call === name).length;
+}
 
 describe("ensureWorkspaceAccess", () => {
   it("returns false without attempting anything when Supabase is unconfigured", async () => {
@@ -156,7 +174,7 @@ describe("ensureWorkspaceAccess", () => {
       orgInsert: ok({ id: "org-1" }),
       orgMemberInsert: ok(),
       workspaceUpsert: ok(),
-      workspaceMemberUpsert: ok(),
+      workspaceMemberInsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
@@ -168,11 +186,12 @@ describe("ensureWorkspaceAccess", () => {
       "auth.getSession",
       "auth.signInAnonymously",
       "org_members.select",
+      "org_members.order:created_at:asc",
       "org_members.maybeSingle",
       "orgs.insert",
       "org_members.insert",
       "workspaces.upsert",
-      "workspace_members.upsert",
+      "workspace_members.insert",
     ]);
   });
 
@@ -184,14 +203,14 @@ describe("ensureWorkspaceAccess", () => {
       orgInsert: ok({ id: "org-1" }),
       orgMemberInsert: ok(),
       workspaceUpsert: ok(),
-      workspaceMemberUpsert: ok(),
+      workspaceMemberInsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
 
     expect(await ensureWorkspaceAccess(INPUT)).toBe(true);
     expect(calls).not.toContain("orgs.insert");
-    expect(calls).toContain("workspace_members.upsert");
+    expect(calls).toContain("workspace_members.insert");
   });
 
   it("short-circuits when anonymous sign-in is disabled on the project", async () => {
@@ -202,7 +221,7 @@ describe("ensureWorkspaceAccess", () => {
       orgInsert: ok({ id: "org-1" }),
       orgMemberInsert: ok(),
       workspaceUpsert: ok(),
-      workspaceMemberUpsert: ok(),
+      workspaceMemberInsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
@@ -220,7 +239,7 @@ describe("ensureWorkspaceAccess", () => {
       orgInsert: fail("42501: new row violates row-level security policy"),
       orgMemberInsert: ok(),
       workspaceUpsert: ok(),
-      workspaceMemberUpsert: ok(),
+      workspaceMemberInsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
@@ -247,12 +266,80 @@ describe("ensureWorkspaceAccess", () => {
       orgInsert: ok({ id: "org-1" }),
       orgMemberInsert: ok(),
       workspaceUpsert: fail(),
-      workspaceMemberUpsert: ok(),
+      workspaceMemberInsert: ok(),
     });
     clientState.client = client;
     clientState.isSupabaseConfigured = true;
 
     expect(await ensureWorkspaceAccess(INPUT)).toBe(false);
-    expect(calls).not.toContain("workspace_members.upsert");
+    expect(calls).not.toContain("workspace_members.insert");
+  });
+
+  it("treats a unique violation on the membership insert as already-a-member", async () => {
+    const { client } = makeFakeClient({
+      session: { userId: "user-1" },
+      signInResult: "ok",
+      orgMembership: { org_id: "org-existing" },
+      orgInsert: ok({ id: "org-1" }),
+      orgMemberInsert: ok(),
+      workspaceUpsert: ok(),
+      workspaceMemberInsert: {
+        data: null,
+        error: { code: "23505", message: "duplicate key value" },
+      },
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+
+    expect(await ensureWorkspaceAccess(INPUT)).toBe(true);
+  });
+
+  it("mints one anonymous user and one org when several consumers bootstrap at once", async () => {
+    // The real cold-load shape: `use-environment-org` and
+    // `use-supabase-identity` both start before either finishes. Without the
+    // single-flight guards each would sign in separately (the client keeps
+    // only the last session, orphaning the first uid's rows) and each would
+    // insert its own client-generated org id.
+    const { client, calls } = makeFakeClient({
+      session: null,
+      signInResult: "ok",
+      orgMembership: null,
+      orgInsert: ok(),
+      orgMemberInsert: ok(),
+      workspaceUpsert: ok(),
+      workspaceMemberInsert: ok(),
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+
+    const [orgId, access] = await Promise.all([
+      resolveOrgId(),
+      ensureWorkspaceAccess(INPUT),
+    ]);
+
+    expect(access).toBe(true);
+    expect(orgId).toBeTruthy();
+    expect(countCalls(calls, "auth.signInAnonymously")).toBe(1);
+    expect(countCalls(calls, "orgs.insert")).toBe(1);
+  });
+
+  it("re-queries the org on a later call instead of caching the first answer", async () => {
+    const { client, calls } = makeFakeClient({
+      session: { userId: "user-1" },
+      signInResult: "ok",
+      orgMembership: { org_id: "org-existing" },
+      orgInsert: ok(),
+      orgMemberInsert: ok(),
+      workspaceUpsert: ok(),
+      workspaceMemberInsert: ok(),
+    });
+    clientState.client = client;
+    clientState.isSupabaseConfigured = true;
+
+    expect(await resolveOrgId()).toBe("org-existing");
+    expect(await resolveOrgId()).toBe("org-existing");
+    // Single-flight, not a cache: a sign-in that changes `auth.uid()` must
+    // not keep resolving the previous user's org.
+    expect(countCalls(calls, "org_members.select")).toBe(2);
   });
 });

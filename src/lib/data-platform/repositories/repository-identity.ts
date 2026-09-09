@@ -39,13 +39,19 @@ function newOrgId(): string {
  * the org bootstrap has never worked for any user). No RETURNING needed
  * anyway, since the id is already known.
  */
-async function ensurePersonalOrg(userId: string): Promise<string | null> {
+async function resolvePersonalOrg(userId: string): Promise<string | null> {
   if (!supabase) return null;
 
+  // Ordered, not just `.limit(1)`: a browser that already ended up in more
+  // than one org (two tabs bootstrapping at once, before the single-flight
+  // below existed) must resolve to the SAME org on every subsequent call.
+  // An unordered limit lets Postgres pick either row, which silently splits
+  // that user's workspaces and repositories across two orgs.
   const { data: membership, error: membershipError } = await supabase
     .from("org_members")
     .select("org_id")
     .eq("user_id", userId)
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (membershipError) logFailure("org_members lookup", membershipError);
@@ -72,6 +78,40 @@ async function ensurePersonalOrg(userId: string): Promise<string | null> {
   }
 
   return orgId;
+}
+
+/**
+ * In-flight org bootstrap for one user id. `resolveOrgId`,
+ * `ensureWorkspaceAccess` and `resolvePersistenceIds` all run concurrently on
+ * a cold page load; without this, each one sees "no membership yet" and
+ * inserts its OWN client-generated org id, leaving the user in several orgs
+ * at once. Since `orgScopedWorkspaceId` prefixes the workspace id with the
+ * org id, that split means the same physical folder gets a different
+ * workspace row per caller and previously persisted knowledge/codegraph rows
+ * stop resolving after a reload. Cross-tab concurrency is still possible;
+ * the ordered lookup above is what keeps that case converging on one org.
+ */
+let inFlightOrg: {
+  userId: string;
+  promise: Promise<string | null>;
+} | null = null;
+
+async function ensurePersonalOrg(userId: string): Promise<string | null> {
+  if (!supabase) return null;
+  if (inFlightOrg?.userId === userId) return inFlightOrg.promise;
+
+  const promise = resolvePersonalOrg(userId);
+  inFlightOrg = { userId, promise };
+  try {
+    return await promise;
+  } finally {
+    if (inFlightOrg?.promise === promise) inFlightOrg = null;
+  }
+}
+
+/** Test seam -- drops any in-flight org bootstrap so the next call re-queries. */
+export function resetPersonalOrgBootstrap(): void {
+  inFlightOrg = null;
 }
 
 /**
