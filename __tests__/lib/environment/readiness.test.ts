@@ -4,6 +4,7 @@ import {
   EMPTY_EVIDENCE,
   type ReadinessEvidence,
 } from "#/lib/environment/requirements/readiness";
+import { FEATURE_REQUIREMENTS } from "#/lib/environment/requirements/feature-requirements";
 import { createEmptyProfile } from "#/lib/environment/types/profile";
 import type { ProbeResult } from "#/lib/environment/types/probe";
 
@@ -103,6 +104,33 @@ describe("readiness", () => {
       ...report.unknown,
     ].filter((item) => item.node.kind === "env" && item.node.scope === "fly");
     expect(flyItems).toEqual([]);
+  });
+
+  it("reports every evaluated requirement, not just the failing ones", () => {
+    // The three buckets between them omit satisfied, not-applicable and
+    // unsatisfied-but-optional requirements, so a per-requirement screen that
+    // reads only those cannot tell "passing" from "never mentioned".
+    const report = computeReadiness(EMPTY_EVIDENCE, null, NOW);
+    const expected = FEATURE_REQUIREMENTS.reduce(
+      (total, feature) => total + feature.requires.length,
+      0,
+    );
+    expect(report.items).toHaveLength(expected);
+    expect(new Set(report.items.map((item) => item.id)).size).toBe(expected);
+    for (const bucket of [report.blocking, report.degrading, report.unknown]) {
+      for (const item of bucket) expect(report.items).toContain(item);
+    }
+  });
+
+  it("keeps a not-applicable requirement in items so a row can say so", () => {
+    const profile = createEmptyProfile("org", NOW);
+    profile.mode = "saas";
+    const report = computeReadiness(EMPTY_EVIDENCE, profile, NOW);
+    const fly = report.items.filter(
+      (item) => item.node.kind === "env" && item.node.scope === "fly",
+    );
+    expect(fly.length).toBeGreaterThan(0);
+    for (const item of fly) expect(item.status).toBe("not-applicable");
   });
 
   it("drops the inbound requirement once polling is in use", () => {

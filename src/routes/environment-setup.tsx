@@ -171,6 +171,13 @@ function EnvironmentSetupScreen() {
     const mirror = searchParams.get("mirror");
     if (!connected && !failed) return;
 
+    // Wait for the session lookup before consuming the receipt. Coming back
+    // from OAuth is a cold page load, so this effect runs first with
+    // `conversationId` still null; stripping the params there threw the
+    // receipt away, and the agent that asked for the connection was left
+    // waiting for a tool result that never arrived.
+    if (sessionLoading) return;
+
     // Strip the params first: a re-render must not replay this, and StrictMode
     // double-invokes effects in development.
     const next = new URLSearchParams(searchParams);
@@ -205,7 +212,14 @@ function EnvironmentSetupScreen() {
         })}`,
       );
     }
-  }, [searchParams, setSearchParams, queryClient, conversationId, t]);
+  }, [
+    searchParams,
+    setSearchParams,
+    queryClient,
+    conversationId,
+    sessionLoading,
+    t,
+  ]);
 
   // A "Fix with agent" click elsewhere in the product arrives as ?seed=, so
   // the conversation opens already knowing what the user wanted help with

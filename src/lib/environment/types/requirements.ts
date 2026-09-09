@@ -77,6 +77,14 @@ export interface ReadinessReport {
    * separately so the UI never presents "we did not check" as "broken".
    */
   score: number;
+  /**
+   * Every evaluated requirement, in feature order. The three buckets below are
+   * views over this list and between them leave out the satisfied,
+   * `not-applicable` and unsatisfied-but-`optional` items -- so a screen that
+   * renders one row per requirement must read `items`, or it has no way to
+   * tell "satisfied" apart from "not in any bucket".
+   */
+  items: ReadinessItem[];
   blocking: ReadinessItem[];
   degrading: ReadinessItem[];
   unknown: ReadinessItem[];

@@ -10,6 +10,7 @@ const NOW = "2026-08-30T00:00:00.000Z";
 
 const readiness: ReadinessReport = {
   score: 80,
+  items: [],
   blocking: [],
   degrading: [],
   unknown: [],

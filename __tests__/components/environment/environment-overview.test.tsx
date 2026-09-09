@@ -35,6 +35,7 @@ vi.mock("#/hooks/query/use-environment-readiness", () => ({
 function baseReport(overrides: Partial<ReadinessReport> = {}): ReadinessReport {
   return {
     score: 55,
+    items: [],
     blocking: [],
     degrading: [],
     unknown: [],

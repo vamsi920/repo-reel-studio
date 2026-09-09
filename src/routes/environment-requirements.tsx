@@ -2,9 +2,13 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
-import { FEATURE_REQUIREMENTS } from "#/lib/environment/requirements/feature-requirements";
+import {
+  FEATURE_REQUIREMENTS,
+  requirementNodeId,
+} from "#/lib/environment/requirements/feature-requirements";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { useEnvironmentReadiness } from "#/hooks/query/use-environment-readiness";
+import type { RequirementStatus } from "#/lib/environment/types/requirements";
 import {
   SEVERITY_LABEL_KEY,
   pipClassForRequirementStatus,
@@ -22,22 +26,14 @@ function EnvironmentRequirementsScreen() {
   const labelFor = useRequirementLabel();
   const openCopilot = useOnboardingCopilotStore((state) => state.openWithSeed);
 
-  // Every item, grouped by feature, so someone reading this sees "Jira
-  // triggers need these four things" rather than a flat list of hostnames.
-  const byFeature = React.useMemo(() => {
-    const all = [
-      ...readiness.blocking,
-      ...readiness.degrading,
-      ...readiness.unknown,
-    ];
-    const satisfied = new Set(all.map((item) => item.id));
-    const grouped = new Map<string, typeof all>();
-    for (const item of all) {
-      const bucket = grouped.get(item.featureId) ?? [];
-      bucket.push(item);
-      grouped.set(item.featureId, bucket);
-    }
-    return { grouped, unsatisfiedIds: satisfied };
+  // Status by requirement id, so a row asks the report about exactly the node
+  // it is drawing. Reading the blocking/degrading/unknown buckets instead
+  // silently reported everything they leave out -- satisfied, not-applicable
+  // and unsatisfied-but-optional requirements alike -- as satisfied.
+  const statusById = React.useMemo(() => {
+    const map = new Map<string, RequirementStatus>();
+    for (const item of readiness.items) map.set(item.id, item.status);
+    return map;
   }, [readiness]);
 
   return (
@@ -50,57 +46,73 @@ function EnvironmentRequirementsScreen() {
       </p>
 
       {FEATURE_REQUIREMENTS.map((feature) => {
-        const problems = byFeature.grouped.get(feature.featureId) ?? [];
+        const rows = feature.requires.map((entry) => ({
+          entry,
+          nodeId: requirementNodeId(entry.node),
+          // A requirement the report never evaluated has not been checked --
+          // it is not passing.
+          status:
+            statusById.get(
+              `${feature.featureId}:${requirementNodeId(entry.node)}`,
+            ) ?? ("unknown" as RequirementStatus),
+        }));
+        const hasBlockingFailure = rows.some(
+          (row) =>
+            row.status === "unsatisfied" && row.entry.severity === "blocking",
+        );
+        const hasFailure = rows.some((row) => row.status === "unsatisfied");
+        // Nothing proved either way is its own state. Painting it green told
+        // people a deployment was ready when no probe had run at all.
+        const hasUnknown = rows.some((row) => row.status === "unknown");
+        const featureBadge = hasBlockingFailure
+          ? {
+              className: "ame-badge-danger",
+              key: I18nKey.ENVIRONMENT$STATUS_ERROR,
+            }
+          : hasFailure
+            ? {
+                className: "ame-badge-warning",
+                key: I18nKey.ENVIRONMENT$STATUS_DEGRADED,
+              }
+            : hasUnknown
+              ? {
+                  className: "ame-badge-neutral",
+                  key: I18nKey.ENVIRONMENT$STATUS_UNKNOWN,
+                }
+              : {
+                  className: "ame-badge-success",
+                  key: I18nKey.ENVIRONMENT$STATUS_OK,
+                };
         return (
           <section
             key={feature.featureId}
             data-testid={`requirement-feature-${feature.featureId}`}
+            data-status={
+              hasBlockingFailure
+                ? "blocked"
+                : hasFailure
+                  ? "degraded"
+                  : hasUnknown
+                    ? "unknown"
+                    : "ready"
+            }
             className="ame-card flex flex-col gap-3 p-4"
           >
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                 {t(feature.nameKey)}
               </h2>
-              <span
-                className={cn(
-                  "ame-badge",
-                  problems.some(
-                    (item) =>
-                      item.severity === "blocking" &&
-                      item.status === "unsatisfied",
-                  )
-                    ? "ame-badge-danger"
-                    : problems.some((item) => item.status === "unsatisfied")
-                      ? "ame-badge-warning"
-                      : "ame-badge-success",
-                )}
-              >
-                {t(
-                  problems.some(
-                    (item) =>
-                      item.severity === "blocking" &&
-                      item.status === "unsatisfied",
-                  )
-                    ? I18nKey.ENVIRONMENT$STATUS_ERROR
-                    : problems.some((item) => item.status === "unsatisfied")
-                      ? I18nKey.ENVIRONMENT$STATUS_DEGRADED
-                      : I18nKey.ENVIRONMENT$STATUS_OK,
-                )}
+              <span className={cn("ame-badge", featureBadge.className)}>
+                {t(featureBadge.key)}
               </span>
             </div>
 
             <ul className="flex flex-col divide-y divide-[var(--border-color)]">
-              {feature.requires.map((entry) => {
-                const item = problems.find(
-                  (candidate) =>
-                    labelFor(candidate.node) === labelFor(entry.node) &&
-                    candidate.severity === entry.severity,
-                );
-                const status = item?.status ?? "satisfied";
+              {rows.map(({ entry, nodeId, status }) => {
                 const scope = requirementScopeHint(entry.node);
                 return (
                   <li
-                    key={`${feature.featureId}:${labelFor(entry.node)}`}
+                    key={`${feature.featureId}:${nodeId}:${entry.severity}`}
                     data-testid={`requirement-row-${feature.featureId}`}
                     data-status={status}
                     className="flex flex-wrap items-center justify-between gap-2 py-2"

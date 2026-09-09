@@ -142,6 +142,7 @@ export function computeReadiness(
 
   return {
     score,
+    items,
     blocking,
     degrading,
     unknown,

@@ -25,6 +25,10 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
   const [project, setProject] = React.useState("");
+  // A failed launch used to reset the button and say nothing at all, on the
+  // very first screen a new user sees. Keep the typed brief and say what went
+  // wrong so they can retry.
+  const [launchError, setLaunchError] = React.useState<string | null>(null);
 
   const {
     mutate: createConversation,
@@ -51,6 +55,7 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
   const launch = () => {
     if (!canSubmit || launchInFlightRef.current) return;
     launchInFlightRef.current = true;
+    setLaunchError(null);
 
     const trimmed = project.trim();
     const looksLikeUrlOrRepo =
@@ -69,8 +74,13 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
           navigate(`/conversations/${data.conversation_id}`);
           onLaunched();
         },
-        onError: () => {
+        onError: (error) => {
           launchInFlightRef.current = false;
+          setLaunchError(
+            error instanceof Error && error.message
+              ? error.message
+              : t(I18nKey.STATUS$ERROR),
+          );
         },
       },
     );
@@ -127,6 +137,15 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
           >
             {t(I18nKey.ONBOARDING$PROJECT_START)}
           </button>
+          {launchError ? (
+            <p
+              role="alert"
+              data-testid="onboarding-project-error"
+              className="text-sm text-[var(--error-500)]"
+            >
+              {launchError}
+            </p>
+          ) : null}
           {!isLlmConfigLoading && !isLlmConfigured ? (
             <LlmNotConfiguredBanner />
           ) : null}
