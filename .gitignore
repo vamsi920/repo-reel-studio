@@ -95,3 +95,12 @@ legacy/server/.repo-workspaces/
 legacy/server/.proactive-agent-ops/
 legacy/server/.governance/
 legacy/server/__pycache__/
+
+# Generated declaration output from the vendored understand-anything build
+vendor/understand-anything/**/*.d.ts
+
+# Supabase CLI local scratch state
+supabase/.temp/
+
+# Playwright auth-suite output
+test-results-auth/
