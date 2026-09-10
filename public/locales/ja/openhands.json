@@ -2359,6 +2359,8 @@
   "SECURITY$SEVERITY_MEDIUM": "Medium",
   "SECURITY$SEVERITY_LOW": "Low",
   "SECURITY$SEVERITY_INFO": "Info",
+  "SECURITY$REPOSITORY_SELECT_LABEL": "Security の対象とするリポジトリ",
+  "SECURITY$REPOSITORY_SELECT_PICK": "接続済みのリポジトリを選択…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Search files, classes and functions…",
   "CODEGRAPH$SEARCH_NO_RESULTS": "一致する項目がありません",

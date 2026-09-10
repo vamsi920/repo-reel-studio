@@ -1,8 +1,9 @@
-import { screen } from "@testing-library/react";
+import { renderHook, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { renderWithProviders } from "test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
-import SecurityScreen from "#/routes/security";
+import SecurityScreen, { useSecurityWorkspaceScope } from "#/routes/security";
 import { I18nKey } from "#/i18n/declaration";
 import routes from "#/routes";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
@@ -111,7 +112,7 @@ describe("Security route", () => {
     expect(button).toHaveAttribute("aria-describedby", hint.id);
   });
 
-  it("names the severity legend and the future-areas list", () => {
+  it("names the severity legend, the empty state and the future-areas list", () => {
     renderSecurity();
 
     expect(
@@ -119,6 +120,9 @@ describe("Security route", () => {
         name: I18nKey.SECURITY$SEVERITY_LEGEND_LABEL,
       }),
     ).toBe(screen.getByTestId("security-severity-legend"));
+    expect(
+      screen.getByRole("region", { name: I18nKey.SECURITY$NOT_CONFIGURED }),
+    ).toBe(screen.getByTestId("security-empty-state"));
     expect(
       screen.getByRole("list", { name: I18nKey.SECURITY$FUTURE_AREAS }),
     ).toBe(screen.getByTestId("security-future-areas"));
@@ -189,6 +193,79 @@ describe("Security route", () => {
       seedRepository();
       renderSecurity();
 
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+    });
+
+    it("identifies the workspace by the snapshot's checkout path", () => {
+      seedRepository();
+
+      const { result } = renderHook(() => useSecurityWorkspaceScope(null));
+
+      // Same identity every other workspace-scoped feature uses; a parallel
+      // id here would never line up with their data.
+      expect(result.current.scope).toMatchObject({
+        state: "scoped",
+        scope: { workspaceId: "/workspace/api", repositoryId: "acme/api@main" },
+      });
+      expect(result.current.repositories).toEqual([
+        { repositoryId: "acme/api@main", label: "acme/api" },
+      ]);
+    });
+  });
+
+  describe("repository picker", () => {
+    it("is absent while the one connected repository is the one shown", () => {
+      seedRepository();
+      renderSecurity();
+
+      expect(
+        screen.queryByTestId("security-repository-select"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("re-scopes the page to the chosen repository", async () => {
+      const user = userEvent.setup();
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity();
+
+      const select = screen.getByRole("combobox", {
+        name: I18nKey.SECURITY$REPOSITORY_SELECT_LABEL,
+      });
+      expect(select).toHaveValue("acme/api@main");
+      expect(
+        screen.getAllByRole("option").map((option) => option.textContent),
+      ).toEqual(["acme/api", "acme/web"]);
+
+      await user.selectOptions(select, "acme/web@main");
+
+      expect(select).toHaveValue("acme/web@main");
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/web@abcdef1",
+      );
+    });
+
+    it("offers a way out of an unknown ?repository=", async () => {
+      const user = userEvent.setup();
+      seedRepository();
+      renderSecurity("/security?repository=acme%2Fghost%40main");
+
+      // Nothing is selected: the unknown id must not masquerade as a choice.
+      const select = screen.getByTestId("security-repository-select");
+      expect(select).toHaveValue("");
+      expect(
+        screen.getByRole("option", {
+          name: I18nKey.SECURITY$REPOSITORY_SELECT_PICK,
+        }),
+      ).toBeDisabled();
+
+      await user.selectOptions(select, "acme/api@main");
+
+      expect(
+        screen.queryByTestId("security-repository-not-connected"),
+      ).not.toBeInTheDocument();
       expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
         "acme/api@abcdef1",
       );
@@ -274,5 +351,45 @@ describe("Security activity contract", () => {
     expect(event.source).toBe("security");
     expect(event.workspaceId).toBe("/workspace/api");
     expect(event.title).toBe("Security: scan started");
+  });
+
+  it("scopes the event to the repository and commit it describes", () => {
+    const event = buildSecurityActivityEvent(
+      {
+        workspaceId: "/workspace/api",
+        repositoryId: "acme/api@main",
+        commitSha: "abcdef1234567890",
+      },
+      "scan.failed",
+      "2026-08-19T00:00:00.000Z",
+      "scanner exited with code 2",
+    );
+
+    expect(event).toMatchObject({
+      id: "security-acme/api@main-scan.failed-2026-08-19T00:00:00.000Z",
+      status: "failed",
+      kind: "scan.failed",
+      entityType: "repository",
+      entityId: "acme/api@main",
+      metadata: { commitSha: "abcdef1234567890" },
+      message: "scanner exited with code 2",
+    });
+  });
+
+  it("omits the message field entirely when there is none", () => {
+    const event = buildSecurityActivityEvent(
+      {
+        workspaceId: "/workspace/api",
+        repositoryId: "acme/api@main",
+        commitSha: "abcdef1234567890",
+      },
+      "findings.ready",
+      "2026-08-19T00:00:00.000Z",
+    );
+
+    // `message: undefined` would still serialise as a key; consumers that
+    // spread the event into a store row must not pick up a phantom column.
+    expect("message" in event).toBe(false);
+    expect(event.status).toBe("completed");
   });
 });

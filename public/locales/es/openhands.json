@@ -2359,6 +2359,8 @@
   "SECURITY$SEVERITY_MEDIUM": "Medium",
   "SECURITY$SEVERITY_LOW": "Low",
   "SECURITY$SEVERITY_INFO": "Info",
+  "SECURITY$REPOSITORY_SELECT_LABEL": "Repositorio al que se limita Security",
+  "SECURITY$REPOSITORY_SELECT_PICK": "Elige un repositorio conectado…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Search files, classes and functions…",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Sin coincidencias",

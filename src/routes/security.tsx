@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import {
@@ -38,6 +38,18 @@ export type SecurityWorkspaceScopeResult =
   | { state: "requested-not-connected"; repositoryId: string }
   | { state: "scoped"; scope: SecurityWorkspaceScope };
 
+/** One entry of the repository picker: the id `?repository=` takes, and how it reads. */
+export interface SecurityRepositoryOption {
+  repositoryId: string;
+  label: string;
+}
+
+export interface SecurityWorkspaceScopeState {
+  scope: SecurityWorkspaceScopeResult;
+  /** Every connected repository, ordered by id — the same order the default pick uses. */
+  repositories: SecurityRepositoryOption[];
+}
+
 function scopedTo(snapshot: RepositorySnapshot): SecurityWorkspaceScopeResult {
   return {
     state: "scoped",
@@ -64,33 +76,42 @@ function scopedTo(snapshot: RepositorySnapshot): SecurityWorkspaceScopeResult {
  */
 export function useSecurityWorkspaceScope(
   repositoryIdParam: string | null,
-): SecurityWorkspaceScopeResult {
+): SecurityWorkspaceScopeState {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
   return useMemo(() => {
-    const entries = Object.values(byRepositoryId);
-    if (entries.length === 0) return { state: "no-repositories" };
+    const entries = [...Object.values(byRepositoryId)].sort((a, b) =>
+      a.snapshot.repositoryId.localeCompare(b.snapshot.repositoryId),
+    );
+    const repositories = entries.map(({ snapshot }) => ({
+      repositoryId: snapshot.repositoryId,
+      label: `${snapshot.owner}/${snapshot.repo}`,
+    }));
+    if (entries.length === 0) {
+      return { scope: { state: "no-repositories" }, repositories };
+    }
 
     if (repositoryIdParam) {
       const requested = entries.find(
         (e) => e.snapshot.repositoryId === repositoryIdParam,
       );
-      return requested
-        ? scopedTo(requested.snapshot)
-        : {
-            state: "requested-not-connected",
-            repositoryId: repositoryIdParam,
-          };
+      return {
+        scope: requested
+          ? scopedTo(requested.snapshot)
+          : {
+              state: "requested-not-connected",
+              repositoryId: repositoryIdParam,
+            },
+        repositories,
+      };
     }
 
-    const [first] = [...entries].sort((a, b) =>
-      a.snapshot.repositoryId.localeCompare(b.snapshot.repositoryId),
-    );
-    return scopedTo(first.snapshot);
+    return { scope: scopedTo(entries[0].snapshot), repositories };
   }, [byRepositoryId, repositoryIdParam]);
 }
 
 const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
 const FUTURE_AREAS_HEADING_ID = "security-future-areas-heading";
+const EMPTY_STATE_HEADING_ID = "security-empty-state-heading";
 
 const SEVERITY_KEY: Record<SecuritySeverity, I18nKey> = {
   critical: I18nKey.SECURITY$SEVERITY_CRITICAL,
@@ -144,6 +165,46 @@ const FUTURE_AREAS: {
   },
 ];
 
+interface RepositorySelectProps {
+  repositories: SecurityRepositoryOption[];
+  /** The connected repository the page is scoped to, or `null` when `?repository=` named an unknown one. */
+  selectedRepositoryId: string | null;
+  onSelect: (repositoryId: string) => void;
+}
+
+/**
+ * The only way to re-scope the page is `?repository=`, which nothing in the
+ * UI writes. With several repositories connected, or with the URL pointing at
+ * one that is not, the user needs a control that writes it for them.
+ */
+function RepositorySelect({
+  repositories,
+  selectedRepositoryId,
+  onSelect,
+}: RepositorySelectProps) {
+  const { t } = useTranslation("openhands");
+  return (
+    <select
+      aria-label={t(I18nKey.SECURITY$REPOSITORY_SELECT_LABEL)}
+      className="mt-3 rounded-md border border-[var(--oh-border)] bg-transparent px-2 py-1 text-xs text-[var(--oh-foreground)]"
+      data-testid="security-repository-select"
+      value={selectedRepositoryId ?? ""}
+      onChange={(event) => onSelect(event.target.value)}
+    >
+      {selectedRepositoryId === null && (
+        <option value="" disabled>
+          {t(I18nKey.SECURITY$REPOSITORY_SELECT_PICK)}
+        </option>
+      )}
+      {repositories.map((repository) => (
+        <option key={repository.repositoryId} value={repository.repositoryId}>
+          {repository.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function SeverityLegend() {
   const { t } = useTranslation("openhands");
   return (
@@ -166,8 +227,28 @@ function SeverityLegend() {
 
 function SecurityScreen() {
   const { t } = useTranslation("openhands");
-  const [searchParams] = useSearchParams();
-  const scope = useSecurityWorkspaceScope(searchParams.get("repository"));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { scope, repositories } = useSecurityWorkspaceScope(
+    searchParams.get("repository"),
+  );
+  const selectRepository = useCallback(
+    (repositoryId: string) => {
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.set("repository", repositoryId);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+  // One connected repository that is also the one shown needs no picker; it
+  // would be a one-option dropdown. It comes back the moment there is a
+  // choice to make, or the URL asks for a repository that is not there.
+  const showRepositorySelect =
+    repositories.length > 1 || scope.state === "requested-not-connected";
 
   return (
     <main className="min-h-full" data-testid="security-page">
@@ -210,12 +291,23 @@ function SecurityScreen() {
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-no-workspace"
+            role="status"
           >
             {t(I18nKey.SECURITY$NO_WORKSPACE)}
           </p>
         )}
+        {showRepositorySelect && (
+          <RepositorySelect
+            repositories={repositories}
+            selectedRepositoryId={
+              scope.state === "scoped" ? scope.scope.repositoryId : null
+            }
+            onSelect={selectRepository}
+          />
+        )}
 
         <section
+          aria-labelledby={EMPTY_STATE_HEADING_ID}
           className="instrument-panel ame-card mt-6 flex flex-col gap-3 p-5"
           data-testid="security-empty-state"
         >
@@ -224,7 +316,10 @@ function SecurityScreen() {
               className="size-4 text-[var(--oh-muted)]"
               aria-hidden
             />
-            <h2 className="text-sm font-medium text-[var(--oh-foreground)]">
+            <h2
+              className="text-sm font-medium text-[var(--oh-foreground)]"
+              id={EMPTY_STATE_HEADING_ID}
+            >
               {t(I18nKey.SECURITY$NOT_CONFIGURED)}
             </h2>
           </div>
