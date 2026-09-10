@@ -47,6 +47,37 @@ export class GithubProxyError extends Error {
   }
 }
 
+const PROXY_ERROR_MESSAGES: Record<string, string> = {
+  unauthorized: "You need to be signed in to browse GitHub repositories.",
+  not_connected: "Connect your GitHub account before browsing repositories.",
+  missing_repository: "No repository was specified.",
+  unknown_action: "Unsupported GitHub proxy request.",
+};
+
+/**
+ * supabase-js's `FunctionsHttpError` hardcodes `error.message` to "Edge
+ * Function returned a non-2xx status code" regardless of what the function
+ * actually returned -- the real reason lives in the Response body on
+ * `error.context`. Read it so callers (and the UI) see e.g. "not_connected"
+ * or a real GitHub API error instead of that generic string.
+ */
+async function describeProxyError(error: unknown): Promise<string> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const body = (await context.clone().json()) as { error?: string };
+      if (body.error) {
+        return PROXY_ERROR_MESSAGES[body.error] ?? body.error;
+      }
+    } catch {
+      // Response body wasn't JSON -- fall through to the generic message below.
+    }
+  }
+  return error instanceof Error
+    ? error.message
+    : "GitHub connection request failed";
+}
+
 async function invokeProxy<T>(body: Record<string, unknown>): Promise<T> {
   if (!supabase) {
     throw new GithubProxyError("Supabase is not configured");
@@ -55,11 +86,7 @@ async function invokeProxy<T>(body: Record<string, unknown>): Promise<T> {
     body,
   });
   if (error) {
-    throw new GithubProxyError(
-      error instanceof Error
-        ? error.message
-        : "GitHub connection request failed",
-    );
+    throw new GithubProxyError(await describeProxyError(error));
   }
   return data as T;
 }
