@@ -29,6 +29,10 @@
  *   LOCAL_BACKEND_API_KEY      Overrides the auto-discovered session API key
  *                              (falls back to the same persisted key file the
  *                              dev launchers already generate and use)
+ *   AGENTOPS_CORS_ORIGINS      Comma-separated browser origins allowed to call
+ *                              this collector cross-origin (default: the
+ *                              production frontend + localhost dev origins —
+ *                              see scripts/agentops/cors.mjs)
  */
 
 import { createServer } from "node:http";
@@ -42,12 +46,16 @@ import {
   isSupabaseConfigured,
 } from "./agentops/supabase-store.mjs";
 import { buildWorkspaceBudget, summarize } from "./agentops/policy.mjs";
+import { applyCorsHeaders, parseAllowedOrigins } from "./agentops/cors.mjs";
 
 const PORT = Number(process.env.AGENTOPS_PORT || 18002);
 const AGENT_SERVER_URL = (
   process.env.AGENT_SERVER_URL || "http://127.0.0.1:18000"
 ).replace(/\/+$/, "");
 const BASE_PATH = "/api/agentops";
+const ALLOWED_CORS_ORIGINS = parseAllowedOrigins(
+  process.env.AGENTOPS_CORS_ORIGINS,
+);
 
 /**
  * The session key this sidecar both presents to the agent-server and requires
@@ -143,6 +151,15 @@ async function main() {
   const routes = createRouter({ store, client, collector });
 
   const server = createServer(async (req, res) => {
+    applyCorsHeaders(res, req.headers.origin, ALLOWED_CORS_ORIGINS);
+    if (req.method === "OPTIONS") {
+      // Preflight only — the real request follows once the browser sees
+      // these headers allow it. Nothing to authenticate or route yet.
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname.startsWith(BASE_PATH)
       ? url.pathname.slice(BASE_PATH.length) || "/"

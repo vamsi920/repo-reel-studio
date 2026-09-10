@@ -22,6 +22,14 @@ primary_region = "iad"
 
 [env]
   PORT = "8000"
+  # Netlify (neo.neodevex.com) calls this app cross-origin — without this the
+  # automation backend's CORS middleware has nothing to allow and every
+  # browser call gets blocked before the app sees it ("Failed to fetch").
+  # scripts/agentops-server.mjs reads the equivalent AGENTOPS_CORS_ORIGINS
+  # (see scripts/agentops/cors.mjs); set explicitly here too so both
+  # sidecars' allowed origins are visible in one place and stay in sync.
+  AUTOMATION_CORS_ORIGINS = "https://neo.neodevex.com"
+  AGENTOPS_CORS_ORIGINS = "https://neo.neodevex.com"
 
 [http_service]
   internal_port = 8000
