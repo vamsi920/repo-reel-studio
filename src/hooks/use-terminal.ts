@@ -85,16 +85,16 @@ function resolveTerminalForeground(host: HTMLElement): string {
   return getComputedStyle(host).color;
 }
 
-// Create a persistent reference that survives component unmounts
-// This ensures terminal history is preserved when navigating away and back
-const persistentLastCommandIndex = { current: 0 };
-
 export const useTerminal = () => {
   const commands = useCommandStore((state) => state.commands);
   const terminal = React.useRef<Terminal | null>(null);
   const fitAddon = React.useRef<FitAddon | null>(null);
   const ref = React.useRef<HTMLDivElement>(null);
-  const lastCommandIndex = persistentLastCommandIndex; // Use the persistent reference
+  // How many of `commands` this xterm instance has already written. Per
+  // instance: a fresh terminal always re-renders the whole list on mount, so
+  // there is nothing to carry across unmounts — and a module-level counter
+  // would be shared by every terminal that happens to be alive at once.
+  const lastCommandIndex = React.useRef(0);
   const isDisposed = React.useRef(false);
 
   const createTerminal = (host: HTMLDivElement) =>
@@ -149,17 +149,23 @@ export const useTerminal = () => {
     if (ref.current) {
       initializeTerminal();
       // Render all commands in array
-      // This happens when we just switch to Terminal from other tabs
-      if (commands.length > 0) {
-        for (let i = 0; i < commands.length; i += 1) {
-          if (commands[i].type === "input") {
+      // This happens when we just switch to Terminal from other tabs.
+      // Read the store directly rather than the render-time `commands`: on a
+      // conversation switch the provider clears and re-seeds the store from
+      // its layout effects, which run after this component rendered but
+      // before this passive effect — the closure would still hold the previous
+      // conversation's output.
+      const initialCommands = useCommandStore.getState().commands;
+      if (initialCommands.length > 0) {
+        for (let i = 0; i < initialCommands.length; i += 1) {
+          if (initialCommands[i].type === "input") {
             terminal.current.write("$ ");
           }
           // Don't pass isUserInput=true here because we're initializing the terminal
           // and need to show all previous commands
-          renderCommand(commands[i], terminal.current, false);
+          renderCommand(initialCommands[i], terminal.current, false);
         }
-        lastCommandIndex.current = commands.length;
+        lastCommandIndex.current = initialCommands.length;
       }
       // Don't show prompt in read-only terminal
     }
@@ -176,28 +182,34 @@ export const useTerminal = () => {
       return;
     }
 
+    // Same reasoning as the mount effect: `commands` re-runs this effect, but
+    // the store may already be ahead of the snapshot this render captured
+    // (on the mount pass it is the *previous* conversation's list), so always
+    // catch up to what the store holds now.
+    const latest = useCommandStore.getState().commands;
+
     // The store shrank — `clearTerminal()` ran (conversation switch) or the
     // commands were otherwise replaced. Wipe the xterm buffer and start over
     // from the beginning; without this the old output stays on screen and the
     // first `lastCommandIndex` commands of the new list are never written,
     // because the index still points past them.
-    if (commands.length < lastCommandIndex.current) {
+    if (latest.length < lastCommandIndex.current) {
       terminal.current.reset();
       // reset() restores default modes, so hide the cursor again.
       terminal.current.write("\x1b[?25l");
       lastCommandIndex.current = 0;
     }
 
-    if (commands.length > 0 && lastCommandIndex.current < commands.length) {
-      for (let i = lastCommandIndex.current; i < commands.length; i += 1) {
-        if (commands[i].type === "input") {
+    if (latest.length > 0 && lastCommandIndex.current < latest.length) {
+      for (let i = lastCommandIndex.current; i < latest.length; i += 1) {
+        if (latest[i].type === "input") {
           terminal.current.write("$ ");
         }
-        // Pass true for isUserInput to skip rendering user input commands
-        // that have already been displayed as the user typed
-        renderCommand(commands[i], terminal.current, false);
+        // Don't pass isUserInput=true: the read-only terminal never echoed
+        // these itself, so every input line still has to be written here.
+        renderCommand(latest[i], terminal.current, false);
       }
-      lastCommandIndex.current = commands.length;
+      lastCommandIndex.current = latest.length;
     }
   }, [commands]);
 

@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it, vi, afterEach } from "vitest";
+import React from "react";
 import { act, cleanup } from "@testing-library/react";
 import { useTerminal } from "#/hooks/use-terminal";
 import { Command, useCommandStore } from "#/stores/command-store";
@@ -136,6 +137,50 @@ describe("useTerminal", () => {
     // the first entries of the new conversation were silently dropped.
     expect(mockTerminal.writeln).toHaveBeenCalledTimes(3);
     expect(mockTerminal.writeln).toHaveBeenLastCalledWith("echo new");
+  });
+
+  it("renders what the store holds after a parent's layout effect re-seeds it, not the render-time snapshot", () => {
+    // Conversation switch: the terminal is re-keyed and renders while the
+    // store still holds the previous conversation's output; the provider's
+    // layout effect then clears and re-seeds it before the terminal's own
+    // mount effect runs.
+    useCommandStore.setState({
+      commands: [
+        { content: "echo old", type: "input" },
+        { content: "old", type: "output" },
+      ],
+    });
+
+    function ReseedingParent() {
+      React.useLayoutEffect(() => {
+        useCommandStore.getState().clearTerminal();
+        useCommandStore
+          .getState()
+          .appendCommands([
+            { content: "echo new", type: "input" },
+            { content: "new", type: "output" },
+            { content: "more", type: "output" },
+          ]);
+      }, []);
+      return <TestTerminalComponent />;
+    }
+
+    renderWithProviders(<ReseedingParent />);
+
+    // Only the new conversation's three commands, none of the old ones — and
+    // no reset needed since the stale snapshot was never written.
+    expect(mockTerminal.writeln.mock.calls.map(([line]) => line)).toEqual([
+      "echo new",
+      "new",
+      "more",
+    ]);
+    expect(mockTerminal.reset).not.toHaveBeenCalled();
+
+    act(() => {
+      useCommandStore.getState().appendOutput("live");
+    });
+    expect(mockTerminal.writeln).toHaveBeenCalledTimes(4);
+    expect(mockTerminal.writeln).toHaveBeenLastCalledWith("live");
   });
 
   it("does not reset the buffer while commands only grow", () => {

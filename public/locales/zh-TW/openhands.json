@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "啟用",
   "COMMON$DISABLE": "停用",
   "COMMON$REMOVE": "移除",
+  "FILE_ITEM$REMOVE_FILE": "移除 {{filename}}",
   "COMMON$CREATED_ON": "建立於",
   "COMMON$FOR_EXAMPLE": "例如",
   "COMMON$TEST_DB_MIGRATION": "測試資料庫遷移",

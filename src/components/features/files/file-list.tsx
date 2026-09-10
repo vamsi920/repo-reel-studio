@@ -15,9 +15,11 @@ export function FileList({ files, onRemove }: FileListProps) {
     >
       {files.map((f, index) => (
         <FileItem
-          key={index}
+          // The same name can be attached twice, so the index has to stay in
+          // the key; the name keeps a removal from re-using the wrong node.
+          key={`${index}:${f}`}
           filename={f}
-          onRemove={onRemove ? () => onRemove?.(index) : undefined}
+          onRemove={onRemove ? () => onRemove(index) : undefined}
         />
       ))}
     </div>

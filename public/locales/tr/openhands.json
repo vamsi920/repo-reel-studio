@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "Etkinleştir",
   "COMMON$DISABLE": "Devre dışı bırak",
   "COMMON$REMOVE": "Kaldır",
+  "FILE_ITEM$REMOVE_FILE": "{{filename}} kaldır",
   "COMMON$CREATED_ON": "Oluşturuldu",
   "COMMON$FOR_EXAMPLE": "Örneğin",
   "COMMON$TEST_DB_MIGRATION": "Veritabanı geçişini test et",

@@ -17,7 +17,7 @@ import { useEventStore } from "#/stores/use-event-store";
 import { useErrorMessageStore } from "#/stores/error-message-store";
 import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-store";
 import { useConversationStateStore } from "#/stores/conversation-state-store";
-import { useCommandStore } from "#/stores/command-store";
+import { commandFromEvent, useCommandStore } from "#/stores/command-store";
 import { useBrowserStore } from "#/stores/browser-store";
 import { useGoalStore } from "#/stores/goal-store";
 import {
@@ -156,7 +156,7 @@ export function ConversationWebSocketProvider({
     (state) => state.consumeMatchingPendingMessage,
   );
   const { setExecutionStatus } = useConversationStateStore();
-  const { appendInput, appendOutput } = useCommandStore();
+  const { appendInput, appendOutput, appendCommands } = useCommandStore();
   const resetBrowserStore = useBrowserStore((state) => state.reset);
 
   // History loading state.
@@ -293,6 +293,10 @@ export function ConversationWebSocketProvider({
     // half-applied state (events gone but the old id still reported).
     clearEventsForConversation(nextId);
     resetBrowserStore();
+    // The terminal is conversation-scoped too, and it is re-seeded from the
+    // preloaded history right below — so its clear has the same ordering
+    // constraint as the event store's and must run here, not in the route.
+    useCommandStore.getState().clearTerminal();
     // The metrics store is conversation-scoped state too: without a reset the
     // previous conversation's usage/cost keeps rendering in the new
     // conversation's meter until fresh WS stats arrive — and a brand-new
@@ -304,7 +308,26 @@ export function ConversationWebSocketProvider({
     if (!preloadedHistory || preloadedHistory.events.length === 0) {
       return;
     }
+    // Events not yet in the store. `addEvents` dedups by id, so this is the
+    // set it actually adds; capture it before the call because side-effects
+    // (the terminal feed below) must not repeat for events we already had —
+    // the page is refetched every time the user returns to the conversation.
+    const knownEventIds = useEventStore.getState().eventIds;
+    const freshEvents = preloadedHistory.events.filter(
+      (event) => !knownEventIds.has(event.id ?? ""),
+    );
     addEvents(preloadedHistory.events);
+
+    // The WebSocket subscribes with `since` after this page, so historical
+    // bash actions/observations only ever reach the terminal through here.
+    // Without this seed the terminal tab is empty after every reload.
+    appendCommands(
+      freshEvents
+        .map(commandFromEvent)
+        .filter((command): command is NonNullable<typeof command> =>
+          Boolean(command),
+        ),
+    );
 
     // The first user message of a cloud start-task conversation is persisted
     // server-side and reaches us via this REST preload, not over the WebSocket
@@ -335,6 +358,7 @@ export function ConversationWebSocketProvider({
   }, [
     preloadedHistory,
     addEvents,
+    appendCommands,
     conversationId,
     consumeMatchingPendingMessage,
   ]);

@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "有効化",
   "COMMON$DISABLE": "無効化",
   "COMMON$REMOVE": "削除",
+  "FILE_ITEM$REMOVE_FILE": "{{filename}} を削除",
   "COMMON$CREATED_ON": "作成日",
   "COMMON$FOR_EXAMPLE": "例えば",
   "COMMON$TEST_DB_MIGRATION": "DBマイグレーションのテスト",

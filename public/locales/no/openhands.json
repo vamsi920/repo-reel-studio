@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "Aktiver",
   "COMMON$DISABLE": "Deaktiver",
   "COMMON$REMOVE": "Fjern",
+  "FILE_ITEM$REMOVE_FILE": "Fjern {{filename}}",
   "COMMON$CREATED_ON": "Opprettet",
   "COMMON$FOR_EXAMPLE": "For eksempel",
   "COMMON$TEST_DB_MIGRATION": "Test DB-migrering",

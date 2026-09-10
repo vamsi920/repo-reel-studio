@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "تفعيل",
   "COMMON$DISABLE": "تعطيل",
   "COMMON$REMOVE": "إزالة",
+  "FILE_ITEM$REMOVE_FILE": "إزالة {{filename}}",
   "COMMON$CREATED_ON": "تم الإنشاء",
   "COMMON$FOR_EXAMPLE": "على سبيل المثال",
   "COMMON$TEST_DB_MIGRATION": "اختبار ترحيل قاعدة البيانات",

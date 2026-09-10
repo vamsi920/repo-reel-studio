@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "사용",
   "COMMON$DISABLE": "사용 안 함",
   "COMMON$REMOVE": "제거",
+  "FILE_ITEM$REMOVE_FILE": "{{filename}} 제거",
   "COMMON$CREATED_ON": "생성됨",
   "COMMON$FOR_EXAMPLE": "예를 들어",
   "COMMON$TEST_DB_MIGRATION": "DB 마이그레이션 테스트",

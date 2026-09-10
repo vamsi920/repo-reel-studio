@@ -1370,6 +1370,7 @@
   "COMMON$ENABLE": "Увімкнути",
   "COMMON$DISABLE": "Вимкнути",
   "COMMON$REMOVE": "Видалити",
+  "FILE_ITEM$REMOVE_FILE": "Видалити {{filename}}",
   "COMMON$CREATED_ON": "Створено",
   "COMMON$FOR_EXAMPLE": "Наприклад:",
   "COMMON$TEST_DB_MIGRATION": "Тестування міграції БД",

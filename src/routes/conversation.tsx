@@ -3,7 +3,6 @@ import { useNavigate, useLocation, useMatch } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import { useConversationId } from "#/hooks/use-conversation-id";
-import { useCommandStore } from "#/stores/command-store";
 import { useConversationStore } from "#/stores/conversation-store";
 import { useAgentStore } from "#/stores/agent-store";
 import { useConversationStateStore } from "#/stores/conversation-state-store";
@@ -75,7 +74,6 @@ function AppContent() {
   const { resetConversationState } = useConversationStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const clearTerminal = useCommandStore((state) => state.clearTerminal);
   const resetConversationRuntimeState = useConversationStateStore(
     (state) => state.reset,
   );
@@ -86,19 +84,18 @@ function AppContent() {
     (state) => state.removeErrorMessage,
   );
 
-  // Per-conversation UI/runtime resets. The event store is cleared separately,
-  // inside ConversationWebSocketProvider, so the clear is ordered *before* the
-  // preloaded-history re-seed (see the note there) — clearing it here would run
-  // too late and wipe the freshly seeded history on a conversation switch.
+  // Per-conversation UI/runtime resets. The event store and the terminal are
+  // cleared separately, inside ConversationWebSocketProvider, so those clears
+  // are ordered *before* the preloaded-history re-seed (see the note there) —
+  // clearing them here would run too late and wipe the freshly seeded history
+  // on a conversation switch.
   React.useEffect(() => {
-    clearTerminal();
     resetConversationState();
     resetConversationRuntimeState();
     setCurrentAgentState(AgentState.LOADING);
     removeErrorMessage();
   }, [
     conversationId,
-    clearTerminal,
     resetConversationState,
     resetConversationRuntimeState,
     setCurrentAgentState,

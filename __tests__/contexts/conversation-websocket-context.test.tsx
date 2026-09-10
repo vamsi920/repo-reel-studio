@@ -16,7 +16,7 @@ import {
   setStoredConversationMetadata,
 } from "#/api/conversation-metadata-store";
 import type { AppConversation } from "#/api/conversation-service/agent-server-conversation-service.types";
-import type { MessageEvent } from "#/types/agent-server/core";
+import type { MessageEvent, OpenHandsEvent } from "#/types/agent-server/core";
 
 type CapturedWebSocketOptions = {
   onMessage?: (event: { data: string }) => void;
@@ -69,6 +69,60 @@ const makeAgentReply = (): MessageEvent => ({
   llm_message: { role: "assistant", content: [{ type: "text", text: "Hi!" }] },
   activated_microagents: [],
   extended_content: [],
+});
+
+const makeBashAction = (id: string, command: string) => ({
+  id,
+  timestamp: new Date().toISOString(),
+  source: "agent",
+  thought: [],
+  thinking_blocks: [],
+  action: {
+    kind: "ExecuteBashAction",
+    command,
+    is_input: false,
+    timeout: null,
+    reset: false,
+  },
+  tool_name: "execute_bash",
+  tool_call_id: `call-${id}`,
+  tool_call: {
+    id: `call-${id}`,
+    type: "function",
+    function: {
+      name: "execute_bash",
+      arguments: JSON.stringify({ command }),
+    },
+  },
+  llm_response_id: `resp-${id}`,
+  security_risk: "UNKNOWN",
+});
+
+const makeBashObservation = (id: string, actionId: string, text: string) => ({
+  id,
+  timestamp: new Date().toISOString(),
+  source: "environment",
+  action_id: actionId,
+  tool_name: "execute_bash",
+  tool_call_id: `call-${actionId}`,
+  observation: {
+    kind: "ExecuteBashObservation",
+    content: [{ type: "text", text }],
+    command: "run",
+    exit_code: 0,
+    error: false,
+    timeout: false,
+    metadata: {
+      exit_code: 0,
+      pid: 1,
+      username: "u",
+      hostname: "h",
+      working_dir: "/",
+      py_interpreter_path: null,
+      prefix: "",
+      suffix: "",
+    },
+  },
 });
 
 const eventIds = () => useEventStore.getState().events.map((event) => event.id);
@@ -298,64 +352,6 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
   // On reconnect the backlog is replayed; non-idempotent side-effects must not
   // fire again for events already processed (#1656).
   describe("reconnect replay does not re-run non-idempotent side-effects", () => {
-    const makeBashAction = (id: string, command: string) => ({
-      id,
-      timestamp: new Date().toISOString(),
-      source: "agent",
-      thought: [],
-      thinking_blocks: [],
-      action: {
-        kind: "ExecuteBashAction",
-        command,
-        is_input: false,
-        timeout: null,
-        reset: false,
-      },
-      tool_name: "execute_bash",
-      tool_call_id: `call-${id}`,
-      tool_call: {
-        id: `call-${id}`,
-        type: "function",
-        function: {
-          name: "execute_bash",
-          arguments: JSON.stringify({ command }),
-        },
-      },
-      llm_response_id: `resp-${id}`,
-      security_risk: "UNKNOWN",
-    });
-
-    const makeBashObservation = (
-      id: string,
-      actionId: string,
-      text: string,
-    ) => ({
-      id,
-      timestamp: new Date().toISOString(),
-      source: "environment",
-      action_id: actionId,
-      tool_name: "execute_bash",
-      tool_call_id: `call-${actionId}`,
-      observation: {
-        kind: "ExecuteBashObservation",
-        content: [{ type: "text", text }],
-        command: "run",
-        exit_code: 0,
-        error: false,
-        timeout: false,
-        metadata: {
-          exit_code: 0,
-          pid: 1,
-          username: "u",
-          hostname: "h",
-          working_dir: "/",
-          py_interpreter_path: null,
-          prefix: "",
-          suffix: "",
-        },
-      },
-    });
-
     const makeConversationError = (id: string, detail: string) => ({
       id,
       timestamp: new Date().toISOString(),
@@ -554,5 +550,105 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
         [],
       ),
     );
+  });
+});
+
+describe("ConversationWebSocketProvider — terminal seeded from history", () => {
+  let queryClient: QueryClient;
+
+  const renderProvider = (conversationId: string) =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ConversationWebSocketProvider
+          conversationId={conversationId}
+          conversationUrl={null}
+        >
+          <div />
+        </ConversationWebSocketProvider>
+      </QueryClientProvider>,
+    );
+
+  const commands = () => useCommandStore.getState().commands;
+
+  beforeEach(() => {
+    wsCapture.mainOnMessage = null;
+    wsCapture.mainOptions = null;
+    wsCapture.calls.length = 0;
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    useEventStore.getState().clearEvents();
+    useCommandStore.setState({ commands: [] });
+
+    vi.mocked(useUserConversation).mockReturnValue({
+      data: { conversation_url: "http://localhost/api", session_api_key: null },
+    } as ReturnType<typeof useUserConversation>);
+
+    // Only conversation A ran a command. The service returns newest-first;
+    // the history hook reverses it into chronological order.
+    vi.spyOn(EventService, "searchEvents").mockImplementation(
+      async (conversationId: string) => ({
+        items: (conversationId === "conv-a"
+          ? [
+              makeBashObservation("bash-obs-1", "bash-1", "a.txt\n"),
+              makeBashAction("bash-1", "ls"),
+              createUserMessageEvent("user-msg-conv-a"),
+            ]
+          : [
+              createUserMessageEvent(`user-msg-${conversationId}`),
+            ]) as unknown as OpenHandsEvent[],
+        next_page_id: null,
+      }),
+    );
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("seeds the terminal with the bash commands from the preloaded history page", async () => {
+    renderProvider("conv-a");
+
+    await waitFor(() =>
+      expect(commands()).toEqual([
+        { content: "ls", type: "input" },
+        { content: "a.txt\n", type: "output" },
+      ]),
+    );
+  });
+
+  it("does not append the same history twice when re-entering the conversation", async () => {
+    const { unmount } = renderProvider("conv-a");
+    await waitFor(() => expect(commands()).toHaveLength(2));
+
+    // Leave (e.g. to Settings) and come back: the page is refetched and the
+    // preload effect runs again with the same events.
+    unmount();
+    renderProvider("conv-a");
+    await waitFor(() => expect(eventIds()).toHaveLength(3));
+
+    expect(commands()).toEqual([
+      { content: "ls", type: "input" },
+      { content: "a.txt\n", type: "output" },
+    ]);
+  });
+
+  it("clears the previous conversation's terminal when switching conversations", async () => {
+    const { rerender } = renderProvider("conv-a");
+    await waitFor(() => expect(commands()).toHaveLength(2));
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <ConversationWebSocketProvider
+          conversationId="conv-b"
+          conversationUrl={null}
+        >
+          <div />
+        </ConversationWebSocketProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(eventIds()).toEqual(["user-msg-conv-b"]));
+    expect(commands()).toEqual([]);
   });
 });

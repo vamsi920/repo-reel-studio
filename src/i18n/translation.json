@@ -23306,6 +23306,23 @@
     "uk": "Видалити",
     "ca": "Elimina"
   },
+  "FILE_ITEM$REMOVE_FILE": {
+    "en": "Remove {{filename}}",
+    "ja": "{{filename}} を削除",
+    "zh-CN": "移除 {{filename}}",
+    "zh-TW": "移除 {{filename}}",
+    "ko-KR": "{{filename}} 제거",
+    "no": "Fjern {{filename}}",
+    "it": "Rimuovi {{filename}}",
+    "pt": "Remover {{filename}}",
+    "es": "Eliminar {{filename}}",
+    "ar": "إزالة {{filename}}",
+    "fr": "Supprimer {{filename}}",
+    "tr": "{{filename}} kaldır",
+    "de": "{{filename}} entfernen",
+    "uk": "Видалити {{filename}}",
+    "ca": "Elimina {{filename}}"
+  },
   "COMMON$CREATED_ON": {
     "en": "Created on",
     "ja": "作成日",
