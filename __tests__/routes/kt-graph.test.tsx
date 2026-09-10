@@ -88,6 +88,7 @@ describe("KtGraph search", () => {
           sessionApiKey: null,
           status: "ready",
           progress: null,
+          lastNonTerminalStatus: null,
           knowledge,
           error: null,
           qualityFlags: [],

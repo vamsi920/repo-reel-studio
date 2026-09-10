@@ -28,6 +28,15 @@ const MAX_CONCEPT_SEGMENT_LINES = 18;
  */
 const MAX_TREE_FILES = 16;
 
+/**
+ * `CodePanel` (kt-video-composition.tsx) shows a fixed 22-line window that
+ * starts 3 lines above the highlight's first line, so the highlight's own
+ * last visible line is at most this many lines past its first line. A wider
+ * highlight range was silently clipped by the window with nothing to say a
+ * highlighted line never appeared on screen.
+ */
+const MAX_CODE_HIGHLIGHT_SPAN = 18;
+
 const IGNORE_PATH =
   /(^|\/)(node_modules|dist|build|\.git|coverage|vendor|__pycache__|\.next|\.turbo)(\/|$)/i;
 const NOISE_FILE =
@@ -484,9 +493,9 @@ function buildCodeScene(id: number, path: string, content: string): KtScene {
       .filter((s) => s.line > primary.line)
       .sort((a, b) => a.line - b.line)[0];
     const blockEnd = next
-      ? Math.min(next.line - 1, primary.line + 30)
-      : Math.min(lineCount, primary.line + 24);
-    highlight = [primary.line, Math.max(primary.line + 1, blockEnd)];
+      ? Math.min(next.line - 1, primary.line + MAX_CODE_HIGHLIGHT_SPAN)
+      : Math.min(lineCount, primary.line + MAX_CODE_HIGHLIGHT_SPAN);
+    highlight = [primary.line, blockEnd];
 
     sentences.push({
       sentence: `The heart of this file is ${primary.name}, the ${kindWord(primary.kind)} starting on line ${primary.line}. That's the part doing the real work here.`,

@@ -173,4 +173,39 @@ describe("buildKtManifest", () => {
 
     expect(manifest.scenes.filter((s) => s.type === "code")).toHaveLength(3);
   });
+
+  it("never highlights a line past the 22-line window CodePanel actually renders", () => {
+    // CodePanel shows a fixed 22-line window starting 3 lines above the
+    // highlight's first line, so a highlight end more than 18 lines past its
+    // start used to point at a line the video never displayed.
+    const body = Array.from(
+      { length: 40 },
+      (_, i) => `  console.log(${i});`,
+    ).join("\n");
+    const fileContents = {
+      "src/big.ts": `export function bigFn() {\n${body}\n}\n`,
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    const [start, end] = codeScene!.highlight_lines;
+    expect(start).toBe(1);
+    expect(end - start).toBeLessThanOrEqual(18);
+  });
+
+  it("does not let a highlight bleed into the next symbol's own line", () => {
+    // Two adjacent one-line exports with no gap between them: the highlight
+    // for the first must stop at its own last line, not spill onto the
+    // second symbol's declaration line.
+    const fileContents = {
+      "src/adjacent.ts":
+        "export function primaryFn() {}\nexport function otherFn() {}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.highlight_lines).toEqual([1, 1]);
+  });
 });

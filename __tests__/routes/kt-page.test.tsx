@@ -147,6 +147,7 @@ describe("KtPage", () => {
           sessionApiKey: "key",
           status: "ready",
           progress: null,
+          lastNonTerminalStatus: null,
           knowledge: KNOWLEDGE,
           error: null,
           qualityFlags: [],

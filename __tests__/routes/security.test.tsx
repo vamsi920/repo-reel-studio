@@ -50,6 +50,7 @@ function seedRepository(
         sessionApiKey: null,
         status: "ready",
         progress: null,
+        lastNonTerminalStatus: null,
         knowledge: null,
         error: null,
         refreshCadence: "manual",

@@ -61,6 +61,7 @@ function seedFailedGeneration(error: string) {
         sessionApiKey: null,
         status: "error",
         progress: null,
+        lastNonTerminalStatus: null,
         knowledge: null,
         error,
         qualityFlags: [],

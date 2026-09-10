@@ -16,29 +16,42 @@ const STEP_LABELS = [
   "Writing knowledge",
 ] as const;
 
+/** Maps a real, non-terminal DeepWiki status onto its step index. */
+function stepForStatus(status: DeepWikiTaskStatus): number {
+  switch (status) {
+    case "pending":
+    case "indexing":
+      return 2;
+    case "determining_structure":
+      return 3;
+    case "generating":
+    case "completed":
+      return 4;
+    default:
+      return 2;
+  }
+}
+
 /** Maps the pre-generation provisioning stage and DeepWiki's own real task
  * status onto one fixed 5-step sequence — the only two stages that come
  * before DeepWiki has a task at all are provisioning-side; the rest mirror
- * DeepWiki's actual TaskStatus enum directly, no invented states. */
+ * DeepWiki's actual TaskStatus enum directly, no invented states.
+ *
+ * "failed" carries no memory of which stage the task had reached, so it is
+ * resolved from `lastNonTerminalStatus` (the last real progress tick before
+ * the failure) instead of always pointing at the final step — otherwise a
+ * task that died while still indexing would show indexing and structure
+ * analysis as falsely completed. */
 function resolveStepIndex(
   provisioningStage: ProvisioningStage | null,
   deepWikiStatus: DeepWikiTaskStatus | null,
+  lastNonTerminalStatus: DeepWikiTaskStatus | null,
 ): number {
   if (deepWikiStatus) {
-    switch (deepWikiStatus) {
-      case "pending":
-      case "indexing":
-        return 2;
-      case "determining_structure":
-        return 3;
-      case "generating":
-      case "completed":
-        return 4;
-      case "failed":
-        return 4;
-      default:
-        return 2;
+    if (deepWikiStatus === "failed") {
+      return lastNonTerminalStatus ? stepForStatus(lastNonTerminalStatus) : 2;
     }
+    return stepForStatus(deepWikiStatus);
   }
   switch (provisioningStage) {
     case "creating_conversation":
@@ -57,6 +70,7 @@ export function ProvisioningCard({
   branch,
   provisioningStage,
   deepWikiStatus,
+  lastNonTerminalStatus = null,
   pagesDone,
   pagesTotal,
   error,
@@ -66,6 +80,9 @@ export function ProvisioningCard({
   branch: string;
   provisioningStage: ProvisioningStage | null;
   deepWikiStatus: DeepWikiTaskStatus | null;
+  /** The last non-terminal status seen before a "failed" status, so the
+   * step list can reflect how far the task actually got. */
+  lastNonTerminalStatus?: DeepWikiTaskStatus | null;
   /** Real counts from DeepWiki's task summary (pages_done/pages_total) —
    * only meaningful once it's past structure analysis and actually writing
    * pages, so the "Writing knowledge" step can show live "(3/12)" progress
@@ -74,7 +91,11 @@ export function ProvisioningCard({
   pagesTotal?: number;
   error: string | null;
 }) {
-  const activeIndex = resolveStepIndex(provisioningStage, deepWikiStatus);
+  const activeIndex = resolveStepIndex(
+    provisioningStage,
+    deepWikiStatus,
+    lastNonTerminalStatus,
+  );
   const showPageCount =
     activeIndex === 4 && !!pagesTotal && pagesTotal > 0 && !error;
 

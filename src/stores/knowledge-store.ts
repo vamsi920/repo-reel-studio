@@ -4,7 +4,10 @@ import type {
   RepositorySnapshot,
 } from "#/lib/knowledge/knowledge-engine";
 import type { PageQualityFlag } from "#/lib/knowledge/quality-review";
-import type { DeepWikiWikiTaskStatus } from "#/api/deepwiki-service/deepwiki-service.types";
+import type {
+  DeepWikiTaskStatus,
+  DeepWikiWikiTaskStatus,
+} from "#/api/deepwiki-service/deepwiki-service.types";
 
 export type KnowledgeGenerationStatus =
   | "idle"
@@ -37,6 +40,12 @@ export interface KnowledgeRepositoryState {
   sessionApiKey: string | null;
   status: KnowledgeGenerationStatus;
   progress: DeepWikiWikiTaskStatus | null;
+  /** The most recent non-terminal DeepWiki status seen for this repository
+   * (e.g. "indexing", "determining_structure") -- kept around after
+   * `progress.status` flips to "failed" so the UI can still show how far
+   * the task actually got before it died, instead of collapsing every
+   * failure onto the last step. */
+  lastNonTerminalStatus: DeepWikiTaskStatus | null;
   knowledge: KnowledgeRepository | null;
   error: string | null;
   /** Cheap post-generation grounding checks (weak/no citations, files outside
@@ -113,6 +122,7 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
           sessionApiKey,
           status: "generating",
           progress: null,
+          lastNonTerminalStatus: null,
           knowledge: null,
           error: null,
           refreshCadence:
@@ -127,10 +137,15 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
     set((state) => {
       const existing = state.byRepositoryId[repositoryId];
       if (!existing) return state;
+      const isTerminal =
+        progress.status === "completed" || progress.status === "failed";
+      const lastNonTerminalStatus = isTerminal
+        ? existing.lastNonTerminalStatus
+        : progress.status;
       return {
         byRepositoryId: {
           ...state.byRepositoryId,
-          [repositoryId]: { ...existing, progress },
+          [repositoryId]: { ...existing, progress, lastNonTerminalStatus },
         },
       };
     }),
@@ -163,6 +178,7 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
           sessionApiKey: null,
           status: "ready",
           progress: null,
+          lastNonTerminalStatus: null,
           knowledge,
           error: null,
           qualityFlags,

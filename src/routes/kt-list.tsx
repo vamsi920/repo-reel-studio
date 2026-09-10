@@ -290,6 +290,7 @@ function ProvisioningCards() {
             branch={g.snapshot.branch}
             provisioningStage={null}
             deepWikiStatus={g.progress?.status ?? "pending"}
+            lastNonTerminalStatus={g.lastNonTerminalStatus}
             pagesDone={g.progress?.pages_done}
             pagesTotal={g.progress?.pages_total}
             error={g.error}
