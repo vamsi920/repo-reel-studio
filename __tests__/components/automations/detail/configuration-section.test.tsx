@@ -131,4 +131,23 @@ describe("ConfigurationSection", () => {
       screen.queryByText("AUTOMATIONS$DETAIL$EVENT_FILTER"),
     ).not.toBeInTheDocument();
   });
+
+  it("shows the unsupported-trigger warning for a github event automation", () => {
+    render(<ConfigurationSection automation={eventAutomation} />);
+
+    expect(
+      screen.getByTestId("unsupported-trigger-warning"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the unsupported-trigger warning for a cron automation", () => {
+    render(<ConfigurationSection automation={cronAutomation} />);
+
+    expect(
+      screen.queryByTestId("unsupported-trigger-warning"),
+    ).not.toBeInTheDocument();
+  });
 });

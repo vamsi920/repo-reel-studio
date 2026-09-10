@@ -2288,6 +2288,8 @@
   "AUTOMATIONS$BUG_FIXER_REPO_PROMPT": "Which repository or project should this watch? The automation is created disabled so you can review it before turning it on.",
   "AUTOMATIONS$BUG_FIXER_CREATE_BUTTON": "Create automation",
   "AUTOMATIONS$BUG_FIXER_CREATED_TOAST": "Bug Fixer automation created — review it, then enable it.",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "غير فعّال بعد",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "لا تستقبل هذه البيئة أحداث webhook الخاصة بـ GitHub بعد، لذلك لن تعمل هذه الأتمتة تلقائيًا أبدًا حتى يتم إعداد ذلك.",
   "SIDEBAR$KNOWLEDGE": "Knowledge",
   "SIDEBAR$AGENTOPS": "AgentOps",
   "KT$TITLE": "Knowledge",

@@ -12,6 +12,7 @@ import BellIcon from "#/icons/bell.svg?react";
 import CodeTagIcon from "#/icons/code-tag.svg?react";
 import LinkExternalIcon from "#/icons/link-external.svg?react";
 import { formatEventOn } from "#/utils/automation-schedule";
+import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 import { SectionCard } from "./section-card";
 import { ConfigField } from "./config-field";
 import { BranchBadge } from "./branch-badge";
@@ -55,6 +56,7 @@ export function ConfigurationSection({
 }: ConfigurationSectionProps) {
   const { t } = useTranslation("openhands");
   const isEvent = automation.trigger.type === "event";
+  const isUnsupported = isUnsupportedEventTrigger(automation.trigger);
 
   let scheduleDisplay = automation.trigger.schedule ?? "";
   if (automation.trigger.schedule_human) {
@@ -72,6 +74,15 @@ export function ConfigurationSection({
       icon={<CogIcon className="size-4" />}
       title={t(I18nKey.AUTOMATIONS$DETAIL$CONFIGURATION)}
     >
+      {isUnsupported && (
+        <div
+          role="alert"
+          data-testid="unsupported-trigger-warning"
+          className="mb-4 rounded-md border border-[var(--oh-warning)]/40 bg-[var(--oh-warning)]/10 px-3 py-2 text-sm text-[var(--oh-warning)]"
+        >
+          {t(I18nKey.AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING)}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-x-4 gap-y-5">
         {automation.repository && (
           <ConfigField

@@ -10,6 +10,8 @@ import EditIcon from "#/icons/u-edit.svg?react";
 import PlayIcon from "#/icons/play.svg?react";
 import { useHasPermission } from "#/hooks/use-has-permission";
 import { ActiveStatusBadge } from "./active-status-badge";
+import { UnsupportedTriggerBadge } from "#/components/features/automations/unsupported-trigger-badge";
+import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 
 interface DetailHeaderProps {
   automation: Automation;
@@ -81,6 +83,9 @@ export function DetailHeader({
             {automation.name}
           </h1>
           <ActiveStatusBadge active={automation.enabled} />
+          {isUnsupportedEventTrigger(automation.trigger) && (
+            <UnsupportedTriggerBadge />
+          )}
         </div>
         <div className="flex items-center gap-2">
           {canManage && onRunNow && (

@@ -19,6 +19,7 @@ import {
   automationListCellClassName,
 } from "./automation-view-mode";
 import { AutomationHealthBadge } from "./automation-health-badge";
+import { UnsupportedTriggerBadge } from "./unsupported-trigger-badge";
 import {
   averageDurationDisplay,
   lastRunText,
@@ -26,6 +27,7 @@ import {
 } from "./automation-run-insights";
 import { deriveAutomationHealth } from "#/manifests/automation-insights";
 import type { AutomationInsightsProps } from "./automation-card";
+import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 
 interface AutomationListRowProps {
   automation: Automation;
@@ -105,6 +107,9 @@ export function AutomationListRow({
           >
             {automation.name}
           </span>
+          {isUnsupportedEventTrigger(automation.trigger) && (
+            <UnsupportedTriggerBadge className="shrink-0" />
+          )}
           {pills.length > 0 ? (
             <div className="min-w-0 flex-1">
               <SkillCardPillRow

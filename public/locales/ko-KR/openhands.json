@@ -2288,6 +2288,8 @@
   "AUTOMATIONS$BUG_FIXER_REPO_PROMPT": "Which repository or project should this watch? The automation is created disabled so you can review it before turning it on.",
   "AUTOMATIONS$BUG_FIXER_CREATE_BUTTON": "Create automation",
   "AUTOMATIONS$BUG_FIXER_CREATED_TOAST": "Bug Fixer automation created — review it, then enable it.",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "아직 작동하지 않음",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "이 배포는 아직 GitHub 웹훅 이벤트를 수신하지 않으므로, 설정이 완료될 때까지 이 자동화는 자동으로 실행되지 않습니다.",
   "SIDEBAR$KNOWLEDGE": "Knowledge",
   "SIDEBAR$AGENTOPS": "AgentOps",
   "KT$TITLE": "Knowledge",

@@ -2288,6 +2288,8 @@
   "AUTOMATIONS$BUG_FIXER_REPO_PROMPT": "Which repository or project should this watch? The automation is created disabled so you can review it before turning it on.",
   "AUTOMATIONS$BUG_FIXER_CREATE_BUTTON": "Create automation",
   "AUTOMATIONS$BUG_FIXER_CREATED_TOAST": "Bug Fixer automation created — review it, then enable it.",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "Ikke funksjonell ennå",
+  "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "Denne installasjonen mottar ennå ikke GitHub-webhook-hendelser, så denne automatiseringen vil aldri kjøre automatisk før det er satt opp.",
   "SIDEBAR$KNOWLEDGE": "Knowledge",
   "SIDEBAR$AGENTOPS": "AgentOps",
   "KT$TITLE": "Knowledge",

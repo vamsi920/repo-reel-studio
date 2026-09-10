@@ -18,12 +18,14 @@ import { buildAutomationMetadataPills } from "./build-automation-pills";
 import { buildAutomationMenuItems } from "./build-automation-menu-items";
 import { automationRunNowTextButtonClassName } from "./automation-action-button-classes";
 import { AutomationHealthBadge } from "./automation-health-badge";
+import { UnsupportedTriggerBadge } from "./unsupported-trigger-badge";
 import { AutomationRunStats, lastRunText } from "./automation-run-insights";
 import {
   deriveAutomationHealth,
   type RunSummaryState,
 } from "#/manifests/automation-insights";
 import type { InterfaceListInsights } from "#/manifests/types";
+import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 
 /** Run insights shown when the manifest declares the dashboard surface. */
 export interface AutomationInsightsProps {
@@ -136,6 +138,10 @@ export function AutomationCard({
           <KebabMenu items={menuItems} />
         </div>
       </header>
+
+      {isUnsupportedEventTrigger(automation.trigger) && (
+        <UnsupportedTriggerBadge className="self-start" />
+      )}
 
       {insights ? (
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">

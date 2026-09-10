@@ -73,4 +73,39 @@ describe("AutomationCard", () => {
     expect(screen.getByText("COMMON$VIEW")).toBeInTheDocument();
     expect(screen.getAllByText("AUTOMATIONS$RUN_NOW")).toHaveLength(2);
   });
+
+  it("shows the unsupported-trigger badge for a github event automation", () => {
+    render(
+      <AutomationCard
+        automation={{
+          ...automation,
+          trigger: { type: "event", source: "github" },
+        }}
+        onToggle={vi.fn()}
+        onRunNow={vi.fn()}
+        onExport={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByTestId("unsupported-trigger-badge"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the unsupported-trigger badge for a cron automation", () => {
+    render(
+      <AutomationCard
+        automation={automation}
+        onToggle={vi.fn()}
+        onRunNow={vi.fn()}
+        onExport={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("unsupported-trigger-badge"),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -18,6 +18,7 @@ import { ModalCloseButton } from "#/components/shared/modals/modal-close-button"
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
 import type { AutomationSpec } from "#/types/automation";
+import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 
 type BugFixerSource = "github" | "jira";
 
@@ -132,6 +133,7 @@ function RepositoryPromptModal({
     source === "github"
       ? t(I18nKey.AUTOMATIONS$BUG_FIXER_GITHUB_TITLE)
       : t(I18nKey.AUTOMATIONS$BUG_FIXER_JIRA_TITLE);
+  const isUnsupported = isUnsupportedEventTrigger({ type: "event", source });
 
   const handleCreate = () => {
     if (!repository.trim() || importAutomation.isPending) return;
@@ -171,7 +173,7 @@ function RepositoryPromptModal({
             {t(I18nKey.AUTOMATIONS$BUG_FIXER_REPO_PROMPT)}
           </p>
         </header>
-        <div className="px-6 py-5">
+        <div className="flex flex-col gap-3 px-6 py-5">
           <input
             type="text"
             value={repository}
@@ -180,6 +182,15 @@ function RepositoryPromptModal({
             data-testid="bug-fixer-repository-input"
             className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-3 py-2 text-sm text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-400)]"
           />
+          {isUnsupported && (
+            <div
+              role="alert"
+              data-testid="bug-fixer-unsupported-trigger-warning"
+              className="rounded-md border border-[var(--oh-warning)]/40 bg-[var(--oh-warning)]/10 px-3 py-2 text-xs text-[var(--oh-warning)]"
+            >
+              {t(I18nKey.AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING)}
+            </div>
+          )}
         </div>
         <footer className="flex justify-end gap-3 px-6 py-5">
           <BrandButton
