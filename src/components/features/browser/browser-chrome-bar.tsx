@@ -8,6 +8,18 @@ type BrowserChromeBarProps = {
   hasPage: boolean;
 };
 
+// The URL comes straight from the agent's browser actions. Only hand the
+// browser an http(s) link; `javascript:`, `data:`, `file:` and the like must
+// stay display-only text rather than become a clickable anchor.
+export function isOpenableBrowserUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function BrowserChromeBar({ url, hasPage }: BrowserChromeBarProps) {
   const { t } = useTranslation("openhands");
 
@@ -37,7 +49,7 @@ export function BrowserChromeBar({ url, hasPage }: BrowserChromeBarProps) {
         </span>
       </div>
 
-      {hasPage && url ? (
+      {hasPage && isOpenableBrowserUrl(url) ? (
         <a
           href={url}
           target="_blank"

@@ -63,7 +63,9 @@ describe("Browser", () => {
 
     render(<BrowserPanel />);
 
-    expect(screen.getByTestId("browser-chrome-bar")).toHaveClass("min-h-[34px]");
+    expect(screen.getByTestId("browser-chrome-bar")).toHaveClass(
+      "min-h-[34px]",
+    );
     expect(screen.getByTestId("browser-chrome-url")).toHaveTextContent(
       "BROWSER$URL_PLACEHOLDER",
     );
@@ -90,6 +92,58 @@ describe("Browser", () => {
     expect(screen.getByAltText("BROWSER$SCREENSHOT_ALT")).toBeInTheDocument();
   });
 
+  it("passes through non-PNG data URLs instead of double-prefixing them", () => {
+    const screenshotSrc = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD";
+
+    useBrowserStore.setState({ url: "https://example.com", screenshotSrc });
+
+    render(<BrowserPanel />);
+
+    expect(screen.getByAltText("BROWSER$SCREENSHOT_ALT")).toHaveAttribute(
+      "src",
+      screenshotSrc,
+    );
+  });
+
+  it("prefixes a bare base64 payload as PNG", () => {
+    useBrowserStore.setState({
+      url: "https://example.com",
+      screenshotSrc: "iVBORw0KGgo=",
+    });
+
+    render(<BrowserPanel />);
+
+    expect(screen.getByAltText("BROWSER$SCREENSHOT_ALT")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,iVBORw0KGgo=",
+    );
+  });
+
+  it("links out only for http(s) urls", () => {
+    const screenshotSrc = "data:image/png;base64,iVBORw0KGgo=";
+
+    useBrowserStore.setState({ url: "https://example.com/a", screenshotSrc });
+    const { unmount } = render(<BrowserPanel />);
+    expect(screen.getByTestId("browser-chrome-open-external")).toHaveAttribute(
+      "href",
+      "https://example.com/a",
+    );
+    unmount();
+
+    useBrowserStore.setState({ url: "javascript:alert(1)", screenshotSrc });
+    render(<BrowserPanel />);
+    expect(
+      screen.queryByTestId("browser-chrome-open-external"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "BUTTON$OPEN_IN_NEW_TAB" }),
+    ).toBeDisabled();
+    // The url is still shown as text.
+    expect(screen.getByTestId("browser-chrome-url")).toHaveTextContent(
+      "javascript:alert(1)",
+    );
+  });
+
   it("does not clear a preloaded screenshot when the browser tab first mounts", () => {
     const screenshotSrc =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN0uGvyHwAFCAJS091fQwAAAABJRU5ErkJggg==";
@@ -103,6 +157,8 @@ describe("Browser", () => {
 
     expect(useBrowserStore.getState().screenshotSrc).toBe(screenshotSrc);
     expect(screen.getByAltText("BROWSER$SCREENSHOT_ALT")).toBeInTheDocument();
-    expect(screen.queryByText("BROWSER$NO_PAGE_LOADED")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("BROWSER$NO_PAGE_LOADED"),
+    ).not.toBeInTheDocument();
   });
 });

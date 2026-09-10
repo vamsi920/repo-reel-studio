@@ -10,6 +10,7 @@ const mockTerminalInstance = {
   open: vi.fn(),
   write: vi.fn(),
   writeln: vi.fn(),
+  reset: vi.fn(),
   dispose: vi.fn(),
   loadAddon: vi.fn(),
 };

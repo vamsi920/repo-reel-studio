@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it, vi, afterEach } from "vitest";
+import { act, cleanup } from "@testing-library/react";
 import { useTerminal } from "#/hooks/use-terminal";
 import { Command, useCommandStore } from "#/stores/command-store";
 import { renderWithProviders } from "../../test-utils";
@@ -30,6 +31,7 @@ describe("useTerminal", () => {
     open: vi.fn(),
     write: vi.fn(),
     writeln: vi.fn(),
+    reset: vi.fn(),
     dispose: vi.fn(),
     element: document.createElement("div"),
   }));
@@ -60,6 +62,8 @@ describe("useTerminal", () => {
 
         writeln = mockTerminal.writeln;
 
+        reset = mockTerminal.reset;
+
         dispose = mockTerminal.dispose;
 
         element = mockTerminal.element;
@@ -75,6 +79,10 @@ describe("useTerminal", () => {
   });
 
   afterEach(() => {
+    // Unmount before touching the store: the global cleanup hook runs after
+    // this one, and a still-mounted terminal would react to the store reset
+    // and leak calls into the next test's mock counts.
+    cleanup();
     vi.clearAllMocks();
     // Reset command store between tests
     useCommandStore.setState({ commands: [] });
@@ -97,6 +105,53 @@ describe("useTerminal", () => {
 
     expect(mockTerminal.writeln).toHaveBeenNthCalledWith(1, "echo hello");
     expect(mockTerminal.writeln).toHaveBeenNthCalledWith(2, "hello");
+  });
+
+  it("wipes the buffer and re-renders from the start when the store is cleared", () => {
+    useCommandStore.setState({
+      commands: [
+        { content: "echo old", type: "input" },
+        { content: "old", type: "output" },
+      ],
+    });
+
+    renderWithProviders(<TestTerminalComponent />);
+    expect(mockTerminal.writeln).toHaveBeenCalledTimes(2);
+    expect(mockTerminal.reset).not.toHaveBeenCalled();
+
+    // Conversation switch: the route clears the store while the terminal is
+    // still mounted, then the new conversation's history is seeded.
+    act(() => {
+      useCommandStore.getState().clearTerminal();
+    });
+    expect(mockTerminal.reset).toHaveBeenCalledTimes(1);
+    // reset() restores the default modes, so the cursor is hidden again.
+    expect(mockTerminal.write).toHaveBeenLastCalledWith("\x1b[?25l");
+
+    act(() => {
+      useCommandStore.getState().appendInput("echo new");
+    });
+
+    // Before the fix the index still pointed past the old two commands, so
+    // the first entries of the new conversation were silently dropped.
+    expect(mockTerminal.writeln).toHaveBeenCalledTimes(3);
+    expect(mockTerminal.writeln).toHaveBeenLastCalledWith("echo new");
+  });
+
+  it("does not reset the buffer while commands only grow", () => {
+    useCommandStore.setState({
+      commands: [{ content: "echo one", type: "input" }],
+    });
+
+    renderWithProviders(<TestTerminalComponent />);
+
+    act(() => {
+      useCommandStore.getState().appendOutput("one");
+    });
+
+    expect(mockTerminal.reset).not.toHaveBeenCalled();
+    expect(mockTerminal.writeln).toHaveBeenCalledTimes(2);
+    expect(mockTerminal.writeln).toHaveBeenLastCalledWith("one");
   });
 
   it("should not call fit() when terminal.element is null", () => {

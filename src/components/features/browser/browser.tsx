@@ -4,12 +4,18 @@ import { EmptyBrowserMessage } from "./empty-browser-message";
 import { useBrowserStore } from "#/stores/browser-store";
 
 export function BrowserPanel() {
-  const { url, screenshotSrc } = useBrowserStore();
+  const url = useBrowserStore((state) => state.url);
+  const screenshotSrc = useBrowserStore((state) => state.screenshotSrc);
   const hasPage = Boolean(screenshotSrc);
 
-  const imgSrc = screenshotSrc?.startsWith("data:image/png;base64,")
+  // Screenshots arrive either as a complete data URL (any image type — the
+  // legacy `extras.screenshot` path is not normalised) or as bare base64,
+  // which we assume is PNG. Only bare payloads get the prefix; matching on
+  // `data:image/png;` alone double-prefixed JPEG/WebP data URLs into a broken
+  // image.
+  const imgSrc = screenshotSrc.startsWith("data:")
     ? screenshotSrc
-    : `data:image/png;base64,${screenshotSrc ?? ""}`;
+    : `data:image/png;base64,${screenshotSrc}`;
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col text-[var(--oh-muted)]">

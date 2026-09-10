@@ -172,11 +172,23 @@ export const useTerminal = () => {
   }, []);
 
   React.useEffect(() => {
-    if (
-      terminal.current &&
-      commands.length > 0 &&
-      lastCommandIndex.current < commands.length
-    ) {
+    if (!terminal.current) {
+      return;
+    }
+
+    // The store shrank — `clearTerminal()` ran (conversation switch) or the
+    // commands were otherwise replaced. Wipe the xterm buffer and start over
+    // from the beginning; without this the old output stays on screen and the
+    // first `lastCommandIndex` commands of the new list are never written,
+    // because the index still points past them.
+    if (commands.length < lastCommandIndex.current) {
+      terminal.current.reset();
+      // reset() restores default modes, so hide the cursor again.
+      terminal.current.write("\x1b[?25l");
+      lastCommandIndex.current = 0;
+    }
+
+    if (commands.length > 0 && lastCommandIndex.current < commands.length) {
       for (let i = lastCommandIndex.current; i < commands.length; i += 1) {
         if (commands[i].type === "input") {
           terminal.current.write("$ ");
