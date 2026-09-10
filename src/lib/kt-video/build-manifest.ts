@@ -688,18 +688,22 @@ function buildSummaryScene(
 /**
  * Builds a deterministic KT-video manifest from real file contents.
  * `fileContents` maps a repo-relative path to its full text content.
+ * `maxCodeScenes` caps the per-file code scenes only — the intro and recap
+ * scenes are added on top, the same way `buildKtManifestFromKnowledgePage`
+ * counts — so a caller that lets the user pick N files and passes N gets a
+ * scene for every one of them.
  */
 export function buildKtManifest(
   repoName: string,
   fileContents: Record<string, string>,
-  maxScenes = 8,
+  maxCodeScenes = 8,
   includeSummary = true,
 ): KtManifest {
   const entries = Object.entries(fileContents).filter(
     ([, c]) => c.trim().length > 0,
   );
   const asRecord = Object.fromEntries(entries);
-  const ranked = rankFiles(asRecord, Math.max(1, maxScenes - 1));
+  const ranked = rankFiles(asRecord, Math.max(1, maxCodeScenes));
 
   const scenes: KtScene[] = [];
   let id = 0;

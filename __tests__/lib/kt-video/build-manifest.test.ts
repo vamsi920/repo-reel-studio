@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildKtManifestFromKnowledgePage } from "#/lib/kt-video/build-manifest";
+import {
+  buildKtManifest,
+  buildKtManifestFromKnowledgePage,
+} from "#/lib/kt-video/build-manifest";
 
 const page = {
   id: "page-1",
@@ -133,5 +136,41 @@ describe("buildKtManifestFromKnowledgePage", () => {
 
     expect(tree?.tree_files).toHaveLength(4);
     expect(tree?.tree_overflow).toBeUndefined();
+  });
+});
+
+describe("buildKtManifest", () => {
+  it("gives every one of the N allowed files its own code scene", () => {
+    // The KT Video tab lets the user pick up to N files and passes that same
+    // N as the cap. The cap used to reserve one slot for the intro, so the
+    // eighth file a user picked never got a scene and nothing said so.
+    const fileContents = Object.fromEntries(
+      Array.from({ length: 8 }, (_, i) => [
+        `src/mod${i}.ts`,
+        `export function fn${i}() {\n  return ${i};\n}\n`.repeat(3),
+      ]),
+    );
+
+    const manifest = buildKtManifest("repo", fileContents, 8);
+    const codeScenes = manifest.scenes.filter((s) => s.type === "code");
+
+    expect(codeScenes.map((s) => s.file_path).sort()).toEqual(
+      Object.keys(fileContents).sort(),
+    );
+    expect(manifest.scenes[0].type).toBe("intro");
+    expect(manifest.scenes[manifest.scenes.length - 1].type).toBe("recap");
+  });
+
+  it("still caps code scenes when more files than the cap are given", () => {
+    const fileContents = Object.fromEntries(
+      Array.from({ length: 6 }, (_, i) => [
+        `src/mod${i}.ts`,
+        `export function fn${i}() {\n  return ${i};\n}\n`.repeat(3),
+      ]),
+    );
+
+    const manifest = buildKtManifest("repo", fileContents, 3);
+
+    expect(manifest.scenes.filter((s) => s.type === "code")).toHaveLength(3);
   });
 });

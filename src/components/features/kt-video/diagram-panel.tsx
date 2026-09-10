@@ -18,20 +18,23 @@ function ensureMermaidInitialized() {
 
 // Rendered once per unique diagram source and reused across every mount —
 // mermaid.render() is async and this is a purely decorative Player preview,
-// not a per-frame render step.
-const svgCache = new Map<string, string>();
+// not a per-frame render step. A parse failure is cached too (as `null`):
+// Remotion remounts the scene on every loop, and re-running a render that
+// is known to fail only re-spawns mermaid's error banner each time round.
+type MermaidResult = string | null;
+const svgCache = new Map<string, MermaidResult>();
 let renderCounter = 0;
 
-function useMermaidSvg(source: string | undefined): string | null {
-  const [svg, setSvg] = useState<string | null>(
-    source ? (svgCache.get(source) ?? null) : null,
+/** `undefined` while rendering, `null` once mermaid has rejected the source. */
+function useMermaidSvg(source: string | undefined): MermaidResult | undefined {
+  const [svg, setSvg] = useState<MermaidResult | undefined>(() =>
+    source ? svgCache.get(source) : null,
   );
 
   useEffect(() => {
     if (!source) return undefined;
-    const cached = svgCache.get(source);
-    if (cached) {
-      setSvg(cached);
+    if (svgCache.has(source)) {
+      setSvg(svgCache.get(source));
       return undefined;
     }
 
@@ -43,11 +46,11 @@ function useMermaidSvg(source: string | undefined): string | null {
     mermaid
       .render(renderId, source)
       .then(({ svg: rendered }) => {
-        if (cancelled) return;
         svgCache.set(source, rendered);
-        setSvg(rendered);
+        if (!cancelled) setSvg(rendered);
       })
       .catch(() => {
+        svgCache.set(source, null);
         if (!cancelled) setSvg(null);
         // Mermaid's own error handler draws into a temporary node it
         // creates for the render (id `d<renderId>`) but never removes on a
@@ -112,13 +115,16 @@ export function DiagramPanel({
         />
       ) : (
         <span
+          role={svg === null ? "alert" : undefined}
           style={{
             color: "rgba(255,255,255,0.4)",
             fontFamily: "system-ui, sans-serif",
             fontSize: 14,
           }}
         >
-          Rendering diagram…
+          {svg === null
+            ? "This diagram couldn't be rendered from its source."
+            : "Rendering diagram…"}
         </span>
       )}
     </div>
