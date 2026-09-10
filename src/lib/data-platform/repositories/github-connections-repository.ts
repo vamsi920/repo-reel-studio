@@ -33,7 +33,20 @@ class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Callers only reach here once `useSupabaseSession()` has already
+    // confirmed a real session via `getSession()` (a local-storage read).
+    // `getUser()` instead re-validates the token against the Supabase Auth
+    // server, so it can independently come back empty on a transient
+    // network hiccup even though the session is genuinely valid -- that
+    // used to return null with zero signal, indistinguishable from "never
+    // connected", which was the last unlogged silent-return path left in
+    // this function (see the "Open Repository always empty" investigation).
+    if (!user) {
+      console.error(
+        "[github-connections-repository] getConnection: getUser() returned no user despite an active session",
+      );
+      return null;
+    }
 
     const { data, error } = await supabase
       .from("github_connections")

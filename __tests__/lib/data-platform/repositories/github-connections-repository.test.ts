@@ -80,11 +80,15 @@ describe("githubConnectionsRepository.getConnection", () => {
     );
   });
 
-  it("returns null without querying when there is no authenticated user", async () => {
+  it("logs and returns null without querying when there is no authenticated user", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     state.user = null;
 
     await expect(
       githubConnectionsRepository.getConnection(),
     ).resolves.toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[github-connections-repository] getConnection: getUser() returned no user despite an active session",
+    );
   });
 });
