@@ -7,7 +7,9 @@ import { ConnectorFieldInput } from "#/components/features/environment/connectio
 import { ConnectorLogo } from "#/components/features/environment/shared/connector-logo";
 import { getConnectorManifest } from "#/lib/environment/registry";
 import {
+  getInitialFormValues,
   hasFieldErrors,
+  splitConnectorValues,
   validateConnectorValues,
   type ConnectorFieldErrors,
   type ConnectorFormValues,
@@ -18,7 +20,18 @@ import {
 } from "#/api/environment-service/environment-service.api";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import type { PendingCredentialRequest } from "#/stores/onboarding-copilot-store";
+import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
+
+/**
+ * The studio raises the same request as a workbench card (see
+ * `handleOnboardingControlAction`, `open_connection_form`). Answering it here
+ * has to settle that card too, or the studio greets the user with an open
+ * form for a credential they already entered.
+ */
+function studioCardIdFor(request: PendingCredentialRequest): string {
+  return `form:${request.providerId}:${request.instanceKey}`;
+}
 
 export interface CredentialRequestSheetProps {
   request: PendingCredentialRequest;
@@ -49,7 +62,11 @@ export function CredentialRequestSheet({
 }: CredentialRequestSheetProps) {
   const { t } = useTranslation("openhands");
   const manifest = getConnectorManifest(request.providerId);
-  const [values, setValues] = React.useState<ConnectorFormValues>({});
+  // Seeded with the manifest's defaults, like the studio form: a region or
+  // endpoint the manifest already knows should not have to be typed twice.
+  const [values, setValues] = React.useState<ConnectorFormValues>(() =>
+    manifest ? getInitialFormValues(manifest) : {},
+  );
   const [errors, setErrors] = React.useState<ConnectorFieldErrors>({});
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -61,7 +78,16 @@ export function CredentialRequestSheet({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validation = validateConnectorValues(manifest, values);
+    // Only the fields on screen can be corrected here. A secret the agent
+    // did not ask for stays out of both the form and its validation --
+    // otherwise a "required" error on an invisible field blocks submit with
+    // nothing to fix.
+    const shown = new Set(fields.map((field) => field.name));
+    const validation = Object.fromEntries(
+      Object.entries(validateConnectorValues(manifest, values)).filter(
+        ([name]) => shown.has(name),
+      ),
+    );
     if (hasFieldErrors(validation)) {
       setErrors(validation);
       return;
@@ -69,14 +95,7 @@ export function CredentialRequestSheet({
 
     setSubmitting(true);
     try {
-      const credentials: ConnectorFormValues = {};
-      const config: Record<string, string> = {};
-      for (const field of manifest.fields) {
-        const value = values[field.name];
-        if (!value) continue;
-        if (field.secret) credentials[field.name] = value;
-        else config[field.name] = value;
-      }
+      const { config, credentials } = splitConnectorValues(manifest, values);
 
       const receipt = await EnvironmentService.setCredentials({
         capability: request.capability,
@@ -84,6 +103,11 @@ export function CredentialRequestSheet({
         instanceKey: request.instanceKey,
         config,
         credentials,
+      });
+
+      useOnboardingStudioStore.getState().updateCard(studioCardIdFor(request), {
+        status: receipt.probe?.ok ? "ok" : "failed",
+        result: receipt.probe,
       });
 
       // Everything in `receipt` was redacted server-side. This is the only
@@ -108,6 +132,9 @@ export function CredentialRequestSheet({
           ? error.message
           : t(I18nKey.ENVIRONMENT$ERROR_SAVE);
       displayErrorToast(message);
+      useOnboardingStudioStore
+        .getState()
+        .updateCard(studioCardIdFor(request), { status: "failed" });
       onResult(
         `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
           status: "error",
@@ -118,6 +145,20 @@ export function CredentialRequestSheet({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // The agent is waiting on this sheet. Dismissing it silently would leave
+  // that turn hanging, so a decline is reported like any other outcome.
+  const handleCancel = () => {
+    useOnboardingStudioStore.getState().removeCard(studioCardIdFor(request));
+    onResult(
+      `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
+        status: "cancelled",
+        provider: request.providerId,
+        instance: request.instanceKey,
+      })}`,
+    );
+    onDone();
   };
 
   return (
@@ -175,7 +216,7 @@ export function CredentialRequestSheet({
           type="button"
           variant="secondary"
           isDisabled={submitting}
-          onClick={onDone}
+          onClick={handleCancel}
           testId="credential-cancel"
         >
           {t(I18nKey.ENVIRONMENT$CANCEL)}

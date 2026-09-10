@@ -2,10 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { I18nKey } from "#/i18n/declaration";
-import {
-  getConnectorManifest,
-  secretFieldNames,
-} from "#/lib/environment/registry";
+import { getConnectorManifest } from "#/lib/environment/registry";
 import { ConnectionForm } from "#/components/features/environment/connections/connection-form";
 import { ConnectorLogo } from "#/components/features/environment/shared/connector-logo";
 import { ProbeResultPanel } from "#/components/features/environment/shared/probe-result-panel";
@@ -20,7 +17,11 @@ import {
   useOnboardingStudioStore,
   type WorkbenchCard,
 } from "#/stores/onboarding-studio-store";
-import type { ConnectorFormValues } from "#/lib/environment/validation";
+import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
+import {
+  splitConnectorValues,
+  type ConnectorFormValues,
+} from "#/lib/environment/validation";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { PostResultFn } from "#/services/onboarding-control";
 
@@ -53,13 +54,30 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
 
   const isOAuth = Boolean(manifest.oauth);
 
-  const handleOAuth = async () => {
+  // The dock raises the same request so it is noticeable from any screen.
+  // Once this card has answered it -- or the user has declined -- that copy
+  // must go too, or the dock keeps flagging a request that no longer exists.
+  const settleDockRequest = () => {
+    const copilot = useOnboardingCopilotStore.getState();
+    const pending = copilot.pendingCredentialRequest;
+    if (
+      pending?.providerId === card.providerId &&
+      pending?.instanceKey === card.instanceKey
+    ) {
+      copilot.clearCredentialRequest();
+    }
+  };
+
+  const handleOAuth = async (values: ConnectorFormValues = {}) => {
     setSubmitting(true);
     try {
       const { authorizeUrl } = await EnvironmentService.startOAuth({
         capability: card.capability,
         providerId: card.providerId,
         instanceKey: card.instanceKey,
+        // A self-hosted OAuth provider (GitHub Enterprise) collects its host
+        // first; the authorize URL cannot be built without it.
+        config: splitConnectorValues(manifest, values).config,
         // Comes back here, not to the settings page: the legacy OAuth starts
         // hardcode `/settings/connections`, which would strand the user
         // outside the conversation they were in the middle of.
@@ -80,14 +98,7 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
     setSubmitting(true);
     updateCard(card.id, { status: "submitting" });
     try {
-      const secretNames = new Set(secretFieldNames(manifest));
-      const credentials: ConnectorFormValues = {};
-      const config: Record<string, string> = {};
-      for (const [name, value] of Object.entries(values)) {
-        if (!value) continue;
-        if (secretNames.has(name)) credentials[name] = value;
-        else config[name] = value;
-      }
+      const { config, credentials } = splitConnectorValues(manifest, values);
 
       const receipt = await EnvironmentService.setCredentials({
         capability: card.capability,
@@ -101,6 +112,7 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
         status: receipt.probe?.ok ? "ok" : "failed",
         result: receipt.probe,
       });
+      settleDockRequest();
 
       // Everything the rest of the app reads about connections is refreshed
       // here, so the repository picker is usable the moment this returns
@@ -144,6 +156,20 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
     }
   };
 
+  // The agent is waiting on this form. Closing it without a word would leave
+  // that turn hanging until someone notices, so a decline is a receipt too.
+  const handleCancel = () => {
+    useOnboardingStudioStore.getState().removeCard(card.id);
+    settleDockRequest();
+    postResult(
+      `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
+        status: "cancelled",
+        provider: card.providerId,
+        instance: card.instanceKey,
+      })}`,
+    );
+  };
+
   return (
     <div
       data-testid={`workbench-connection-card-${card.providerId}`}
@@ -171,7 +197,7 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
           type="button"
           data-testid={`workbench-oauth-${card.providerId}`}
           disabled={submitting}
-          onClick={handleOAuth}
+          onClick={() => handleOAuth()}
           className="ame-btn-primary ame-btn-sm self-start"
         >
           {submitting
@@ -184,9 +210,7 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
           submitting={submitting}
           submitLabel={t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMIT)}
           onSubmit={isOAuth ? handleOAuth : handleSubmit}
-          onCancel={() =>
-            useOnboardingStudioStore.getState().removeCard(card.id)
-          }
+          onCancel={handleCancel}
         />
       )}
 

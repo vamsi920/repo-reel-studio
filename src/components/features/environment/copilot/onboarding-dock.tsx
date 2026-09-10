@@ -144,8 +144,12 @@ export function OnboardingDock() {
               </button>
             </header>
 
+            {/* Keyed so a new request starts from a blank form: the sheet
+                keeps what was typed in local state, and one provider's
+                half-entered secret must never carry over into the next. */}
             {pending ? (
               <CredentialRequestSheet
+                key={pending.requestId}
                 request={pending}
                 onDone={clearCredentialRequest}
                 onResult={postResult}

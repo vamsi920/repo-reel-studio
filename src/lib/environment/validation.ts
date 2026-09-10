@@ -86,6 +86,33 @@ export function getInitialFormValues(
   return values;
 }
 
+export interface SplitConnectorValues {
+  /** Plaintext configuration: hosts, regions, buckets -- never a secret. */
+  config: Record<string, string>;
+  /** Secret fields, destined for the Edge Function and nowhere else. */
+  credentials: ConnectorFormValues;
+}
+
+/**
+ * Splits what a form collected into the two payloads every connection call
+ * takes. Blank values are dropped rather than sent as empty strings, so an
+ * optional field left untouched does not overwrite a stored one with "".
+ */
+export function splitConnectorValues(
+  manifest: ConnectorManifest,
+  values: ConnectorFormValues,
+): SplitConnectorValues {
+  const config: Record<string, string> = {};
+  const credentials: ConnectorFormValues = {};
+  for (const field of manifest.fields) {
+    const value = values[field.name];
+    if (!value) continue;
+    if (field.secret) credentials[field.name] = value;
+    else config[field.name] = value;
+  }
+  return { config, credentials };
+}
+
 /**
  * Pure, synchronous validation shared by the connection form, the credential
  * sheet and the edge function. Returns codes, never sentences -- the message

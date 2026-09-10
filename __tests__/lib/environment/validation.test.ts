@@ -3,6 +3,7 @@ import {
   buildRedactedSummary,
   isBlockedHost,
   redactValue,
+  splitConnectorValues,
   validateConnectorValues,
 } from "#/lib/environment/validation";
 import { getConnectorManifest } from "#/lib/environment/registry";
@@ -106,5 +107,26 @@ describe("redaction", () => {
     expect(summary.namespace).toBe("prod");
     expect(summary.apiKey).not.toContain("pcsk");
     expect(JSON.stringify(summary)).not.toContain("abcdefgh");
+  });
+});
+
+describe("splitConnectorValues", () => {
+  it("routes secret fields to credentials and the rest to config", () => {
+    const { config, credentials } = splitConnectorValues(pinecone, {
+      apiKey: "pcsk_abcdefgh",
+      namespace: "prod",
+    });
+    expect(credentials).toEqual({ apiKey: "pcsk_abcdefgh" });
+    expect(config).toEqual({ namespace: "prod" });
+  });
+
+  it("drops blank values and anything the manifest does not declare", () => {
+    const { config, credentials } = splitConnectorValues(pinecone, {
+      apiKey: "",
+      namespace: "",
+      stray: "value",
+    });
+    expect(credentials).toEqual({});
+    expect(config).toEqual({});
   });
 });
