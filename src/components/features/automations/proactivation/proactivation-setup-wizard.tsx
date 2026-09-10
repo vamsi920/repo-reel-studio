@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { I18nKey } from "#/i18n/declaration";
@@ -146,6 +146,15 @@ export function ProactivationSetupWizard({
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     providers[0] ?? null,
   );
+  // `providers` resolves asynchronously (useUserProviders depends on a
+  // useGithubConnection query), so the wizard can mount before it populates.
+  // Re-sync once it does, or selectedProvider stays stuck at null forever and
+  // the repositories step renders neither the dropdown nor the manual input.
+  useEffect(() => {
+    if (!selectedProvider && providers.length > 0) {
+      setSelectedProvider(providers[0]);
+    }
+  }, [providers, selectedProvider]);
   // Repository search only works on a cloud backend OR a local backend with
   // GitHub connected via Settings -> Connections (see `isLocalGithubActive`
   // in `git-service.api.ts`, which `GitRepoDropdown` relies on under the
