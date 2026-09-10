@@ -254,6 +254,38 @@ describe("ConversationName", () => {
     expect(inputElement).toHaveValue("Test Conversation");
   });
 
+  it("should not save a whitespace-only title", async () => {
+    const user = userEvent.setup();
+    renderConversationNameWithRouter();
+
+    await user.dblClick(screen.getByTestId("conversation-name-title"));
+
+    const inputElement = screen.getByTestId("conversation-name-input");
+    await user.clear(inputElement);
+    await user.type(inputElement, "   ");
+    await user.tab();
+
+    expect(mockMutate).not.toHaveBeenCalled();
+    expect(inputElement).toHaveValue("Test Conversation");
+  });
+
+  it("should discard the draft and keep the saved title on Escape", async () => {
+    const user = userEvent.setup();
+    renderConversationNameWithRouter();
+
+    await user.dblClick(screen.getByTestId("conversation-name-title"));
+
+    const inputElement = screen.getByTestId("conversation-name-input");
+    await user.clear(inputElement);
+    await user.type(inputElement, "Abandoned draft");
+    await user.keyboard("{Escape}");
+
+    expect(mockMutate).not.toHaveBeenCalled();
+    expect(screen.getByTestId("conversation-name-title")).toHaveTextContent(
+      "Test Conversation",
+    );
+  });
+
   it("should trim whitespace from input value", async () => {
     const user = userEvent.setup();
     renderConversationNameWithRouter();

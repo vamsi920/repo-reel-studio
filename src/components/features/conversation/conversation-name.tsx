@@ -72,8 +72,10 @@ export function ConversationName() {
   };
 
   const handleBlur = () => {
-    if (inputRef.current?.value && conversationId) {
-      const trimmed = inputRef.current.value.trim();
+    // Trim before the empty check: a whitespace-only value used to pass the
+    // truthiness test and get saved as "" — a conversation with no title.
+    const trimmed = inputRef.current?.value.trim() ?? "";
+    if (trimmed && conversationId) {
       if (trimmed !== conversation?.title) {
         updateConversation(
           { conversationId, newTitle: trimmed },
@@ -99,6 +101,11 @@ export function ConversationName() {
     }
     if (event.key === "Enter") {
       event.currentTarget.blur();
+    } else if (event.key === "Escape" && inputRef.current) {
+      // Cancel the edit: restore the saved title so the blur that follows
+      // sees an unchanged value and does not persist the abandoned draft.
+      inputRef.current.value = conversation?.title ?? "";
+      inputRef.current.blur();
     }
   };
 

@@ -192,6 +192,35 @@ describe("PendingUserMessages", () => {
     });
   });
 
+  it("retries with the server-bound content, not the bubble text", async () => {
+    mockSend.mockResolvedValueOnce({ queued: false });
+    const id = useOptimisticUserMessageStore
+      .getState()
+      .enqueuePendingMessage({
+        conversationId: ACTIVE_CONVO,
+        text: "look at this",
+        content: "look at this\n\nFiles uploaded: notes.txt",
+        fileUrls: ["notes.txt"],
+      });
+    useOptimisticUserMessageStore
+      .getState()
+      .markPendingMessageError(id, "Server unavailable");
+
+    renderWithProviders(<PendingUserMessages />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("chat-message-retry"));
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({
+          content: "look at this\n\nFiles uploaded: notes.txt",
+          file_urls: ["notes.txt"],
+        }),
+      }),
+    );
+  });
+
   it("flips back to 'error' if the retry attempt also fails", async () => {
     mockSend.mockRejectedValueOnce(new Error("still broken"));
     const id = useOptimisticUserMessageStore

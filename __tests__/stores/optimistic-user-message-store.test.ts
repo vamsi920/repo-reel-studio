@@ -246,6 +246,31 @@ describe("optimistic-user-message-store", () => {
     expect(entry.errorMessage).toBe("boom");
   });
 
+  it("a retry re-arms the watchdog with a full timeout window", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    const id = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "retry-later",
+    });
+    // The first attempt is rejected two thirds of the way in; the user
+    // retries right away.
+    vi.advanceTimersByTime((PENDING_MESSAGE_TIMEOUT_MS * 2) / 3);
+    store.markPendingMessageError(id, "boom");
+    store.markPendingMessageSending(id);
+
+    // The first send's clock must not cut the retry short.
+    vi.advanceTimersByTime(PENDING_MESSAGE_TIMEOUT_MS / 2);
+    expect(
+      useOptimisticUserMessageStore.getState().pendingMessages[0].status,
+    ).toBe("sending");
+
+    // ...but the retry does get its own watchdog.
+    vi.advanceTimersByTime(PENDING_MESSAGE_TIMEOUT_MS / 2);
+    const [entry] = useOptimisticUserMessageStore.getState().pendingMessages;
+    expect(entry.status).toBe("error");
+    expect(entry.errorMessage).toBe("Send timed out");
+  });
+
   it("removePendingMessage drops a specific entry by id", () => {
     const store = useOptimisticUserMessageStore.getState();
     const firstId = store.enqueuePendingMessage({

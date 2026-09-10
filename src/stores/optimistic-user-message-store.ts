@@ -108,8 +108,32 @@ const initialState: OptimisticUserMessageState = {
 const generatePendingId = (): string =>
   `pending-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+// One live watchdog per pending id. Re-arming (retry) replaces the previous
+// timer so an attempt always gets the full `PENDING_MESSAGE_TIMEOUT_MS`
+// instead of inheriting whatever was left on the first send's clock.
+const watchdogTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Watchdog: if the server echo never lands (WS dropped, server crashed,
+// network partition), flip this entry to "error" so the user gets a
+// retry link instead of a permanently-pinned "Sending…" bubble.
+const armWatchdog = (id: string) => {
+  const previous = watchdogTimers.get(id);
+  if (previous !== undefined) clearTimeout(previous);
+  watchdogTimers.set(
+    id,
+    setTimeout(() => {
+      watchdogTimers.delete(id);
+      const store = useOptimisticUserMessageStore.getState();
+      const current = store.pendingMessages.find((m) => m.id === id);
+      if (current?.status === "sending") {
+        store.markPendingMessageError(id, "Send timed out");
+      }
+    }, PENDING_MESSAGE_TIMEOUT_MS),
+  );
+};
+
 export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
-  (set, get) => ({
+  (set) => ({
     ...initialState,
 
     enqueuePendingMessage: (payload) => {
@@ -128,15 +152,7 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
         pendingMessages: [...state.pendingMessages, message],
       }));
 
-      // Watchdog: if the server echo never lands (WS dropped, server crashed,
-      // network partition), flip this entry to "error" so the user gets a
-      // retry link instead of a permanently-pinned "Sending…" bubble.
-      setTimeout(() => {
-        const current = get().pendingMessages.find((m) => m.id === id);
-        if (current?.status === "sending") {
-          get().markPendingMessageError(id, "Send timed out");
-        }
-      }, PENDING_MESSAGE_TIMEOUT_MS);
+      armWatchdog(id);
 
       return id;
     },
@@ -150,14 +166,19 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
         ),
       })),
 
-    markPendingMessageSending: (id) =>
+    // A retry is a fresh send, so it gets a fresh watchdog: without one, a
+    // retry whose echo never arrives would sit on "Sending…" forever because
+    // the only timer ever scheduled was the first send's.
+    markPendingMessageSending: (id) => {
       set((state) => ({
         pendingMessages: state.pendingMessages.map((message) =>
           message.id === id
             ? { ...message, status: "sending", errorMessage: undefined }
             : message,
         ),
-      })),
+      }));
+      armWatchdog(id);
+    },
 
     removePendingMessage: (id) =>
       set((state) => ({

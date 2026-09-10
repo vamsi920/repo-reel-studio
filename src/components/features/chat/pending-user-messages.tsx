@@ -65,9 +65,14 @@ export function PendingUserMessages() {
       markPendingMessageSending(id);
 
       try {
+        // Resend `content`, not `text`: `content` is what the first attempt
+        // handed to the server (it carries the appended "Files uploaded: …"
+        // block when there were attachments) and is what the echo is matched
+        // against. Resending the bare bubble text silently dropped the
+        // uploaded files from the agent's view.
         await send(
           createChatMessage(
-            message.text,
+            message.content,
             message.imageUrls,
             message.fileUrls,
             message.timestamp,
