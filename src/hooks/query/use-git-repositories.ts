@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
 import { useUserProviders } from "../use-user-providers";
 import { useAppInstallations } from "./use-app-installations";
@@ -27,6 +28,13 @@ export function useGitRepositories(options: UseGitRepositoriesOptions) {
   const useInstallationRepos = provider
     ? shouldUseInstallationRepos(provider, active.backend.kind)
     : false;
+
+  const queryEnabled =
+    enabled &&
+    (providers || []).length > 0 &&
+    !!provider &&
+    (!useInstallationRepos ||
+      (Array.isArray(installations) && installations.length > 0));
 
   const repos = useInfiniteQuery<
     RepositoryPage,
@@ -102,16 +110,40 @@ export function useGitRepositories(options: UseGitRepositoriesOptions) {
     initialPageParam: useInstallationRepos
       ? { installationIndex: 0, pageId: null }
       : null,
-    enabled:
-      enabled &&
-      (providers || []).length > 0 &&
-      !!provider &&
-      (!useInstallationRepos ||
-        (Array.isArray(installations) && installations.length > 0)),
+    enabled: queryEnabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 15, // 15 minutes
     refetchOnWindowFocus: false,
   });
+
+  // Dev-only diagnostic: the repo fetch never fires at all (not "returns
+  // empty") whenever `enabled` is false -- most often because `provider`
+  // isn't in the resolved `providers` list yet. That gate has no other
+  // visible signal (no error, no loading state), so a real connection
+  // that never surfaces here is otherwise silent. See the "Open
+  // Repository always shows No Repository" report for the symptom this
+  // is meant to pin down.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (!queryEnabled && enabled && provider) {
+      const providerMissing = !(providers || []).includes(provider);
+      console.debug("[useGitRepositories] repository fetch gated off", {
+        provider,
+        providers,
+        providerMissingFromList: providerMissing,
+        useInstallationRepos,
+        installationsResolved: Array.isArray(installations),
+        installationsCount: installations?.length ?? null,
+      });
+    }
+  }, [
+    queryEnabled,
+    enabled,
+    provider,
+    providers,
+    useInstallationRepos,
+    installations,
+  ]);
 
   const onLoadMore = () => {
     if (repos.hasNextPage && !repos.isFetchingNextPage) {
