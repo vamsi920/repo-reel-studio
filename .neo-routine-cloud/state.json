@@ -1,0 +1,18 @@
+{
+  "repo": "https://github.com/vamsi920/repo-reel-studio",
+  "lastSection": null,
+  "sections": {
+    "knowledge-kt": { "lastRun": null, "runCount": 0 },
+    "kt-video": { "lastRun": null, "runCount": 0 },
+    "codegraph": { "lastRun": null, "runCount": 0 },
+    "agentops": { "lastRun": null, "runCount": 0 },
+    "automations": { "lastRun": null, "runCount": 0 },
+    "environment-onboarding": { "lastRun": null, "runCount": 0 },
+    "security": { "lastRun": null, "runCount": 0 },
+    "auth-data-platform": { "lastRun": null, "runCount": 0 },
+    "settings": { "lastRun": null, "runCount": 0 },
+    "conversation-chat": { "lastRun": null, "runCount": 0 },
+    "skills-plugins-mcp": { "lastRun": null, "runCount": 0 },
+    "files-terminal-browser": { "lastRun": null, "runCount": 0 }
+  }
+}

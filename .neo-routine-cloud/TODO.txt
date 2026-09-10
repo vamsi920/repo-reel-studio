@@ -1,0 +1,16 @@
+# Neo cloud routine TODO list
+#
+# This is the CLOUD routine's todo list (git-tracked — edit it right here on
+# GitHub or via a PR). It is separate from the local routine's TODO.txt on the
+# maintainer's Mac, which is git-ignored and not this file.
+#
+# Drop requests in whatever format is natural: a short line, or a paragraph
+# with context/examples. Everything for ONE request counts as one item, no
+# matter how many lines it takes. Separate DIFFERENT requests with a blank
+# line — that's the only boundary the routine looks for. Lines starting with
+# "#" are always ignored.
+#
+# When an item ships to main, the routine deletes it. If it can't (too big, or
+# checks failed), it comments the whole thing out as "# BLOCKED <date>: <reason>"
+# above the original text, so it's skipped next time and shows up in the daily
+# report instead of being retried forever.
