@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
@@ -184,6 +184,77 @@ describe("CodeGraphNodeDetails", () => {
     expect(
       await screen.findByText("CODEGRAPH$SOURCE_MISSING"),
     ).toBeInTheDocument();
+  });
+
+  it("does not leave the button stuck on loading when the read rejects", async () => {
+    const user = userEvent.setup();
+    // Neither handle should reject, but a raw sandbox error here used to be an
+    // unhandled rejection that left the button disabled on "Loading source…".
+    renderPanel({
+      readSource: vi.fn().mockRejectedValue(new Error("sandbox gone")),
+    });
+
+    await user.click(screen.getByTestId("codegraph-open-source"));
+
+    const button = await screen.findByText("CODEGRAPH$SOURCE_MISSING");
+    expect(button.closest("button")).not.toBeDisabled();
+  });
+
+  it("shows an empty file as loaded rather than offering to open it again", async () => {
+    const user = userEvent.setup();
+    renderPanel({ readSource: vi.fn().mockResolvedValue("") });
+
+    await user.click(screen.getByTestId("codegraph-open-source"));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("codegraph-open-source"),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("drops a source read that resolves after the user moved to another node", async () => {
+    const user = userEvent.setup();
+    let resolveRead: (content: string) => void = () => {};
+    const readSource = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveRead = resolve;
+        }),
+    );
+    const props = {
+      node: node(),
+      edges: EDGES,
+      siblings: [node(), SIBLING_A, SIBLING_B, SIBLING_C],
+      knowledgeLink: null,
+      onSelect: vi.fn(),
+      onDrillDown: vi.fn(),
+      onClose: vi.fn(),
+      readSource,
+    };
+    const { rerender } = render(
+      <MemoryRouter>
+        <CodeGraphNodeDetails {...props} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByTestId("codegraph-open-source"));
+    expect(readSource).toHaveBeenCalledWith("src/pay/charge.ts");
+
+    // Select gateway.ts while charge.ts is still being read from the sandbox.
+    rerender(
+      <MemoryRouter>
+        <CodeGraphNodeDetails {...props} node={SIBLING_A} />
+      </MemoryRouter>,
+    );
+    resolveRead("const charge = () => {};");
+
+    // gateway.ts must not be shown charge.ts's source.
+    await waitFor(() =>
+      expect(screen.getByTestId("codegraph-open-source")).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/const charge/)).not.toBeInTheDocument();
+    expect(screen.getByText("CODEGRAPH$OPEN_SOURCE")).toBeInTheDocument();
   });
 
   it("has no source control for an aggregate with no file of its own", () => {

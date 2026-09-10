@@ -114,25 +114,43 @@ export function CodeGraphNodeDetails({
       .slice(0, 6);
   }, [siblings, node.id, dependencies, usedBy]);
 
+  // The node whose source is (or was last) being read. A read that resolves
+  // after the user has moved on to another node must not land in that node's
+  // panel — file reads go through the sandbox and can take seconds.
+  const sourceNodeIdRef = React.useRef(node.id);
+
   const loadSource = React.useCallback(async () => {
     if (!node.filePath) return;
+    const requestedFor = node.id;
     setSourceState("loading");
-    const content = await readSource(node.filePath);
+    let content: string | null;
+    try {
+      content = await readSource(node.filePath);
+    } catch {
+      // Both handles already swallow read failures, but a rejection here
+      // would otherwise leave the button disabled on "Loading source…" for
+      // good. Report it the same way as a file that no longer exists.
+      content = null;
+    }
+    if (sourceNodeIdRef.current !== requestedFor) return;
     if (content === null) {
       setSourceState("missing");
       return;
     }
     setSourceState("idle");
     setSource(content);
-  }, [node.filePath, readSource]);
+  }, [node.id, node.filePath, readSource]);
 
   React.useEffect(() => {
+    sourceNodeIdRef.current = node.id;
     setSource(null);
     setSourceState("idle");
   }, [node.id]);
 
   const excerpt = React.useMemo(() => {
-    if (!source) return null;
+    // `""` is a real (empty) file that loaded fine — only `null` means "not
+    // loaded yet"; the two must not both show the "Open source" button.
+    if (source === null) return null;
     const lines = source.split("\n");
     if (!node.lineRange) return lines.slice(0, 60).join("\n");
     const [start, end] = node.lineRange;
@@ -280,7 +298,7 @@ export function CodeGraphNodeDetails({
 
       {node.filePath ? (
         <Section title={t(I18nKey.CODEGRAPH$SOURCE)}>
-          {excerpt ? (
+          {excerpt !== null ? (
             <pre className="max-h-72 overflow-auto rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] p-2 font-mono text-[10px] leading-relaxed text-[var(--oh-foreground)] custom-scrollbar">
               {excerpt}
             </pre>

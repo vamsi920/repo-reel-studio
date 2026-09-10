@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { inWorkspace, parseProgress } from "#/lib/codegraph/analyzer-runner";
+import {
+  analyzerFailureReason,
+  inWorkspace,
+  mapSearchEntries,
+  parseProgress,
+} from "#/lib/codegraph/analyzer-runner";
 
 describe("inWorkspace", () => {
   // The agent-server's /api/file/upload and /api/file/download take the path
@@ -81,5 +86,84 @@ describe("parseProgress", () => {
 
   it("returns nothing for empty output", () => {
     expect(parseProgress("")).toEqual([]);
+  });
+});
+
+describe("analyzerFailureReason", () => {
+  it("prefers the analyzer's own failed milestone", () => {
+    expect(
+      analyzerFailureReason({
+        stdout: '{"__codegraph":"failed","reason":"ENOENT: grammars"}',
+        stderr: "node: some stack trace",
+      }),
+    ).toBe("ENOENT: grammars");
+  });
+
+  it("falls back to the tail of stderr", () => {
+    expect(analyzerFailureReason({ stdout: "", stderr: "  Killed\n" })).toBe(
+      "Killed",
+    );
+  });
+
+  it("never returns an empty reason", () => {
+    // `"".slice(-500) ?? fallback` used to yield "" here, and the page then
+    // rendered "Graph analysis failed" over a blank line.
+    expect(analyzerFailureReason({ stdout: "", stderr: "" })).toBe(
+      "analyzer exited non-zero",
+    );
+    expect(analyzerFailureReason({ stdout: null, stderr: null })).toBe(
+      "analyzer exited non-zero",
+    );
+  });
+
+  it("uses pre-parsed events when given", () => {
+    expect(
+      analyzerFailureReason({
+        events: [{ phase: "failed", reason: "out of memory" }],
+        stderr: "ignored",
+      }),
+    ).toBe("out of memory");
+  });
+});
+
+describe("mapSearchEntries", () => {
+  it("maps compact tuples to entries", () => {
+    expect(
+      mapSearchEntries([
+        ["file:a.ts", "a.ts", "file", "a.ts", "module:src", "unit"],
+      ]),
+    ).toEqual([
+      {
+        id: "file:a.ts",
+        name: "a.ts",
+        type: "file",
+        filePath: "a.ts",
+        parentId: "module:src",
+        level: "unit",
+      },
+    ]);
+  });
+
+  it("returns nothing for a corrupt or missing index instead of throwing", () => {
+    // A partially mirrored `search.json` used to throw out of
+    // `loadSearchIndex` and leave the search box silently dead.
+    expect(mapSearchEntries(null)).toEqual([]);
+    expect(mapSearchEntries({ not: "an array" })).toEqual([]);
+    expect(mapSearchEntries("garbage")).toEqual([]);
+  });
+
+  it("skips malformed rows and fills missing columns", () => {
+    expect(
+      mapSearchEntries(["not a row", [42, "bad id"], ["sym:x", "x"]]),
+    ).toEqual([
+      {
+        id: "sym:x",
+        name: "x",
+        type: "",
+        filePath: "",
+        parentId: "",
+        level: "",
+      },
+    ]);
   });
 });

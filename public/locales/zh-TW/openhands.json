@@ -2361,6 +2361,8 @@
   "SECURITY$SEVERITY_INFO": "Info",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Search files, classes and functions…",
+  "CODEGRAPH$SEARCH_NO_RESULTS": "沒有相符項目",
+  "CODEGRAPH$SEARCH_LOADING": "正在載入搜尋索引…",
   "CODEGRAPH$FILTERS": "Filters",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",

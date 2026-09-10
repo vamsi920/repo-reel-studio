@@ -354,17 +354,47 @@ async function uploadArtifactsToStorage(
   }
 }
 
-function mapSearchEntries(
-  raw: [string, string, string, string, string, string][],
-): SearchEntry[] {
-  return raw.map(([id, name, type, filePath, parentId, level]) => ({
-    id,
-    name,
-    type,
-    filePath,
-    parentId,
-    level,
-  }));
+/**
+ * Maps the compact `search.json` tuples to entries. Tolerates a corrupt or
+ * partially mirrored file: a non-array or malformed row yields nothing rather
+ * than throwing out of `loadSearchIndex`, which would leave the search box
+ * silently dead (the route fires it without a catch).
+ */
+export function mapSearchEntries(raw: unknown): SearchEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const entries: SearchEntry[] = [];
+  for (const row of raw) {
+    if (!Array.isArray(row)) continue;
+    const [id, name, type, filePath, parentId, level] = row as unknown[];
+    if (typeof id !== "string") continue;
+    entries.push({
+      id,
+      name: typeof name === "string" ? name : "",
+      type: typeof type === "string" ? type : "",
+      filePath: typeof filePath === "string" ? filePath : "",
+      parentId: typeof parentId === "string" ? parentId : "",
+      level: typeof level === "string" ? level : "",
+    });
+  }
+  return entries;
+}
+
+/**
+ * The message shown when the analyzer exits non-zero: its own `failed`
+ * milestone when it managed to emit one, else the tail of stderr, else a
+ * generic line — never an empty string, which the page would render as a
+ * blank error.
+ */
+export function analyzerFailureReason(result: {
+  stdout?: string | null;
+  stderr?: string | null;
+  events?: AnalyzerProgress[];
+}): string {
+  const events = result.events ?? parseProgress(result.stdout ?? "");
+  const failure = events.find((event) => event.phase === "failed");
+  if (failure?.reason?.trim()) return failure.reason.trim();
+  const stderr = (result.stderr ?? "").trim().slice(-500);
+  return stderr || "analyzer exited non-zero";
 }
 
 /**
@@ -435,10 +465,8 @@ function makeStorageHandle(
         `${prefix}/levels/${shardName(parentId)}.json`,
       ),
     loadSearchIndex: async () => {
-      const raw = await readJsonFromStorage<
-        [string, string, string, string, string, string][]
-      >(`${prefix}/search.json`);
-      return raw ? mapSearchEntries(raw) : [];
+      const raw = await readJsonFromStorage<unknown>(`${prefix}/search.json`);
+      return mapSearchEntries(raw);
     },
     readSource: async (filePath) => {
       // Raw source is never mirrored to Storage (only the derived graph is)
@@ -476,10 +504,8 @@ function makeHandle(
         `${dir}/levels/${shardName(parentId)}.json`,
       ),
     loadSearchIndex: async () => {
-      const raw = await readJson<
-        [string, string, string, string, string, string][]
-      >(workspace, `${dir}/search.json`);
-      return raw ? mapSearchEntries(raw) : [];
+      const raw = await readJson<unknown>(workspace, `${dir}/search.json`);
+      return mapSearchEntries(raw);
     },
     readSource: async (filePath) => {
       try {
@@ -555,17 +581,13 @@ export async function runAnalysis(
     timeoutSeconds,
   );
 
-  parseProgress(result.stdout ?? "").forEach((event) => onProgress?.(event));
+  const events = parseProgress(result.stdout ?? "");
+  events.forEach((event) => onProgress?.(event));
 
   if (result.exit_code !== 0) {
-    const failure = parseProgress(result.stdout ?? "").find(
-      (event) => event.phase === "failed",
-    );
     throw new CodeGraphAnalyzerError(
       "analysis",
-      failure?.reason ??
-        (result.stderr ?? "").slice(-500) ??
-        "analyzer exited non-zero",
+      analyzerFailureReason({ stderr: result.stderr, events }),
     );
   }
 

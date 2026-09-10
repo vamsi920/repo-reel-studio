@@ -32,6 +32,12 @@ interface Props {
    * even when the graph is fresh/ready, not just when stale or errored. */
   onRebuild: () => void;
   isRebuilding?: boolean;
+  /**
+   * Whether the search index has been fetched. Until it has, an empty result
+   * list means "still loading", not "no matches" — the two must read
+   * differently or the user retypes a query that was never run.
+   */
+  searchIndexReady?: boolean;
 }
 
 export function CodeGraphToolbar({
@@ -49,6 +55,7 @@ export function CodeGraphToolbar({
   levelNodes,
   onRebuild,
   isRebuilding = false,
+  searchIndexReady = true,
 }: Props) {
   const { t } = useTranslation("openhands");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -155,14 +162,37 @@ export function CodeGraphToolbar({
           type="search"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
+          onKeyDown={(event) => {
+            // Escape dismisses the results the same way it does in every
+            // other search box; without it the list covers the canvas until
+            // the query is deleted by hand.
+            if (event.key === "Escape" && searchQuery) {
+              event.preventDefault();
+              onSearchChange("");
+            }
+          }}
           placeholder={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
+          aria-label={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
           data-testid="codegraph-search"
           className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] py-1.5 pl-8 pr-3 text-xs text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-500)]"
         />
 
+        {searchQuery && searchResults.length === 0 ? (
+          <p
+            role="status"
+            data-testid="codegraph-search-empty"
+            className="absolute z-20 mt-1 w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-2.5 py-1.5 text-xs text-[var(--oh-muted)] shadow-lg"
+          >
+            {searchIndexReady
+              ? t(I18nKey.CODEGRAPH$SEARCH_NO_RESULTS)
+              : t(I18nKey.CODEGRAPH$SEARCH_LOADING)}
+          </p>
+        ) : null}
+
         {searchQuery && searchResults.length > 0 ? (
           <ul
             data-testid="codegraph-search-results"
+            aria-label={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
             className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] shadow-lg custom-scrollbar"
           >
             {searchResults.map((entry) => (

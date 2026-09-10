@@ -482,6 +482,7 @@ function KtGraph() {
                 if (query) ensureSearchIndex();
               }}
               searchResults={searchResults}
+              searchIndexReady={state.searchIndex !== null}
               onSelectResult={selectSearchResult}
               levelNodes={level.nodes}
               onRebuild={() => analyze(true)}

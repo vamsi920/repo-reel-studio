@@ -24390,10 +24390,10 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
   languages;
   configs;
   /**
-   * Neo modification.
+   * NeoDevEx modification.
    *
    * Upstream locates grammar `.wasm` files with `require.resolve(...)` against
-   * the analyzer's own `node_modules`. Neo runs this bundled inside an
+   * the analyzer's own `node_modules`. NeoDevEx runs this bundled inside an
    * agent-server sandbox, where the grammars are uploaded next to the bundle
    * and there is no installed package tree to resolve against. When supplied,
    * this resolver is used instead; when omitted, upstream behaviour is
@@ -24419,7 +24419,7 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
    *
    * @param configs Language configurations to load
    * @param extractors Optional language extractors; if none provided, registers all builtin extractors
-   * @param wasmResolver Neo modification — see `wasmResolver` below.
+   * @param wasmResolver NeoDevEx modification — see `wasmResolver` below.
    */
   constructor(configs, extractors, wasmResolver) {
     this.wasmResolver = wasmResolver;
@@ -24471,7 +24471,7 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
     return this._extensionToLang.get(ext) ?? null;
   }
   /**
-   * Neo modification — routes grammar lookup through the injected
+   * NeoDevEx modification — routes grammar lookup through the injected
    * resolver when one was supplied, falling back to upstream's
    * `require.resolve` otherwise.
    */
@@ -25355,7 +25355,8 @@ function buildHierarchy(graph, hints = []) {
   }
   const layerlessWithPath = layerless.filter((unit) => unit.filePath);
   const layerlessWithoutPath = layerless.filter((unit) => !unit.filePath);
-  for (const unit of layerlessWithoutPath) push("subsystem:other", "Other", unit);
+  for (const unit of layerlessWithoutPath)
+    push("subsystem:other", "Other", unit);
   const DERIVE_CONTAINERS_MIN_NODES = 4;
   if (layerlessWithPath.length >= DERIVE_CONTAINERS_MIN_NODES) {
     const { containers, ungrouped } = deriveContainers(

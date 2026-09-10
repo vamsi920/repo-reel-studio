@@ -221,4 +221,55 @@ describe("CodeGraphToolbar", () => {
 
     expect(props.onSelectResult).toHaveBeenCalledWith(entry);
   });
+
+  it("says so when a query matches nothing, instead of showing nothing", () => {
+    renderToolbar({ searchQuery: "zzz", searchResults: [] });
+
+    expect(screen.getByTestId("codegraph-search-empty")).toHaveTextContent(
+      "CODEGRAPH$SEARCH_NO_RESULTS",
+    );
+    expect(
+      screen.queryByTestId("codegraph-search-results"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("distinguishes an index still loading from a genuine miss", () => {
+    // The index is fetched lazily on the first keystroke; until it lands,
+    // "No matches" would be a lie the user acts on by retyping.
+    renderToolbar({
+      searchQuery: "charge",
+      searchResults: [],
+      searchIndexReady: false,
+    });
+
+    expect(screen.getByTestId("codegraph-search-empty")).toHaveTextContent(
+      "CODEGRAPH$SEARCH_LOADING",
+    );
+  });
+
+  it("shows no status at all without a query", () => {
+    renderToolbar({ searchQuery: "", searchIndexReady: false });
+
+    expect(
+      screen.queryByTestId("codegraph-search-empty"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears the query on Escape", async () => {
+    const user = userEvent.setup();
+    const props = renderToolbar({ searchQuery: "charge" });
+
+    await user.click(screen.getByTestId("codegraph-search"));
+    await user.keyboard("{Escape}");
+
+    expect(props.onSearchChange).toHaveBeenCalledWith("");
+  });
+
+  it("labels the search box for assistive technology", () => {
+    renderToolbar();
+
+    expect(screen.getByTestId("codegraph-search")).toHaveAccessibleName(
+      "CODEGRAPH$SEARCH_PLACEHOLDER",
+    );
+  });
 });
