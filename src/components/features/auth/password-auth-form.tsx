@@ -55,6 +55,7 @@ export function PasswordAuthForm() {
 
   const isSignUp = mode === "sign-up";
   const isForgot = mode === "forgot";
+  const isSubmitting = submitState === "submitting";
 
   const clearFieldErrors = () => {
     setDomainRejected(false);
@@ -124,9 +125,7 @@ export function PasswordAuthForm() {
         setErrorMessage(t(I18nKey.NEODEVEX_AUTH$NO_ACCOUNT_FOUND));
       } else {
         setErrorMessage(
-          outcome.kind === "error"
-            ? outcome.message
-            : t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR),
+          outcome.message || t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR),
         );
       }
       return;
@@ -145,11 +144,12 @@ export function PasswordAuthForm() {
       setDomainRejected(true);
     } else if (outcome.kind === "already_exists") {
       setAlreadyExists(true);
+    } else if (outcome.kind === "invalid_credentials") {
+      setErrorMessage(t(I18nKey.NEODEVEX_AUTH$INVALID_CREDENTIALS));
     } else {
-      const fallback = isSignUp
-        ? t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR)
-        : t(I18nKey.NEODEVEX_AUTH$INVALID_CREDENTIALS);
-      setErrorMessage(outcome.message || fallback);
+      setErrorMessage(
+        outcome.message || t(I18nKey.NEODEVEX_AUTH$GENERIC_ERROR),
+      );
     }
   };
 
@@ -223,7 +223,8 @@ export function PasswordAuthForm() {
               type="button"
               data-testid="auth-forgot-link"
               onClick={() => switchMode("forgot")}
-              className="text-xs text-[var(--primary-400)] hover:underline"
+              disabled={isSubmitting}
+              className="text-xs text-[var(--primary-400)] hover:underline disabled:opacity-50 disabled:hover:no-underline"
             >
               {t(I18nKey.NEODEVEX_AUTH$FORGOT_LINK)}
             </button>
@@ -233,6 +234,7 @@ export function PasswordAuthForm() {
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
+            aria-pressed={showPassword}
             className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
           >
             {showPassword ? (
@@ -297,19 +299,17 @@ export function PasswordAuthForm() {
         <BrandButton
           type="submit"
           variant="primary"
-          isDisabled={
-            !email.trim() || !password || submitState === "submitting"
-          }
+          isDisabled={!email.trim() || !password || isSubmitting}
           testId="auth-submit"
           className="w-full justify-center"
         >
           {isForgot
             ? t(
-                submitState === "submitting"
+                isSubmitting
                   ? I18nKey.NEODEVEX_AUTH$RESET_SUBMITTING
                   : I18nKey.NEODEVEX_AUTH$RESET_SUBMIT,
               )
-            : submitState === "submitting"
+            : isSubmitting
               ? t(
                   isSignUp
                     ? I18nKey.NEODEVEX_AUTH$CREATING_ACCOUNT
@@ -323,10 +323,16 @@ export function PasswordAuthForm() {
         </BrandButton>
       </form>
 
+      {/* Mode switches are locked while a request is in flight: `switchMode`
+          wipes the password fields and every outcome-driven message, so a
+          reply landing after a switch would paint the previous mode's
+          outcome (e.g. "account already exists") onto the new form. */}
       <button
         type="button"
+        data-testid="auth-mode-toggle"
         onClick={() => switchMode(isForgot || isSignUp ? "sign-in" : "sign-up")}
-        className="text-center text-sm text-[var(--primary-400)] hover:underline"
+        disabled={isSubmitting}
+        className="text-center text-sm text-[var(--primary-400)] hover:underline disabled:opacity-50 disabled:hover:no-underline"
       >
         {t(
           isForgot || isSignUp

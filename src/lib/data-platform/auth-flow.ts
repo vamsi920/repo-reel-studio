@@ -91,6 +91,7 @@ export type AuthOutcome =
   | { kind: "signed_in" }
   | { kind: "domain_rejected" }
   | { kind: "already_exists" }
+  | { kind: "invalid_credentials" }
   | { kind: "error"; message: string };
 
 /**
@@ -107,7 +108,26 @@ function isEmailAlreadyRegisteredError(error: {
   if (error.code === "email_exists" || error.code === "user_already_exists") {
     return true;
   }
-  return /already registered|already exists/i.test(error.message ?? "");
+  // "User already registered" (signUp) and "A user with this email address
+  // has already been registered" (updateUser on the anonymous-upgrade path).
+  return /already (?:been )?registered|already exists/i.test(
+    error.message ?? "",
+  );
+}
+
+/**
+ * "Wrong email or password" from `signInWithPassword`. Surfaced as its own
+ * outcome so the form can show its translated copy: GoTrue always fills
+ * `message` ("Invalid login credentials"), so a `message || fallback` in the
+ * UI never reached the fallback and every non-English user saw the raw
+ * English API string.
+ */
+function isInvalidCredentialsError(error: {
+  code?: string;
+  message?: string;
+}): boolean {
+  if (error.code === "invalid_credentials") return true;
+  return /invalid login credentials/i.test(error.message ?? "");
 }
 
 /**
@@ -234,7 +254,13 @@ export type DirectPasswordResetOutcome =
   | { kind: "changed" }
   | { kind: "domain_rejected" }
   | { kind: "no_account" }
-  | { kind: "error"; message: string };
+  // `message` is only set when there is something human-readable to show
+  // (an unexpected thrown error). Edge Function failures carry a machine
+  // code the UI can't display, and functions-js's own `error.message` is
+  // boilerplate ("Edge Function returned a non-2xx status code"), so those
+  // come back without one and the form falls back to its translated
+  // generic error.
+  | { kind: "error"; message?: string };
 
 /**
  * POC-only stand-in for `requestPasswordReset`: sets the password for
@@ -271,17 +297,16 @@ export async function directPasswordReset(
       const body = await context?.json?.().catch(() => null);
       if (body?.error === "domain_rejected") return { kind: "domain_rejected" };
       if (body?.error === "no_account") return { kind: "no_account" };
-      return { kind: "error", message: error.message };
+      return { kind: "error" };
     }
     if (!data?.ok) {
-      return { kind: "error", message: "Something went wrong." };
+      return { kind: "error" };
     }
     return { kind: "changed" };
   } catch (error) {
-    return {
-      kind: "error",
-      message: error instanceof Error ? error.message : "Something went wrong.",
-    };
+    return error instanceof Error
+      ? { kind: "error", message: error.message }
+      : { kind: "error" };
   }
 }
 
@@ -342,7 +367,12 @@ export async function signInWithPassword(
       email: trimmedEmail,
       password,
     });
-    if (error) return { kind: "error", message: error.message };
+    if (error) {
+      if (isInvalidCredentialsError(error)) {
+        return { kind: "invalid_credentials" };
+      }
+      return { kind: "error", message: error.message };
+    }
     return { kind: "signed_in" };
   } catch (error) {
     return {
