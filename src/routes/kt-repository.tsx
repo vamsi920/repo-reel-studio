@@ -118,6 +118,24 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
   const liveMatch = repositoryId
     ? connected.find((c) => c.repositoryId === repositoryId)
     : undefined;
+  // The conversation list re-polls every 10s and the matching conversation's
+  // metadata (status, timestamps) changes while its clone runs, so
+  // `liveMatch` is a fresh object almost every tick even when nothing this
+  // hook cares about has moved. Keying the effect on the fields it actually
+  // uses keeps a refetch from cancelling an attempt that is still waiting
+  // on the clone (`resolveCommitSha` polls for up to 90s).
+  const liveKey = liveMatch
+    ? [
+        liveMatch.owner,
+        liveMatch.repo,
+        liveMatch.branch,
+        liveMatch.workingDir ?? "",
+        liveMatch.conversationUrl ?? "",
+        liveMatch.sessionApiKey ?? "",
+      ].join("\0")
+    : null;
+  const liveMatchRef = useRef(liveMatch);
+  liveMatchRef.current = liveMatch;
 
   useEffect(() => {
     if (hasEntry || !repositoryId) {
@@ -136,11 +154,12 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
     // conversations at all has a permanently empty list, and gating on that
     // left this page spinning forever instead of falling back to the
     // persisted Supabase content this hook exists to load.
-    if (!liveMatch && connectedLoading) return undefined;
+    if (liveKey === null && connectedLoading) return undefined;
     if (attemptedRef.current === repositoryId) return undefined;
     attemptedRef.current = repositoryId;
 
     let cancelled = false;
+    const liveMatch = liveMatchRef.current;
     (async () => {
       if (liveMatch?.workingDir) {
         try {
@@ -189,12 +208,16 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
     });
     return () => {
       cancelled = true;
+      // A cancelled attempt settles nothing (no store entry, no `checked`),
+      // so it must not count as this repository's one attempt — otherwise
+      // the re-run that follows bails out here and the page spins forever.
+      if (attemptedRef.current === repositoryId) attemptedRef.current = null;
     };
   }, [
     repositoryId,
     hasEntry,
     hydrate,
-    liveMatch,
+    liveKey,
     connectedLoading,
     backend.id,
     startGenerating,

@@ -4,13 +4,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtRepository from "#/routes/kt-repository";
 import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
+import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
+import { resolveCommitSha } from "#/lib/knowledge/connected-repositories";
+import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
 
 const resolveOrgId = vi.fn();
 
+/** What the mocked conversation-history hook reports; tests mutate it. */
+const connected: { repositories: RepoCandidate[]; isLoading: boolean } = {
+  repositories: [],
+  isLoading: false,
+};
+
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
+  // A fresh array (and fresh candidate objects) on every render, exactly
+  // like the real hook after each 10s conversation-list refetch.
   useConnectedRepositories: () => ({
-    repositories: [],
-    isLoading: false,
+    repositories: connected.repositories.map((candidate) => ({
+      ...candidate,
+    })),
+    isLoading: connected.isLoading,
   }),
   resolveCommitSha: vi.fn(),
 }));
@@ -64,6 +77,8 @@ describe("KtRepository", () => {
     } as never);
     useKnowledgeStore.setState({ byRepositoryId: {} });
     resolveOrgId.mockResolvedValue(null);
+    connected.repositories = [];
+    connected.isLoading = false;
   });
 
   afterEach(() => {
@@ -82,6 +97,59 @@ describe("KtRepository", () => {
     expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
   });
 
+  it("keeps waiting on the live conversation across conversation-list refetches", async () => {
+    connected.repositories = [
+      {
+        repositoryId: REPOSITORY_ID,
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "http://localhost:3000/conversations/c1",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      },
+    ];
+    let finishClone: (sha: string) => void = () => {};
+    vi.mocked(resolveCommitSha).mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          finishClone = resolve;
+        }),
+    );
+    vi.mocked(generateKnowledge).mockImplementation(
+      async (snapshot, conversationUrl, sessionApiKey, store) => {
+        store.startGenerating(snapshot, conversationUrl, sessionApiKey);
+      },
+    );
+
+    const { rerender } = renderWithProviders(<KtRepository />);
+    await waitFor(() => expect(resolveCommitSha).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
+
+    // Two background refetches land while the clone is still running.
+    rerender(<KtRepository />);
+    rerender(<KtRepository />);
+    finishClone("0123456789abcdef");
+
+    await waitFor(() =>
+      expect(generateKnowledge).toHaveBeenCalledWith(
+        expect.objectContaining({
+          repositoryId: REPOSITORY_ID,
+          commitSha: "0123456789abcdef",
+          localPath: "/workspace/api",
+        }),
+        "http://localhost:3000/conversations/c1",
+        "key",
+        expect.anything(),
+        expect.any(Function),
+        {},
+        expect.any(String),
+      ),
+    );
+    expect(resolveCommitSha).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(I18nKey.KT$STARTING)).not.toBeInTheDocument();
+  });
+
   it("falls back to the empty state when cold rehydration rejects", async () => {
     const rejections: unknown[] = [];
     const onUnhandled = (reason: unknown) => rejections.push(reason);
@@ -91,9 +159,7 @@ describe("KtRepository", () => {
     try {
       renderWithProviders(<KtRepository />);
 
-      expect(
-        await screen.findByText(I18nKey.KT$NOT_FOUND),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(I18nKey.KT$NOT_FOUND)).toBeInTheDocument();
       await waitFor(() => expect(rejections).toHaveLength(0));
     } finally {
       process.off("unhandledRejection", onUnhandled);

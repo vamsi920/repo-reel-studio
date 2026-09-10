@@ -1,4 +1,6 @@
-import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
+import DeepWikiService, {
+  DeepWikiServiceError,
+} from "#/api/deepwiki-service/deepwiki-service.api";
 import type {
   DeepWikiWikiPage,
   DeepWikiWikiSection,
@@ -92,6 +94,32 @@ export interface RepositoryKnowledgeEngine {
 export type KnowledgeGenerationProgress = (
   status: DeepWikiWikiTaskStatus,
 ) => void;
+
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+/** Consecutive transport drops (with no progress in between) tolerated
+ * before a generation is declared unreachable. */
+const MAX_STREAM_RECONNECTS = 5;
+const RECONNECT_BACKOFF_MS = 2000;
+const STREAM_DISCONNECTED_MESSAGE =
+  "DeepWiki stopped responding — is the DeepWiki service still running? See docs/deepwiki-video-kt-integration.md.";
+
+type StreamOutcome =
+  | { kind: "settled"; status: DeepWikiWikiTaskStatus | null }
+  | { kind: "disconnected"; sawProgress: boolean };
+
+function isTaskStatus(value: unknown): value is DeepWikiWikiTaskStatus {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { status?: unknown }).status === "string"
+  );
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 const MERMAID_FENCE_RE = /```mermaid\n([\s\S]*?)```/g;
 
@@ -254,15 +282,22 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
     // its own stream endpoint 404s immediately if we try to watch it (its
     // docstring says as much: "the frontend then falls back to the wiki
     // cache"). Read the cache directly instead of streaming in that case.
+    let taskGone = false;
     if (!submitResult.from_cache) {
       const finalStatus = await this.waitForCompletion(submitResult.task_id);
-      if (finalStatus.status === "failed") {
+      taskGone = finalStatus === null;
+      // `null` means the task had already left DeepWiki's registry by the
+      // time we could ask about it (terminal tasks only linger for a TTL) —
+      // the wiki cache below is the only remaining source of truth, so let
+      // it decide rather than failing a generation that may well have
+      // finished while we were disconnected.
+      if (finalStatus?.status === "failed") {
         throw new Error(
           finalStatus.error ??
             `DeepWiki generation failed for ${snapshot.owner}/${snapshot.repo}`,
         );
       }
-      if (!finalStatus.wiki_structure) {
+      if (finalStatus && !finalStatus.wiki_structure) {
         throw new Error(
           `DeepWiki reported "${finalStatus.status}" with no wiki structure for ${snapshot.owner}/${snapshot.repo}`,
         );
@@ -285,7 +320,9 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
     );
     if (!cache) {
       throw new Error(
-        `DeepWiki reported success for ${snapshot.owner}/${snapshot.repo} but its wiki cache was empty.`,
+        taskGone
+          ? `Lost track of DeepWiki's generation task for ${snapshot.owner}/${snapshot.repo} and no finished wiki was found — run Generate again to resume.`
+          : `DeepWiki reported success for ${snapshot.owner}/${snapshot.repo} but its wiki cache was empty.`,
       );
     }
     const hydratedStructure: DeepWikiWikiStructure = {
@@ -298,8 +335,60 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
     return normalizeStructure(hydratedStructure, snapshot);
   }
 
-  private waitForCompletion(taskId: string): Promise<DeepWikiWikiTaskStatus> {
-    return new Promise((resolve, reject) => {
+  /**
+   * Resolves with the task's terminal status, or `null` once the task is no
+   * longer known to DeepWiki at all (evicted after its post-completion TTL,
+   * or reported as "no longer available" on the stream).
+   *
+   * The SSE stream is the primary signal, but a browser `EventSource` fires
+   * a bare `error` on any transport drop — laptop sleep, a Wi-Fi blip, a
+   * proxy cutting a long-lived connection — while DeepWiki's task keeps
+   * running server-side. Treating that drop as a failed generation showed
+   * the user an error for work that was still (or already) finished. On a
+   * drop, ask DeepWiki directly what state the task is in and either settle
+   * on that answer or re-attach to the stream; only give up after several
+   * consecutive attempts fail to reach it.
+   */
+  private async waitForCompletion(
+    taskId: string,
+  ): Promise<DeepWikiWikiTaskStatus | null> {
+    let attempts = 0;
+    for (;;) {
+      const outcome = await this.streamUntilSettled(taskId);
+      if (outcome.kind !== "disconnected") return outcome.status;
+      // Progress since the last drop proves DeepWiki is reachable and
+      // working — a later drop is a fresh incident, not the same one.
+      if (outcome.sawProgress) attempts = 0;
+
+      // Poll the cheap status endpoint until DeepWiki answers, then either
+      // settle on that answer or re-attach to the stream for the rest.
+      for (;;) {
+        attempts += 1;
+        if (attempts > MAX_STREAM_RECONNECTS) {
+          throw new Error(STREAM_DISCONNECTED_MESSAGE);
+        }
+        await delay(RECONNECT_BACKOFF_MS * attempts);
+        let status: DeepWikiWikiTaskStatus;
+        try {
+          status = await DeepWikiService.getWikiTask(taskId);
+        } catch (error) {
+          if (error instanceof DeepWikiServiceError && error.status === 404) {
+            return null;
+          }
+          continue;
+        }
+        this.options.onProgress?.(status);
+        if (status.status === "completed" || status.status === "failed") {
+          return status;
+        }
+        break;
+      }
+    }
+  }
+
+  private streamUntilSettled(taskId: string): Promise<StreamOutcome> {
+    return new Promise((resolve) => {
+      let sawProgress = false;
       // Belt-and-suspenders: if the SSE connection never opens at all (e.g.
       // DeepWiki isn't running) or goes silent mid-generation, surface a
       // clear error instead of hanging forever. This resets on every real
@@ -309,37 +398,41 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
       // it's still making progress; what actually indicates a hang is no
       // progress for a while, not elapsed wall-clock time.
       let inactivityTimer: number;
-      const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
       const armInactivityTimer = () => {
         window.clearTimeout(inactivityTimer);
         inactivityTimer = window.setTimeout(() => {
           unsubscribe();
-          reject(
-            new Error(
-              "DeepWiki stopped responding — is the DeepWiki service still running? See docs/deepwiki-video-kt-integration.md.",
-            ),
-          );
+          resolve({ kind: "disconnected", sawProgress });
         }, INACTIVITY_TIMEOUT_MS);
       };
 
       const unsubscribe = DeepWikiService.streamWikiTask(taskId, {
         onProgress: (status) => {
+          sawProgress = true;
           armInactivityTimer();
           this.options.onProgress?.(status);
         },
         onDone: (status) => {
           window.clearTimeout(inactivityTimer);
           this.options.onProgress?.(status);
-          resolve(status);
+          resolve({ kind: "settled", status });
         },
         onError: (statusOrError) => {
           window.clearTimeout(inactivityTimer);
           if (statusOrError instanceof Error) {
-            reject(statusOrError);
+            resolve({ kind: "disconnected", sawProgress });
+            return;
+          }
+          // The stream's `error` event carries either a full failed-task
+          // status or a bare `{"error": "task no longer available"}` when
+          // the registry dropped the task mid-stream — the latter has no
+          // `status` and must not be mistaken for a terminal task status.
+          if (!isTaskStatus(statusOrError)) {
+            resolve({ kind: "settled", status: null });
             return;
           }
           this.options.onProgress?.(statusOrError);
-          resolve(statusOrError);
+          resolve({ kind: "settled", status: statusOrError });
         },
       });
       armInactivityTimer();
