@@ -36,11 +36,16 @@ export function ActivityLogSection({
   const [limit, setLimit] = useState(PAGE_SIZE);
   const highlightedRef = useRef<HTMLDivElement | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const { data, isLoading } = useAutomationRuns({
-    id: automation.id,
-    limit,
-    offset: 0,
-  });
+  const { data, isLoading, isFetching, isPlaceholderData, isError, refetch } =
+    useAutomationRuns({
+      id: automation.id,
+      limit,
+      offset: 0,
+    });
+  // Which `?run=` id has already been scrolled to. Without this the effect
+  // below re-centred the page on every runs refetch — every 3s while a run is
+  // in flight — so the reader could not scroll away from the highlighted row.
+  const scrolledToRunIdRef = useRef<string | null>(null);
 
   const hasMore = data ? data.total > data.runs.length : false;
   const canExport = !isLoading && (data?.total ?? 0) > 0 && !isExporting;
@@ -72,6 +77,10 @@ export function ActivityLogSection({
 
   useEffect(() => {
     if (!highlightedRunId || !data?.runs.length) return;
+    if (scrolledToRunIdRef.current === highlightedRunId) return;
+    // The previous page is kept on screen while a larger one loads; deciding
+    // from it would request the next page again before this one has landed.
+    if (isPlaceholderData) return;
     const index = data.runs.findIndex((run) => run.id === highlightedRunId);
     if (index < 0) {
       if (hasMore && limit < HIGHLIGHT_AUTO_LOAD_MAX_RUNS) {
@@ -79,11 +88,12 @@ export function ActivityLogSection({
       }
       return;
     }
+    scrolledToRunIdRef.current = highlightedRunId;
     highlightedRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
-  }, [data?.runs, hasMore, highlightedRunId, limit]);
+  }, [data?.runs, hasMore, highlightedRunId, isPlaceholderData, limit]);
 
   return (
     <div
@@ -133,6 +143,24 @@ export function ActivityLogSection({
         </div>
       )}
 
+      {!isLoading && isError && !data && (
+        <div
+          data-testid="automation-activity-log-error"
+          className="flex flex-col items-center gap-2 px-5 py-8 text-center"
+        >
+          <p className="text-sm text-danger">
+            {t(I18nKey.AUTOMATIONS$DETAIL$LOGS_ERROR)}
+          </p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="text-sm text-muted hover:text-foreground"
+          >
+            {t(I18nKey.AUTOMATIONS$ERROR_RETRY)}
+          </button>
+        </div>
+      )}
+
       {!isLoading && data?.runs.length === 0 && (
         <p className="px-5 py-8 text-center text-sm text-muted">
           {t(I18nKey.AUTOMATIONS$DETAIL$NO_RUNS)}
@@ -166,8 +194,11 @@ export function ActivityLogSection({
             <div className="border-t border-[var(--oh-border)] px-5 py-3">
               <button
                 type="button"
+                data-testid="activity-log-load-more"
                 onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
-                className="text-sm text-muted hover:text-foreground"
+                disabled={isFetching}
+                aria-busy={isFetching}
+                className="text-sm text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t(I18nKey.AUTOMATIONS$DETAIL$LOAD_MORE_RUNS)}
               </button>

@@ -3,6 +3,7 @@ import {
   buildCronSchedule,
   parseCronSchedule,
   parseTimeOfDay,
+  replaceCronTime,
 } from "#/utils/automation-schedule";
 
 describe("automation-schedule", () => {
@@ -79,6 +80,28 @@ describe("automation-schedule", () => {
       expect(valid).toEqual({ hour: 9, minute: 30 });
       expect(invalidHour).toBeNull();
       expect(malformed).toBeNull();
+    });
+  });
+  describe("replaceCronTime", () => {
+    it("swaps only the minute and hour fields of a custom cron", () => {
+      // Arrange — monthly and multi-weekday schedules the presets cannot
+      // express but whose time is still a plain field pair.
+      // Act / Assert — day, month and weekday fields survive untouched.
+      expect(replaceCronTime("0 9 1 * *", 10, 30)).toBe("30 10 1 * *");
+      expect(replaceCronTime("15 7 * * 1,3,5", 18, 0)).toBe("0 18 * * 1,3,5");
+      expect(replaceCronTime("  0 9 1 * *  ", 8, 5)).toBe("5 8 1 * *");
+    });
+
+    it("refuses when the time is not a single field pair", () => {
+      // Arrange — a list hour, a step minute, and a non-cron string. Rewriting
+      // "9,17" to one hour would silently drop the second run, so none of
+      // these may produce a schedule.
+      const inputs = ["0 9,17 * * *", "*/5 9 * * *", "every 5 minutes", ""];
+
+      // Act / Assert
+      inputs.forEach((input) => {
+        expect(replaceCronTime(input, 10, 30)).toBeNull();
+      });
     });
   });
 });

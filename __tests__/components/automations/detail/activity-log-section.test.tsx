@@ -160,6 +160,80 @@ describe("ActivityLogSection ?run= highlight", () => {
     });
   });
 
+  it("scrolls to the deep-linked run once, not on every runs refetch", async () => {
+    // Arrange — the runs query polls every 3s while a run is in flight, and
+    // each answer is a new array. The section used to re-centre the page on
+    // the highlighted row on every one of them, so the reader could not
+    // scroll away.
+    vi.mocked(useAutomationRuns).mockReturnValue({
+      data: { runs: [run, { ...run, id: "r2" }], total: 2 },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAutomationRuns>);
+    const { rerender } = renderSection("r1");
+    await waitFor(() => {
+      expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
+    // Act — a refetch delivers a fresh array with the same run ids.
+    vi.mocked(useAutomationRuns).mockReturnValue({
+      data: {
+        runs: [
+          { ...run, status: AutomationRunStatus.RUNNING },
+          { ...run, id: "r2" },
+        ],
+        total: 2,
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAutomationRuns>);
+    rerender(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ActivityLogSection automation={automation} highlightedRunId="r1" />
+      </QueryClientProvider>,
+    );
+
+    // Assert — still highlighted, but not scrolled to again.
+    expect(
+      screen.getByTestId("automation-run-highlight-r1"),
+    ).toBeInTheDocument();
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(
+      1,
+    );
+  });
+
+  it("does not request the next page while the previous one is still the placeholder", async () => {
+    // Arrange — with `keepPreviousData` the 20-run page stays on screen after
+    // the limit grows to 40. Deciding from that placeholder would ask for 60,
+    // 80 and 100 before the 40-run page ever landed.
+    vi.mocked(useAutomationRuns).mockImplementation(
+      (options) =>
+        ({
+          data: { runs: makeRuns(20), total: 500 },
+          isLoading: false,
+          isPlaceholderData: (options.limit ?? 20) > 20,
+        }) as unknown as ReturnType<typeof useAutomationRuns>,
+    );
+
+    renderSection("r-missing");
+
+    await waitFor(() => {
+      expect(useAutomationRuns).toHaveBeenCalledWith({
+        id: "a1",
+        limit: 40,
+        offset: 0,
+      });
+    });
+    const requestedLimits = vi
+      .mocked(useAutomationRuns)
+      .mock.calls.map(([options]) => options.limit ?? 0);
+    expect(Math.max(...requestedLimits)).toBe(40);
+  });
+
   it("stops auto-loading pages for a missing run id at the cap", async () => {
     vi.mocked(useAutomationRuns).mockImplementation(
       (options) =>
@@ -184,5 +258,55 @@ describe("ActivityLogSection ?run= highlight", () => {
       .mock.calls.map(([options]) => options.limit ?? 0);
     expect(Math.max(...requestedLimits)).toBe(100);
     expect(window.HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+});
+
+describe("ActivityLogSection error state", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("says the runs failed to load and retries on demand", async () => {
+    // Arrange — the runs query rejected. The section used to render just its
+    // header: no rows, no empty state, no error, nothing to click.
+    const refetch = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAutomationRuns).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch,
+    } as unknown as ReturnType<typeof useAutomationRuns>);
+    const user = userEvent.setup();
+    renderSection();
+
+    // Assert — error state, export disabled, and Retry refetches.
+    expect(
+      screen.getByTestId("automation-activity-log-error"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("activity-log-export-json")).toBeDisabled();
+
+    // Act
+    await user.click(
+      screen.getByRole("button", { name: "AUTOMATIONS$ERROR_RETRY" }),
+    );
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the loaded rows and disables Load more while the next page is fetching", () => {
+    // Arrange — the previous page is the placeholder for the larger request.
+    vi.mocked(useAutomationRuns).mockReturnValue({
+      data: { runs: [run], total: 5 },
+      isLoading: false,
+      isFetching: true,
+      isPlaceholderData: true,
+    } as unknown as ReturnType<typeof useAutomationRuns>);
+
+    renderSection();
+
+    // Assert — no skeleton swap; the button is inert until the page lands.
+    expect(screen.getByTestId("activity-log-load-more")).toBeDisabled();
+    expect(
+      screen.queryByTestId("automation-activity-log-error"),
+    ).not.toBeInTheDocument();
   });
 });

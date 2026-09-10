@@ -92,6 +92,15 @@ const customAutomation: Automation = {
   trigger: { type: "cron", schedule: "0 9,17 * * *" },
 };
 
+// A custom schedule whose time is still a plain minute/hour pair (monthly on
+// the 1st). The presets cannot express it, but its time can be edited.
+const monthlyAutomation: Automation = {
+  ...dailyAutomation,
+  id: "auto-5",
+  name: "Monthly report",
+  trigger: { type: "cron", schedule: "0 9 1 * *" },
+};
+
 // A schedule automation pinned to a concrete LLM profile, used to exercise
 // the profile picker (the base fixtures intentionally leave `model` unset).
 const modeledAutomation: Automation = {
@@ -261,6 +270,54 @@ describe("EditAutomationModal", () => {
       .calls[0];
     expect(body).not.toHaveProperty("trigger");
     expect(body).toMatchObject({ name: "Renamed" });
+  });
+
+  it("re-times a custom cron whose minute and hour are plain fields", async () => {
+    // Arrange — "0 9 1 * *" is custom (monthly), yet the modal pre-fills
+    // 09:00 and offers the time field. Previously an edit there was
+    // accepted and then silently dropped on save: the PATCH only ever
+    // carried a trigger for preset schedules, so the modal closed with
+    // nothing sent and nothing said.
+    vi.mocked(AutomationService.updateAutomation).mockResolvedValue({
+      ...monthlyAutomation,
+      trigger: { type: "cron", schedule: "30 10 1 * *" },
+    });
+    const user = userEvent.setup();
+    const { onClose } = renderModal(monthlyAutomation);
+
+    const timeInput = screen.getByTestId(
+      "edit-automation-time",
+    ) as HTMLInputElement;
+    expect(timeInput.value).toBe("09:00");
+    expect(timeInput).not.toBeDisabled();
+
+    // Act — move the time only.
+    await user.clear(timeInput);
+    await user.type(timeInput, "10:30");
+    await user.click(screen.getByTestId("edit-automation-save"));
+
+    // Assert — the day/month/weekday fields are kept, only the time moves.
+    await waitFor(() => {
+      expect(AutomationService.updateAutomation).toHaveBeenCalledTimes(1);
+    });
+    expect(AutomationService.updateAutomation).toHaveBeenCalledWith("auto-5", {
+      trigger: { type: "cron", schedule: "30 10 1 * *" },
+    });
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("disables the time field for a custom cron with no single time", async () => {
+    // Arrange — "0 9,17 * * *" runs twice a day; there is no one time to
+    // offer, and substituting one would drop the other run. The field used
+    // to render enabled and empty, inviting an edit that could never save.
+    renderModal(customAutomation);
+
+    // Assert
+    const timeInput = screen.getByTestId(
+      "edit-automation-time",
+    ) as HTMLInputElement;
+    expect(timeInput.value).toBe("");
+    expect(timeInput).toBeDisabled();
   });
 
   it("surfaces an error toast and keeps the modal open when the update fails", async () => {

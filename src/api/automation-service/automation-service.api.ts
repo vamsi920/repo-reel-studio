@@ -276,10 +276,19 @@ function buildCreateAutomationRequest(spec: AutomationSpec) {
   };
 }
 
+/**
+ * Pin a request to the backend selected when a multi-step mutation started.
+ * The base URL still goes through the same mount resolution as every other
+ * local call: an explicit `baseURL` makes the interceptor pass the request
+ * straight through, so without this the import POST/PATCH/cleanup and the
+ * webhook registration hit the raw registered host — and 404'd on a host that
+ * lacks the automation mount even though everything else on the page had
+ * already fallen back to this app's origin.
+ */
 async function buildPinnedLocalConfig(backend: Backend) {
   const apiKey = backend.apiKey.trim();
   return {
-    baseURL: backend.host,
+    baseURL: await resolveAutomationBaseUrl(backend.host),
     headers: await buildAutomationRequestHeaders(
       apiKey ? { "X-Session-API-Key": apiKey } : {},
     ),

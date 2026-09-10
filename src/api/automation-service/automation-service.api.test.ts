@@ -508,3 +508,113 @@ describe("automation base URL resolution", () => {
     });
   });
 });
+
+describe("pinned local requests", () => {
+  // A host registered by `dev:minimal` — the bare agent-server, which has no
+  // `/api/automation` mount — while this app's own origin does serve it.
+  const bareHostBackend: Backend = {
+    ...localBackend,
+    id: "local-bare",
+    name: "Bare agent-server",
+    host: "http://localhost:18000",
+  };
+
+  beforeEach(() => {
+    __resetAutomationBaseUrlForTests();
+    getTelemetryDistinctId.mockResolvedValue(null);
+    setRegisteredBackends([bareHostBackend]);
+    setActiveSelection({ backendId: bareHostBackend.id });
+    localAxios.get.mockImplementation(
+      async (_path: string, config: { baseURL?: string }) => ({
+        data: {
+          status: config.baseURL === window.location.origin ? "ok" : "error",
+        },
+      }),
+    );
+    localAxios.post.mockResolvedValue({ data: createdAutomation });
+    localAxios.patch.mockImplementation(
+      async (_path: string, body: Partial<Automation>) => ({
+        data: { ...createdAutomation, ...body },
+      }),
+    );
+  });
+
+  afterEach(() => {
+    __resetAutomationBaseUrlForTests();
+    setActiveSelection(null);
+    setRegisteredBackends([]);
+    vi.clearAllMocks();
+  });
+
+  it("imports through the same resolved mount as every other local call", async () => {
+    // Arrange — see beforeEach: the registered host fails the health probe,
+    // the origin passes it. Every interceptor-routed call already falls back
+    // to the origin; the pinned import config used to send the POST and PATCH
+    // to the raw host instead, so importing 404'd on a page that otherwise
+    // worked.
+    // Act
+    await AutomationService.createAutomation(spec);
+
+    // Assert — both pinned requests carry the resolved origin and the
+    // backend's own session key.
+    const origin = window.location.origin;
+    expect(localAxios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({
+        baseURL: origin,
+        headers: expect.objectContaining({
+          "X-Session-API-Key": bareHostBackend.apiKey,
+        }),
+      }),
+    );
+    expect(localAxios.patch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ baseURL: origin }),
+    );
+  });
+
+  it("registers custom webhooks through the resolved mount too", async () => {
+    // Arrange
+    localAxios.post.mockResolvedValueOnce({
+      data: {
+        id: "wh-1",
+        org_id: "org-1",
+        webhook_url: "https://hooks.example.test/wh-1",
+        webhook_secret: null,
+        signature_header: "X-Signature",
+      },
+    });
+
+    // Act
+    await AutomationService.createCustomWebhook({
+      name: "Jira",
+      source: "jira",
+      event_key_expr: "webhookEvent",
+    });
+
+    // Assert
+    expect(localAxios.post).toHaveBeenCalledWith(
+      "/api/automation/v1/webhooks",
+      expect.any(Object),
+      expect.objectContaining({ baseURL: window.location.origin }),
+    );
+  });
+
+  it("keeps the registered host when neither it nor the origin serves the mount", async () => {
+    // Arrange — a genuine outage must surface against the real host, not be
+    // redirected somewhere equally unproven.
+    localAxios.get.mockResolvedValue({ data: { status: "error" } });
+
+    // Act
+    await AutomationService.createAutomation(spec);
+
+    // Assert
+    expect(localAxios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ baseURL: bareHostBackend.host }),
+    );
+  });
+});

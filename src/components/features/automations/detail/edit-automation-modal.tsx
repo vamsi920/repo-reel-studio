@@ -18,6 +18,7 @@ import {
   buildCronSchedule,
   formatTimeOfDay,
   parseTimeOfDay,
+  replaceCronTime,
   formatEventOn,
   type SchedulePresetKind,
 } from "#/utils/automation-schedule";
@@ -192,10 +193,11 @@ export function EditAutomationModal({
     label: t(key),
   }));
 
-  const isTimeEditable =
-    !form.isCustomSchedule ||
-    parseTimeOfDay(form.timeOfDay) !== null ||
-    form.timeOfDay === "";
+  // A custom cron can still be re-timed when its minute and hour fields are
+  // plain integers (`initial.timeOfDay` is derived exactly then); a list or
+  // range there ("0 9,17 * * *") has no single time to offer, so the field is
+  // disabled rather than accepting an edit that could never be saved.
+  const isTimeEditable = !form.isCustomSchedule || initial.timeOfDay !== "";
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -236,21 +238,31 @@ export function EditAutomationModal({
       body.timeout = timeoutResult.value;
     }
 
-    if (!form.isCustomSchedule && form.frequency !== "custom") {
+    if (automation.trigger.type !== "event") {
       const parsedTime = parseTimeOfDay(form.timeOfDay);
-      if (parsedTime) {
-        const newSchedule = buildCronSchedule({
-          kind: form.frequency,
-          hour: parsedTime.hour,
-          minute: parsedTime.minute,
-          weekday: form.frequency === "weekly" ? form.weekday : undefined,
-        });
-        if (newSchedule !== automation.trigger.schedule) {
-          body.trigger = {
-            ...automation.trigger,
-            schedule: newSchedule,
-          };
+      let newSchedule: string | null = null;
+      if (!form.isCustomSchedule && form.frequency !== "custom") {
+        if (parsedTime) {
+          newSchedule = buildCronSchedule({
+            kind: form.frequency,
+            hour: parsedTime.hour,
+            minute: parsedTime.minute,
+            weekday: form.frequency === "weekly" ? form.weekday : undefined,
+          });
         }
+      } else if (isTimeEditable && parsedTime && form.rawSchedule) {
+        // Keep the hand-written day/month/weekday fields; only the time moves.
+        newSchedule = replaceCronTime(
+          form.rawSchedule,
+          parsedTime.hour,
+          parsedTime.minute,
+        );
+      }
+      if (newSchedule !== null && newSchedule !== automation.trigger.schedule) {
+        body.trigger = {
+          ...automation.trigger,
+          schedule: newSchedule,
+        };
       }
     }
 
@@ -465,7 +477,7 @@ export function EditAutomationModal({
                   onChange={(e) =>
                     setForm((f) => ({ ...f, timeOfDay: e.target.value }))
                   }
-                  disabled={form.isCustomSchedule && !isTimeEditable}
+                  disabled={!isTimeEditable}
                   className={cn(
                     formControlSettingsFieldClassName,
                     "disabled:bg-[var(--oh-surface-raised)]",

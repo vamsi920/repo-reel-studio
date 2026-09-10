@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import AutomationService from "#/api/automation-service/automation-service.api";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import {
@@ -51,6 +51,10 @@ export function useAutomationRuns(options: UseAutomationRunsOptions) {
     queryFn: () => AutomationService.getAutomationRuns(id, limit, offset),
     staleTime: 60 * 1000,
     enabled: !!id && enabled,
+    // "Load more" grows `limit`, which is a new key; keep the page that is
+    // already on screen instead of swapping it for a skeleton until the
+    // larger page arrives.
+    placeholderData: keepPreviousData,
     // Poll while any run is non-terminal so status and conversation_id
     // transitions appear without a manual refresh.
     refetchInterval: (query) => {

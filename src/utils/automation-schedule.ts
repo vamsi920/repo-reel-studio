@@ -80,6 +80,32 @@ export function buildCronSchedule(input: PresetSchedule): string {
   }
 }
 
+/**
+ * Re-time a cron expression the presets cannot express (a monthly "0 9 1 * *",
+ * a list of weekdays, …) without disturbing the rest of it. Only the minute
+ * and hour fields are replaced, and only when both are single integers — the
+ * same condition under which `parseCronSchedule` reports a `hour`/`minute` for
+ * a custom schedule. Returns null when the time is not a plain field pair
+ * ("0 9,17 * * *"), because substituting one hour there would silently drop
+ * the other run.
+ */
+export function replaceCronTime(
+  cron: string,
+  hour: number,
+  minute: number,
+): string | null {
+  const fields = cron.trim().split(/\s+/);
+  if (fields.length !== 5) return null;
+  const [minuteField, hourField, ...rest] = fields;
+  if (
+    parseSingleInt(minuteField, 0, 59) === null ||
+    parseSingleInt(hourField, 0, 23) === null
+  ) {
+    return null;
+  }
+  return [String(minute), String(hour), ...rest].join(" ");
+}
+
 export function formatTimeOfDay(hour: number, minute: number): string {
   const hh = String(hour).padStart(2, "0");
   const mm = String(minute).padStart(2, "0");
