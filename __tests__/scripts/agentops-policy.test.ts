@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildWorkspaceBudget,
   computeSpend,
   dayStart,
   evaluateBudgets,
@@ -220,5 +221,55 @@ describe("summarize", () => {
     expect(summary.costTodayUsd).toBe(3);
     // The zero-cost errored run is reported, not silently treated as free.
     expect(summary.runsTodayWithoutReportedCost).toBe(1);
+  });
+});
+
+describe("buildWorkspaceBudget", () => {
+  it("derives one workspace's month from an already-listed run set", () => {
+    const runs = [
+      run({ runId: "a", costUsd: 1.5 }),
+      run({ runId: "b", costUsd: 0 }),
+      run({ runId: "c", workspaceId: "/elsewhere", costUsd: 9 }),
+      run({ runId: "d", costUsd: 4, updatedAt: "2025-12-31T23:59:59.000Z" }),
+    ];
+    const budget = buildWorkspaceBudget({
+      workspaceId: "/workspace/project",
+      policy: { monthlyBudgetUsd: 10, runBudgetUsd: null },
+      runs,
+      now: NOW,
+    });
+
+    expect(budget).toMatchObject({
+      workspaceId: "/workspace/project",
+      periodStart: "2026-01-01T00:00:00.000Z",
+      usedUsd: 1.5,
+      remainingUsd: 8.5,
+      runCount: 2,
+      runsWithoutReportedCost: 1,
+      tokens: 2000,
+    });
+    expect(budget.policy.monthlyBudgetUsd).toBe(10);
+    expect(budget.projectedUsd).toBeGreaterThan(1.5);
+  });
+
+  it("reports no remaining figure for a workspace with no monthly limit", () => {
+    const budget = buildWorkspaceBudget({
+      workspaceId: "/workspace/project",
+      policy: { monthlyBudgetUsd: null },
+      runs: [run({ costUsd: 30 })],
+      now: NOW,
+    });
+    expect(budget.remainingUsd).toBeNull();
+    expect(budget.usedUsd).toBe(30);
+  });
+
+  it("never reports negative remaining budget once the limit is passed", () => {
+    const budget = buildWorkspaceBudget({
+      workspaceId: "/workspace/project",
+      policy: { monthlyBudgetUsd: 10 },
+      runs: [run({ costUsd: 12 })],
+      now: NOW,
+    });
+    expect(budget.remainingUsd).toBe(0);
   });
 });

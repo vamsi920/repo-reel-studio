@@ -80,6 +80,35 @@ export function projectMonthlySpend(usedUsd, now) {
   return (usedUsd / elapsedMs) * monthMs;
 }
 
+/**
+ * The Budgets tab's view of one workspace: this month's real spend against the
+ * workspace policy. Takes the already-listed runs so the caller can serve
+ * every workspace from one read.
+ */
+export function buildWorkspaceBudget({ workspaceId, policy, runs, now }) {
+  const since = monthStart(now);
+  const spend = computeSpend(runs, { workspaceId, since });
+
+  return {
+    workspaceId,
+    policy,
+    periodStart: since,
+    usedUsd: spend.usedUsd,
+    remainingUsd:
+      typeof policy.monthlyBudgetUsd === "number"
+        ? Math.max(0, policy.monthlyBudgetUsd - spend.usedUsd)
+        : null,
+    // Straight-line run-rate extrapolation of this month's actual spend, not a
+    // forecast and not a bill. Null until an hour of the month has elapsed.
+    projectedUsd: projectMonthlySpend(spend.usedUsd, now),
+    runCount: spend.runCount,
+    // Runs whose provider reported no cost. Surfaced so the UI can say
+    // "no cost reported" rather than implying those runs were free.
+    runsWithoutReportedCost: spend.runsWithoutCost,
+    tokens: spend.tokens,
+  };
+}
+
 const RISK_ORDER = { UNKNOWN: -1, LOW: 0, MEDIUM: 1, HIGH: 2 };
 
 /** True when `risk` meets or exceeds the policy's approval threshold. */

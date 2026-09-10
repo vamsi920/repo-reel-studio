@@ -80,6 +80,20 @@ export function useAgentOpsRuns(
   });
 }
 
+/**
+ * A finished or errored run is history until someone sends the conversation
+ * another message, so its detail page polls at the History cadence rather
+ * than the live one — the detail read is four store queries per tick.
+ */
+export function runDetailRefetchInterval(
+  detail: AgentOpsRunDetail | undefined,
+): number {
+  const status = detail?.run.status;
+  return status === "finished" || status === "error"
+    ? SLOW_REFETCH_MS
+    : LIVE_REFETCH_MS;
+}
+
 export function useAgentOpsRun(
   runId: string | null,
 ): UseQueryResult<AgentOpsRunDetail> {
@@ -87,7 +101,7 @@ export function useAgentOpsRun(
     queryKey: AGENTOPS_QUERY_KEYS.run(runId ?? ""),
     queryFn: () => AgentOpsService.getRun(runId as string),
     enabled: Boolean(runId) && isAgentOpsSupportedBackend(),
-    refetchInterval: LIVE_REFETCH_MS,
+    refetchInterval: (query) => runDetailRefetchInterval(query.state.data),
     ...NO_RETRY,
   });
 }
@@ -191,7 +205,29 @@ export function useSaveAgentOpsPolicies() {
     mutationKey: ["agentops", "save-policies"],
     mutationFn: (policies: AgentOpsPolicies) =>
       AgentOpsService.savePolicies(policies),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // Write the collector's confirmed copy into the caches the budgets form
+      // reads from before the refetch lands, so a form that drops its local
+      // edits on success shows the new limits rather than the old ones for
+      // a round trip.
+      queryClient.setQueryData(AGENTOPS_QUERY_KEYS.policies, saved);
+      queryClient.setQueryData<{
+        budgets: AgentOpsBudget[];
+        agents: AgentOpsPolicies["agents"];
+      }>(AGENTOPS_QUERY_KEYS.budgets, (current) =>
+        current
+          ? {
+              agents: saved.agents,
+              budgets: current.budgets.map((budget) => ({
+                ...budget,
+                policy: {
+                  ...budget.policy,
+                  ...(saved.workspaces[budget.workspaceId] ?? {}),
+                },
+              })),
+            }
+          : current,
+      );
       queryClient.invalidateQueries({ queryKey: AGENTOPS_QUERY_KEYS.all });
     },
   });

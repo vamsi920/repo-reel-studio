@@ -43128,6 +43128,23 @@
     "tr": "Could not save the budget policy.",
     "uk": "Could not save the budget policy."
   },
+  "AGENTOPS$BUDGET_INVALID_AMOUNT": {
+    "en": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "ja": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "zh-CN": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "zh-TW": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "ko-KR": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "no": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "ar": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "de": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "fr": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "it": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "pt": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "es": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "ca": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "tr": "Enter an amount of $0 or more, or leave it blank for no limit.",
+    "uk": "Enter an amount of $0 or more, or leave it blank for no limit."
+  },
   "AGENTOPS$AUTONOMY_SUPERVISED": {
     "en": "Supervised",
     "ja": "Supervised",

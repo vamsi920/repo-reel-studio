@@ -2536,6 +2536,7 @@
   "AGENTOPS$BUDGET_SAVE": "Save budgets",
   "AGENTOPS$BUDGET_SAVED": "Budget policy saved",
   "AGENTOPS$BUDGET_SAVE_FAILED": "Could not save the budget policy.",
+  "AGENTOPS$BUDGET_INVALID_AMOUNT": "Enter an amount of $0 or more, or leave it blank for no limit.",
   "AGENTOPS$AUTONOMY_SUPERVISED": "Supervised",
   "AGENTOPS$AUTONOMY_SUPERVISED_HINT": "Confirmation mode on — the agent stops before acting.",
   "AGENTOPS$AUTONOMY_ASSISTED": "Assisted",

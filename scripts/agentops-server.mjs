@@ -41,12 +41,7 @@ import {
   SupabaseAgentOpsStore,
   isSupabaseConfigured,
 } from "./agentops/supabase-store.mjs";
-import {
-  computeSpend,
-  monthStart,
-  projectMonthlySpend,
-  summarize,
-} from "./agentops/policy.mjs";
+import { buildWorkspaceBudget, summarize } from "./agentops/policy.mjs";
 
 const PORT = Number(process.env.AGENTOPS_PORT || 18002);
 const AGENT_SERVER_URL = (
@@ -122,32 +117,6 @@ function readBody(req) {
 }
 
 /** Budget rollup for one workspace: used / remaining / projected. */
-async function budgetForWorkspace(store, workspaceId, now) {
-  const policy = await store.getWorkspacePolicy(workspaceId);
-  const since = monthStart(now);
-  const runs = await store.listRuns({ limit: 10000 });
-  const spend = computeSpend(runs, { workspaceId, since });
-  const projectedUsd = projectMonthlySpend(spend.usedUsd, now);
-
-  return {
-    workspaceId,
-    policy,
-    periodStart: since,
-    usedUsd: spend.usedUsd,
-    remainingUsd:
-      typeof policy.monthlyBudgetUsd === "number"
-        ? Math.max(0, policy.monthlyBudgetUsd - spend.usedUsd)
-        : null,
-    // Straight-line run-rate extrapolation of this month's actual spend, not a
-    // forecast and not a bill. Null until an hour of the month has elapsed.
-    projectedUsd,
-    runCount: spend.runCount,
-    // Runs whose provider reported no cost. Surfaced so the UI can say
-    // "no cost reported" rather than implying those runs were free.
-    runsWithoutReportedCost: spend.runsWithoutCost,
-    tokens: spend.tokens,
-  };
-}
 
 function createStore() {
   if (isSupabaseConfigured()) {
@@ -447,8 +416,18 @@ function createRouter({ store, client, collector }) {
       for (const id of Object.keys(policies.workspaces)) {
         workspaceIds.add(id);
       }
+      // One run listing serves every workspace. Re-listing per workspace
+      // was a full table read (up to 10k rows) per workspace on every poll
+      // from every open Budgets tab.
       const budgets = await Promise.all(
-        [...workspaceIds].map((id) => budgetForWorkspace(store, id, now)),
+        [...workspaceIds].map(async (workspaceId) =>
+          buildWorkspaceBudget({
+            workspaceId,
+            policy: await store.getWorkspacePolicy(workspaceId),
+            runs,
+            now,
+          }),
+        ),
       );
       sendJson(res, 200, { budgets, agents: policies.agents });
       return true;

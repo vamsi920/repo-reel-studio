@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
@@ -6,6 +6,7 @@ import type {
   AgentOpsAutonomyLevel,
   AgentOpsBudget,
   AgentOpsPolicies,
+  AgentOpsWorkspacePolicy,
 } from "#/api/agentops-service/agentops-service.types";
 import { useSaveAgentOpsPolicies } from "#/hooks/query/use-agentops";
 import {
@@ -49,11 +50,47 @@ const AUTONOMY_OPTIONS: {
   },
 ];
 
-function numberOrNull(value: string): number | null {
+/**
+ * Parse a budget field. Blank means "no limit" (`null`); anything that is not
+ * a finite, non-negative number is `undefined` — invalid, never silently
+ * treated as "no limit", because that would quietly lift a spending cap.
+ */
+export function parseBudgetUsd(value: string): number | null | undefined {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const parsed = Number(trimmed);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+/** The editable subset of a workspace policy, as the form holds it. */
+interface WorkspaceFormValues {
+  monthlyBudgetUsd: string;
+  runBudgetUsd: string;
+  autonomyLevel: AgentOpsAutonomyLevel;
+}
+
+function toFormValues(policy: AgentOpsWorkspacePolicy): WorkspaceFormValues {
+  return {
+    monthlyBudgetUsd:
+      typeof policy.monthlyBudgetUsd === "number"
+        ? String(policy.monthlyBudgetUsd)
+        : "",
+    runBudgetUsd:
+      typeof policy.runBudgetUsd === "number"
+        ? String(policy.runBudgetUsd)
+        : "",
+    autonomyLevel: policy.autonomyLevel,
+  };
+}
+
+function isDirty(
+  edit: Partial<WorkspaceFormValues> | undefined,
+  base: WorkspaceFormValues,
+): boolean {
+  if (!edit) return false;
+  return (Object.keys(edit) as (keyof WorkspaceFormValues)[]).some(
+    (field) => edit[field] !== base[field],
+  );
 }
 
 const INPUT_CLASS =
@@ -67,31 +104,85 @@ interface BudgetsPanelProps {
 export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
   const { t } = useTranslation("openhands");
   const { mutate: savePolicies, isPending } = useSaveAgentOpsPolicies();
-  const [draft, setDraft] = useState<AgentOpsPolicies>(policies);
 
-  // Reset when the server's copy changes (another tab, or our own save landing).
-  useEffect(() => setDraft(policies), [policies]);
+  // The form is the server's copy plus whatever the operator has changed. Only
+  // the changes are held in state, as an overlay: a refetch (every 30s, and
+  // after any AgentOps mutation) refreshes the figures underneath without
+  // wiping half-typed edits, and "dirty" means "differs from the server",
+  // not "was touched".
+  const [edits, setEdits] = useState<
+    Record<string, Partial<WorkspaceFormValues>>
+  >({});
 
-  const updateWorkspace = (
+  const baseline = useMemo(
+    () =>
+      Object.fromEntries(
+        budgets.map((budget) => [
+          budget.workspaceId,
+          toFormValues(budget.policy),
+        ]),
+      ) as Record<string, WorkspaceFormValues>,
+    [budgets],
+  );
+
+  const setField = <Field extends keyof WorkspaceFormValues>(
     workspaceId: string,
-    patch: Partial<AgentOpsPolicies["workspaces"][string]>,
+    field: Field,
+    value: WorkspaceFormValues[Field],
   ) =>
-    setDraft((current) => ({
+    setEdits((current) => ({
       ...current,
-      workspaces: {
-        ...current.workspaces,
-        [workspaceId]: { ...(current.workspaces[workspaceId] ?? {}), ...patch },
-      },
+      [workspaceId]: { ...(current[workspaceId] ?? {}), [field]: value },
     }));
 
-  const save = () =>
-    savePolicies(draft, {
-      onSuccess: () => displaySuccessToast(t(I18nKey.AGENTOPS$BUDGET_SAVED)),
-      onError: (error) =>
-        displayErrorToast(
-          getApiErrorMessage(error, t(I18nKey.AGENTOPS$BUDGET_SAVE_FAILED)),
-        ),
-    });
+  const dirtyWorkspaces = budgets.filter((budget) =>
+    isDirty(edits[budget.workspaceId], baseline[budget.workspaceId]),
+  );
+  const hasInvalidAmount = dirtyWorkspaces.some((budget) => {
+    const form = {
+      ...baseline[budget.workspaceId],
+      ...edits[budget.workspaceId],
+    };
+    return (
+      parseBudgetUsd(form.monthlyBudgetUsd) === undefined ||
+      parseBudgetUsd(form.runBudgetUsd) === undefined
+    );
+  });
+  const canSave = dirtyWorkspaces.length > 0 && !hasInvalidAmount && !isPending;
+
+  const save = () => {
+    if (!canSave) return;
+    // Only workspaces the operator changed are written; an untouched
+    // workspace keeps whatever (possibly default) policy the collector holds.
+    const workspaces = { ...policies.workspaces };
+    for (const budget of dirtyWorkspaces) {
+      const form = {
+        ...baseline[budget.workspaceId],
+        ...edits[budget.workspaceId],
+      };
+      workspaces[budget.workspaceId] = {
+        ...(workspaces[budget.workspaceId] ?? {}),
+        monthlyBudgetUsd: parseBudgetUsd(form.monthlyBudgetUsd) ?? null,
+        runBudgetUsd: parseBudgetUsd(form.runBudgetUsd) ?? null,
+        autonomyLevel: form.autonomyLevel,
+      };
+    }
+    savePolicies(
+      { ...policies, workspaces },
+      {
+        onSuccess: () => {
+          // The hook has already written the saved policies into the budgets
+          // cache, so dropping the overlay here does not flash the old values.
+          setEdits({});
+          displaySuccessToast(t(I18nKey.AGENTOPS$BUDGET_SAVED));
+        },
+        onError: (error) =>
+          displayErrorToast(
+            getApiErrorMessage(error, t(I18nKey.AGENTOPS$BUDGET_SAVE_FAILED)),
+          ),
+      },
+    );
+  };
 
   if (!budgets.length) {
     return (
@@ -104,13 +195,19 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
   return (
     <div data-testid="agentops-budgets-panel" className="flex flex-col gap-4">
       {budgets.map((budget) => {
-        const workspacePolicy = draft.workspaces[budget.workspaceId] ?? {};
-        const monthly =
-          workspacePolicy.monthlyBudgetUsd ?? budget.policy.monthlyBudgetUsd;
+        const form = {
+          ...baseline[budget.workspaceId],
+          ...edits[budget.workspaceId],
+        };
+        const monthly = parseBudgetUsd(form.monthlyBudgetUsd);
+        const monthlyInvalid = monthly === undefined;
+        const runInvalid = parseBudgetUsd(form.runBudgetUsd) === undefined;
         const usedPct =
           typeof monthly === "number" && monthly > 0
             ? Math.min(100, (budget.usedUsd / monthly) * 100)
             : null;
+        const monthlyInputId = `agentops-budget-monthly-${budget.workspaceId}`;
+        const runInputId = `agentops-budget-run-${budget.workspaceId}`;
 
         return (
           <section
@@ -176,7 +273,14 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
             </div>
 
             {usedPct !== null ? (
-              <span className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--background-tertiary)]">
+              <span
+                role="progressbar"
+                aria-label={t(I18nKey.AGENTOPS$BUDGET_USED)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(usedPct)}
+                className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--background-tertiary)]"
+              >
                 <span
                   className="block h-full rounded-full"
                   style={{
@@ -196,41 +300,77 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
               <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
                 {t(I18nKey.AGENTOPS$BUDGET_MONTHLY_LABEL)}
                 <input
+                  id={monthlyInputId}
+                  data-testid={monthlyInputId}
                   className={INPUT_CLASS}
                   inputMode="decimal"
                   placeholder={t(I18nKey.AGENTOPS$BUDGET_NO_LIMIT)}
-                  defaultValue={budget.policy.monthlyBudgetUsd ?? ""}
-                  onBlur={(event) =>
-                    updateWorkspace(budget.workspaceId, {
-                      monthlyBudgetUsd: numberOrNull(event.target.value),
-                    })
+                  value={form.monthlyBudgetUsd}
+                  aria-invalid={monthlyInvalid}
+                  aria-describedby={
+                    monthlyInvalid ? `${monthlyInputId}-error` : undefined
+                  }
+                  onChange={(event) =>
+                    setField(
+                      budget.workspaceId,
+                      "monthlyBudgetUsd",
+                      event.target.value,
+                    )
                   }
                 />
+                {monthlyInvalid ? (
+                  <span
+                    id={`${monthlyInputId}-error`}
+                    role="alert"
+                    className="text-[11px] text-[var(--error-500)]"
+                  >
+                    {t(I18nKey.AGENTOPS$BUDGET_INVALID_AMOUNT)}
+                  </span>
+                ) : null}
               </label>
               <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
                 {t(I18nKey.AGENTOPS$BUDGET_PER_RUN_LABEL)}
                 <input
+                  id={runInputId}
+                  data-testid={runInputId}
                   className={INPUT_CLASS}
                   inputMode="decimal"
                   placeholder={t(I18nKey.AGENTOPS$BUDGET_NO_LIMIT)}
-                  defaultValue={budget.policy.runBudgetUsd ?? ""}
-                  onBlur={(event) =>
-                    updateWorkspace(budget.workspaceId, {
-                      runBudgetUsd: numberOrNull(event.target.value),
-                    })
+                  value={form.runBudgetUsd}
+                  aria-invalid={runInvalid}
+                  aria-describedby={
+                    runInvalid ? `${runInputId}-error` : undefined
+                  }
+                  onChange={(event) =>
+                    setField(
+                      budget.workspaceId,
+                      "runBudgetUsd",
+                      event.target.value,
+                    )
                   }
                 />
+                {runInvalid ? (
+                  <span
+                    id={`${runInputId}-error`}
+                    role="alert"
+                    className="text-[11px] text-[var(--error-500)]"
+                  >
+                    {t(I18nKey.AGENTOPS$BUDGET_INVALID_AMOUNT)}
+                  </span>
+                ) : null}
               </label>
               <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
                 {t(I18nKey.AGENTOPS$BUDGET_AUTONOMY_LABEL)}
                 <select
+                  data-testid={`agentops-budget-autonomy-${budget.workspaceId}`}
                   className={INPUT_CLASS}
-                  defaultValue={budget.policy.autonomyLevel}
+                  value={form.autonomyLevel}
                   onChange={(event) =>
-                    updateWorkspace(budget.workspaceId, {
-                      autonomyLevel: event.target
-                        .value as AgentOpsAutonomyLevel,
-                    })
+                    setField(
+                      budget.workspaceId,
+                      "autonomyLevel",
+                      event.target.value as AgentOpsAutonomyLevel,
+                    )
                   }
                 >
                   {AUTONOMY_OPTIONS.map((option) => (
@@ -242,10 +382,7 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
                 <span className="text-[11px] text-[var(--text-tertiary)]">
                   {t(
                     AUTONOMY_OPTIONS.find(
-                      (option) =>
-                        option.value ===
-                        (workspacePolicy.autonomyLevel ??
-                          budget.policy.autonomyLevel),
+                      (option) => option.value === form.autonomyLevel,
                     )?.hintKey ?? I18nKey.AGENTOPS$AUTONOMY_ASSISTED_HINT,
                   )}
                 </span>
@@ -259,7 +396,7 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
         <button
           type="button"
           data-testid="agentops-save-policies"
-          disabled={isPending}
+          disabled={!canSave}
           onClick={save}
           className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--primary-500)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >

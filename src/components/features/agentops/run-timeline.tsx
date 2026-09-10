@@ -140,6 +140,7 @@ export function RunTimeline({ run, spans }: RunTimelineProps) {
                     type="button"
                     key={span.spanId}
                     data-testid={`agentops-span-${span.spanId}`}
+                    aria-pressed={isSelected}
                     onClick={() => setSelectedSpanId(span.spanId)}
                     className="group flex items-center gap-2 rounded-[var(--radius-sm)] px-1 py-1 text-left hover:bg-[var(--background-secondary)]"
                   >
