@@ -192,4 +192,116 @@ describe("KtGraph search", () => {
       "sub1",
     );
   });
+
+  it("keeps the graph on screen while a forced rebuild is running instead of blanking to a spinner", async () => {
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+    useCodeGraphStore.getState().beginRebuild(key);
+
+    renderWithProviders(<KtGraph />);
+
+    // The already-open graph (breadcrumbs, node) stays mounted...
+    expect(await screen.findByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+      "System",
+    );
+    expect(screen.getByTestId("codegraph-node-count")).toBeInTheDocument();
+    // ...and the rebuild control reflects the in-progress rebuild rather than
+    // the whole view disappearing behind a blank "analyzing" spinner.
+    expect(screen.getByTestId("codegraph-rebuild")).toBeDisabled();
+  });
+
+  it("fetches the search index once even when the user types before the first fetch resolves", async () => {
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    let resolveLoad: ((entries: SearchEntry[]) => void) | undefined;
+    const loadSearchIndex = vi.fn(
+      () =>
+        new Promise<SearchEntry[]>((resolve) => {
+          resolveLoad = resolve;
+        }),
+    );
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex,
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+
+    renderWithProviders(<KtGraph />);
+
+    const user = userEvent.setup();
+    const search = await screen.findByTestId("codegraph-search");
+    await user.type(search, "sub");
+
+    expect(loadSearchIndex).toHaveBeenCalledTimes(1);
+    resolveLoad?.([]);
+  });
+
+  it("colors the analysis-failed icon with a real design-system token", async () => {
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setError(key, "analysis: boom");
+
+    const { container } = renderWithProviders(<KtGraph />);
+
+    await screen.findByText("analysis: boom");
+    // `--danger-500` is not a token this app defines (the real one is
+    // `--error-500`, used everywhere else on this page); referencing it left
+    // the icon uncolored.
+    expect(container.querySelector('[class*="--error-500"]')).not.toBeNull();
+    expect(container.querySelector('[class*="--danger-500"]')).toBeNull();
+  });
 });

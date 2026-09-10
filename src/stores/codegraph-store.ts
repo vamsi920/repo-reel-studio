@@ -23,6 +23,10 @@ export interface CodeGraphState {
   status: CodeGraphStatus;
   progress: AnalyzerProgress | null;
   error: string | null;
+  /** A forced re-analysis in progress behind an already-rendered graph — the
+   * graph stays on screen (status stays "ready") while this is true, rather
+   * than being torn down for a blank "analyzing" spinner. */
+  rebuilding: boolean;
 
   meta: CodeGraphMeta | null;
   freshness: FreshnessResult | null;
@@ -57,6 +61,7 @@ interface CodeGraphStore {
   setReady: (key: string, handle: AnalysisHandle) => void;
   setError: (key: string, error: string) => void;
   setFreshness: (key: string, freshness: FreshnessResult) => void;
+  beginRebuild: (key: string) => void;
 
   beginLoadLevel: (key: string, parentId: string) => void;
   setLevel: (
@@ -88,6 +93,7 @@ function emptyState(
     status: "analyzing",
     progress: null,
     error: null,
+    rebuilding: false,
     meta: null,
     freshness: null,
     currentParentId: null,
@@ -140,6 +146,7 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
         ...state,
         status: "ready",
         error: null,
+        rebuilding: false,
         meta: handle.meta,
         // The system view is always what loads first — never a deep level the
         // user did not ask for.
@@ -149,10 +156,18 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
     },
 
     setError: (key, error) =>
-      update(key, (state) => ({ ...state, status: "error", error })),
+      update(key, (state) => ({
+        ...state,
+        status: "error",
+        error,
+        rebuilding: false,
+      })),
 
     setFreshness: (key, freshness) =>
       update(key, (state) => ({ ...state, freshness })),
+
+    beginRebuild: (key) =>
+      update(key, (state) => ({ ...state, rebuilding: true })),
 
     beginLoadLevel: (key, parentId) =>
       update(key, (state) =>

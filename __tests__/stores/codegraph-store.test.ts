@@ -184,6 +184,36 @@ describe("codegraph store", () => {
     expect(state.meta).toBeNull();
   });
 
+  it("keeps the graph on screen while a forced rebuild runs", () => {
+    const key = start();
+    const root = level(null, [node("a")]);
+    useCodeGraphStore.getState().setReady(key, handle(root));
+
+    useCodeGraphStore.getState().beginRebuild(key);
+    const state = useCodeGraphStore.getState().byKey[key];
+
+    expect(state.rebuilding).toBe(true);
+    expect(state.status).toBe("ready");
+    expect(selectCurrentLevel(state)).toEqual(root);
+  });
+
+  it("clears the rebuilding flag once a rebuild succeeds or fails", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("a")])));
+    useCodeGraphStore.getState().beginRebuild(key);
+
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("b")])));
+    expect(useCodeGraphStore.getState().byKey[key].rebuilding).toBe(false);
+
+    useCodeGraphStore.getState().beginRebuild(key);
+    useCodeGraphStore.getState().setError(key, "analysis: failed");
+    expect(useCodeGraphStore.getState().byKey[key].rebuilding).toBe(false);
+  });
+
   it("ignores updates for a key that no longer exists", () => {
     expect(() =>
       useCodeGraphStore.getState().selectNode("missing::key::sha", "a"),

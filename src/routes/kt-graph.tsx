@@ -104,13 +104,24 @@ function KtGraph() {
 
   const analyze = React.useCallback(
     async (force: boolean) => {
-      if (!snapshot) return;
+      if (!snapshot || !key) return;
       const workspaceId = workspaceIdForSnapshot(snapshot);
-      const analysisKey = useCodeGraphStore.getState().start({
-        workspaceId,
-        repositoryId: snapshot.repositoryId,
-        commitSha: snapshot.commitSha,
-      });
+
+      // A forced rebuild of a graph that is already on screen keeps it there
+      // — the toolbar's rebuild button shows progress instead of the whole
+      // view being torn down for a blank "analyzing" spinner. Anything else
+      // (first build, or rebuilding from the full error screen, which has no
+      // graph worth preserving) resets to that spinner as before.
+      const existing = useCodeGraphStore.getState().byKey[key];
+      if (force && existing?.status === "ready") {
+        useCodeGraphStore.getState().beginRebuild(key);
+      } else {
+        useCodeGraphStore.getState().start({
+          workspaceId,
+          repositoryId: snapshot.repositoryId,
+          commitSha: snapshot.commitSha,
+        });
+      }
 
       // A cold-rehydrated (Supabase) Docs entry has real content but
       // `localPath: ""` and no live session -- confirmed real: without this
@@ -127,7 +138,7 @@ function KtGraph() {
         useCodeGraphStore
           .getState()
           .setError(
-            analysisKey,
+            key,
             "Open this repository's conversation to build the code graph — analysis needs a live workspace session.",
           );
         return;
@@ -170,7 +181,7 @@ function KtGraph() {
             ...shared,
             hints: toSubsystemHints(knowledgeState?.knowledge ?? undefined),
             onProgress: (progress) => {
-              useCodeGraphStore.getState().setProgress(analysisKey, progress);
+              useCodeGraphStore.getState().setProgress(key, progress);
               if (progress.phase === "relationships") {
                 emitCodeGraphMilestone(context, {
                   kind: "analysis.relationships",
@@ -187,7 +198,7 @@ function KtGraph() {
           });
         }
 
-        useCodeGraphStore.getState().setReady(analysisKey, result);
+        useCodeGraphStore.getState().setReady(key, result);
         emitCodeGraphMilestone(context, {
           kind: "analysis.ready",
           subsystemCount: result.root.nodes.length,
@@ -221,11 +232,11 @@ function KtGraph() {
             : error instanceof Error
               ? error.message
               : String(error);
-        useCodeGraphStore.getState().setError(analysisKey, reason);
+        useCodeGraphStore.getState().setError(key, reason);
         emitCodeGraphMilestone(context, { kind: "analysis.failed", reason });
       }
     },
-    [snapshot, knowledgeState],
+    [snapshot, knowledgeState, key],
   );
 
   // On a fresh page load (no in-memory graph state yet), check whether a
@@ -282,11 +293,22 @@ function KtGraph() {
   );
 
   // --- Search --------------------------------------------------------------
+  // `searchIndex` only lands in the store once the fetch resolves, so without
+  // tracking the in-flight request separately, each keystroke typed before
+  // that first response arrives re-fires the same fetch of `search.json` —
+  // the largest artefact the analyzer produces.
+  const searchIndexLoadingRef = React.useRef<Set<string>>(new Set());
   const ensureSearchIndex = React.useCallback(async () => {
     if (!key || !handle) return;
     if (useCodeGraphStore.getState().byKey[key]?.searchIndex) return;
-    const entries = await handle.loadSearchIndex();
-    useCodeGraphStore.getState().setSearchIndex(key, entries);
+    if (searchIndexLoadingRef.current.has(key)) return;
+    searchIndexLoadingRef.current.add(key);
+    try {
+      const entries = await handle.loadSearchIndex();
+      useCodeGraphStore.getState().setSearchIndex(key, entries);
+    } finally {
+      searchIndexLoadingRef.current.delete(key);
+    }
   }, [key, handle]);
 
   const fuse = React.useMemo(() => {
@@ -447,7 +469,7 @@ function KtGraph() {
       {state?.status === "error" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6">
           <AlertTriangle
-            className="size-7 text-[var(--danger-500)]"
+            className="size-7 text-[var(--error-500)]"
             aria-hidden
           />
           <p className="text-sm font-medium text-[var(--oh-foreground)]">
@@ -495,6 +517,7 @@ function KtGraph() {
               onSelectResult={selectSearchResult}
               levelNodes={level.nodes}
               onRebuild={() => analyze(true)}
+              isRebuilding={Boolean(state.rebuilding)}
             />
             <div className="min-h-0 flex-1">
               <CodeGraphCanvas
