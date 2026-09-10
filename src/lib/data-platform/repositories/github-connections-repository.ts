@@ -17,6 +17,16 @@ export interface GithubConnectionsRepository {
   getConnection(): Promise<GithubConnectionStatus | null>;
 }
 
+// A real fetch failure (RLS denial, network error, bad schema) previously
+// returned null identically to "no connection exists", so a broken query
+// here was invisible in the console -- see repository-identity.ts's
+// `logFailure` for the same fix applied to that repository's silent
+// swallow. `.maybeSingle()` itself reports no error for the legitimate
+// "no row" case, so this only fires for genuine failures.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[github-connections-repository] ${step} failed`, error);
+}
+
 class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository {
   async getConnection(): Promise<GithubConnectionStatus | null> {
     if (!isSupabaseConfigured || !supabase) return null;
@@ -30,7 +40,11 @@ class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository
       .select("github_username, enterprise_host, connected_at")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      logFailure("getConnection", error);
+      return null;
+    }
+    if (!data) return null;
 
     return {
       githubUsername: data.github_username as string,
