@@ -33,6 +33,12 @@ export function PluginCard({
   const { t } = useTranslation("openhands");
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    // Enter/Space on the nested install button or enable toggle bubbles up
+    // here. Only a keypress on the card itself should open the detail modal.
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onOpen();

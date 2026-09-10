@@ -8,6 +8,7 @@ import { I18nKey } from "#/i18n/declaration";
 import type { SkillInfo } from "#/types/settings";
 import { cn } from "#/utils/utils";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 import CopyIcon from "#/icons/copy.svg?react";
 import CheckmarkIcon from "#/icons/checkmark.svg?react";
 import MessageSquareShareIcon from "#/icons/message-square-share.svg?react";
@@ -82,8 +83,9 @@ export function SkillDetailModal({
       return;
     }
 
-    await navigator.clipboard.writeText(skill.source);
-    setSourceCopied(true);
+    if (await copyTextToClipboard(skill.source)) {
+      setSourceCopied(true);
+    }
   };
 
   React.useEffect(() => {

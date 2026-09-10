@@ -303,6 +303,51 @@ describe("SkillsPluginsScreen", () => {
     );
   });
 
+  it("reports a failed catalog fetch instead of claiming there are no plugins", async () => {
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockRejectedValue(
+      new Error("catalog unavailable"),
+    );
+
+    renderPluginsScreen();
+
+    expect(await screen.findByTestId("plugins-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("plugins-empty")).not.toBeInTheDocument();
+  });
+
+  it("still lists the plugins it could load when another source fails", async () => {
+    vi.spyOn(PluginsService, "getLocalPlugins").mockRejectedValue(
+      new Error("local scan failed"),
+    );
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([buildInstalledPlugin()]);
+
+    renderPluginsScreen();
+
+    expect(
+      await screen.findByTestId("plugin-card-demo-plugin"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("plugins-error")).toBeInTheDocument();
+  });
+
+  it("does not open the detail modal when the card's install button is activated by keyboard", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
+      buildCatalogPlugin(),
+    ]);
+    vi.spyOn(PluginsManagementService, "installPlugin").mockResolvedValue(
+      buildInstalledPlugin(),
+    );
+
+    renderPluginsScreen();
+    const install = await screen.findByTestId("plugin-install-demo-plugin");
+    install.focus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.queryByTestId("plugin-detail-modal")).not.toBeInTheDocument();
+  });
+
   it("omits the Start Conversation action for a local plugin without a source", async () => {
     const user = userEvent.setup();
     vi.spyOn(PluginsService, "getLocalPlugins").mockResolvedValue([

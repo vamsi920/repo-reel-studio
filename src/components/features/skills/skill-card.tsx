@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { SkillInfo } from "#/types/settings";
 import { cn } from "#/utils/utils";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 import CopyIcon from "#/icons/copy.svg?react";
 import CheckmarkIcon from "#/icons/checkmark.svg?react";
 import { CirclePlusCheckToggle } from "#/components/shared/buttons/circle-plus-check-toggle";
@@ -42,11 +43,18 @@ export function SkillCard({
       return;
     }
 
-    await navigator.clipboard.writeText(skill.source);
-    setSourceCopied(true);
+    if (await copyTextToClipboard(skill.source)) {
+      setSourceCopied(true);
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    // Enter/Space on the nested copy button or enable toggle bubbles up here.
+    // Only a keypress on the card itself should open the detail modal.
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onOpen();

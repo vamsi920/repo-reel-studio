@@ -20,6 +20,7 @@ import {
 import { MOCK_DEFAULT_USER_SETTINGS } from "#/mocks/handlers";
 import { Settings, SkillInfo } from "#/types/settings";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
+import * as ToastHandlers from "#/utils/custom-toast-handlers";
 
 const navigateMock = vi.fn();
 
@@ -184,6 +185,50 @@ Full skill body.`,
     );
 
     expect(writeText).toHaveBeenCalledWith(skill.source);
+  });
+
+  it("reports a failed clipboard write instead of silently doing nothing", async () => {
+    const user = userEvent.setup();
+    const skill = buildSkill();
+    const toastSpy = vi
+      .spyOn(ToastHandlers, "displayErrorToast")
+      .mockImplementation(() => "toast-id");
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(
+      new Error("clipboard unavailable"),
+    );
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+
+    renderSkillsSettingsScreen();
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+    const copyButton = within(card).getByTestId(
+      `skill-copy-source-${skill.name}`,
+    );
+
+    await user.click(copyButton);
+
+    await waitFor(() => expect(toastSpy).toHaveBeenCalled());
+    // No "Copied" confirmation for a copy that never happened, and the button
+    // stays usable so the user can retry.
+    expect(copyButton).toHaveAttribute(
+      "aria-label",
+      "SETTINGS$SKILLS_COPY_PATH",
+    );
+    expect(copyButton).not.toBeDisabled();
+  });
+
+  it("does not open the detail modal when the card toggle is activated by keyboard", async () => {
+    const user = userEvent.setup();
+    const skill = buildSkill();
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+
+    renderSkillsSettingsScreen();
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+    const toggle = within(card).getByTestId(`skill-toggle-${skill.name}`);
+
+    toggle.focus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.queryByTestId("skill-detail-modal")).not.toBeInTheDocument();
   });
 
   it("hides the copy button when the source is a scope label instead of a path", async () => {

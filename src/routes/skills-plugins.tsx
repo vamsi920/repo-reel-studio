@@ -38,10 +38,21 @@ export default function SkillsPluginsScreen() {
   const { navigate } = useNavigation();
   const isLocal = backend.kind === "local";
 
-  const { data: marketplace, isLoading: marketplaceLoading } =
-    usePluginsMarketplace();
-  const { data: installed, isLoading: installedLoading } = usePlugins();
-  const { data: local, isLoading: localLoading } = useLocalPlugins();
+  const {
+    data: marketplace,
+    isLoading: marketplaceLoading,
+    isError: marketplaceFailed,
+  } = usePluginsMarketplace();
+  const {
+    data: installed,
+    isLoading: installedLoading,
+    isError: installedFailed,
+  } = usePlugins();
+  const {
+    data: local,
+    isLoading: localLoading,
+    isError: localFailed,
+  } = useLocalPlugins();
 
   const installPlugin = useInstallPlugin();
   const setPluginEnabled = useSetPluginEnabled();
@@ -74,6 +85,9 @@ export default function SkillsPluginsScreen() {
     : null;
 
   const isLoading = marketplaceLoading || installedLoading || localLoading;
+  // Any failed source means the list below is incomplete. Saying "no plugins"
+  // then would report a fetch failure as an empty catalog.
+  const hasFailedSource = marketplaceFailed || installedFailed || localFailed;
 
   const pendingName =
     (setPluginEnabled.isPending
@@ -163,7 +177,18 @@ export default function SkillsPluginsScreen() {
             </div>
           )}
 
-          {!isLoading && plugins.length === 0 && (
+          {!isLoading && hasFailedSource && (
+            <div
+              data-testid="plugins-error"
+              className={extensionModuleEmptyStateClassName}
+            >
+              <p className="text-sm text-tertiary-light">
+                {t(I18nKey.PLUGINS$PICKER_ERROR)}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !hasFailedSource && plugins.length === 0 && (
             <div
               data-testid="plugins-empty"
               className={extensionModuleEmptyStateClassName}
