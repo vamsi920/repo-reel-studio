@@ -4,6 +4,11 @@ import { describe, it, expect, vi } from "vitest";
 import util from "util";
 import { ChatMessage } from "#/components/features/chat/chat-message";
 
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast: vi.fn(),
+  displaySuccessToast: vi.fn(),
+}));
+
 describe("ChatMessage", () => {
   it("does not update the parent while measuring user-message truncation", async () => {
     // Regression test for the React warning:
@@ -136,6 +141,31 @@ describe("ChatMessage", () => {
     await waitFor(() =>
       expect(navigator.clipboard.readText()).resolves.toBe("Hello, World!"),
     );
+  });
+
+  it("keeps the copy button honest when the clipboard write fails", async () => {
+    // `writeText` rejects on an insecure origin, a denied permission, or an
+    // unfocused document. The handler used to await it bare, so the failure
+    // became an unhandled rejection and the button silently did nothing.
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const toast = vi
+      .mocked(displayErrorToast)
+      .mockClear()
+      .mockImplementation(() => {});
+    const writeText = vi
+      .spyOn(navigator.clipboard, "writeText")
+      .mockRejectedValue(new Error("Document is not focused"));
+
+    const user = userEvent.setup();
+    render(<ChatMessage type="user" message="Hello, World!" />);
+
+    await user.click(screen.getByTestId("copy-to-clipboard"));
+
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+    // Still offering to copy — never the "copied" confirmation.
+    expect(screen.getByTestId("copy-to-clipboard")).not.toBeDisabled();
+
+    writeText.mockRestore();
   });
 
   it("should render a component passed as a prop", () => {

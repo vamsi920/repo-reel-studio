@@ -337,6 +337,54 @@ describe("conversation-panel-list-helpers", () => {
     ]);
   });
 
+  it("revealThroughPage lets an exhausted Load more deepen an already-visible folder", () => {
+    // The freeze keeps a folder's first impression stable while pages arrive
+    // in the background. It must not survive an explicit "Load more" click
+    // that found no new folder — that click would otherwise change nothing on
+    // screen, which is the dead-click users report.
+    const items = [
+      { ...base, id: "none-1", title: "None 1", selected_workspace: null },
+      { ...base, id: "none-2", title: "None 2", selected_workspace: null },
+    ] as AppConversation[];
+    const pageByConversationId = new Map([
+      ["none-1", 0],
+      ["none-2", 1],
+    ]);
+
+    expect([
+      ...getGroupDiscoveryConversationIds(items, pageByConversationId, "local", {
+        revealThroughPage: 1,
+      }),
+    ]).toEqual(["none-1", "none-2"]);
+
+    // A reveal that has not reached the later page leaves the freeze in place.
+    expect([
+      ...getGroupDiscoveryConversationIds(items, pageByConversationId, "local", {
+        revealThroughPage: 0,
+      }),
+    ]).toEqual(["none-1"]);
+
+    const grouped = groupConversations(items, "local", "updated", {
+      emptyWorkspace: "No workspace",
+      emptyRepository: "No repository",
+    });
+    const noneGroup = grouped.find((group) => group.id === "__none_workspace");
+    const collapsed = getGroupConversationPreview(noneGroup!.conversations, {
+      expanded: false,
+      discoveryConversationIds: getGroupDiscoveryConversationIds(
+        items,
+        pageByConversationId,
+        "local",
+        { revealThroughPage: 1 },
+      ),
+    });
+    expect(collapsed.visibleConversations.map((c) => c.id)).toEqual([
+      "none-1",
+      "none-2",
+    ]);
+    expect(collapsed.isPreviewTruncated).toBe(false);
+  });
+
   it("resolvePinnedConversations preserves pin order and drops missing ids", () => {
     const conversations = [
       { ...base, id: "a", title: "A" },

@@ -19,7 +19,7 @@ import {
 import { getContextFillTone } from "#/components/features/conversation/usage-panel/context-meter";
 import {
   ContextWindowRing,
-  CONTEXT_WINDOW_TRACK_COLOR,
+  CONTEXT_WINDOW_METER_TRACK_COLOR,
 } from "./context-window-ring";
 
 const TONE_BAR_CLASS = {
@@ -114,7 +114,7 @@ export function ContextWindowMeter() {
               type="button"
               data-testid="context-window-meter-bar-button"
               className="relative h-1.5 w-full rounded-full cursor-pointer"
-              style={{ backgroundColor: CONTEXT_WINDOW_TRACK_COLOR }}
+              style={{ backgroundColor: CONTEXT_WINDOW_METER_TRACK_COLOR }}
               aria-label={t(I18nKey.COMMON$USAGE)}
               onClick={(event) => {
                 event.preventDefault();

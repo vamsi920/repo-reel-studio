@@ -5,7 +5,8 @@ const CONTEXT_WINDOW_RING_SIZE = 16;
 const CONTEXT_WINDOW_RING_STROKE = 2;
 
 /**
- * Opacity of the ring's unfilled track, as a fraction of `--oh-foreground`.
+ * How far the ring's unfilled track is mixed from its own backdrop toward
+ * `--oh-foreground`, as a percentage.
  *
  * The track is derived from the foreground rather than pinned to a scale stop.
  * It carries information (the arc's proportion is only readable against it), so
@@ -16,15 +17,41 @@ const CONTEXT_WINDOW_RING_STROKE = 2;
  * fixes it, and no fixed stop holds across the three palettes in
  * `color-themes.ts`, whose scales differ.
  *
- * Compositing the foreground over whatever the active theme paints keeps the
- * track between surface and arc by construction rather than by coincidence.
- * 42% is the value that maximises the worst case across the shipped palettes;
- * `context-window-ring.test.tsx` asserts it per theme.
+ * Two properties of the mix are load-bearing, and both were wrong before:
+ *
+ * 1. **Mix against the backdrop, not `transparent`.** A translucent track is
+ *    composited by the browser in gamma-encoded sRGB, which is not symmetric
+ *    between light and dark backdrops: the same alpha lands much closer to the
+ *    surface on a light palette. `Neo-DeepSea` — the default theme — is light,
+ *    and the previous 42% alpha left the track at 2.70:1 against the composer,
+ *    under the 3:1 that WCAG 2.1 SC 1.4.11 asks of non-text contrast. No single
+ *    alpha satisfies both a light and a dark palette: the feasible bands are
+ *    disjoint (0.457-0.622 for deepsea, 0.399-0.453 for the neutral scale).
+ * 2. **Mix in `oklab`.** Interpolating perceptually makes one ratio work for
+ *    every shipped palette; 53% keeps the worst case at 3.17:1.
+ *
+ * `context-window-ring.test.tsx` asserts both per theme.
  */
-export const CONTEXT_WINDOW_RING_TRACK_ALPHA = 0.42;
+export const CONTEXT_WINDOW_RING_TRACK_MIX = 53;
 
-/** Shared by the ring's track and the popover's usage bar, which had the same defect. */
-export const CONTEXT_WINDOW_TRACK_COLOR = `color-mix(in srgb, var(--oh-foreground) ${CONTEXT_WINDOW_RING_TRACK_ALPHA * 100}%, transparent)`;
+/**
+ * The ring sits on the composer, so its track is anchored to `--oh-surface`
+ * (and stays legible under the trigger's `hover:bg-white/10` fill).
+ */
+export const CONTEXT_WINDOW_TRACK_COLOR = `color-mix(in oklab, var(--oh-foreground) ${CONTEXT_WINDOW_RING_TRACK_MIX}%, var(--oh-surface))`;
+
+/**
+ * The usage popover's bar sits on `bg-tertiary`, a much weaker pairing: the
+ * foreground is only 8.6:1 from that panel under the default palette, so the
+ * two 3:1 steps a track needs (track-from-panel, arc-from-track) do not both
+ * fit. 46% is the ratio that maximises the worst case there — 2.96:1, up from
+ * 2.42:1 — and the remaining gap is a property of the panel color, not of this
+ * value. Fixing it properly means giving the popover a surface further from
+ * the foreground.
+ */
+export const CONTEXT_WINDOW_METER_TRACK_MIX = 46;
+
+export const CONTEXT_WINDOW_METER_TRACK_COLOR = `color-mix(in oklab, var(--oh-foreground) ${CONTEXT_WINDOW_METER_TRACK_MIX}%, var(--oh-color-tertiary))`;
 
 const TONE_STROKE = {
   neutral: "var(--oh-foreground)",

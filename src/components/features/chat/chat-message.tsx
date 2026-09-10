@@ -5,6 +5,7 @@ import { CopyToClipboardButton } from "#/components/shared/buttons/copy-to-clipb
 import type { SourceType } from "#/types/agent-server/core/base/common";
 import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
 import { I18nKey } from "#/i18n/declaration";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { TextShimmer } from "#/components/shared/text-shimmer";
 import { MarkdownRenderer } from "../markdown/markdown-renderer";
 import { PendingStopIcon } from "./pending-stop-icon";
@@ -56,8 +57,16 @@ export function ChatMessage({
   }, [message]);
 
   const handleCopyToClipboard = async () => {
-    await navigator.clipboard.writeText(message);
-    setIsCopy(true);
+    // `writeText` rejects on an insecure origin, on a denied permission, and
+    // when the document is not focused. Unhandled, that left the button doing
+    // nothing at all — no "Copied" state and no explanation — and surfaced as
+    // an unhandled rejection. Mirror `error-message-banner`'s handling.
+    try {
+      await navigator.clipboard.writeText(message);
+      setIsCopy(true);
+    } catch {
+      displayErrorToast(t(I18nKey.CHAT_INTERFACE$CHAT_MESSAGE_COPY_FAILED));
+    }
   };
 
   React.useEffect(() => {

@@ -463,6 +463,11 @@ export function ConversationPanel({
     groupedSourceConversations,
   ]);
 
+  // Pages whose rows are allowed into the collapsed folder previews even
+  // though the folder was discovered earlier. See `revealLoadedPagesInPreview`.
+  const [previewRevealThroughPage, setPreviewRevealThroughPage] =
+    React.useState<number | null>(null);
+
   const groupDiscoveryConversationIds = React.useMemo(() => {
     if (!groupedSourceConversations) {
       return null;
@@ -471,13 +476,17 @@ export function ConversationPanel({
       groupedSourceConversations,
       conversationPageById,
       activeBackend.kind,
-      { forceIncludeConversationId: currentConversationId },
+      {
+        forceIncludeConversationId: currentConversationId,
+        revealThroughPage: previewRevealThroughPage,
+      },
     );
   }, [
     activeBackend.kind,
     conversationPageById,
     currentConversationId,
     groupedSourceConversations,
+    previewRevealThroughPage,
   ]);
 
   const orderedConversationGroups = React.useMemo(() => {
@@ -567,6 +576,23 @@ export function ConversationPanel({
     setLoadMorePageFloor(null);
   }, []);
 
+  // A "Load more" click that ends without the visible list growing used to be
+  // a dead click: in grouped mode the fetched page only deepened folders that
+  // were already on screen, and those rows are frozen out of the collapsed
+  // preview, so nothing appeared. Once the click is over there is no first
+  // impression left to protect — the user asked for more and the backend had
+  // no new folder to give — so the pages fetched so far are allowed into the
+  // previews. The preview limit still caps each folder, so this widens folders
+  // by a few rows rather than dumping the page into them.
+  const revealLoadedPagesInPreview = React.useCallback(() => {
+    const lastLoadedPageIndex = loadedPageCountRef.current - 1;
+    setPreviewRevealThroughPage((current) =>
+      current != null && current >= lastLoadedPageIndex
+        ? current
+        : lastLoadedPageIndex,
+    );
+  }, []);
+
   const requestLoadMore = React.useCallback(() => {
     if (hasNextPage) {
       setLoadMoreFloor(visibleCountRef.current);
@@ -594,6 +620,7 @@ export function ConversationPanel({
       loadMorePageFloor != null &&
       loadedPageCount >= loadMorePageFloor + MAX_PAGES_PER_LOAD_MORE_CLICK
     ) {
+      revealLoadedPagesInPreview();
       clearLoadMoreRequest();
       return;
     }
@@ -605,6 +632,7 @@ export function ConversationPanel({
     }
     // Nothing more to fetch — stop waiting even if the list did not grow.
     if (!hasNextPage) {
+      revealLoadedPagesInPreview();
       clearLoadMoreRequest();
       return;
     }
@@ -621,6 +649,7 @@ export function ConversationPanel({
     isFetching,
     isFetchingNextPage,
     fetchNextPage,
+    revealLoadedPagesInPreview,
   ]);
 
   const isLoadingMore = loadMoreFloor !== null || isFetchingNextPage;

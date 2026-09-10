@@ -371,12 +371,23 @@ export const MAX_PAGES_PER_LOAD_MORE_CLICK = 3;
  * Expanding the folder reads the full grouped `conversations` array instead.
  * `forceIncludeConversationId` keeps the active thread in the preview even
  * when it landed on a non-discovery page.
+ *
+ * `revealThroughPage` lifts the freeze for pages up to and including that
+ * index. The panel sets it once a "Load more" click has finished without
+ * surfacing a new folder: at that point the user has explicitly asked for more
+ * and there is nothing else to give them, so the pages already fetched must be
+ * allowed to deepen the folders they belong to. (The preview is still capped at
+ * `GROUP_CONVERSATIONS_PREVIEW_LIMIT` rows, so unfreezing widens a folder by a
+ * few rows, it does not dump the whole page into it.)
  */
 export function getGroupDiscoveryConversationIds(
   items: readonly AppConversation[],
   pageByConversationId: ReadonlyMap<string, number>,
   backendKind: BackendKind,
-  options?: { forceIncludeConversationId?: string | null },
+  options?: {
+    forceIncludeConversationId?: string | null;
+    revealThroughPage?: number | null;
+  },
 ): Set<string> {
   // Resolve each conversation's folder identity exactly once; both passes
   // below (finding each folder's discovery page, then collecting the ids on
@@ -396,9 +407,13 @@ export function getGroupDiscoveryConversationIds(
     }
   }
 
+  const revealThroughPage = options?.revealThroughPage;
   const discoveryIds = new Set<string>();
   for (const { conversationId, groupId, page } of resolved) {
-    if (page === discoveryPageByGroupId.get(groupId)) {
+    if (
+      page === discoveryPageByGroupId.get(groupId) ||
+      (revealThroughPage != null && page <= revealThroughPage)
+    ) {
       discoveryIds.add(conversationId);
     }
   }
