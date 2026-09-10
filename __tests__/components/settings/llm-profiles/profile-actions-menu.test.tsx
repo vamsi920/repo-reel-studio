@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { ProfileActionsMenu } from "#/components/features/settings/llm-profiles/profile-actions-menu";
@@ -322,6 +323,100 @@ describe("ProfileActionsMenu", () => {
 
       await user.keyboard("{Tab}");
       expect(handleClose).toHaveBeenCalled();
+    });
+    it("focuses first item on mount when portaled to an anchor", () => {
+      // Both profile rows pass an anchorRef, so this is the production path.
+      // The portaled menu renders nothing until its position is measured,
+      // so focusing on first mount used to find no items at all.
+      const anchor = document.createElement("button");
+      document.body.appendChild(anchor);
+
+      render(
+        <ProfileActionsMenu {...defaultProps} anchorRef={{ current: anchor }} />,
+      );
+
+      expect(screen.getByTestId("profile-edit")).toHaveFocus();
+      anchor.remove();
+    });
+
+    it("skips the disabled Set Active item when arrowing in either direction", async () => {
+      const user = userEvent.setup();
+      render(<ProfileActionsMenu {...defaultProps} isActive />);
+
+      await user.keyboard("{ArrowDown}"); // Rename
+      await user.keyboard("{ArrowDown}"); // Duplicate
+      await user.keyboard("{ArrowDown}"); // Set Active is disabled -> Delete
+      expect(screen.getByTestId("profile-delete")).toHaveFocus();
+
+      await user.keyboard("{ArrowUp}"); // back over the disabled item
+      expect(screen.getByTestId("profile-duplicate")).toHaveFocus();
+    });
+
+    it("jumps to the first and last items with Home and End", async () => {
+      const user = userEvent.setup();
+      render(<ProfileActionsMenu {...defaultProps} />);
+
+      await user.keyboard("{End}");
+      expect(screen.getByTestId("profile-delete")).toHaveFocus();
+
+      await user.keyboard("{Home}");
+      expect(screen.getByTestId("profile-edit")).toHaveFocus();
+    });
+
+    it("returns focus to the anchor when closed from the keyboard", async () => {
+      const user = userEvent.setup();
+      const anchor = document.createElement("button");
+      document.body.appendChild(anchor);
+
+      function Host() {
+        const [open, setOpen] = useState(true);
+        return open ? (
+          <ProfileActionsMenu
+            {...defaultProps}
+            anchorRef={{ current: anchor }}
+            onClose={() => setOpen(false)}
+          />
+        ) : null;
+      }
+      render(<Host />);
+      expect(screen.getByTestId("profile-edit")).toHaveFocus();
+
+      await user.keyboard("{Escape}");
+
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(anchor).toHaveFocus();
+      anchor.remove();
+    });
+
+    it("leaves focus alone when the menu closes because another control was clicked", async () => {
+      const user = userEvent.setup();
+      const anchor = document.createElement("button");
+      document.body.appendChild(anchor);
+
+      function Host() {
+        const [open, setOpen] = useState(true);
+        return (
+          <>
+            <button type="button" data-testid="elsewhere">
+              Elsewhere
+            </button>
+            {open ? (
+              <ProfileActionsMenu
+                {...defaultProps}
+                anchorRef={{ current: anchor }}
+                onClose={() => setOpen(false)}
+              />
+            ) : null}
+          </>
+        );
+      }
+      render(<Host />);
+
+      await user.click(screen.getByTestId("elsewhere"));
+
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(screen.getByTestId("elsewhere")).toHaveFocus();
+      anchor.remove();
     });
   });
 });

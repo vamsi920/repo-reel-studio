@@ -1,10 +1,3 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useCallback,
-  useState,
-} from "react";
 import ReactDOM from "react-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "#/utils/utils";
@@ -14,6 +7,7 @@ import EditIcon from "#/icons/u-edit.svg?react";
 import CheckCircleIcon from "#/icons/u-check-circle.svg?react";
 import DeleteIcon from "#/icons/u-delete.svg?react";
 import { MenuItem } from "#/components/features/settings/llm-profiles/profile-actions-menu-item";
+import { useProfileActionsMenu } from "#/components/features/settings/llm-profiles/use-profile-actions-menu";
 
 interface AgentProfileActionsMenuProps {
   onEdit: () => void;
@@ -40,86 +34,16 @@ export function AgentProfileActionsMenu({
   anchorRef,
 }: AgentProfileActionsMenuProps) {
   const { t } = useTranslation("openhands");
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const anchorElement = anchorRef?.current ?? null;
-  const [portalStyle, setPortalStyle] = useState<React.CSSProperties>();
-
-  useLayoutEffect(() => {
-    if (!anchorElement) return undefined;
-
-    const updatePosition = () => {
-      const rect = anchorElement.getBoundingClientRect();
-      if (!rect) return;
-      const gap = 8;
-      setPortalStyle({
-        position: "fixed",
-        zIndex: 9999,
-        top: rect.bottom + gap,
-        right: window.innerWidth - rect.right,
-        width: "max-content",
-      });
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [anchorElement]);
-
-  useEffect(() => {
-    menuItemsRef.current[0]?.focus();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (menuRef.current?.contains(target)) return;
-      if (anchorElement?.contains(target)) return;
-      onClose();
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [anchorElement, onClose]);
-
-  const handleAction = (action: () => void) => {
-    action();
-    onClose();
-  };
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, currentIndex: number) => {
-      if (e.key === "Tab") {
-        onClose();
-        return;
-      }
-      const itemCount = menuItemsRef.current.filter(Boolean).length;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const nextIndex = (currentIndex + 1) % itemCount;
-        menuItemsRef.current[nextIndex]?.focus();
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        const prevIndex = (currentIndex - 1 + itemCount) % itemCount;
-        menuItemsRef.current[prevIndex]?.focus();
-      }
-    },
-    [onClose],
-  );
+  const {
+    menuRef,
+    menuItemsRef,
+    isPortaled,
+    portalStyle,
+    handleAction,
+    handleKeyDown,
+  } = useProfileActionsMenu({ anchorRef, onClose });
 
   const setActiveDisabled = isActive || isActivating;
-  const isPortaled = Boolean(anchorElement);
 
   const menu = (
     <div
