@@ -309,8 +309,17 @@ function KtGraph() {
     async (entry: SearchEntry) => {
       if (!key) return;
       // A hit usually lives on a level that isn't open. Navigate to its parent
-      // first so selecting it actually reveals something.
-      if (entry.parentId) await drillDown(entry.parentId);
+      // first so selecting it actually reveals something. A subsystem's
+      // `parentId` is the empty string (the system root), which is falsy but
+      // still means "navigate" whenever the current view isn't already the
+      // root — otherwise selecting a subsystem while drilled into another
+      // level would select a node the open level doesn't contain, and the
+      // details panel would silently fail to appear.
+      if (entry.parentId) {
+        await drillDown(entry.parentId);
+      } else {
+        useCodeGraphStore.getState().navigateTo(key, null);
+      }
       useCodeGraphStore.getState().selectNode(key, entry.id);
       useCodeGraphStore.getState().setSearchQuery(key, "");
     },
