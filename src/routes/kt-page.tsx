@@ -90,11 +90,19 @@ function KtPage() {
     return s.handles[key];
   });
 
-  const handleWatchKt = async () => {
-    if (!page || !state) return;
-    setMode("watch");
-    if (manifest) return;
-    if (!state.conversationUrl || !state.sessionApiKey) {
+  // The actual generation work, factored out of handleWatchKt so the
+  // page-change effect below can invoke it directly for a page it already
+  // knows needs a fresh manifest — going through handleWatchKt there would
+  // check the `manifest` state closed over at the time that effect fired,
+  // which is one render stale relative to the `setManifest(null)` call just
+  // above it (state updates don't apply to an already-created closure), so
+  // its `if (manifest) return;` guard would see the *previous* page's
+  // manifest and wrongly skip regeneration.
+  const generateWatchManifest = async (
+    targetPage: NonNullable<typeof page>,
+    targetState: NonNullable<typeof state>,
+  ) => {
+    if (!targetState.conversationUrl || !targetState.sessionApiKey) {
       // A cold-rehydrated (Supabase) entry has real Docs content but no live
       // session — Watch KT needs one to download real file content. Real
       // scope boundary, not a bug: open/reopen this repo's conversation.
@@ -107,13 +115,13 @@ function KtPage() {
     setIsGeneratingVideo(true);
     try {
       const { contents: fileContents } = await readSnapshotFiles(
-        state.snapshot,
-        state.conversationUrl,
-        state.sessionApiKey,
-        page.relevantFiles.map((f) => f.path),
+        targetState.snapshot,
+        targetState.conversationUrl,
+        targetState.sessionApiKey,
+        targetPage.relevantFiles.map((f) => f.path),
       );
       if (
-        page.relevantFiles.length > 0 &&
+        targetPage.relevantFiles.length > 0 &&
         Object.keys(fileContents).length === 0
       ) {
         // Every declared source file failed to load — the video would
@@ -128,11 +136,11 @@ function KtPage() {
       const conceptHops = codeGraphHandle
         ? await findConceptFlow(
             codeGraphHandle,
-            page.relevantFiles.map((f) => f.path),
+            targetPage.relevantFiles.map((f) => f.path),
           ).catch(() => [])
         : [];
       const builtManifest = buildKtManifestFromKnowledgePage(
-        page,
+        targetPage,
         fileContents,
         Object.keys(fileContents),
         5,
@@ -143,7 +151,7 @@ function KtPage() {
       // narration already in the manifest untouched.
       const narrated = await narrateManifest(
         builtManifest,
-        state.snapshot,
+        targetState.snapshot,
       ).catch(() => builtManifest);
       setManifest(narrated);
     } catch (error) {
@@ -153,6 +161,34 @@ function KtPage() {
       setIsGeneratingVideo(false);
     }
   };
+
+  const handleWatchKt = async () => {
+    if (!page || !state) return;
+    setMode("watch");
+    if (manifest) return;
+    await generateWatchManifest(page, state);
+  };
+
+  // This route (`kt/:repositoryId/:pageId`) is reused across navigations
+  // between pages of the same repo — React doesn't remount just because
+  // `:pageId` changed. Without this, `manifest` from the previous page would
+  // stay set, so clicking Watch KT (or the auto-watch deep link) for the new
+  // page would hit the `if (manifest) return;` guard below and silently keep
+  // showing the previous page's video under the new page's title.
+  const previousPageIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentPageId = page?.id ?? null;
+    if (previousPageIdRef.current === currentPageId) return;
+    const isPageChange = previousPageIdRef.current !== null;
+    previousPageIdRef.current = currentPageId;
+    if (!isPageChange) return;
+    setManifest(null);
+    autoWatchStarted.current = false;
+    if (mode === "watch" && page && state) {
+      autoWatchStarted.current = true;
+      void generateWatchManifest(page, state);
+    }
+  }, [page?.id]);
 
   useEffect(() => {
     // `?view=watch` should behave exactly like pressing Watch KT, which means

@@ -157,6 +157,14 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
     if (liveKey === null && connectedLoading) return undefined;
     if (attemptedRef.current === repositoryId) return undefined;
     attemptedRef.current = repositoryId;
+    // `checked` is local component state, but this route (`kt/:repositoryId`)
+    // is reused across navigations between repositories — React doesn't
+    // remount just because the param changed. Without this reset, switching
+    // from a repo that had already settled `checked: true` (e.g. an earlier,
+    // already-hydrated repo) straight to a fresh repo that still needs this
+    // attempt would render "not found" for the new repo until the attempt
+    // below finishes, instead of the loading state it's actually in.
+    setChecked(false);
 
     let cancelled = false;
     const liveMatch = liveMatchRef.current;

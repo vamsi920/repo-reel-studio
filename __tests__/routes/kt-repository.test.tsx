@@ -150,6 +150,37 @@ describe("KtRepository", () => {
     expect(screen.queryByText(I18nKey.KT$STARTING)).not.toBeInTheDocument();
   });
 
+  it("doesn't flash 'not found' for a new repository while the route component is reused", async () => {
+    // This route (`kt/:repositoryId`) is reused across navigations between
+    // repositories -- React doesn't remount just because the param changed.
+    seedFailedGeneration("boom");
+    const { rerender } = renderWithProviders(<KtRepository />);
+    expect(await screen.findByTestId("kt-repository-error")).toBeInTheDocument();
+
+    let resolveOrg: (value: string | null) => void = () => {};
+    resolveOrgId.mockImplementation(
+      () =>
+        new Promise<string | null>((resolve) => {
+          resolveOrg = resolve;
+        }),
+    );
+    const OTHER_REPOSITORY_ID = "acme/web@main";
+    useParamsMock.mockReturnValue({
+      repositoryId: encodeURIComponent(OTHER_REPOSITORY_ID),
+    } as never);
+    rerender(<KtRepository />);
+
+    // Regression: the new repository's own rehydration attempt hasn't
+    // settled yet, so this must show the loading state -- not a stale
+    // "not found" left over from the previous repository already having
+    // settled `checked: true`.
+    expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
+    expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
+
+    resolveOrg(null);
+    expect(await screen.findByText(I18nKey.KT$NOT_FOUND)).toBeInTheDocument();
+  });
+
   it("falls back to the empty state when cold rehydration rejects", async () => {
     const rejections: unknown[] = [];
     const onUnhandled = (reason: unknown) => rejections.push(reason);
