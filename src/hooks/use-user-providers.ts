@@ -7,7 +7,12 @@ import { useGithubConnection } from "./query/use-github-connection";
 
 export const useUserProviders = () => {
   const { data: settings, isLoading: isLoadingSettings } = useSettings();
-  const { data: githubConnection } = useGithubConnection();
+  const {
+    data: githubConnection,
+    isPending: isGithubConnectionPending,
+    fetchStatus: githubConnectionFetchStatus,
+    isError: isGithubConnectionError,
+  } = useGithubConnection();
   // Reactive read: the raw `getActiveBackend()` store getter doesn't
   // subscribe to backend-registry changes, so a backend switch that
   // happens after this hook first mounts (onboarding seeding the default
@@ -27,6 +32,37 @@ export const useUserProviders = () => {
   React.useEffect(() => {
     setLocalGithubConnected(hasLocalGithubConnection);
   }, [hasLocalGithubConnection]);
+
+  // Dev-only diagnostic: a local (non-Cloud) backend with no working GitHub
+  // connection leaves `providers` without "github" and, from there, leaves
+  // useGitRepositories's query permanently disabled with zero other signal
+  // (see the "Open Repository always shows No Repository" report). Pending
+  // + idle fetchStatus means the underlying query never even attempted a
+  // fetch (e.g. the Supabase session hasn't resolved to a real user yet) --
+  // that is a different failure mode than a fetch that ran and resolved to
+  // "no connection", and neither was distinguishable from here before.
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (backend.kind === "cloud" || hasLocalGithubConnection) return;
+    const queryNeverAttempted =
+      isGithubConnectionPending && githubConnectionFetchStatus === "idle";
+    console.debug(
+      '[useUserProviders] local GitHub connection unavailable, "github" omitted from providers',
+      {
+        backendKind: backend.kind,
+        queryNeverAttempted,
+        isGithubConnectionPending,
+        githubConnectionFetchStatus,
+        isGithubConnectionError,
+      },
+    );
+  }, [
+    backend.kind,
+    hasLocalGithubConnection,
+    isGithubConnectionPending,
+    githubConnectionFetchStatus,
+    isGithubConnectionError,
+  ]);
 
   const providers = React.useMemo(() => {
     const list = convertRawProvidersToList(settings?.provider_tokens_set);

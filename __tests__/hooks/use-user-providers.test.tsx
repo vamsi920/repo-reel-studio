@@ -114,4 +114,85 @@ describe("useUserProviders", () => {
 
     expect(result.current.providers).toContain("github");
   });
+
+  // Regression coverage for the "Open Repository always shows No Repository"
+  // report: when a local backend has no working GitHub connection, providers
+  // silently omits "github" with no other signal. These diagnostics are the
+  // only way to tell "the underlying query never even ran" apart from "it
+  // ran and resolved to no connection" from the browser console.
+  describe("dev diagnostic for a missing local GitHub connection", () => {
+    it("logs that the connection query never attempted a fetch", () => {
+      const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+      mockUseGithubConnection.mockReturnValue({
+        data: undefined,
+        isPending: true,
+        fetchStatus: "idle",
+        isError: false,
+      });
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      renderUserProviders();
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[useUserProviders]"),
+        expect.objectContaining({
+          backendKind: "local",
+          queryNeverAttempted: true,
+        }),
+      );
+      debugSpy.mockRestore();
+    });
+
+    it("logs that the connection query ran and resolved to no connection", () => {
+      const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+      mockUseGithubConnection.mockReturnValue({
+        data: null,
+        isPending: false,
+        fetchStatus: "idle",
+        isError: false,
+      });
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      renderUserProviders();
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[useUserProviders]"),
+        expect.objectContaining({
+          backendKind: "local",
+          queryNeverAttempted: false,
+        }),
+      );
+      debugSpy.mockRestore();
+    });
+
+    it("does not log once a local GitHub connection resolves", () => {
+      const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      renderUserProviders();
+
+      expect(debugSpy).not.toHaveBeenCalled();
+      debugSpy.mockRestore();
+    });
+
+    it("does not log for a Cloud backend, which never uses this path", () => {
+      const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+      mockUseGithubConnection.mockReturnValue({
+        data: undefined,
+        isPending: true,
+        fetchStatus: "idle",
+        isError: false,
+      });
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+
+      renderUserProviders();
+
+      expect(debugSpy).not.toHaveBeenCalled();
+      debugSpy.mockRestore();
+    });
+  });
 });
