@@ -31,8 +31,8 @@ export function useGitRepositories(options: UseGitRepositoriesOptions) {
 
   const queryEnabled =
     enabled &&
-    (providers || []).length > 0 &&
     !!provider &&
+    (providers || []).includes(provider) &&
     (!useInstallationRepos ||
       (Array.isArray(installations) && installations.length > 0));
 
