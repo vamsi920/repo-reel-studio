@@ -295,6 +295,19 @@ export async function runConnectorProbe(
       ? requested.filter((scope) => !granted.includes(scope))
       : undefined;
 
+    // A 2xx response with fewer scopes than requested is not a rejected
+    // credential -- remediationForStatus() only looks at the HTTP status, so
+    // it has nothing to say here. Reuse the 403 copy, which already
+    // correctly separates "valid but underscoped" from "invalid".
+    const scopeRemediation =
+      missing && missing.length > 0
+        ? {
+            codeKey: "PROBE$REMEDIATION_FORBIDDEN",
+            steps: [{ kind: "console", targetKey: "PROBE$REMEDIATION_GRANT_SCOPES" }],
+            agentActionable: false,
+          }
+        : undefined;
+
     // Rate-limit headroom is reported as a check rather than silently ignored:
     // a probe loop during onboarding is the likeliest thing to exhaust a
     // customer's API quota, and they should see it coming.
@@ -320,7 +333,7 @@ export async function runConnectorProbe(
       vantage: "edge",
       latencyMs,
       checks,
-      remediation: remediationForStatus(response.status),
+      remediation: remediationForStatus(response.status) ?? scopeRemediation,
       grantedScopes: granted,
       missingScopes: missing,
       serverVersion: extractVersion(manifest, response, body),
