@@ -26,6 +26,7 @@ import { getStoredConversationMetadata } from "#/api/conversation-metadata-store
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useOptionalScrollContext } from "#/context/scroll-context";
+import { mintLocalGithubCloneCredential } from "#/api/git-service/mint-local-github-clone-credential";
 
 interface GitControlBarProps {
   onSuggestionsClick: (value: string) => void;
@@ -156,7 +157,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
         gitProvider: repository.git_provider,
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           // Use ref to read the latest WebSocket status (avoids stale closure)
           if (webSocketStatusRef.current !== "OPEN") {
             displayErrorToast(
@@ -164,6 +165,14 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             );
             return;
           }
+
+          // Mirror the conversation-creation flow: a local (non-Cloud)
+          // GitHub connection needs its clone credential minted into this
+          // sandbox's secret store before the agent attempts to clone,
+          // otherwise a private repo attached mid-conversation fails with
+          // no GITHUB_TOKEN configured. No-op for Cloud backends / non-GitHub
+          // repos (see mintLocalGithubCloneCredential).
+          await mintLocalGithubCloneCredential(repository.git_provider);
 
           // Send clone command to agent after metadata is updated
           // Use ref to always call the latest send function (avoids stale closure

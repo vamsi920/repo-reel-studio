@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "test-utils";
 
 import { useActiveBackend } from "#/contexts/active-backend-context";
@@ -13,6 +13,7 @@ import { useUpdateConversationRepository } from "#/hooks/mutation/use-update-con
 import { useHomeStore } from "#/stores/home-store";
 import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-store";
 import { getStoredConversationMetadata } from "#/api/conversation-metadata-store";
+import { mintLocalGithubCloneCredential } from "#/api/git-service/mint-local-github-clone-credential";
 import { GitControlBar } from "#/components/features/chat/git-control-bar";
 import { ScrollProvider } from "#/context/scroll-context";
 
@@ -40,6 +41,7 @@ vi.mock("#/hooks/mutation/use-update-conversation-repository");
 vi.mock("#/stores/home-store");
 vi.mock("#/stores/optimistic-user-message-store");
 vi.mock("#/api/conversation-metadata-store");
+vi.mock("#/api/git-service/mint-local-github-clone-credential");
 
 vi.mock("#/components/features/chat/git-control-bar-repo-button", () => ({
   GitControlBarRepoButton: ({ disabled }: { disabled?: boolean }) => (
@@ -246,9 +248,10 @@ describe("GitControlBar - Auto-scroll on clone (issue #817)", () => {
         markPendingMessageError: vi.fn(),
       })) as unknown as typeof useOptimisticUserMessageStore);
     vi.mocked(getStoredConversationMetadata).mockReturnValue(null);
+    vi.mocked(mintLocalGithubCloneCredential).mockResolvedValue("github.com");
   });
 
-  it("scrolls the chat to bottom after a successful clone is enqueued", () => {
+  it("scrolls the chat to bottom after a successful clone is enqueued", async () => {
     // Arrange: provide a spy via ScrollProvider so we can observe the
     // scroll callback the bar pulls out of useOptionalScrollContext.
     const scrollDomToBottom = vi.fn();
@@ -277,7 +280,47 @@ describe("GitControlBar - Auto-scroll on clone (issue #817)", () => {
     );
 
     // Assert: the optimistic clone bubble must pull the chat back to the
-    // bottom even if the user had scrolled up.
-    expect(scrollDomToBottom).toHaveBeenCalledTimes(1);
+    // bottom even if the user had scrolled up. The credential mint now runs
+    // (and is awaited) before this, so the scroll lands after a microtask.
+    await waitFor(() => expect(scrollDomToBottom).toHaveBeenCalledTimes(1));
+  });
+
+  it("mints a local GitHub clone credential before sending the clone command", async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useSendMessage).mockReturnValue({
+      send,
+    } as unknown as ReturnType<typeof useSendMessage>);
+
+    renderWithProviders(
+      <ScrollProvider
+        value={{
+          scrollRef: { current: null },
+          autoScroll: true,
+          setAutoScroll: vi.fn(),
+          scrollDomToBottom: vi.fn(),
+          hitBottom: true,
+          setHitBottom: vi.fn(),
+          onChatBodyScroll: vi.fn(),
+        }}
+      >
+        <GitControlBar onSuggestionsClick={vi.fn()} />
+      </ScrollProvider>,
+    );
+
+    mocks.modalLaunchHandler.current?.(
+      { full_name: "user/private-repo", git_provider: "github" },
+      { name: "main" },
+    );
+
+    await waitFor(() => expect(send).toHaveBeenCalled());
+
+    expect(mintLocalGithubCloneCredential).toHaveBeenCalledWith("github");
+    // The credential must be minted (and awaited) before the clone command
+    // is sent, otherwise the sandbox has no GITHUB_TOKEN when the agent
+    // attempts to clone a private repo.
+    const mintOrder = vi.mocked(mintLocalGithubCloneCredential).mock
+      .invocationCallOrder[0];
+    const sendOrder = send.mock.invocationCallOrder[0];
+    expect(mintOrder).toBeLessThan(sendOrder);
   });
 });

@@ -28,57 +28,31 @@ import {
   toPluginCoordinates,
   type WorkspaceMode,
 } from "#/api/conversation-metadata-store";
-import { SecretsService } from "#/api/secrets-service";
-import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
-import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
-
-const GITHUB_CLONE_SECRET_NAME = "GITHUB_TOKEN";
+import {
+  GITHUB_CLONE_SECRET_NAME,
+  mintLocalGithubCloneCredential,
+} from "#/api/git-service/mint-local-github-clone-credential";
 
 /**
- * The self-hosted agent-server has no route back to Supabase, so the only
- * way to get a locally-connected GitHub token into its sandbox is a brief
- * browser pass-through: mint the decrypted token, save it straight into the
- * agent-server's own secret store, and prepend a clone instruction. The
- * token variable is discarded immediately after -- never persisted, never
- * logged. See supabase/functions/github-mint-clone-credential and the
- * plan doc's explicitly-confirmed tradeoff.
+ * No-op (returns null) unless a repo is selected, it's GitHub, and a local
+ * (non-Cloud) GitHub connection is active -- see
+ * `mintLocalGithubCloneCredential`, which mints and stores the credential
+ * this instruction references.
  */
 async function buildLocalGithubCloneInstructions(repository: {
   name: string;
   gitProvider: Provider;
   branch?: string;
 }): Promise<string | null> {
-  if (
-    repository.gitProvider !== "github" ||
-    !isLocalGithubConnected() ||
-    !isSupabaseConfigured ||
-    !supabase
-  ) {
-    return null;
-  }
-
-  const { data, error } = await supabase.functions.invoke<{
-    token: string;
-    host: string;
-  }>("github-mint-clone-credential", { body: {} });
-  if (error || !data?.token || !data?.host) return null;
-
-  try {
-    await SecretsService.createSecret(
-      GITHUB_CLONE_SECRET_NAME,
-      data.token,
-      "GitHub clone credential (auto-managed)",
-    );
-  } catch {
-    return null;
-  }
+  const host = await mintLocalGithubCloneCredential(repository.gitProvider);
+  if (!host) return null;
 
   const checkout = repository.branch
     ? ` && git checkout ${repository.branch}`
     : "";
   return (
     `Before doing anything else, run: ` +
-    `git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${data.host}/${repository.name}.git .${checkout}`
+    `git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}`
   );
 }
 
