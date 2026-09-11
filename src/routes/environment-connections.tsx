@@ -47,6 +47,20 @@ function EnvironmentConnectionsScreen() {
     React.useState<ConnectorManifest | null>(null);
   const [busyProvider, setBusyProvider] = React.useState<string | null>(null);
   const [lastProbe, setLastProbe] = React.useState<ProbeResult | null>(null);
+  const formPanelRef = React.useRef<HTMLElement | null>(null);
+
+  // The form panel always renders at a fixed spot near the top of the page,
+  // not next to the card that was clicked. On a long catalog scroll (most
+  // categories, most of the time) that leaves it off-screen, so "Connect"
+  // looks like it did nothing unless the panel is brought into view itself.
+  React.useEffect(() => {
+    if (!activeManifest) return;
+    formPanelRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    formPanelRef.current?.focus();
+  }, [activeManifest]);
 
   // The OAuth callback bounces back here with a result in the query string,
   // matching how connections-settings.tsx already handles ?connected=/?error=.
@@ -251,8 +265,10 @@ function EnvironmentConnectionsScreen() {
 
       {activeManifest ? (
         <section
+          ref={formPanelRef}
+          tabIndex={-1}
           data-testid="connection-form-panel"
-          className="instrument-panel ame-card flex flex-col gap-4 p-5"
+          className="instrument-panel ame-card flex flex-col gap-4 p-5 outline-none"
         >
           <div className="flex flex-col gap-0.5">
             <span className="ame-eyebrow">
