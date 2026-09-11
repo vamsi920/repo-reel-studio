@@ -30,9 +30,36 @@ describe("netlify.toml Content-Security-Policy", () => {
     );
   });
 
-  it("still restricts script-src to self, inline, and the telemetry proxy", () => {
+  it("allows the jsdelivr CDN to load the Monaco editor used by the Diff tab", () => {
+    // @monaco-editor/react's default loader (src/components/features/
+    // diff-viewer/file-diff-viewer.tsx) fetches its AMD loader script and
+    // worker bundles from cdn.jsdelivr.net; without this, script-src blocks
+    // the loader and the Diff tab spins on "Loading..." forever.
+    expect(getDirectiveSources("script-src")).toContain(
+      "https://cdn.jsdelivr.net",
+    );
+  });
+
+  it("still restricts script-src to self, inline, and the two allowed CDNs", () => {
     expect(getDirectiveSources("script-src").sort()).toEqual(
-      ["'self'", "'unsafe-inline'", "https://z.openhands.dev"].sort(),
+      [
+        "'self'",
+        "'unsafe-inline'",
+        "https://z.openhands.dev",
+        "https://cdn.jsdelivr.net",
+      ].sort(),
+    );
+  });
+
+  it("allows the jsdelivr CDN to load Monaco's web workers", () => {
+    expect(getDirectiveSources("worker-src")).toContain(
+      "https://cdn.jsdelivr.net",
+    );
+  });
+
+  it("still restricts worker-src to self, blob, and the jsdelivr CDN", () => {
+    expect(getDirectiveSources("worker-src").sort()).toEqual(
+      ["'self'", "blob:", "https://cdn.jsdelivr.net"].sort(),
     );
   });
 });
