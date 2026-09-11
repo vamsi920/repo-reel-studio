@@ -37,6 +37,19 @@ const getWikiTask = vi.mocked(DeepWikiService.getWikiTask);
 const getWikiCache = vi.mocked(DeepWikiService.getWikiCache);
 const streamWikiTask = vi.mocked(DeepWikiService.streamWikiTask);
 
+// Real (unmocked) resolveDeepWikiRepoTarget is exercised here, with just its
+// two lower-level dependencies faked -- covers the engine actually wiring a
+// resolved GitHub target through, on top of deepwiki-repo-target.test.ts's
+// own coverage of the resolution logic itself.
+const githubTargetState = vi.hoisted(() => ({ localConnected: false }));
+vi.mock("#/api/git-service/github-connection-flag", () => ({
+  isLocalGithubConnected: () => githubTargetState.localConnected,
+}));
+const mintGithubCloneToken = vi.fn();
+vi.mock("#/api/git-service/mint-local-github-clone-credential", () => ({
+  mintGithubCloneToken: (...args: unknown[]) => mintGithubCloneToken(...args),
+}));
+
 type StreamHandlers = Parameters<typeof DeepWikiService.streamWikiTask>[1];
 
 const snapshot: RepositorySnapshot = {
@@ -157,6 +170,7 @@ describe("DeepWikiKnowledgeEngine.generate", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    githubTargetState.localConnected = false;
   });
 
   it("normalizes the finished wiki cache into a KnowledgeRepository", async () => {
@@ -204,6 +218,32 @@ describe("DeepWikiKnowledgeEngine.generate", () => {
       "acme",
       "api",
       "local",
+      "en",
+      "abc123",
+    );
+  });
+
+  it("clones by URL with a scoped token when a local GitHub connection is available", async () => {
+    githubTargetState.localConnected = true;
+    mintGithubCloneToken.mockResolvedValue({
+      token: "gh-token-123",
+      host: "github.com",
+    });
+    scriptStream((h) => h.onDone(completed));
+
+    await settle(new DeepWikiKnowledgeEngine().generate(snapshot));
+
+    expect(submitWikiTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repo_url: "https://github.com/acme/api",
+        type: "github",
+        token: "gh-token-123",
+      }),
+    );
+    expect(getWikiCache).toHaveBeenCalledWith(
+      "acme",
+      "api",
+      "github",
       "en",
       "abc123",
     );

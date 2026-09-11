@@ -4,6 +4,7 @@ import type {
   KnowledgeRepository,
   RepositorySnapshot,
 } from "./knowledge-engine";
+import { resolveDeepWikiRepoTarget } from "./deepwiki-repo-target";
 
 let initialized = false;
 function ensureMermaidInitialized() {
@@ -48,6 +49,17 @@ export async function repairInvalidDiagrams(
 ): Promise<KnowledgeRepository> {
   let repairedCount = 0;
   let attemptedCount = 0;
+  // Lazy + memoized: only resolved (and only mints a GitHub credential, if
+  // needed) once at least one diagram actually fails to parse, and reused
+  // across every repair attempt in this pass rather than re-minted per
+  // diagram. Must match whatever repo_url/type this repo's Knowledge was
+  // actually indexed under (see deepwiki-repo-target.ts) — DeepWiki 425s a
+  // chat-completion call against a repo/type combination it never indexed.
+  let targetPromise: ReturnType<typeof resolveDeepWikiRepoTarget> | null = null;
+  const getTarget = () => {
+    targetPromise ??= resolveDeepWikiRepoTarget(snapshot);
+    return targetPromise;
+  };
 
   const pages = await Promise.all(
     knowledge.pages.map(async (page) => {
@@ -60,9 +72,10 @@ export async function repairInvalidDiagrams(
 
           attemptedCount += 1;
           try {
+            const target = await getTarget();
             const response = await DeepWikiService.chatCompletion({
-              repo_url: snapshot.localPath,
-              type: "local",
+              repo_url: target.repo_url,
+              type: target.type,
               provider: "google",
               messages: [
                 {

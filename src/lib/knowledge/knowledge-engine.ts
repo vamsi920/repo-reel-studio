@@ -9,6 +9,7 @@ import type {
 } from "#/api/deepwiki-service/deepwiki-service.types";
 import { extractCitedRanges } from "./citation-parser";
 import type { EvidenceSubsystemEntry } from "./code-evidence";
+import { resolveDeepWikiRepoTarget } from "./deepwiki-repo-target";
 
 /** Every generation must resolve to an immutable commit. */
 export interface RepositorySnapshot {
@@ -246,9 +247,11 @@ function normalizeStructure(
 /**
  * Reuses DeepWiki-Open's own async task machine as the job queue — this app
  * has no job-queue infrastructure of its own to build one in (see
- * docs/deepwiki-video-kt-integration.md). DeepWiki's `type: "local"` repo
- * mode means no second GitHub auth or clone step is introduced either: it
- * reads the exact local checkout Neo already resolved for this commit.
+ * docs/deepwiki-video-kt-integration.md). Prefers DeepWiki's `type: "github"`
+ * clone-by-URL mode (see deepwiki-repo-target.ts) so generation doesn't
+ * depend on DeepWiki sharing a filesystem with the agent-server sandbox;
+ * falls back to `type: "local"` (reading the exact local checkout Neo
+ * already resolved for this commit) when no GitHub credential is available.
  */
 export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
   constructor(
@@ -263,10 +266,12 @@ export class DeepWikiKnowledgeEngine implements RepositoryKnowledgeEngine {
     snapshot: RepositorySnapshot,
     options: GenerateOptions = {},
   ): Promise<KnowledgeRepository> {
-    const repoType = "local";
+    const target = await resolveDeepWikiRepoTarget(snapshot);
+    const repoType = target.type;
     const submitResult = await DeepWikiService.submitWikiTask({
-      repo_url: snapshot.localPath,
+      repo_url: target.repo_url,
       type: repoType,
+      token: target.token,
       owner: snapshot.owner,
       repo: snapshot.repo,
       provider: this.options.provider ?? "google",

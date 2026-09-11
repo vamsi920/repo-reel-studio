@@ -25,12 +25,37 @@ export const GITHUB_CLONE_SECRET_NAME = "GITHUB_TOKEN";
 export async function mintLocalGithubCloneCredential(
   gitProvider: Provider,
 ): Promise<string | null> {
-  if (
-    gitProvider !== "github" ||
-    !isLocalGithubConnected() ||
-    !isSupabaseConfigured ||
-    !supabase
-  ) {
+  if (gitProvider !== "github") return null;
+
+  const credential = await mintGithubCloneToken();
+  if (!credential) return null;
+
+  try {
+    await SecretsService.createSecret(
+      GITHUB_CLONE_SECRET_NAME,
+      credential.token,
+      "GitHub clone credential (auto-managed)",
+    );
+  } catch {
+    return null;
+  }
+
+  return credential.host;
+}
+
+/**
+ * The same one-shot decrypted-token handoff as above, without the
+ * agent-server secret-store write -- for callers that need the raw token
+ * immediately (e.g. to pass straight through to another HTTP request) rather
+ * than stashing it for a sandbox to read later. Never persist or log the
+ * returned token. See #/lib/knowledge/deepwiki-repo-target.ts for the other
+ * consumer of this.
+ */
+export async function mintGithubCloneToken(): Promise<{
+  token: string;
+  host: string;
+} | null> {
+  if (!isLocalGithubConnected() || !isSupabaseConfigured || !supabase) {
     return null;
   }
 
@@ -40,15 +65,5 @@ export async function mintLocalGithubCloneCredential(
   }>("github-mint-clone-credential", { body: {} });
   if (error || !data?.token || !data?.host) return null;
 
-  try {
-    await SecretsService.createSecret(
-      GITHUB_CLONE_SECRET_NAME,
-      data.token,
-      "GitHub clone credential (auto-managed)",
-    );
-  } catch {
-    return null;
-  }
-
-  return data.host;
+  return data;
 }

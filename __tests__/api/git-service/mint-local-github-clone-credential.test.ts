@@ -32,7 +32,7 @@ vi.mock("#/api/secrets-service", () => ({
   },
 }));
 
-const { mintLocalGithubCloneCredential } = await import(
+const { mintLocalGithubCloneCredential, mintGithubCloneToken } = await import(
   "#/api/git-service/mint-local-github-clone-credential"
 );
 
@@ -88,5 +88,38 @@ describe("mintLocalGithubCloneCredential", () => {
   it("returns null when storing the secret throws", async () => {
     createSecret.mockRejectedValue(new Error("store failed"));
     await expect(mintLocalGithubCloneCredential("github")).resolves.toBeNull();
+  });
+});
+
+describe("mintGithubCloneToken", () => {
+  beforeEach(() => {
+    state.isConfigured = true;
+    state.localConnected = true;
+    state.invokeData = { token: "gh-token-123", host: "github.com" };
+    state.invokeError = null;
+    createSecret.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns the raw token and host without storing anything", async () => {
+    await expect(mintGithubCloneToken()).resolves.toEqual({
+      token: "gh-token-123",
+      host: "github.com",
+    });
+    expect(createSecret).not.toHaveBeenCalled();
+  });
+
+  it("returns null when there is no local GitHub connection", async () => {
+    state.localConnected = false;
+    await expect(mintGithubCloneToken()).resolves.toBeNull();
+  });
+
+  it("returns null when the mint function invoke errors", async () => {
+    state.invokeError = { message: "boom" };
+    state.invokeData = null;
+    await expect(mintGithubCloneToken()).resolves.toBeNull();
   });
 });
