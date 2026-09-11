@@ -62,4 +62,21 @@ describe("netlify.toml Content-Security-Policy", () => {
       ["'self'", "blob:", "https://cdn.jsdelivr.net"].sort(),
     );
   });
+
+  it("allows framing the agent-server workspace host for the Files tab's Rich preview", () => {
+    // src/components/features/files-tab/file-content-viewer.tsx iframes HTML
+    // and PDF files from the conversation's agent-server workspace URL
+    // (src/hooks/query/use-workspace-file-content.ts). That host is
+    // user-configurable per backend (src/api/backend-registry/types.ts), so
+    // it can't be pinned to one domain here; without a frame-src, the
+    // default-src 'self' fallback silently blocks the iframe and the Rich
+    // preview pane stays permanently blank.
+    expect(getDirectiveSources("frame-src")).toContain("https:");
+  });
+
+  it("still restricts frame-src to self and https", () => {
+    expect(getDirectiveSources("frame-src").sort()).toEqual(
+      ["'self'", "https:"].sort(),
+    );
+  });
 });
