@@ -118,7 +118,12 @@ function extractScopes(
 
   if (spec.from === "header") {
     const raw = response.headers.get(spec.name);
-    if (!raw) return [];
+    // A missing header means "no scopes header was returned" (e.g. the
+    // vendor never echoes one on a rejected credential), not "zero scopes
+    // granted" -- the caller must be able to tell those apart, since a real
+    // empty grant should still produce a "missing everything" message while
+    // an absent header should suppress the scope check entirely.
+    if (!raw) return undefined;
     return raw
       .split(spec.separator)
       .map((scope) => scope.trim())
@@ -133,7 +138,7 @@ function extractScopes(
       .map((scope) => scope.trim())
       .filter(Boolean);
   }
-  return [];
+  return undefined;
 }
 
 function extractVersion(
