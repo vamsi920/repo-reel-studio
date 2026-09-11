@@ -79,6 +79,7 @@ export function GitRepoDropdown({
     isLoading,
     isFetchingNextPage,
     isError,
+    error: repositoryError,
     isSearchLoading,
   } = useRepositoryData(
     provider,
@@ -345,7 +346,7 @@ export function GitRepoDropdown({
         itemKey={(repo) => repo.id}
       />
 
-      <ErrorMessage isError={isError} />
+      <ErrorMessage isError={isError} message={repositoryError?.message} />
     </div>
   );
 }

@@ -183,4 +183,49 @@ describe("GitBranchDropdown", () => {
       expect(mockOnBranchSelect).toHaveBeenCalledWith(MOCK_BRANCHES[1]);
     });
   });
+
+  describe("error state", () => {
+    it("shows the real error message when the branches query fails", async () => {
+      mockUseBranchData.mockReturnValue({
+        branches: [],
+        isLoading: false,
+        isError: true,
+        error: new Error(
+          "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+        ),
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isSearchLoading: false,
+      });
+
+      render(
+        <GitBranchDropdown
+          repository="user/repo"
+          provider="github"
+          selectedBranch={null}
+          onBranchSelect={mockOnBranchSelect}
+        />,
+        {
+          wrapper: ({ children }) => (
+            <QueryClientProvider
+              client={
+                new QueryClient({
+                  defaultOptions: { queries: { retry: false } },
+                })
+              }
+            >
+              {children}
+            </QueryClientProvider>
+          ),
+        },
+      );
+
+      expect(
+        await screen.findByText(
+          "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
 });

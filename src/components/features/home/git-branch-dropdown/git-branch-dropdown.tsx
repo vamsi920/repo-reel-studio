@@ -60,6 +60,7 @@ export function GitBranchDropdown({
     branches: filteredBranches,
     isLoading,
     isError,
+    error: branchError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -72,8 +73,6 @@ export function GitBranchDropdown({
     inputValue,
     selectedBranch,
   );
-
-  const error = isError ? new Error("Failed to load branches") : null;
 
   // Handle clear
   const handleClear = useCallback(() => {
@@ -239,7 +238,7 @@ export function GitBranchDropdown({
         menuRef={menuRef}
       />
 
-      <ErrorMessage isError={!!error} />
+      <ErrorMessage isError={isError} message={branchError?.message} />
     </div>
   );
 }

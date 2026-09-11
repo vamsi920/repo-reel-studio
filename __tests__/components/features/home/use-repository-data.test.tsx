@@ -95,4 +95,42 @@ describe("useRepositoryData", () => {
       true,
     );
   });
+
+  it("surfaces the list query's error", () => {
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+    const listError = new Error("github_auth_error");
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: listError,
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isError).toBe(true);
+    expect(result.current.error).toBe(listError);
+  });
+
+  it("surfaces the search query's error even when the list query is fine", () => {
+    // Regression: a search-only failure (e.g. the proxy erroring while
+    // typing) used to be dropped entirely -- only the list query's isError
+    // reached the dropdown, so a broken search looked like "no results"
+    // instead of a real error.
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+    const searchError = new Error("github_api_error");
+    mockUseSearchRepositories.mockReturnValue({
+      ...defaultSearchRepositoriesResult,
+      isError: true,
+      error: searchError,
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "neo-qa-fixture", [], "neo-qa-fixture"),
+    );
+
+    expect(result.current.isError).toBe(true);
+    expect(result.current.error).toBe(searchError);
+  });
 });

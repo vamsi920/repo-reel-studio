@@ -250,4 +250,30 @@ describe("GitRepoDropdown", () => {
       });
     });
   });
+
+  describe("error state", () => {
+    it("shows the real error message when the repository query fails", async () => {
+      renderDropdown(
+        {},
+        {
+          isError: true,
+          error: new Error(
+            "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+          ),
+        },
+      );
+
+      expect(
+        await screen.findByText(
+          "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("falls back to a generic message when the query errors without one", async () => {
+      renderDropdown({}, { isError: true });
+
+      expect(await screen.findByText("Failed to load data")).toBeInTheDocument();
+    });
+  });
 });

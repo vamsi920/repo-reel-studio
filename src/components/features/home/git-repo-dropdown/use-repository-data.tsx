@@ -22,6 +22,7 @@ export function useRepositoryData(
     isLoading,
     isFetchingNextPage,
     isError,
+    error: listError,
   } = useGitRepositories({
     provider,
     enabled: !disabled,
@@ -46,12 +47,16 @@ export function useRepositoryData(
   const isProviderReady = !!provider && providers.includes(provider);
 
   // Search repositories when user types
-  const { data: searchData, isLoading: isSearchLoading } =
-    useSearchRepositories(
-      processedSearchInput,
-      provider,
-      shouldSkipSearch || !isProviderReady,
-    );
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    error: searchError,
+  } = useSearchRepositories(
+    processedSearchInput,
+    provider,
+    shouldSkipSearch || !isProviderReady,
+  );
 
   // Combine all repositories from paginated data
   const allRepositories = useMemo(
@@ -135,7 +140,13 @@ export function useRepositoryData(
     hasNextPage,
     isLoading,
     isFetchingNextPage,
-    isError,
+    // A search-query failure (e.g. a dead GitHub credential returning a
+    // proxy error) used to be invisible here -- only the list query's
+    // isError was surfaced, so typing into the search box during an outage
+    // silently fell through to "no results" instead of a real error. See
+    // the "Open Repository silently shows empty results" report.
+    isError: isError || isSearchError,
+    error: listError ?? searchError ?? null,
     isSearchLoading,
   };
 }

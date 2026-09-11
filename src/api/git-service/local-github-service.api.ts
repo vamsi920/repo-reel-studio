@@ -52,6 +52,9 @@ const PROXY_ERROR_MESSAGES: Record<string, string> = {
   not_connected: "Connect your GitHub account before browsing repositories.",
   missing_repository: "No repository was specified.",
   unknown_action: "Unsupported GitHub proxy request.",
+  github_auth_error:
+    "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+  github_api_error: "GitHub is temporarily unreachable. Please try again.",
 };
 
 /**

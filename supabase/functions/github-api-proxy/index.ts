@@ -44,6 +44,23 @@ async function getDecryptedConnection(
   return { token, host: connection.enterprise_host };
 }
 
+/**
+ * Thrown when GitHub's API itself rejects a request, carrying the real
+ * upstream HTTP status. The top-level handler uses this to tell "your
+ * credential is bad" (401/403) apart from "GitHub is having an outage"
+ * (5xx/other) instead of flattening every failure to the same opaque 502 --
+ * see the "Open Repository silently shows empty results" report.
+ */
+class GithubUpstreamError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "GithubUpstreamError";
+  }
+}
+
 function githubHeaders(token: string): HeadersInit {
   return {
     Authorization: `Bearer ${token}`,
@@ -96,7 +113,10 @@ async function handleRepos(
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     console.error(`GitHub /user/repos failed (${response.status}): ${body}`);
-    throw new Error(`GitHub API error (${response.status})`);
+    throw new GithubUpstreamError(
+      response.status,
+      `GitHub API error (${response.status})`,
+    );
   }
   const repos = (await response.json()) as Record<string, unknown>[];
   const filtered = query
@@ -186,7 +206,10 @@ async function handlePulls(
     console.error(
       `GitHub /search/issues failed (${searchResponse.status}): ${body}`,
     );
-    throw new Error(`GitHub API error (${searchResponse.status})`);
+    throw new GithubUpstreamError(
+      searchResponse.status,
+      `GitHub API error (${searchResponse.status})`,
+    );
   }
   const search = (await searchResponse.json()) as {
     items: { number: number; repository_url: string }[];
@@ -239,7 +262,10 @@ async function handleBranches(
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     console.error(`GitHub /branches failed (${response.status}): ${body}`);
-    throw new Error(`GitHub API error (${response.status})`);
+    throw new GithubUpstreamError(
+      response.status,
+      `GitHub API error (${response.status})`,
+    );
   }
   const branches = (await response.json()) as Record<string, unknown>[];
   const filtered = query
@@ -307,6 +333,15 @@ Deno.serve(async (req) => {
     }
     return jsonResponse({ error: "unknown_action" }, { status: 400 });
   } catch (error) {
+    if (error instanceof GithubUpstreamError) {
+      // 401/403 means the stored credential itself is bad -- surface that
+      // distinctly from a genuine GitHub outage so the client can tell the
+      // user to reconnect instead of just "try again".
+      if (error.status === 401 || error.status === 403) {
+        return jsonResponse({ error: "github_auth_error" }, { status: 401 });
+      }
+      return jsonResponse({ error: "github_api_error" }, { status: 502 });
+    }
     return jsonResponse(
       { error: error instanceof Error ? error.message : "github_api_error" },
       { status: 502 },

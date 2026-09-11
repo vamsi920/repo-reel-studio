@@ -91,4 +91,22 @@ describe("useGitRepositories", () => {
       expect(retrieveUserGitRepositoriesSpy).not.toHaveBeenCalled();
     });
   });
+
+  it("surfaces the underlying query error instead of swallowing it", async () => {
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+    retrieveUserGitRepositoriesSpy.mockReset();
+    retrieveUserGitRepositoriesSpy.mockRejectedValue(
+      new Error("github_auth_error"),
+    );
+
+    const { result } = renderHook(
+      () => useGitRepositories({ provider: "github" }),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(result.current.error?.message).toBe("github_auth_error");
+  });
 });

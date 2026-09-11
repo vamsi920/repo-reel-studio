@@ -155,6 +155,7 @@ export function useGitRepositories(options: UseGitRepositoriesOptions) {
     data: repos.data,
     isLoading: repos.isLoading,
     isError: repos.isError,
+    error: repos.error,
     hasNextPage: repos.hasNextPage,
     isFetchingNextPage: repos.isFetchingNextPage,
     fetchNextPage: repos.fetchNextPage,
