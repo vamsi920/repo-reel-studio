@@ -205,10 +205,18 @@ function useKnowledgeRehydration(repositoryId: string | undefined) {
       if (!cancelled) {
         try {
           await tryColdRehydration(repositoryId, parsed, hydrate);
-        } catch {
-          // Documented best-effort: an unconfigured/unreachable Supabase,
-          // an RLS denial or a missing generation must not reject out of
-          // this effect — the empty-state fallback below covers it.
+        } catch (error) {
+          // Best-effort: an unconfigured/unreachable Supabase, an RLS
+          // denial, or a missing generation must not reject out of this
+          // effect — the empty-state fallback below covers it. But the
+          // failure itself must not vanish silently (that's what made a
+          // genuinely-generated repo intermittently show "hasn't been
+          // generated yet" with zero console signal) — log it.
+          console.error(
+            "[kt-repository] cold rehydration failed",
+            repositoryId,
+            error,
+          );
         }
       }
     })().finally(() => {

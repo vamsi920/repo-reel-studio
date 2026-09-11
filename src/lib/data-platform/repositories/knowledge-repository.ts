@@ -52,29 +52,49 @@ interface GenerationRow {
   generated_at: string;
 }
 
+// A genuine query error (RLS denial, network failure) used to be
+// indistinguishable from "no generation exists yet" everywhere in this file
+// -- every read discarded `error` and either fell through a bare `if
+// (!data)` check or a silent `catch { return null }`, so Docs rendered "This
+// repository hasn't been generated yet" for a repo that really does have
+// generated knowledge, with zero console signal pointing at why. Only the
+// expected "no row found" case (`maybeSingle` resolving `data: null` with no
+// `error`) should stay silent; anything else must log.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[knowledge-repository] ${step} failed`, error);
+}
+
 async function reconstruct(
   repositoryUuid: string,
   generation: GenerationRow,
 ): Promise<KnowledgeRepository | null> {
   if (!supabase) return null;
 
-  const [{ data: sectionRows }, { data: pageRows }, { data: diagramRows }] =
-    await Promise.all([
-      supabase
-        .from("knowledge_sections")
-        .select("id, title, description, page_ids")
-        .eq("generation_id", generation.id),
-      supabase
-        .from("knowledge_pages")
-        .select(
-          "id, title, description, content_markdown, importance, relevant_files, related_page_ids, parent_section_id",
-        )
-        .eq("generation_id", generation.id),
-      supabase
-        .from("knowledge_diagrams")
-        .select("id, page_id, type, mermaid")
-        .eq("page_generation_id", generation.id),
-    ]);
+  const [
+    { data: sectionRows, error: sectionsError },
+    { data: pageRows, error: pagesError },
+    { data: diagramRows, error: diagramsError },
+  ] = await Promise.all([
+    supabase
+      .from("knowledge_sections")
+      .select("id, title, description, page_ids")
+      .eq("generation_id", generation.id),
+    supabase
+      .from("knowledge_pages")
+      .select(
+        "id, title, description, content_markdown, importance, relevant_files, related_page_ids, parent_section_id",
+      )
+      .eq("generation_id", generation.id),
+    supabase
+      .from("knowledge_diagrams")
+      .select("id, page_id, type, mermaid")
+      .eq("page_generation_id", generation.id),
+  ]);
+  if (sectionsError)
+    logFailure("reconstruct: knowledge_sections", sectionsError);
+  if (pagesError) logFailure("reconstruct: knowledge_pages", pagesError);
+  if (diagramsError)
+    logFailure("reconstruct: knowledge_diagrams", diagramsError);
 
   if (!pageRows) return null;
 
@@ -214,15 +234,17 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
   ): Promise<KnowledgeRepository | null> {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
-      const { data: generation } = await supabase
+      const { data: generation, error } = await supabase
         .from("knowledge_generations")
         .select("id, commit_sha, title, summary, generated_at")
         .eq("repository_id", repositoryUuid)
         .eq("commit_sha", commitSha)
         .maybeSingle();
+      if (error) logFailure("getFullGeneration", error);
       if (!generation) return null;
       return await reconstruct(repositoryUuid, generation as GenerationRow);
-    } catch {
+    } catch (error) {
+      logFailure("getFullGeneration", error);
       return null;
     }
   }
@@ -232,16 +254,18 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
   ): Promise<KnowledgeRepository | null> {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
-      const { data: generation } = await supabase
+      const { data: generation, error } = await supabase
         .from("knowledge_generations")
         .select("id, commit_sha, title, summary, generated_at")
         .eq("repository_id", repositoryUuid)
         .order("generated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) logFailure("getLatestGenerationForRepository", error);
       if (!generation) return null;
       return await reconstruct(repositoryUuid, generation as GenerationRow);
-    } catch {
+    } catch (error) {
+      logFailure("getLatestGenerationForRepository", error);
       return null;
     }
   }
@@ -249,10 +273,16 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
   async listGeneratedRepositories(): Promise<PersistedRepositorySummary[]> {
     if (!isSupabaseConfigured || !supabase) return [];
     try {
-      const { data: generations } = await supabase
+      const { data: generations, error: generationsError } = await supabase
         .from("knowledge_generations")
         .select("repository_id, branch")
         .order("generated_at", { ascending: false });
+      if (generationsError) {
+        logFailure(
+          "listGeneratedRepositories: knowledge_generations",
+          generationsError,
+        );
+      }
       if (!generations || generations.length === 0) return [];
 
       const repositoryIds = Array.from(
@@ -264,10 +294,13 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         if (!branchByRepo.has(id)) branchByRepo.set(id, row.branch ?? null);
       }
 
-      const { data: repos } = await supabase
+      const { data: repos, error: reposError } = await supabase
         .from("repositories")
         .select("id, owner, name")
         .in("id", repositoryIds);
+      if (reposError) {
+        logFailure("listGeneratedRepositories: repositories", reposError);
+      }
       if (!repos) return [];
 
       return repos.map((row) => ({
@@ -275,7 +308,8 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         repo: row.name as string,
         branch: branchByRepo.get(row.id as string) ?? null,
       }));
-    } catch {
+    } catch (error) {
+      logFailure("listGeneratedRepositories", error);
       return [];
     }
   }
