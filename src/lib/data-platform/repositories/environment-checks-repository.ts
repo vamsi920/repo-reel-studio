@@ -22,6 +22,15 @@ export interface EnvironmentChecksRepository {
   recent(orgId: string, limit?: number): Promise<EnvironmentCheckRecord[]>;
 }
 
+// Same fix as connections-repository.ts / github-connections-repository.ts /
+// jira-connections-repository.ts: a genuine fetch failure (RLS denial,
+// network error) previously returned an empty list identically to "no
+// checks have run yet", with no console signal, making a broken Runbook
+// query invisible.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[environment-checks-repository] ${step} failed`, error);
+}
+
 class SupabaseEnvironmentChecksRepository implements EnvironmentChecksRepository {
   async recent(orgId: string, limit = 50): Promise<EnvironmentCheckRecord[]> {
     if (!isSupabaseConfigured || !supabase || !orgId) return [];
@@ -33,7 +42,11 @@ class SupabaseEnvironmentChecksRepository implements EnvironmentChecksRepository
       .eq("org_id", orgId)
       .order("created_at", { ascending: false })
       .limit(limit);
-    if (error || !data) return [];
+    if (error) {
+      logFailure("recent", error);
+      return [];
+    }
+    if (!data) return [];
     return (data as unknown as Record<string, unknown>[]).map((row) => ({
       id: row.id as string,
       kind: row.kind as string,

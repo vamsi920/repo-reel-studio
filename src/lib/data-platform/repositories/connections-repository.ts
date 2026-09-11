@@ -79,6 +79,16 @@ export interface ConnectionsRepository {
   list(orgId: string): Promise<ConnectionRecord[]>;
 }
 
+// A genuine fetch failure (RLS denial, network error) previously returned an
+// empty list identically to "no connections configured yet", with no
+// console signal -- indistinguishable from a real empty state, which made a
+// broken connections query invisible on the Environment > Connections page.
+// Same fix already applied to github-connections-repository.ts and
+// jira-connections-repository.ts.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[connections-repository] ${step} failed`, error);
+}
+
 class SupabaseConnectionsRepository implements ConnectionsRepository {
   async list(orgId: string): Promise<ConnectionRecord[]> {
     if (!isSupabaseConfigured || !supabase || !orgId) return [];
@@ -87,7 +97,11 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       .select(SELECT_COLUMNS)
       .eq("org_id", orgId)
       .order("capability", { ascending: true });
-    if (error || !data) return [];
+    if (error) {
+      logFailure("list", error);
+      return [];
+    }
+    if (!data) return [];
     return (data as unknown as Record<string, unknown>[]).map(toRecord);
   }
 }
