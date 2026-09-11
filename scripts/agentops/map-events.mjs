@@ -658,16 +658,30 @@ export class RunAggregator {
   }
 }
 
+/**
+ * The phase a run should start in given its first-observed status. Mirrors
+ * the transitions RunAggregator.applyStatus() would apply — needed because
+ * applyStatus() only fires on a status *change*, so a run whose very first
+ * observation is already terminal (e.g. the collector missed the earlier
+ * ticks) would otherwise never leave the default "planning" phase.
+ */
+function initialPhaseForStatus(status) {
+  if (status === "finished") return "completed";
+  if (status === "waiting_for_confirmation") return "waiting_approval";
+  return "planning";
+}
+
 /** A fresh run record for a conversation the collector has not seen before. */
 export function createRun(conversation, observedAt) {
+  const status = normalizeRunStatus(conversation.executionStatus);
   return {
     runId: conversation.id,
     workspaceId: conversation.workspaceId ?? "unknown",
     agentName: conversation.agentName ?? "agent",
     task: conversation.title ?? "Untitled run",
-    status: normalizeRunStatus(conversation.executionStatus),
+    status,
     model: conversation.model ?? null,
-    phase: "planning",
+    phase: initialPhaseForStatus(status),
     startedAt: conversation.createdAt ?? observedAt,
     endedAt: null,
     updatedAt: observedAt,

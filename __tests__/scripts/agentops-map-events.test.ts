@@ -285,6 +285,46 @@ describe("RunAggregator — status transitions", () => {
   });
 });
 
+describe("createRun — initial phase", () => {
+  it("starts a run already in a terminal status with the matching terminal phase", () => {
+    const finished = createRun(
+      {
+        id: "run-finished",
+        title: "Already done by the time we saw it",
+        executionStatus: "finished",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      OBSERVED_AT,
+    );
+    expect(finished.status).toBe("finished");
+    expect(finished.phase).toBe("completed");
+  });
+
+  it("starts a run already waiting for confirmation with the waiting_approval phase", () => {
+    const waiting = createRun(
+      {
+        id: "run-waiting",
+        title: "Already waiting by the time we saw it",
+        executionStatus: "waiting_for_confirmation",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      OBSERVED_AT,
+    );
+    expect(waiting.status).toBe("waiting_for_confirmation");
+    expect(waiting.phase).toBe("waiting_approval");
+  });
+
+  it("defaults every other first-observed status to planning", () => {
+    for (const status of ["idle", "running", "paused", "error", "stuck"]) {
+      const run = createRun(
+        { id: `run-${status}`, title: "Task", executionStatus: status },
+        OBSERVED_AT,
+      );
+      expect(run.phase).toBe("planning");
+    }
+  });
+});
+
 describe("privacy invariant", () => {
   it("never persists thought, reasoning_content or thinking_blocks", () => {
     const aggregator = new RunAggregator(newRun());
