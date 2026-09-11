@@ -3,6 +3,7 @@ import { Provider } from "#/types/settings";
 import { GitRepository } from "#/types/git";
 import { useGitRepositories } from "#/hooks/query/use-git-repositories";
 import { useSearchRepositories } from "#/hooks/query/use-search-repositories";
+import { useUserProviders } from "#/hooks/use-user-providers";
 
 export function useRepositoryData(
   provider: Provider,
@@ -32,9 +33,25 @@ export function useRepositoryData(
     [repositoryName, inputValue],
   );
 
+  // `providers` only includes `provider` once its connection status is
+  // actually known (see useUserProviders / GitService.isLocalGithubActive).
+  // GitService's search/list calls resolve a local GitHub connection via a
+  // plain module flag that isn't part of any query key, so a search fired
+  // before that flag settles gets cached as an empty result for
+  // `staleTime` (5 min) with no way to self-correct. useGitRepositories
+  // already withholds its fetch until `provider` is in `providers`; gate
+  // the search query the same way so it can't fire -- and cache an empty
+  // page -- ahead of that.
+  const { providers } = useUserProviders();
+  const isProviderReady = !!provider && providers.includes(provider);
+
   // Search repositories when user types
   const { data: searchData, isLoading: isSearchLoading } =
-    useSearchRepositories(processedSearchInput, provider, shouldSkipSearch);
+    useSearchRepositories(
+      processedSearchInput,
+      provider,
+      shouldSkipSearch || !isProviderReady,
+    );
 
   // Combine all repositories from paginated data
   const allRepositories = useMemo(
