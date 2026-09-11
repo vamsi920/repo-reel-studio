@@ -329,7 +329,75 @@ export function ProactivationSetupWizard({
           {` (${stepIndex + 1}/${STEPS.length})`}
         </p>
 
-        <div className="mt-4 flex-1 overflow-y-auto pr-1">
+        {/*
+         * The repositories step's picker (provider/repo dropdowns) renders
+         * outside the scrollable body below, not inside it. GitRepoDropdown's
+         * suggestion popover positions itself with plain `absolute` CSS (no
+         * portal), so nesting it inside an `overflow-y-auto` ancestor clips
+         * the popover out of both paint and hit-testing once it extends past
+         * that ancestor's bounds -- the wizard's own footer, a later sibling
+         * outside the scroll container, then intercepts clicks at that same
+         * screen position. Only the already-added repos list needs to
+         * scroll, so it stays inside the scrollable body; the picker itself
+         * doesn't.
+         */}
+        {step === "repositories" && (
+          <div className="mt-4 flex flex-col gap-3">
+            {providers.length > 1 && (
+              <GitProviderDropdown
+                providers={providers}
+                value={selectedProvider}
+                onChange={setSelectedProvider}
+              />
+            )}
+            {selectedProvider && canListRepositories && (
+              <GitRepoDropdown
+                provider={selectedProvider}
+                onChange={handleAddRepo}
+                placeholder={t(
+                  I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY,
+                )}
+              />
+            )}
+            {!canListRepositories && (
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <SettingsInput
+                    testId="proactivation-manual-repo"
+                    name="manualRepo"
+                    type="text"
+                    label={t(I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY)}
+                    value={manualRepo}
+                    onChange={setManualRepo}
+                    placeholder={t(I18nKey.SETUP$REPOSITORY_PLACEHOLDER)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAddManualRepo();
+                      }
+                    }}
+                  />
+                </div>
+                <BrandButton
+                  type="button"
+                  variant="secondary"
+                  testId="proactivation-manual-repo-add"
+                  onClick={handleAddManualRepo}
+                  isDisabled={manualRepo.trim().length === 0}
+                >
+                  {t(I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY)}
+                </BrandButton>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "flex-1 overflow-y-auto pr-1",
+            step === "repositories" ? "mt-3" : "mt-4",
+          )}
+        >
           {step === "workspace" && (
             <div className="rounded-lg bg-[var(--oh-surface-raised)] p-4 text-sm text-content">
               {activeWorkspace
@@ -339,89 +407,39 @@ export function ProactivationSetupWizard({
           )}
 
           {step === "repositories" && (
-            <div className="flex flex-col gap-3">
-              {providers.length > 1 && (
-                <GitProviderDropdown
-                  providers={providers}
-                  value={selectedProvider}
-                  onChange={setSelectedProvider}
-                />
+            <div className="flex flex-col gap-2">
+              {selectedRepos.length === 0 && (
+                <p className="text-xs text-muted">
+                  {t(I18nKey.AUTOMATIONS$PROACTIVATION_NO_REPOSITORIES)}
+                </p>
               )}
-              {selectedProvider && canListRepositories && (
-                <GitRepoDropdown
-                  provider={selectedProvider}
-                  onChange={handleAddRepo}
-                  placeholder={t(
-                    I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY,
-                  )}
-                />
-              )}
-              {!canListRepositories && (
-                <div className="flex items-end gap-2">
-                  <div className="min-w-0 flex-1">
-                    <SettingsInput
-                      testId="proactivation-manual-repo"
-                      name="manualRepo"
-                      type="text"
-                      label={t(
-                        I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY,
-                      )}
-                      value={manualRepo}
-                      onChange={setManualRepo}
-                      placeholder={t(I18nKey.SETUP$REPOSITORY_PLACEHOLDER)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleAddManualRepo();
-                        }
-                      }}
-                    />
-                  </div>
-                  <BrandButton
-                    type="button"
-                    variant="secondary"
-                    testId="proactivation-manual-repo-add"
-                    onClick={handleAddManualRepo}
-                    isDisabled={manualRepo.trim().length === 0}
-                  >
-                    {t(I18nKey.AUTOMATIONS$PROACTIVATION_ADD_REPOSITORY)}
-                  </BrandButton>
-                </div>
-              )}
-              <div className="flex flex-col gap-2">
-                {selectedRepos.length === 0 && (
-                  <p className="text-xs text-muted">
-                    {t(I18nKey.AUTOMATIONS$PROACTIVATION_NO_REPOSITORIES)}
-                  </p>
-                )}
-                {selectedRepos.map((repo) => (
-                  <div
-                    key={repoKey(repo)}
-                    className="flex items-center justify-between rounded-lg bg-[var(--oh-surface-raised)] px-3 py-2 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-content">
-                        {repo.full_name}
-                      </div>
-                      {repo.main_branch && (
-                        <div className="truncate text-xs text-muted">
-                          {t(I18nKey.AUTOMATIONS$PROACTIVATION_DEFAULT_BRANCH, {
-                            branch: repo.main_branch,
-                          })}
-                        </div>
-                      )}
+              {selectedRepos.map((repo) => (
+                <div
+                  key={repoKey(repo)}
+                  className="flex items-center justify-between rounded-lg bg-[var(--oh-surface-raised)] px-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-content">
+                      {repo.full_name}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRepo(repo)}
-                      className="text-muted hover:text-foreground"
-                      aria-label={t(I18nKey.AUTOMATIONS$CANCEL)}
-                    >
-                      <XMarkIcon className="size-4" />
-                    </button>
+                    {repo.main_branch && (
+                      <div className="truncate text-xs text-muted">
+                        {t(I18nKey.AUTOMATIONS$PROACTIVATION_DEFAULT_BRANCH, {
+                          branch: repo.main_branch,
+                        })}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRepo(repo)}
+                    className="text-muted hover:text-foreground"
+                    aria-label={t(I18nKey.AUTOMATIONS$CANCEL)}
+                  >
+                    <XMarkIcon className="size-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 

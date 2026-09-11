@@ -86,4 +86,24 @@ describe("ProactivationSetupWizard repositories step", () => {
 
     expect(await screen.findByTestId("git-repo-dropdown")).toBeInTheDocument();
   });
+
+  it("does not nest the repo picker inside the scrollable step body, so its popover can't be clipped or its click target stolen by the footer", async () => {
+    // Regression test: the picker's suggestion popover is positioned with
+    // plain `absolute` CSS (no portal). Nesting it inside an
+    // `overflow-y-auto` ancestor clips the popover out of paint and
+    // hit-testing once it extends past that ancestor, letting the wizard's
+    // footer (a later sibling) intercept clicks at the same screen position.
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+
+    const user = userEvent.setup();
+    render(<Wizard />);
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+
+    const dropdown = await screen.findByTestId("git-repo-dropdown");
+    let ancestor: HTMLElement | null = dropdown.parentElement;
+    while (ancestor) {
+      expect(ancestor.className).not.toContain("overflow-y-auto");
+      ancestor = ancestor.parentElement;
+    }
+  });
 });
