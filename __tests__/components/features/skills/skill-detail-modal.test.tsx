@@ -129,7 +129,11 @@ describe("SkillDetailModal", () => {
       screen.getByTestId(`skill-detail-use-skill-${ADD_SKILL_SKILL_NAME}`),
     );
 
-    expect(onClose).toHaveBeenCalled();
+    // onClose must NOT fire yet: closing the modal here would unmount the
+    // hook instance (and its pending onSuccess callback) before the
+    // conversation has actually been created -- see
+    // use-launch-skill-in-chat.ts for why this order matters.
+    expect(onClose).not.toHaveBeenCalled();
     expect(mockCreateConversationMutate).toHaveBeenCalledWith(
       {},
       expect.objectContaining({ onSuccess: expect.any(Function) }),
@@ -145,6 +149,7 @@ describe("SkillDetailModal", () => {
     }) => void;
     onSuccess({ conversation_id: "convo-123" });
 
+    expect(onClose).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/conversations/convo-123");
     await waitFor(() => {
       expect(setMessageToSend).toHaveBeenCalledWith(ADD_SKILL_EXAMPLE_COMMAND);
@@ -187,6 +192,32 @@ describe("SkillDetailModal", () => {
     expect(localStorage.getItem("pending-task-draft-abc")).toBe(
       ADD_SKILL_EXAMPLE_COMMAND,
     );
+  });
+
+  it("closes the modal once conversation creation fails, not before", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(
+      <SkillDetailModal
+        skill={buildSkill({ name: ADD_SKILL_SKILL_NAME })}
+        enabled
+        onToggle={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+
+    await user.click(
+      screen.getByTestId(`skill-detail-use-skill-${ADD_SKILL_SKILL_NAME}`),
+    );
+
+    expect(onClose).not.toHaveBeenCalled();
+
+    const onError = mockCreateConversationMutate.mock.calls[0][1]
+      .onError as () => void;
+    onError();
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("disables Use skill when the skill is turned off", async () => {
