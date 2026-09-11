@@ -30,6 +30,12 @@ primary_region = "iad"
   # sidecars' allowed origins are visible in one place and stay in sync.
   AUTOMATION_CORS_ORIGINS = "https://neo.neodevex.com"
   AGENTOPS_CORS_ORIGINS = "https://neo.neodevex.com"
+  # Without this, openhands/automation/webhook_router.py's _build_webhook_url()
+  # falls back to its http://127.0.0.1:<port> default (see app.py's own startup
+  # warning), so every webhook-triggered automation (e.g. Jira "Instant
+  # triggers") is registered with a loopback URL that no external service can
+  # ever reach.
+  AUTOMATION_BASE_URL = "https://neo-agent-server.fly.dev"
 
 [http_service]
   internal_port = 8000
