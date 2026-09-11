@@ -11,8 +11,17 @@ import { I18nKey } from "#/i18n/declaration";
 import { useConversationStore } from "#/stores/conversation-store";
 import * as telemetry from "#/services/telemetry";
 
+const mockCreateConversationMutate = vi.fn();
+
 vi.mock("#/hooks/query/use-settings", () => ({
   useSettings: () => ({ data: { user_consents_to_analytics: true } }),
+}));
+
+vi.mock("#/hooks/mutation/use-create-conversation", () => ({
+  useCreateConversation: () => ({
+    mutate: mockCreateConversationMutate,
+    isPending: false,
+  }),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -89,6 +98,7 @@ describe("CreateInstructions", () => {
       .spyOn(telemetry, "trackEvent")
       .mockResolvedValue(undefined);
     useConversationStore.setState({ messageToSend: null });
+    mockCreateConversationMutate.mockReset();
   });
 
   afterEach(() => {
@@ -107,7 +117,7 @@ describe("CreateInstructions", () => {
     );
   });
 
-  it("navigates to conversations with a prefilled prompt when Create Automation is clicked", async () => {
+  it("creates a fresh conversation and navigates there with a prefilled prompt when Create Automation is clicked", async () => {
     const user = userEvent.setup();
     const setMessageToSend = vi.fn();
     useConversationStore.setState({ setMessageToSend });
@@ -115,7 +125,18 @@ describe("CreateInstructions", () => {
 
     await user.click(screen.getByTestId("automations-create-automation"));
 
-    expect(navigate).toHaveBeenCalledWith("/conversations");
+    expect(mockCreateConversationMutate).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+    const onSuccess = mockCreateConversationMutate.mock.calls[0][1]
+      .onSuccess as (conversation: {
+      conversation_id: string;
+      task_id?: string;
+    }) => void;
+    onSuccess({ conversation_id: "convo-456" });
+
+    expect(navigate).toHaveBeenCalledWith("/conversations/convo-456");
     await waitFor(() => {
       expect(setMessageToSend).toHaveBeenCalledWith("Create an automation");
     });
