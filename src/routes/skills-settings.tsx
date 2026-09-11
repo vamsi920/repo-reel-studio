@@ -53,8 +53,6 @@ function SkillsSettingsScreen() {
   const lastWrittenQuery = React.useRef(queryInput);
 
   const [disabledSet, setDisabledSet] = React.useState<Set<string>>(new Set());
-  const [hasHydratedInitialSettings, setHasHydratedInitialSettings] =
-    React.useState(false);
   const [selectedSkill, setSelectedSkill] = React.useState<SkillInfo | null>(
     null,
   );
@@ -85,22 +83,7 @@ function SkillsSettingsScreen() {
   React.useEffect(() => {
     if (settingsLoading || !settings) return;
     setDisabledSet(new Set(settings.disabled_skills ?? []));
-    setHasHydratedInitialSettings(true);
   }, [settingsLoading, settings?.disabled_skills]);
-
-  // Auto-save skill toggles once initial settings are loaded.
-  React.useEffect(() => {
-    if (!hasHydratedInitialSettings) return;
-    saveSettings(
-      { disabled_skills: Array.from(disabledSet) },
-      {
-        onError: (error) => {
-          const errorMessage = retrieveAxiosErrorMessage(error);
-          displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
-        },
-      },
-    );
-  }, [disabledSet, hasHydratedInitialSettings, saveSettings, t]);
 
   // Back and forward move `q` under a route that stays mounted, so the input has to take the URL's value back or it would keep showing — and debounce back — a query the user has already navigated away from.
   React.useEffect(() => {
@@ -151,15 +134,22 @@ function SkillsSettingsScreen() {
     handleFilterChange(clearSkillFilterFacets(filter));
 
   const handleToggle = (skillName: string, enabled: boolean) => {
-    setDisabledSet((prev) => {
-      const next = new Set(prev);
-      if (enabled) {
-        next.delete(skillName);
-      } else {
-        next.add(skillName);
-      }
-      return next;
-    });
+    const next = new Set(disabledSet);
+    if (enabled) {
+      next.delete(skillName);
+    } else {
+      next.add(skillName);
+    }
+    setDisabledSet(next);
+    saveSettings(
+      { disabled_skills: Array.from(next) },
+      {
+        onError: (error) => {
+          const errorMessage = retrieveAxiosErrorMessage(error);
+          displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
+        },
+      },
+    );
   };
 
   return (

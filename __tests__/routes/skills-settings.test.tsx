@@ -421,7 +421,8 @@ Full skill body.`,
 
   it("saves disabled_skills to the server when a skill is toggled off and settings has no prior disabled_skills field", async () => {
     // Reproduces the bug where disabled_skills is absent from settings (undefined),
-    // causing hasHydratedInitialSettings to never become true and the save to be silently skipped.
+    // which must still hydrate to an empty local set rather than leaving the
+    // toggle unable to save.
     const user = userEvent.setup();
     const skill = buildSkill({ name: "save-me" });
     vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
@@ -443,6 +444,26 @@ Full skill body.`,
         expect.objectContaining({ disabled_skills: [skill.name] }),
       ),
     );
+  });
+
+  it("does not save settings on initial load, only after an actual toggle", async () => {
+    const skill = buildSkill({ name: "untouched" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ disabled_skills: ["untouched"] }),
+    );
+    const saveSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+
+    renderSkillsSettingsScreen();
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+    // Hydration should have applied the server's disabled state by now.
+    expect(
+      within(card).getByTestId(`skill-toggle-${skill.name}`),
+    ).toHaveAttribute("aria-checked", "false");
+
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it("saves an updated disabled list when a skill is toggled off and settings already has disabled_skills", async () => {
