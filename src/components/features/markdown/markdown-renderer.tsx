@@ -1,8 +1,11 @@
 import Markdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import type { Schema } from "hast-util-sanitize";
 import type { PluggableList } from "unified";
 import { code } from "./code";
@@ -14,6 +17,58 @@ import { table, th, td } from "./table";
 import { blockquote } from "./blockquote";
 import { hr } from "./horizontal-rule";
 import { remarkGithubAlerts } from "./remark-github-alerts";
+
+// `remark-math` parses `$inline$` / `$$block$$` into code/pre elements
+// classed `math-inline` / `math-display`; `rehype-katex` finds those and
+// replaces them with rendered markup. We render MathML only (not KaTeX's
+// HTML+CSS box tree) because that tree leans on inline `style` attributes
+// for glyph layout, and `MARKDOWN_SANITIZE_SCHEMA` deliberately disallows
+// `style` everywhere (see the note below) to keep arbitrary authored HTML
+// from smuggling in position/clickjacking tricks. MathML needs no inline
+// styles for layout, so it renders correctly even after sanitization, and
+// `trust: false` (KaTeX's default) keeps commands like `\href`/`\includegraphics`
+// from emitting real links or images.
+const KATEX_OPTIONS = {
+  output: "mathml",
+  trust: false,
+  strict: "ignore",
+} as const;
+
+// MathML tag/attribute names KaTeX's mathml output can emit (verified by
+// scanning katex's MathML builder), added on top of rehype-sanitize's
+// HTML-only default schema. None of these attributes carry URLs or CSS
+// text, only enumerated/numeric presentation hints, so allowing them
+// doesn't reopen the risks the `style`/`data:` restrictions above guard
+// against.
+const MATHML_TAG_NAMES = [
+  "math",
+  "semantics",
+  "annotation",
+  "mrow",
+  "mi",
+  "mn",
+  "mo",
+  "ms",
+  "mtext",
+  "mspace",
+  "msup",
+  "msub",
+  "msubsup",
+  "mfrac",
+  "msqrt",
+  "mroot",
+  "mover",
+  "munder",
+  "munderover",
+  "mtable",
+  "mtr",
+  "mtd",
+  "mstyle",
+  "mpadded",
+  "mphantom",
+  "menclose",
+  "mglyph",
+];
 
 // Build a sanitize schema that extends rehype-sanitize's defaults with a
 // few markdown-friendly additions. The defaults strip `<script>`, event
@@ -65,9 +120,43 @@ export const MARKDOWN_SANITIZE_SCHEMA: Schema = {
       "height",
       "loading",
     ],
+    // MathML presentation attributes KaTeX's mathml output emits (see
+    // MATHML_TAG_NAMES above). All enumerated/numeric — no URLs, no CSS
+    // text — so allowing them doesn't reopen the `style`/`data:` risks
+    // this schema otherwise guards against.
+    math: ["xmlns", "display"],
+    annotation: ["encoding"],
+    mo: [
+      "stretchy",
+      "fence",
+      "separator",
+      "largeop",
+      "movablelimits",
+      "lspace",
+      "rspace",
+      "minsize",
+      "maxsize",
+    ],
+    mfrac: ["linethickness"],
+    mtable: [
+      "columnalign",
+      "columnspacing",
+      "columnlines",
+      "rowspacing",
+      "rowlines",
+    ],
+    mspace: ["width", "height", "depth"],
+    mover: ["accent"],
+    munder: ["accentunder"],
+    munderover: ["accent", "accentunder"],
+    mstyle: ["displaystyle", "scriptlevel", "mathcolor", "mathbackground"],
+    mi: ["mathvariant"],
+    mn: ["mathvariant"],
+    mtext: ["mathvariant"],
   },
   tagNames: [
     ...(defaultSchema.tagNames ?? []),
+    ...MATHML_TAG_NAMES,
     "img",
     "details",
     "summary",
@@ -167,19 +256,32 @@ export function MarkdownRenderer({
 
   const markdownContent = content ?? children ?? "";
 
-  // `rehype-raw` parses raw HTML embedded in the markdown into the rehype
-  // tree. `rehype-sanitize` then strips anything dangerous (scripts,
-  // event handlers, `javascript:` URLs, etc.). The order matters: sanitize
-  // must run *after* raw so it sees the parsed HTML nodes.
-  const rehypePlugins: PluggableList | undefined = allowHtml
-    ? [rehypeRaw, [rehypeSanitize, MARKDOWN_SANITIZE_SCHEMA]]
-    : undefined;
+  // `rehype-katex` renders the math elements `remark-math` produced and
+  // must run before sanitization so `rehype-sanitize` sees (and can
+  // validate) the actual MathML it emits, rather than the placeholder
+  // `<code class="math-inline">` it replaces. `rehype-raw` then parses raw
+  // HTML embedded in the markdown into the rehype tree, and `rehype-sanitize`
+  // strips anything dangerous (scripts, event handlers, `javascript:` URLs,
+  // etc.). The order matters: sanitize must run *after* both so it sees the
+  // final tree.
+  const rehypePlugins: PluggableList = allowHtml
+    ? [
+        [rehypeKatex, KATEX_OPTIONS],
+        rehypeRaw,
+        [rehypeSanitize, MARKDOWN_SANITIZE_SCHEMA],
+      ]
+    : [[rehypeKatex, KATEX_OPTIONS]];
 
   return (
     <div data-testid="markdown-renderer">
       <Markdown
         components={components}
-        remarkPlugins={[remarkGithubAlerts, remarkGfm, remarkBreaks]}
+        remarkPlugins={[
+          remarkGithubAlerts,
+          remarkGfm,
+          remarkBreaks,
+          remarkMath,
+        ]}
         rehypePlugins={rehypePlugins}
       >
         {markdownContent}

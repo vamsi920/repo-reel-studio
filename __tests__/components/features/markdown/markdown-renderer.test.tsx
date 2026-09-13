@@ -177,6 +177,44 @@ describe("MarkdownRenderer", () => {
     expect(container.textContent).toContain("world");
   });
 
+  describe("math rendering (KaTeX)", () => {
+    it("renders inline math ($...$) as MathML instead of raw source", () => {
+      const md = "The area is $ax^2+bx+c=0$ for real numbers.";
+      const { container } = render(<MarkdownRenderer>{md}</MarkdownRenderer>);
+      const math = container.querySelector("math");
+      expect(math).not.toBeNull();
+      expect(container.textContent).not.toContain("$ax^2+bx+c=0$");
+      expect(container.textContent).toContain("ax^2+bx+c=0");
+    });
+
+    it("renders block math ($$...$$) as MathML instead of raw source", () => {
+      const md = "$$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$";
+      const { container } = render(<MarkdownRenderer>{md}</MarkdownRenderer>);
+      const math = container.querySelector("math");
+      expect(math).not.toBeNull();
+      expect(math?.querySelector("mfrac")).not.toBeNull();
+      expect(container.textContent).not.toContain("$$x =");
+    });
+
+    it("still renders math when allowHtml=false (user messages)", () => {
+      const md = "What is $1+1$?";
+      const { container } = render(
+        <MarkdownRenderer allowHtml={false}>{md}</MarkdownRenderer>,
+      );
+      expect(container.querySelector("math")).not.toBeNull();
+      expect(container.textContent).not.toContain("$1+1$");
+    });
+
+    it("degrades gracefully (no crash, source text preserved) for unparsable math", () => {
+      const md = "Broken: $\\frac{1}{$ end.";
+      const { container } = render(<MarkdownRenderer>{md}</MarkdownRenderer>);
+      // KaTeX must not throw and take down the whole render; some
+      // representation of the content should still be present.
+      expect(container.textContent).toContain("Broken:");
+      expect(container.textContent).toContain("end.");
+    });
+  });
+
   describe("GitHub-style alert blockquotes", () => {
     const ALERT_CASES: Array<{ marker: string; label: string }> = [
       { marker: "NOTE", label: "Note" },
