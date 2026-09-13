@@ -423,6 +423,100 @@ describe("useCreateConversation", () => {
     expect(call?.[0]?.agentProfileId).toBeUndefined();
   });
 
+  it("retries the LLM-profile fetch once before downgrading to agent_settings (transient network blip)", async () => {
+    // A one-off failure on this fetch must not permanently strand the launch
+    // on agent_settings, which has no API key at all for an account that only
+    // ever configured an LLM via named profiles (TODO.txt 2026-09 report).
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-gemini",
+          name: "Gemini launcher",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gemini-default",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-gemini",
+    });
+    listLlmProfilesMock
+      .mockRejectedValueOnce(new Error("network blip"))
+      .mockResolvedValueOnce({
+        profiles: [{ name: "gemini-default", api_key_set: true }],
+        active_profile: "gemini-default",
+      });
+    const createConversationSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-id",
+        app_conversation_id: "conv-1",
+        agent_server_url: "http://agent-server.local",
+      } as never);
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider
+          client={
+            new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } })
+          }
+        >
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await result.current.mutateAsync({ query: "hello" });
+
+    expect(listLlmProfilesMock).toHaveBeenCalledTimes(2);
+    const call = createConversationSpy.mock.lastCall;
+    expect(call?.[0]?.agentProfileId).toBe("profile-gemini");
+  });
+
+  it("fails loudly instead of silently launching when no LLM is configured anywhere", async () => {
+    // If the list genuinely loads and shows no profile with a key configured,
+    // agent_settings has nothing to fall back to either -- launching would
+    // silently create a conversation that fails every message with an opaque
+    // litellm auth error instead of a clear, actionable message now.
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-gemini",
+          name: "Gemini launcher",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "missing-ref",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-gemini",
+    });
+    listLlmProfilesMock.mockResolvedValue({
+      profiles: [],
+      active_profile: null,
+    });
+    const createConversationSpy = vi.spyOn(
+      AgentServerConversationService,
+      "createConversation",
+    );
+    // Spies persist across tests in this file; drop earlier calls so the
+    // not-called assertion below sees only this launch attempt.
+    createConversationSpy.mockClear();
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await expect(
+      result.current.mutateAsync({ query: "hello" }),
+    ).rejects.toThrow(/No LLM is configured/);
+    expect(createConversationSpy).not.toHaveBeenCalled();
+  });
+
   it("keeps the profile path for an ACP `default` profile (agent_settings can't carry ACP config)", async () => {
     // The default→agent_settings shortcut is OpenHands-only: activation is
     // pointer-only, so global agent_settings is stale (still OpenHands) for an

@@ -7,7 +7,9 @@ import { useTracking } from "#/hooks/use-tracking";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { useAgentProfiles } from "#/hooks/query/use-agent-profiles";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import ProfilesService from "#/api/profiles-service/profiles-service.api";
+import ProfilesService, {
+  type ProfileListResponse,
+} from "#/api/profiles-service/profiles-service.api";
 import AgentProfilesService, {
   WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME,
   type AgentProfileListResponse,
@@ -203,15 +205,21 @@ export const useCreateConversation = () => {
         // `useLlmProfiles()` result: a send fired before that query loads (or
         // after it errors) must still validate the ref, not launch blind.
         let llmProfileExists = false;
+        let llmProfilesFetched: ProfileListResponse | undefined;
         try {
           const llm = await queryClient.ensureQueryData({
             queryKey: [...LLM_PROFILES_QUERY_KEYS.all, backend.id, orgId],
             queryFn: ProfilesService.listProfiles,
-            // Match the agent-profiles fetch above: on a backend where this
-            // errors, fall back to agent_settings immediately rather than
-            // stalling the send through the default exponential backoff.
-            retry: false,
+            // One retry rides out a one-off network blip without stalling the
+            // send through the default exponential backoff -- unlike the
+            // agent-profiles fetch above (which fails fast because a 404 there
+            // means the endpoint genuinely doesn't exist on this backend), a
+            // failure here silently downgrades to agent_settings below, which
+            // has no API key at all for an account that only ever configured
+            // an LLM via named profiles.
+            retry: 1,
           });
+          llmProfilesFetched = llm;
           llmProfileExists = llm.profiles.some(
             (profile) => profile.name === resolvedAgentProfile.llm_profile_ref,
           );
@@ -225,6 +233,21 @@ export const useCreateConversation = () => {
               `LLM profile "${resolvedAgentProfile.llm_profile_ref}"; ` +
               "launching from agent_settings instead.",
           );
+          // The agent_settings fallback only exists on local (#1571). If the
+          // list genuinely loaded and shows no profile with a key configured
+          // anywhere, agent_settings has nothing to fall back to either --
+          // launching would silently create a conversation that fails every
+          // message with an opaque litellm auth error instead of surfacing a
+          // clear, actionable message now.
+          if (
+            !isCloud &&
+            llmProfilesFetched &&
+            !llmProfilesFetched.profiles.some((profile) => profile.api_key_set)
+          ) {
+            throw new Error(
+              "No LLM is configured for this account. Add one in Settings > LLM before starting a conversation.",
+            );
+          }
           effectiveAgentProfileId = undefined;
         }
       }
