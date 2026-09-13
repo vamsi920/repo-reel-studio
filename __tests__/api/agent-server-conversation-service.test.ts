@@ -1,9 +1,14 @@
 import {
   ConversationClient,
   FileClient,
+  HooksClient,
   ProfilesClient,
   SettingsClient,
 } from "@openhands/typescript-client/clients";
+import {
+  AgentServerFeatureRequirements,
+  AgentServerVersionError,
+} from "@openhands/typescript-client";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   __resetActiveStoreForTests,
@@ -32,6 +37,7 @@ const {
   mockGetProfile,
   mockActivateProfile,
   mockListProfiles,
+  mockLoadHooks,
 } = vi.hoisted(() => ({
   mockHttpGet: vi.fn(),
   mockHttpPost: vi.fn(),
@@ -46,6 +52,7 @@ const {
   mockGetProfile: vi.fn(),
   mockActivateProfile: vi.fn(),
   mockListProfiles: vi.fn(),
+  mockLoadHooks: vi.fn(),
 }));
 
 const originalFetch = global.fetch;
@@ -75,6 +82,9 @@ vi.mock("@openhands/typescript-client/clients", async () => {
     }),
     VSCodeClient: vi.fn(function VSCodeClientMock() {
       return { getUrl: vi.fn() };
+    }),
+    HooksClient: vi.fn(function HooksClientMock() {
+      return { loadHooks: mockLoadHooks };
     }),
   };
 });
@@ -114,10 +124,12 @@ describe("AgentServerConversationService", () => {
     });
     mockSwitchProfile.mockReset();
     mockSwitchLLM.mockReset();
+    mockLoadHooks.mockReset();
     fetchMock.mockReset();
     global.fetch = originalFetch;
     vi.mocked(ConversationClient).mockClear();
     vi.mocked(FileClient).mockClear();
+    vi.mocked(HooksClient).mockClear();
     vi.mocked(ProfilesClient).mockClear();
     vi.mocked(SettingsClient).mockClear();
 
@@ -246,6 +258,110 @@ describe("AgentServerConversationService", () => {
         "/api/file/download",
         expect.anything(),
       );
+    });
+  });
+
+  describe("getHooks", () => {
+    const mockConversationLookup = () => {
+      mockHttpGet.mockImplementation((url: string) => {
+        if (url === "/api/conversations") {
+          return Promise.resolve({
+            data: [
+              {
+                id: "conv-123",
+                created_at: "2024-01-01",
+                updated_at: "2024-01-01",
+                workspace: {
+                  working_dir: "/workspace/project/agent-canvas/conv-123",
+                },
+              },
+            ],
+          });
+        }
+        return Promise.resolve({ data: null });
+      });
+    };
+
+    it("returns empty hooks without calling the server when conversationId is empty", async () => {
+      const result = await AgentServerConversationService.getHooks("");
+
+      expect(result).toEqual({ hooks: [] });
+      expect(mockLoadHooks).not.toHaveBeenCalled();
+    });
+
+    it("loads real hook config from the conversation's own agent-server", async () => {
+      mockConversationLookup();
+      mockLoadHooks.mockResolvedValue({
+        hook_config: {
+          pre_tool_use: [
+            {
+              matcher: "bash",
+              hooks: [{ type: "command", command: "echo pre", timeout: 30 }],
+            },
+          ],
+          post_tool_use: [],
+          user_prompt_submit: [],
+          session_start: [],
+          session_end: [],
+          stop: [],
+        },
+      });
+
+      const result =
+        await AgentServerConversationService.getHooks("conv-123");
+
+      expect(HooksClient).toHaveBeenCalledWith({
+        host: "http://localhost:54928",
+        apiKey: "test-api-key",
+        workingDir: "/workspace/project/agent-canvas",
+      });
+      expect(mockLoadHooks).toHaveBeenCalledWith({
+        project_dir: "/workspace/project/agent-canvas/conv-123",
+      });
+      expect(result).toEqual({
+        hooks: [
+          {
+            event_type: "pre_tool_use",
+            matchers: [
+              {
+                matcher: "bash",
+                hooks: [
+                  {
+                    type: "command",
+                    command: "echo pre",
+                    timeout: 30,
+                    async: undefined,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it("returns empty hooks when the agent server predates the hooks API", async () => {
+      mockConversationLookup();
+      mockLoadHooks.mockRejectedValue(
+        new AgentServerVersionError({
+          requirement: AgentServerFeatureRequirements.hooks,
+          actualVersion: "1.10.0",
+        }),
+      );
+
+      const result =
+        await AgentServerConversationService.getHooks("conv-123");
+
+      expect(result).toEqual({ hooks: [] });
+    });
+
+    it("propagates real errors instead of hiding them as empty hooks", async () => {
+      mockConversationLookup();
+      mockLoadHooks.mockRejectedValue(new Error("network down"));
+
+      await expect(
+        AgentServerConversationService.getHooks("conv-123"),
+      ).rejects.toThrow("network down");
     });
   });
 

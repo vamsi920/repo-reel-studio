@@ -1,11 +1,18 @@
 import {
   ConversationSortOrder,
+  HOOK_EVENT_FIELDS,
+  HookType,
+  isAgentServerVersionError,
   type ForkConversationRequest,
+  type HookConfig,
+  type HookDefinition as SdkHookDefinition,
+  type HookMatcher as SdkHookMatcher,
   type LLMConfig,
 } from "@openhands/typescript-client";
 import {
   ConversationClient,
   FileClient,
+  HooksClient,
   ProfilesClient,
   VSCodeClient,
 } from "@openhands/typescript-client/clients";
@@ -59,6 +66,7 @@ import {
 import { resolveTitleLlmProfile } from "#/utils/title-llm-profile";
 import type {
   GetHooksResponse,
+  HookEvent as LocalHookEvent,
   PluginSpec,
   AppConversation,
   AppConversationPage,
@@ -97,6 +105,32 @@ function numberOrZero(value: unknown): number {
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+// The agent-server's /api/hooks response nests matchers under known
+// snake_case event-type keys (HOOK_EVENT_FIELDS); the UI wants a flat list of
+// only the event types that actually have hooks configured.
+function hookConfigToEvents(config: HookConfig): LocalHookEvent[] {
+  const events: LocalHookEvent[] = [];
+  for (const eventType of HOOK_EVENT_FIELDS) {
+    const matchers = config[eventType];
+    if (!matchers || matchers.length === 0) continue;
+    events.push({
+      event_type: eventType,
+      matchers: matchers.map((matcher: SdkHookMatcher) => ({
+        matcher: matcher.matcher ?? "*",
+        hooks: matcher.hooks.map((hook: SdkHookDefinition) => ({
+          type: hook.type ?? HookType.COMMAND,
+          command: hook.command,
+          // The server always resolves a concrete timeout before persisting
+          // hook config; this fallback only guards partial/legacy payloads.
+          timeout: hook.timeout ?? 60,
+          async: hook.async,
+        })),
+      })),
+    });
+  }
+  return events;
 }
 
 function readTimestamp(
@@ -657,7 +691,35 @@ class AgentServerConversationService {
     if (!conversationId) {
       return emptyHooksResponse();
     }
-    return emptyHooksResponse();
+
+    const [conversation] = await this.batchGetAppConversations([
+      conversationId,
+    ]);
+    if (!conversation) {
+      return emptyHooksResponse();
+    }
+
+    const clientOptions = getAgentServerClientOptions({
+      conversationUrl: conversation.conversation_url,
+      sessionApiKey: conversation.session_api_key,
+    });
+
+    try {
+      const { hook_config: hookConfig } = await new HooksClient(
+        clientOptions,
+      ).loadHooks({
+        project_dir:
+          conversation.workspace?.working_dir ?? getAgentServerWorkingDir(),
+      });
+      return { hooks: hookConfig ? hookConfigToEvents(hookConfig) : [] };
+    } catch (error) {
+      if (isAgentServerVersionError(error)) {
+        // Older agent servers predate the hooks API entirely; that's not a
+        // real error, just "this workspace has no hooks to show".
+        return emptyHooksResponse();
+      }
+      throw error;
+    }
   }
 
   static async getRuntimeConversation(
