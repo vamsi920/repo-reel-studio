@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AutomationService from "#/api/automation-service/automation-service.api";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useTracking } from "#/hooks/use-tracking";
+import { mintLocalGithubCloneCredential } from "#/api/git-service/mint-local-github-clone-credential";
 import type { Automation, AutomationSpec } from "#/types/automation";
 import {
   AUTOMATION_DETAIL_QUERY_KEY,
@@ -96,7 +97,16 @@ export function useDispatchAutomation() {
   const active = useActiveBackend();
   const { trackAutomationExecuted } = useTracking();
   return useMutation({
-    mutationFn: (id: string) => AutomationService.dispatchAutomation(id),
+    mutationFn: async (id: string) => {
+      // Automations only support GitHub repos today, and a locally-connected
+      // GitHub credential is minted into a short-lived browser session, not
+      // stored anywhere the automation backend can read later -- so a manual
+      // dispatch (the one path with a live session) re-primes the
+      // agent-server's secret store immediately before the run starts.
+      // No-op when there's no local GitHub connection or on Cloud backends.
+      await mintLocalGithubCloneCredential("github");
+      return AutomationService.dispatchAutomation(id);
+    },
     onSuccess: (_run, id) => {
       queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: AUTOMATION_DETAIL_QUERY_KEY });

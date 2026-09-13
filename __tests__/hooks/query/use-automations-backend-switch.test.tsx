@@ -43,6 +43,13 @@ vi.mock("#/api/automation-service/automation-service.api", () => ({
   },
 }));
 
+const mintLocalGithubCloneCredentialMock = vi.fn();
+vi.mock("#/api/git-service/mint-local-github-clone-credential", () => ({
+  mintLocalGithubCloneCredential: (
+    ...args: Parameters<typeof mintLocalGithubCloneCredentialMock>
+  ) => mintLocalGithubCloneCredentialMock(...args),
+}));
+
 let captureMock: ReturnType<typeof vi.spyOn>;
 
 vi.mock("#/hooks/query/use-settings", () => ({
@@ -119,6 +126,8 @@ beforeEach(() => {
   vi.mocked(AutomationService.deleteAutomation).mockReset();
   vi.mocked(AutomationService.updateAutomation).mockReset();
   vi.mocked(AutomationService.toggleAutomation).mockReset();
+  mintLocalGithubCloneCredentialMock.mockReset();
+  mintLocalGithubCloneCredentialMock.mockResolvedValue("github.com");
   vi.mocked(AutomationService.deleteAutomation).mockResolvedValue(undefined);
   vi.mocked(AutomationService.updateAutomation).mockResolvedValue(automation);
   vi.mocked(AutomationService.toggleAutomation).mockResolvedValue(automation);
@@ -180,6 +189,31 @@ describe("automation hooks — backend switch", () => {
     });
 
     expect(AutomationService.dispatchAutomation).toHaveBeenCalledWith("auto-1");
+  });
+
+  it("useDispatchAutomation re-primes the local GitHub clone credential before dispatching, so a manual run doesn't fail with no token configured", async () => {
+    const callOrder: string[] = [];
+    mintLocalGithubCloneCredentialMock.mockImplementation(async () => {
+      callOrder.push("mint");
+      return "github.com";
+    });
+    vi.mocked(AutomationService.dispatchAutomation).mockImplementation(
+      async () => {
+        callOrder.push("dispatch");
+        return automationRun;
+      },
+    );
+
+    const { result } = renderHook(() => useDispatchAutomation(), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync("auto-1");
+    });
+
+    expect(mintLocalGithubCloneCredentialMock).toHaveBeenCalledWith("github");
+    expect(callOrder).toEqual(["mint", "dispatch"]);
   });
 });
 

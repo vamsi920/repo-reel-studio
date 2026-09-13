@@ -7,6 +7,7 @@ import type { Provider } from "#/types/settings";
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { isLocalGithubConnected } from "#/api/git-service/github-connection-flag";
+import { mintLocalGithubCloneCredential } from "#/api/git-service/mint-local-github-clone-credential";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { useResolvedWorkspaces } from "#/hooks/query/use-resolved-workspaces";
 import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
@@ -242,6 +243,23 @@ export function ProactivationSetupWizard({
     const sortedWatchAreas = WATCH_AREAS.filter((a) => watchAreas.has(a));
 
     try {
+      // A locally-connected GitHub credential only ever gets minted into a
+      // live browser session's sandbox secret store (see
+      // mintLocalGithubCloneCredential) -- Proactive runs launched later by
+      // the automation backend have no such session, so without this a
+      // scheduled/"Run now" run against a private repo fails at `git clone`
+      // with no token configured. Priming it here, while the wizard still
+      // has a live session, at least covers runs while the credential
+      // remains valid. No-op for non-GitHub providers or Cloud backends.
+      const providersToPrime = new Set(
+        selectedRepos.map((repo) => repo.git_provider),
+      );
+      await Promise.all(
+        Array.from(providersToPrime).map((provider) =>
+          mintLocalGithubCloneCredential(provider),
+        ),
+      );
+
       // Sequential, not parallel: each create is a two-request flow
       // (create-preset then PATCH the real trigger) against the same
       // automation service, and failures should stop cleanly rather than
