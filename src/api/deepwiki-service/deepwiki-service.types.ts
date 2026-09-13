@@ -55,6 +55,7 @@ export interface DeepWikiChatMessage {
 export interface DeepWikiChatCompletionRequest {
   repo_url: string;
   type: DeepWikiRepoType;
+  token?: string | null;
   provider?: string;
   model?: string | null;
   language?: string;

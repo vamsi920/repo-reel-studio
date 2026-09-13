@@ -76,6 +76,7 @@ export async function repairInvalidDiagrams(
             const response = await DeepWikiService.chatCompletion({
               repo_url: target.repo_url,
               type: target.type,
+              token: target.token,
               provider: "google",
               messages: [
                 {

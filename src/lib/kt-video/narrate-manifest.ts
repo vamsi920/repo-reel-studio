@@ -1,5 +1,6 @@
 import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
+import { resolveDeepWikiRepoTarget } from "#/lib/knowledge/deepwiki-repo-target";
 import type { KtManifest, KtScene } from "./build-manifest";
 
 const FPS = 30;
@@ -100,9 +101,11 @@ export async function narrateManifest(
 
   let response: string;
   try {
+    const target = await resolveDeepWikiRepoTarget(snapshot);
     response = await DeepWikiService.chatCompletion({
-      repo_url: snapshot.localPath,
-      type: "local",
+      repo_url: target.repo_url,
+      type: target.type,
+      token: target.token,
       provider: "google",
       messages: [{ role: "user", content: buildPrompt(narratable) }],
     });
