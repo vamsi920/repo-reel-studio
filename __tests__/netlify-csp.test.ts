@@ -63,6 +63,27 @@ describe("netlify.toml Content-Security-Policy", () => {
     );
   });
 
+  it("allows the jsdelivr CDN to load Monaco's stylesheet for the Diff tab", () => {
+    // Monaco's default loader also fetches editor.main.css from
+    // cdn.jsdelivr.net (see the script-src test above for the JS half);
+    // without this in style-src, the browser blocks that stylesheet and the
+    // Diff tab renders as an unstyled sliver instead of a readable diff.
+    expect(getDirectiveSources("style-src")).toContain(
+      "https://cdn.jsdelivr.net",
+    );
+  });
+
+  it("still restricts style-src to self, inline, fonts.googleapis, and jsdelivr", () => {
+    expect(getDirectiveSources("style-src").sort()).toEqual(
+      [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+      ].sort(),
+    );
+  });
+
   it("allows framing the agent-server workspace host for the Files tab's Rich preview", () => {
     // src/components/features/files-tab/file-content-viewer.tsx iframes HTML
     // and PDF files from the conversation's agent-server workspace URL
