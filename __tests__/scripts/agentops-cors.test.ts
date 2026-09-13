@@ -72,6 +72,12 @@ describe("applyCorsHeaders", () => {
     expect(res.headers["Access-Control-Allow-Methods"]).toContain("OPTIONS");
   });
 
+  it("allows PUT so preflight for the budgets save route succeeds", () => {
+    const res = fakeRes();
+    applyCorsHeaders(res, "https://neo.neodevex.com", allowed);
+    expect(res.headers["Access-Control-Allow-Methods"]).toContain("PUT");
+  });
+
   it("omits Allow-Origin/Vary for a disallowed origin but still sets the shared headers", () => {
     const res = fakeRes();
     applyCorsHeaders(res, "https://evil.example.com", allowed);

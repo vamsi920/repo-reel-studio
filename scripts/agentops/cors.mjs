@@ -53,5 +53,5 @@ export function applyCorsHeaders(res, requestOrigin, allowedOrigins) {
     "Access-Control-Allow-Headers",
     "Content-Type, X-Session-API-Key",
   );
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
 }
