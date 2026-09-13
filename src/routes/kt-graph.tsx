@@ -21,7 +21,6 @@ import {
   codegraphStoragePrefix,
   openExistingAnalysis,
   runAnalysis,
-  type AnalysisHandle,
   type SearchEntry,
 } from "#/lib/codegraph/analyzer-runner";
 import { codeGraphKey } from "#/lib/codegraph/codegraph-types";
@@ -36,7 +35,12 @@ import {
   workspaceIdForSnapshot,
 } from "#/lib/codegraph/workspace-identity";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import { resolvePersistenceIds } from "#/lib/data-platform/repositories/repository-identity";
+import {
+  resolvePersistenceIds,
+  resolveOrgId,
+  findRepositoryUuid,
+  type PersistenceIds,
+} from "#/lib/data-platform/repositories/repository-identity";
 import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
 
 const MAX_SEARCH_RESULTS = 20;
@@ -103,7 +107,7 @@ function KtGraph() {
   ]);
 
   const analyze = React.useCallback(
-    async (force: boolean) => {
+    async (force: boolean, coldStorageIds?: PersistenceIds) => {
       if (!snapshot || !key) return;
       const workspaceId = workspaceIdForSnapshot(snapshot);
 
@@ -123,13 +127,63 @@ function KtGraph() {
         });
       }
 
-      // A cold-rehydrated (Supabase) Docs entry has real content but
-      // `localPath: ""` and no live session -- confirmed real: without this
-      // guard, `runAnalysis` (needed whenever no cached graph exists yet
-      // for this commit) tried to mkdir a workspace-relative path with an
-      // empty root, producing a confusing "/.neodevex: Read-only file
-      // system" error instead of a clear one. Same scope boundary as Watch
-      // KT: analysis needs a live sandbox to actually run in.
+      const context = {
+        workspaceId,
+        repositoryId: snapshot.repositoryId,
+        commitSha: snapshot.commitSha,
+      };
+      // Resolved up front (not just after a successful run) so the Storage
+      // fast path in `openExistingAnalysis` works even without a live
+      // sandbox -- that's the whole point of mirroring to Storage.
+      // `resolvePersistenceIds` needs a real `localPath`, which a
+      // cold-rehydrated entry never has -- `coldStorageIds`, when the caller
+      // already resolved the snapshot's real stored ids (see the cold-load
+      // effect below), is used instead so this never calls it with an empty
+      // path and writes a bogus workspace row.
+      const persistenceIds =
+        coldStorageIds ??
+        (snapshot.localPath
+          ? await resolvePersistenceIds({
+              owner: snapshot.owner,
+              repo: snapshot.repo,
+              branch: snapshot.branch,
+              localPath: snapshot.localPath,
+              backendId: backend.id,
+            })
+          : null);
+      const shared = {
+        snapshot,
+        conversationUrl: knowledgeState?.conversationUrl ?? null,
+        sessionApiKey: knowledgeState?.sessionApiKey ?? null,
+        workspaceId,
+        storageIds: persistenceIds,
+      };
+
+      // The Storage-mirror fast path needs no live sandbox at all, so it must
+      // run before the live-session guard below -- this is what lets a
+      // cold-rehydrated entry (no `localPath`, no conversation) skip straight
+      // to a graph that was already generated and mirrored elsewhere instead
+      // of always landing on "open a live session".
+      if (!force) {
+        const existingResult = await openExistingAnalysis(shared);
+        if (existingResult) {
+          useCodeGraphStore.getState().setReady(key, existingResult);
+          emitCodeGraphMilestone(context, {
+            kind: "analysis.ready",
+            subsystemCount: existingResult.root.nodes.length,
+            ...(existingResult.meta.reducedAnalysis ? { reduced: true } : {}),
+          });
+          return;
+        }
+      }
+
+      // Nothing reusable was found (or a forced rebuild): a real `localPath`
+      // and a live session are needed to actually run the analyzer.
+      // Confirmed real: without this guard, `runAnalysis` tried to mkdir a
+      // workspace-relative path with an empty root, producing a confusing
+      // "/.neodevex: Read-only file system" error instead of a clear one.
+      // Same scope boundary as Watch KT: analysis needs a live sandbox to
+      // actually run in.
       if (
         !snapshot.localPath ||
         !knowledgeState?.conversationUrl ||
@@ -143,60 +197,28 @@ function KtGraph() {
           );
         return;
       }
-      const context = {
-        workspaceId,
-        repositoryId: snapshot.repositoryId,
-        commitSha: snapshot.commitSha,
-      };
-      // Resolved up front (not just after a successful run) so the Storage
-      // fast path in `openExistingAnalysis` works even without a live
-      // sandbox -- that's the whole point of mirroring to Storage.
-      const persistenceIds = await resolvePersistenceIds({
-        owner: snapshot.owner,
-        repo: snapshot.repo,
-        branch: snapshot.branch,
-        localPath: snapshot.localPath,
-        backendId: backend.id,
-      });
-      const shared = {
-        snapshot,
-        conversationUrl: knowledgeState?.conversationUrl ?? null,
-        sessionApiKey: knowledgeState?.sessionApiKey ?? null,
-        workspaceId,
-        storageIds: persistenceIds,
-      };
 
       try {
-        let result: AnalysisHandle | null = null;
-
-        // An analysis for this exact commit is reusable; one for any other
-        // commit is not, and openExistingAnalysis only ever looks at this one.
-        if (!force) {
-          result = await openExistingAnalysis(shared);
-        }
-
-        if (!result) {
-          emitCodeGraphMilestone(context, { kind: "analysis.started" });
-          result = await runAnalysis({
-            ...shared,
-            hints: toSubsystemHints(knowledgeState?.knowledge ?? undefined),
-            onProgress: (progress) => {
-              useCodeGraphStore.getState().setProgress(key, progress);
-              if (progress.phase === "relationships") {
-                emitCodeGraphMilestone(context, {
-                  kind: "analysis.relationships",
-                });
-              }
-              if (progress.phase === "mapped") {
-                emitCodeGraphMilestone(context, {
-                  kind: "analysis.mapped",
-                  fileCount: progress.fileCount ?? 0,
-                  symbolCount: progress.symbolCount ?? 0,
-                });
-              }
-            },
-          });
-        }
+        emitCodeGraphMilestone(context, { kind: "analysis.started" });
+        const result = await runAnalysis({
+          ...shared,
+          hints: toSubsystemHints(knowledgeState?.knowledge ?? undefined),
+          onProgress: (progress) => {
+            useCodeGraphStore.getState().setProgress(key, progress);
+            if (progress.phase === "relationships") {
+              emitCodeGraphMilestone(context, {
+                kind: "analysis.relationships",
+              });
+            }
+            if (progress.phase === "mapped") {
+              emitCodeGraphMilestone(context, {
+                kind: "analysis.mapped",
+                fileCount: progress.fileCount ?? 0,
+                symbolCount: progress.symbolCount ?? 0,
+              });
+            }
+          },
+        });
 
         useCodeGraphStore.getState().setReady(key, result);
         emitCodeGraphMilestone(context, {
@@ -236,7 +258,7 @@ function KtGraph() {
         emitCodeGraphMilestone(context, { kind: "analysis.failed", reason });
       }
     },
-    [snapshot, knowledgeState, key],
+    [snapshot, knowledgeState, key, backend.id],
   );
 
   // On a fresh page load (no in-memory graph state yet), check whether a
@@ -245,25 +267,37 @@ function KtGraph() {
   // mirror first, so this can succeed even without a live agent-server
   // session -- it only falls back to needing one if that commit was analyzed
   // before Storage mirroring existed, or the mirror upload failed.
+  //
+  // A cold-rehydrated (Supabase) Docs entry has `localPath: ""`, so it can't
+  // use `resolvePersistenceIds` here -- that resolver needs a real local
+  // path to re-derive the same workspace id a live generation wrote the
+  // snapshot under, and an empty path produces a *different* id that never
+  // matches the stored row (confirmed: this is why a real, previously
+  // generated graph stayed permanently invisible on every cold load). The
+  // read-only `resolveOrgId` + `findRepositoryUuid` pair Knowledge docs
+  // already use for the same cold-rehydration problem needs neither, and
+  // `findSnapshotWorkspaceId` then asks the snapshot row itself which
+  // workspace actually generated it.
   React.useEffect(() => {
     if (!snapshot || !key || state) return;
     let cancelled = false;
     (async () => {
-      const ids = await resolvePersistenceIds({
-        owner: snapshot.owner,
-        repo: snapshot.repo,
-        branch: snapshot.branch,
-        localPath: snapshot.localPath,
-        backendId: backend.id,
-      });
-      if (!ids || cancelled) return;
-      const exists = await codegraphPersistenceRepository.hasSnapshot(
-        ids.workspaceId,
-        ids.repositoryUuid,
-        snapshot.commitSha,
+      const orgId = await resolveOrgId();
+      if (!orgId || cancelled) return;
+      const repositoryUuid = await findRepositoryUuid(
+        orgId,
+        snapshot.owner,
+        snapshot.repo,
+        snapshot.localPath || undefined,
       );
-      if (!exists || cancelled) return;
-      analyze(false);
+      if (!repositoryUuid || cancelled) return;
+      const workspaceId =
+        await codegraphPersistenceRepository.findSnapshotWorkspaceId(
+          repositoryUuid,
+          snapshot.commitSha,
+        );
+      if (!workspaceId || cancelled) return;
+      analyze(false, { workspaceId, repositoryUuid });
     })();
     return () => {
       cancelled = true;

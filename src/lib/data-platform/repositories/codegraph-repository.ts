@@ -26,6 +26,21 @@ export interface CodegraphPersistenceRepository {
     repositoryUuid: string,
     commitSha: string,
   ): Promise<boolean>;
+  /**
+   * Looks up an existing snapshot's own stored `workspace_id` for a
+   * repository + commit, without requiring the caller to already know (or
+   * correctly re-derive) that workspace id. A cold page load has no real
+   * local path, so it cannot reproduce the workspace id a previous, real
+   * generation wrote the snapshot under -- this lets a cold rehydration ask
+   * the snapshot table itself which workspace actually generated it, the
+   * same way Knowledge docs look up content by repository id alone. Returns
+   * the most recently generated match when more than one workspace has a
+   * snapshot for the same commit.
+   */
+  findSnapshotWorkspaceId(
+    repositoryUuid: string,
+    commitSha: string,
+  ): Promise<string | null>;
 }
 
 class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepository {
@@ -68,6 +83,26 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
       return Boolean(data);
     } catch {
       return false;
+    }
+  }
+
+  async findSnapshotWorkspaceId(
+    repositoryUuid: string,
+    commitSha: string,
+  ): Promise<string | null> {
+    if (!isSupabaseConfigured || !supabase) return null;
+    try {
+      const { data } = await supabase
+        .from("codegraph_snapshots")
+        .select("workspace_id")
+        .eq("repository_id", repositoryUuid)
+        .eq("commit_sha", commitSha)
+        .order("generated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data?.workspace_id as string | undefined) ?? null;
+    } catch {
+      return null;
     }
   }
 }

@@ -5,10 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtGraph from "#/routes/kt-graph";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
-import type {
-  AnalysisHandle,
-  CodeGraphLevelPayload,
-  SearchEntry,
+import {
+  resolveOrgId,
+  findRepositoryUuid,
+} from "#/lib/data-platform/repositories/repository-identity";
+import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
+import {
+  openExistingAnalysis,
+  type AnalysisHandle,
+  type CodeGraphLevelPayload,
+  type SearchEntry,
 } from "#/lib/codegraph/analyzer-runner";
 import type {
   CodeGraphMeta,
@@ -21,14 +27,28 @@ vi.mock("#/contexts/active-backend-context", () => ({
 
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
   resolvePersistenceIds: vi.fn().mockResolvedValue(null),
+  resolveOrgId: vi.fn().mockResolvedValue(null),
+  findRepositoryUuid: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("#/lib/data-platform/repositories/codegraph-repository", () => ({
   codegraphPersistenceRepository: {
     hasSnapshot: vi.fn().mockResolvedValue(false),
     saveSnapshot: vi.fn(),
+    findSnapshotWorkspaceId: vi.fn().mockResolvedValue(null),
   },
 }));
+
+vi.mock("#/lib/codegraph/analyzer-runner", async () => {
+  const actual = await vi.importActual<
+    typeof import("#/lib/codegraph/analyzer-runner")
+  >("#/lib/codegraph/analyzer-runner");
+  return {
+    ...actual,
+    openExistingAnalysis: vi.fn().mockResolvedValue(null),
+    runAnalysis: vi.fn(),
+  };
+});
 
 vi.mock("#/lib/codegraph/workspace-identity", () => ({
   workspaceIdForSnapshot: (snapshot: { localPath: string }) =>
@@ -154,8 +174,7 @@ describe("KtGraph search", () => {
     const handle: AnalysisHandle = {
       meta,
       root: rootLevel,
-      loadLevel: async (parentId) =>
-        parentId === "sub1" ? childLevel : null,
+      loadLevel: async (parentId) => (parentId === "sub1" ? childLevel : null),
       loadSearchIndex: async () => searchIndex,
       readSource: async () => null,
     };
@@ -185,9 +204,9 @@ describe("KtGraph search", () => {
       expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
         "System",
       );
-      expect(
-        screen.getByTestId("codegraph-breadcrumbs"),
-      ).not.toHaveTextContent("sub1");
+      expect(screen.getByTestId("codegraph-breadcrumbs")).not.toHaveTextContent(
+        "sub1",
+      );
     });
     expect(screen.getByTestId("codegraph-node-details")).toHaveTextContent(
       "sub1",
@@ -230,9 +249,9 @@ describe("KtGraph search", () => {
     renderWithProviders(<KtGraph />);
 
     // The already-open graph (breadcrumbs, node) stays mounted...
-    expect(await screen.findByTestId("codegraph-breadcrumbs")).toHaveTextContent(
-      "System",
-    );
+    expect(
+      await screen.findByTestId("codegraph-breadcrumbs"),
+    ).toHaveTextContent("System");
     expect(screen.getByTestId("codegraph-node-count")).toBeInTheDocument();
     // ...and the rebuild control reflects the in-progress rebuild rather than
     // the whole view disappearing behind a blank "analyzing" spinner.
@@ -304,5 +323,119 @@ describe("KtGraph search", () => {
     // the icon uncolored.
     expect(container.querySelector('[class*="--error-500"]')).not.toBeNull();
     expect(container.querySelector('[class*="--danger-500"]')).toBeNull();
+  });
+});
+
+describe("KtGraph cold rehydration", () => {
+  const COLD_REPOSITORY_ID = "acme/docs@main";
+  const COLD_COMMIT = "1122334455667788";
+
+  beforeEach(() => {
+    useParamsMock.mockReturnValue({
+      repositoryId: encodeURIComponent(COLD_REPOSITORY_ID),
+    } as never);
+    // A cold-rehydrated (Supabase) Docs entry has real content but no
+    // `localPath` and no live session -- see kt-repository.tsx's
+    // `tryColdRehydration`.
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [COLD_REPOSITORY_ID]: {
+          snapshot: {
+            repositoryId: COLD_REPOSITORY_ID,
+            owner: "acme",
+            repo: "docs",
+            branch: "main",
+            commitSha: COLD_COMMIT,
+            localPath: "",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge,
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+  });
+
+  afterEach(() => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    vi.clearAllMocks();
+  });
+
+  it("renders a graph that was already generated elsewhere instead of showing the empty state", async () => {
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockResolvedValue("real-workspace-1");
+
+    const meta: CodeGraphMeta = {
+      workspaceId: "real-workspace-1",
+      repositoryId: COLD_REPOSITORY_ID,
+      commitSha: COLD_COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 4,
+      symbolCount: 2,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+    vi.mocked(openExistingAnalysis).mockResolvedValue(handle);
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByTestId("codegraph-breadcrumbs"),
+    ).toHaveTextContent("System");
+
+    expect(findRepositoryUuid).toHaveBeenCalledWith(
+      "org-1",
+      "acme",
+      "docs",
+      undefined,
+    );
+    expect(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).toHaveBeenCalledWith("repo-uuid-1", COLD_COMMIT);
+    expect(openExistingAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storageIds: {
+          workspaceId: "real-workspace-1",
+          repositoryUuid: "repo-uuid-1",
+        },
+      }),
+    );
+  });
+
+  it("keeps showing the empty state, not an error, when no prior snapshot exists for this commit", async () => {
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockResolvedValue(null);
+
+    renderWithProviders(<KtGraph />);
+
+    expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
+    expect(openExistingAnalysis).not.toHaveBeenCalled();
   });
 });
