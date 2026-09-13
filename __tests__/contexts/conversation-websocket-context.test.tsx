@@ -125,6 +125,46 @@ const makeBashObservation = (id: string, actionId: string, text: string) => ({
   },
 });
 
+const makeBrowserNavigateAction = (id: string, url: string) => ({
+  id,
+  timestamp: new Date().toISOString(),
+  source: "agent",
+  thought: [],
+  thinking_blocks: [],
+  action: { kind: "BrowserNavigateAction", url, new_tab: false },
+  tool_name: "browser_navigate",
+  tool_call_id: `call-${id}`,
+  tool_call: {
+    id: `call-${id}`,
+    type: "function",
+    function: { name: "browser_navigate", arguments: JSON.stringify({ url }) },
+  },
+  llm_response_id: `resp-${id}`,
+  security_risk: "UNKNOWN",
+});
+
+const makeBrowserObservation = (
+  id: string,
+  actionId: string,
+  {
+    error = null,
+    screenshotData = null,
+  }: { error?: string | null; screenshotData?: string | null } = {},
+) => ({
+  id,
+  timestamp: new Date().toISOString(),
+  source: "environment",
+  action_id: actionId,
+  tool_name: "browser_navigate",
+  tool_call_id: `call-${actionId}`,
+  observation: {
+    kind: "BrowserObservation",
+    output: error ?? "Navigated to the page",
+    error,
+    screenshot_data: screenshotData,
+  },
+});
+
 const eventIds = () => useEventStore.getState().events.map((event) => event.id);
 
 describe("ConversationWebSocketProvider — conversation-scoped event store", () => {
@@ -464,6 +504,84 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
       expect(useBrowserStore.getState().screenshotSrc).toBe(""),
     );
     expect(useBrowserStore.getState().url).toBe("");
+  });
+
+  describe("BrowserNavigateAction / BrowserObservation pairing", () => {
+    const renderBrowserCaptured = async () => {
+      render(
+        <QueryClientProvider client={queryClient}>
+          <ConversationWebSocketProvider
+            conversationId="conv-browser"
+            conversationUrl="http://localhost/api"
+          >
+            <div />
+          </ConversationWebSocketProvider>
+        </QueryClientProvider>,
+      );
+      await waitFor(() => expect(wsCapture.mainOnMessage).not.toBeNull());
+    };
+
+    const deliverBrowserEvent = (event: unknown) =>
+      act(() => {
+        wsCapture.mainOnMessage!({ data: JSON.stringify(event) });
+      });
+
+    // The dispatched action only records what the agent asked for. Adopting
+    // it immediately (instead of waiting for the observation) is exactly how
+    // the panel used to show a target URL the browser never actually reached.
+    it("does not update the URL bar until the browser observation confirms it", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-1", "https://example.com"),
+      );
+      expect(useBrowserStore.getState().url).toBe("");
+
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-1", "nav-1", {
+          screenshotData: "abc123",
+        }),
+      );
+      expect(useBrowserStore.getState().url).toBe("https://example.com");
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,abc123",
+      );
+    });
+
+    // Matches the reported bug: the browser tool can claim a navigation
+    // succeeded while the observation says otherwise. The URL bar and
+    // screenshot must not adopt the claimed destination in that case.
+    it("does not adopt the requested URL when the browser observation reports an error", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-2", "https://example.com/blocked"),
+      );
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-2", "nav-2", {
+          error: "Cannot navigate - browser not connected",
+        }),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("");
+      expect(useBrowserStore.getState().screenshotSrc).toBe("");
+    });
+
+    // The exact reported failure mode: the browser tool's observation comes
+    // back with neither a screenshot nor an error — it silently no-op'd
+    // instead of actually navigating. Requiring a real screenshot (not just
+    // "no error") to confirm the URL is what catches this case too.
+    it("does not adopt the requested URL when the observation has no screenshot and no error", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-3", "http://localhost:8080"),
+      );
+      deliverBrowserEvent(makeBrowserObservation("obs-3", "nav-3"));
+
+      expect(useBrowserStore.getState().url).toBe("");
+      expect(useBrowserStore.getState().screenshotSrc).toBe("");
+    });
   });
 
   it("resets the metrics store when switching conversations", async () => {

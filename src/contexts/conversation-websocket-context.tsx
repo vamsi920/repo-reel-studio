@@ -158,6 +158,14 @@ export function ConversationWebSocketProvider({
   const { setExecutionStatus } = useConversationStateStore();
   const { appendInput, appendOutput, appendCommands } = useCommandStore();
   const resetBrowserStore = useBrowserStore((state) => state.reset);
+  // The URL a BrowserNavigateAction *asked for*, keyed by the action's own
+  // event id, held here until the matching BrowserObservation confirms the
+  // browser actually got there. Committing the URL straight off the action
+  // (the agent's stated intent) let the panel show a target URL the browser
+  // never reached whenever the tool silently no-op'd — see the "Browser tab
+  // falsely reports success" report. Keyed off `action_id` correlation
+  // rather than assuming in-order 1:1 delivery.
+  const pendingBrowserNavigationsRef = useRef<Map<string, string>>(new Map());
 
   // History loading state.
   // - Main conversation history is now loaded via REST (`useConversationHistory`),
@@ -293,6 +301,7 @@ export function ConversationWebSocketProvider({
     // half-applied state (events gone but the old id still reported).
     clearEventsForConversation(nextId);
     resetBrowserStore();
+    pendingBrowserNavigationsRef.current.clear();
     // The terminal is conversation-scoped too, and it is re-seeded from the
     // preloaded history right below — so its clear has the same ordering
     // constraint as the event store's and must run here, not in the route.
@@ -653,20 +662,43 @@ export function ConversationWebSocketProvider({
             appendOutput(textContent);
           }
 
-          // Handle BrowserObservation events - update browser store with screenshot
+          // Handle BrowserObservation events - update browser store with
+          // screenshot, and commit any navigation this observation confirms.
+          // Both are gated on an actual screenshot being present, not merely
+          // on the absence of an error: the browser tool can report a
+          // navigate as successful (no `error`) while the browser silently
+          // never moved and no screenshot comes back either, so requiring a
+          // real screenshot is what catches that silent-failure case.
           if (isBrowserObservationEvent(event)) {
-            const { screenshot_data: screenshotData } = event.observation;
-            if (screenshotData) {
-              const screenshotSrc = screenshotData.startsWith("data:")
-                ? screenshotData
+            const { screenshot_data: screenshotData, error } =
+              event.observation;
+            const confirmed = Boolean(screenshotData) && !error;
+            if (confirmed) {
+              const screenshotSrc = screenshotData!.startsWith("data:")
+                ? screenshotData!
                 : `data:image/png;base64,${screenshotData}`;
               useBrowserStore.getState().setScreenshotSrc(screenshotSrc);
             }
+            const pendingUrl = pendingBrowserNavigationsRef.current.get(
+              event.action_id,
+            );
+            if (pendingUrl !== undefined) {
+              pendingBrowserNavigationsRef.current.delete(event.action_id);
+              if (confirmed) {
+                useBrowserStore.getState().setUrl(pendingUrl);
+              }
+            }
           }
 
-          // Handle BrowserNavigateAction events - update browser store with URL
+          // Handle BrowserNavigateAction events - hold the requested URL
+          // until the paired BrowserObservation confirms it (see above)
+          // rather than showing it immediately, since the action only
+          // records what the agent asked for, not what actually happened.
           if (isBrowserNavigateActionEvent(event)) {
-            useBrowserStore.getState().setUrl(event.action.url);
+            pendingBrowserNavigationsRef.current.set(
+              event.id,
+              event.action.url,
+            );
           }
 
           if (
