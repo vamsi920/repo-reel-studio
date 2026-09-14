@@ -14,6 +14,7 @@ import {
   isActiveStatus,
   isTerminalStatus,
   normalizeRunStatus,
+  normalizeTimestamp,
 } from "./map-events.mjs";
 import { computeSpend, evaluateBudgets, monthStart } from "./policy.mjs";
 
@@ -163,7 +164,7 @@ export class Collector {
     run.agentName = deriveAgentName(conversation);
     const model = deriveModel(conversation);
     if (model) run.model = model;
-    run.updatedAt = conversation.updated_at ?? observedAt;
+    run.updatedAt = normalizeTimestamp(conversation.updated_at) ?? observedAt;
 
     const spans = [];
     const audit = [];
@@ -247,10 +248,13 @@ export class Collector {
         audit.push(
           ...result.audit.map((entry) => ({
             ...entry,
-            at: entry.at ?? event.timestamp,
+            at: entry.at ?? normalizeTimestamp(event.timestamp),
           })),
         );
 
+        // The cursor stays in the runtime's own (offset-less) form: it is sent
+        // straight back as `timestamp__gte`, so it must match what the
+        // agent-server compares against, not the normalized value we store.
         if (event.timestamp !== tracker.cursor) {
           tracker.cursor = event.timestamp;
           tracker.seenAtCursor = new Set();
@@ -313,7 +317,9 @@ export class Collector {
 
     if (!breaches.length) return audit;
 
-    const pendingApprovals = await this.store.listApprovals({ state: "pending" });
+    const pendingApprovals = await this.store.listApprovals({
+      state: "pending",
+    });
     const existing = pendingApprovals.find(
       (a) => a.kind === "budget" && a.runId === run.runId,
     );
@@ -378,7 +384,9 @@ export class Collector {
    */
   async #raiseConfirmationApproval(aggregator, observedAt) {
     const run = aggregator.run;
-    const pendingApprovals = await this.store.listApprovals({ state: "pending" });
+    const pendingApprovals = await this.store.listApprovals({
+      state: "pending",
+    });
     const existing = pendingApprovals.find(
       (a) => a.kind === "confirmation" && a.runId === run.runId,
     );

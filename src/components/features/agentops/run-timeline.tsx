@@ -11,6 +11,7 @@ import {
   RUN_PHASES,
   RUN_PHASE_LABEL_KEYS,
   formatTimestamp,
+  parseTimestamp,
 } from "./agentops-formatting";
 
 /**
@@ -36,8 +37,8 @@ function spanColor(kind: string): string {
 }
 
 function spanDurationMs(span: AgentOpsSpan): number {
-  const start = new Date(span.startTime).getTime();
-  const end = span.endTime ? new Date(span.endTime).getTime() : start;
+  const start = parseTimestamp(span.startTime);
+  const end = span.endTime ? parseTimestamp(span.endTime) : start;
   return Math.max(0, end - start);
 }
 
@@ -61,17 +62,17 @@ export function RunTimeline({ run, spans }: RunTimelineProps) {
 
   const { windowStart, windowMs, byPhase } = useMemo(() => {
     const times = spans.flatMap((span) => [
-      new Date(span.startTime).getTime(),
+      parseTimestamp(span.startTime),
       span.endTime
-        ? new Date(span.endTime).getTime()
-        : new Date(span.startTime).getTime(),
+        ? parseTimestamp(span.endTime)
+        : parseTimestamp(span.startTime),
     ]);
     const start = times.length
       ? Math.min(...times)
-      : new Date(run.startedAt).getTime();
+      : parseTimestamp(run.startedAt);
     const end = times.length
       ? Math.max(...times)
-      : new Date(run.endedAt ?? run.startedAt).getTime();
+      : parseTimestamp(run.endedAt ?? run.startedAt);
     // A run whose spans all share one timestamp would divide by zero; a 1ms
     // floor renders them as equal-width ticks instead.
     const span = Math.max(1, end - start);
@@ -123,8 +124,7 @@ export function RunTimeline({ run, spans }: RunTimelineProps) {
             <div className="flex flex-col gap-1">
               {(byPhase.get(phase) ?? []).map((span) => {
                 const offsetPct =
-                  ((new Date(span.startTime).getTime() - windowStart) /
-                    windowMs) *
+                  ((parseTimestamp(span.startTime) - windowStart) / windowMs) *
                   100;
                 // Sub-percent bars are invisible; floor the width so a fast
                 // tool call is still clickable.

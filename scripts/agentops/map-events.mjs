@@ -109,6 +109,28 @@ export function normalizeRunStatus(executionStatus) {
   return RUN_STATUSES.has(executionStatus) ? executionStatus : "idle";
 }
 
+/** An ISO-8601 string that already carries a zone: trailing "Z" or ±HH[:MM]. */
+const ZONED_ISO_PATTERN = /(Z|[+-]\d{2}(:?\d{2})?)$/i;
+
+/**
+ * Make a runtime timestamp unambiguous.
+ *
+ * The agent-server serialises its datetimes naively — "2026-09-14T01:53:30.400286",
+ * no "Z", no offset — while the collector's own records use
+ * `new Date().toISOString()`. Both are UTC, but a browser's `new Date()`
+ * parses an offset-less ISO string as *local* time, so a tool call and the
+ * "run completed" row that followed it two seconds later rendered hours apart
+ * and sorted out of order. Every timestamp copied out of a runtime event or
+ * conversation record goes through here so the store only ever holds zoned
+ * UTC. Anything that isn't an offset-less ISO string is returned untouched.
+ */
+export function normalizeTimestamp(value) {
+  if (typeof value !== "string") return value;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return value;
+  if (ZONED_ISO_PATTERN.test(value)) return value;
+  return `${value}Z`;
+}
+
 /** Terminal statuses — a run in one of these is history, not a live run. */
 export function isTerminalStatus(status) {
   return status === "finished" || status === "error";
@@ -312,7 +334,7 @@ export class RunAggregator {
     // are worth an audit line, neither is worth a span.
     const isFirst = !this.run.startedAt;
     if (isFirst) {
-      this.run.startedAt = event.timestamp;
+      this.run.startedAt = normalizeTimestamp(event.timestamp);
       this.#setPhase("planning");
     }
     return {
@@ -323,7 +345,7 @@ export class RunAggregator {
           summary: isFirst
             ? `Run started in ${this.run.workspaceId}`
             : "User sent a follow-up message",
-          at: event.timestamp,
+          at: normalizeTimestamp(event.timestamp),
           actor: "user",
         },
       ],
@@ -340,7 +362,7 @@ export class RunAggregator {
       kind: AgentOpsSpanKindValues.TOOL,
       name: event.tool_name,
       phase,
-      startTime: event.timestamp,
+      startTime: normalizeTimestamp(event.timestamp),
       endTime: null,
       status: ToolStatus.EXECUTING,
       attributes: {
@@ -377,7 +399,7 @@ export class RunAggregator {
         {
           action: "tool.called",
           summary: `${event.tool_name} (${event.action?.kind ?? "unknown"})`,
-          at: event.timestamp,
+          at: normalizeTimestamp(event.timestamp),
           actor: "agent",
           metadata: {
             toolCallId: event.tool_call_id,
@@ -419,7 +441,7 @@ export class RunAggregator {
     const isError = event.observation?.is_error === true;
     const closed = this.#closeToolSpan(event.tool_call_id, {
       status: isError ? ToolStatus.FAILED : ToolStatus.SUCCEEDED,
-      endTime: event.timestamp,
+      endTime: normalizeTimestamp(event.timestamp),
       result: summarizeObservation(event.observation),
       errorMessage: isError
         ? summarizeObservation(event.observation, 500)
@@ -433,7 +455,7 @@ export class RunAggregator {
   #applyRejection(event) {
     const closed = this.#closeToolSpan(event.tool_call_id, {
       status: ToolStatus.FAILED,
-      endTime: event.timestamp,
+      endTime: normalizeTimestamp(event.timestamp),
       result: null,
       errorMessage: `Rejected: ${event.rejection_reason}`,
     });
@@ -443,7 +465,7 @@ export class RunAggregator {
         {
           action: "approval.rejected",
           summary: `Action rejected: ${event.rejection_reason}`,
-          at: event.timestamp,
+          at: normalizeTimestamp(event.timestamp),
           actor: "user",
           metadata: { toolCallId: event.tool_call_id },
         },
@@ -455,7 +477,7 @@ export class RunAggregator {
     this.run.errorCount += 1;
     const closed = this.#closeToolSpan(event.tool_call_id, {
       status: ToolStatus.FAILED,
-      endTime: event.timestamp,
+      endTime: normalizeTimestamp(event.timestamp),
       result: null,
       errorMessage: first200(event.error),
     });
@@ -465,7 +487,7 @@ export class RunAggregator {
         {
           action: "task.error",
           summary: first200(event.error),
-          at: event.timestamp,
+          at: normalizeTimestamp(event.timestamp),
           actor: "agent",
         },
       ],
@@ -695,7 +717,7 @@ export function createRun(conversation, observedAt) {
     status,
     model: conversation.model ?? null,
     phase: initialPhaseForStatus(status),
-    startedAt: conversation.createdAt ?? observedAt,
+    startedAt: normalizeTimestamp(conversation.createdAt) ?? observedAt,
     endedAt: null,
     updatedAt: observedAt,
     costUsd: 0,

@@ -26,12 +26,33 @@ export function formatCostUsd(value: number | null | undefined): string {
   return `$${value.toFixed(2)}`;
 }
 
+/** An ISO-8601 string that already carries a zone: trailing "Z" or ±HH[:MM]. */
+const ZONED_ISO_PATTERN = /(Z|[+-]\d{2}(:?\d{2})?)$/i;
+const ISO_DATETIME_PREFIX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+/**
+ * Parse a collector timestamp as the UTC instant it is.
+ *
+ * The collector now stores zoned UTC for everything (see `normalizeTimestamp`
+ * in scripts/agentops/map-events.mjs), but rows recorded before that fix
+ * still carry the agent-server's offset-less form — and `new Date()` reads an
+ * offset-less ISO string as *local* time, which put those rows hours off and
+ * out of order next to the collector's own records. Treat a missing zone as
+ * UTC here too, so old and new rows render on the same clock.
+ */
+export function parseTimestamp(value: string): number {
+  if (ISO_DATETIME_PREFIX.test(value) && !ZONED_ISO_PATTERN.test(value)) {
+    return new Date(`${value}Z`).getTime();
+  }
+  return new Date(value).getTime();
+}
+
 export function formatElapsed(
   startedAt: string,
   endedAt: string | null,
 ): string {
-  const start = new Date(startedAt).getTime();
-  const end = endedAt ? new Date(endedAt).getTime() : Date.now();
+  const start = parseTimestamp(startedAt);
+  const end = endedAt ? parseTimestamp(endedAt) : Date.now();
   const seconds = Math.max(0, Math.round((end - start) / 1000));
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
@@ -41,7 +62,7 @@ export function formatElapsed(
 }
 
 export function formatTimestamp(value: string): string {
-  const date = new Date(value);
+  const date = new Date(parseTimestamp(value));
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(undefined, {
     month: "short",

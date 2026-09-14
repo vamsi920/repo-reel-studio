@@ -7,6 +7,7 @@ import {
   summarizeActionParameters,
   isActiveStatus,
   isTerminalStatus,
+  normalizeTimestamp,
 } from "../../scripts/agentops/map-events.mjs";
 
 const OBSERVED_AT = "2026-01-02T00:00:00.000Z";
@@ -74,6 +75,88 @@ describe("phaseForAction", () => {
       phaseForAction({ kind: "ExecuteBashAction", command: "./deploy.sh" }),
     ).toBe("tool_call");
     expect(phaseForAction(undefined)).toBe("tool_call");
+  });
+});
+
+describe("normalizeTimestamp", () => {
+  it("marks the agent-server's offset-less ISO timestamps as UTC", () => {
+    expect(normalizeTimestamp("2026-09-14T01:53:30.400286")).toBe(
+      "2026-09-14T01:53:30.400286Z",
+    );
+    expect(normalizeTimestamp("2026-09-14T01:53:30")).toBe(
+      "2026-09-14T01:53:30Z",
+    );
+  });
+
+  it("leaves already-zoned timestamps and non-ISO values alone", () => {
+    expect(normalizeTimestamp("2026-09-14T01:53:49.794Z")).toBe(
+      "2026-09-14T01:53:49.794Z",
+    );
+    expect(normalizeTimestamp("2026-09-14T01:53:49+00:00")).toBe(
+      "2026-09-14T01:53:49+00:00",
+    );
+    expect(normalizeTimestamp("2026-09-13T21:53:49-0400")).toBe(
+      "2026-09-13T21:53:49-0400",
+    );
+    expect(normalizeTimestamp("not a date")).toBe("not a date");
+    expect(normalizeTimestamp(null)).toBeNull();
+    expect(normalizeTimestamp(undefined)).toBeUndefined();
+  });
+});
+
+describe("RunAggregator — timestamps", () => {
+  // Regression: the runtime emits naive timestamps ("…T01:53:30.400286", no
+  // "Z"); copied through verbatim they were parsed by the browser as local
+  // time and rendered hours off next to the collector's own zoned records.
+  it("stores every event-derived timestamp as zoned UTC", () => {
+    const aggregator = new RunAggregator(newRun());
+
+    const started = aggregator.applyEvent({
+      id: "evt-0",
+      timestamp: "2026-09-14T01:52:55.122847",
+      source: "user",
+      llm_message: { role: "user", content: "hi" },
+    });
+    expect(started.audit[0].at).toBe("2026-09-14T01:52:55.122847Z");
+
+    const opened = aggregator.applyEvent(
+      actionEvent({ timestamp: "2026-09-14T01:53:30.400286" }),
+    );
+    expect(opened.spans[0].startTime).toBe("2026-09-14T01:53:30.400286Z");
+    expect(opened.audit[0].at).toBe("2026-09-14T01:53:30.400286Z");
+
+    const closed = aggregator.applyEvent({
+      id: "evt-2",
+      timestamp: "2026-09-14T01:53:31.000000",
+      source: "environment",
+      action_id: "evt-1",
+      tool_name: "execute_bash",
+      tool_call_id: "call-1",
+      observation: { kind: "ExecuteBashObservation", output: "ok" },
+    });
+    expect(closed.spans[0].endTime).toBe("2026-09-14T01:53:31.000000Z");
+  });
+
+  it("uses the first user message's (normalized) timestamp as startedAt", () => {
+    const run = createRun(
+      {
+        id: "run-2",
+        executionStatus: "running",
+        createdAt: "2026-09-14T01:52:55.122847",
+      },
+      OBSERVED_AT,
+    );
+    expect(run.startedAt).toBe("2026-09-14T01:52:55.122847Z");
+
+    run.startedAt = null;
+    const aggregator = new RunAggregator(run);
+    aggregator.applyEvent({
+      id: "evt-0",
+      timestamp: "2026-09-14T01:53:00.000000",
+      source: "user",
+      llm_message: { role: "user", content: "hi" },
+    });
+    expect(aggregator.run.startedAt).toBe("2026-09-14T01:53:00.000000Z");
   });
 });
 

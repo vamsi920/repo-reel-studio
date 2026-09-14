@@ -5,7 +5,38 @@ import { describe, expect, it } from "vitest";
 import {
   ACTIVE_RUN_STATUSES,
   ACTIVE_RUN_STATUSES_QUERY,
+  formatElapsed,
+  parseTimestamp,
 } from "#/components/features/agentops/agentops-formatting";
+
+describe("parseTimestamp", () => {
+  // Regression: rows recorded from agent-server events carry offset-less
+  // timestamps; `new Date()` reads those as local time, so a tool call and
+  // the "run completed" row two seconds later rendered hours apart in EDT.
+  it("reads an offset-less ISO timestamp as UTC, not local time", () => {
+    expect(parseTimestamp("2026-09-14T01:53:30.400286")).toBe(
+      Date.UTC(2026, 8, 14, 1, 53, 30, 400),
+    );
+    expect(parseTimestamp("2026-09-14T01:53:30.400286")).toBe(
+      parseTimestamp("2026-09-14T01:53:30.400Z"),
+    );
+  });
+
+  it("leaves zoned timestamps unchanged", () => {
+    expect(parseTimestamp("2026-09-14T01:53:49.794Z")).toBe(
+      Date.UTC(2026, 8, 14, 1, 53, 49, 794),
+    );
+    expect(parseTimestamp("2026-09-13T21:53:49-04:00")).toBe(
+      Date.UTC(2026, 8, 14, 1, 53, 49),
+    );
+  });
+
+  it("keeps elapsed time right across a naive start and a zoned end", () => {
+    expect(
+      formatElapsed("2026-09-14T01:52:55.122847", "2026-09-14T01:53:49.794Z"),
+    ).toBe("55s");
+  });
+});
 
 describe("ACTIVE_RUN_STATUSES", () => {
   it("excludes 'idle', matching the collector's own isActiveStatus()", () => {

@@ -131,6 +131,69 @@ describe("Collector event-tail cursor", () => {
   });
 });
 
+describe("Collector timestamp normalization", () => {
+  // Regression: the agent-server's events and conversation records carry
+  // offset-less timestamps. The audit rows and run fields built from them
+  // must be stored as zoned UTC so they render on the same clock as the
+  // collector's own `now()` records — but the tail cursor sent back to the
+  // agent-server as `timestamp__gte` must stay in the runtime's own form.
+  it("stores zoned UTC for event and conversation timestamps but keeps the raw tail cursor", async () => {
+    const store = makeStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "run-1",
+            title: "Naive clocks",
+            execution_status: "running",
+            updated_at: "2026-09-14T01:58:00.000000",
+            created_at: "2026-09-14T01:52:55.122847",
+            workspace: { working_dir: "ws" },
+          },
+        ],
+      }),
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "evt-action",
+            timestamp: "2026-09-14T01:58:03.915000",
+            source: "agent",
+            tool_name: "terminal",
+            tool_call_id: "call-1",
+            action: { kind: "TerminalAction", command: "sleep 1" },
+          },
+        ],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T01:58:05.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startedAt: "2026-09-14T01:52:55.122847Z",
+        updatedAt: "2026-09-14T01:58:00.000000Z",
+        lastEventTimestamp: "2026-09-14T01:58:03.915000",
+      }),
+    );
+    expect(
+      store.appendedAudit.find((record) => record.action === "tool.called"),
+    ).toMatchObject({ at: "2026-09-14T01:58:03.915000Z" });
+    expect(store.appendSpans).toHaveBeenCalledWith("run-1", [
+      expect.objectContaining({ startTime: "2026-09-14T01:58:03.915000Z" }),
+    ]);
+
+    // The next tick resumes from the runtime's own timestamp form.
+    await collector.tick();
+    const lastParams = client.searchEvents.mock.calls.at(-1)?.[1];
+    expect(lastParams.timestampGte).toBe("2026-09-14T01:58:03.915000");
+  });
+});
+
 describe("Collector same-tick completion", () => {
   it("keeps phase completed when the last tool call and the finished status land in the same tick", async () => {
     // Regression: applyStatus("finished") set phase "completed", then the
