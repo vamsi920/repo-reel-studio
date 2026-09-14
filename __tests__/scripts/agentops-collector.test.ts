@@ -634,6 +634,91 @@ describe("Collector budget enforcement on halted runs", () => {
   });
 });
 
+describe("Collector budget enforcement after a rejected approval", () => {
+  it("does not re-raise the breach on a run that stayed paused after its approval was rejected", async () => {
+    // Regression test: the breach dedup only looked at *pending* approvals,
+    // so the moment an operator rejected one, the still-paused, still-over-
+    // budget run tripped the same breach on the next tick — a new pending
+    // approval, another /interrupt, and another budget.exceeded + run.paused
+    // audit pair, forever. Rejecting could never be made to stick.
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: 100,
+        runBudgetUsd: 0.01,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+    });
+    let executionStatus = "running";
+    const client = makeClient({
+      searchConversations: vi.fn(async () => ({
+        items: [
+          {
+            id: "run-rejected",
+            title: "Run Sequential Sleep Commands",
+            execution_status: executionStatus,
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+            stats: {
+              usage_to_metrics: {
+                agent: {
+                  accumulated_cost: 0.0497,
+                  accumulated_token_usage: {},
+                  costs: [],
+                  response_latencies: [],
+                  token_usages: [],
+                },
+              },
+            },
+          },
+        ],
+      })),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:06:00.000Z",
+    });
+    // The enforcement's own audit pair — not the status-derived "Run paused"
+    // row that the running→paused transition legitimately emits once.
+    const budgetAudit = () =>
+      store.appendedAudit.filter(
+        (record) =>
+          record.action === "budget.exceeded" ||
+          record.summary === "Run halted because a budget was exceeded",
+      );
+
+    // Tick 1: over budget while running — halted for real, approval opened.
+    await collector.tick();
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+    expect(budgetAudit()).toHaveLength(2);
+
+    // The operator rejects it: the approval leaves the pending list and the
+    // runtime reports the run as paused. Nothing new may be raised.
+    executionStatus = "paused";
+    store.listApprovals.mockResolvedValue([]);
+    await collector.tick();
+    await collector.tick();
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+    expect(budgetAudit()).toHaveLength(2);
+
+    // The operator resumes the run without raising the limit: it is spending
+    // again, so the breach is raised again — once.
+    executionStatus = "running";
+    await collector.tick();
+    expect(client.interruptConversation).toHaveBeenCalledTimes(2);
+    expect(store.upsertApproval).toHaveBeenCalledTimes(2);
+    expect(budgetAudit()).toHaveLength(4);
+  });
+});
+
 describe("Collector budget warning dedup", () => {
   it("warns again for the same threshold crossed in the same calendar month a year later", async () => {
     // Regression test: the dedup key used to be

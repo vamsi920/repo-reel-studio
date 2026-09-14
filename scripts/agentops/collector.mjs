@@ -331,9 +331,20 @@ export class Collector {
    *
    * A breach halts the run for real (`/interrupt`) and opens an approval, so a
    * human decides whether to raise the limit or cancel. Warnings only report.
+   *
+   * Only a *running* run is judged. A paused one is already halted — by this
+   * very enforcement a tick earlier, or by the operator — so it is spending
+   * nothing, `/interrupt` would be a no-op on it, and the breach that stopped
+   * it has already been raised. Judging it again is what used to make a
+   * rejected budget approval impossible: the run stayed paused and over
+   * budget, the rejected approval no longer counted as pending, and the same
+   * breach was re-raised on the very next tick with a fresh audit pair. A
+   * breach is raised again only once the run is running again — the operator
+   * resumed it without raising the limit, or an approval raised the limit and
+   * the run overspent that too.
    */
   async #enforceBudgets(run, observedAt) {
-    if (!isActiveStatus(run.status)) return [];
+    if (run.status !== "running") return [];
 
     const [policy, agentBudgetUsd, runs] = await Promise.all([
       this.store.getWorkspacePolicy(run.workspaceId),
@@ -373,6 +384,8 @@ export class Collector {
 
     if (!breaches.length) return audit;
 
+    // Still needed for a run that stayed running because `/interrupt` failed:
+    // one open approval per run, not one per tick.
     const pendingApprovals = await this.store.listApprovals({
       state: "pending",
     });
