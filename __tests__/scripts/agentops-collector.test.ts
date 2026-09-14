@@ -131,6 +131,162 @@ describe("Collector event-tail cursor", () => {
   });
 });
 
+describe("Collector same-tick completion", () => {
+  it("keeps phase completed when the last tool call and the finished status land in the same tick", async () => {
+    // Regression: applyStatus("finished") set phase "completed", then the
+    // tool events tailed in the same tick overwrote it with "tool_call", so
+    // History showed a finished run as Progress "Tool call".
+    const store = makeStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "run-1",
+            title: "Run sleep 15 three times",
+            execution_status: "finished",
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+          },
+        ],
+      }),
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "evt-user",
+            timestamp: "2026-01-15T00:00:01.000Z",
+            source: "user",
+            llm_message: { role: "user", content: "Run sleep 15 three times" },
+          },
+          {
+            id: "evt-action",
+            timestamp: "2026-01-15T00:04:50.000Z",
+            source: "agent",
+            tool_name: "terminal",
+            tool_call_id: "call-1",
+            action: { kind: "TerminalAction", command: "sleep 15" },
+          },
+          {
+            id: "evt-observation",
+            timestamp: "2026-01-15T00:04:55.000Z",
+            source: "environment",
+            action_id: "evt-action",
+            tool_call_id: "call-1",
+            observation: { output: "" },
+          },
+        ],
+      }),
+    });
+    // The store already knows the run as "running" from an earlier tick.
+    store.getRun.mockResolvedValue({
+      runId: "run-1",
+      workspaceId: "ws",
+      agentName: "agent",
+      task: "Run sleep 15 three times",
+      status: "running",
+      model: null,
+      phase: "planning",
+      startedAt: "2026-01-15T00:00:00.000Z",
+      endedAt: null,
+      updatedAt: "2026-01-15T00:04:00.000Z",
+      costUsd: 0,
+      maxBudgetPerTask: null,
+      tokens: {
+        prompt: 0,
+        completion: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        reasoning: 0,
+        total: 0,
+      },
+      toolCallCount: 2,
+      llmCallCount: 0,
+      errorCount: 0,
+      artifacts: [],
+      lastEventId: null,
+      lastEventTimestamp: null,
+      lastEventIds: [],
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:05:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "finished",
+        phase: "completed",
+        toolCallCount: 3,
+      }),
+    );
+
+    // The completion is recorded after the tool call it followed, and its
+    // summary counts that call.
+    const actions = store.appendedAudit.map((record) => record.action);
+    expect(actions.indexOf("tool.called")).toBeGreaterThan(-1);
+    expect(actions.indexOf("task.completed")).toBeGreaterThan(
+      actions.indexOf("tool.called"),
+    );
+    expect(
+      store.appendedAudit.find((record) => record.action === "task.completed"),
+    ).toMatchObject({ summary: "Run completed after 3 tool calls" });
+  });
+
+  it("keeps phase completed for a run first observed already finished whose events are tailed in the same tick", async () => {
+    const store = makeStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "run-2",
+            title: "Fast run",
+            execution_status: "finished",
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+          },
+        ],
+      }),
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "evt-user",
+            timestamp: "2026-01-15T00:00:01.000Z",
+            source: "user",
+            llm_message: { role: "user", content: "Fast run" },
+          },
+          {
+            id: "evt-action",
+            timestamp: "2026-01-15T00:00:02.000Z",
+            source: "agent",
+            tool_name: "terminal",
+            tool_call_id: "call-1",
+            action: { kind: "TerminalAction", command: "sleep 1" },
+          },
+        ],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:05:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "finished",
+        phase: "completed",
+        toolCallCount: 1,
+      }),
+    );
+  });
+});
+
 describe("Collector budget warning dedup", () => {
   it("warns again for the same threshold crossed in the same calendar month a year later", async () => {
     // Regression test: the dedup key used to be

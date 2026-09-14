@@ -282,6 +282,19 @@ export class RunAggregator {
     return this.run.phase;
   }
 
+  /**
+   * Move the run to an event-derived phase — unless the run is already over.
+   *
+   * A terminal status owns the phase: `applyStatus("finished")` sets
+   * "completed", and the events tailed afterwards (the last tool call and its
+   * completion often land in the same poll tick, or get re-tailed later) must
+   * not drag a finished run back to "tool_call" / "planning".
+   */
+  #setPhase(phase) {
+    if (isTerminalStatus(this.run.status)) return;
+    this.run.phase = phase;
+  }
+
   applyEvent(event) {
     if (!event || typeof event.id !== "string") return { spans: [], audit: [] };
 
@@ -300,7 +313,7 @@ export class RunAggregator {
     const isFirst = !this.run.startedAt;
     if (isFirst) {
       this.run.startedAt = event.timestamp;
-      this.run.phase = "planning";
+      this.#setPhase("planning");
     }
     return {
       spans: [],
@@ -350,7 +363,7 @@ export class RunAggregator {
 
     this.openToolSpans.set(event.tool_call_id, span);
     this.run.toolCallCount += 1;
-    this.run.phase = phase;
+    this.#setPhase(phase);
 
     const artifacts = artifactsForAction(event.action);
     for (const artifact of artifacts) {

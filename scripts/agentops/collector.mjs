@@ -168,15 +168,12 @@ export class Collector {
     const spans = [];
     const audit = [];
 
-    const statusResult = aggregator.applyStatus(
-      conversation.execution_status,
-      observedAt,
-    );
-    audit.push(...statusResult.audit);
-
-    const statsResult = aggregator.applyStats(conversation.stats, observedAt);
-    spans.push(...statsResult.spans);
-
+    // Events first, status last. The events tailed in this tick happened
+    // *before* the status we are about to fold in (the last tool call precedes
+    // "finished"), so applying them in that order keeps the status-derived
+    // phase ("completed", "waiting_approval") as the final word, lists
+    // `task.completed` after the tool calls it followed, and lets its
+    // "after N tool calls" count include them.
     const eventResult = await this.#tailEvents(tracker, runId);
     spans.push(...eventResult.spans);
     audit.push(...eventResult.audit);
@@ -185,6 +182,15 @@ export class Collector {
     // than replaying the whole conversation.
     run.lastEventTimestamp = tracker.cursor;
     run.lastEventIds = [...tracker.seenAtCursor];
+
+    const statsResult = aggregator.applyStats(conversation.stats, observedAt);
+    spans.push(...statsResult.spans);
+
+    const statusResult = aggregator.applyStatus(
+      conversation.execution_status,
+      observedAt,
+    );
+    audit.push(...statusResult.audit);
 
     const budgetAudit = await this.#enforceBudgets(run, observedAt);
     audit.push(...budgetAudit);

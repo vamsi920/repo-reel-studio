@@ -283,6 +283,63 @@ describe("RunAggregator — status transitions", () => {
     expect(isTerminalStatus("error")).toBe(true);
     expect(isTerminalStatus("paused")).toBe(false);
   });
+
+  it("keeps the completed phase when tool events are applied after the run finished", () => {
+    // The last tool call and the "finished" status often land in the same
+    // collector tick (or the tool events get re-tailed on a later one). The
+    // event must still be counted, but it must not drag a finished run's
+    // phase back from "completed" to "tool_call".
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyStatus("finished", OBSERVED_AT);
+    expect(aggregator.run.phase).toBe("completed");
+
+    const result = aggregator.applyEvent(
+      actionEvent({
+        action: { kind: "TerminalAction", command: "sleep 15" },
+      }),
+    );
+
+    expect(result.spans).toHaveLength(1);
+    expect(aggregator.run.toolCallCount).toBe(1);
+    expect(aggregator.run.phase).toBe("completed");
+  });
+
+  it("keeps the completed phase when the first user message is tailed after the run finished", () => {
+    // A run first observed already finished starts in phase "completed"
+    // (createRun); tailing its opening user message afterwards must not reset
+    // it to "planning".
+    const aggregator = new RunAggregator(
+      createRun(
+        {
+          id: "run-1",
+          title: "Already done",
+          executionStatus: "finished",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        OBSERVED_AT,
+      ),
+    );
+
+    aggregator.applyEvent({
+      id: "evt-user",
+      timestamp: "2026-01-01T00:00:00.500Z",
+      source: "user",
+      llm_message: { role: "user", content: "Run sleep 15 three times" },
+    });
+
+    expect(aggregator.run.phase).toBe("completed");
+  });
+
+  it("still moves the phase with tool events while the run is live", () => {
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyStatus("running", OBSERVED_AT);
+    aggregator.applyEvent(
+      actionEvent({
+        action: { kind: "TerminalAction", command: "sleep 15" },
+      }),
+    );
+    expect(aggregator.run.phase).toBe("tool_call");
+  });
 });
 
 describe("createRun — initial phase", () => {
