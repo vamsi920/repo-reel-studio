@@ -289,7 +289,7 @@ function createRouter({ store, client, collector }) {
       }
       const [runSpans, runAudit, runApprovals] = await Promise.all([
         store.listSpans(runId),
-        store.listAudit({ entityId: runId }),
+        store.listAudit({ runId }),
         store.listApprovals({ state: "all" }),
       ]);
       sendJson(res, 200, {

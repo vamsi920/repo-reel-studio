@@ -194,9 +194,20 @@ export class AgentOpsStore {
     return entry;
   }
 
-  async listAudit({ entityId, workspaceId, since, limit = 500 } = {}) {
+  /**
+   * `runId` widens the match beyond `entityId`: approval decisions are
+   * recorded against the approval (`entityType: "approval"`) and only carry
+   * the run in `metadata.runId`, yet they belong on that run's trail too.
+   *
+   * @param {{ entityId?: string, runId?: string, workspaceId?: string, since?: string, limit?: number }} [filters]
+   */
+  async listAudit({ entityId, runId, workspaceId, since, limit = 500 } = {}) {
     let records = this.audit;
     if (entityId) records = records.filter((r) => r.entityId === entityId);
+    if (runId)
+      records = records.filter(
+        (r) => r.entityId === runId || r.metadata?.runId === runId,
+      );
     if (workspaceId)
       records = records.filter((r) => r.workspaceId === workspaceId);
     if (since) {

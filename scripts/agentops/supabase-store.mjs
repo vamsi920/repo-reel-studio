@@ -255,6 +255,17 @@ export function rowToApproval(row) {
   };
 }
 
+/**
+ * PostgREST `or` filter selecting every audit row that belongs to `runId`:
+ * rows recorded against the run itself, plus rows recorded against another
+ * entity (an approval) that name the run in `metadata.runId`. Values are
+ * double-quoted so a `,` or `.` in an id can't split the filter.
+ */
+export function runAuditFilter(runId) {
+  const quoted = `"${String(runId).replace(/["\\]/g, "\\$&")}"`;
+  return `entity_id.eq.${quoted},metadata->>runId.eq.${quoted}`;
+}
+
 export class SupabaseAgentOpsStore {
   constructor({ url, serviceRoleKey } = {}) {
     const resolvedUrl = url ?? process.env.SUPABASE_URL;
@@ -404,14 +415,22 @@ export class SupabaseAgentOpsStore {
     return entry;
   }
 
-  /** `workspaceId` filter contract — see the note on `listRuns`. */
-  async listAudit({ entityId, workspaceId, since, limit = 500 } = {}) {
+  /**
+   * `workspaceId` filter contract — see the note on `listRuns`. `runId`
+   * matches `entity_id` OR `metadata->>runId`, so an approval decision
+   * (recorded against the approval, run only in metadata) still shows up on
+   * the run's own trail.
+   *
+   * @param {{ entityId?: string, runId?: string, workspaceId?: string, since?: string, limit?: number }} [filters]
+   */
+  async listAudit({ entityId, runId, workspaceId, since, limit = 500 } = {}) {
     let query = this.client
       .from("agentops_audit")
       .select("*, workspaces(path, name)")
       .order("at", { ascending: false })
       .limit(limit);
     if (entityId) query = query.eq("entity_id", entityId);
+    if (runId) query = query.or(runAuditFilter(runId));
     if (workspaceId) query = query.eq("workspace_id", workspaceId);
     if (since) query = query.gte("at", since);
 

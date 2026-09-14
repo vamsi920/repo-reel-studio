@@ -7,9 +7,11 @@ import {
   rowToAudit,
   rowToRun,
   rowToSpan,
+  runAuditFilter,
   runToRow,
   spanToRow,
   DEFAULT_ORG_ID,
+  SupabaseAgentOpsStore,
 } from "../../scripts/agentops/supabase-store.mjs";
 
 /**
@@ -271,5 +273,61 @@ describe("approval row mapping", () => {
 describe("bootstrap org id", () => {
   it("is a fixed, deterministic UUID", () => {
     expect(DEFAULT_ORG_ID).toBe("00000000-0000-0000-0000-000000000001");
+  });
+});
+
+describe("run-scoped audit filter", () => {
+  const RUN_ID = "600d2a7a-ead8-4b13-a02a-b6395a065e62";
+
+  it("matches rows recorded against the run and rows that only name it in metadata", () => {
+    expect(runAuditFilter(RUN_ID)).toBe(
+      `entity_id.eq."${RUN_ID}",metadata->>runId.eq."${RUN_ID}"`,
+    );
+  });
+
+  it("quotes the id so reserved PostgREST characters cannot split the filter", () => {
+    expect(runAuditFilter('a,b.c"d')).toBe(
+      'entity_id.eq."a,b.c\\"d",metadata->>runId.eq."a,b.c\\"d"',
+    );
+  });
+
+  it("listAudit({ runId }) applies the or-filter instead of a strict entity_id match", async () => {
+    const calls: Array<[string, unknown]> = [];
+    const builder = {
+      select() {
+        calls.push(["select", undefined]);
+        return builder;
+      },
+      order() {
+        return builder;
+      },
+      limit() {
+        return builder;
+      },
+      eq(column: string, value: unknown) {
+        calls.push(["eq", [column, value]]);
+        return builder;
+      },
+      or(filter: string) {
+        calls.push(["or", filter]);
+        return builder;
+      },
+      gte() {
+        return builder;
+      },
+      then(resolve: (value: unknown) => void) {
+        resolve({ data: [], error: null });
+      },
+    };
+    const store = new SupabaseAgentOpsStore({
+      url: "http://localhost:54321",
+      serviceRoleKey: "test-service-role-key",
+    });
+    store.client = { from: () => builder } as never;
+
+    await store.listAudit({ runId: RUN_ID });
+
+    expect(calls).toContainEqual(["or", runAuditFilter(RUN_ID)]);
+    expect(calls.some(([name]) => name === "eq")).toBe(false);
   });
 });
