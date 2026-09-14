@@ -4,13 +4,12 @@ import { I18nKey } from "#/i18n/declaration";
 import { useAgentOpsRuns } from "#/hooks/query/use-agentops";
 import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { LiveRunsTable } from "#/components/features/agentops/live-runs-table";
-
-const ACTIVE_STATUSES = "running,paused,waiting_for_confirmation,stuck,idle";
+import { ACTIVE_RUN_STATUSES_QUERY } from "#/components/features/agentops/agentops-formatting";
 
 function AgentOpsLiveRuns() {
   const { t } = useTranslation("openhands");
   const { data, isLoading, error } = useAgentOpsRuns({
-    status: ACTIVE_STATUSES,
+    status: ACTIVE_RUN_STATUSES_QUERY,
   });
 
   // Elapsed time is computed from `Date.now()`, so it needs its own tick — the

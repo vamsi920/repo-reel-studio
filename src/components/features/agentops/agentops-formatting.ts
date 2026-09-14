@@ -73,6 +73,25 @@ export const RUN_STATUS_COLORS: Record<AgentOpsRunStatus, string> = {
   stuck: "var(--error-500)",
 };
 
+/**
+ * The single definition of "active" everywhere a run list or count is shown.
+ * Mirrors the collector's own `isActiveStatus()`
+ * (scripts/agentops/map-events.mjs), which already drives the Overview stat
+ * tile's `summary.activeRuns` count — deliberately excludes "idle", which is
+ * "session open, agent not currently working", not a live run. Both
+ * agentops-overview.tsx and agentops-live-runs.tsx query this same list so
+ * the "Live Runs" preview, its "View all" link, and the stat tile can't drift
+ * out of sync with each other again.
+ */
+export const ACTIVE_RUN_STATUSES: AgentOpsRunStatus[] = [
+  "running",
+  "paused",
+  "waiting_for_confirmation",
+  "stuck",
+];
+
+export const ACTIVE_RUN_STATUSES_QUERY = ACTIVE_RUN_STATUSES.join(",");
+
 export const RUN_PHASES: AgentOpsRunPhase[] = [
   "planning",
   "repository_inspection",

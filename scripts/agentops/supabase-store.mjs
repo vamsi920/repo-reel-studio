@@ -100,6 +100,8 @@ export function runToRow(run, workspaceDbId) {
     llm_call_count: run.llmCallCount,
     error_count: run.errorCount,
     artifacts: run.artifacts,
+    last_event_timestamp: run.lastEventTimestamp ?? null,
+    last_event_ids: run.lastEventIds ?? [],
   };
 }
 
@@ -130,12 +132,11 @@ export function rowToRun(row) {
     llmCallCount: row.llm_call_count ?? 0,
     errorCount: row.error_count ?? 0,
     artifacts: row.artifacts ?? [],
-    // Cursor bookkeeping (see map-events.mjs / collector.mjs) is
-    // Postgres-store-agnostic and travels inside `tokens`-adjacent run state
-    // only in memory; a restarted collector re-derives it by re-tailing from
-    // `updated_at`, so it is intentionally not persisted as its own column.
-    lastEventTimestamp: null,
-    lastEventIds: [],
+    // Cursor bookkeeping (see map-events.mjs / collector.mjs) — persisted so
+    // a collector restart resumes tailing from where it left off instead of
+    // replaying the whole conversation into the audit log and counters.
+    lastEventTimestamp: row.last_event_timestamp ?? null,
+    lastEventIds: row.last_event_ids ?? [],
   };
 }
 

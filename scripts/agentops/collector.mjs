@@ -295,7 +295,7 @@ export class Collector {
     const audit = [];
 
     for (const warning of warnings) {
-      const key = `${run.workspaceId}:${warning.thresholdPct}:${new Date(since).getUTCMonth()}`;
+      const key = `${run.workspaceId}:${warning.thresholdPct}:${since}`;
       if (this.#alreadyWarned(key)) continue;
       audit.push({
         action: "budget.warning",

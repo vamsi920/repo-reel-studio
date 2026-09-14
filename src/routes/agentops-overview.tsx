@@ -10,13 +10,12 @@ import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { AgentOpsStatTiles } from "#/components/features/agentops/agentops-stat-tiles";
 import { AuditList } from "#/components/features/agentops/audit-list";
 import { LiveRunsTable } from "#/components/features/agentops/live-runs-table";
-
-const ACTIVE_STATUSES = "running,paused,waiting_for_confirmation,stuck";
+import { ACTIVE_RUN_STATUSES_QUERY } from "#/components/features/agentops/agentops-formatting";
 
 function AgentOpsOverview() {
   const { t } = useTranslation("openhands");
   const summary = useAgentOpsSummary();
-  const activeRuns = useAgentOpsRuns({ status: ACTIVE_STATUSES });
+  const activeRuns = useAgentOpsRuns({ status: ACTIVE_RUN_STATUSES_QUERY });
   const audit = useAgentOpsAudit();
 
   return (

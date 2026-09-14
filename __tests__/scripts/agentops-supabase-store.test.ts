@@ -111,6 +111,35 @@ describe("run row mapping", () => {
     expect(row.max_budget_per_task).toBeNull();
     expect(rowToRun(row)!.maxBudgetPerTask).toBeNull();
   });
+
+  it("round-trips the collector's event tail cursor so a restart resumes instead of replaying", () => {
+    // Regression test: rowToRun() used to hardcode lastEventTimestamp: null
+    // and lastEventIds: [] on every read, so a restarted collector always
+    // re-tailed every event from the start of the conversation, duplicating
+    // audit records and re-incrementing tool/llm/error counts.
+    const row = runToRow(
+      {
+        ...run,
+        lastEventTimestamp: "2026-01-01T00:04:30.000Z",
+        lastEventIds: ["evt-41", "evt-42"],
+      },
+      FAKE_WORKSPACE_DB_ID,
+    );
+    expect(row.last_event_timestamp).toBe("2026-01-01T00:04:30.000Z");
+    expect(row.last_event_ids).toEqual(["evt-41", "evt-42"]);
+
+    const roundTripped = rowToRun(row)!;
+    expect(roundTripped.lastEventTimestamp).toBe("2026-01-01T00:04:30.000Z");
+    expect(roundTripped.lastEventIds).toEqual(["evt-41", "evt-42"]);
+  });
+
+  it("defaults an unset cursor to null/empty rather than throwing", () => {
+    const row = runToRow(run, FAKE_WORKSPACE_DB_ID);
+    expect(row.last_event_timestamp).toBeNull();
+    expect(row.last_event_ids).toEqual([]);
+    expect(rowToRun(row)!.lastEventTimestamp).toBeNull();
+    expect(rowToRun(row)!.lastEventIds).toEqual([]);
+  });
 });
 
 describe("span row mapping", () => {
