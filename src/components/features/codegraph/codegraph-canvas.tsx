@@ -36,6 +36,17 @@ const MINIMAP_THRESHOLD = 12;
 
 const nodeTypes = { custom: CustomNode };
 
+/**
+ * Id of the React Flow node an event originated from, or null when it came
+ * from the pane. React Flow stamps `data-id` on every node wrapper.
+ */
+function flowNodeIdFromEvent(event: React.SyntheticEvent): string | null {
+  const target = event.target;
+  if (!(target instanceof Element)) return null;
+  const wrapper = target.closest<HTMLElement>(".react-flow__node");
+  return wrapper?.dataset.id ?? null;
+}
+
 export interface CodeGraphCanvasProps {
   nodes: CodeGraphNode[];
   edges: CodeGraphEdge[];
@@ -186,6 +197,9 @@ function CodeGraphCanvasInner({
         const isNeighbour = upstream.has(node.id) || downstream.has(node.id);
         return {
           ...flowNode,
+          // Announced instead of the bare "node" role description when a
+          // keyboard user tabs onto it.
+          ariaLabel: node.name,
           data: {
             label: node.name,
             nodeType: node.type,
@@ -220,6 +234,28 @@ function CodeGraphCanvasInner({
       degrees,
       handleNodeClick,
     ],
+  );
+
+  // React Flow gives every node a tab stop and handles Enter/Space/Escape
+  // itself, but only to toggle its own internal `selected` flag, which this
+  // canvas never reads (selection lives in the store). The only route from a
+  // node to the app is CustomNode's mouse onClick, so without this handler
+  // the graph is mouse-only. Keydown events bubble from the focused node
+  // wrapper up to this container, so one handler covers every node.
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Escape") {
+        onSelect("");
+        return;
+      }
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const nodeId = flowNodeIdFromEvent(event);
+      if (!nodeId) return;
+      // Space would otherwise scroll the pane; Enter would re-fire on repeat.
+      event.preventDefault();
+      handleNodeClick(nodeId);
+    },
+    [handleNodeClick, onSelect],
   );
 
   const flowEdges = React.useMemo<Edge[]>(
@@ -258,6 +294,7 @@ function CodeGraphCanvasInner({
         if (target && target.childCount > 0) onDrillDown(node.id);
       }}
       onPaneClick={() => onSelect("")}
+      onKeyDown={handleKeyDown}
       proOptions={{ hideAttribution: false }}
       minZoom={0.05}
       maxZoom={2}
