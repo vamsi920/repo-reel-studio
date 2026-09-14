@@ -272,4 +272,35 @@ describe("CodeGraphToolbar", () => {
       "CODEGRAPH$SEARCH_PLACEHOLDER",
     );
   });
+
+  it("shows a loading indicator while a level shard is being fetched", () => {
+    renderToolbar({ isLoadingLevel: true });
+
+    expect(screen.getByTestId("codegraph-level-loading")).toHaveTextContent(
+      "CODEGRAPH$LEVEL_LOADING",
+    );
+  });
+
+  it("does not show the loading indicator when nothing is in flight", () => {
+    renderToolbar();
+
+    expect(
+      screen.queryByTestId("codegraph-level-loading"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("names the level that could not be loaded and retries that same level", async () => {
+    const user = userEvent.setup();
+    const onRetryLevel = vi.fn();
+    renderToolbar({
+      levelError: { parentId: "subsystem:pay", name: "Payment Service" },
+      onRetryLevel,
+    });
+
+    expect(screen.getByTestId("codegraph-level-error")).toHaveTextContent(
+      'CODEGRAPH$LEVEL_LOAD_FAILED:{"name":"Payment Service"}',
+    );
+    await user.click(screen.getByTestId("codegraph-level-retry"));
+    expect(onRetryLevel).toHaveBeenCalledWith("subsystem:pay");
+  });
 });

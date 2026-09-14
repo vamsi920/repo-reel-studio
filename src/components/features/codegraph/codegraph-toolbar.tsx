@@ -1,8 +1,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AlertTriangle,
   ChevronRight,
   Filter,
+  Loader2,
   Maximize2,
   RefreshCw,
   Search,
@@ -38,6 +40,12 @@ interface Props {
    * differently or the user retypes a query that was never run.
    */
   searchIndexReady?: boolean;
+  /** A level shard is being fetched after a drill-down click. */
+  isLoadingLevel?: boolean;
+  /** The last drill-down whose shard could not be read, with the node's
+   * display name; `onRetryLevel` re-attempts that same parent. */
+  levelError?: { parentId: string; name: string } | null;
+  onRetryLevel?: (parentId: string) => void;
 }
 
 export function CodeGraphToolbar({
@@ -56,6 +64,9 @@ export function CodeGraphToolbar({
   onRebuild,
   isRebuilding = false,
   searchIndexReady = true,
+  isLoadingLevel = false,
+  levelError = null,
+  onRetryLevel,
 }: Props) {
   const { t } = useTranslation("openhands");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -111,6 +122,17 @@ export function CodeGraphToolbar({
               })}
         </span>
 
+        {isLoadingLevel ? (
+          <span
+            role="status"
+            data-testid="codegraph-level-loading"
+            className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--oh-muted)]"
+          >
+            <Loader2 className="size-3 animate-spin" aria-hidden />
+            {t(I18nKey.CODEGRAPH$LEVEL_LOADING)}
+          </span>
+        ) : null}
+
         {crumbs.length > 1 ? (
           <button
             type="button"
@@ -152,6 +174,32 @@ export function CodeGraphToolbar({
           {t(I18nKey.CODEGRAPH$REBUILD)}
         </button>
       </div>
+
+      {levelError ? (
+        <div
+          role="alert"
+          data-testid="codegraph-level-error"
+          className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] px-2.5 py-1.5 text-xs text-[var(--oh-foreground)]"
+        >
+          <AlertTriangle
+            className="size-3.5 shrink-0 text-[var(--oh-muted)]"
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1 truncate">
+            {t(I18nKey.CODEGRAPH$LEVEL_LOAD_FAILED, { name: levelError.name })}
+          </span>
+          {onRetryLevel ? (
+            <button
+              type="button"
+              data-testid="codegraph-level-retry"
+              onClick={() => onRetryLevel(levelError.parentId)}
+              className="shrink-0 rounded-md border border-[var(--oh-border)] px-2 py-0.5 text-xs hover:bg-[var(--oh-interactive-hover)]"
+            >
+              {t(I18nKey.CODEGRAPH$RETRY)}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="relative">
         <Search

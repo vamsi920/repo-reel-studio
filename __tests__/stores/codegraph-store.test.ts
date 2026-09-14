@@ -141,6 +141,33 @@ describe("codegraph store", () => {
     expect(useCodeGraphStore.getState().byKey[key].loadingParents).toEqual([]);
   });
 
+  it("remembers which level failed so the UI can say so and offer a retry", () => {
+    const key = start();
+    useCodeGraphStore.getState().beginLoadLevel(key, "sub");
+    useCodeGraphStore.getState().failLevel(key, "sub");
+
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBe("sub");
+  });
+
+  it("clears the failure once the same level is retried or arrives", () => {
+    const key = start();
+    useCodeGraphStore.getState().failLevel(key, "sub");
+    useCodeGraphStore.getState().beginLoadLevel(key, "sub");
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
+
+    useCodeGraphStore.getState().failLevel(key, "sub");
+    useCodeGraphStore.getState().setLevel(key, "sub", level("sub", []));
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
+  });
+
+  it("clears the failure when the user navigates elsewhere", () => {
+    const key = start();
+    useCodeGraphStore.getState().failLevel(key, "sub");
+    useCodeGraphStore.getState().navigateTo(key, null);
+
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
+  });
+
   it("clears the selection when navigating, so stale details cannot linger", () => {
     const key = start();
     useCodeGraphStore

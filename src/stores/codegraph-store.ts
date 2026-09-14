@@ -37,6 +37,10 @@ export interface CodeGraphState {
   levels: Record<string, CodeGraphLevelPayload>;
   /** Parents currently being fetched, so a double click doesn't double fetch. */
   loadingParents: string[];
+  /** The parent whose level shard could not be read on the last attempt, so
+   * the UI can say so and offer a retry instead of a dead click. Cleared by
+   * the next attempt or by navigating anywhere. */
+  levelError: string | null;
 
   selectedNodeId: string | null;
   searchIndex: SearchEntry[] | null;
@@ -99,6 +103,7 @@ function emptyState(
     currentParentId: null,
     levels: {},
     loadingParents: [],
+    levelError: null,
     selectedNodeId: null,
     searchIndex: null,
     searchQuery: "",
@@ -170,23 +175,27 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
       update(key, (state) => ({ ...state, rebuilding: true })),
 
     beginLoadLevel: (key, parentId) =>
-      update(key, (state) =>
-        state.loadingParents.includes(parentId)
-          ? state
-          : { ...state, loadingParents: [...state.loadingParents, parentId] },
-      ),
+      update(key, (state) => ({
+        ...state,
+        loadingParents: state.loadingParents.includes(parentId)
+          ? state.loadingParents
+          : [...state.loadingParents, parentId],
+        levelError: state.levelError === parentId ? null : state.levelError,
+      })),
 
     setLevel: (key, parentId, level) =>
       update(key, (state) => ({
         ...state,
         levels: { ...state.levels, [parentId]: level },
         loadingParents: state.loadingParents.filter((id) => id !== parentId),
+        levelError: state.levelError === parentId ? null : state.levelError,
       })),
 
     failLevel: (key, parentId) =>
       update(key, (state) => ({
         ...state,
         loadingParents: state.loadingParents.filter((id) => id !== parentId),
+        levelError: parentId,
       })),
 
     navigateTo: (key, parentId) =>
@@ -194,6 +203,7 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
         ...state,
         currentParentId: parentId,
         selectedNodeId: null,
+        levelError: null,
       })),
 
     selectNode: (key, nodeId) =>

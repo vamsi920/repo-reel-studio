@@ -320,6 +320,101 @@ describe("KtGraph search", () => {
     resolveLoad?.([]);
   });
 
+  it("fetches a level shard once, shows progress meanwhile, and says so with a retry when it cannot be read", async () => {
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1", { name: "Payments", childCount: 3 })],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    // The first fetch stays pending until the test releases it, so every
+    // extra click lands while it is still in flight — exactly what a real
+    // double click on the canvas produces (single + double click handlers).
+    let release: (level: CodeGraphLevelPayload | null) => void = () => {};
+    const loadLevel = vi.fn(
+      () =>
+        new Promise<CodeGraphLevelPayload | null>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+    useCodeGraphStore.getState().selectNode(key, "sub1");
+
+    renderWithProviders(<KtGraph />);
+
+    const user = userEvent.setup();
+    const drill = await screen.findByTestId("codegraph-drill-down");
+    await user.click(drill);
+    await user.click(drill);
+    await user.click(drill);
+
+    expect(loadLevel).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("codegraph-level-loading")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("codegraph-level-error"),
+    ).not.toBeInTheDocument();
+
+    release(null);
+
+    // Route tests render bare i18n keys; the interpolated node name is
+    // covered by the toolbar's own test.
+    expect(
+      await screen.findByTestId("codegraph-level-error"),
+    ).toHaveTextContent("CODEGRAPH$LEVEL_LOAD_FAILED");
+    expect(
+      screen.queryByTestId("codegraph-level-loading"),
+    ).not.toBeInTheDocument();
+    // Still on the system view — a failed drill must not navigate.
+    expect(screen.getByTestId("codegraph-breadcrumbs")).not.toHaveTextContent(
+      "Payments",
+    );
+
+    await user.click(screen.getByTestId("codegraph-level-retry"));
+    expect(loadLevel).toHaveBeenCalledTimes(2);
+    expect(loadLevel).toHaveBeenLastCalledWith("sub1");
+    expect(
+      screen.queryByTestId("codegraph-level-error"),
+    ).not.toBeInTheDocument();
+
+    release({
+      parentId: "sub1",
+      nodes: [node("leaf1", { level: "unit", type: "function" })],
+      edges: [],
+      crumbs: [
+        { id: null, name: "System" },
+        { id: "sub1", name: "Payments" },
+      ],
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+        "Payments",
+      );
+    });
+  });
+
   it("colors the analysis-failed icon with a real design-system token", async () => {
     const key = useCodeGraphStore.getState().start({
       workspaceId: WORKSPACE_ID,
@@ -503,8 +598,8 @@ describe("KtGraph deep link on a cold store", () => {
       screen.queryByText(I18nKey.CODEGRAPH$NO_KNOWLEDGE),
     ).not.toBeInTheDocument();
     expect(
-      useKnowledgeStore.getState().byRepositoryId[COLD_REPOSITORY_ID]
-        ?.knowledge?.commitSha,
+      useKnowledgeStore.getState().byRepositoryId[COLD_REPOSITORY_ID]?.knowledge
+        ?.commitSha,
     ).toBe(COLD_COMMIT);
   });
 

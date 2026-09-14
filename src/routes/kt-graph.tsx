@@ -318,9 +318,15 @@ function KtGraph() {
         useCodeGraphStore.getState().navigateTo(key, nodeId);
         return;
       }
+      // The canvas drills on single AND double click, so one real double
+      // click reaches here three times while the first shard fetch is still
+      // in flight — it navigates when that fetch lands.
+      if (current?.loadingParents.includes(nodeId)) return;
       useCodeGraphStore.getState().beginLoadLevel(key, nodeId);
       const level = await handle.loadLevel(nodeId);
       if (!level) {
+        // `loadLevel` swallows the underlying fetch/storage error and returns
+        // null; without this the click would look dead.
         useCodeGraphStore.getState().failLevel(key, nodeId);
         return;
       }
@@ -423,6 +429,13 @@ function KtGraph() {
   const availableTypes = Array.from(
     new Set((level?.nodes ?? []).map((node) => node.type)),
   ).sort();
+
+  const failedLevelId = state?.levelError ?? null;
+  const failedLevelName = failedLevelId
+    ? (level?.nodes.find((node) => node.id === failedLevelId)?.name ??
+      level?.crumbs.find((crumb) => crumb.id === failedLevelId)?.name ??
+      failedLevelId)
+    : null;
 
   const highlighted = new Set(
     state?.searchQuery ? searchResults.map((entry) => entry.id) : [],
@@ -563,6 +576,13 @@ function KtGraph() {
               levelNodes={level.nodes}
               onRebuild={() => analyze(true)}
               isRebuilding={Boolean(state.rebuilding)}
+              isLoadingLevel={state.loadingParents.length > 0}
+              levelError={
+                failedLevelId && failedLevelName
+                  ? { parentId: failedLevelId, name: failedLevelName }
+                  : null
+              }
+              onRetryLevel={drillDown}
             />
             <div className="min-h-0 flex-1">
               <CodeGraphCanvas
