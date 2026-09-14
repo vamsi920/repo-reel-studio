@@ -153,7 +153,7 @@ async function main() {
   });
   const collector = new Collector({ client, store });
 
-  const routes = createRouter({ store, client, collector });
+  const routes = createRouter({ store, client, collector, storeKind });
 
   const server = createServer(async (req, res) => {
     applyCorsHeaders(res, req.headers.origin, ALLOWED_CORS_ORIGINS);
@@ -215,7 +215,7 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
-function createRouter({ store, client, collector }) {
+function createRouter({ store, client, collector, storeKind }) {
   return async function route(req, res, path, url) {
     const method = req.method ?? "GET";
     const now = new Date().toISOString();
@@ -228,6 +228,10 @@ function createRouter({ store, client, collector }) {
       sendJson(res, 200, {
         ...summarize(summaryRuns, summaryApprovals, now),
         collector: collector.health(),
+        // Which store is actually serving this data — the UI warns the user
+        // when it's the ephemeral JSONL fallback, since that data is lost on
+        // every container restart with no other signal that it happened.
+        store: storeKind,
       });
       return true;
     }

@@ -10,6 +10,7 @@ import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { AgentOpsStatTiles } from "#/components/features/agentops/agentops-stat-tiles";
 import { AuditList } from "#/components/features/agentops/audit-list";
 import { LiveRunsTable } from "#/components/features/agentops/live-runs-table";
+import { LocalStoreBanner } from "#/components/features/agentops/local-store-banner";
 import { ACTIVE_RUN_STATUSES_QUERY } from "#/components/features/agentops/agentops-formatting";
 
 function AgentOpsOverview() {
@@ -29,6 +30,7 @@ function AgentOpsOverview() {
       error={summary.error ?? activeRuns.error ?? audit.error}
     >
       <div className="flex flex-col gap-6">
+        {summary.data?.store === "jsonl" ? <LocalStoreBanner /> : null}
         {summary.data ? <AgentOpsStatTiles summary={summary.data} /> : null}
 
         <section className="flex flex-col gap-2">

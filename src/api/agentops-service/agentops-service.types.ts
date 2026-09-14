@@ -176,6 +176,12 @@ export interface AgentOpsSummary {
   runsTodayWithoutReportedCost: number;
   generatedAt: string;
   collector: AgentOpsCollectorHealth;
+  /**
+   * Which backing store served this data. `"jsonl"` is the ephemeral
+   * local-disk fallback used whenever Supabase isn't configured — its data
+   * does not survive a collector restart, unlike `"supabase"`.
+   */
+  store: "supabase" | "jsonl";
 }
 
 export interface AgentOpsRunDetail {

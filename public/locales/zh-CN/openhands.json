@@ -2478,6 +2478,7 @@
   "AGENTOPS$COLLECTOR_DOWN_BODY": "Runs, spans, budgets and the audit log are recorded by a companion process. Nothing is shown here until it is up — this page never displays sample data.",
   "AGENTOPS$COLLECTOR_DOWN_HINT": "It normally starts automatically with npm run dev.",
   "AGENTOPS$COLLECTOR_STALE_BANNER": "AgentOps 收集器没有响应。当前显示的是它最后返回的数据——收集器恢复后会自动刷新。",
+  "AGENTOPS$LOCAL_STORE_BANNER": "此数据仅保存在本地磁盘上，下次重启后将会丢失。请配置持久化数据库以保留数据。",
   "AGENTOPS$BACKEND_UNSUPPORTED_TITLE": "AgentOps needs a local agent server",
   "AGENTOPS$BACKEND_UNSUPPORTED_BODY": "The Control Tower collector reads runs directly from a local agent server. Switch to a local backend to see live runs, approvals, budgets and audit history.",
   "AGENTOPS$TILE_ACTIVE_AGENTS": "Active agents",

@@ -30,6 +30,7 @@ const SUMMARY: AgentOpsSummary = {
     lastError: null,
     trackedRuns: 0,
   },
+  store: "supabase",
 };
 
 const loaded = (data: unknown) => ({ data, isLoading: false, error: null });
@@ -88,5 +89,20 @@ describe("AgentOpsOverview", () => {
       screen.getByText("AGENTOPS$EMPTY_NO_ACTIVE_RUNS"),
     ).toBeInTheDocument();
     expect(screen.getByText("AGENTOPS$EMPTY_NO_AUDIT")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("agentops-local-store-banner"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("warns when the collector is serving data from the ephemeral local store", () => {
+    summary.mockReturnValue(loaded({ ...SUMMARY, store: "jsonl" }));
+    runs.mockReturnValue(loaded([]));
+    audit.mockReturnValue(loaded([]));
+
+    renderOverview();
+
+    expect(
+      screen.getByTestId("agentops-local-store-banner"),
+    ).toBeInTheDocument();
   });
 });

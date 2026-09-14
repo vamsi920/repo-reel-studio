@@ -42142,6 +42142,23 @@
     "tr": "AgentOps toplayıcısı yanıt vermiyor. Döndürdüğü son veriler gösteriliyor — toplayıcı geri geldiğinde kendiliğinden yenilenir.",
     "uk": "Збирач AgentOps не відповідає. Показано останні отримані від нього дані — вони оновляться самі, щойно збирач повернеться."
   },
+  "AGENTOPS$LOCAL_STORE_BANNER": {
+    "en": "This data is stored on local disk only and will be lost on the next restart. Configure a persistent database to keep it.",
+    "ja": "このデータはローカルディスクにのみ保存されており、次回の再起動時に失われます。保持するには永続的なデータベースを設定してください。",
+    "zh-CN": "此数据仅保存在本地磁盘上，下次重启后将会丢失。请配置持久化数据库以保留数据。",
+    "zh-TW": "此資料僅儲存在本機磁碟上，下次重新啟動後將會遺失。請設定持久化資料庫以保留資料。",
+    "ko-KR": "이 데이터는 로컬 디스크에만 저장되며 다음 재시작 시 사라집니다. 데이터를 유지하려면 영구 데이터베이스를 구성하세요.",
+    "no": "Disse dataene lagres kun lokalt på disk og går tapt ved neste omstart. Konfigurer en varig database for å beholde dem.",
+    "ar": "يتم تخزين هذه البيانات على القرص المحلي فقط وستُفقد عند إعادة التشغيل التالية. قم بتهيئة قاعدة بيانات دائمة للاحتفاظ بها.",
+    "de": "Diese Daten werden nur auf der lokalen Festplatte gespeichert und gehen beim nächsten Neustart verloren. Richten Sie eine dauerhafte Datenbank ein, um sie zu behalten.",
+    "fr": "Ces données ne sont stockées que sur le disque local et seront perdues au prochain redémarrage. Configurez une base de données persistante pour les conserver.",
+    "it": "Questi dati sono archiviati solo su disco locale e andranno persi al prossimo riavvio. Configura un database persistente per conservarli.",
+    "pt": "Esses dados são armazenados apenas em disco local e serão perdidos na próxima reinicialização. Configure um banco de dados persistente para mantê-los.",
+    "es": "Estos datos se almacenan solo en el disco local y se perderán en el próximo reinicio. Configura una base de datos persistente para conservarlos.",
+    "ca": "Aquestes dades es desen només al disc local i es perdran en el proper reinici. Configura una base de dades persistent per conservar-les.",
+    "tr": "Bu veriler yalnızca yerel diskte saklanıyor ve bir sonraki yeniden başlatmada kaybolacak. Verileri korumak için kalıcı bir veritabanı yapılandırın.",
+    "uk": "Ці дані зберігаються лише на локальному диску і будуть втрачені під час наступного перезапуску. Налаштуйте постійну базу даних, щоб зберегти їх."
+  },
   "AGENTOPS$BACKEND_UNSUPPORTED_TITLE": {
     "en": "AgentOps needs a local agent server",
     "ja": "AgentOps needs a local agent server",
