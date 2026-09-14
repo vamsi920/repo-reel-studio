@@ -16,10 +16,27 @@ const VANTAGES: ProbeVantage[] = ["browser", "edge", "runtime"];
 
 type CellState = "ok" | "fail" | "unknown";
 
-function CellDot({ state }: { state: CellState }) {
+const CELL_STATE_LABEL_KEY: Record<CellState, I18nKey> = {
+  ok: I18nKey.ENVIRONMENT$CELL_STATE_REACHABLE,
+  fail: I18nKey.ENVIRONMENT$CELL_STATE_UNREACHABLE,
+  unknown: I18nKey.ENVIRONMENT$CELL_STATE_UNTESTED,
+};
+
+function CellDot({
+  state,
+  label,
+}: {
+  state: CellState;
+  /** e.g. "api.github.com from Browser" — combined with the state to form the accessible name. */
+  label: string;
+}) {
+  const { t } = useTranslation("openhands");
+  const statusText = t(CELL_STATE_LABEL_KEY[state]);
   return (
     <span
-      aria-hidden
+      role="img"
+      aria-label={`${label}: ${statusText}`}
+      title={statusText}
       data-state={state}
       className={cn(
         "ame-pip",
@@ -27,6 +44,25 @@ function CellDot({ state }: { state: CellState }) {
         state === "fail" && "ame-pip-error",
       )}
     />
+  );
+}
+
+function CellLegend() {
+  const { t } = useTranslation("openhands");
+  const entries: { state: CellState; className?: string }[] = [
+    { state: "ok", className: "ame-pip-success" },
+    { state: "fail", className: "ame-pip-error" },
+    { state: "unknown" },
+  ];
+  return (
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-tertiary)]">
+      {entries.map(({ state, className }) => (
+        <li key={state} className="flex items-center gap-1.5">
+          <span aria-hidden className={cn("ame-pip", className)} />
+          {t(CELL_STATE_LABEL_KEY[state])}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -113,6 +149,7 @@ function EnvironmentNetworkScreen() {
         <p className="text-xs text-[var(--text-tertiary)]">
           {t(I18nKey.ENVIRONMENT$VANTAGE_HELP)}
         </p>
+        <CellLegend />
 
         {/* Wide table scrolls inside its own container so the page body never
             scrolls sideways on a narrow screen. */}
@@ -168,6 +205,7 @@ function EnvironmentNetworkScreen() {
                             : (verdicts.get(`${host.host}|${vantage}`) ??
                               "unknown")
                         }
+                        label={`${host.host} ${t(I18nKey.ENVIRONMENT$CELL_LABEL_FROM)} ${t(VANTAGE_LABEL_KEY[vantage])}`}
                       />
                     </td>
                   ))}
