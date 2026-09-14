@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders, useParamsMock } from "test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtGraph from "#/routes/kt-graph";
+import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
 import {
@@ -10,6 +11,7 @@ import {
   findRepositoryUuid,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
+import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 import {
   openExistingAnalysis,
   type AnalysisHandle,
@@ -49,6 +51,17 @@ vi.mock("#/lib/codegraph/analyzer-runner", async () => {
     runAnalysis: vi.fn(),
   };
 });
+
+vi.mock("#/lib/knowledge/connected-repositories", () => ({
+  useConnectedRepositories: () => ({ repositories: [], isLoading: false }),
+  resolveCommitSha: vi.fn(),
+}));
+
+vi.mock("#/lib/data-platform/repositories/knowledge-repository", () => ({
+  knowledgePersistenceRepository: {
+    getLatestGenerationForRepository: vi.fn().mockResolvedValue(null),
+  },
+}));
 
 vi.mock("#/lib/codegraph/workspace-identity", () => ({
   workspaceIdForSnapshot: (snapshot: { localPath: string }) =>
@@ -437,5 +450,73 @@ describe("KtGraph cold rehydration", () => {
 
     expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
     expect(openExistingAnalysis).not.toHaveBeenCalled();
+  });
+});
+
+describe("KtGraph deep link on a cold store", () => {
+  const COLD_REPOSITORY_ID = "acme/docs@main";
+  const COLD_COMMIT = "1122334455667788";
+
+  beforeEach(() => {
+    useParamsMock.mockReturnValue({
+      repositoryId: encodeURIComponent(COLD_REPOSITORY_ID),
+    } as never);
+    // A reload / bookmark of the CodeGraph tab: nothing in memory yet, but
+    // the repository has a completed generation persisted in Supabase.
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+  });
+
+  afterEach(() => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    vi.clearAllMocks();
+  });
+
+  it("rehydrates the persisted knowledge instead of asking to generate docs first", async () => {
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      knowledgePersistenceRepository.getLatestGenerationForRepository,
+    ).mockResolvedValue({
+      ...knowledge,
+      repositoryId: COLD_REPOSITORY_ID,
+      commitSha: COLD_COMMIT,
+    });
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockResolvedValue(null);
+
+    renderWithProviders(<KtGraph />);
+
+    // Loading, not the "generate docs first" empty state, while the lookup
+    // is in flight — that state used to be committed on the first render.
+    expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
+    expect(
+      screen.queryByText(I18nKey.CODEGRAPH$NO_KNOWLEDGE),
+    ).not.toBeInTheDocument();
+
+    // Once hydrated the graph page itself renders (here: its own "no graph
+    // for this commit yet" state, since no snapshot is stored).
+    expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
+    expect(
+      screen.queryByText(I18nKey.CODEGRAPH$NO_KNOWLEDGE),
+    ).not.toBeInTheDocument();
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[COLD_REPOSITORY_ID]
+        ?.knowledge?.commitSha,
+    ).toBe(COLD_COMMIT);
+  });
+
+  it("falls back to the empty state only after the lookup found nothing", async () => {
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue(null);
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByText(I18nKey.CODEGRAPH$NO_KNOWLEDGE),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("codegraph-generate")).not.toBeInTheDocument();
   });
 });

@@ -84,8 +84,33 @@ vi.mock("#/stores/codegraph-store", () => ({
   useCodeGraphStore: () => undefined,
 }));
 
+// The cold-load rehydration hook reads the conversation list through
+// react-query; these tests seed the store directly and render without a
+// QueryClient, so the live-match lookup is stubbed to "no conversations".
+vi.mock("#/lib/knowledge/connected-repositories", () => ({
+  useConnectedRepositories: () => ({ repositories: [], isLoading: false }),
+  resolveCommitSha: vi.fn(),
+}));
+
+vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
+  resolveOrgId: vi.fn().mockResolvedValue(null),
+  findRepositoryUuid: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("#/lib/data-platform/repositories/knowledge-repository", () => ({
+  knowledgePersistenceRepository: {
+    getLatestGenerationForRepository: vi.fn().mockResolvedValue(null),
+  },
+}));
+
 import KtPage from "#/routes/kt-page";
+import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
+import {
+  findRepositoryUuid,
+  resolveOrgId,
+} from "#/lib/data-platform/repositories/repository-identity";
+import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 
 const REPOSITORY_ID = "acme/api@main";
 
@@ -187,5 +212,48 @@ describe("KtPage", () => {
       ),
     );
     expect(buildManifestMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("KtPage deep link on a cold store", () => {
+  beforeEach(() => {
+    mockUseSearchParams.mockReturnValue([new URLSearchParams(), vi.fn()]);
+    // A reload / bookmark of a doc page: nothing in memory yet, but the
+    // repository has a completed generation persisted in Supabase.
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+  });
+
+  afterEach(() => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+    vi.clearAllMocks();
+  });
+
+  it("rehydrates the persisted knowledge instead of rendering 'Page not found'", async () => {
+    mockUseParams.mockReturnValue(paramsFor("page-b"));
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      knowledgePersistenceRepository.getLatestGenerationForRepository,
+    ).mockResolvedValue(KNOWLEDGE);
+
+    render(<KtPage />);
+
+    expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
+    expect(screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND)).not.toBeInTheDocument();
+
+    expect(await screen.findByTestId("kt-page-markdown")).toHaveTextContent(
+      "# Page B",
+    );
+    expect(screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND)).not.toBeInTheDocument();
+  });
+
+  it("says 'Page not found' only after the lookup found nothing", async () => {
+    mockUseParams.mockReturnValue(paramsFor("page-b"));
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue(null);
+
+    render(<KtPage />);
+
+    expect(await screen.findByText(I18nKey.KT$PAGE_NOT_FOUND)).toBeInTheDocument();
   });
 });

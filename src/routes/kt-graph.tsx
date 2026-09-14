@@ -42,6 +42,7 @@ import {
   type PersistenceIds,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
+import { useKnowledgeRehydration } from "#/lib/knowledge/use-knowledge-rehydration";
 
 const MAX_SEARCH_RESULTS = 20;
 
@@ -59,6 +60,9 @@ function KtGraph() {
   const knowledgeState = useKnowledgeStore(
     (s) => s.byRepositoryId[repositoryId],
   );
+  // A deep link / reload lands here with an empty store even for a repo that
+  // was generated earlier; this loads it the same way the Docs tab does.
+  const rehydrationChecked = useKnowledgeRehydration(repositoryId || undefined);
 
   const snapshot = knowledgeState?.snapshot;
   const key = snapshot
@@ -395,9 +399,16 @@ function KtGraph() {
             <ChevronLeft className="size-4" aria-hidden />
             {t(I18nKey.KT$BACK_TO_LIST)}
           </button>
-          <p className="text-sm text-[var(--oh-muted)]">
-            {t(I18nKey.CODEGRAPH$NO_KNOWLEDGE)}
-          </p>
+          {rehydrationChecked ? (
+            <p className="text-sm text-[var(--oh-muted)]">
+              {t(I18nKey.CODEGRAPH$NO_KNOWLEDGE)}
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-[var(--oh-muted)]">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              {t(I18nKey.KT$STARTING)}
+            </p>
+          )}
         </div>
       </main>
     );

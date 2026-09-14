@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { ChevronLeft, Video } from "lucide-react";
+import { ChevronLeft, Loader2, Video } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
+import { useKnowledgeRehydration } from "#/lib/knowledge/use-knowledge-rehydration";
 
 /**
  * The Video KT tab.
@@ -25,6 +26,9 @@ function KtVideoList() {
     ? decodeURIComponent(rawRepositoryId)
     : "";
   const state = useKnowledgeStore((s) => s.byRepositoryId[repositoryId]);
+  // A deep link / reload lands here with an empty store even for a repo that
+  // was generated earlier; this loads it the same way the Docs tab does.
+  const rehydrationChecked = useKnowledgeRehydration(repositoryId || undefined);
 
   return (
     <main className="min-h-full" data-testid="kt-video-list">
@@ -40,7 +44,12 @@ function KtVideoList() {
 
         <KnowledgeTabs repositoryId={repositoryId} active="video" />
 
-        {!state?.knowledge ? (
+        {!state?.knowledge && !rehydrationChecked ? (
+          <p className="flex items-center gap-2 pt-6 text-sm text-[var(--oh-muted)]">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            {t(I18nKey.KT$STARTING)}
+          </p>
+        ) : !state?.knowledge ? (
           <p className="pt-6 text-sm text-[var(--oh-muted)]">
             {t(I18nKey.KT$NOT_FOUND)}
           </p>

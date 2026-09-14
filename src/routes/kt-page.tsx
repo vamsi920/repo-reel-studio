@@ -21,6 +21,7 @@ import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
 import { codeGraphKey } from "#/lib/codegraph/codegraph-types";
 import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
+import { useKnowledgeRehydration } from "#/lib/knowledge/use-knowledge-rehydration";
 
 type ViewMode = "read" | "watch";
 
@@ -38,11 +39,15 @@ function KtPage() {
     repositoryId: string;
     pageId: string;
   }>();
+  const decodedRepositoryId = repositoryId
+    ? decodeURIComponent(repositoryId)
+    : undefined;
   const state = useKnowledgeStore((s) =>
-    repositoryId
-      ? s.byRepositoryId[decodeURIComponent(repositoryId)]
-      : undefined,
+    decodedRepositoryId ? s.byRepositoryId[decodedRepositoryId] : undefined,
   );
+  // A deep link / reload lands here with an empty store even for a repo that
+  // was generated earlier; this loads it the same way the Docs tab does.
+  const rehydrationChecked = useKnowledgeRehydration(decodedRepositoryId);
 
   // Navigation compatibility only: the Knowledge "Video KT" tab and CodeGraph's
   // [Watch KT] deeplink both point here with `?view=watch`, so arriving that way
@@ -204,9 +209,16 @@ function KtPage() {
       <main className="min-h-full" data-testid="kt-page">
         <div className="mx-auto max-w-4xl p-6">
           <KtBreadcrumb />
-          <p className="text-sm text-[var(--oh-muted)]">
-            {t(I18nKey.KT$PAGE_NOT_FOUND)}
-          </p>
+          {rehydrationChecked ? (
+            <p className="text-sm text-[var(--oh-muted)]">
+              {t(I18nKey.KT$PAGE_NOT_FOUND)}
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-[var(--oh-muted)]">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              {t(I18nKey.KT$STARTING)}
+            </p>
+          )}
         </div>
       </main>
     );
