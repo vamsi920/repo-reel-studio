@@ -173,7 +173,11 @@ export class Collector {
       );
 
     const tracker = {
-      aggregator: new RunAggregator(run),
+      aggregator: new RunAggregator(run, {
+        // A stored run with an event cursor already tailed its opening user
+        // message before this collector started; the next one is a follow-up.
+        taskStarted: Boolean(stored?.lastEventTimestamp),
+      }),
       /** ISO timestamp to resume the event tail from. */
       cursor: run.lastEventTimestamp ?? null,
       /** Event ids already folded in at exactly `cursor`, to avoid re-counting. */

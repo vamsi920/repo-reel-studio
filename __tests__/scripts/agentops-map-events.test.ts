@@ -162,6 +162,65 @@ describe("RunAggregator — timestamps", () => {
   });
 });
 
+describe("RunAggregator — user messages", () => {
+  function userMessage(id: string, timestamp: string, content: string) {
+    return {
+      id,
+      timestamp,
+      source: "user",
+      llm_message: { role: "user", content },
+    };
+  }
+
+  it("audits the first user message as task.started even though startedAt is pre-seeded", () => {
+    // createRun seeds startedAt from the conversation's created_at before any
+    // event is tailed, so "first message" cannot be inferred from it — every
+    // run's opening message used to be logged as a follow-up.
+    const run = newRun();
+    expect(run.startedAt).toBe("2026-01-01T00:00:00.000Z");
+    const aggregator = new RunAggregator(run);
+
+    const first = aggregator.applyEvent(
+      userMessage("evt-user-1", "2026-01-01T00:00:01.000Z", "Fix the test"),
+    );
+    expect(first.audit).toEqual([
+      {
+        action: "task.started",
+        summary: "Run started in /workspace/project",
+        at: "2026-01-01T00:00:01.000Z",
+        actor: "user",
+      },
+    ]);
+    // The conversation's own created_at stays the run's start time.
+    expect(aggregator.run.startedAt).toBe("2026-01-01T00:00:00.000Z");
+
+    const second = aggregator.applyEvent(
+      userMessage("evt-user-2", "2026-01-01T00:05:00.000Z", "Also lint"),
+    );
+    expect(second.audit).toEqual([
+      expect.objectContaining({
+        action: "task.message",
+        summary: "User sent a follow-up message",
+        actor: "user",
+      }),
+    ]);
+  });
+
+  it("treats the next message as a follow-up when told the task already started", () => {
+    // A collector restarted mid-run rebuilds the aggregator from the store;
+    // the opening message was tailed before the restart and must not be
+    // re-announced as task.started when the user sends another one.
+    const aggregator = new RunAggregator(newRun(), { taskStarted: true });
+
+    const result = aggregator.applyEvent(
+      userMessage("evt-user-2", "2026-01-01T00:05:00.000Z", "Also lint"),
+    );
+    expect(result.audit).toEqual([
+      expect.objectContaining({ action: "task.message" }),
+    ]);
+  });
+});
+
 describe("RunAggregator — event dedupe", () => {
   it("ignores an event it has already folded in", () => {
     // The agent-server's events/search pages are not strictly ordered by

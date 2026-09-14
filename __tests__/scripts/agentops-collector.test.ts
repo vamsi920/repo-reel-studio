@@ -116,6 +116,104 @@ describe("Collector event-tail cursor", () => {
     );
   });
 
+  it("does not re-announce task.started for a follow-up after a restart", async () => {
+    // The stored run has an event cursor, so its opening user message was
+    // tailed by the previous collector process; the message tailed now is a
+    // follow-up, not the task.
+    const store = makeStore({
+      getRun: vi.fn().mockResolvedValue({
+        runId: "run-1",
+        workspaceId: "ws",
+        agentName: "agent",
+        task: "Fix the flaky test",
+        status: "running",
+        model: null,
+        phase: "tool_call",
+        startedAt: "2026-01-15T00:00:00.000Z",
+        endedAt: null,
+        updatedAt: "2026-01-15T00:04:00.000Z",
+        costUsd: 0,
+        maxBudgetPerTask: null,
+        tokens: {
+          prompt: 0,
+          completion: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          reasoning: 0,
+          total: 0,
+        },
+        toolCallCount: 0,
+        llmCallCount: 0,
+        errorCount: 0,
+        artifacts: [],
+        lastEventId: null,
+        lastEventTimestamp: "2026-01-15T00:04:30.000Z",
+        lastEventIds: ["evt-1"],
+      }),
+    });
+    const client = makeClient({
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "evt-user-2",
+            timestamp: "2026-01-15T00:04:45.000Z",
+            source: "user",
+            llm_message: { role: "user", content: "Also fix lint" },
+          },
+        ],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:05:00.000Z",
+    });
+
+    await collector.tick();
+
+    const userRows = store.appendedAudit.filter(
+      (record) => record.actor === "user",
+    );
+    expect(userRows).toEqual([
+      expect.objectContaining({ action: "task.message" }),
+    ]);
+  });
+
+  it("records task.started for the opening message of a run seen fresh", async () => {
+    const store = makeStore();
+    const client = makeClient({
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "evt-user-1",
+            timestamp: "2026-01-15T00:00:01.000Z",
+            source: "user",
+            llm_message: { role: "user", content: "Fix the flaky test" },
+          },
+        ],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:05:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(
+      store.appendedAudit.filter((record) => record.actor === "user"),
+    ).toEqual([
+      expect.objectContaining({
+        action: "task.started",
+        summary: "Run started in ws",
+      }),
+    ]);
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({ startedAt: "2026-01-15T00:00:00.000Z" }),
+    );
+  });
+
   it("tails from the start for a run the store has never seen", async () => {
     const store = makeStore();
     const client = makeClient();

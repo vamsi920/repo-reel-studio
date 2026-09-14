@@ -317,7 +317,7 @@ function spanId(runId, suffix) {
  * only what later mapping decisions need.
  */
 export class RunAggregator {
-  constructor(run) {
+  constructor(run, { taskStarted = false } = {}) {
     this.run = run;
     /** tool_call_id → open tool span, awaiting its observation. */
     this.openToolSpans = new Map();
@@ -330,6 +330,14 @@ export class RunAggregator {
      * duplicated tool.called audit rows.
      */
     this.seenEventIds = new Set();
+    /**
+     * Whether the run's opening user message has been folded in. Tracked
+     * explicitly: `run.startedAt` cannot stand in for it, because createRun
+     * seeds it from the conversation's created_at before any event arrives.
+     * The collector sets it for a run reloaded from the store whose opening
+     * message was already tailed before a restart.
+     */
+    this.taskStarted = taskStarted;
   }
 
   /** The run's current derived phase. */
@@ -367,9 +375,12 @@ export class RunAggregator {
   #applyUserMessage(event) {
     // The first user message is the task. Later ones are follow-up turns; both
     // are worth an audit line, neither is worth a span.
-    const isFirst = !this.run.startedAt;
+    const isFirst = !this.taskStarted;
     if (isFirst) {
-      this.run.startedAt = normalizeTimestamp(event.timestamp);
+      this.taskStarted = true;
+      // createRun normally seeds startedAt from the conversation metadata;
+      // the message timestamp is only a fallback when that was missing.
+      this.run.startedAt ??= normalizeTimestamp(event.timestamp);
       this.#setPhase("planning");
     }
     return {
