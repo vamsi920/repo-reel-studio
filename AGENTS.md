@@ -89,7 +89,16 @@ whether or not a tab is open and survive a reload.
 - `scripts/agentops/collector.mjs` — the poll loop, budget enforcement, and the
   approvals it raises. Every store call is `await`ed — both stores below
   present the same async interface, so the collector doesn't know which one
-  is live.
+  is live. The REST `events/search` tail is the durable cursor, but it does
+  **not** serve an `ActionEvent` while the agent-server is blocked inside that
+  tool call, so each active run is also subscribed to the runtime's
+  `/sockets/events/<id>` websocket (`AgentServerClient.openEventStream`, the
+  same socket and `auth` handshake the chat UI uses) and those events are
+  folded in on the next tick — that is what makes an executing tool span,
+  `toolCallCount` and `tool.called` visible mid-command. The socket never
+  moves the cursor; overlap with the tail is deduped by event id, and a
+  restarted collector seeds its open tool spans from `store.listSpans` so the
+  observation that arrives later still closes them without re-counting.
 
 **Storage: two interchangeable stores, selected at startup** (see
 `createStore()` in `scripts/agentops-server.mjs`):

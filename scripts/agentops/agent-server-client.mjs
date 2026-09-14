@@ -7,10 +7,14 @@
  * response shapes mirror `client/conversation-client.js` in that package, which
  * is the contract of record.
  *
- * The agent-server is NOT modified by any of this. Reads are `GET`s; the only
- * writes are the same pause/interrupt/run control calls the app's own chat UI
- * already makes.
+ * The agent-server is NOT modified by any of this. Reads are `GET`s (plus a
+ * read-only subscription to the same events websocket the chat UI opens); the
+ * only writes are the same pause/interrupt/run control calls the app's own
+ * chat UI already makes.
  */
+
+/** Sent first thing on the events socket, exactly as `src/utils/websocket-auth.ts` does. */
+const WEBSOCKET_AUTH_TYPE = "auth";
 
 export class AgentServerClient {
   constructor({ baseUrl, sessionApiKey, timeoutMs = 30000 }) {
@@ -88,6 +92,99 @@ export class AgentServerClient {
     return this.#request(
       `/api/conversations/${conversationId}/events/search?${params.toString()}`,
     );
+  }
+
+  /**
+   * Whether this process can open the events websocket at all. Node 22+ ships
+   * a global `WebSocket`; on anything older the collector keeps working on the
+   * REST tail alone.
+   */
+  static get supportsEventStream() {
+    return typeof globalThis.WebSocket === "function";
+  }
+
+  /**
+   * Subscribe to a conversation's live event stream.
+   *
+   * This is the same `/sockets/events/{id}` socket the chat UI uses
+   * (`src/utils/websocket-url.ts` + `src/hooks/use-websocket.ts`), and it is
+   * the only channel that delivers an `ActionEvent` while the agent-server is
+   * still blocked inside that tool call — `events/search` does not serve the
+   * call (nor the LLM completion before it) until the observation lands, so
+   * a REST-only collector shows a two-minute command as "0 tool calls" for
+   * the whole two minutes.
+   *
+   * `since` mirrors the UI's `resend_mode=since` handshake: the runtime
+   * replays everything strictly after that timestamp, so a reconnect from the
+   * collector's REST cursor never misses an event. Overlap with the REST tail
+   * is expected and is deduped by event id in `RunAggregator`.
+   *
+   * Returns a handle, or `null` when no WebSocket implementation is available.
+   * The handle does not reconnect on its own: the collector re-opens it on a
+   * later tick while the run is still active, which is a natural backoff.
+   */
+  openEventStream(conversationId, { since, onEvent, onError } = {}) {
+    if (!AgentServerClient.supportsEventStream) return null;
+
+    const url = new URL(this.baseUrl);
+    const scheme = url.protocol === "https:" ? "wss:" : "ws:";
+    const params = new URLSearchParams(
+      since
+        ? { resend_mode: "since", after_timestamp: since }
+        : { resend_mode: "all" },
+    );
+    const socketUrl = `${scheme}//${url.host}${url.pathname.replace(/\/$/, "")}/sockets/events/${conversationId}?${params.toString()}`;
+
+    const handle = { closed: false, close: () => {} };
+    let socket;
+    try {
+      socket = new globalThis.WebSocket(socketUrl);
+    } catch (error) {
+      onError?.(error);
+      return null;
+    }
+
+    handle.close = () => {
+      if (handle.closed) return;
+      handle.closed = true;
+      try {
+        socket.close();
+      } catch {
+        // Already closed by the peer; nothing to release.
+      }
+    };
+
+    socket.addEventListener("open", () => {
+      if (this.sessionApiKey) {
+        socket.send(
+          JSON.stringify({
+            type: WEBSOCKET_AUTH_TYPE,
+            session_api_key: this.sessionApiKey,
+          }),
+        );
+      }
+    });
+    socket.addEventListener("message", (message) => {
+      let event;
+      try {
+        event =
+          typeof message.data === "string"
+            ? JSON.parse(message.data)
+            : JSON.parse(String(message.data));
+      } catch (error) {
+        onError?.(new Error(`events socket sent non-JSON: ${error.message}`));
+        return;
+      }
+      onEvent?.(event);
+    });
+    socket.addEventListener("error", () => {
+      onError?.(new Error("events socket errored"));
+    });
+    socket.addEventListener("close", () => {
+      handle.closed = true;
+    });
+
+    return handle;
   }
 
   /**

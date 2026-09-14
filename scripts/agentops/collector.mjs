@@ -5,7 +5,9 @@
  * tower whose telemetry only exists while someone has a tab open is not a
  * control tower: runs would vanish on reload, overnight and headless runs would
  * never be recorded, and the audit log would be per-browser. The collector polls
- * the agent-server's REST API, which is the durable source.
+ * the agent-server's REST API, which is the durable source, and — for runs that
+ * are active — also listens on the conversation's events websocket, which is
+ * the only source that reports a tool call *while* it is executing.
  */
 
 import {
@@ -16,6 +18,11 @@ import {
   normalizeRunStatus,
   normalizeTimestamp,
 } from "./map-events.mjs";
+import {
+  AgentOpsSpanKindValues,
+  ToolAttributes,
+  ToolStatus,
+} from "../../vendor/agentops/semconv/index.mjs";
 import { computeSpend, evaluateBudgets, monthStart } from "./policy.mjs";
 
 const ACTIVE_POLL_MS = 2000;
@@ -114,6 +121,7 @@ export class Collector {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    for (const tracker of this.tracked.values()) this.#closeLiveStream(tracker);
   }
 
   /** @returns {Promise<boolean>} whether any run is currently active. */
@@ -135,8 +143,10 @@ export class Collector {
     // Trackers are kept for finished runs (see #syncConversation), so drop
     // the ones whose conversation has left the search page; the store has
     // everything they held.
-    for (const runId of this.tracked.keys()) {
-      if (!seen.has(runId)) this.tracked.delete(runId);
+    for (const [runId, tracker] of this.tracked) {
+      if (seen.has(runId)) continue;
+      this.#closeLiveStream(tracker);
+      this.tracked.delete(runId);
     }
     return hasActive;
   }
@@ -176,9 +186,121 @@ export class Collector {
        * restart a finished conversation).
        */
       settled: false,
+      /** Open events-websocket handle for an active run, or null. */
+      liveStream: null,
+      /** Events received on the websocket, folded in on the next tick. */
+      liveEvents: [],
+      /** Wall-clock time (ms) before which a dropped socket is not re-opened. */
+      liveRetryAt: 0,
+      liveBackoffMs: ACTIVE_POLL_MS,
     };
+    if (stored && !isTerminalStatus(run.status)) {
+      await this.#seedOpenToolSpans(tracker, runId);
+    }
     this.tracked.set(runId, tracker);
     return tracker;
+  }
+
+  /**
+   * Rebuild a restarted collector's view of a run's in-flight tool calls.
+   *
+   * A tool span reaches the store the moment its ActionEvent arrives on the
+   * websocket — possibly minutes before the REST tail serves that same event
+   * and moves the cursor past it. A collector restarted in that window (every
+   * deploy is one) would otherwise re-count the call when the tail replays
+   * it, and could not close the span when the observation finally lands,
+   * because a fresh aggregator has no open span to close.
+   */
+  async #seedOpenToolSpans(tracker, runId) {
+    const spans = await this.store.listSpans(runId);
+    const prefix = `${runId}:`;
+    for (const span of spans) {
+      if (span?.kind !== AgentOpsSpanKindValues.TOOL) continue;
+      if (typeof span.spanId === "string" && span.spanId.startsWith(prefix)) {
+        tracker.aggregator.seenEventIds.add(span.spanId.slice(prefix.length));
+      }
+      const toolCallId = span.attributes?.[ToolAttributes.TOOL_ID];
+      if (span.status === ToolStatus.EXECUTING && toolCallId) {
+        tracker.aggregator.openToolSpans.set(toolCallId, span);
+      }
+    }
+  }
+
+  /**
+   * Keep an active run subscribed to its events websocket; drop the
+   * subscription once it is over. Re-opened from the REST cursor on a later
+   * tick if the socket dropped, so nothing is missed in between.
+   */
+  #syncLiveStream(tracker, runId) {
+    const run = tracker.aggregator.run;
+    if (isTerminalStatus(run.status)) {
+      this.#closeLiveStream(tracker);
+      return;
+    }
+    if (tracker.liveStream && !tracker.liveStream.closed) return;
+    if (typeof this.client.openEventStream !== "function") return;
+
+    // A socket the runtime keeps refusing (auth, restart) must not be
+    // re-dialled every 2 s tick; back off up to a minute, reset once it
+    // delivers again.
+    if (tracker.liveStream?.closed) {
+      tracker.liveStream = null;
+      tracker.liveRetryAt = Date.now() + tracker.liveBackoffMs;
+      tracker.liveBackoffMs = Math.min(tracker.liveBackoffMs * 2, 60000);
+    }
+    if (Date.now() < tracker.liveRetryAt) return;
+
+    tracker.liveStream = this.client.openEventStream(runId, {
+      since: tracker.cursor,
+      onEvent: (event) => {
+        tracker.liveBackoffMs = ACTIVE_POLL_MS;
+        tracker.liveEvents.push(event);
+      },
+      onError: (error) => {
+        this.logger.warn(
+          `[agentops] events socket for ${runId}: ${error.message}`,
+        );
+      },
+    });
+    if (!tracker.liveStream && !this.warnedNoLiveStream) {
+      this.warnedNoLiveStream = true;
+      this.logger.warn(
+        "[agentops] live event stream unavailable (no WebSocket in this Node); tool calls surface only once they finish",
+      );
+    }
+  }
+
+  #closeLiveStream(tracker) {
+    tracker.liveStream?.close();
+    tracker.liveStream = null;
+  }
+
+  /**
+   * Fold in the events the websocket delivered since the last tick.
+   *
+   * These are applied through the same aggregator as the REST tail, so an
+   * `ActionEvent` opens its tool span (status `executing`, `toolCallCount`
+   * bumped, `tool.called` audited) right away instead of when the observation
+   * lands. The REST cursor is deliberately *not* moved: the tail remains the
+   * durable record of what was seen, and the aggregator's event-id set makes
+   * the eventual overlap a no-op.
+   */
+  #drainLiveEvents(tracker) {
+    const spans = [];
+    const audit = [];
+    const events = tracker.liveEvents.splice(0);
+    for (const event of events) {
+      if (!event?.id) continue;
+      const result = tracker.aggregator.applyEvent(event);
+      spans.push(...result.spans);
+      audit.push(
+        ...result.audit.map((entry) => ({
+          ...entry,
+          at: entry.at ?? normalizeTimestamp(event.timestamp),
+        })),
+      );
+    }
+    return { spans, audit };
   }
 
   async #syncConversation(conversation, observedAt) {
@@ -215,6 +337,10 @@ export class Collector {
     // phase ("completed", "waiting_approval") as the final word, lists
     // `task.completed` after the tool calls it followed, and lets its
     // "after N tool calls" count include them.
+    const liveResult = this.#drainLiveEvents(tracker);
+    spans.push(...liveResult.spans);
+    audit.push(...liveResult.audit);
+
     const eventResult = await this.#tailEvents(tracker, runId);
     spans.push(...eventResult.spans);
     audit.push(...eventResult.audit);
@@ -263,12 +389,16 @@ export class Collector {
     // conversation leaves the search page.
     if (isTerminalStatus(run.status)) {
       tracker.settled =
+        liveResult.spans.length === 0 &&
+        liveResult.audit.length === 0 &&
         eventResult.spans.length === 0 &&
         eventResult.audit.length === 0 &&
         statusResult.audit.length === 0;
     } else {
       tracker.settled = false;
     }
+
+    this.#syncLiveStream(tracker, runId);
   }
 
   async #tailEvents(tracker, runId) {

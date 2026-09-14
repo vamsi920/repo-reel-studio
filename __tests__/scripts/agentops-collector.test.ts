@@ -40,6 +40,7 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     ]),
     listApprovals: vi.fn().mockResolvedValue([]),
     upsertApproval: vi.fn().mockResolvedValue(undefined),
+    listSpans: vi.fn().mockResolvedValue([]),
     ...overrides,
   };
 }
@@ -774,5 +775,270 @@ describe("Collector budget warning dedup", () => {
       (record) => record.action === "budget.warning",
     );
     expect(warnings).toHaveLength(1);
+  });
+});
+
+describe("Collector live event stream", () => {
+  // Regression: the agent-server's `events/search` does not serve an
+  // ActionEvent (nor the LLM completion before it) while it is blocked inside
+  // that tool call, so a REST-only collector reported "0 tool calls / no
+  // spans" for the whole duration of a `sleep 150`. The events websocket does
+  // deliver it immediately; the collector must surface it from there.
+  const actionEvent = {
+    id: "evt-action",
+    timestamp: "2026-09-14T14:02:35.419000",
+    source: "agent",
+    tool_name: "terminal",
+    tool_call_id: "call-1",
+    action: { kind: "TerminalAction", command: "sleep 150" },
+  };
+  const observationEvent = {
+    id: "evt-observation",
+    timestamp: "2026-09-14T14:05:06.114000",
+    source: "environment",
+    action_id: "evt-action",
+    tool_name: "terminal",
+    tool_call_id: "call-1",
+    observation: { kind: "TerminalObservation", is_error: false },
+  };
+
+  function makeStreamingClient(overrides: Record<string, unknown> = {}) {
+    const streams: Array<{
+      conversationId: string;
+      options: { since: string | null; onEvent: (event: unknown) => void };
+      handle: { closed: boolean; close: ReturnType<typeof vi.fn> };
+    }> = [];
+    const openEventStream = vi.fn(
+      (
+        conversationId: string,
+        options: { since: string | null; onEvent: (event: unknown) => void },
+      ) => {
+        const handle = { closed: false, close: vi.fn() };
+        handle.close.mockImplementation(() => {
+          handle.closed = true;
+        });
+        streams.push({ conversationId, options, handle });
+        return handle;
+      },
+    );
+    const client = makeClient({ openEventStream, ...overrides });
+    return { client, openEventStream, streams };
+  }
+
+  it("serves an executing tool span from the websocket before the REST tail has it", async () => {
+    const store = makeStore();
+    const { client, openEventStream, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T14:02:36.000Z",
+    });
+
+    // Tick 1: the run is active, so the collector subscribes.
+    await collector.tick();
+    expect(openEventStream).toHaveBeenCalledTimes(1);
+    expect(streams[0].conversationId).toBe("run-1");
+    expect(streams[0].options.since).toBeNull();
+
+    // The runtime pushes the ActionEvent the moment the command starts; the
+    // REST search still returns nothing.
+    streams[0].options.onEvent(actionEvent);
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        toolCallCount: 1,
+        phase: "tool_call",
+        // The REST cursor is untouched: the tail stays the durable record.
+        lastEventTimestamp: null,
+      }),
+    );
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        name: "terminal",
+        status: "executing",
+        endTime: null,
+      }),
+    ]);
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+
+    // Minutes later the observation lands and the REST tail finally serves
+    // both events: the call is not counted twice, and the span closes.
+    streams[0].options.onEvent(observationEvent);
+    client.searchEvents.mockResolvedValueOnce({
+      items: [actionEvent, observationEvent],
+    });
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        toolCallCount: 1,
+        lastEventTimestamp: observationEvent.timestamp,
+      }),
+    );
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        status: "succeeded",
+        endTime: "2026-09-14T14:05:06.114000Z",
+      }),
+    ]);
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+    // Still subscribed: one socket for the life of the run, not one per tick.
+    expect(openEventStream).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the stream once the run is over and drops it with the tracker", async () => {
+    const store = makeStore();
+    const { client, openEventStream, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T14:02:36.000Z",
+    });
+
+    await collector.tick();
+    expect(streams).toHaveLength(1);
+
+    client.searchConversations.mockResolvedValue({
+      items: [
+        {
+          id: "run-1",
+          title: "Fix the flaky test",
+          execution_status: "finished",
+          workspace: { working_dir: "ws" },
+          updated_at: "2026-09-14T14:05:10.000Z",
+          created_at: "2026-09-14T14:02:00.000Z",
+        },
+      ],
+    });
+    await collector.tick();
+    expect(streams[0].handle.close).toHaveBeenCalledTimes(1);
+
+    // A finished run gets no new socket on later ticks.
+    await collector.tick();
+    expect(openEventStream).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-opens a dropped socket from the REST cursor", async () => {
+    const store = makeStore();
+    const { client, openEventStream, streams } = makeStreamingClient({
+      searchEvents: vi.fn().mockResolvedValue({ items: [actionEvent] }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T14:02:36.000Z",
+    });
+
+    await collector.tick();
+    streams[0].handle.closed = true;
+    // First tick after the drop schedules the retry; back-off elapses.
+    await collector.tick();
+    await new Promise((resolve) => setTimeout(resolve, 2100));
+    await collector.tick();
+
+    expect(openEventStream).toHaveBeenCalledTimes(2);
+    expect(streams[1].options.since).toBe(actionEvent.timestamp);
+  });
+
+  it("keeps polling-only behaviour when the client has no event stream", async () => {
+    const store = makeStore();
+    const client = makeClient({
+      searchEvents: vi.fn().mockResolvedValue({ items: [actionEvent] }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T14:02:36.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({ toolCallCount: 1 }),
+    );
+  });
+
+  it("seeds a restarted collector's open tool spans from the store", async () => {
+    // A tool span reaches the store from the socket before the REST tail
+    // moves the cursor past its ActionEvent. A collector restarted in that
+    // window (every deploy) must neither re-count the call when the tail
+    // replays it nor lose the observation that closes it.
+    const executingSpan = {
+      spanId: "run-1:evt-action",
+      parentSpanId: null,
+      traceId: "run-1",
+      kind: "tool",
+      name: "terminal",
+      phase: "tool_call",
+      startTime: "2026-09-14T14:02:35.419000Z",
+      endTime: null,
+      status: "executing",
+      attributes: { "tool.id": "call-1", "tool.name": "terminal" },
+    };
+    const store = makeStore({
+      getRun: vi.fn().mockResolvedValue({
+        runId: "run-1",
+        workspaceId: "ws",
+        agentName: "agent",
+        task: "Fix the flaky test",
+        status: "running",
+        model: null,
+        phase: "tool_call",
+        startedAt: "2026-09-14T14:02:00.000Z",
+        endedAt: null,
+        updatedAt: "2026-09-14T14:02:36.000Z",
+        costUsd: 0,
+        maxBudgetPerTask: null,
+        tokens: {
+          prompt: 0,
+          completion: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          reasoning: 0,
+          total: 0,
+        },
+        toolCallCount: 1,
+        llmCallCount: 0,
+        errorCount: 0,
+        artifacts: [],
+        lastEventId: "evt-action",
+        lastEventTimestamp: null,
+        lastEventIds: [],
+      }),
+      listSpans: vi.fn().mockResolvedValue([executingSpan]),
+    });
+    const { client } = makeStreamingClient({
+      searchEvents: vi.fn().mockResolvedValue({
+        items: [actionEvent, observationEvent],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T14:05:07.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.listSpans).toHaveBeenCalledWith("run-1");
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({ toolCallCount: 1 }),
+    );
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        status: "succeeded",
+      }),
+    ]);
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(0);
   });
 });
