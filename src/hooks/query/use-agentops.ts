@@ -127,11 +127,19 @@ export function useAgentOpsApprovals(
   });
 }
 
+/**
+ * Polled at the Budgets cadence like `useAgentOpsBudgets`, not fetched once:
+ * with `retry: false` a query that never refetches turns a single failed
+ * request — every Fly deploy restarts the collector for a few seconds — into
+ * a permanent error, and the Budgets tab (which treats any errored query as
+ * "collector down") would stay on that card until the tab was remounted.
+ */
 export function useAgentOpsPolicies(): UseQueryResult<AgentOpsPolicies> {
   return useQuery({
     queryKey: AGENTOPS_QUERY_KEYS.policies,
     queryFn: AgentOpsService.getPolicies,
     enabled: isAgentOpsSupportedBackend(),
+    refetchInterval: SLOW_REFETCH_MS,
     ...NO_RETRY,
   });
 }
