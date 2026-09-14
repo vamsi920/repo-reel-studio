@@ -3,6 +3,7 @@ import { runDetailRefetchInterval } from "#/hooks/query/use-agentops";
 import {
   AgentOpsRequestError,
   AgentOpsUnavailableError,
+  getAgentOpsErrorMessage,
   isAgentOpsNotFoundError,
 } from "#/api/agentops-service/agentops-service.api";
 import type { AgentOpsRunDetail } from "#/api/agentops-service/agentops-service.types";
@@ -100,10 +101,46 @@ describe("isAgentOpsNotFoundError", () => {
     expect(
       isAgentOpsNotFoundError(new AgentOpsRequestError("/runs/x", 500, "")),
     ).toBe(false);
-    expect(
-      isAgentOpsNotFoundError(new AgentOpsUnavailableError("down")),
-    ).toBe(false);
+    expect(isAgentOpsNotFoundError(new AgentOpsUnavailableError("down"))).toBe(
+      false,
+    );
     expect(isAgentOpsNotFoundError(new Error("404"))).toBe(false);
     expect(isAgentOpsNotFoundError(null)).toBe(false);
+  });
+});
+
+describe("getAgentOpsErrorMessage", () => {
+  it("prefers the collector's plain explanation over the translated fallback", () => {
+    expect(
+      getAgentOpsErrorMessage(
+        new AgentOpsRequestError(
+          "/runs/x/pause",
+          409,
+          JSON.stringify({ error: "Run x is finished; nothing to pause" }),
+        ),
+        "Could not pause",
+      ),
+    ).toBe("Run x is finished; nothing to pause");
+  });
+
+  it("never shows the raw request string to the operator", () => {
+    // An ingress error page, a connection failure, or anything that is not
+    // an AgentOps error: the toast gets the fallback, the console the rest.
+    expect(
+      getAgentOpsErrorMessage(
+        new AgentOpsRequestError("/policies", 502, "<html>Bad Gateway</html>"),
+        "Could not save budgets",
+      ),
+    ).toBe("Could not save budgets");
+    expect(
+      getAgentOpsErrorMessage(
+        new AgentOpsUnavailableError("AgentOps collector not reachable"),
+        "Could not save budgets",
+      ),
+    ).toBe("Could not save budgets");
+    expect(getAgentOpsErrorMessage(new Error("boom"), "fallback")).toBe(
+      "fallback",
+    );
+    expect(getAgentOpsErrorMessage(null, "fallback")).toBe("fallback");
   });
 });

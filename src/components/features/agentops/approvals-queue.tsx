@@ -7,9 +7,9 @@ import type {
   AgentOpsApproval,
   AgentOpsBudgetBreach,
 } from "#/api/agentops-service/agentops-service.types";
+import { getAgentOpsErrorMessage } from "#/api/agentops-service/agentops-service.api";
 import { useAgentOpsApprovalDecision } from "#/hooks/query/use-agentops";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
-import { getApiErrorMessage } from "#/utils/api-error-message";
 import {
   formatCostUsd,
   formatTimestamp,
@@ -103,7 +103,7 @@ function ApprovalCard({ approval }: ApprovalCardProps) {
       {
         onError: (error) =>
           displayErrorToast(
-            getApiErrorMessage(
+            getAgentOpsErrorMessage(
               error,
               t(I18nKey.AGENTOPS$CONTROL_FAILED, { action: decision }),
             ),

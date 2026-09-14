@@ -8,12 +8,12 @@ import type {
   AgentOpsPolicies,
   AgentOpsWorkspacePolicy,
 } from "#/api/agentops-service/agentops-service.types";
+import { getAgentOpsErrorMessage } from "#/api/agentops-service/agentops-service.api";
 import { useSaveAgentOpsPolicies } from "#/hooks/query/use-agentops";
 import {
   displayErrorToast,
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
-import { getApiErrorMessage } from "#/utils/api-error-message";
 import { formatCostUsd, shortWorkspace } from "./agentops-formatting";
 
 /**
@@ -178,7 +178,10 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
         },
         onError: (error) =>
           displayErrorToast(
-            getApiErrorMessage(error, t(I18nKey.AGENTOPS$BUDGET_SAVE_FAILED)),
+            getAgentOpsErrorMessage(
+              error,
+              t(I18nKey.AGENTOPS$BUDGET_SAVE_FAILED),
+            ),
           ),
       },
     );

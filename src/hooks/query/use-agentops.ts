@@ -55,6 +55,14 @@ const NO_RETRY = {
   meta: { disableToast: true },
 } as const;
 
+// The mutations below each have exactly one caller, and that caller shows its
+// own toast with a translated fallback (see `getAgentOpsErrorMessage`).
+// Without this the global MutationCache handler in query-client-config.ts
+// shows a second, identical toast for the same failure.
+const COMPONENT_OWNS_TOAST = {
+  meta: { disableToast: true },
+} as const;
+
 export function useAgentOpsSummary(): UseQueryResult<AgentOpsSummary> {
   return useQuery({
     queryKey: AGENTOPS_QUERY_KEYS.summary,
@@ -178,6 +186,7 @@ export function useAgentOpsRunControl() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["agentops", "run-control"],
+    ...COMPONENT_OWNS_TOAST,
     mutationFn: ({
       runId,
       action,
@@ -195,6 +204,7 @@ export function useAgentOpsApprovalDecision() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["agentops", "approval-decision"],
+    ...COMPONENT_OWNS_TOAST,
     mutationFn: ({
       approvalId,
       decision,
@@ -220,6 +230,7 @@ export function useSaveAgentOpsPolicies() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["agentops", "save-policies"],
+    ...COMPONENT_OWNS_TOAST,
     mutationFn: (policies: AgentOpsPolicies) =>
       AgentOpsService.savePolicies(policies),
     onSuccess: (saved) => {

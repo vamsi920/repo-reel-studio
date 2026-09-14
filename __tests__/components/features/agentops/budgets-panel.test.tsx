@@ -6,8 +6,13 @@ import {
   BudgetsPanel,
   parseBudgetUsd,
 } from "#/components/features/agentops/budgets-panel";
-import AgentOpsService from "#/api/agentops-service/agentops-service.api";
+import AgentOpsService, {
+  AgentOpsRequestError,
+  AgentOpsUnavailableError,
+} from "#/api/agentops-service/agentops-service.api";
 import { AGENTOPS_QUERY_KEYS } from "#/hooks/query/use-agentops";
+import { createAgentServerQueryClient } from "#/query-client-config";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type {
   AgentOpsBudget,
   AgentOpsPolicies,
@@ -94,6 +99,7 @@ describe("parseBudgetUsd", () => {
 describe("BudgetsPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(displayErrorToast).mockClear();
   });
 
   it("keeps the operator's unsaved edits when the server copy refreshes underneath", async () => {
@@ -221,6 +227,63 @@ describe("BudgetsPanel", () => {
     rerender(cached!.budgets);
     expect(monthlyInput()).toHaveValue("40");
     expect(saveButton()).toBeDisabled();
+  });
+
+  it("shows one translated toast when the save fails, not the request string twice", async () => {
+    vi.spyOn(AgentOpsService, "savePolicies").mockRejectedValue(
+      new AgentOpsRequestError("/policies", 502, "<html>Bad Gateway</html>"),
+    );
+    // The app's real query client, whose global MutationCache handler would
+    // otherwise add a second toast for the same failure.
+    renderPanel([budget()], EMPTY_POLICIES, createAgentServerQueryClient());
+
+    await userEvent.clear(monthlyInput());
+    await userEvent.type(monthlyInput(), "40");
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(displayErrorToast).toHaveBeenCalledWith(
+      "AGENTOPS$BUDGET_SAVE_FAILED",
+    );
+    // The edits survive a failed save.
+    expect(monthlyInput()).toHaveValue("40");
+    expect(saveButton()).not.toBeDisabled();
+  });
+
+  it("shows the collector's own explanation when it gave one", async () => {
+    vi.spyOn(AgentOpsService, "savePolicies").mockRejectedValue(
+      new AgentOpsRequestError(
+        "/policies",
+        400,
+        JSON.stringify({ error: "Expected a JSON policies object" }),
+      ),
+    );
+    renderPanel([budget()], EMPTY_POLICIES, createAgentServerQueryClient());
+
+    await userEvent.clear(monthlyInput());
+    await userEvent.type(monthlyInput(), "40");
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(displayErrorToast).toHaveBeenCalledWith(
+      "Expected a JSON policies object",
+    );
+  });
+
+  it("falls back to the translated message when the collector is unreachable", async () => {
+    vi.spyOn(AgentOpsService, "savePolicies").mockRejectedValue(
+      new AgentOpsUnavailableError("AgentOps collector not reachable"),
+    );
+    renderPanel([budget()], EMPTY_POLICIES, createAgentServerQueryClient());
+
+    await userEvent.clear(monthlyInput());
+    await userEvent.type(monthlyInput(), "40");
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(displayErrorToast).toHaveBeenCalledWith(
+      "AGENTOPS$BUDGET_SAVE_FAILED",
+    );
   });
 
   it("exposes the usage bar as a progress indicator", () => {

@@ -79,6 +79,24 @@ export function isAgentOpsNotFoundError(error: unknown): boolean {
 }
 
 /**
+ * The message a toast should show for a failed AgentOps call: the collector's
+ * own plain explanation when it gave one (a 409 saying why a control was
+ * refused, "Approval x is already approved", …), otherwise the caller's
+ * translated fallback. Never the raw `Error.message` — for a non-JSON body
+ * (an ingress 502 page) or a connection failure that is an internal request
+ * string, which belongs in the console, not in front of the operator.
+ */
+export function getAgentOpsErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  if (error instanceof AgentOpsRequestError && error.response.message) {
+    return error.response.message;
+  }
+  return fallback;
+}
+
+/**
  * The collector reads a specific agent-server over its local REST API, so it
  * only means anything for local backends. Cloud backends are told so plainly
  * rather than being shown an empty tower.

@@ -5,7 +5,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { DangerModal } from "#/components/shared/modals/confirmation-modals/danger-modal";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
-import { getApiErrorMessage } from "#/utils/api-error-message";
+import { getAgentOpsErrorMessage } from "#/api/agentops-service/agentops-service.api";
 import { useAgentOpsRunControl } from "#/hooks/query/use-agentops";
 import type { AgentOpsRun } from "#/api/agentops-service/agentops-service.types";
 
@@ -50,7 +50,7 @@ export function RunControls({ run }: RunControlsProps) {
       {
         onError: (error) =>
           displayErrorToast(
-            getApiErrorMessage(
+            getAgentOpsErrorMessage(
               error,
               t(I18nKey.AGENTOPS$CONTROL_FAILED, { action }),
             ),
