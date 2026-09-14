@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import EnvironmentSetupScreen from "#/routes/environment-setup";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
+import { resetOAuthReceiptGuardForTests } from "#/lib/environment/oauth-receipt-guard";
+import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 
 const state = vi.hoisted(() => ({
   session: null as { conversationId: string } | null,
@@ -86,7 +88,8 @@ beforeEach(() => {
   state.session = null;
   state.sessionLoading = true;
   state.posted = [];
-  sessionStorage.clear();
+  resetOAuthReceiptGuardForTests();
+  useOnboardingStudioStore.getState().reset();
 });
 
 describe("Environment setup OAuth receipt", () => {
@@ -127,5 +130,62 @@ describe("Environment setup OAuth receipt", () => {
     await waitFor(() => expect(state.posted).toHaveLength(1));
     expect(state.posted[0]).toContain('"status":"error"');
     expect(state.posted[0]).toContain('"reason":"access_denied"');
+  });
+
+  it("still posts a second, later connection for the same provider in a fresh page load", async () => {
+    // The guard exists to survive StrictMode's double-invoked effect within
+    // one page load, not to block a genuine second OAuth round trip. A real
+    // second connect is always a fresh page load, which is what resetting
+    // the guard here simulates.
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+    renderScreen("/environment/setup?connected=github&mirror=ok");
+    await waitFor(() => expect(state.posted).toHaveLength(1));
+
+    resetOAuthReceiptGuardForTests();
+    state.posted = [];
+    renderScreen("/environment/setup?connected=github&mirror=ok");
+
+    await waitFor(() => expect(state.posted).toHaveLength(1));
+    expect(state.posted[0]).toContain('"status":"connected"');
+  });
+});
+
+describe("Environment setup studio workbench reset", () => {
+  it("wipes the previous conversation's cards when a new session starts", async () => {
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+    const { rerender } = renderScreen("/environment/setup");
+
+    await waitFor(() =>
+      expect(useOnboardingStudioStore.getState().conversationId).toBe(
+        "conv-1",
+      ),
+    );
+    useOnboardingStudioStore.getState().pushCard({
+      id: "discovery-1",
+      kind: "discovery",
+    });
+    expect(useOnboardingStudioStore.getState().cards).toHaveLength(1);
+
+    // A different conversation id resolving on this same mounted screen (a
+    // new session after the first completed, or a different org) must not
+    // leave the first session's singleton discovery/plan cards behind --
+    // they would otherwise block a fresh discovery card from ever rendering.
+    state.session = { conversationId: "conv-2" };
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/environment/setup"]}>
+          <EnvironmentSetupScreen />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(useOnboardingStudioStore.getState().conversationId).toBe(
+        "conv-2",
+      ),
+    );
+    expect(useOnboardingStudioStore.getState().cards).toHaveLength(0);
   });
 });

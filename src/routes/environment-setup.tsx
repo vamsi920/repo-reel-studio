@@ -27,6 +27,7 @@ import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { useEnvironmentReadiness } from "#/hooks/query/use-environment-readiness";
 import { createConversationResultPoster } from "#/services/onboarding-control";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
+import { consumeOAuthReceiptOnce } from "#/lib/environment/oauth-receipt-guard";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { ONBOARDING_SYSTEM_BRIEF } from "#/components/features/environment/copilot/onboarding-brief";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
@@ -34,9 +35,6 @@ import {
   displayErrorToast,
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
-
-/** Guards against re-posting an OAuth receipt when StrictMode remounts. */
-const OAUTH_RECEIPT_GUARD_PREFIX = "onboarding-oauth-receipt:";
 
 /** Tab ids for the mobile layout; not user-facing text. */
 const MOBILE_TABS = ["chat", "workbench"] as const;
@@ -157,7 +155,19 @@ function EnvironmentSetupScreen() {
 
   const conversationId = session?.conversationId ?? null;
 
+  // The store's cards/facts/plan belong to one onboarding conversation. If a
+  // second, different session ever mounts this screen in the same tab (the
+  // first was completed/abandoned and a new one started, or a different org
+  // is active), the previous session's discovery/plan cards are singletons
+  // that block a fresh one from ever rendering -- so a real conversation
+  // change must wipe the workbench, not just repoint its id.
+  const previousConversationIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
+    const previous = previousConversationIdRef.current;
+    if (previous !== null && previous !== conversationId) {
+      useOnboardingStudioStore.getState().reset();
+    }
+    previousConversationIdRef.current = conversationId;
     setStudioConversationId(conversationId);
   }, [conversationId, setStudioConversationId]);
 
@@ -186,13 +196,8 @@ function EnvironmentSetupScreen() {
     next.delete("mirror");
     setSearchParams(next, { replace: true });
 
-    const guardKey = `${OAUTH_RECEIPT_GUARD_PREFIX}${connected ?? failed}`;
-    try {
-      if (sessionStorage.getItem(guardKey)) return;
-      sessionStorage.setItem(guardKey, "1");
-    } catch {
-      // A browser refusing sessionStorage costs at worst a duplicate receipt.
-    }
+    const guardKey = `environment-setup:${connected ?? failed}`;
+    if (!consumeOAuthReceiptOnce(guardKey)) return;
 
     if (connected) displaySuccessToast(t(I18nKey.ENVIRONMENT$STATUS_OK));
     if (failed) displayErrorToast(failed);

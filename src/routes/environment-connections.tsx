@@ -19,6 +19,7 @@ import { CAPABILITY_LABEL_KEY } from "#/lib/environment/display";
 import { useConnections } from "#/hooks/query/use-connections";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
+import { consumeOAuthReceiptOnce } from "#/lib/environment/oauth-receipt-guard";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import {
   EnvironmentService,
@@ -68,15 +69,22 @@ function EnvironmentConnectionsScreen() {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
     if (!connected && !error) return;
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("connected");
+    next.delete("error");
+    setSearchParams(next, { replace: true });
+
+    // StrictMode double-invokes this effect before the param strip above
+    // takes effect, which would otherwise toast and invalidate twice.
+    const guardKey = `environment-connections:${connected ?? error}`;
+    if (!consumeOAuthReceiptOnce(guardKey)) return;
+
     if (connected) {
       displaySuccessToast(t(I18nKey.ENVIRONMENT$STATUS_OK));
       void invalidateConnectionCaches(queryClient);
     }
     if (error) displayErrorToast(error);
-    const next = new URLSearchParams(searchParams);
-    next.delete("connected");
-    next.delete("error");
-    setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams, queryClient, t]);
 
   const visibleManifests = React.useMemo(() => {

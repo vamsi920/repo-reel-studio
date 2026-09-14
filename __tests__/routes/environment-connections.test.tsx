@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import EnvironmentConnectionsScreen from "#/routes/environment-connections";
+import { resetOAuthReceiptGuardForTests } from "#/lib/environment/oauth-receipt-guard";
+import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 
 vi.mock("#/lib/data-platform/client", () => ({
   isSupabaseConfigured: true,
@@ -33,13 +35,13 @@ vi.mock("#/api/environment-service/environment-service.api", () => ({
   EnvironmentServiceError: class EnvironmentServiceError extends Error {},
 }));
 
-function renderScreen() {
+function renderScreen(entry = "/environment/connections") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/environment/connections"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <EnvironmentConnectionsScreen />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -48,6 +50,8 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.mocked(invalidateConnectionCaches).mockClear();
+  resetOAuthReceiptGuardForTests();
 });
 
 describe("Environment connections form panel", () => {
@@ -89,5 +93,40 @@ describe("Environment connections form panel", () => {
     expect(
       screen.queryByTestId("connection-form-panel"),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Environment connections OAuth receipt", () => {
+  it("invalidates connection caches once for an OAuth callback", async () => {
+    renderScreen("/environment/connections?connected=github");
+
+    await waitFor(() =>
+      expect(invalidateConnectionCaches).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("does not double-fire for a second mount of the same receipt in one page load", async () => {
+    // Guards against React 18 StrictMode's double-invoked effect firing the
+    // toast/cache-invalidation twice for the exact same OAuth redirect.
+    renderScreen("/environment/connections?connected=github");
+    await waitFor(() =>
+      expect(invalidateConnectionCaches).toHaveBeenCalledTimes(1),
+    );
+
+    renderScreen("/environment/connections?connected=github");
+    expect(invalidateConnectionCaches).toHaveBeenCalledTimes(1);
+  });
+
+  it("still fires for a later, genuinely new page load", async () => {
+    renderScreen("/environment/connections?connected=github");
+    await waitFor(() =>
+      expect(invalidateConnectionCaches).toHaveBeenCalledTimes(1),
+    );
+
+    resetOAuthReceiptGuardForTests();
+    renderScreen("/environment/connections?connected=github");
+    await waitFor(() =>
+      expect(invalidateConnectionCaches).toHaveBeenCalledTimes(2),
+    );
   });
 });
