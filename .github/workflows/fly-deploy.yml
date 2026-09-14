@@ -12,7 +12,7 @@ jobs:
       group: fly-deploy-neo-agent-server
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --config fly.agent-server.toml --app neo-agent-server --remote-only --ha=false
         env:
@@ -25,7 +25,7 @@ jobs:
       group: fly-deploy-neo-deepwiki
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --config fly.toml --app neo-deepwiki --remote-only --ha=false
         working-directory: vendor/deepwiki-open
