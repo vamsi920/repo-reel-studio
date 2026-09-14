@@ -39031,6 +39031,23 @@
     "tr": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",
     "uk": "No connected repositories yet. Open a conversation with a repo attached, then come back here."
   },
+  "KT$LOADING": {
+    "en": "Loading repositories…",
+    "ja": "Loading repositories…",
+    "zh-CN": "Loading repositories…",
+    "zh-TW": "Loading repositories…",
+    "ko-KR": "Loading repositories…",
+    "no": "Loading repositories…",
+    "ar": "Loading repositories…",
+    "de": "Loading repositories…",
+    "fr": "Loading repositories…",
+    "it": "Loading repositories…",
+    "pt": "Loading repositories…",
+    "es": "Loading repositories…",
+    "ca": "Loading repositories…",
+    "tr": "Loading repositories…",
+    "uk": "Loading repositories…"
+  },
   "KT$GENERATE": {
     "en": "Generate Knowledge",
     "ja": "Generate Knowledge",

@@ -21,6 +21,7 @@ import type { Provider } from "#/types/settings";
 import {
   useConnectedRepositories,
   resolveCommitSha,
+  type ConnectedRepositories,
   type RepoCandidate,
 } from "#/lib/knowledge/connected-repositories";
 
@@ -32,32 +33,57 @@ import {
 /** Repos with real, previously-generated Knowledge in Supabase but no open
  * conversation right now — without this, they'd vanish from /kt entirely on
  * reload, exactly the empty-page problem this is fixing at the list level. */
-function usePersistedRepositories(): PersistedRepositorySummary[] {
-  const [summaries, setSummaries] = useState<PersistedRepositorySummary[]>([]);
+interface PersistedRepositories {
+  summaries: PersistedRepositorySummary[];
+  /** True once the Supabase lookup has settled (with a list or with an
+   * error). The list starts empty on the very first render either way, so
+   * KtList must not read `summaries.length === 0` as "nothing generated"
+   * until this is true — doing so flashes the empty state for the whole
+   * round trip on every visit. */
+  loaded: boolean;
+}
+
+function usePersistedRepositories(): PersistedRepositories {
+  const [state, setState] = useState<PersistedRepositories>({
+    summaries: [],
+    loaded: false,
+  });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const list =
           await knowledgePersistenceRepository.listGeneratedRepositories();
-        if (!cancelled) setSummaries(list);
+        if (!cancelled) setState({ summaries: list, loaded: true });
       } catch {
         // Best-effort: an unconfigured/unreachable Supabase must not reject
         // out of this effect (an unhandled rejection) — the list still
         // renders every connected and in-memory repository.
+        if (!cancelled) setState((prev) => ({ ...prev, loaded: true }));
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-  return summaries;
+  return state;
 }
 
-function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
+interface AllRepositories {
+  repositories: RepoCandidate[];
+  /** True while either source (conversation history or the Supabase
+   * generated-repositories lookup) has not answered yet. */
+  isLoading: boolean;
+}
+
+function useAllRepositories({
+  repositories: connected,
+  isLoading: connectedLoading,
+}: ConnectedRepositories): AllRepositories {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
-  const persisted = usePersistedRepositories();
-  return useMemo(() => {
+  const { summaries: persisted, loaded: persistedLoaded } =
+    usePersistedRepositories();
+  const repositories = useMemo(() => {
     // Repos already generated in Supabase, regardless of whether they also
     // have a live conversation right now -- without this, a repo that's
     // BOTH connected (found via useConnectedRepositories) AND previously
@@ -112,6 +138,7 @@ function useAllRepositories(connected: RepoCandidate[]): RepoCandidate[] {
         candidate.knownGenerated || persistedIds.has(candidate.repositoryId),
     }));
   }, [connected, byRepositoryId, persisted]);
+  return { repositories, isLoading: connectedLoading || !persistedLoaded };
 }
 
 async function resolveSnapshot(
@@ -413,8 +440,8 @@ function AddRepositoryTrigger() {
 
 function KtList() {
   const { t } = useTranslation("openhands");
-  const repositories = useAllRepositories(
-    useConnectedRepositories().repositories,
+  const { repositories, isLoading } = useAllRepositories(
+    useConnectedRepositories(),
   );
   const [search, setSearch] = useState("");
 
@@ -447,7 +474,19 @@ function KtList() {
 
         <ProvisioningCards />
 
-        {repositories.length === 0 ? (
+        {repositories.length === 0 && isLoading ? (
+          // Neither source has answered yet: a neutral placeholder, never
+          // the "no repositories" copy — that would flash on every visit
+          // for as long as the Supabase round trip takes.
+          <div
+            data-testid="kt-list-loading"
+            role="status"
+            className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-sm text-[var(--oh-muted)]"
+          >
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            {t(I18nKey.KT$LOADING)}
+          </div>
+        ) : repositories.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-center text-sm text-[var(--oh-muted)]">
             <RefreshCw className="mx-auto mb-2 size-5" aria-hidden />
             {t(I18nKey.KT$EMPTY)}

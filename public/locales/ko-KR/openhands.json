@@ -2295,6 +2295,7 @@
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",
+  "KT$LOADING": "Loading repositories…",
   "KT$GENERATE": "Generate Knowledge",
   "KT$STARTING": "Starting…",
   "KT$STATUS": "{{status}}…",

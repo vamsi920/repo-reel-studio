@@ -7,12 +7,13 @@ import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 
 const connected: RepoCandidate[] = [];
+let connectedLoading = false;
 const listGeneratedRepositories = vi.fn();
 
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
   useConnectedRepositories: () => ({
     repositories: connected,
-    isLoading: false,
+    isLoading: connectedLoading,
   }),
   resolveCommitSha: vi.fn(),
 }));
@@ -64,6 +65,7 @@ const UNPROVISIONED: RepoCandidate = {
 describe("KtList", () => {
   beforeEach(() => {
     setConnected();
+    connectedLoading = false;
     useKnowledgeStore.setState({
       byRepositoryId: {},
       provisioningByRepositoryId: {},
@@ -108,5 +110,63 @@ describe("KtList", () => {
     } finally {
       process.off("unhandledRejection", onUnhandled);
     }
+  });
+
+  it("shows a loading placeholder, not the empty state, until the persisted lookup settles", async () => {
+    let resolveList: (value: never[]) => void = () => {};
+    listGeneratedRepositories.mockReturnValue(
+      new Promise<never[]>((resolve) => {
+        resolveList = resolve;
+      }),
+    );
+
+    renderWithProviders(<KtList />);
+
+    // The Supabase round trip is still in flight: the "no repositories"
+    // copy must not be committed even for a frame.
+    expect(screen.getByTestId("kt-list-loading")).toBeInTheDocument();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+
+    resolveList([]);
+
+    expect(await screen.findByText("KT$EMPTY")).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-list-loading")).toBeNull();
+  });
+
+  it("keeps the loading placeholder while conversation history is still loading", async () => {
+    connectedLoading = true;
+    listGeneratedRepositories.mockResolvedValue([]);
+
+    renderWithProviders(<KtList />);
+
+    await waitFor(() =>
+      expect(listGeneratedRepositories).toHaveBeenCalledTimes(1),
+    );
+    expect(screen.getByTestId("kt-list-loading")).toBeInTheDocument();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+  });
+
+  it("falls through to the empty state when the persisted lookup fails and nothing is connected", async () => {
+    listGeneratedRepositories.mockRejectedValue(new Error("no supabase"));
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByText("KT$EMPTY")).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-list-loading")).toBeNull();
+  });
+
+  it("renders persisted repositories as View Knowledge cards without an empty-state flash", async () => {
+    listGeneratedRepositories.mockResolvedValue([
+      { owner: "vamsi920", repo: "layman", branch: "main" },
+    ]);
+
+    renderWithProviders(<KtList />);
+
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+    expect(await screen.findByTestId("kt-repo-card")).toHaveTextContent(
+      "vamsi920/layman",
+    );
+    expect(screen.getByText("KT$VIEW_KNOWLEDGE")).toBeInTheDocument();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
   });
 });
