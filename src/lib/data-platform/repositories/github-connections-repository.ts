@@ -1,4 +1,8 @@
-import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import {
+  supabase,
+  isSupabaseConfigured,
+  getAuthUser,
+} from "#/lib/data-platform/client";
 
 /**
  * Read-only from the browser: `github_connections` has no client-writable
@@ -32,7 +36,7 @@ class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository
     if (!isSupabaseConfigured || !supabase) return null;
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getAuthUser();
     // Callers only reach here once `useSupabaseSession()` has already
     // confirmed a real session via `getSession()` (a local-storage read).
     // `getUser()` instead re-validates the token against the Supabase Auth

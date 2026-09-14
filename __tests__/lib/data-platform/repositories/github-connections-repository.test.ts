@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("#/lib/data-platform/client", () => ({
   isSupabaseConfigured: true,
+  getAuthUser: async () => ({ data: { user: state.user } }),
   supabase: {
     auth: {
       getUser: async () => ({ data: { user: state.user } }),

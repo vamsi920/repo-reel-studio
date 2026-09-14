@@ -1,4 +1,8 @@
-import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import {
+  supabase,
+  isSupabaseConfigured,
+  getAuthUser,
+} from "#/lib/data-platform/client";
 
 /**
  * `jira_automation_triggers` holds no secrets (project key, label, repo,
@@ -58,7 +62,7 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
     if (!isSupabaseConfigured || !supabase) return [];
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getAuthUser();
     if (!user) return [];
 
     const { data, error } = await supabase
@@ -74,7 +78,7 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
     if (!isSupabaseConfigured || !supabase) return null;
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getAuthUser();
     if (!user) return null;
 
     const { data, error } = await supabase
@@ -116,7 +120,7 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
     if (!isSupabaseConfigured || !supabase) return false;
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getAuthUser();
     if (!user) return false;
 
     const { data } = await supabase

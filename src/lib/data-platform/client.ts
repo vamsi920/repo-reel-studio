@@ -47,3 +47,30 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
       global: { fetch: timedFetch },
     })
   : null;
+
+type GetUserResult = Awaited<ReturnType<SupabaseClient["auth"]["getUser"]>>;
+
+let inFlightGetUser: Promise<GetUserResult> | null = null;
+
+// Several repositories (github/jira connections, jira triggers) each call
+// `auth.getUser()` independently during app bootstrap to re-validate the
+// session against the Supabase Auth server. When more than one fires in the
+// same tick, the browser can cancel one mid-flight and report it as a CORS
+// failure instead of a cancellation (no 'Access-Control-Allow-Origin'
+// header, even though the endpoint is not actually CORS-blocked) -- see the
+// "intermittent getUser() CORS block" report. Sharing one in-flight request
+// across concurrent callers removes the race instead of chasing its symptom.
+export function getAuthUser(): Promise<GetUserResult> {
+  if (!supabase) {
+    return Promise.resolve({
+      data: { user: null },
+      error: null,
+    } as unknown as GetUserResult);
+  }
+  if (!inFlightGetUser) {
+    inFlightGetUser = supabase.auth.getUser().finally(() => {
+      inFlightGetUser = null;
+    });
+  }
+  return inFlightGetUser;
+}

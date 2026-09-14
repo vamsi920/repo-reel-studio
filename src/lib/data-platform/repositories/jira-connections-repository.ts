@@ -1,4 +1,8 @@
-import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
+import {
+  supabase,
+  isSupabaseConfigured,
+  getAuthUser,
+} from "#/lib/data-platform/client";
 
 /**
  * Read-only from the browser: `jira_connections` has no client-writable RLS
@@ -35,7 +39,7 @@ class SupabaseJiraConnectionsRepository implements JiraConnectionsRepository {
     if (!isSupabaseConfigured || !supabase) return null;
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getAuthUser();
     // See github-connections-repository.ts's identical check: `getUser()`
     // re-validates the token against the Supabase Auth server (unlike the
     // local-storage `getSession()` read callers already gated on), so it can
