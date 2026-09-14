@@ -303,6 +303,21 @@ function isUserMessageEvent(event) {
   return event?.llm_message?.role === "user";
 }
 
+/**
+ * The runtime's live cost report: a `ConversationStateUpdateEvent` carrying
+ * the same `ConversationStats` the REST search returns under `stats`, pushed
+ * on the events socket after every completion — including the ones made
+ * while a tool call holds the conversation lock and the search cannot answer.
+ */
+function isStatsUpdateEvent(event) {
+  return (
+    event?.kind === "ConversationStateUpdateEvent" &&
+    event?.key === "stats" &&
+    !!event?.value &&
+    typeof event.value === "object"
+  );
+}
+
 /** Deterministic span ids, so replaying the same events is idempotent. */
 function spanId(runId, suffix) {
   return `${runId}:${suffix}`;
@@ -368,6 +383,15 @@ export class RunAggregator {
     if (isObservationEvent(event)) return this.#applyObservation(event);
     if (isAgentErrorEvent(event)) return this.#applyAgentError(event);
     if (isUserMessageEvent(event)) return this.#applyUserMessage(event);
+    if (isStatsUpdateEvent(event)) {
+      // Same fold as the polled `conversation.stats`, so the cost a budget is
+      // judged against is current mid-tool-call, not only between calls.
+      const result = this.applyStats(
+        event.value,
+        normalizeTimestamp(event.timestamp) ?? new Date().toISOString(),
+      );
+      return { ...result, statsApplied: true };
+    }
 
     return { spans: [], audit: [] };
   }

@@ -471,6 +471,53 @@ describe("RunAggregator — LLM spans from ConversationStats", () => {
     expect(rebuilt.run.llmCallCount).toBe(1);
   });
 
+  it("folds the socket's live stats update exactly like the polled stats", () => {
+    // The runtime pushes ConversationStateUpdateEvent{key:"stats"} on the
+    // events socket after every completion, including the ones made while a
+    // tool call blocks the REST search. It is the same ConversationStats.
+    const aggregator = new RunAggregator(newRun());
+    const result = aggregator.applyEvent({
+      id: "evt-stats-1",
+      kind: "ConversationStateUpdateEvent",
+      key: "stats",
+      value: stats,
+      timestamp: "2026-01-01T00:00:00.000000",
+      source: "environment",
+    });
+
+    expect("statsApplied" in result && result.statsApplied).toBe(true);
+    expect(result.spans).toHaveLength(1);
+    expect(aggregator.run.costUsd).toBe(0.42);
+    expect(aggregator.run.llmCallCount).toBe(1);
+
+    // The REST tail replays the same event later: nothing is counted twice.
+    const replay = aggregator.applyEvent({
+      id: "evt-stats-1",
+      kind: "ConversationStateUpdateEvent",
+      key: "stats",
+      value: stats,
+      timestamp: "2026-01-01T00:00:00.000000",
+      source: "environment",
+    });
+    expect(replay.spans).toHaveLength(0);
+    expect(aggregator.run.costUsd).toBe(0.42);
+  });
+
+  it("ignores state updates that carry no stats", () => {
+    const aggregator = new RunAggregator(newRun());
+    const result = aggregator.applyEvent({
+      id: "evt-status-1",
+      kind: "ConversationStateUpdateEvent",
+      key: "agent_status",
+      value: "running",
+      timestamp: "2026-01-01T00:00:00.000000",
+      source: "environment",
+    });
+    expect(result.spans).toHaveLength(0);
+    expect("statsApplied" in result).toBe(false);
+    expect(aggregator.run.costUsd).toBe(0);
+  });
+
   it("reports a missing cost as null, never as zero", () => {
     const aggregator = new RunAggregator(newRun());
     const noCost = {
@@ -632,7 +679,10 @@ describe("RunAggregator — pause mid tool call, resume, finish", () => {
         id: "evt-3",
         timestamp: "2026-01-02T00:00:06.000Z",
         tool_call_id: "call-2",
-        action: { kind: "ExecuteBashAction", command: "sleep 26 && echo seven" },
+        action: {
+          kind: "ExecuteBashAction",
+          command: "sleep 26 && echo seven",
+        },
       }),
     );
     const done = aggregator.applyEvent({

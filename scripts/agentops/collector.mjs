@@ -335,6 +335,7 @@ export class Collector {
   #drainLiveEvents(tracker) {
     const spans = [];
     const audit = [];
+    let statsApplied = false;
     const events = tracker.liveEvents.splice(0);
     for (const event of events) {
       if (!event?.id) continue;
@@ -346,8 +347,9 @@ export class Collector {
           at: entry.at ?? normalizeTimestamp(event.timestamp),
         })),
       );
+      if (result.statsApplied) statsApplied = true;
     }
-    return { spans, audit };
+    return { spans, audit, statsApplied };
   }
 
   /**
@@ -395,9 +397,18 @@ export class Collector {
    */
   async #flushLiveEvents(tracker, runId, observedAt) {
     const result = this.#drainLiveEvents(tracker);
-    if (!result.spans.length && !result.audit.length) return result;
+    if (!result.spans.length && !result.audit.length && !result.statsApplied) {
+      return result;
+    }
     const run = tracker.aggregator.run;
     run.updatedAt = observedAt;
+    // A live cost report is judged right here: with back-to-back long
+    // commands the poll only ever answers in the seconds between tool calls,
+    // so a run could otherwise finish at many times its budget before the
+    // poll's own enforcement saw a single dollar of it.
+    if (result.statsApplied) {
+      result.audit.push(...(await this.#enforceBudgets(run, observedAt)));
+    }
     await this.#persist(tracker, runId, result.spans, result.audit, observedAt);
     return result;
   }

@@ -1246,6 +1246,104 @@ describe("Collector live event stream", () => {
     ).toHaveLength(1);
   });
 
+  it("halts an over-budget run on the socket's live cost report while the poll is blocked behind a long tool call", async () => {
+    // Regression: run.costUsd was set only from conversations/search, which
+    // hangs under the conversation lock for the length of every tool call,
+    // so six back-to-back `sleep 40` commands ran to completion at seven
+    // times a $0.01 budget with no budget.exceeded, no run.paused and no
+    // approval. The runtime reports each completion's cost on the socket.
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: 100,
+        runBudgetUsd: 0.01,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+    });
+    const { client, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      logger: { ...console, info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      now: () => "2026-09-14T17:52:11.000Z",
+    });
+
+    await collector.tick();
+    expect(streams).toHaveLength(1);
+    expect(client.interruptConversation).not.toHaveBeenCalled();
+
+    // The agent starts a 40 s command: from here the search hangs and every
+    // poll is aborted until it returns.
+    client.searchConversations.mockRejectedValue(
+      new Error("This operation was aborted"),
+    );
+    client.searchEvents.mockRejectedValue(
+      new Error("This operation was aborted"),
+    );
+    streams[0].options.onEvent(actionEvent);
+    await vi.waitFor(() => expect(store.upsertRun).toHaveBeenCalled());
+    await expect(collector.tick()).rejects.toThrow("aborted");
+
+    // The completion that issued the command is reported live on the socket
+    // — and it already costs more than the whole run is allowed.
+    streams[0].options.onEvent({
+      id: "evt-stats-1",
+      kind: "ConversationStateUpdateEvent",
+      key: "stats",
+      value: {
+        usage_to_metrics: {
+          default: {
+            model_name: "claude-opus-5",
+            accumulated_cost: 0.0331,
+            max_budget_per_task: null,
+            accumulated_token_usage: {},
+            costs: [
+              { model: "claude-opus-5", cost: 0.0331, timestamp: 1789408331 },
+            ],
+            response_latencies: [],
+            token_usages: [
+              {
+                model: "claude-opus-5",
+                prompt_tokens: 900,
+                completion_tokens: 40,
+                response_id: "resp-1",
+              },
+            ],
+          },
+        },
+      },
+      timestamp: "2026-09-14T17:52:11.000000",
+      source: "environment",
+    });
+
+    await vi.waitFor(() =>
+      expect(client.interruptConversation).toHaveBeenCalledWith("run-1"),
+    );
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({ runId: "run-1", costUsd: 0.0331 }),
+    );
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({ spanId: "run-1:llm:default:0", kind: "llm" }),
+    ]);
+    expect(store.appendedAudit.map((record) => record.action)).toEqual(
+      expect.arrayContaining(["budget.exceeded", "run.paused"]),
+    );
+    expect(store.upsertApproval).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "budget",
+        runId: "run-1",
+        state: "pending",
+      }),
+    );
+    // All of it before the tool returned: no poll has answered since the
+    // one that was aborted, so the cost could only have come from the socket.
+    expect(client.searchConversations).toHaveBeenCalledTimes(2);
+  });
+
   it("writes socket events before the REST tail can fail the poll", async () => {
     const store = makeStore();
     const { client, streams } = makeStreamingClient();
