@@ -131,9 +131,17 @@ export function normalizeTimestamp(value) {
   return `${value}Z`;
 }
 
-/** Terminal statuses — a run in one of these is history, not a live run. */
+/**
+ * Terminal statuses — a run in one of these is history, not a live run.
+ *
+ * "stuck" is terminal on purpose: the runtime's loop detector has halted the
+ * agent, and the SDK treats STUCK exactly like FINISHED — only a new user
+ * message resets it (`LocalConversation.send_message`). `/interrupt` is a
+ * no-op on it and `/run` re-trips the detector within milliseconds, so there
+ * is nothing live left to pause, stop, or resume.
+ */
 export function isTerminalStatus(status) {
-  return status === "finished" || status === "error";
+  return status === "finished" || status === "error" || status === "stuck";
 }
 
 /** Live statuses — what the "Active Agents" tile counts. */
@@ -141,8 +149,7 @@ export function isActiveStatus(status) {
   return (
     status === "running" ||
     status === "paused" ||
-    status === "waiting_for_confirmation" ||
-    status === "stuck"
+    status === "waiting_for_confirmation"
   );
 }
 
@@ -678,6 +685,14 @@ export class RunAggregator {
       audit.push({
         action: "task.failed",
         summary: "Run ended in an error state",
+        at: observedAt,
+        actor: "agent",
+      });
+    } else if (status === "stuck") {
+      audit.push({
+        action: "task.stuck",
+        summary:
+          "Runtime halted the run: the agent was repeating itself (stuck detection)",
         at: observedAt,
         actor: "agent",
       });

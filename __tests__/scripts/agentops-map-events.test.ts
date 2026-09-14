@@ -396,6 +396,25 @@ describe("RunAggregator — status transitions", () => {
     expect(isTerminalStatus("paused")).toBe(false);
   });
 
+  it("treats a stuck run as halted history, not a live run", () => {
+    // The runtime's loop detector has given up on it: `/interrupt` is a
+    // no-op and `/run` re-trips the detector immediately, so only a new user
+    // message restarts it — the same way the SDK treats FINISHED.
+    expect(isActiveStatus("stuck")).toBe(false);
+    expect(isTerminalStatus("stuck")).toBe(true);
+
+    const aggregator = new RunAggregator(newRun());
+    const stuck = aggregator.applyStatus("stuck", OBSERVED_AT);
+    expect(stuck.audit).toEqual([
+      expect.objectContaining({ action: "task.stuck", actor: "agent" }),
+    ]);
+    expect(aggregator.run.endedAt).toBe(OBSERVED_AT);
+
+    // A follow-up user message resets it and the run goes live again.
+    aggregator.applyStatus("running", OBSERVED_AT);
+    expect(aggregator.run.endedAt).toBeNull();
+  });
+
   it("keeps the completed phase when tool events are applied after the run finished", () => {
     // The last tool call and the "finished" status often land in the same
     // collector tick (or the tool events get re-tailed on a later one). The

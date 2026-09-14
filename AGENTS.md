@@ -150,7 +150,14 @@ full environment, so they pass through once set in `.env` (dev) or via
   counted as `runsWithoutReportedCost` and labelled, never shown as free.
 - **Never show a control that doesn't act.** Pause/Resume/Stop call the
   agent-server's real `/interrupt` and `/run`. A control whose precondition
-  isn't met is not rendered, rather than rendered disabled.
+  isn't met is not rendered, rather than rendered disabled. The runtime
+  answers 200 to both endpoints even when it ignores them, so
+  `scripts/agentops/run-control.mjs` checks the conversation's *live*
+  `execution_status` first and refuses (409, no audit row) a control the
+  runtime will not act on. A `stuck` run is terminal (`isTerminalStatus`),
+  not active: `/interrupt` is a no-op on it and `/run` re-trips the stuck
+  detector within milliseconds — only a new user message resets it, exactly
+  like FINISHED — so the UI renders an explanation there instead of controls.
 - **Never store chain-of-thought.** `thought`, `reasoning_content` and
   `thinking_blocks` are stripped in the mapper. There is a test asserting it
   (`__tests__/scripts/agentops-map-events.test.ts`); keep it passing.

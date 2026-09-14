@@ -29,6 +29,7 @@ const ACTION_ICONS: Record<string, ReactNode> = {
   "task.completed": <CheckCircle2 size={14} />,
   "task.failed": <XCircle size={14} />,
   "task.error": <XCircle size={14} />,
+  "task.stuck": <XCircle size={14} />,
   "tool.called": <Wrench size={14} />,
   "approval.requested": <ShieldQuestion size={14} />,
   "approval.granted": <CheckCircle2 size={14} />,
@@ -45,6 +46,7 @@ const ACTION_ICONS: Record<string, ReactNode> = {
 const ACTION_TONES: Record<string, string> = {
   "task.failed": "var(--error-500)",
   "task.error": "var(--error-500)",
+  "task.stuck": "var(--error-500)",
   "approval.rejected": "var(--error-500)",
   "budget.exceeded": "var(--error-500)",
   "budget.warning": "var(--warning-500)",

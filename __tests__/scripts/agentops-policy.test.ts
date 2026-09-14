@@ -222,6 +222,17 @@ describe("summarize", () => {
     // The zero-cost errored run is reported, not silently treated as free.
     expect(summary.runsTodayWithoutReportedCost).toBe(1);
   });
+
+  it("counts a stuck run as a failure and not as an active agent", () => {
+    const summary = summarize(
+      [run({ runId: "s", status: "stuck", agentName: "Looping Agent" })],
+      [],
+      NOW,
+    );
+    expect(summary.activeAgents).toBe(0);
+    expect(summary.activeRuns).toBe(0);
+    expect(summary.failures).toBe(1);
+  });
 });
 
 describe("buildWorkspaceBudget", () => {

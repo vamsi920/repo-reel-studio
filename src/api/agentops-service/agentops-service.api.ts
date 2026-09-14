@@ -41,6 +41,34 @@ export class AgentOpsUnavailableError extends Error {
 }
 
 /**
+ * The collector answered, but with an error status. `response` carries the
+ * collector's own `{ error }` body as `message` so `getApiErrorMessage()`
+ * shows the plain explanation (e.g. why a control was refused) rather than
+ * the raw status line.
+ */
+export class AgentOpsRequestError extends Error {
+  status: number;
+
+  response: { message?: string; status: number };
+
+  constructor(path: string, status: number, body: string) {
+    let message: string | undefined;
+    try {
+      const parsed = JSON.parse(body) as { error?: unknown };
+      if (typeof parsed?.error === "string" && parsed.error) {
+        message = parsed.error;
+      }
+    } catch {
+      // Not JSON — fall through to the raw text.
+    }
+    super(message ?? `AgentOps request to ${path} failed: ${status} ${body}`);
+    this.name = "AgentOpsRequestError";
+    this.status = status;
+    this.response = { message, status };
+  }
+}
+
+/**
  * The collector reads a specific agent-server over its local REST API, so it
  * only means anything for local backends. Cloud backends are told so plainly
  * rather than being shown an empty tower.
@@ -91,9 +119,7 @@ async function request<T>(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(
-      `AgentOps request to ${path} failed: ${response.status} ${text}`,
-    );
+    throw new AgentOpsRequestError(path, response.status, text);
   }
 
   const text = await response.text();

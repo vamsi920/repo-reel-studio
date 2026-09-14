@@ -39,23 +39,24 @@ describe("parseTimestamp", () => {
 });
 
 describe("ACTIVE_RUN_STATUSES", () => {
-  it("excludes 'idle', matching the collector's own isActiveStatus()", () => {
+  it("excludes 'idle' and 'stuck', matching the collector's own isActiveStatus()", () => {
     // scripts/agentops/map-events.mjs's isActiveStatus() — the source of
-    // summary.activeRuns on the Overview stat tile — is exactly these four
+    // summary.activeRuns on the Overview stat tile — is exactly these three
     // statuses. "idle" (session open, agent not working) is deliberately not
-    // counted as active anywhere else, so this list shouldn't count it either.
+    // counted as active anywhere else, and "stuck" is a run the runtime has
+    // halted for good, so this list shouldn't count either.
     expect(ACTIVE_RUN_STATUSES).toEqual([
       "running",
       "paused",
       "waiting_for_confirmation",
-      "stuck",
     ]);
     expect(ACTIVE_RUN_STATUSES).not.toContain("idle");
+    expect(ACTIVE_RUN_STATUSES).not.toContain("stuck");
   });
 
   it("joins into the comma-separated query string both routes send", () => {
     expect(ACTIVE_RUN_STATUSES_QUERY).toBe(
-      "running,paused,waiting_for_confirmation,stuck",
+      "running,paused,waiting_for_confirmation",
     );
   });
 });

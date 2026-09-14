@@ -34,10 +34,15 @@ export function RunControls({ run }: RunControlsProps) {
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
 
   // Only a run the runtime is actually working on can be paused or stopped;
-  // only a halted-but-unfinished run can be resumed.
-  const canPause = run.status === "running" || run.status === "stuck";
+  // only a halted-but-unfinished run can be resumed. A "stuck" run is none of
+  // these: the runtime's loop detector has already halted it, `/interrupt` is
+  // a no-op on it and `/run` re-trips the detector immediately, so the only
+  // way forward is a new message in the conversation — say so instead.
+  const isStuck = run.status === "stuck";
+  const canPause = run.status === "running";
   const canResume = run.status === "paused" || run.status === "idle";
-  const canStop = run.status !== "finished" && run.status !== "error";
+  const canStop =
+    !isStuck && run.status !== "finished" && run.status !== "error";
 
   const invoke = (action: "pause" | "resume" | "cancel") =>
     controlRun(
@@ -58,6 +63,15 @@ export function RunControls({ run }: RunControlsProps) {
       data-testid="agentops-run-controls"
       className="flex items-center gap-2"
     >
+      {isStuck ? (
+        <p
+          data-testid="agentops-run-stuck-note"
+          className="text-xs text-[var(--text-secondary)]"
+        >
+          {t(I18nKey.AGENTOPS$CONTROL_STUCK_NOTE)}
+        </p>
+      ) : null}
+
       {canPause ? (
         <button
           type="button"

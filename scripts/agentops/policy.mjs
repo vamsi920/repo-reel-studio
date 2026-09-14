@@ -221,9 +221,12 @@ export function summarize(runs, approvals, now) {
     activeRuns: runs.filter((run) => isActiveStatus(run.status)).length,
     runsToday: today.length,
     waitingForApproval: approvals.filter((a) => a.state === "pending").length,
+    // A stuck run is a failure: the runtime gave up on the task, and it will
+    // not finish without a human sending the conversation a new message.
     failures: today.filter(
       (run) =>
         run.status === "error" ||
+        run.status === "stuck" ||
         (isTerminalStatus(run.status) && run.errorCount > 0),
     ).length,
     tokensToday: spendToday.tokens,

@@ -561,6 +561,79 @@ describe("Collector same-tick completion", () => {
   });
 });
 
+describe("Collector budget enforcement on halted runs", () => {
+  it("does not interrupt a stuck run or open a budget approval for it", async () => {
+    // The runtime has already halted a stuck run and ignores /interrupt on
+    // it; an approval whose "approve" would try to /run it would only flip
+    // it running→stuck again. Nothing live is left to govern.
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: 100,
+        runBudgetUsd: 1,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+    });
+    let executionStatus = "running";
+    const client = makeClient({
+      searchConversations: vi.fn(async () => ({
+        items: [
+          {
+            id: "run-stuck",
+            title: "Loops forever",
+            execution_status: executionStatus,
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+            stats: {
+              usage_to_metrics: {
+                agent: {
+                  accumulated_cost: 5,
+                  accumulated_token_usage: {},
+                  costs: [],
+                  response_latencies: [],
+                  token_usages: [],
+                },
+              },
+            },
+          },
+        ],
+      })),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:06:00.000Z",
+    });
+
+    // First tick: the run is over budget while running, so it is halted for
+    // real and an approval is opened — the normal path.
+    expect(await collector.tick()).toBe(true);
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+
+    // Second tick: the runtime's loop detector has halted it. Nothing live
+    // is left to govern — no second interrupt, no second approval.
+    executionStatus = "stuck";
+    store.listApprovals.mockResolvedValue([]);
+    const hasActive = await collector.tick();
+
+    expect(hasActive).toBe(false);
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+    expect(store.appendedAudit.map((record) => record.action)).toContain(
+      "task.stuck",
+    );
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: "run-stuck", status: "stuck" }),
+    );
+  });
+});
+
 describe("Collector budget warning dedup", () => {
   it("warns again for the same threshold crossed in the same calendar month a year later", async () => {
     // Regression test: the dedup key used to be

@@ -46,6 +46,11 @@ import {
   isSupabaseConfigured,
 } from "./agentops/supabase-store.mjs";
 import { buildWorkspaceBudget, summarize } from "./agentops/policy.mjs";
+import {
+  RunControlError,
+  controlRun,
+  resumeAfterApproval,
+} from "./agentops/run-control.mjs";
 import { applyCorsHeaders, parseAllowedOrigins } from "./agentops/cors.mjs";
 
 const PORT = Number(process.env.AGENTOPS_PORT || 18002);
@@ -256,33 +261,21 @@ function createRouter({ store, client, collector }) {
     if (method === "POST" && runControlMatch) {
       const runId = decodeURIComponent(runControlMatch[1]);
       const action = runControlMatch[2];
-      const run = await store.getRun(runId);
-      if (!run) {
-        sendJson(res, 404, { error: `Unknown run ${runId}` });
-        return true;
+      // Forwards to the runtime only when the runtime will act on it, and
+      // records the audit row only then — see scripts/agentops/run-control.mjs.
+      try {
+        sendJson(
+          res,
+          200,
+          await controlRun({ client, store, runId, action, now }),
+        );
+      } catch (error) {
+        if (!(error instanceof RunControlError)) throw error;
+        sendJson(res, error.status, {
+          error: error.message,
+          runtimeStatus: error.runtimeStatus ?? null,
+        });
       }
-
-      // These call the runtime for real. `pause` and `cancel` both map to
-      // `/interrupt`, which is what actually halts in-flight work on a local
-      // agent-server; `cancel` differs in that the UI requires a confirmation
-      // first and the audit records it as an operator cancellation.
-      if (action === "resume") await client.runConversation(runId);
-      else await client.interruptConversation(runId);
-
-      await store.appendAudit({
-        at: now,
-        actor: "user",
-        action: action === "resume" ? "run.resumed" : `run.${action}`,
-        summary:
-          action === "resume"
-            ? "Run resumed from the Control Tower"
-            : `Run ${action === "cancel" ? "cancelled" : "paused"} from the Control Tower`,
-        entityType: "run",
-        entityId: runId,
-        workspaceId: run.workspaceId,
-      });
-
-      sendJson(res, 200, { ok: true, action, runId });
       return true;
     }
 
@@ -336,6 +329,7 @@ function createRouter({ store, client, collector }) {
       }
       const body = await readBody(req).catch(() => null);
       const reason = typeof body?.reason === "string" ? body.reason : undefined;
+      let resumeOutcome = null;
 
       if (approval.kind === "confirmation") {
         // The runtime is genuinely blocked on this; answering it is what
@@ -368,7 +362,12 @@ function createRouter({ store, client, collector }) {
           }
           policies.workspaces[approval.workspaceId] = workspace;
           await store.setPolicies(policies);
-          await client.runConversation(approval.runId);
+          // The limit is raised either way; the run only restarts if the
+          // runtime will actually take a `/run` (not on a stuck run).
+          resumeOutcome = await resumeAfterApproval({
+            client,
+            runId: approval.runId,
+          });
         }
         // Rejecting leaves the run halted — it is already interrupted.
       }
@@ -385,7 +384,11 @@ function createRouter({ store, client, collector }) {
         actor: "user",
         action:
           decision === "approve" ? "approval.granted" : "approval.rejected",
-        summary: `${decision === "approve" ? "Approved" : "Rejected"}: ${approval.title}`,
+        summary:
+          `${decision === "approve" ? "Approved" : "Rejected"}: ${approval.title}` +
+          (resumeOutcome && !resumeOutcome.resumed
+            ? ` (run not resumed: ${resumeOutcome.reason})`
+            : ""),
         entityType: "approval",
         entityId: approval.id,
         workspaceId: approval.workspaceId,
@@ -393,10 +396,21 @@ function createRouter({ store, client, collector }) {
           runId: approval.runId,
           kind: approval.kind,
           reason: reason ?? null,
+          ...(resumeOutcome
+            ? {
+                resumed: resumeOutcome.resumed,
+                runtimeStatus: resumeOutcome.status,
+              }
+            : {}),
         },
       });
 
-      sendJson(res, 200, { ok: true, approvalId, decision });
+      sendJson(res, 200, {
+        ok: true,
+        approvalId,
+        decision,
+        ...(resumeOutcome ? { resumed: resumeOutcome.resumed } : {}),
+      });
       return true;
     }
 

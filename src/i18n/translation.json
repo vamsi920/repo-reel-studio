@@ -43451,6 +43451,23 @@
     "tr": "Could not {{action}} the run.",
     "uk": "Could not {{action}} the run."
   },
+  "AGENTOPS$CONTROL_STUCK_NOTE": {
+    "en": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "ja": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "zh-CN": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "zh-TW": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "ko-KR": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "no": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "ar": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "de": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "fr": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "it": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "pt": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "es": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "ca": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "tr": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
+    "uk": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it."
+  },
   "AGENTOPS$RUN_BACK": {
     "en": "Back to live runs",
     "ja": "Back to live runs",

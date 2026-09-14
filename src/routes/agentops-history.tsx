@@ -5,7 +5,9 @@ import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { AuditList } from "#/components/features/agentops/audit-list";
 import { LiveRunsTable } from "#/components/features/agentops/live-runs-table";
 
-const FINISHED_STATUSES = "finished,error";
+// Terminal statuses, mirroring the collector's isTerminalStatus(): a stuck
+// run is history too — the runtime halted it and only a new message restarts it.
+const FINISHED_STATUSES = "finished,error,stuck";
 
 function AgentOpsHistory() {
   const { t } = useTranslation("openhands");

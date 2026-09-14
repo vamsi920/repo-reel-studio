@@ -2555,6 +2555,7 @@
   "AGENTOPS$CONTROL_STOP_CONFIRM_BODY": "\"{{task}}\" will be interrupted immediately. Work already written to the workspace is kept, but the agent's current turn is lost.",
   "AGENTOPS$CONTROL_STOP_CONFIRM_ACTION": "Stop run",
   "AGENTOPS$CONTROL_FAILED": "Could not {{action}} the run.",
+  "AGENTOPS$CONTROL_STUCK_NOTE": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
   "AGENTOPS$RUN_BACK": "Back to live runs",
   "AGENTOPS$RUN_OPEN_CONVERSATION": "Open conversation",
   "AGENTOPS$RUN_TOOL_CALLS": "Tool calls",
