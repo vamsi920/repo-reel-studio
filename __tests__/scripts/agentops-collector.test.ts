@@ -481,6 +481,106 @@ describe("Collector finished-run idempotence", () => {
     });
   });
 
+  it("closes out a run first seen already finished: end time and task.completed after its tool calls", async () => {
+    // Regression: a run the collector could not discover while it ran (every
+    // poll blocked behind its long commands) surfaced only after it finished,
+    // with task.started and its tool.called rows but no task.completed and no
+    // endedAt — createRun seeded "finished" so applyStatus saw no change.
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations: vi
+        .fn()
+        .mockResolvedValue({ items: [finishedConversation] }),
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "finished",
+      phase: "completed",
+      toolCallCount: 1,
+      // The runtime's own last-touched time, not when the collector looked.
+      endedAt: "2026-09-14T02:00:00.000Z",
+    });
+    const actions = store.appendedAudit.map((record) => record.action);
+    expect(actions.indexOf("task.completed")).toBeGreaterThan(
+      actions.indexOf("tool.called"),
+    );
+    expect(
+      store.appendedAudit.find((record) => record.action === "task.completed"),
+    ).toMatchObject({
+      summary: "Run completed after 1 tool calls",
+      at: "2026-09-14T02:00:00.000Z",
+    });
+
+    // Closing out happens once; later ticks add nothing.
+    const auditAfterFirst = store.appendedAudit.length;
+    await collector.tick();
+    await collector.tick();
+    expect(store.appendedAudit).toHaveLength(auditAfterFirst);
+  });
+
+  it("closes out a run first seen in an error state with task.failed", async () => {
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [{ ...finishedConversation, execution_status: "error" }],
+      }),
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "error",
+      endedAt: "2026-09-14T02:00:00.000Z",
+    });
+    expect(
+      store.appendedAudit.filter((record) => record.action === "task.failed"),
+    ).toHaveLength(1);
+  });
+
+  it("does not close out again a stored run that had already ended", async () => {
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations: vi
+        .fn()
+        .mockResolvedValue({ items: [finishedConversation] }),
+      searchEvents: searchEventsFake(),
+    });
+    const first = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+    await first.tick();
+    const completions = () =>
+      store.appendedAudit.filter(
+        (record) => record.action === "task.completed",
+      );
+    expect(completions()).toHaveLength(1);
+
+    // A restarted collector finds the run in the store, already closed out.
+    const restarted = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:01:05.000Z",
+    });
+    await restarted.tick();
+    expect(completions()).toHaveLength(1);
+  });
+
   it("drops trackers for conversations that left the search page", async () => {
     const searchConversations = vi
       .fn()
@@ -1415,6 +1515,20 @@ describe("Collector live event stream", () => {
         ),
       ),
     ).toHaveLength(1);
+  });
+
+  it("lets the discovery search wait for the runtime's state lock instead of the 30 s default", async () => {
+    // Regression: with back-to-back 40 s commands every poll straddled a
+    // step, the 30 s abort fired each time, and the run was never tracked
+    // (no socket, no live cost, no budget halt) until it had finished.
+    const client = makeClient();
+    const collector = new Collector({ client, store: makeStore() });
+
+    await collector.tick();
+
+    expect(client.searchConversations).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutMs: 5 * 60 * 1000 }),
+    );
   });
 
   it("reports live sockets and socket traffic in its health", async () => {

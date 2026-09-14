@@ -13,10 +13,18 @@
  * inside a tool call it holds the conversation's state lock, and every REST
  * read that needs that lock (`conversations/search` composes each open
  * conversation's info under it) blocks until the tool returns — a `sleep 150`
- * stalls the poll for 150 s, which the client aborts after 30 s. Events that
- * reach the socket in that window are therefore persisted the moment they
- * arrive (`#flushLiveEvents`), on their own per-run write queue, and the poll
- * catches up with the cursor whenever the runtime answers again.
+ * stalls the poll for 150 s. Events that reach the socket in that window are
+ * therefore persisted the moment they arrive (`#flushLiveEvents`), on their
+ * own per-run write queue, and the poll catches up with the cursor whenever
+ * the runtime answers again.
+ *
+ * The poll's search is the only way a *new* run is discovered, so it waits
+ * for that lock rather than giving up at the client's 30 s default
+ * (`DISCOVERY_TIMEOUT_MS`). The lock is FIFO: the search is answered the
+ * moment the current step ends, so a run of back-to-back long commands is
+ * tracked after at most one step. Aborting at 30 s and retrying 15 s later
+ * meant every poll straddled a step and such a run was never seen at all
+ * until it had finished — no socket, so no live cost, so no budget halt.
  */
 
 import {
@@ -36,6 +44,12 @@ import { computeSpend, evaluateBudgets, monthStart } from "./policy.mjs";
 
 const ACTIVE_POLL_MS = 2000;
 const IDLE_POLL_MS = 15000;
+/**
+ * How long the discovery search may wait behind a conversation's state lock
+ * before it is abandoned and retried. Bounded by the longest single step the
+ * runtime will run, not by "how long should an HTTP call take".
+ */
+const DISCOVERY_TIMEOUT_MS = 5 * 60 * 1000;
 /** Events pulled per request while catching up on a busy conversation. */
 const EVENT_PAGE_SIZE = 100;
 
@@ -139,7 +153,10 @@ export class Collector {
   async tick() {
     const observedAt = this.now();
     this.lastTickAt = observedAt;
-    const page = await this.client.searchConversations({ limit: 50 });
+    const page = await this.client.searchConversations({
+      limit: 50,
+      timeoutMs: DISCOVERY_TIMEOUT_MS,
+    });
     const conversations = Array.isArray(page?.items) ? page.items : [];
 
     let hasActive = false;
@@ -168,6 +185,14 @@ export class Collector {
     if (existing) return existing;
 
     const stored = await this.store.getRun(runId);
+    // A run first seen already over (the collector was blocked behind its
+    // long commands for its whole life, or was down) is seeded as not yet
+    // started, so the poll's applyStatus() closes it out the way it would a
+    // live run: endedAt set, task.completed / task.failed audited after the
+    // tool calls tailed in that same tick. Seeding the terminal status
+    // directly left such a run with no end time and no completion row.
+    const firstStatus = normalizeRunStatus(conversation.execution_status);
+    const closingOut = !stored && isTerminalStatus(firstStatus);
     const run =
       stored ??
       createRun(
@@ -176,7 +201,9 @@ export class Collector {
           workspaceId: deriveWorkspaceId(conversation),
           agentName: deriveAgentName(conversation),
           title: conversation.title,
-          executionStatus: conversation.execution_status,
+          executionStatus: closingOut
+            ? undefined
+            : conversation.execution_status,
           model: deriveModel(conversation),
           createdAt: conversation.created_at,
         },
@@ -195,6 +222,12 @@ export class Collector {
       seenAtCursor: new Set(run.lastEventIds ?? []),
       /** Whether the store has this run's first record yet. */
       isNew: !stored,
+      /**
+       * A never-stored run whose first observation is already terminal: its
+       * end is dated by the runtime's own `updated_at`, not by when the
+       * collector finally got to look.
+       */
+      closingOut,
       /**
        * A terminal run that a whole tick found nothing new for. Skipped on
        * later ticks until its status changes (a follow-up message can
@@ -492,8 +525,9 @@ export class Collector {
 
     const statusResult = aggregator.applyStatus(
       conversation.execution_status,
-      observedAt,
+      tracker.closingOut ? run.updatedAt : observedAt,
     );
+    tracker.closingOut = false;
     audit.push(...statusResult.audit);
 
     const budgetAudit = await this.#enforceBudgets(run, observedAt);

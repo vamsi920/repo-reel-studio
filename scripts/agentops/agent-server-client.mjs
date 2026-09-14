@@ -23,9 +23,12 @@ export class AgentServerClient {
     this.timeoutMs = timeoutMs;
   }
 
-  async #request(path, { method = "GET", body } = {}) {
+  async #request(path, { method = "GET", body, timeoutMs } = {}) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timer = setTimeout(
+      () => controller.abort(),
+      timeoutMs ?? this.timeoutMs,
+    );
     try {
       const response = await fetch(`${this.baseUrl}${path}`, {
         method,
@@ -58,14 +61,28 @@ export class AgentServerClient {
    * carries `stats` (the full `usage_to_metrics`), `execution_status`,
    * `workspace` and `agent`, so a single page gives the collector everything
    * it needs for the run records — no per-conversation follow-up call.
+   *
+   * `timeoutMs` overrides the client-wide abort for this one call. The
+   * runtime composes every *live* row under that conversation's state lock,
+   * which `arun()` holds for the whole LLM + tool step, so this request
+   * legitimately blocks for as long as the longest current step — and the
+   * lock is FIFO, so it is answered the moment that step ends. Aborting it
+   * at the default 30 s is what made a run of back-to-back long commands
+   * invisible for its whole life: the collector is the only caller for
+   * which waiting is the right answer, hence a per-call override rather
+   * than a longer default for the control calls.
+   *
+   * @param {{ limit?: number, pageId?: string, timeoutMs?: number }} [options]
    */
-  async searchConversations({ limit = 50, pageId } = {}) {
+  async searchConversations({ limit = 50, pageId, timeoutMs } = {}) {
     const params = new URLSearchParams({
       limit: String(limit),
       sort_order: "UPDATED_AT_DESC",
     });
     if (pageId) params.set("page_id", pageId);
-    return this.#request(`/api/conversations/search?${params.toString()}`);
+    return this.#request(`/api/conversations/search?${params.toString()}`, {
+      timeoutMs,
+    });
   }
 
   async getConversation(conversationId) {

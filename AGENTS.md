@@ -98,8 +98,15 @@ whether or not a tab is open and survive a reload.
   what makes an executing tool span, `toolCallCount` and `tool.called`
   visible mid-command. They must not wait for the poll: while the runtime
   is inside a tool call it holds the conversation state lock, so
-  `conversations/search` blocks for the length of the command and the client
-  aborts it after 30 s — every poll fails until the tool returns. The socket
+  `conversations/search` blocks for the length of the command. That search
+  is also the only way a new run is *discovered*, so the collector lets it
+  wait up to `DISCOVERY_TIMEOUT_MS` (5 min) rather than the client's 30 s
+  default — the lock is FIFO, so it is answered the moment the current step
+  ends. **Do not put the 30 s abort back on it**: with back-to-back long
+  commands every poll straddled a step and aborted, and such a run was
+  never tracked (no socket, no live cost, no budget halt) until it had
+  finished. A run first seen already terminal is seeded as unstarted so
+  `applyStatus` closes it out (endedAt, `task.completed`). The socket
   never moves the cursor; overlap with the tail is deduped by event id, and a
   restarted collector seeds its open tool spans from `store.listSpans` so the
   observation that arrives later still closes them without re-counting.

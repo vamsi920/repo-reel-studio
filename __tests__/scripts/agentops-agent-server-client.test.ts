@@ -145,3 +145,84 @@ describe("AgentServerClient.openEventStream", () => {
     expect(client.openEventStream("run-1")).toBeNull();
   });
 });
+
+describe("AgentServerClient request timeouts", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** A fetch that never answers on its own and rejects only when aborted. */
+  function hangingFetch() {
+    return vi.fn(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init.signal.addEventListener("abort", () =>
+            reject(new Error("This operation was aborted")),
+          );
+        }),
+    );
+  }
+
+  it("aborts a control call at the client-wide default", async () => {
+    vi.useFakeTimers();
+    const fetch = hangingFetch();
+    vi.stubGlobal("fetch", fetch);
+    const client = new AgentServerClient({
+      baseUrl: "http://127.0.0.1:18000",
+      sessionApiKey: null,
+    });
+
+    const pending = client.interruptConversation("run-1");
+    const outcome = pending.then(
+      () => "resolved",
+      (error: Error) => error.message,
+    );
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await outcome).toBe("This operation was aborted");
+  });
+
+  it("lets the discovery search wait as long as the caller allows", async () => {
+    // The runtime composes a live conversation's row under its state lock,
+    // held for a whole LLM + tool step; the collector must be able to wait
+    // that out or a run of long commands is never discovered.
+    vi.useFakeTimers();
+    const fetch = hangingFetch();
+    vi.stubGlobal("fetch", fetch);
+    const client = new AgentServerClient({
+      baseUrl: "http://127.0.0.1:18000",
+      sessionApiKey: null,
+    });
+
+    const pending = client.searchConversations({ timeoutMs: 300_000 });
+    const outcome = pending.then(
+      () => "resolved",
+      (error: Error) => error.message,
+    );
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(269_999);
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await outcome).toBe("This operation was aborted");
+  });
+
+  it("keeps the client-wide default when no override is given", async () => {
+    vi.useFakeTimers();
+    const fetch = hangingFetch();
+    vi.stubGlobal("fetch", fetch);
+    const client = new AgentServerClient({
+      baseUrl: "http://127.0.0.1:18000",
+      sessionApiKey: null,
+    });
+
+    const outcome = client.searchConversations().then(
+      () => "resolved",
+      (error: Error) => error.message,
+    );
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(await outcome).toBe("This operation was aborted");
+  });
+});
