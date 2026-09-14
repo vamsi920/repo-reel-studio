@@ -42074,6 +42074,23 @@
     "tr": "It normally starts automatically with npm run dev.",
     "uk": "It normally starts automatically with npm run dev."
   },
+  "AGENTOPS$COLLECTOR_STALE_BANNER": {
+    "en": "The AgentOps collector isn't answering. Showing the last data it returned — it refreshes on its own once the collector is back.",
+    "ja": "AgentOps コレクターが応答していません。最後に取得したデータを表示しています。コレクターが復旧すると自動的に更新されます。",
+    "zh-CN": "AgentOps 收集器没有响应。当前显示的是它最后返回的数据——收集器恢复后会自动刷新。",
+    "zh-TW": "AgentOps 收集器沒有回應。目前顯示的是它最後回傳的資料——收集器恢復後會自動重新整理。",
+    "ko-KR": "AgentOps 수집기가 응답하지 않습니다. 마지막으로 받은 데이터를 표시하고 있으며, 수집기가 복구되면 자동으로 새로 고쳐집니다.",
+    "no": "AgentOps-innsamleren svarer ikke. Viser de siste dataene den returnerte — de oppdateres av seg selv når innsamleren er tilbake.",
+    "ar": "جامع AgentOps لا يستجيب. يتم عرض آخر بيانات أعادها — وسيتم التحديث تلقائيًا بمجرد عودة الجامع.",
+    "de": "Der AgentOps-Collector antwortet nicht. Angezeigt werden die zuletzt gelieferten Daten — sie aktualisieren sich von selbst, sobald der Collector wieder erreichbar ist.",
+    "fr": "Le collecteur AgentOps ne répond pas. Affichage des dernières données reçues — elles se rafraîchiront d'elles-mêmes dès que le collecteur sera de retour.",
+    "it": "Il collector AgentOps non risponde. Vengono mostrati gli ultimi dati ricevuti — si aggiorneranno da soli non appena il collector tornerà disponibile.",
+    "pt": "O coletor AgentOps não está respondendo. Mostrando os últimos dados que ele retornou — eles serão atualizados automaticamente assim que o coletor voltar.",
+    "es": "El recolector de AgentOps no responde. Se muestran los últimos datos que devolvió — se actualizarán solos en cuanto el recolector vuelva.",
+    "ca": "El recol·lector d'AgentOps no respon. Es mostren les últimes dades que va retornar — s'actualitzaran soles quan el recol·lector torni.",
+    "tr": "AgentOps toplayıcısı yanıt vermiyor. Döndürdüğü son veriler gösteriliyor — toplayıcı geri geldiğinde kendiliğinden yenilenir.",
+    "uk": "Збирач AgentOps не відповідає. Показано останні отримані від нього дані — вони оновляться самі, щойно збирач повернеться."
+  },
   "AGENTOPS$BACKEND_UNSUPPORTED_TITLE": {
     "en": "AgentOps needs a local agent server",
     "ja": "AgentOps needs a local agent server",

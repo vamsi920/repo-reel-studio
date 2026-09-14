@@ -2474,6 +2474,7 @@
   "AGENTOPS$COLLECTOR_DOWN_TITLE": "The AgentOps collector isn't running",
   "AGENTOPS$COLLECTOR_DOWN_BODY": "Runs, spans, budgets and the audit log are recorded by a companion process. Nothing is shown here until it is up — this page never displays sample data.",
   "AGENTOPS$COLLECTOR_DOWN_HINT": "It normally starts automatically with npm run dev.",
+  "AGENTOPS$COLLECTOR_STALE_BANNER": "AgentOps 수집기가 응답하지 않습니다. 마지막으로 받은 데이터를 표시하고 있으며, 수집기가 복구되면 자동으로 새로 고쳐집니다.",
   "AGENTOPS$BACKEND_UNSUPPORTED_TITLE": "AgentOps needs a local agent server",
   "AGENTOPS$BACKEND_UNSUPPORTED_BODY": "The Control Tower collector reads runs directly from a local agent server. Switch to a local backend to see live runs, approvals, budgets and audit history.",
   "AGENTOPS$TILE_ACTIVE_AGENTS": "Active agents",

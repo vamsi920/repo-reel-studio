@@ -10,9 +10,13 @@ function AgentOpsBudgets() {
   const policies = useAgentOpsPolicies();
 
   return (
+    // The form's edits live inside BudgetsPanel, so it must stay mounted
+    // across a failed poll: pass `hasData` whenever both queries still hold
+    // their last good answer and let the panel show the outage as a banner.
     <AgentOpsPanel
       isLoading={budgets.isLoading || policies.isLoading}
       error={budgets.error ?? policies.error}
+      hasData={Boolean(budgets.data && policies.data)}
     >
       <BudgetsPanel
         budgets={budgets.data?.budgets ?? []}
