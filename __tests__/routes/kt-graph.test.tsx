@@ -415,6 +415,100 @@ describe("KtGraph search", () => {
     });
   });
 
+  it("does not carry a type filter from one level onto another", async () => {
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1", { name: "Payments", childCount: 2 })],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const childLevel: CodeGraphLevelPayload = {
+      parentId: "sub1",
+      nodes: [
+        node("file1", { level: "unit", type: "file", name: "charge.ts" }),
+        node("dir1", { level: "unit", type: "folder", name: "helpers" }),
+      ],
+      edges: [],
+      crumbs: [
+        { id: null, name: "System" },
+        { id: "sub1", name: "Payments" },
+      ],
+    };
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel: async (parentId) => (parentId === "sub1" ? childLevel : null),
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+    useCodeGraphStore.getState().selectNode(key, "sub1");
+
+    renderWithProviders(<KtGraph />);
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("codegraph-drill-down"));
+    await waitFor(() => {
+      expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+        "Payments",
+      );
+    });
+
+    // Hide "file" inside the folder level.
+    const filtersToggle = screen.getByTestId("codegraph-filters-toggle");
+    await user.click(filtersToggle);
+    await user.click(
+      within(screen.getByTestId("codegraph-filters")).getByRole("button", {
+        name: "file",
+      }),
+    );
+    expect(filtersToggle).toHaveTextContent("1");
+    expect(screen.getByTestId("codegraph-node-count")).toHaveTextContent(
+      "CODEGRAPH$NODES_FILTERED",
+    );
+
+    // Back on the system level there is nothing hidden: no badge, a plain
+    // count, and only this level's own type in the panel.
+    await user.click(screen.getByTestId("codegraph-back"));
+    await waitFor(() => {
+      expect(screen.getByTestId("codegraph-breadcrumbs")).not.toHaveTextContent(
+        "Payments",
+      );
+    });
+    expect(
+      screen.getByTestId("codegraph-filters-toggle"),
+    ).not.toHaveTextContent("1");
+    expect(screen.getByTestId("codegraph-node-count")).toHaveTextContent(
+      "CODEGRAPH$NODES",
+    );
+    expect(screen.getByTestId("codegraph-node-count")).not.toHaveTextContent(
+      "CODEGRAPH$NODES_FILTERED",
+    );
+    const panel = screen.getByTestId("codegraph-filters");
+    expect(
+      within(panel).getByRole("button", { name: "service" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(panel).queryByRole("button", { name: "file" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("colors the analysis-failed icon with a real design-system token", async () => {
     const key = useCodeGraphStore.getState().start({
       workspaceId: WORKSPACE_ID,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   selectCurrentLevel,
+  selectHiddenTypes,
   selectVisibleNodes,
   useCodeGraphStore,
 } from "#/stores/codegraph-store";
@@ -200,6 +201,67 @@ describe("codegraph store", () => {
     ).toHaveLength(2);
   });
 
+  it("keeps a type filter on the level it was set on, not on every level", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("sub", "subsystem")])));
+    useCodeGraphStore
+      .getState()
+      .setLevel(
+        key,
+        "sub",
+        level("sub", [node("f", "file"), node("d", "folder")]),
+      );
+    useCodeGraphStore
+      .getState()
+      .setLevel(key, "other", level("other", [node("g", "file")]));
+
+    // Hide "file" inside one folder…
+    useCodeGraphStore.getState().navigateTo(key, "sub");
+    useCodeGraphStore.getState().toggleType(key, "file");
+    let state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual(["file"]);
+    expect(selectVisibleNodes(state).map((n) => n.id)).toEqual(["d"]);
+
+    // …Back to the system level: nothing is hidden there, so the badge has
+    // nothing to count and the node count stays honest.
+    useCodeGraphStore.getState().navigateTo(key, null);
+    state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual([]);
+    expect(selectVisibleNodes(state)).toHaveLength(1);
+
+    // A sibling folder the user never filtered shows all of its files.
+    useCodeGraphStore.getState().navigateTo(key, "other");
+    state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual([]);
+    expect(selectVisibleNodes(state).map((n) => n.id)).toEqual(["g"]);
+
+    // Returning to the filtered folder finds the filter where it was left.
+    useCodeGraphStore.getState().navigateTo(key, "sub");
+    state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual(["file"]);
+    expect(selectVisibleNodes(state).map((n) => n.id)).toEqual(["d"]);
+  });
+
+  it("drops every type filter when the graph is rebuilt", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("a", "file")])));
+    useCodeGraphStore.getState().toggleType(key, "file");
+    expect(selectHiddenTypes(useCodeGraphStore.getState().byKey[key])).toEqual([
+      "file",
+    ]);
+
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("b", "file")])));
+    const state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual([]);
+    expect(selectVisibleNodes(state)).toHaveLength(1);
+  });
+
   it("records errors without pretending a graph is available", () => {
     const key = start();
     useCodeGraphStore
@@ -258,6 +320,7 @@ describe("codegraph store", () => {
 
   it("returns no visible nodes before a level has loaded", () => {
     expect(selectVisibleNodes(undefined)).toEqual([]);
+    expect(selectHiddenTypes(undefined)).toEqual([]);
     expect(selectCurrentLevel(undefined)).toBeUndefined();
   });
 });

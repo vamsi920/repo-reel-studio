@@ -45,8 +45,11 @@ export interface CodeGraphState {
   selectedNodeId: string | null;
   searchIndex: SearchEntry[] | null;
   searchQuery: string;
-  /** Node types hidden by the filter panel. */
-  hiddenTypes: string[];
+  /** Node types hidden by the filter panel, keyed by level like `levels`
+   * (`""` for the root). Each level has its own set: hiding "file" inside one
+   * folder must not silently thin out every other folder, and the Filters
+   * badge only ever counts types that exist on the level on screen. */
+  hiddenTypes: Record<string, string[]>;
 }
 
 const LEVEL_ROOT = "";
@@ -107,8 +110,13 @@ function emptyState(
     selectedNodeId: null,
     searchIndex: null,
     searchQuery: "",
-    hiddenTypes: [],
+    hiddenTypes: {},
   };
+}
+
+/** The `levels` / `hiddenTypes` key for a parent id. */
+function levelKey(parentId: string | null): string {
+  return parentId ?? LEVEL_ROOT;
 }
 
 /**
@@ -157,6 +165,9 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
         // user did not ask for.
         currentParentId: null,
         levels: { [LEVEL_ROOT]: handle.root },
+        // A rebuilt graph can have different types on every level; a filter
+        // kept from the old one would hide nodes the user never chose to.
+        hiddenTypes: {},
       }));
     },
 
@@ -216,12 +227,19 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
       update(key, (state) => ({ ...state, searchQuery })),
 
     toggleType: (key, type) =>
-      update(key, (state) => ({
-        ...state,
-        hiddenTypes: state.hiddenTypes.includes(type)
-          ? state.hiddenTypes.filter((entry) => entry !== type)
-          : [...state.hiddenTypes, type],
-      })),
+      update(key, (state) => {
+        const current = levelKey(state.currentParentId);
+        const hidden = state.hiddenTypes[current] ?? [];
+        return {
+          ...state,
+          hiddenTypes: {
+            ...state.hiddenTypes,
+            [current]: hidden.includes(type)
+              ? hidden.filter((entry) => entry !== type)
+              : [...hidden, type],
+          },
+        };
+      }),
 
     reset: (key) =>
       set((store) => {
@@ -242,7 +260,14 @@ export function selectCurrentLevel(
   state: CodeGraphState | undefined,
 ): CodeGraphLevelPayload | undefined {
   if (!state) return undefined;
-  return state.levels[state.currentParentId ?? LEVEL_ROOT];
+  return state.levels[levelKey(state.currentParentId)];
+}
+
+/** The types hidden on the level currently on screen — never a type from
+ * another level, so the badge, the chips and the node count always agree. */
+export function selectHiddenTypes(state: CodeGraphState | undefined): string[] {
+  if (!state) return [];
+  return state.hiddenTypes[levelKey(state.currentParentId)] ?? [];
 }
 
 /** Applies the type filter without mutating the cached level. */
@@ -251,6 +276,7 @@ export function selectVisibleNodes(
 ): CodeGraphNode[] {
   const level = selectCurrentLevel(state);
   if (!level) return [];
-  if (!state?.hiddenTypes.length) return level.nodes;
-  return level.nodes.filter((node) => !state.hiddenTypes.includes(node.type));
+  const hidden = selectHiddenTypes(state);
+  if (!hidden.length) return level.nodes;
+  return level.nodes.filter((node) => !hidden.includes(node.type));
 }

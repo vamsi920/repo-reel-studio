@@ -7,6 +7,7 @@ import Fuse from "fuse.js";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import {
   selectCurrentLevel,
+  selectHiddenTypes,
   selectVisibleNodes,
   useCodeGraphStore,
 } from "#/stores/codegraph-store";
@@ -554,7 +555,7 @@ function KtGraph() {
               nodeCount={level.nodes.length}
               visibleCount={visibleNodes.length}
               types={availableTypes}
-              hiddenTypes={state.hiddenTypes}
+              hiddenTypes={selectHiddenTypes(state)}
               onToggleType={(type) =>
                 useCodeGraphStore.getState().toggleType(key, type)
               }
