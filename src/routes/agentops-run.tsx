@@ -2,8 +2,10 @@ import { Link, useParams } from "react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
+import { isAgentOpsNotFoundError } from "#/api/agentops-service/agentops-service.api";
 import { useAgentOpsRun } from "#/hooks/query/use-agentops";
 import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
+import { RunNotFound } from "#/components/features/agentops/run-not-found";
 import { AuditList } from "#/components/features/agentops/audit-list";
 import { ApprovalsQueue } from "#/components/features/agentops/approvals-queue";
 import { RunControls } from "#/components/features/agentops/run-controls";
@@ -37,6 +39,12 @@ function AgentOpsRunDetailScreen() {
   const { t } = useTranslation("openhands");
   const { runId } = useParams<{ runId: string }>();
   const { data, isLoading, error } = useAgentOpsRun(runId ?? null);
+
+  // The collector is up and simply has no such run — not a "collector down"
+  // condition, so it gets its own empty state rather than the start command.
+  if (isAgentOpsNotFoundError(error)) {
+    return <RunNotFound runId={runId ?? ""} />;
+  }
 
   return (
     <AgentOpsPanel isLoading={isLoading} error={error}>

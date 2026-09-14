@@ -14,6 +14,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import AgentOpsService, {
+  isAgentOpsNotFoundError,
   isAgentOpsSupportedBackend,
 } from "#/api/agentops-service/agentops-service.api";
 import type {
@@ -84,10 +85,17 @@ export function useAgentOpsRuns(
  * A finished or errored run is history until someone sends the conversation
  * another message, so its detail page polls at the History cadence rather
  * than the live one — the detail read is four store queries per tick.
+ *
+ * A run the collector does not know (404) is not polled at all: `retry:
+ * false` only stops retries within one fetch, and re-asking for an unknown
+ * id every 3 s just fills the console with 404s. A collector outage keeps
+ * polling so the page recovers on its own once it is back.
  */
 export function runDetailRefetchInterval(
   detail: AgentOpsRunDetail | undefined,
-): number {
+  error: unknown = null,
+): number | false {
+  if (isAgentOpsNotFoundError(error)) return false;
   const status = detail?.run.status;
   return status === "finished" || status === "error"
     ? SLOW_REFETCH_MS
@@ -101,7 +109,8 @@ export function useAgentOpsRun(
     queryKey: AGENTOPS_QUERY_KEYS.run(runId ?? ""),
     queryFn: () => AgentOpsService.getRun(runId as string),
     enabled: Boolean(runId) && isAgentOpsSupportedBackend(),
-    refetchInterval: (query) => runDetailRefetchInterval(query.state.data),
+    refetchInterval: (query) =>
+      runDetailRefetchInterval(query.state.data, query.state.error),
     ...NO_RETRY,
   });
 }

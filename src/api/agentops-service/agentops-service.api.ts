@@ -69,6 +69,16 @@ export class AgentOpsRequestError extends Error {
 }
 
 /**
+ * The collector is up but has no record of what was asked for — a run id
+ * that was mistyped, expired, or recorded before the collector last
+ * restarted. Not a "collector down" condition: the caller should render an
+ * empty state and stop polling, not tell the user to start the process.
+ */
+export function isAgentOpsNotFoundError(error: unknown): boolean {
+  return error instanceof AgentOpsRequestError && error.status === 404;
+}
+
+/**
  * The collector reads a specific agent-server over its local REST API, so it
  * only means anything for local backends. Cloud backends are told so plainly
  * rather than being shown an empty tower.

@@ -2557,6 +2557,8 @@
   "AGENTOPS$CONTROL_FAILED": "Could not {{action}} the run.",
   "AGENTOPS$CONTROL_STUCK_NOTE": "The runtime halted this run because the agent kept repeating itself. Pause, Stop and Resume have no effect on a stuck run — send the conversation a new message to continue it.",
   "AGENTOPS$RUN_BACK": "Back to live runs",
+  "AGENTOPS$RUN_NOT_FOUND_TITLE": "This run is no longer recorded",
+  "AGENTOPS$RUN_NOT_FOUND_BODY": "The AgentOps collector is running but has no record of this run. The id may be mistyped, or the run may have been recorded before the collector last restarted.",
   "AGENTOPS$RUN_OPEN_CONVERSATION": "Open conversation",
   "AGENTOPS$RUN_TOOL_CALLS": "Tool calls",
   "AGENTOPS$RUN_LLM_CALLS": "LLM calls",
