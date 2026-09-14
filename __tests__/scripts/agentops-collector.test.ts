@@ -1139,4 +1139,214 @@ describe("Collector live event stream", () => {
       store.appendedAudit.filter((record) => record.action === "tool.called"),
     ).toHaveLength(0);
   });
+
+  // Regression (production, 2026-09-14): the socket was open, the ActionEvent
+  // was delivered, and the span still only appeared once the command had
+  // finished. While the runtime is inside a tool call it holds the state lock,
+  // so `conversations/search` blocks for the whole command and the client
+  // aborts it after 30 s — every poll failed, and the events the socket had
+  // queued were only ever written by a poll. They must reach the store on
+  // arrival, with no REST call in the way.
+  it("persists a tool call from the websocket while every poll is blocked behind it", async () => {
+    const store = makeStore();
+    const { client, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      logger: { ...console, info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      now: () => "2026-09-14T15:09:06.000Z",
+    });
+
+    await collector.tick();
+    expect(streams).toHaveLength(1);
+    store.appendSpans.mockClear();
+    store.upsertRun.mockClear();
+
+    // From here on the runtime is blocked in the tool: the search hangs and
+    // the client's timeout turns it into a failed poll.
+    client.searchConversations.mockRejectedValue(
+      new Error("This operation was aborted"),
+    );
+    client.searchEvents.mockRejectedValue(
+      new Error("This operation was aborted"),
+    );
+
+    streams[0].options.onEvent(actionEvent);
+    await vi.waitFor(() => expect(store.upsertRun).toHaveBeenCalled());
+
+    expect(store.appendSpans).toHaveBeenCalledTimes(1);
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        name: "terminal",
+        status: "executing",
+        endTime: null,
+      }),
+    ]);
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        runId: "run-1",
+        toolCallCount: 1,
+        phase: "tool_call",
+        updatedAt: "2026-09-14T15:09:06.000Z",
+      }),
+    );
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+
+    // The poll keeps failing for the length of the command; that changes
+    // nothing about what is already in the store.
+    await expect(collector.tick()).rejects.toThrow("aborted");
+    expect(store.appendSpans).toHaveBeenCalledTimes(1);
+
+    // The observation also arrives on the socket first — and closes the span
+    // without waiting for the runtime to answer a REST call again.
+    streams[0].options.onEvent(observationEvent);
+    await vi.waitFor(() => expect(store.appendSpans).toHaveBeenCalledTimes(2));
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        status: "succeeded",
+        endTime: "2026-09-14T14:05:06.114000Z",
+      }),
+    ]);
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({ toolCallCount: 1 }),
+    );
+
+    // Once the runtime answers again the tail replays both events: nothing is
+    // counted twice, and the cursor finally moves.
+    client.searchConversations.mockResolvedValue({
+      items: [
+        {
+          id: "run-1",
+          title: "Fix the flaky test",
+          execution_status: "running",
+          workspace: { working_dir: "ws" },
+          updated_at: "2026-09-14T15:11:36.000Z",
+          created_at: "2026-09-14T15:08:34.000Z",
+        },
+      ],
+    });
+    client.searchEvents.mockResolvedValue({ items: [] });
+    client.searchEvents.mockResolvedValueOnce({
+      items: [actionEvent, observationEvent],
+    });
+    await collector.tick();
+    expect(store.appendSpans).toHaveBeenCalledTimes(2);
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        toolCallCount: 1,
+        lastEventTimestamp: observationEvent.timestamp,
+      }),
+    );
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+  });
+
+  it("writes socket events before the REST tail can fail the poll", async () => {
+    const store = makeStore();
+    const { client, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T15:09:06.000Z",
+    });
+
+    await collector.tick();
+    store.appendSpans.mockClear();
+    client.searchEvents.mockRejectedValueOnce(
+      new Error("This operation was aborted"),
+    );
+
+    // No yield between the push and the poll: the poll itself must flush the
+    // event before it asks the tail, and the tail's failure must not lose it.
+    streams[0].options.onEvent(actionEvent);
+    await expect(collector.tick()).rejects.toThrow("aborted");
+
+    expect(store.appendSpans).toHaveBeenCalledTimes(1);
+    expect(store.appendSpans).toHaveBeenLastCalledWith("run-1", [
+      expect.objectContaining({
+        spanId: "run-1:evt-action",
+        status: "executing",
+      }),
+    ]);
+    expect(store.upsertRun).toHaveBeenLastCalledWith(
+      expect.objectContaining({ toolCallCount: 1, phase: "tool_call" }),
+    );
+  });
+
+  it("queues the poll behind an in-flight socket flush for the same run", async () => {
+    const store = makeStore();
+    let releaseFlush: () => void = () => {};
+    store.appendSpans.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseFlush = resolve;
+        }),
+    );
+    const { client, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T15:09:06.000Z",
+    });
+
+    await collector.tick();
+    client.searchEvents.mockClear();
+
+    streams[0].options.onEvent(actionEvent);
+    // Let the flush start and park on its store write.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const poll = collector.tick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The poll has listed conversations but has not touched this run yet.
+    expect(client.searchEvents).not.toHaveBeenCalled();
+
+    releaseFlush();
+    await poll;
+    expect(client.searchEvents).toHaveBeenCalledTimes(1);
+    // One executing span, written once — the poll's tail found nothing new.
+    expect(
+      store.appendSpans.mock.calls.filter(([, spans]) =>
+        (spans as Array<{ spanId: string }>).some(
+          (span) => span.spanId === "run-1:evt-action",
+        ),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("reports live sockets and socket traffic in its health", async () => {
+    const store = makeStore();
+    const { client, streams } = makeStreamingClient();
+    const collector = new Collector({
+      client,
+      store,
+      logger: { ...console, info: vi.fn(), warn: vi.fn() },
+      now: () => "2026-09-14T15:09:06.000Z",
+    });
+
+    expect(collector.health()).toMatchObject({
+      liveStreams: 0,
+      liveEventsReceived: 0,
+      lastLiveEventAt: null,
+    });
+
+    await collector.tick();
+    expect(collector.health()).toMatchObject({ liveStreams: 1 });
+
+    streams[0].options.onEvent(actionEvent);
+    await vi.waitFor(() => expect(store.upsertRun).toHaveBeenCalledTimes(2));
+    expect(collector.health()).toMatchObject({
+      liveStreams: 1,
+      liveEventsReceived: 1,
+      lastLiveEventAt: "2026-09-14T15:09:06.000Z",
+    });
+
+    streams[0].handle.closed = true;
+    expect(collector.health()).toMatchObject({ liveStreams: 0 });
+  });
 });

@@ -2554,6 +2554,7 @@
   "AGENTOPS$AUTONOMY_AUTONOMOUS": "Autonomous",
   "AGENTOPS$AUTONOMY_AUTONOMOUS_HINT": "No confirmation prompts. Budgets still stop the run.",
   "AGENTOPS$CONTROL_PAUSE": "Pause",
+  "AGENTOPS$CONTROL_PAUSE_HINT": "일시 중지는 현재 명령이 끝난 후에 적용됩니다. 런타임은 실행 중인 터미널 명령을 도중에 중단할 수 없습니다.",
   "AGENTOPS$CONTROL_RESUME": "Resume",
   "AGENTOPS$CONTROL_STOP": "Stop",
   "AGENTOPS$CONTROL_STOP_CONFIRM_TITLE": "Stop this run?",

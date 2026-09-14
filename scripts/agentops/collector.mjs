@@ -8,6 +8,15 @@
  * the agent-server's REST API, which is the durable source, and — for runs that
  * are active — also listens on the conversation's events websocket, which is
  * the only source that reports a tool call *while* it is executing.
+ *
+ * The websocket path must never wait on a REST call. While the runtime is
+ * inside a tool call it holds the conversation's state lock, and every REST
+ * read that needs that lock (`conversations/search` composes each open
+ * conversation's info under it) blocks until the tool returns — a `sleep 150`
+ * stalls the poll for 150 s, which the client aborts after 30 s. Events that
+ * reach the socket in that window are therefore persisted the moment they
+ * arrive (`#flushLiveEvents`), on their own per-run write queue, and the poll
+ * catches up with the cursor whenever the runtime answers again.
  */
 
 import {
@@ -94,6 +103,8 @@ export class Collector {
     this.stopped = false;
     this.lastError = null;
     this.lastTickAt = null;
+    this.liveEventsReceived = 0;
+    this.lastLiveEventAt = null;
   }
 
   start() {
@@ -197,6 +208,14 @@ export class Collector {
       /** Wall-clock time (ms) before which a dropped socket is not re-opened. */
       liveRetryAt: 0,
       liveBackoffMs: ACTIVE_POLL_MS,
+      /**
+       * Per-run write queue. A socket flush and the poll both read and write
+       * the same aggregator and store rows; chaining them here keeps the two
+       * from interleaving without a global lock.
+       */
+      writes: Promise.resolve(),
+      /** Whether a socket flush is already queued behind `writes`. */
+      flushQueued: false,
     };
     if (stored && !isTerminalStatus(run.status)) {
       await this.#seedOpenToolSpans(tracker, runId);
@@ -254,15 +273,39 @@ export class Collector {
     }
     if (Date.now() < tracker.liveRetryAt) return;
 
+    let received = 0;
     tracker.liveStream = this.client.openEventStream(runId, {
       since: tracker.cursor,
+      onOpen: () => {
+        this.logger.info(`[agentops] events socket open for ${runId}`);
+      },
       onEvent: (event) => {
         tracker.liveBackoffMs = ACTIVE_POLL_MS;
+        this.liveEventsReceived += 1;
+        this.lastLiveEventAt = this.now();
+        received += 1;
+        if (received === 1) {
+          this.logger.info(
+            `[agentops] events socket for ${runId} delivered its first event (${event?.kind ?? "unknown kind"})`,
+          );
+        }
         tracker.liveEvents.push(event);
+        // Persist now, not on the next poll: the poll may be blocked behind
+        // this very tool call for as long as it runs.
+        this.#queueLiveFlush(tracker, runId);
       },
       onError: (error) => {
         this.logger.warn(
           `[agentops] events socket for ${runId}: ${error.message}`,
+        );
+      },
+      onClose: ({ code, reason }) => {
+        // 1000 is our own close at the end of a run; anything else is the
+        // runtime hanging up (4001 = session key rejected) and worth a line,
+        // since the re-dial backoff would otherwise hide it completely.
+        if (code === 1000) return;
+        this.logger.warn(
+          `[agentops] events socket for ${runId} closed (${code ?? "no code"}${reason ? `: ${reason}` : ""}) after ${received} events`,
         );
       },
     });
@@ -307,9 +350,86 @@ export class Collector {
     return { spans, audit };
   }
 
+  /**
+   * Run `work` after every write already queued for this run, and make the
+   * queue wait for it. A rejected `work` is reported to the caller but never
+   * poisons the queue for the next one.
+   */
+  #enqueueWrite(tracker, work) {
+    const next = tracker.writes.then(work, work);
+    tracker.writes = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  /**
+   * Schedule one socket flush for this run. Events that arrive while it is
+   * queued are picked up by that same flush, so a burst costs one round of
+   * store writes rather than one per event.
+   */
+  #queueLiveFlush(tracker, runId) {
+    if (tracker.flushQueued) return;
+    tracker.flushQueued = true;
+    this.#enqueueWrite(tracker, async () => {
+      tracker.flushQueued = false;
+      try {
+        await this.#flushLiveEvents(tracker, runId, this.now());
+      } catch (error) {
+        // The aggregator already applied these events, so the store is
+        // simply behind: the observation still closes the span from the
+        // REST tail later. Log rather than throw — nothing awaits this.
+        this.logger.error(
+          `[agentops] live flush for ${runId} failed: ${error.message}`,
+        );
+      }
+    });
+  }
+
+  /**
+   * Fold in and persist whatever the websocket delivered. Called from the
+   * socket (through the write queue) and at the top of every poll, so the
+   * poll's own REST calls — which can block for the length of the tool call
+   * — never stand between an ActionEvent and the store.
+   */
+  async #flushLiveEvents(tracker, runId, observedAt) {
+    const result = this.#drainLiveEvents(tracker);
+    if (!result.spans.length && !result.audit.length) return result;
+    const run = tracker.aggregator.run;
+    run.updatedAt = observedAt;
+    await this.#persist(tracker, runId, result.spans, result.audit, observedAt);
+    return result;
+  }
+
+  async #persist(tracker, runId, spans, audit, observedAt) {
+    const run = tracker.aggregator.run;
+    if (spans.length) await this.store.appendSpans(runId, spans);
+    for (const record of audit) {
+      await this.store.appendAudit({
+        at: observedAt,
+        actor: "system",
+        ...record,
+        entityType: "run",
+        entityId: runId,
+        workspaceId: run.workspaceId,
+      });
+    }
+    await this.store.upsertRun(run);
+    tracker.isNew = false;
+  }
+
   async #syncConversation(conversation, observedAt) {
-    const runId = conversation.id;
     const tracker = await this.#trackerFor(conversation, observedAt);
+    // Behind any socket flush already in flight for this run, and ahead of
+    // the next one: they share the aggregator and the store rows.
+    return this.#enqueueWrite(tracker, () =>
+      this.#pollConversation(tracker, conversation, observedAt),
+    );
+  }
+
+  async #pollConversation(tracker, conversation, observedAt) {
+    const runId = conversation.id;
     const { aggregator } = tracker;
     const run = aggregator.run;
 
@@ -341,9 +461,11 @@ export class Collector {
     // phase ("completed", "waiting_approval") as the final word, lists
     // `task.completed` after the tool calls it followed, and lets its
     // "after N tool calls" count include them.
-    const liveResult = this.#drainLiveEvents(tracker);
-    spans.push(...liveResult.spans);
-    audit.push(...liveResult.audit);
+    //
+    // The socket's events are persisted before the REST tail is even asked:
+    // that request can hang for the length of the tool call, and a throw from
+    // it must not take already-applied events down with it.
+    const liveResult = await this.#flushLiveEvents(tracker, runId, observedAt);
 
     const eventResult = await this.#tailEvents(tracker, runId);
     spans.push(...eventResult.spans);
@@ -372,19 +494,7 @@ export class Collector {
       );
     }
 
-    await this.store.appendSpans(runId, spans);
-    for (const record of audit) {
-      await this.store.appendAudit({
-        at: observedAt,
-        actor: "system",
-        ...record,
-        entityType: "run",
-        entityId: runId,
-        workspaceId: run.workspaceId,
-      });
-    }
-    await this.store.upsertRun(run);
-    tracker.isNew = false;
+    await this.#persist(tracker, runId, spans, audit, observedAt);
 
     // The aggregator (and its llmCursor / seen-event set) is kept for a
     // finished run rather than rebuilt from the store next tick — a rebuilt
@@ -634,11 +744,18 @@ export class Collector {
   }
 
   health() {
+    let liveStreams = 0;
+    for (const tracker of this.tracked.values()) {
+      if (tracker.liveStream && !tracker.liveStream.closed) liveStreams += 1;
+    }
     return {
       status: "ok",
       lastTickAt: this.lastTickAt,
       lastError: this.lastError,
       trackedRuns: this.tracked.size,
+      liveStreams,
+      liveEventsReceived: this.liveEventsReceived,
+      lastLiveEventAt: this.lastLiveEventAt,
     };
   }
 }

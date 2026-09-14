@@ -43434,6 +43434,23 @@
     "tr": "Pause",
     "uk": "Pause"
   },
+  "AGENTOPS$CONTROL_PAUSE_HINT": {
+    "en": "Pause takes effect after the current command finishes — the runtime cannot abort a terminal command mid-flight.",
+    "ja": "一時停止は現在のコマンドが終了した後に有効になります。ランタイムは実行中のターミナルコマンドを途中で中断できません。",
+    "zh-CN": "暂停将在当前命令完成后生效——运行时无法中途中止正在执行的终端命令。",
+    "zh-TW": "暫停將在目前指令完成後生效——執行環境無法中途中止正在執行的終端指令。",
+    "ko-KR": "일시 중지는 현재 명령이 끝난 후에 적용됩니다. 런타임은 실행 중인 터미널 명령을 도중에 중단할 수 없습니다.",
+    "no": "Pause trer i kraft etter at den nåværende kommandoen er ferdig — kjøretiden kan ikke avbryte en terminalkommando underveis.",
+    "ar": "يسري الإيقاف المؤقت بعد انتهاء الأمر الحالي — لا يمكن لبيئة التشغيل إيقاف أمر طرفية أثناء تنفيذه.",
+    "de": "Die Pause greift erst, wenn der aktuelle Befehl beendet ist — die Laufzeit kann einen laufenden Terminalbefehl nicht abbrechen.",
+    "fr": "La pause prend effet une fois la commande en cours terminée — le runtime ne peut pas interrompre une commande de terminal en plein vol.",
+    "it": "La pausa ha effetto al termine del comando corrente — il runtime non può interrompere un comando del terminale in esecuzione.",
+    "pt": "A pausa entra em vigor após o término do comando atual — o runtime não consegue abortar um comando de terminal em execução.",
+    "es": "La pausa surte efecto cuando termina el comando actual — el runtime no puede abortar un comando de terminal en ejecución.",
+    "ca": "La pausa té efecte quan acaba l'ordre actual — el runtime no pot avortar una ordre de terminal en execució.",
+    "tr": "Duraklatma, geçerli komut bittikten sonra devreye girer — çalışma zamanı yürütülmekte olan bir terminal komutunu yarıda kesemez.",
+    "uk": "Пауза набуде чинності після завершення поточної команди — середовище виконання не може перервати команду термінала під час її виконання."
+  },
   "AGENTOPS$CONTROL_RESUME": {
     "en": "Resume",
     "ja": "Resume",

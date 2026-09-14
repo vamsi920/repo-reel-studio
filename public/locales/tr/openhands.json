@@ -2554,6 +2554,7 @@
   "AGENTOPS$AUTONOMY_AUTONOMOUS": "Autonomous",
   "AGENTOPS$AUTONOMY_AUTONOMOUS_HINT": "No confirmation prompts. Budgets still stop the run.",
   "AGENTOPS$CONTROL_PAUSE": "Pause",
+  "AGENTOPS$CONTROL_PAUSE_HINT": "Duraklatma, geçerli komut bittikten sonra devreye girer — çalışma zamanı yürütülmekte olan bir terminal komutunu yarıda kesemez.",
   "AGENTOPS$CONTROL_RESUME": "Resume",
   "AGENTOPS$CONTROL_STOP": "Stop",
   "AGENTOPS$CONTROL_STOP_CONFIRM_TITLE": "Stop this run?",

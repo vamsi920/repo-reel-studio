@@ -2554,6 +2554,7 @@
   "AGENTOPS$AUTONOMY_AUTONOMOUS": "Autonomous",
   "AGENTOPS$AUTONOMY_AUTONOMOUS_HINT": "No confirmation prompts. Budgets still stop the run.",
   "AGENTOPS$CONTROL_PAUSE": "Pause",
+  "AGENTOPS$CONTROL_PAUSE_HINT": "暂停将在当前命令完成后生效——运行时无法中途中止正在执行的终端命令。",
   "AGENTOPS$CONTROL_RESUME": "Resume",
   "AGENTOPS$CONTROL_STOP": "Stop",
   "AGENTOPS$CONTROL_STOP_CONFIRM_TITLE": "Stop this run?",

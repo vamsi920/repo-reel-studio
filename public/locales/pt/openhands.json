@@ -2554,6 +2554,7 @@
   "AGENTOPS$AUTONOMY_AUTONOMOUS": "Autonomous",
   "AGENTOPS$AUTONOMY_AUTONOMOUS_HINT": "No confirmation prompts. Budgets still stop the run.",
   "AGENTOPS$CONTROL_PAUSE": "Pause",
+  "AGENTOPS$CONTROL_PAUSE_HINT": "A pausa entra em vigor após o término do comando atual — o runtime não consegue abortar um comando de terminal em execução.",
   "AGENTOPS$CONTROL_RESUME": "Resume",
   "AGENTOPS$CONTROL_STOP": "Stop",
   "AGENTOPS$CONTROL_STOP_CONFIRM_TITLE": "Stop this run?",

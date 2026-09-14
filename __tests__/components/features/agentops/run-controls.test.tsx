@@ -59,6 +59,14 @@ describe("RunControls", () => {
     expect(screen.queryByTestId("agentops-run-stuck-note")).toBeNull();
   });
 
+  it("explains that Pause waits for the current command to finish", () => {
+    renderControls("running");
+    expect(screen.getByTestId("agentops-run-pause")).toHaveAttribute(
+      "title",
+      "AGENTOPS$CONTROL_PAUSE_HINT",
+    );
+  });
+
   it("offers Resume and Stop on a paused run", () => {
     renderControls("paused");
     expect(screen.getByTestId("agentops-run-resume")).toBeInTheDocument();

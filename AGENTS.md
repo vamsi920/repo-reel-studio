@@ -94,11 +94,17 @@ whether or not a tab is open and survive a reload.
   tool call, so each active run is also subscribed to the runtime's
   `/sockets/events/<id>` websocket (`AgentServerClient.openEventStream`, the
   same socket and `auth` handshake the chat UI uses) and those events are
-  folded in on the next tick — that is what makes an executing tool span,
-  `toolCallCount` and `tool.called` visible mid-command. The socket never
-  moves the cursor; overlap with the tail is deduped by event id, and a
+  persisted **the moment they arrive**, on a per-run write queue — that is
+  what makes an executing tool span, `toolCallCount` and `tool.called`
+  visible mid-command. They must not wait for the poll: while the runtime
+  is inside a tool call it holds the conversation state lock, so
+  `conversations/search` blocks for the length of the command and the client
+  aborts it after 30 s — every poll fails until the tool returns. The socket
+  never moves the cursor; overlap with the tail is deduped by event id, and a
   restarted collector seeds its open tool spans from `store.listSpans` so the
   observation that arrives later still closes them without re-counting.
+  `/api/agentops/health` and `summary.collector` report `liveStreams`,
+  `liveEventsReceived` and `lastLiveEventAt` so a silent socket is visible.
 
 **Storage: two interchangeable stores, selected at startup** (see
 `createStore()` in `scripts/agentops-server.mjs`):

@@ -122,8 +122,15 @@ export class AgentServerClient {
    * Returns a handle, or `null` when no WebSocket implementation is available.
    * The handle does not reconnect on its own: the collector re-opens it on a
    * later tick while the run is still active, which is a natural backoff.
+   *
+   * `onOpen` fires once the handshake completed (and the auth frame was sent);
+   * `onClose` fires with the peer's close code and reason — a 4001 there is
+   * the runtime rejecting the session key, which is otherwise silent.
    */
-  openEventStream(conversationId, { since, onEvent, onError } = {}) {
+  openEventStream(
+    conversationId,
+    { since, onEvent, onError, onOpen, onClose } = {},
+  ) {
     if (!AgentServerClient.supportsEventStream) return null;
 
     const url = new URL(this.baseUrl);
@@ -163,6 +170,7 @@ export class AgentServerClient {
           }),
         );
       }
+      onOpen?.();
     });
     socket.addEventListener("message", (message) => {
       let event;
@@ -180,8 +188,9 @@ export class AgentServerClient {
     socket.addEventListener("error", () => {
       onError?.(new Error("events socket errored"));
     });
-    socket.addEventListener("close", () => {
+    socket.addEventListener("close", (event) => {
       handle.closed = true;
+      onClose?.({ code: event?.code ?? null, reason: event?.reason ?? "" });
     });
 
     return handle;

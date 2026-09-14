@@ -73,11 +73,15 @@ export function RunControls({ run }: RunControlsProps) {
       ) : null}
 
       {canPause ? (
+        // `/interrupt` queues until the tool returns: a terminal command that
+        // is already running finishes (and its output is captured) before the
+        // pause lands. Say so, rather than implying an immediate stop.
         <button
           type="button"
           data-testid="agentops-run-pause"
           className={BUTTON_CLASS}
           disabled={isPending}
+          title={t(I18nKey.AGENTOPS$CONTROL_PAUSE_HINT)}
           onClick={() => invoke("pause")}
         >
           <Pause size={14} />
