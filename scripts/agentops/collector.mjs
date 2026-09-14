@@ -151,12 +151,15 @@ export class Collector {
 
   /** @returns {Promise<boolean>} whether any run is currently active. */
   async tick() {
-    const observedAt = this.now();
-    this.lastTickAt = observedAt;
+    this.lastTickAt = this.now();
     const page = await this.client.searchConversations({
       limit: 50,
       timeoutMs: DISCOVERY_TIMEOUT_MS,
     });
+    // Dated *after* the search answers: it can sit behind the runtime's state
+    // lock for a whole step (up to DISCOVERY_TIMEOUT_MS), and a run first
+    // seen then must not look like it was seen when the tick began.
+    const observedAt = this.now();
     const conversations = Array.isArray(page?.items) ? page.items : [];
 
     let hasActive = false;
@@ -440,7 +443,7 @@ export class Collector {
     // so a run could otherwise finish at many times its budget before the
     // poll's own enforcement saw a single dollar of it.
     if (result.statsApplied) {
-      result.audit.push(...(await this.#enforceBudgets(run, observedAt)));
+      result.audit.push(...(await this.#enforceBudgets(run)));
     }
     await this.#persist(tracker, runId, result.spans, result.audit, observedAt);
     return result;
@@ -472,7 +475,7 @@ export class Collector {
     );
   }
 
-  async #pollConversation(tracker, conversation, observedAt) {
+  async #pollConversation(tracker, conversation, discoveredAt) {
     const runId = conversation.id;
     const { aggregator } = tracker;
     const run = aggregator.run;
@@ -494,7 +497,7 @@ export class Collector {
     run.agentName = deriveAgentName(conversation);
     const model = deriveModel(conversation);
     if (model) run.model = model;
-    run.updatedAt = normalizeTimestamp(conversation.updated_at) ?? observedAt;
+    run.updatedAt = normalizeTimestamp(conversation.updated_at) ?? discoveredAt;
 
     const spans = [];
     const audit = [];
@@ -509,11 +512,22 @@ export class Collector {
     // The socket's events are persisted before the REST tail is even asked:
     // that request can hang for the length of the tool call, and a throw from
     // it must not take already-applied events down with it.
-    const liveResult = await this.#flushLiveEvents(tracker, runId, observedAt);
+    const liveResult = await this.#flushLiveEvents(
+      tracker,
+      runId,
+      discoveredAt,
+    );
 
     const eventResult = await this.#tailEvents(tracker, runId);
     spans.push(...eventResult.spans);
     audit.push(...eventResult.audit);
+
+    // The tail can block behind the same state lock for the length of the
+    // tool call. Everything recorded from here on — the LLM spans' fallback
+    // start, `run.paused` / `task.completed`, the audit rows — is dated by
+    // when it is written, not by when this poll began, so a halt written
+    // 40 s into a step does not sort above the policy change that caused it.
+    const observedAt = this.now();
 
     // Persist the cursor with the run so a collector restart resumes rather
     // than replaying the whole conversation.
@@ -530,13 +544,11 @@ export class Collector {
     tracker.closingOut = false;
     audit.push(...statusResult.audit);
 
-    const budgetAudit = await this.#enforceBudgets(run, observedAt);
+    const budgetAudit = await this.#enforceBudgets(run);
     audit.push(...budgetAudit);
 
     if (aggregator.run.status === "waiting_for_confirmation") {
-      audit.push(
-        ...(await this.#raiseConfirmationApproval(aggregator, observedAt)),
-      );
+      audit.push(...(await this.#raiseConfirmationApproval(aggregator)));
     }
 
     await this.#persist(tracker, runId, spans, audit, observedAt);
@@ -631,8 +643,12 @@ export class Collector {
    * breach is raised again only once the run is running again — the operator
    * resumed it without raising the limit, or an approval raised the limit and
    * the run overspent that too.
+   *
+   * Rows and the approval are stamped with the time they are created here,
+   * never with a timestamp the caller sampled earlier: a poll can spend a
+   * whole step behind the runtime's state lock before it reaches this point.
    */
-  async #enforceBudgets(run, observedAt) {
+  async #enforceBudgets(run) {
     if (run.status !== "running") return [];
 
     const [policy, agentBudgetUsd, runs] = await Promise.all([
@@ -640,6 +656,7 @@ export class Collector {
       this.store.getAgentBudget(run.agentName),
       this.store.listRuns({ limit: 10000 }),
     ]);
+    const observedAt = this.now();
     const since = monthStart(observedAt);
     const workspaceSpend = computeSpend(runs, {
       workspaceId: run.workspaceId,
@@ -740,7 +757,7 @@ export class Collector {
    * `/events/respond_to_confirmation` answers. The queue entry is a view onto
    * that, not a second gate of our own.
    */
-  async #raiseConfirmationApproval(aggregator, observedAt) {
+  async #raiseConfirmationApproval(aggregator) {
     const run = aggregator.run;
     const pendingApprovals = await this.store.listApprovals({
       state: "pending",
@@ -753,6 +770,8 @@ export class Collector {
     // The open tool span is exactly the action the runtime is waiting on.
     const [pending] = [...aggregator.openToolSpans.values()].slice(-1);
     const policy = await this.store.getWorkspacePolicy(run.workspaceId);
+    // Stamped when the approval is created (see #enforceBudgets).
+    const observedAt = this.now();
 
     await this.store.upsertApproval({
       id: `confirmation:${run.runId}:${observedAt}`,

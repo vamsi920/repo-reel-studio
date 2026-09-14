@@ -833,6 +833,95 @@ describe("Collector budget enforcement on halted runs", () => {
   });
 });
 
+describe("Collector audit timestamps behind a blocked poll", () => {
+  it("dates budget rows and the approval by when they are written, not by when the tick began", async () => {
+    // A tick samples its clock, then sits behind the runtime's state lock for
+    // the length of a tool call — first in the discovery search, then in the
+    // event tail. The budget.exceeded / run.paused rows and the approval it
+    // opens afterwards used to carry that stale start time, so a halt written
+    // 40 s into a step sorted *above* the policy change that caused it.
+    let now = "2026-09-14T20:53:04.709Z";
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: 100,
+        runBudgetUsd: 0.01,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+    });
+    const client = makeClient({
+      // The search answers once the step ends, 40 s later.
+      searchConversations: vi.fn(async () => {
+        now = "2026-09-14T20:53:44.900Z";
+        return {
+          items: [
+            {
+              id: "run-slow",
+              title: "Five sleeps",
+              execution_status: "running",
+              workspace: { working_dir: "ws" },
+              updated_at: "2026-09-14T20:53:44.500Z",
+              created_at: "2026-09-14T20:52:00.000Z",
+              stats: {
+                usage_to_metrics: {
+                  agent: {
+                    accumulated_cost: 0.0415,
+                    accumulated_token_usage: {},
+                    costs: [],
+                    response_latencies: [],
+                    token_usages: [],
+                  },
+                },
+              },
+            },
+          ],
+        };
+      }),
+      // ...and the tail behind the same lock a little after that.
+      searchEvents: vi.fn(async () => {
+        now = "2026-09-14T20:53:45.300Z";
+        return { items: [] };
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => now,
+    });
+
+    await collector.tick();
+
+    // The tick itself is still reported from when it began.
+    expect(collector.health().lastTickAt).toBe("2026-09-14T20:53:04.709Z");
+
+    const exceeded = store.appendedAudit.find(
+      (record) => record.action === "budget.exceeded",
+    );
+    const paused = store.appendedAudit.find(
+      (record) => record.action === "run.paused",
+    );
+    expect(exceeded).toMatchObject({ at: "2026-09-14T20:53:45.300Z" });
+    expect(paused).toMatchObject({ at: "2026-09-14T20:53:45.300Z" });
+    expect(store.upsertApproval).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "budget:run-slow:2026-09-14T20:53:45.300Z",
+        requestedAt: "2026-09-14T20:53:45.300Z",
+      }),
+    );
+    // The run itself stays dated by the runtime's own updated_at.
+    expect(store.upsertRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "run-slow",
+        updatedAt: "2026-09-14T20:53:44.500Z",
+      }),
+    );
+  });
+});
+
 describe("Collector budget enforcement after a rejected approval", () => {
   it("does not re-raise the breach on a run that stayed paused after its approval was rejected", async () => {
     // Regression test: the breach dedup only looked at *pending* approvals,
