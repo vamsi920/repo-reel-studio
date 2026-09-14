@@ -1,5 +1,13 @@
 import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
 
+function logFailure(step: string, error: unknown): void {
+  // A failed lookup used to be indistinguishable from "no snapshot yet":
+  // the cold-load check in kt-graph.tsx would then show "Build code graph"
+  // for a repository that does have a stored graph, with nothing in the
+  // console to attribute it to. Mirrors repository-identity.ts's helper.
+  console.error(`[codegraph-persistence] ${step} failed`, error);
+}
+
 /**
  * Metadata-only persistence for CodeGraph, against `codegraph_snapshots`
  * (supabase/migrations/20260819201308_knowledge_codegraph.sql). The real
@@ -47,7 +55,7 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
   async saveSnapshot(input: CodegraphSnapshotInput): Promise<void> {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      await supabase.from("codegraph_snapshots").upsert(
+      const { error } = await supabase.from("codegraph_snapshots").upsert(
         {
           workspace_id: input.workspaceId,
           repository_id: input.repositoryUuid,
@@ -59,10 +67,12 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
         },
         { onConflict: "workspace_id,repository_id,commit_sha" },
       );
-    } catch {
+      if (error) logFailure("codegraph_snapshots upsert", error);
+    } catch (error) {
       // Best-effort -- the graph itself already rendered from the real
       // on-disk analysis output; a failed persistence write only affects
       // whether the next visit has to click "Build code graph" again.
+      logFailure("codegraph_snapshots upsert", error);
     }
   }
 
@@ -73,15 +83,17 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
   ): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) return false;
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("codegraph_snapshots")
         .select("id")
         .eq("workspace_id", workspaceId)
         .eq("repository_id", repositoryUuid)
         .eq("commit_sha", commitSha)
         .maybeSingle();
+      if (error) logFailure("codegraph_snapshots lookup", error);
       return Boolean(data);
-    } catch {
+    } catch (error) {
+      logFailure("codegraph_snapshots lookup", error);
       return false;
     }
   }
@@ -92,7 +104,7 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
   ): Promise<string | null> {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("codegraph_snapshots")
         .select("workspace_id")
         .eq("repository_id", repositoryUuid)
@@ -100,8 +112,10 @@ class SupabaseCodegraphPersistenceRepository implements CodegraphPersistenceRepo
         .order("generated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) logFailure("codegraph_snapshots workspace lookup", error);
       return (data?.workspace_id as string | undefined) ?? null;
-    } catch {
+    } catch (error) {
+      logFailure("codegraph_snapshots workspace lookup", error);
       return null;
     }
   }
