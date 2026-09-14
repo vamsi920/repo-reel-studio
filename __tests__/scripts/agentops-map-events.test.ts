@@ -6,9 +6,11 @@ import {
   phaseForAction,
   summarizeActionParameters,
   isActiveStatus,
+  isInterruptedToolCallError,
   isTerminalStatus,
   normalizeTimestamp,
 } from "../../scripts/agentops/map-events.mjs";
+import { summarize } from "../../scripts/agentops/policy.mjs";
 
 const OBSERVED_AT = "2026-01-02T00:00:00.000Z";
 
@@ -230,6 +232,69 @@ describe("RunAggregator — tool spans", () => {
     expect(closed.spans[0].status).toBe("failed");
     expect(closed.spans[0].attributes["error.message"]).toBe("boom");
     expect(aggregator.run.errorCount).toBe(1);
+  });
+
+  it("records a real agent error as a failed span and counts it", () => {
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyEvent(actionEvent());
+    const errored = aggregator.applyEvent({
+      id: "evt-3",
+      timestamp: "2026-01-01T00:00:06.000Z",
+      source: "agent",
+      tool_name: "execute_bash",
+      tool_call_id: "call-1",
+      error: "Tool execute_bash raised: command not found",
+    });
+    expect(errored.spans[0].status).toBe("failed");
+    expect(errored.audit[0]).toMatchObject({
+      action: "task.error",
+      actor: "agent",
+    });
+    expect(aggregator.run.errorCount).toBe(1);
+  });
+
+  it("does not count the runtime's interrupt backfill as an error", () => {
+    // Pause, Stop and a budget halt all call /interrupt; the SDK then emits
+    // this synthetic AgentErrorEvent for the tool call that was in flight.
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyEvent(actionEvent());
+    const interrupted = aggregator.applyEvent({
+      id: "evt-3",
+      timestamp: "2026-01-01T00:00:06.000Z",
+      source: "agent",
+      tool_name: "execute_bash",
+      tool_call_id: "call-1",
+      error:
+        "Tool call interrupted before completion. The conversation was paused.",
+    });
+    expect(interrupted.spans).toHaveLength(1);
+    expect(interrupted.spans[0]).toMatchObject({
+      spanId: "run-1:evt-1",
+      status: "interrupted",
+      endTime: "2026-01-01T00:00:06.000Z",
+    });
+    expect(interrupted.spans[0].attributes["error.type"]).toBe(
+      "tool_interrupted",
+    );
+    expect(interrupted.audit).toHaveLength(1);
+    expect(interrupted.audit[0]).toMatchObject({
+      action: "tool.interrupted",
+      actor: "system",
+      summary: "Tool call interrupted: execute_bash",
+    });
+    expect(interrupted.audit[0].action).not.toBe("task.error");
+    expect(aggregator.run.errorCount).toBe(0);
+    expect(aggregator.openToolSpans.size).toBe(0);
+  });
+
+  it("recognises the interrupt message and nothing else", () => {
+    expect(
+      isInterruptedToolCallError(
+        "Tool call interrupted before completion. The conversation was paused.",
+      ),
+    ).toBe(true);
+    expect(isInterruptedToolCallError("Tool raised: not found")).toBe(false);
+    expect(isInterruptedToolCallError(undefined)).toBe(false);
   });
 
   it("records a user rejection as an audit event and a failed span", () => {
@@ -470,6 +535,71 @@ describe("RunAggregator — status transitions", () => {
       }),
     );
     expect(aggregator.run.phase).toBe("tool_call");
+  });
+});
+
+describe("RunAggregator — pause mid tool call, resume, finish", () => {
+  it("leaves errorCount at 0 so the run is not counted as a failure", () => {
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyEvent(
+      actionEvent({
+        action: { kind: "ExecuteBashAction", command: "sleep 20 && echo one" },
+      }),
+    );
+
+    // Control Tower Pause → /interrupt: the runtime pauses and backfills the
+    // in-flight tool call with its synthetic interruption error.
+    const paused = aggregator.applyStatus("paused", "2026-01-02T00:00:02.000Z");
+    expect(paused.audit[0]).toMatchObject({ action: "run.paused" });
+    const interrupted = aggregator.applyEvent({
+      id: "evt-2",
+      timestamp: "2026-01-02T00:00:02.100Z",
+      source: "agent",
+      tool_name: "execute_bash",
+      tool_call_id: "call-1",
+      error:
+        "Tool call interrupted before completion. The conversation was paused.",
+    });
+    expect(interrupted.spans[0].status).toBe("interrupted");
+
+    // Resume, run the next command, and finish normally.
+    const resumed = aggregator.applyStatus(
+      "running",
+      "2026-01-02T00:00:05.000Z",
+    );
+    expect(resumed.audit[0]).toMatchObject({ action: "run.resumed" });
+    aggregator.applyEvent(
+      actionEvent({
+        id: "evt-3",
+        timestamp: "2026-01-02T00:00:06.000Z",
+        tool_call_id: "call-2",
+        action: { kind: "ExecuteBashAction", command: "sleep 26 && echo seven" },
+      }),
+    );
+    const done = aggregator.applyEvent({
+      id: "evt-4",
+      timestamp: "2026-01-02T00:00:33.000Z",
+      source: "environment",
+      action_id: "evt-3",
+      tool_name: "execute_bash",
+      tool_call_id: "call-2",
+      observation: { kind: "ExecuteBashObservation", output: "seven" },
+    });
+    expect(done.spans[0].status).toBe("succeeded");
+    aggregator.applyStatus("finished", "2026-01-02T00:00:34.000Z");
+
+    expect(aggregator.run.status).toBe("finished");
+    expect(aggregator.run.phase).toBe("completed");
+    expect(aggregator.run.errorCount).toBe(0);
+    expect(aggregator.run.toolCallCount).toBe(2);
+
+    const summary = summarize(
+      [aggregator.run],
+      [],
+      new Date("2026-01-02T01:00:00.000Z"),
+    );
+    expect(summary.runsToday).toBe(1);
+    expect(summary.failures).toBe(0);
   });
 });
 

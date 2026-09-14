@@ -280,6 +280,25 @@ function isAgentErrorEvent(event) {
   );
 }
 
+/**
+ * The synthetic error the runtime backfills for a tool call that was in
+ * flight when the conversation was interrupted (`LocalConversation.
+ * _emit_orphaned_action_errors`). Pause, Stop and a budget halt all go
+ * through `/interrupt`, so this lands on every run an operator paused — it
+ * is bookkeeping for the LLM history, not something the agent got wrong.
+ */
+const INTERRUPTED_TOOL_CALL_PATTERN =
+  /interrupted before completion|conversation was paused/i;
+
+/** A tool span cut short by an interrupt: neither succeeded nor failed. */
+export const TOOL_STATUS_INTERRUPTED = "interrupted";
+
+export function isInterruptedToolCallError(message) {
+  return (
+    typeof message === "string" && INTERRUPTED_TOOL_CALL_PATTERN.test(message)
+  );
+}
+
 function isUserMessageEvent(event) {
   return event?.llm_message?.role === "user";
 }
@@ -445,7 +464,10 @@ export class RunAggregator {
         ...(errorMessage
           ? {
               [CoreAttributes.ERROR_MESSAGE]: errorMessage,
-              [CoreAttributes.ERROR_TYPE]: "tool_error",
+              [CoreAttributes.ERROR_TYPE]:
+                status === TOOL_STATUS_INTERRUPTED
+                  ? "tool_interrupted"
+                  : "tool_error",
             }
           : {}),
       },
@@ -490,6 +512,9 @@ export class RunAggregator {
   }
 
   #applyAgentError(event) {
+    if (isInterruptedToolCallError(event.error)) {
+      return this.#applyInterruptedToolCall(event);
+    }
     this.run.errorCount += 1;
     const closed = this.#closeToolSpan(event.tool_call_id, {
       status: ToolStatus.FAILED,
@@ -505,6 +530,34 @@ export class RunAggregator {
           summary: first200(event.error),
           at: normalizeTimestamp(event.timestamp),
           actor: "agent",
+        },
+      ],
+    };
+  }
+
+  /**
+   * An interrupt cut a tool call short. The span is closed as "interrupted"
+   * rather than failed and `errorCount` is left alone: `policy.summarize`
+   * counts any finished run with an error as a failure, and a run the
+   * operator paused and then let finish did not fail. The audit row is
+   * attributed to the system, since the agent did nothing here.
+   */
+  #applyInterruptedToolCall(event) {
+    const closed = this.#closeToolSpan(event.tool_call_id, {
+      status: TOOL_STATUS_INTERRUPTED,
+      endTime: normalizeTimestamp(event.timestamp),
+      result: null,
+      errorMessage: first200(event.error),
+    });
+    return {
+      spans: closed ? [closed] : [],
+      audit: [
+        {
+          action: "tool.interrupted",
+          summary: `Tool call interrupted: ${closed?.name ?? event.tool_name ?? "tool"}`,
+          at: normalizeTimestamp(event.timestamp),
+          actor: "system",
+          metadata: { toolCallId: event.tool_call_id },
         },
       ],
     };
