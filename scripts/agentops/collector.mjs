@@ -49,6 +49,21 @@ export function deriveModel(conversation) {
   );
 }
 
+/**
+ * Order two runtime timestamps; `null` sorts first. Compared as instants (via
+ * normalizeTimestamp) so a zoned stored cursor and a naive event agree.
+ */
+function compareTimestamps(a, b) {
+  if (!b) return a ? 1 : 0;
+  if (!a) return -1;
+  const left = Date.parse(normalizeTimestamp(a));
+  const right = Date.parse(normalizeTimestamp(b));
+  if (Number.isNaN(left) || Number.isNaN(right)) {
+    return a === b ? 0 : a > b ? 1 : -1;
+  }
+  return left === right ? 0 : left > right ? 1 : -1;
+}
+
 export function deriveWorkspaceId(conversation) {
   const workingDir = conversation?.workspace?.working_dir;
   return typeof workingDir === "string" && workingDir ? workingDir : "unknown";
@@ -109,11 +124,19 @@ export class Collector {
     const conversations = Array.isArray(page?.items) ? page.items : [];
 
     let hasActive = false;
+    const seen = new Set();
     for (const conversation of conversations) {
       if (!conversation?.id) continue;
+      seen.add(conversation.id);
       const status = normalizeRunStatus(conversation.execution_status);
       if (isActiveStatus(status)) hasActive = true;
       await this.#syncConversation(conversation, observedAt);
+    }
+    // Trackers are kept for finished runs (see #syncConversation), so drop
+    // the ones whose conversation has left the search page; the store has
+    // everything they held.
+    for (const runId of this.tracked.keys()) {
+      if (!seen.has(runId)) this.tracked.delete(runId);
     }
     return hasActive;
   }
@@ -147,6 +170,12 @@ export class Collector {
       seenAtCursor: new Set(run.lastEventIds ?? []),
       /** Whether the store has this run's first record yet. */
       isNew: !stored,
+      /**
+       * A terminal run that a whole tick found nothing new for. Skipped on
+       * later ticks until its status changes (a follow-up message can
+       * restart a finished conversation).
+       */
+      settled: false,
     };
     this.tracked.set(runId, tracker);
     return tracker;
@@ -157,6 +186,17 @@ export class Collector {
     const tracker = await this.#trackerFor(conversation, observedAt);
     const { aggregator } = tracker;
     const run = aggregator.run;
+
+    // A finished run stays on the search page for as long as the conversation
+    // exists. Re-tailing and re-applying its stats every tick is what used to
+    // inflate its counts and duplicate its audit rows, so once it has settled
+    // there is nothing to do until the runtime reports a different status.
+    if (
+      tracker.settled &&
+      normalizeRunStatus(conversation.execution_status) === run.status
+    ) {
+      return;
+    }
 
     // Identity can change mid-run (a title is generated, a model is switched).
     run.task = conversation.title ?? run.task;
@@ -216,9 +256,18 @@ export class Collector {
     await this.store.upsertRun(run);
     tracker.isNew = false;
 
+    // The aggregator (and its llmCursor / seen-event set) is kept for a
+    // finished run rather than rebuilt from the store next tick — a rebuilt
+    // one starts blank and re-counts. It settles once a tick after the
+    // terminal status finds no trailing events; tick() prunes it when the
+    // conversation leaves the search page.
     if (isTerminalStatus(run.status)) {
-      // Stop holding aggregator state for finished runs; the store has it.
-      this.tracked.delete(runId);
+      tracker.settled =
+        eventResult.spans.length === 0 &&
+        eventResult.audit.length === 0 &&
+        statusResult.audit.length === 0;
+    } else {
+      tracker.settled = false;
     }
   }
 
@@ -255,11 +304,18 @@ export class Collector {
         // The cursor stays in the runtime's own (offset-less) form: it is sent
         // straight back as `timestamp__gte`, so it must match what the
         // agent-server compares against, not the normalized value we store.
-        if (event.timestamp !== tracker.cursor) {
+        //
+        // It only ever moves forward. A page is not strictly ordered — a
+        // ConversationStateUpdateEvent stamped a millisecond before the
+        // ActionEvent it follows is served after it — and letting the cursor
+        // fall back to that older timestamp re-served the newer events on
+        // the next poll, double-counting them.
+        const advance = compareTimestamps(event.timestamp, tracker.cursor);
+        if (advance > 0) {
           tracker.cursor = event.timestamp;
           tracker.seenAtCursor = new Set();
         }
-        tracker.seenAtCursor.add(event.id);
+        if (advance >= 0) tracker.seenAtCursor.add(event.id);
         tracker.aggregator.run.lastEventId = event.id;
       }
 

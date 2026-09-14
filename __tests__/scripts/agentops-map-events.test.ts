@@ -160,6 +160,22 @@ describe("RunAggregator — timestamps", () => {
   });
 });
 
+describe("RunAggregator — event dedupe", () => {
+  it("ignores an event it has already folded in", () => {
+    // The agent-server's events/search pages are not strictly ordered by
+    // timestamp, so the collector can hand the same ActionEvent back; it must
+    // not count as a second tool call or a second tool.called audit row.
+    const aggregator = new RunAggregator(newRun());
+    const first = aggregator.applyEvent(actionEvent());
+    expect(first.spans).toHaveLength(1);
+    expect(first.audit).toHaveLength(1);
+
+    const again = aggregator.applyEvent(actionEvent());
+    expect(again).toEqual({ spans: [], audit: [] });
+    expect(aggregator.run.toolCallCount).toBe(1);
+  });
+});
+
 describe("RunAggregator — tool spans", () => {
   it("opens a tool span on the action and closes it on the observation", () => {
     const aggregator = new RunAggregator(newRun());
@@ -316,6 +332,19 @@ describe("RunAggregator — LLM spans from ConversationStats", () => {
     // Totals stay authoritative rather than doubling.
     expect(aggregator.run.costUsd).toBe(0.42);
     expect(aggregator.run.tokens.total).toBe(1200);
+    expect(aggregator.run.llmCallCount).toBe(1);
+  });
+
+  it("derives llmCallCount from the stats totals, so a rebuilt aggregator does not re-add calls", () => {
+    // Regression: a finished run's aggregator was rebuilt from the store on
+    // every poll with an empty llmCursor, and the incremented count grew by
+    // the whole call history each tick (252 → 366 in 40s for a 7-call run).
+    const run = { ...newRun(), llmCallCount: 252 };
+    const rebuilt = new RunAggregator(run);
+    rebuilt.applyStats(stats, OBSERVED_AT);
+    expect(rebuilt.run.llmCallCount).toBe(1);
+    rebuilt.applyStats(stats, OBSERVED_AT);
+    expect(rebuilt.run.llmCallCount).toBe(1);
   });
 
   it("reports a missing cost as null, never as zero", () => {

@@ -297,6 +297,13 @@ export class RunAggregator {
     this.openToolSpans = new Map();
     /** usage id → count of token_usages entries already turned into spans. */
     this.llmCursor = new Map();
+    /**
+     * Event ids already folded in. The agent-server's events/search pages are
+     * not strictly ordered by timestamp, so the collector's cursor can hand
+     * the same event back; counting it twice inflated toolCallCount and
+     * duplicated tool.called audit rows.
+     */
+    this.seenEventIds = new Set();
   }
 
   /** The run's current derived phase. */
@@ -319,6 +326,8 @@ export class RunAggregator {
 
   applyEvent(event) {
     if (!event || typeof event.id !== "string") return { spans: [], audit: [] };
+    if (this.seenEventIds.has(event.id)) return { spans: [], audit: [] };
+    this.seenEventIds.add(event.id);
 
     if (isActionEvent(event)) return this.#applyAction(event);
     if (isUserRejectObservation(event)) return this.#applyRejection(event);
@@ -516,6 +525,7 @@ export class RunAggregator {
     const spans = [];
     let accumulatedCost = 0;
     let maxBudgetPerTask = null;
+    let llmCallCount = 0;
     const totals = {
       prompt: 0,
       completion: 0,
@@ -553,6 +563,7 @@ export class RunAggregator {
 
       for (const usage of usages) {
         if (!usage || typeof usage !== "object") continue;
+        llmCallCount += 1;
         totals.prompt += usage.prompt_tokens ?? 0;
         totals.completion += usage.completion_tokens ?? 0;
         totals.cacheRead += usage.cache_read_tokens ?? 0;
@@ -619,7 +630,11 @@ export class RunAggregator {
       this.llmCursor.set(usageId, usages.length);
     }
 
-    this.run.llmCallCount += spans.length;
+    // Recomputed from the runtime's totals, like tokens and cost, rather than
+    // incremented: an aggregator rebuilt from the store (collector restart,
+    // or a finished run re-polled) starts with an empty llmCursor and would
+    // otherwise add every call again on each poll.
+    this.run.llmCallCount = llmCallCount;
     this.run.costUsd = accumulatedCost;
     this.run.maxBudgetPerTask = maxBudgetPerTask;
     this.run.model = latestModel;

@@ -194,6 +194,217 @@ describe("Collector timestamp normalization", () => {
   });
 });
 
+describe("Collector finished-run idempotence", () => {
+  const finishedConversation = {
+    id: "run-1",
+    title: "Six commands",
+    execution_status: "finished",
+    updated_at: "2026-09-14T02:00:00.000Z",
+    created_at: "2026-09-14T01:50:00.000Z",
+    workspace: { working_dir: "ws" },
+    stats: {
+      usage_to_metrics: {
+        default: {
+          model_name: "claude-opus-5",
+          accumulated_cost: 0.1,
+          costs: [
+            { model: "claude-opus-5", cost: 0.05, timestamp: 1789350000 },
+            { model: "claude-opus-5", cost: 0.05, timestamp: 1789350010 },
+          ],
+          response_latencies: [],
+          token_usages: [
+            {
+              model: "claude-opus-5",
+              prompt_tokens: 10,
+              completion_tokens: 1,
+              response_id: "r1",
+            },
+            {
+              model: "claude-opus-5",
+              prompt_tokens: 10,
+              completion_tokens: 1,
+              response_id: "r2",
+            },
+          ],
+        },
+      },
+    },
+  };
+  const events = [
+    {
+      id: "evt-action",
+      timestamp: "2026-09-14T01:58:03.915000",
+      source: "agent",
+      tool_name: "terminal",
+      tool_call_id: "call-1",
+      action: { kind: "TerminalAction", command: "sleep 1" },
+    },
+    {
+      id: "evt-observation",
+      timestamp: "2026-09-14T01:58:29.364000",
+      source: "environment",
+      action_id: "evt-action",
+      tool_call_id: "call-1",
+      observation: { output: "" },
+    },
+    // The runtime serves this state event *after* the newer observation.
+    {
+      id: "evt-state",
+      timestamp: "2026-09-14T01:58:03.914000",
+      source: "environment",
+      kind: "ConversationStateUpdateEvent",
+      key: "execution_status",
+      value: "running",
+    },
+  ];
+
+  /** A store whose getRun returns what upsertRun last saved, like the real ones. */
+  function persistentStore() {
+    const runs = new Map<string, Record<string, unknown>>();
+    return makeStore({
+      getRun: vi.fn(async (runId: string) => {
+        const run = runs.get(runId);
+        return run ? structuredClone(run) : null;
+      }),
+      upsertRun: vi.fn(async (run: Record<string, unknown>) => {
+        runs.set(run.runId as string, structuredClone(run));
+      }),
+    });
+  }
+
+  /** An events/search fake honouring timestamp__gte like the agent-server. */
+  function searchEventsFake() {
+    return vi.fn(async (_runId: string, params: { timestampGte?: string }) => ({
+      items: events.filter(
+        (event) =>
+          !params.timestampGte || event.timestamp >= params.timestampGte,
+      ),
+    }));
+  }
+
+  it("does not re-count a finished run on later ticks", async () => {
+    // Regression: the run detail's TOOL CALLS / LLM CALLS and the audit log
+    // grew on every poll after the run had ended (toolCallCount 56 → 75,
+    // llmCallCount 252 → 366 in 40s for a six-command run).
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations: vi
+        .fn()
+        .mockResolvedValue({ items: [finishedConversation] }),
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+    const firstRun = store.upsertRun.mock.calls.at(-1)?.[0];
+    expect(firstRun).toMatchObject({
+      status: "finished",
+      toolCallCount: 1,
+      llmCallCount: 2,
+    });
+    const auditAfterFirst = store.appendedAudit.length;
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+
+    await collector.tick();
+    await collector.tick();
+    await collector.tick();
+
+    const lastRun = store.upsertRun.mock.calls.at(-1)?.[0];
+    expect(lastRun).toMatchObject({ toolCallCount: 1, llmCallCount: 2 });
+    expect(store.appendedAudit).toHaveLength(auditAfterFirst);
+    // Once settled, the run is not re-tailed at all.
+    expect(client.searchEvents.mock.calls.length).toBeLessThanOrEqual(2);
+  });
+
+  it("never moves the event cursor backwards on an out-of-order page", async () => {
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [{ ...finishedConversation, execution_status: "running" }],
+      }),
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      lastEventTimestamp: "2026-09-14T01:58:29.364000",
+      lastEventIds: ["evt-observation"],
+      toolCallCount: 1,
+    });
+
+    await collector.tick();
+    expect(client.searchEvents.mock.calls.at(-1)?.[1]).toMatchObject({
+      timestampGte: "2026-09-14T01:58:29.364000",
+    });
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      toolCallCount: 1,
+    });
+    expect(
+      store.appendedAudit.filter((record) => record.action === "tool.called"),
+    ).toHaveLength(1);
+  });
+
+  it("picks a finished run back up when a follow-up message restarts it", async () => {
+    const searchConversations = vi
+      .fn()
+      .mockResolvedValue({ items: [finishedConversation] });
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations,
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+    await collector.tick(); // settles
+    searchConversations.mockResolvedValue({
+      items: [{ ...finishedConversation, execution_status: "running" }],
+    });
+    await collector.tick();
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "running",
+      endedAt: null,
+    });
+  });
+
+  it("drops trackers for conversations that left the search page", async () => {
+    const searchConversations = vi
+      .fn()
+      .mockResolvedValue({ items: [finishedConversation] });
+    const store = persistentStore();
+    const client = makeClient({
+      searchConversations,
+      searchEvents: searchEventsFake(),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T02:00:05.000Z",
+    });
+
+    await collector.tick();
+    expect(collector.tracked.has("run-1")).toBe(true);
+    searchConversations.mockResolvedValue({ items: [] });
+    await collector.tick();
+    expect(collector.tracked.has("run-1")).toBe(false);
+  });
+});
+
 describe("Collector same-tick completion", () => {
   it("keeps phase completed when the last tool call and the finished status land in the same tick", async () => {
     // Regression: applyStatus("finished") set phase "completed", then the
