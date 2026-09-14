@@ -154,6 +154,15 @@ Plain Conventional Commits message scoped to the section/area, e.g.
 
 Then `git push origin main`. Record the new SHA.
 
+**A push does not deploy everything.** `src/**` goes live via Netlify and
+`server/**` via the Fly workflow, but `supabase/functions/**` and
+`supabase/migrations/**` only go live via the Supabase CLI, which this cloud
+sandbox has no credentials for. If your commit touched those paths, log the run
+as `FIXED (NOT DEPLOYED)` — never plain FIXED — and put the exact command in
+the log's `notes:` so the daily digest can hand it to a human:
+`supabase functions deploy <every changed function, plus every function importing a changed _shared module> --project-ref hyirnyyqwyvplwvuekda`.
+Never describe an undeployed edge-function change as live.
+
 ## 8. Watch the deploy, revert if red — best effort
 
 Try:
