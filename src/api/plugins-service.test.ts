@@ -7,7 +7,9 @@ import {
   setActiveSelection,
   setRegisteredBackends,
 } from "./backend-registry/active-store";
-import PluginsService from "./plugins-service";
+import PluginsService, {
+  isPluginsEndpointUnsupported,
+} from "./plugins-service";
 
 vi.mock("@openhands/typescript-client/clients", () => ({
   PluginsClient: vi.fn(),
@@ -18,6 +20,17 @@ const getPluginsMarketplace = vi.fn();
 const getPlugins = vi.fn();
 const downloadFile = vi.fn();
 const close = vi.fn();
+
+/** Mirrors the SDK `HttpError` shape: `name === "HttpError"` + numeric status. */
+function sdkHttpError(status: number, body: unknown = { detail: "boom" }) {
+  const error = new Error(
+    `HTTP request failed (${status} ): ${JSON.stringify(body)}`,
+  ) as Error & { status: number; response: unknown };
+  error.name = "HttpError";
+  error.status = status;
+  error.response = body;
+  return error;
+}
 
 function useBackend(kind: "local" | "cloud"): void {
   setRegisteredBackends([
@@ -67,13 +80,44 @@ describe("PluginsService.getPluginsMarketplace", () => {
     expect(PluginsClient).not.toHaveBeenCalled();
   });
 
-  it("returns an empty catalog when the local request fails", async () => {
+  it("returns an empty catalog when the agent-server has no plugins route (404)", async () => {
     useBackend("local");
-    getPluginsMarketplace.mockRejectedValue(new Error("unreachable"));
+    getPluginsMarketplace.mockRejectedValue(sdkHttpError(404));
 
     const result = await PluginsService.getPluginsMarketplace();
 
     expect(result).toEqual([]);
+  });
+
+  it("rethrows a 5xx so the page can show its error state and retry", async () => {
+    useBackend("local");
+    const error = sdkHttpError(500);
+    getPluginsMarketplace.mockRejectedValue(error);
+
+    await expect(PluginsService.getPluginsMarketplace()).rejects.toBe(error);
+  });
+
+  it("rethrows a transport failure instead of faking an empty catalog", async () => {
+    useBackend("local");
+    const error = new Error("Request failed: Failed to fetch");
+    getPluginsMarketplace.mockRejectedValue(error);
+
+    await expect(PluginsService.getPluginsMarketplace()).rejects.toBe(error);
+  });
+});
+
+describe("isPluginsEndpointUnsupported", () => {
+  it("is true only for a missing-route HTTP status from the SDK client", () => {
+    expect(isPluginsEndpointUnsupported(sdkHttpError(404))).toBe(true);
+    expect(isPluginsEndpointUnsupported(sdkHttpError(405))).toBe(true);
+    expect(isPluginsEndpointUnsupported(sdkHttpError(500))).toBe(false);
+    expect(isPluginsEndpointUnsupported(sdkHttpError(502))).toBe(false);
+    expect(
+      isPluginsEndpointUnsupported(
+        new Error("Request failed: Failed to fetch"),
+      ),
+    ).toBe(false);
+    expect(isPluginsEndpointUnsupported(undefined)).toBe(false);
   });
 });
 
@@ -110,6 +154,21 @@ describe("PluginsService.getLocalPlugins", () => {
 
     expect(result).toEqual([]);
     expect(PluginsClient).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty list when the agent-server has no plugins route (404)", async () => {
+    useBackend("local");
+    getPlugins.mockRejectedValue(sdkHttpError(404));
+
+    await expect(PluginsService.getLocalPlugins()).resolves.toEqual([]);
+  });
+
+  it("rethrows a 5xx", async () => {
+    useBackend("local");
+    const error = sdkHttpError(503);
+    getPlugins.mockRejectedValue(error);
+
+    await expect(PluginsService.getLocalPlugins()).rejects.toBe(error);
   });
 });
 

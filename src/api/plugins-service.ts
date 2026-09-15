@@ -4,6 +4,7 @@ import {
 } from "@openhands/typescript-client/clients";
 import { getActiveBackend } from "./backend-registry/active-store";
 import { getAgentServerClientOptions } from "./agent-server-client-options";
+import { isSdkHttpStatusError } from "./agent-server-compatibility";
 
 /** Summary of a skill bundled in a plugin (agent-server `PluginSkillSummary`). */
 export interface PluginBundledSkill {
@@ -53,6 +54,17 @@ export interface PluginFileContent {
   text: string | null;
 }
 
+/**
+ * Whether a failed plugins call means the agent-server simply doesn't serve
+ * the plugins router (older servers answer 404 / 405 for the route). Only that
+ * case is a legitimate "empty catalog"; a 5xx or a network failure is a real
+ * outage and must propagate so the Plugins page can show its error state and
+ * react-query can retry instead of caching `[]` for the stale window.
+ */
+export function isPluginsEndpointUnsupported(error: unknown): boolean {
+  return isSdkHttpStatusError(error, 404) || isSdkHttpStatusError(error, 405);
+}
+
 function isLikelyBinary(buffer: ArrayBuffer): boolean {
   // Same heuristic git uses: presence of a NUL byte in the first ~8KB. Small
   // private copy of `isLikelyBinary` in `use-workspace-file-content.ts` — that
@@ -87,10 +99,14 @@ class PluginsService {
       // REST API / Automations bundle) describes OpenHands Cloud features this
       // local-only deployment doesn't run, so it's excluded here.
       return plugins.filter((plugin) => plugin.name !== "openhands");
-    } catch {
-      // Agent-server may not support the plugins endpoint or be unreachable;
-      // surface an empty catalog rather than throwing.
-      return [];
+    } catch (error) {
+      // An agent-server that predates the plugins endpoint answers 404 — treat
+      // that as an empty catalog. Anything else (5xx, unreachable) is a real
+      // failure and propagates to the query so the page shows its error state.
+      if (isPluginsEndpointUnsupported(error)) {
+        return [];
+      }
+      throw error;
     }
   }
 
@@ -102,8 +118,8 @@ class PluginsService {
    * global, so there is no project workspace to scope project plugins to.
    *
    * Local backend only — a cloud backend has no local plugin directories, so an
-   * empty list is returned. Errors surface as an empty list (mirrors the
-   * catalog) rather than throwing.
+   * empty list is returned. An agent-server without the plugins endpoint yields
+   * an empty list (mirrors the catalog); any other failure propagates.
    */
   static async getLocalPlugins(): Promise<LocalPlugin[]> {
     if (getActiveBackend().backend.kind === "cloud") {
@@ -115,8 +131,11 @@ class PluginsService {
         getAgentServerClientOptions(),
       ).getPlugins({ load_user: true, load_project: false });
       return (response.plugins ?? []) as LocalPlugin[];
-    } catch {
-      return [];
+    } catch (error) {
+      if (isPluginsEndpointUnsupported(error)) {
+        return [];
+      }
+      throw error;
     }
   }
 

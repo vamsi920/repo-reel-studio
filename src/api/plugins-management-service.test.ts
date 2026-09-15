@@ -19,6 +19,16 @@ const uninstallPlugin = vi.fn();
 const refreshPlugin = vi.fn();
 const close = vi.fn();
 
+/** Mirrors the SDK `HttpError` shape: `name === "HttpError"` + numeric status. */
+function sdkHttpError(status: number) {
+  const error = new Error(`HTTP request failed (${status} ): {}`) as Error & {
+    status: number;
+  };
+  error.name = "HttpError";
+  error.status = status;
+  return error;
+}
+
 function useBackend(kind: "local" | "cloud"): void {
   const backend: Backend = {
     id: kind,
@@ -82,13 +92,33 @@ describe("PluginsManagementService", () => {
     expect(PluginsClient).not.toHaveBeenCalled();
   });
 
-  it("returns an empty installed list when the local request fails", async () => {
+  it("returns an empty installed list when the agent-server has no plugins router (404)", async () => {
     useBackend("local");
-    listInstalledPlugins.mockRejectedValue(new Error("unreachable"));
+    listInstalledPlugins.mockRejectedValue(sdkHttpError(404));
 
     const result = await PluginsManagementService.listInstalledPlugins();
 
     expect(result).toEqual([]);
+  });
+
+  it("rethrows a 5xx instead of reporting an empty installed list", async () => {
+    useBackend("local");
+    const error = sdkHttpError(500);
+    listInstalledPlugins.mockRejectedValue(error);
+
+    await expect(PluginsManagementService.listInstalledPlugins()).rejects.toBe(
+      error,
+    );
+  });
+
+  it("rethrows a transport failure", async () => {
+    useBackend("local");
+    const error = new Error("Request failed: Failed to fetch");
+    listInstalledPlugins.mockRejectedValue(error);
+
+    await expect(PluginsManagementService.listInstalledPlugins()).rejects.toBe(
+      error,
+    );
   });
 
   it("forwards source, ref, and repo_path when installing a plugin", async () => {

@@ -1,7 +1,10 @@
 import { PluginsClient } from "@openhands/typescript-client/clients";
 import { getActiveBackend } from "./backend-registry/active-store";
 import { getAgentServerClientOptions } from "./agent-server-client-options";
-import type { PluginBundledSkill } from "./plugins-service";
+import {
+  isPluginsEndpointUnsupported,
+  type PluginBundledSkill,
+} from "./plugins-service";
 
 /**
  * An installed plugin, as returned by the agent-server management router
@@ -71,7 +74,9 @@ function getManagementClient(): PluginsManagementClient {
  * Local backend only for now (per Appendix C Q5): installed plugins live on the
  * local agent-server's `~/.openhands/plugins/installed/`. A cloud backend has no
  * per-user installed store yet, so reads return an empty list and mutating
- * actions throw (the UI also disables them on cloud).
+ * actions throw (the UI also disables them on cloud). An agent-server that
+ * predates the plugins router (404) also reads as an empty list; any other
+ * read failure propagates so the Plugins page can show its error state.
  */
 class PluginsManagementService {
   static async listInstalledPlugins(): Promise<InstalledPluginInfo[]> {
@@ -82,10 +87,14 @@ class PluginsManagementService {
     try {
       const response = await getManagementClient().listInstalledPlugins();
       return response.plugins ?? [];
-    } catch {
-      // Agent-server may predate the plugins router or be unreachable; surface
-      // an empty list rather than throwing (mirrors the catalog service).
-      return [];
+    } catch (error) {
+      // Agent-server may predate the plugins router — an empty list then
+      // (mirrors the catalog service). A 5xx or unreachable server is a real
+      // failure and must not masquerade as "nothing installed".
+      if (isPluginsEndpointUnsupported(error)) {
+        return [];
+      }
+      throw error;
     }
   }
 
