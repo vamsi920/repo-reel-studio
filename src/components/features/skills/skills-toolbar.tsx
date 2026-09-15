@@ -72,7 +72,10 @@ export function SkillsToolbar({
         <ListFilter className="size-4 shrink-0" aria-hidden />
         {t(I18nKey.SETTINGS$SKILLS_FILTERS_BUTTON)}
         {activeFilterCount > 0 ? (
-          <span className="rounded-full bg-white px-1.5 text-[11px] font-medium text-black">
+          <span
+            data-testid="skills-filters-count"
+            className="rounded-full bg-foreground px-1.5 text-[11px] font-medium text-[var(--oh-background)]"
+          >
             {activeFilterCount}
           </span>
         ) : null}

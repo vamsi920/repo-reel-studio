@@ -47,8 +47,10 @@ export function SkillFacetRow({
         aria-hidden
         className={cn(
           "flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border",
+          // Ink fill + canvas-coloured tick: the pair inverts together, unlike
+          // literal white/black (which the light theme remaps to ink-on-ink).
           checked
-            ? "border-white bg-white text-black"
+            ? "border-foreground bg-foreground text-[var(--oh-background)]"
             : "border-[var(--oh-border)]",
         )}
       >

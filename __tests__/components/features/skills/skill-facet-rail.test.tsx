@@ -66,4 +66,18 @@ describe("SkillFacetRail", () => {
 
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  it("draws a checked box with the ink/canvas token pair, not literal white/black", () => {
+    // The light theme remaps `--color-white` to ink, so `bg-white text-black`
+    // rendered an invisible black tick on a black square.
+    const [group] = buildGroups();
+    group.rows[0].checked = true;
+    render(<SkillFacetRail groups={[group]} onToggle={vi.fn()} />);
+
+    const row = screen.getByTestId("skill-facet-category-environment");
+    expect(row).toHaveAttribute("aria-checked", "true");
+    const box = row.querySelector("span[aria-hidden]");
+    expect(box).toHaveClass("bg-foreground", "text-[var(--oh-background)]");
+    expect(box).not.toHaveClass("bg-white", "text-black");
+  });
 });
