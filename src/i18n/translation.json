@@ -16251,6 +16251,23 @@
     "tr": "Sunucuya ulaşılamadı. URL'yi ve sunucu türünü kontrol edin.",
     "uk": "Не вдалося підключитися до сервера. Перевірте URL-адресу та тип сервера."
   },
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": {
+    "en": "Couldn't run the connection test — the backend didn't respond. Retry, or check that the backend is running.",
+    "ja": "接続テストを実行できませんでした — バックエンドが応答しませんでした。再試行するか、バックエンドが動作しているか確認してください。",
+    "zh-CN": "无法运行连接测试 — 后端没有响应。请重试，或检查后端是否正在运行。",
+    "zh-TW": "無法執行連線測試 — 後端沒有回應。請重試，或檢查後端是否正在執行。",
+    "ko-KR": "연결 테스트를 실행할 수 없습니다 — 백엔드가 응답하지 않았습니다. 다시 시도하거나 백엔드가 실행 중인지 확인하세요.",
+    "no": "Kunne ikke kjøre tilkoblingstesten — backend svarte ikke. Prøv igjen, eller sjekk at backend kjører.",
+    "ar": "تعذر تشغيل اختبار الاتصال — لم يستجب الخادم الخلفي. أعد المحاولة أو تحقق من أن الخادم الخلفي يعمل.",
+    "de": "Der Verbindungstest konnte nicht ausgeführt werden — das Backend hat nicht geantwortet. Versuchen Sie es erneut oder prüfen Sie, ob das Backend läuft.",
+    "fr": "Impossible d'exécuter le test de connexion — le backend n'a pas répondu. Réessayez ou vérifiez que le backend est en cours d'exécution.",
+    "it": "Impossibile eseguire il test di connessione — il backend non ha risposto. Riprova o verifica che il backend sia in esecuzione.",
+    "pt": "Não foi possível executar o teste de conexão — o backend não respondeu. Tente novamente ou verifique se o backend está em execução.",
+    "es": "No se pudo ejecutar la prueba de conexión — el backend no respondió. Reintenta o comprueba que el backend esté en ejecución.",
+    "ca": "No s'ha pogut executar la prova de connexió — el backend no ha respost. Torna-ho a provar o comprova que el backend s'està executant.",
+    "tr": "Bağlantı testi çalıştırılamadı — arka uç yanıt vermedi. Tekrar deneyin veya arka ucun çalıştığını kontrol edin.",
+    "uk": "Не вдалося запустити перевірку з'єднання — бекенд не відповів. Повторіть спробу або перевірте, чи запущено бекенд."
+  },
   "MCP$TEST_ERROR_UNKNOWN": {
     "en": "Connection failed: {{-error}}",
     "ja": "接続に失敗しました: {{-error}}",

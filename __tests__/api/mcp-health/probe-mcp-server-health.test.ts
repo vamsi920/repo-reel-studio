@@ -10,7 +10,10 @@ import {
   seedMcpServerHealth,
 } from "#/api/mcp-health/probe-mcp-server-health";
 import McpService from "#/api/mcp-service/mcp-service.api";
-import type { ExtendedMCPTestResponse, MCPServerConfig } from "#/types/mcp-server";
+import type {
+  ExtendedMCPTestResponse,
+  MCPServerConfig,
+} from "#/types/mcp-server";
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
 
 /** Matches the catalog `github` entry, so the `get_me` probe spec applies. */
@@ -129,16 +132,40 @@ describe("probeMcpServerHealth", () => {
     });
   });
 
-  it("converts a thrown transport error into a failed verdict", async () => {
+  it("files a thrown transport error as probe-unavailable, not as a server verdict", async () => {
     vi.spyOn(McpService, "testServer").mockRejectedValue(
-      new Error("network down"),
+      new Error("Request failed: Failed to fetch"),
     );
 
     await probeMcpServerHealth(CUSTOM);
 
     expect(getMcpHealthSnapshot()[getMcpServerHealthKey(CUSTOM)]).toMatchObject(
-      { status: "failed", kind: "unknown", error: "network down" },
+      {
+        status: "failed",
+        kind: "probe-unavailable",
+        error: "Request failed: Failed to fetch",
+      },
     );
+  });
+
+  it("files a 5xx from the test endpoint as probe-unavailable with the raw text redacted", async () => {
+    const error = new Error(
+      'HTTP request failed (500 Internal Server Error): {"detail":"boom github_pat_x"}',
+    ) as Error & { status: number };
+    error.name = "HttpError";
+    error.status = 500;
+    vi.spyOn(McpService, "testServer").mockRejectedValue(error);
+
+    await probeMcpServerHealth(GITHUB);
+
+    const health = getMcpHealthSnapshot()[getMcpServerHealthKey(GITHUB)];
+    expect(health).toMatchObject({
+      status: "failed",
+      kind: "probe-unavailable",
+    });
+    expect(health).not.toMatchObject({
+      error: expect.stringContaining("github_pat_x"),
+    });
   });
 });
 

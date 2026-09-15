@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "Reautorizar",
   "MCP$TEST_ERROR_TIMEOUT": "Tempo limite de conexão esgotado. Verifique a URL e tente novamente.",
   "MCP$TEST_ERROR_CONNECTION": "Não foi possível acessar o servidor. Verifique a URL e o tipo de servidor.",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "Não foi possível executar o teste de conexão — o backend não respondeu. Tente novamente ou verifique se o backend está em execução.",
   "MCP$TEST_ERROR_UNKNOWN": "Falha na conexão: {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "O servidor respondeu {{status}} para {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Falha na verificação das credenciais: {{-error}}",

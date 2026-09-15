@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "Autoriser på nytt",
   "MCP$TEST_ERROR_TIMEOUT": "Tilkoblingen ble tidsavbrutt. Sjekk URL-en og prøv igjen.",
   "MCP$TEST_ERROR_CONNECTION": "Kunne ikke nå serveren. Sjekk URL-en og servertypen.",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "Kunne ikke kjøre tilkoblingstesten — backend svarte ikke. Prøv igjen, eller sjekk at backend kjører.",
   "MCP$TEST_ERROR_UNKNOWN": "Tilkobling mislyktes: {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "Serveren svarte {{status}} for {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Kontroll av påloggingsinformasjon mislyktes: {{-error}}",

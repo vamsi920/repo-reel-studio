@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
-import type { ExtendedMCPTestFailureKind } from "#/types/mcp-server";
+import type { McpHealthFailureKind } from "#/types/mcp-health";
 
 // httpx's HTTPStatusError repr: "Client error '410 Gone' for url 'https://…'".
 const HTTP_STATUS_ERROR_PATTERN =
@@ -36,14 +36,18 @@ export function makeUnknownMcpTestErrorMessage(
 /**
  * Kind-specific, localized guidance for a failed MCP connection test.
  * `error` is interpolated for the kinds whose message surfaces the provider
- * detail — callers pass display-safe (redacted) text.
+ * detail — callers pass display-safe (redacted) text. `probe-unavailable`
+ * deliberately drops it: the text is the transport's wrapped error, not
+ * anything about the MCP server.
  */
 export function makeMcpTestErrorMessage(
   t: TFunction<"openhands">,
-  errorKind: ExtendedMCPTestFailureKind,
+  errorKind: McpHealthFailureKind,
   error: string,
 ): string {
   switch (errorKind) {
+    case "probe-unavailable":
+      return t(I18nKey.MCP$TEST_ERROR_PROBE_UNAVAILABLE);
     case "timeout":
       return t(I18nKey.MCP$TEST_ERROR_TIMEOUT);
     case "connection":

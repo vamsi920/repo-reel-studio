@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "重新授权",
   "MCP$TEST_ERROR_TIMEOUT": "连接超时。请检查 URL 后重试。",
   "MCP$TEST_ERROR_CONNECTION": "无法连接到服务器。请检查 URL 和服务器类型。",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "无法运行连接测试 — 后端没有响应。请重试，或检查后端是否正在运行。",
   "MCP$TEST_ERROR_UNKNOWN": "连接失败：{{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "服务器对 {{-url}} 返回了 {{status}}",
   "MCP$TEST_ERROR_CREDENTIALS": "凭据检查失败：{{-error}}",

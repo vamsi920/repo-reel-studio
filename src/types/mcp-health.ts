@@ -1,5 +1,15 @@
 import type { ExtendedMCPTestFailureKind } from "#/types/mcp-server";
 
+/**
+ * Why a health check failed. The backend's own verdicts describe the MCP
+ * server; `probe-unavailable` is the one client-side kind and means the test
+ * request itself never got a verdict (agent-server down, 5xx from
+ * `/api/mcp/test`, network failure) — so it says nothing about the server.
+ */
+export type McpHealthFailureKind =
+  | ExtendedMCPTestFailureKind
+  | "probe-unavailable";
+
 /** How strongly the last successful check proved the server works. */
 export type McpHealthVerification =
   // A representative read-only tool call succeeded — credentials exercised.
@@ -18,7 +28,7 @@ export type McpServerHealth =
     }
   | {
       status: "failed";
-      kind: ExtendedMCPTestFailureKind;
+      kind: McpHealthFailureKind;
       /** Redacted, display-safe error detail. */
       error: string;
       checkedAt: number;

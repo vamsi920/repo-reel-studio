@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "Réautoriser",
   "MCP$TEST_ERROR_TIMEOUT": "Délai de connexion dépassé. Vérifiez l'URL et réessayez.",
   "MCP$TEST_ERROR_CONNECTION": "Impossible d'atteindre le serveur. Vérifiez l'URL et le type de serveur.",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "Impossible d'exécuter le test de connexion — le backend n'a pas répondu. Réessayez ou vérifiez que le backend est en cours d'exécution.",
   "MCP$TEST_ERROR_UNKNOWN": "Échec de la connexion : {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "Le serveur a répondu {{status}} pour {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Échec de la vérification des identifiants : {{-error}}",

@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "再認可",
   "MCP$TEST_ERROR_TIMEOUT": "接続がタイムアウトしました。URLを確認して、もう一度お試しください。",
   "MCP$TEST_ERROR_CONNECTION": "サーバーに接続できませんでした。URLとサーバーの種類を確認してください。",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "接続テストを実行できませんでした — バックエンドが応答しませんでした。再試行するか、バックエンドが動作しているか確認してください。",
   "MCP$TEST_ERROR_UNKNOWN": "接続に失敗しました: {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "サーバーは {{-url}} に対して {{status}} を返しました",
   "MCP$TEST_ERROR_CREDENTIALS": "認証情報の確認に失敗しました: {{-error}}",

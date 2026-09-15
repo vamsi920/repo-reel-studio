@@ -82,6 +82,12 @@ export function McpServerHealthSection({
   const isChecking = health.status === "checking";
   const isFailed = health.status === "failed";
   const label = getStatusLabel(t, health);
+  // The transport's raw error stays out of the label (it reads as a verdict
+  // on the server) but is kept in the tooltip for anyone debugging.
+  const labelTitle =
+    isFailed && health.kind === "probe-unavailable" && health.error
+      ? `${label} (${health.error})`
+      : label;
 
   const handleReauthorize = async () => {
     const result = await reauthorize();
@@ -139,7 +145,7 @@ export function McpServerHealthSection({
             "line-clamp-2 break-words text-xs",
             isFailed ? "text-red-500" : "text-tertiary-alt",
           )}
-          title={label}
+          title={labelTitle}
         >
           {label}
         </p>

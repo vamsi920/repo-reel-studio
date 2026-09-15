@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "إعادة التفويض",
   "MCP$TEST_ERROR_TIMEOUT": "انتهت مهلة الاتصال. تحقق من عنوان URL وحاول مرة أخرى.",
   "MCP$TEST_ERROR_CONNECTION": "تعذّر الوصول إلى الخادم. تحقق من عنوان URL ونوع الخادم.",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "تعذر تشغيل اختبار الاتصال — لم يستجب الخادم الخلفي. أعد المحاولة أو تحقق من أن الخادم الخلفي يعمل.",
   "MCP$TEST_ERROR_UNKNOWN": "فشل الاتصال: {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "أجاب الخادم بـ {{status}} لعنوان {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "فشل التحقق من بيانات الاعتماد: {{-error}}",

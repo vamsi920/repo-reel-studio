@@ -22,6 +22,13 @@ import {
 const AUTH_FAILURE_TEXT =
   /\b(401|403)\b|unauthorized|forbidden|invalid[ _-]?(token|credentials?|api[ _-]?key)/i;
 
+/**
+ * A thrown error means the probe request itself failed (agent-server down,
+ * 5xx from `/api/mcp/test`, network/timeout) — a verdict about the MCP
+ * server only ever arrives in a response body. File it as
+ * `probe-unavailable` so the card says the test couldn't run instead of
+ * blaming the server with the transport's raw message.
+ */
 function failedHealth(
   server: MCPServerConfig,
   error: unknown,
@@ -29,7 +36,7 @@ function failedHealth(
   const message = error instanceof Error ? error.message : String(error);
   return {
     status: "failed",
-    kind: "unknown",
+    kind: "probe-unavailable",
     error: redactMcpSecrets(message, server),
     checkedAt: Date.now(),
   };

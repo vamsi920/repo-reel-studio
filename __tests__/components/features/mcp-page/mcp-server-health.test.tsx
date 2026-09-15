@@ -13,7 +13,10 @@ import {
 import { InstalledServerCard } from "#/components/features/mcp-page/installed-server-card";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import { MOCK_DEFAULT_USER_SETTINGS } from "#/mocks/handlers";
-import type { ExtendedMCPTestResponse, MCPServerConfig } from "#/types/mcp-server";
+import type {
+  ExtendedMCPTestResponse,
+  MCPServerConfig,
+} from "#/types/mcp-server";
 
 const CUSTOM_SERVER: MCPServerConfig = {
   id: "custom",
@@ -96,7 +99,10 @@ describe("InstalledServerCard connection health", () => {
 
     resolveProbe({ ok: true, tools: ["a", "b"] });
     await waitFor(() =>
-      expect(healthDot()).toHaveAttribute("data-status", "healthy-connectivity"),
+      expect(healthDot()).toHaveAttribute(
+        "data-status",
+        "healthy-connectivity",
+      ),
     );
     // The explicit "proves connectivity only" hint must accompany the result.
     expect(
@@ -120,14 +126,42 @@ describe("InstalledServerCard connection health", () => {
     // Probing must not have bubbled into the card's edit action.
     expect(onEdit).not.toHaveBeenCalled();
     expect(probeButton(GITHUB_SERVER.id)).toHaveTextContent("MCP$HEALTH_RETRY");
-    expect(
-      screen.getByRole("link", { name: "MCP$VIEW_DOCS" }),
-    ).toHaveAttribute("href", "https://github.com/github/github-mcp-server");
+    expect(screen.getByRole("link", { name: "MCP$VIEW_DOCS" })).toHaveAttribute(
+      "href",
+      "https://github.com/github/github-mcp-server",
+    );
 
     fireEvent.click(
       screen.getByTestId(`mcp-health-update-credentials-${GITHUB_SERVER.id}`),
     );
     expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("says the test couldn't run when the probe request itself fails, keeping the raw text in the tooltip only", async () => {
+    vi.spyOn(McpService, "testServer").mockRejectedValue(
+      new Error(
+        'HTTP request failed (500 ): {"detail":"Internal Server Error"}',
+      ),
+    );
+    renderCard(GITHUB_SERVER);
+
+    fireEvent.click(probeButton(GITHUB_SERVER.id));
+    await waitFor(() =>
+      expect(healthDot()).toHaveAttribute("data-status", "failed"),
+    );
+
+    const label = screen.getByTestId(`mcp-health-label-${GITHUB_SERVER.id}`);
+    expect(label).toHaveTextContent("MCP$TEST_ERROR_PROBE_UNAVAILABLE");
+    expect(label).not.toHaveTextContent("Internal Server Error");
+    expect(label).toHaveAttribute(
+      "title",
+      expect.stringContaining("Internal Server Error"),
+    );
+    // A failed probe is not a credentials verdict: no "Update credentials".
+    expect(
+      screen.queryByTestId(`mcp-health-update-credentials-${GITHUB_SERVER.id}`),
+    ).not.toBeInTheDocument();
+    expect(probeButton(GITHUB_SERVER.id)).toHaveTextContent("MCP$HEALTH_RETRY");
   });
 
   it("Retry re-probes and moves the card to healthy in place", async () => {
@@ -147,7 +181,10 @@ describe("InstalledServerCard connection health", () => {
 
     fireEvent.click(probeButton(CUSTOM_SERVER.id));
     await waitFor(() =>
-      expect(healthDot()).toHaveAttribute("data-status", "healthy-connectivity"),
+      expect(healthDot()).toHaveAttribute(
+        "data-status",
+        "healthy-connectivity",
+      ),
     );
   });
 
@@ -209,7 +246,10 @@ describe("InstalledServerCard connection health", () => {
     );
 
     await waitFor(() =>
-      expect(healthDot()).toHaveAttribute("data-status", "healthy-connectivity"),
+      expect(healthDot()).toHaveAttribute(
+        "data-status",
+        "healthy-connectivity",
+      ),
     );
     expect(McpService.authorizeOAuth).toHaveBeenCalledTimes(1);
     // The refreshed oauth_state is persisted, not dropped on the floor.

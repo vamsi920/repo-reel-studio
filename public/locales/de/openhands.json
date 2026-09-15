@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "Erneut autorisieren",
   "MCP$TEST_ERROR_TIMEOUT": "Zeitüberschreitung der Verbindung. Überprüfen Sie die URL und versuchen Sie es erneut.",
   "MCP$TEST_ERROR_CONNECTION": "Server konnte nicht erreicht werden. Überprüfen Sie die URL und den Servertyp.",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "Der Verbindungstest konnte nicht ausgeführt werden — das Backend hat nicht geantwortet. Versuchen Sie es erneut oder prüfen Sie, ob das Backend läuft.",
   "MCP$TEST_ERROR_UNKNOWN": "Verbindung fehlgeschlagen: {{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "Der Server hat für {{-url}} mit {{status}} geantwortet",
   "MCP$TEST_ERROR_CREDENTIALS": "Überprüfung der Anmeldedaten fehlgeschlagen: {{-error}}",

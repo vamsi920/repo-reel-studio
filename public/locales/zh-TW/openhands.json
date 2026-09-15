@@ -955,6 +955,7 @@
   "MCP$HEALTH_REAUTHORIZE": "重新授權",
   "MCP$TEST_ERROR_TIMEOUT": "連線逾時。請檢查 URL 後重試。",
   "MCP$TEST_ERROR_CONNECTION": "無法連線到伺服器。請檢查 URL 和伺服器類型。",
+  "MCP$TEST_ERROR_PROBE_UNAVAILABLE": "無法執行連線測試 — 後端沒有回應。請重試，或檢查後端是否正在執行。",
   "MCP$TEST_ERROR_UNKNOWN": "連線失敗：{{-error}}",
   "MCP$TEST_ERROR_HTTP_STATUS": "伺服器對 {{-url}} 回應了 {{status}}",
   "MCP$TEST_ERROR_CREDENTIALS": "憑證檢查失敗：{{-error}}",

@@ -5,7 +5,9 @@ import { makeMcpTestErrorMessage } from "#/utils/mcp-test-error-message";
 // Mirrors the vitest i18n mock: the key comes back as-is, with the
 // interpolation values appended so the test can see what was passed.
 const t = ((key: string, options?: Record<string, unknown>) =>
-  options ? `${key} ${JSON.stringify(options)}` : key) as TFunction<"openhands">;
+  options
+    ? `${key} ${JSON.stringify(options)}`
+    : key) as TFunction<"openhands">;
 
 describe("makeMcpTestErrorMessage", () => {
   it("renders an httpx status error as a status + URL sentence", () => {
@@ -30,5 +32,15 @@ describe("makeMcpTestErrorMessage", () => {
     expect(message).toBe(
       'MCP$TEST_ERROR_UNKNOWN {"error":"All connection attempts failed"}',
     );
+  });
+
+  it("renders a probe transport failure as 'test couldn't run' without the raw text", () => {
+    const message = makeMcpTestErrorMessage(
+      t,
+      "probe-unavailable",
+      'HTTP request failed (500 ): {"detail":"Internal Server Error"}',
+    );
+
+    expect(message).toBe("MCP$TEST_ERROR_PROBE_UNAVAILABLE");
   });
 });
