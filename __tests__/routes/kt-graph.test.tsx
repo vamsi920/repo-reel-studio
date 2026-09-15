@@ -12,8 +12,11 @@ import {
 } from "#/lib/data-platform/repositories/repository-identity";
 import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+import { resolveHeadCommitSha } from "#/lib/codegraph/workspace-identity";
+import { codeGraphKey } from "#/lib/codegraph/codegraph-types";
 import {
   openExistingAnalysis,
+  runAnalysis,
   type AnalysisHandle,
   type CodeGraphLevelPayload,
   type SearchEntry,
@@ -269,6 +272,93 @@ describe("KtGraph search", () => {
     // ...and the rebuild control reflects the in-progress rebuild rather than
     // the whole view disappearing behind a blank "analyzing" spinner.
     expect(screen.getByTestId("codegraph-rebuild")).toBeDisabled();
+  });
+
+  it("rebuilds from the stale banner under HEAD and clears the banner", async () => {
+    const HEAD = "fedcba0987654321";
+    // The rebuild needs a live session; the freshness check and the rebuild
+    // both resolve the same HEAD, which is not the commit the graph is on.
+    useKnowledgeStore.setState((current) => ({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          ...current.byRepositoryId[REPOSITORY_ID],
+          conversationUrl: "http://agent.test/conversations/1",
+          sessionApiKey: "key",
+        },
+      },
+    }));
+    vi.mocked(resolveHeadCommitSha).mockResolvedValue(HEAD);
+
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const makeHandle = (commitSha: string): AnalysisHandle => ({
+      meta: {
+        workspaceId: WORKSPACE_ID,
+        repositoryId: REPOSITORY_ID,
+        commitSha,
+        generatedAt: "2026-01-01T00:00:00.000Z",
+        fileCount: 1,
+        symbolCount: 1,
+        languages: [],
+        frameworks: [],
+      },
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    });
+    vi.mocked(runAnalysis).mockImplementation(async (options) =>
+      makeHandle(options.snapshot.commitSha),
+    );
+
+    const oldKey = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(oldKey, makeHandle(COMMIT));
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByTestId("codegraph-stale-banner"),
+    ).toHaveTextContent(`${COMMIT.slice(0, 7)} → ${HEAD.slice(0, 7)}`);
+
+    await userEvent.click(screen.getByTestId("codegraph-reanalyze"));
+
+    // The analyzer scans the HEAD checkout, so the run is labelled — and its
+    // output dir, Storage mirror and snapshot row keyed — under HEAD, not
+    // under the commit the Docs snapshot was generated at.
+    await waitFor(() => expect(runAnalysis).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(runAnalysis).mock.calls[0][0].snapshot.commitSha).toBe(
+      HEAD,
+    );
+
+    // The route follows the rebuilt graph: header on HEAD, no stale banner,
+    // and the old commit's in-memory graph is gone rather than overwritten.
+    const newKey = codeGraphKey(WORKSPACE_ID, REPOSITORY_ID, HEAD);
+    await waitFor(() =>
+      expect(useCodeGraphStore.getState().byKey[newKey]?.status).toBe("ready"),
+    );
+    expect(
+      await screen.findByText(`acme/api@${HEAD.slice(0, 7)}`, { exact: false }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("codegraph-stale-banner"),
+    ).not.toBeInTheDocument();
+    expect(useCodeGraphStore.getState().byKey[oldKey]).toBeUndefined();
+    expect(
+      useCodeGraphStore.getState().byKey[newKey]?.freshness?.freshness,
+    ).toBe("fresh");
+    // The Docs snapshot itself keeps the commit the docs were generated at.
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[REPOSITORY_ID].snapshot
+        .commitSha,
+    ).toBe(COMMIT);
   });
 
   it("fetches the search index once even when the user types before the first fetch resolves", async () => {

@@ -30,7 +30,7 @@ import {
   toSubsystemHints,
 } from "#/lib/codegraph/deepwiki-bridge";
 import { emitCodeGraphMilestone } from "#/lib/codegraph/activity";
-import { evaluateFreshness } from "#/lib/codegraph/staleness";
+import { evaluateFreshness, sameCommit } from "#/lib/codegraph/staleness";
 import {
   resolveHeadCommitSha,
   workspaceIdForSnapshot,
@@ -65,7 +65,20 @@ function KtGraph() {
   // was generated earlier; this loads it the same way the Docs tab does.
   const rehydrationChecked = useKnowledgeRehydration(repositoryId || undefined);
 
-  const snapshot = knowledgeState?.snapshot;
+  // The Docs snapshot is pinned to the commit the docs were generated at and
+  // must stay that way. The graph, though, can be rebuilt under HEAD from the
+  // stale banner — when it has been, the route re-keys itself to that commit
+  // so the key, the header, the analyzer output dir, the Storage mirror and
+  // the freshness check all describe the graph actually on screen.
+  const docsSnapshot = knowledgeState?.snapshot;
+  const pinnedCommit = useCodeGraphStore(
+    (s) => s.pinnedCommitByRepositoryId[repositoryId],
+  );
+  const snapshot = React.useMemo(() => {
+    if (!docsSnapshot) return undefined;
+    if (pinnedCommit?.from !== docsSnapshot.commitSha) return docsSnapshot;
+    return { ...docsSnapshot, commitSha: pinnedCommit.to };
+  }, [docsSnapshot, pinnedCommit]);
   const key = snapshot
     ? codeGraphKey(
         workspaceIdForSnapshot(snapshot),
@@ -113,8 +126,33 @@ function KtGraph() {
 
   const analyze = React.useCallback(
     async (force: boolean, coldStorageIds?: PersistenceIds) => {
-      if (!snapshot || !key) return;
+      if (!snapshot || !docsSnapshot || !key) return;
       const workspaceId = workspaceIdForSnapshot(snapshot);
+      const conversationUrl = knowledgeState?.conversationUrl ?? null;
+      const sessionApiKey = knowledgeState?.sessionApiKey ?? null;
+
+      // A rebuild exists to describe the code as it is now. The sandbox
+      // checkout the analyzer scans is at HEAD (that is exactly what made the
+      // graph stale), so the rebuilt graph must be keyed, labelled, written
+      // to `out/<sha>`, mirrored and recorded under HEAD too — never under the
+      // commit the Docs snapshot happens to carry. Otherwise the old commit's
+      // genuine graph gets overwritten with HEAD's code and the stale banner
+      // never clears. When HEAD cannot be resolved the rebuild stays on the
+      // current commit, as before.
+      let target = snapshot;
+      let targetKey = key;
+      if (force) {
+        const head = await resolveHeadCommitSha(
+          snapshot,
+          conversationUrl,
+          sessionApiKey,
+        );
+        if (head && !sameCommit(head, snapshot.commitSha)) {
+          target = { ...snapshot, commitSha: head };
+          targetKey = codeGraphKey(workspaceId, target.repositoryId, head);
+        }
+      }
+      const retargeted = targetKey !== key;
 
       // A forced rebuild of a graph that is already on screen keeps it there
       // — the toolbar's rebuild button shows progress instead of the whole
@@ -122,20 +160,44 @@ function KtGraph() {
       // (first build, or rebuilding from the full error screen, which has no
       // graph worth preserving) resets to that spinner as before.
       const existing = useCodeGraphStore.getState().byKey[key];
-      if (force && existing?.status === "ready") {
+      const keepOnScreen = force && existing?.status === "ready";
+      if (keepOnScreen) {
         useCodeGraphStore.getState().beginRebuild(key);
-      } else {
+      }
+      if (!keepOnScreen || retargeted) {
         useCodeGraphStore.getState().start({
           workspaceId,
-          repositoryId: snapshot.repositoryId,
-          commitSha: snapshot.commitSha,
+          repositoryId: target.repositoryId,
+          commitSha: target.commitSha,
         });
       }
+      // The pin is always relative to the Docs snapshot's own commit, so a
+      // second rebuild (HEAD moved again) replaces the first pin instead of
+      // chaining off it.
+      const pin = () => {
+        if (!retargeted) return;
+        useCodeGraphStore.getState().pinCommit(snapshot.repositoryId, {
+          from: docsSnapshot.commitSha,
+          to: target.commitSha,
+        });
+      };
+      if (!keepOnScreen) pin();
+      // Progress goes to whichever key is on screen while the run lasts: the
+      // old graph when it is being kept, else the target.
+      const displayKey = keepOnScreen ? key : targetKey;
+      // Once the run has settled, the route follows the target key; the old
+      // commit's in-memory graph is dropped (its files and mirror are left
+      // exactly as they were).
+      const settle = () => {
+        if (!retargeted || !keepOnScreen) return;
+        pin();
+        useCodeGraphStore.getState().reset(key);
+      };
 
       const context = {
         workspaceId,
-        repositoryId: snapshot.repositoryId,
-        commitSha: snapshot.commitSha,
+        repositoryId: target.repositoryId,
+        commitSha: target.commitSha,
       };
       // Resolved up front (not just after a successful run) so the Storage
       // fast path in `openExistingAnalysis` works even without a live
@@ -157,9 +219,9 @@ function KtGraph() {
             })
           : null);
       const shared = {
-        snapshot,
-        conversationUrl: knowledgeState?.conversationUrl ?? null,
-        sessionApiKey: knowledgeState?.sessionApiKey ?? null,
+        snapshot: target,
+        conversationUrl,
+        sessionApiKey,
         workspaceId,
         storageIds: persistenceIds,
       };
@@ -189,17 +251,14 @@ function KtGraph() {
       // "/.neodevex: Read-only file system" error instead of a clear one.
       // Same scope boundary as Watch KT: analysis needs a live sandbox to
       // actually run in.
-      if (
-        !snapshot.localPath ||
-        !knowledgeState?.conversationUrl ||
-        !knowledgeState?.sessionApiKey
-      ) {
+      if (!snapshot.localPath || !conversationUrl || !sessionApiKey) {
         useCodeGraphStore
           .getState()
           .setError(
-            key,
+            targetKey,
             "Open this repository's conversation to build the code graph — analysis needs a live workspace session.",
           );
+        settle();
         return;
       }
 
@@ -209,7 +268,7 @@ function KtGraph() {
           ...shared,
           hints: toSubsystemHints(knowledgeState?.knowledge ?? undefined),
           onProgress: (progress) => {
-            useCodeGraphStore.getState().setProgress(key, progress);
+            useCodeGraphStore.getState().setProgress(displayKey, progress);
             if (progress.phase === "relationships") {
               emitCodeGraphMilestone(context, {
                 kind: "analysis.relationships",
@@ -225,7 +284,18 @@ function KtGraph() {
           },
         });
 
-        useCodeGraphStore.getState().setReady(key, result);
+        useCodeGraphStore.getState().setReady(targetKey, result);
+        if (retargeted) {
+          // The graph now describes HEAD: say so without waiting for the
+          // freshness effect to re-check it on the new key.
+          useCodeGraphStore
+            .getState()
+            .setFreshness(
+              targetKey,
+              evaluateFreshness(target.commitSha, target.commitSha),
+            );
+        }
+        settle();
         emitCodeGraphMilestone(context, {
           kind: "analysis.ready",
           subsystemCount: result.root.nodes.length,
@@ -241,14 +311,14 @@ function KtGraph() {
           void codegraphPersistenceRepository.saveSnapshot({
             workspaceId: persistenceIds.workspaceId,
             repositoryUuid: persistenceIds.repositoryUuid,
-            commitSha: snapshot.commitSha,
+            commitSha: target.commitSha,
             nodeCount: result.root.nodes.length,
             edgeCount: result.root.edges.length,
             analyzerVersion: "understand-anything",
             outputPath: codegraphStoragePrefix(
               persistenceIds.workspaceId,
               persistenceIds.repositoryUuid,
-              snapshot.commitSha,
+              target.commitSha,
             ),
           });
         }
@@ -259,11 +329,12 @@ function KtGraph() {
             : error instanceof Error
               ? error.message
               : String(error);
-        useCodeGraphStore.getState().setError(key, reason);
+        useCodeGraphStore.getState().setError(targetKey, reason);
+        settle();
         emitCodeGraphMilestone(context, { kind: "analysis.failed", reason });
       }
     },
-    [snapshot, knowledgeState, key, backend.id],
+    [snapshot, docsSnapshot, knowledgeState, key, backend.id],
   );
 
   // On a fresh page load (no in-memory graph state yet), check whether a

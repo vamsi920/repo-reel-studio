@@ -54,10 +54,24 @@ export interface CodeGraphState {
 
 const LEVEL_ROOT = "";
 
+/** A graph the stale banner rebuilt under the repository's current HEAD
+ * instead of the commit the Docs snapshot was generated at. */
+export interface PinnedGraphCommit {
+  /** The Docs snapshot commit the pin was made from — the pin only applies
+   * while the snapshot still carries this commit. */
+  from: string;
+  /** The HEAD commit the graph was rebuilt under. */
+  to: string;
+}
+
 interface CodeGraphStore {
   byKey: Record<string, CodeGraphState>;
   /** Handles hold a live workspace client, so they stay out of rendered state. */
   handles: Record<string, AnalysisHandle>;
+  /** Per repository: the HEAD commit a stale-banner rebuild moved the graph
+   * to. The Docs snapshot keeps its own commit (docs really were generated
+   * there); only the graph route re-keys itself through this. */
+  pinnedCommitByRepositoryId: Record<string, PinnedGraphCommit>;
 
   start: (params: {
     workspaceId: string;
@@ -69,6 +83,7 @@ interface CodeGraphStore {
   setError: (key: string, error: string) => void;
   setFreshness: (key: string, freshness: FreshnessResult) => void;
   beginRebuild: (key: string) => void;
+  pinCommit: (repositoryId: string, pin: PinnedGraphCommit) => void;
 
   beginLoadLevel: (key: string, parentId: string) => void;
   setLevel: (
@@ -138,6 +153,7 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
   return {
     byKey: {},
     handles: {},
+    pinnedCommitByRepositoryId: {},
 
     start: ({ workspaceId, repositoryId, commitSha }) => {
       const key = codeGraphKey(workspaceId, repositoryId, commitSha);
@@ -184,6 +200,14 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
 
     beginRebuild: (key) =>
       update(key, (state) => ({ ...state, rebuilding: true })),
+
+    pinCommit: (repositoryId, pin) =>
+      set((store) => ({
+        pinnedCommitByRepositoryId: {
+          ...store.pinnedCommitByRepositoryId,
+          [repositoryId]: pin,
+        },
+      })),
 
     beginLoadLevel: (key, parentId) =>
       update(key, (state) => ({
