@@ -95,7 +95,17 @@ const BLOCKED_HOST_PATTERNS: RegExp[] = [
 ];
 
 /** Providers legitimately reached on loopback, beside the workload. */
-const LOOPBACK_ALLOWED_PROVIDERS = new Set(["ollama", "litellm", "qdrant", "postgres"]);
+const LOOPBACK_ALLOWED_PROVIDERS = new Set([
+  "ollama",
+  "litellm",
+  "qdrant",
+  "postgres",
+  // `baseUrlEnv`-resolved: a local Supabase stack's SUPABASE_URL is
+  // http://127.0.0.1:54321, not attacker-controlled input.
+  "supabase-storage",
+  "supabase-postgres",
+  "supabase-pgvector",
+]);
 
 export function assertHostAllowed(urlString: string, providerId: string): void {
   let url: URL;
@@ -111,11 +121,19 @@ export function assertHostAllowed(urlString: string, providerId: string): void {
   }
 }
 
-/** Resolves a manifest's base URL, honouring a self-hosted host override. */
+/**
+ * Resolves a manifest's base URL, honouring a self-hosted host override.
+ *
+ * `baseUrlEnv` is a last resort, for connectors that reuse this deployment's
+ * own infrastructure (e.g. its own Supabase project) instead of a vendor's
+ * public API or a user-supplied host: there is no literal to hardcode since
+ * it differs per install, and nothing for the user to type in either.
+ */
 export function resolveBaseUrl(
   manifest: {
     id: string;
     baseUrl?: string;
+    baseUrlEnv?: string;
     hostOverride?: { field: string; baseUrlTemplate: string };
   },
   context: TemplateContext,
@@ -126,9 +144,24 @@ export function resolveBaseUrl(
   const base =
     overrideValue && manifest.hostOverride
       ? interpolatePath(manifest.hostOverride.baseUrlTemplate, context)
-      : manifest.baseUrl;
+      : (manifest.baseUrl ??
+        (manifest.baseUrlEnv ? readEnvVar(manifest.baseUrlEnv) : undefined));
 
   if (!base) throw new TemplateError("no_base_url");
   assertHostAllowed(base, manifest.id);
   return base.replace(/\/+$/, "");
+}
+
+/**
+ * `Deno.env` in production; falls back to `process.env` so this file stays
+ * importable under Vitest (`__tests__/lib/environment/probe-runner.test.ts`
+ * loads it outside a Deno runtime).
+ */
+function readEnvVar(name: string): string | undefined {
+  const denoEnv = (globalThis as { Deno?: { env: { get(name: string): string | undefined } } })
+    .Deno?.env;
+  if (denoEnv) return denoEnv.get(name);
+  return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[
+    name
+  ];
 }

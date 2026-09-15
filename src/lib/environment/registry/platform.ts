@@ -18,6 +18,9 @@ export const PLATFORM_MANIFESTS: ConnectorManifest[] = [
     nameKey: "CONNECTOR$SUPABASE_STORAGE_NAME",
     descriptionKey: "CONNECTOR$SUPABASE_STORAGE_DESC",
     authKind: "none",
+    // Zero-configuration: reuses this deployment's own Supabase project, so
+    // there is no host to ask the user for.
+    baseUrlEnv: "SUPABASE_URL",
     fields: [],
     probe: {
       vantage: ["browser", "edge"],
@@ -206,6 +209,9 @@ export const PLATFORM_MANIFESTS: ConnectorManifest[] = [
     nameKey: "CONNECTOR$SUPABASE_PG_NAME",
     descriptionKey: "CONNECTOR$SUPABASE_PG_DESC",
     authKind: "none",
+    // Zero-configuration: reuses this deployment's own Supabase project, so
+    // there is no host to ask the user for.
+    baseUrlEnv: "SUPABASE_URL",
     fields: [],
     probe: {
       vantage: ["browser", "edge"],

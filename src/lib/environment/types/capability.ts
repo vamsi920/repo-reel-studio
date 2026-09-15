@@ -205,6 +205,15 @@ export interface ConnectorManifest {
   hostOverride?: { field: string; baseUrlTemplate: string };
   /** Base URL when `hostOverride` is absent or its field is empty. */
   baseUrl?: string;
+  /**
+   * Name of a server-side environment variable to read the base URL from,
+   * for connectors that reuse this deployment's own infrastructure (e.g. the
+   * app's own Supabase project) rather than a vendor's public API or a
+   * user-supplied host -- the address varies per install, and there is
+   * nothing for a user to type in either. Only consulted when `baseUrl` is
+   * absent; resolved by the Edge Function at probe time, never in the browser.
+   */
+  baseUrlEnv?: string;
   fields: ConnectorField[];
   oauth?: ConnectorOAuth;
   operations?: ConnectorOperation[];

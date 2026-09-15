@@ -86,6 +86,7 @@ export interface ConnectorManifest {
   authKind: string;
   hostOverride?: { field: string; baseUrlTemplate: string };
   baseUrl?: string;
+  baseUrlEnv?: string;
   fields: {
     name: string;
     kind: string;

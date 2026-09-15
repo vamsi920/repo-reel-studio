@@ -14,6 +14,7 @@ export interface ConnectorManifest {
   authKind: string;
   hostOverride?: { field: string; baseUrlTemplate: string };
   baseUrl?: string;
+  baseUrlEnv?: string;
   fields: {
     name: string;
     kind: string;
@@ -2917,6 +2918,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
     "nameKey": "CONNECTOR$PGVECTOR_NAME",
     "descriptionKey": "CONNECTOR$PGVECTOR_DESC",
     "authKind": "none",
+    "baseUrlEnv": "SUPABASE_URL",
     "fields": [],
     "probe": {
       "vantage": [
@@ -2955,6 +2957,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
     "nameKey": "CONNECTOR$SUPABASE_PG_NAME",
     "descriptionKey": "CONNECTOR$SUPABASE_PG_DESC",
     "authKind": "none",
+    "baseUrlEnv": "SUPABASE_URL",
     "fields": [],
     "probe": {
       "vantage": [
@@ -2993,6 +2996,7 @@ export const CONNECTOR_MANIFESTS: ConnectorManifest[] = [
     "nameKey": "CONNECTOR$SUPABASE_STORAGE_NAME",
     "descriptionKey": "CONNECTOR$SUPABASE_STORAGE_DESC",
     "authKind": "none",
+    "baseUrlEnv": "SUPABASE_URL",
     "fields": [],
     "probe": {
       "vantage": [

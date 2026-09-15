@@ -9,6 +9,9 @@ export const VECTOR_STORE_MANIFESTS: ConnectorManifest[] = [
     // Authentication is the app's existing Supabase session; there is nothing
     // extra to supply, which is why this is the zero-configuration default.
     authKind: "none",
+    // Reuses this deployment's own Supabase project, so there is no host to
+    // ask the user for either.
+    baseUrlEnv: "SUPABASE_URL",
     fields: [],
     probe: {
       vantage: ["browser", "edge"],
