@@ -105,6 +105,23 @@ export function ManageBackendsModal({
     [active.backend.id, active.orgId, onClose, setActive],
   );
 
+  // In recovery mode the modal is the only thing on screen and the root
+  // bootstrap query does not re-probe on its own. The per-row health probe
+  // keeps polling, though, so once the active backend comes back (a Fly
+  // machine restart, a proxy blip) re-run the bootstrap automatically instead
+  // of stranding the user behind a modal that already says "Connected". Fire
+  // once per false/null -> true transition so a backend that stays healthy
+  // while the bootstrap keeps failing does not hammer `onClose` every poll.
+  const activeIsConnected =
+    healthByBackendId[active.backend.id]?.isConnected === true;
+  const wasActiveConnectedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!recoveryMode) return;
+    const wasConnected = wasActiveConnectedRef.current;
+    wasActiveConnectedRef.current = activeIsConnected;
+    if (activeIsConnected && !wasConnected) onClose();
+  }, [activeIsConnected, onClose, recoveryMode]);
+
   const handleCloudLogin = React.useCallback(
     (backend: Backend, apiKey: string) => {
       updateBackend(backend.id, { apiKey });
@@ -186,6 +203,16 @@ export function ManageBackendsModal({
           </div>
 
           <div className="flex justify-end gap-2 p-5">
+            {recoveryMode ? (
+              <BrandButton
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                testId="manage-backends-retry"
+              >
+                {t(I18nKey.SETTINGS$AGENT_SERVER_RETRY_CONNECTION)}
+              </BrandButton>
+            ) : null}
             {isLockedToCloud ? (
               lockedCloudBackend ? (
                 <DeviceFlowAuth

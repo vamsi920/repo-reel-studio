@@ -243,6 +243,43 @@ describe("ManageBackendsModal", () => {
     });
   });
 
+  it("in recovery mode, re-runs the bootstrap on its own once the active backend's probe reports connected", async () => {
+    const onClose = vi.fn();
+
+    renderWithProviders(<ManageBackendsModal onClose={onClose} recoveryMode />);
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(
+      screen
+        .getByTestId("manage-backends-row-Local")
+        .querySelector('[data-testid="backend-status-dot"]'),
+    ).toHaveAttribute("data-status", "connected");
+  });
+
+  it("in recovery mode, offers a Retry connection button while the active backend is still unreachable", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    getSettingsMock.mockRejectedValue(new Error("Network Error"));
+
+    renderWithProviders(<ManageBackendsModal onClose={onClose} recoveryMode />);
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId("manage-backends-row-Local")
+          .querySelector('[data-testid="backend-status-dot"]'),
+      ).toHaveAttribute("data-status", "disconnected"),
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(
+      screen.queryByTestId("manage-backends-done"),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("manage-backends-retry"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("opens an edit form pre-filled with the row's backend, and persists changes via updateBackend", async () => {
     // These tests exercise edit-form behavior, not lock behavior; isolate
     // them from a local .env that sets VITE_LOCK_TO_CLOUD and would hide the
@@ -627,9 +664,7 @@ describe("ManageBackendsModal", () => {
     );
 
     await user.click(
-      await screen.findByTestId(
-        "manage-backends-reconnect-cloud-login-button",
-      ),
+      await screen.findByTestId("manage-backends-reconnect-cloud-login-button"),
     );
 
     await waitFor(() => {
@@ -678,9 +713,7 @@ describe("ManageBackendsModal", () => {
     );
 
     await user.click(
-      await screen.findByTestId(
-        "manage-backends-reconnect-cloud-login-button",
-      ),
+      await screen.findByTestId("manage-backends-reconnect-cloud-login-button"),
     );
 
     expect(
