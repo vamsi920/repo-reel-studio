@@ -16268,6 +16268,23 @@
     "tr": "Bağlantı başarısız: {{-error}}",
     "uk": "Помилка з'єднання: {{-error}}"
   },
+  "MCP$TEST_ERROR_HTTP_STATUS": {
+    "en": "The server answered {{status}} for {{-url}}",
+    "ja": "サーバーは {{-url}} に対して {{status}} を返しました",
+    "zh-CN": "服务器对 {{-url}} 返回了 {{status}}",
+    "zh-TW": "伺服器對 {{-url}} 回應了 {{status}}",
+    "ko-KR": "서버가 {{-url}}에 대해 {{status}}(으)로 응답했습니다",
+    "no": "Serveren svarte {{status}} for {{-url}}",
+    "ar": "أجاب الخادم بـ {{status}} لعنوان {{-url}}",
+    "de": "Der Server hat für {{-url}} mit {{status}} geantwortet",
+    "fr": "Le serveur a répondu {{status}} pour {{-url}}",
+    "it": "Il server ha risposto {{status}} per {{-url}}",
+    "pt": "O servidor respondeu {{status}} para {{-url}}",
+    "es": "El servidor respondió {{status}} para {{-url}}",
+    "ca": "El servidor ha respost {{status}} per a {{-url}}",
+    "tr": "Sunucu {{-url}} için {{status}} yanıtı verdi",
+    "uk": "Сервер відповів {{status}} для {{-url}}"
+  },
   "MCP$TEST_ERROR_CREDENTIALS": {
     "en": "Credential check failed: {{-error}}",
     "ja": "認証情報の確認に失敗しました: {{-error}}",

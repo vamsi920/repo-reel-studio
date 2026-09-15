@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "S'ha esgotat el temps de connexió. Comprova l'URL i torna-ho a provar.",
   "MCP$TEST_ERROR_CONNECTION": "No s'ha pogut connectar amb el servidor. Comprova l'URL i el tipus de servidor.",
   "MCP$TEST_ERROR_UNKNOWN": "Ha fallat la connexió: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "El servidor ha respost {{status}} per a {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Ha fallat la verificació de credencials: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "Edita {{name}}",
   "MCP$DELETE_SERVER_ARIA": "Elimina {{name}}",

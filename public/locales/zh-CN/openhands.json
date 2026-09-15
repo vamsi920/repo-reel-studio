@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "连接超时。请检查 URL 后重试。",
   "MCP$TEST_ERROR_CONNECTION": "无法连接到服务器。请检查 URL 和服务器类型。",
   "MCP$TEST_ERROR_UNKNOWN": "连接失败：{{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "服务器对 {{-url}} 返回了 {{status}}",
   "MCP$TEST_ERROR_CREDENTIALS": "凭据检查失败：{{-error}}",
   "MCP$EDIT_SERVER_ARIA": "编辑 {{name}}",
   "MCP$DELETE_SERVER_ARIA": "移除 {{name}}",

@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "انتهت مهلة الاتصال. تحقق من عنوان URL وحاول مرة أخرى.",
   "MCP$TEST_ERROR_CONNECTION": "تعذّر الوصول إلى الخادم. تحقق من عنوان URL ونوع الخادم.",
   "MCP$TEST_ERROR_UNKNOWN": "فشل الاتصال: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "أجاب الخادم بـ {{status}} لعنوان {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "فشل التحقق من بيانات الاعتماد: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "تعديل {{name}}",
   "MCP$DELETE_SERVER_ARIA": "إزالة {{name}}",

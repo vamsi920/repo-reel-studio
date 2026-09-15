@@ -184,6 +184,15 @@ export function CustomServerEditor({
     });
   };
 
+  // A verdict describes one exact config; once the user edits any field
+  // (or switches transport, which resets the whole form) it is stale and
+  // would otherwise sit under a different form until the next test.
+  const handleConfigChange = () => {
+    if (!testResult && !oauthTestResult) return;
+    resetTest();
+    setOauthTestResult(null);
+  };
+
   const handleTestClick = (payload: MCPServerConfig) => {
     setOauthTestResult(null);
     if (payload.auth?.strategy === "oauth2" && !isCloudBackend) {
@@ -250,6 +259,7 @@ export function CustomServerEditor({
             onTest={isCloudBackend ? undefined : handleTestClick}
             isTestPending={isTesting || isOauthTesting}
             testMessage={isCloudBackend ? null : testMessage}
+            onConfigChange={handleConfigChange}
           />
         </div>
       </ModalBackdrop>

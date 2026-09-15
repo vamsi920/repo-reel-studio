@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Час очікування з'єднання вичерпано. Перевірте URL-адресу та спробуйте ще раз.",
   "MCP$TEST_ERROR_CONNECTION": "Не вдалося підключитися до сервера. Перевірте URL-адресу та тип сервера.",
   "MCP$TEST_ERROR_UNKNOWN": "Помилка з'єднання: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "Сервер відповів {{status}} для {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Помилка перевірки облікових даних: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "Редагувати {{name}}",
   "MCP$DELETE_SERVER_ARIA": "Видалити {{name}}",

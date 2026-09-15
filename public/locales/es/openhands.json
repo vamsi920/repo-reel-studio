@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Se agotó el tiempo de conexión. Comprueba la URL e inténtalo de nuevo.",
   "MCP$TEST_ERROR_CONNECTION": "No se pudo conectar con el servidor. Comprueba la URL y el tipo de servidor.",
   "MCP$TEST_ERROR_UNKNOWN": "Error de conexión: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "El servidor respondió {{status}} para {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Error en la verificación de credenciales: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "Editar {{name}}",
   "MCP$DELETE_SERVER_ARIA": "Eliminar {{name}}",

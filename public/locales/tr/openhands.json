@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Bağlantı zaman aşımına uğradı. URL'yi kontrol edip tekrar deneyin.",
   "MCP$TEST_ERROR_CONNECTION": "Sunucuya ulaşılamadı. URL'yi ve sunucu türünü kontrol edin.",
   "MCP$TEST_ERROR_UNKNOWN": "Bağlantı başarısız: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "Sunucu {{-url}} için {{status}} yanıtı verdi",
   "MCP$TEST_ERROR_CREDENTIALS": "Kimlik bilgisi denetimi başarısız: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "{{name}} öğesini düzenle",
   "MCP$DELETE_SERVER_ARIA": "{{name}} öğesini kaldır",

@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Zeitüberschreitung der Verbindung. Überprüfen Sie die URL und versuchen Sie es erneut.",
   "MCP$TEST_ERROR_CONNECTION": "Server konnte nicht erreicht werden. Überprüfen Sie die URL und den Servertyp.",
   "MCP$TEST_ERROR_UNKNOWN": "Verbindung fehlgeschlagen: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "Der Server hat für {{-url}} mit {{status}} geantwortet",
   "MCP$TEST_ERROR_CREDENTIALS": "Überprüfung der Anmeldedaten fehlgeschlagen: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "{{name}} bearbeiten",
   "MCP$DELETE_SERVER_ARIA": "{{name}} entfernen",

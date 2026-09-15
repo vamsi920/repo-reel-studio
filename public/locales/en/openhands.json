@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Connection timed out. Check the URL and try again.",
   "MCP$TEST_ERROR_CONNECTION": "Could not reach the server. Check the URL and server type.",
   "MCP$TEST_ERROR_UNKNOWN": "Connection failed: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "The server answered {{status}} for {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Credential check failed: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "Edit {{name}}",
   "MCP$DELETE_SERVER_ARIA": "Remove {{name}}",

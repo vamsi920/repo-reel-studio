@@ -39,6 +39,12 @@ interface MCPServerFormProps {
   onTest?: (server: MCPServerConfig) => void;
   isTestPending?: boolean;
   testMessage?: TestMessage | null;
+  /**
+   * Fired whenever any field of the config changes, including the transport
+   * and auth selectors, so the parent can drop a connection-test verdict
+   * that no longer describes what is in the form.
+   */
+  onConfigChange?: () => void;
 }
 
 export function MCPServerForm({
@@ -52,6 +58,7 @@ export function MCPServerForm({
   onTest,
   isTestPending = false,
   testMessage = null,
+  onConfigChange,
 }: MCPServerFormProps) {
   const { t } = useTranslation("openhands");
   const [serverType, setServerType] = React.useState<MCPServerType>(
@@ -448,6 +455,7 @@ export function MCPServerForm({
       ref={formRef}
       data-testid={formTestId}
       onSubmit={handleSubmit}
+      onChange={onConfigChange}
       className="flex flex-col items-start gap-6"
       noValidate
     >
@@ -458,7 +466,10 @@ export function MCPServerForm({
           label={t(I18nKey.SETTINGS$MCP_SERVER_TYPE)}
           items={serverTypeOptions}
           selectedKey={serverType}
-          onSelectionChange={(key) => setServerType(key as MCPServerType)}
+          onSelectionChange={(key) => {
+            setServerType(key as MCPServerType);
+            onConfigChange?.();
+          }}
           onInputChange={() => {}} // Prevent input changes
           isClearable={false}
           allowsCustomValue={false}
@@ -502,7 +513,10 @@ export function MCPServerForm({
             label={t(I18nKey.SETTINGS$MCP_AUTHENTICATION)}
             items={authModeOptions}
             selectedKey={authMode}
-            onSelectionChange={(key) => setAuthMode(key as RemoteAuthMode)}
+            onSelectionChange={(key) => {
+              setAuthMode(key as RemoteAuthMode);
+              onConfigChange?.();
+            }}
             onInputChange={() => {}}
             isClearable={false}
             allowsCustomValue={false}
@@ -548,9 +562,10 @@ export function MCPServerForm({
                 label={t(I18nKey.SETTINGS$MCP_OAUTH_CLIENT_AUTH)}
                 items={oauthClientAuthMethodOptions}
                 selectedKey={oauthClientAuthMethod}
-                onSelectionChange={(key) =>
-                  setOAuthClientAuthMethod(key as OAuthClientAuthMethodOption)
-                }
+                onSelectionChange={(key) => {
+                  setOAuthClientAuthMethod(key as OAuthClientAuthMethodOption);
+                  onConfigChange?.();
+                }}
                 onInputChange={() => {}}
                 isClearable={false}
                 allowsCustomValue={false}

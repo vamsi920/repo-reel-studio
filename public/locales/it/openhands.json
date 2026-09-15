@@ -956,6 +956,7 @@
   "MCP$TEST_ERROR_TIMEOUT": "Connessione scaduta. Controlla l'URL e riprova.",
   "MCP$TEST_ERROR_CONNECTION": "Impossibile raggiungere il server. Controlla l'URL e il tipo di server.",
   "MCP$TEST_ERROR_UNKNOWN": "Connessione non riuscita: {{-error}}",
+  "MCP$TEST_ERROR_HTTP_STATUS": "Il server ha risposto {{status}} per {{-url}}",
   "MCP$TEST_ERROR_CREDENTIALS": "Verifica delle credenziali non riuscita: {{-error}}",
   "MCP$EDIT_SERVER_ARIA": "Modifica {{name}}",
   "MCP$DELETE_SERVER_ARIA": "Rimuovi {{name}}",

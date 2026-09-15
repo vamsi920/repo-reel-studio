@@ -270,6 +270,35 @@ describe("CustomServerEditor", () => {
     );
   });
 
+  it("clears a stale test verdict once the config being tested changes", async () => {
+    // Arrange: a failed probe of one URL is on screen in the add form.
+    vi.spyOn(McpService, "testServer").mockResolvedValue({
+      ok: false,
+      error: "boom",
+      error_kind: "unknown",
+    });
+    renderWith(<EditorOnceSettingsLoaded onClose={vi.fn()} />);
+    await screen.findByTestId("mcp-custom-editor");
+    fireEvent.change(screen.getByTestId("server-name-input"), {
+      target: { value: "qa-bogus-sse" },
+    });
+    fireEvent.change(screen.getByTestId("url-input"), {
+      target: { value: "https://mcp.deepwiki.com/sse" },
+    });
+    fireEvent.click(screen.getByTestId("mcp-test-connection"));
+    await screen.findByTestId("mcp-test-message");
+
+    // Act: edit the URL the verdict was about.
+    fireEvent.change(screen.getByTestId("url-input"), {
+      target: { value: "https://mcp.deepwiki.com/mcp" },
+    });
+
+    // Assert: the verdict no longer describes the form, so it is gone.
+    await waitFor(() =>
+      expect(screen.queryByTestId("mcp-test-message")).not.toBeInTheDocument(),
+    );
+  });
+
   it("reseeds the edited server's health from the fresh pre-save test", async () => {
     // Arrange: the installed card shows a failure; the user re-saves the
     // server (e.g. after fixing the credential) and the pre-save test now
