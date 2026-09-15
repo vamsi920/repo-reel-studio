@@ -43910,6 +43910,23 @@
     "tr": "Stuck",
     "uk": "Stuck"
   },
+  "AGENTOPS$STATUS_CANCELLED": {
+    "en": "Cancelled",
+    "ja": "キャンセル済み",
+    "zh-CN": "已取消",
+    "zh-TW": "已取消",
+    "ko-KR": "취소됨",
+    "no": "Avbrutt",
+    "ar": "ملغى",
+    "de": "Abgebrochen",
+    "fr": "Annulé",
+    "it": "Annullato",
+    "pt": "Cancelado",
+    "es": "Cancelado",
+    "ca": "Cancel·lat",
+    "tr": "İptal edildi",
+    "uk": "Скасовано"
+  },
   "AGENTOPS$PHASE_PLANNING": {
     "en": "Planning",
     "ja": "Planning",

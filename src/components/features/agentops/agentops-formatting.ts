@@ -81,6 +81,7 @@ export const RUN_STATUS_LABEL_KEYS: Record<AgentOpsRunStatus, I18nKey> = {
   finished: I18nKey.AGENTOPS$STATUS_FINISHED,
   error: I18nKey.AGENTOPS$STATUS_ERROR,
   stuck: I18nKey.AGENTOPS$STATUS_STUCK,
+  cancelled: I18nKey.AGENTOPS$STATUS_CANCELLED,
 };
 
 /** Token names, so status colour stays consistent with the design system. */
@@ -92,6 +93,7 @@ export const RUN_STATUS_COLORS: Record<AgentOpsRunStatus, string> = {
   finished: "var(--success-500)",
   error: "var(--error-500)",
   stuck: "var(--error-500)",
+  cancelled: "var(--text-tertiary)",
 };
 
 /**

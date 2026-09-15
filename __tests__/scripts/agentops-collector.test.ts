@@ -1651,3 +1651,188 @@ describe("Collector live event stream", () => {
     expect(collector.health()).toMatchObject({ liveStreams: 0 });
   });
 });
+
+describe("Collector orphaned-run close-out", () => {
+  // Regression: a run paused by a budget halt whose conversation was then
+  // deleted from the runtime stayed "paused" in the store forever — Active
+  // Agents 1, a Live Runs row with a ticking clock, Resume/Stop buttons —
+  // because the poll only folds in statuses the runtime reports and a deleted
+  // conversation reports nothing.
+  const pausedRun = {
+    runId: "run-1",
+    workspaceId: "ws",
+    agentName: "agent",
+    task: "Test Sequential Sleep Commands",
+    status: "paused",
+    model: null,
+    phase: "tool_call",
+    startedAt: "2026-09-14T22:30:00.000Z",
+    endedAt: null,
+    updatedAt: "2026-09-14T22:38:49.000Z",
+    costUsd: 0.03,
+    maxBudgetPerTask: null,
+    tokens: {},
+    toolCallCount: 2,
+    llmCallCount: 3,
+    errorCount: 0,
+    lastEventTimestamp: null,
+    lastEventIds: [],
+  };
+
+  const notFound = Object.assign(new Error("agent-server GET failed: 404"), {
+    status: 404,
+  });
+
+  function orphanStore() {
+    const runs = new Map<string, Record<string, unknown>>([
+      ["run-1", structuredClone(pausedRun)],
+    ]);
+    return makeStore({
+      getRun: vi.fn(async (runId: string) => {
+        const run = runs.get(runId);
+        return run ? structuredClone(run) : null;
+      }),
+      upsertRun: vi.fn(async (run: Record<string, unknown>) => {
+        runs.set(run.runId as string, structuredClone(run));
+      }),
+      listRuns: vi.fn(async ({ status }: { status?: string } = {}) => {
+        const wanted = status ? new Set(status.split(",")) : null;
+        return [...runs.values()]
+          .filter((run) => !wanted || wanted.has(run.status as string))
+          .map((run) => structuredClone(run));
+      }),
+    });
+  }
+
+  it("closes out a stored active run whose conversation the runtime no longer has", async () => {
+    const store = orphanStore();
+    const getConversation = vi.fn().mockRejectedValue(notFound);
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({ items: [] }),
+      getConversation,
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T22:50:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(getConversation).toHaveBeenCalledWith("run-1");
+    expect(store.upsertRun.mock.calls.at(-1)?.[0]).toMatchObject({
+      runId: "run-1",
+      status: "cancelled",
+      endedAt: "2026-09-14T22:50:00.000Z",
+      updatedAt: "2026-09-14T22:50:00.000Z",
+    });
+    const closeOuts = store.appendedAudit.filter(
+      (record) => record.action === "run.cancelled",
+    );
+    expect(closeOuts).toHaveLength(1);
+    expect(closeOuts[0]).toMatchObject({
+      actor: "system",
+      entityId: "run-1",
+      workspaceId: "ws",
+      at: "2026-09-14T22:50:00.000Z",
+    });
+
+    // Terminal now: the next tick has nothing left to confirm or close.
+    await collector.tick();
+    expect(getConversation).toHaveBeenCalledTimes(1);
+    expect(store.upsertRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes out a run it was tracking once its conversation disappears", async () => {
+    // The explorer's exact sequence: the collector had the run on its page
+    // (paused), the conversation was deleted, the next tick's page is empty.
+    const store = orphanStore();
+    const searchConversations = vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "run-1",
+          title: "Test Sequential Sleep Commands",
+          execution_status: "paused",
+          workspace: { working_dir: "ws" },
+          updated_at: "2026-09-14T22:38:49.000Z",
+          created_at: "2026-09-14T22:30:00.000Z",
+        },
+      ],
+    });
+    const getConversation = vi.fn().mockResolvedValue({
+      id: "run-1",
+      execution_status: "paused",
+    });
+    const client = makeClient({ searchConversations, getConversation });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T22:50:00.000Z",
+    });
+
+    await collector.tick();
+    expect(collector.tracked.has("run-1")).toBe(true);
+    // On the page, so never asked about individually.
+    expect(getConversation).not.toHaveBeenCalled();
+
+    searchConversations.mockResolvedValue({ items: [] });
+    getConversation.mockRejectedValue(notFound);
+    await collector.tick();
+
+    expect(collector.tracked.has("run-1")).toBe(false);
+    expect(await store.getRun("run-1")).toMatchObject({
+      status: "cancelled",
+      endedAt: "2026-09-14T22:50:00.000Z",
+    });
+    expect(
+      store.appendedAudit.filter((record) => record.action === "run.cancelled"),
+    ).toHaveLength(1);
+  });
+
+  it("leaves a run alone when it merely fell off the search page", async () => {
+    // The page is capped at 50: absence from it is not proof of deletion.
+    const store = orphanStore();
+    const getConversation = vi
+      .fn()
+      .mockResolvedValue({ id: "run-1", execution_status: "paused" });
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({ items: [] }),
+      getConversation,
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-09-14T22:50:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(getConversation).toHaveBeenCalledWith("run-1");
+    expect(store.upsertRun).not.toHaveBeenCalled();
+    expect(store.appendedAudit).toHaveLength(0);
+    expect(await store.getRun("run-1")).toMatchObject({ status: "paused" });
+  });
+
+  it("does not close out on a runtime error that is not a 404", async () => {
+    const store = orphanStore();
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({ items: [] }),
+      getConversation: vi.fn().mockRejectedValue(
+        Object.assign(new Error("agent-server GET failed: 503"), {
+          status: 503,
+        }),
+      ),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      logger: { ...console, info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      now: () => "2026-09-14T22:50:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(store.upsertRun).not.toHaveBeenCalled();
+    expect(await store.getRun("run-1")).toMatchObject({ status: "paused" });
+  });
+});

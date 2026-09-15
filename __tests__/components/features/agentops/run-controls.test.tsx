@@ -67,10 +67,13 @@ describe("RunControls", () => {
     );
   });
 
-  it("offers Resume and Stop on a paused run", () => {
+  it("offers only Resume on a paused run", () => {
+    // Stop is /interrupt, which the runtime ignores on a paused conversation:
+    // the run would stay paused in Live Runs and the collector refuses it
+    // with a 409, so the button is not offered at all.
     renderControls("paused");
     expect(screen.getByTestId("agentops-run-resume")).toBeInTheDocument();
-    expect(screen.getByTestId("agentops-run-stop")).toBeInTheDocument();
+    expect(screen.queryByTestId("agentops-run-stop")).toBeNull();
     expect(screen.queryByTestId("agentops-run-pause")).toBeNull();
   });
 
@@ -87,6 +90,14 @@ describe("RunControls", () => {
 
   it("renders nothing actionable on a finished run", () => {
     renderControls("finished");
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByTestId("agentops-run-stuck-note")).toBeNull();
+  });
+
+  it("renders nothing actionable on a cancelled run", () => {
+    // Closed out by the collector after its conversation was deleted from
+    // the runtime — there is nothing left to pause, stop or resume.
+    renderControls("cancelled");
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByTestId("agentops-run-stuck-note")).toBeNull();
   });

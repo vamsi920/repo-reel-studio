@@ -10,7 +10,11 @@
  * in the span inspector without a frontend change.
  */
 
-/** Mirrors the agent-server's `ConversationExecutionStatus`. */
+/**
+ * Mirrors the agent-server's `ConversationExecutionStatus`, plus "cancelled":
+ * the collector's own terminal status for a run whose conversation was
+ * deleted from the runtime while the store still held it as active.
+ */
 export type AgentOpsRunStatus =
   | "idle"
   | "running"
@@ -18,7 +22,8 @@ export type AgentOpsRunStatus =
   | "waiting_for_confirmation"
   | "finished"
   | "error"
-  | "stuck";
+  | "stuck"
+  | "cancelled";
 
 export type AgentOpsRunPhase =
   | "planning"

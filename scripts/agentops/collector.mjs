@@ -179,7 +179,65 @@ export class Collector {
       this.#closeLiveStream(tracker);
       this.tracked.delete(runId);
     }
+    await this.#closeOrphanedRuns(seen, observedAt);
     return hasActive;
+  }
+
+  /**
+   * Close out stored runs whose conversation no longer exists at the runtime.
+   *
+   * A conversation deleted mid-run (from the chat sidebar, or by a QA run
+   * cleaning up after itself) simply stops appearing on the search page. The
+   * poll only ever folds in statuses the runtime reports, and a conversation
+   * that is gone reports nothing — so the stored run kept its last live
+   * status (paused, typically, after a budget halt) forever: counted by the
+   * Active Agents tile, listed in Live Runs with a ticking clock, offering
+   * Resume/Stop buttons that could only 409. Pruning the tracker above is not
+   * enough; the store's copy is what the API serves.
+   *
+   * Candidates are every stored active run that is not on this tick's page,
+   * tracked or not (a collector restarted after the deletion never had a
+   * tracker for it). Absence from the page is not proof — the page is capped
+   * at 50 — so each candidate is confirmed with a direct GET and only a
+   * definite 404 closes it out; a runtime error leaves it for the next tick.
+   */
+  async #closeOrphanedRuns(seen, observedAt) {
+    if (typeof this.client.getConversation !== "function") return;
+    const stored = await this.store.listRuns({
+      status: "running,paused,waiting_for_confirmation",
+    });
+    for (const run of stored) {
+      if (typeof run?.runId !== "string" || !run.runId) continue;
+      if (!isActiveStatus(run.status) || seen.has(run.runId)) continue;
+      try {
+        await this.client.getConversation(run.runId);
+        continue;
+      } catch (error) {
+        if (error?.status !== 404) {
+          this.logger.warn(
+            `[agentops] could not confirm ${run.runId} still exists: ${error.message}`,
+          );
+          continue;
+        }
+      }
+      run.status = "cancelled";
+      run.endedAt = observedAt;
+      run.updatedAt = observedAt;
+      await this.store.appendAudit({
+        at: observedAt,
+        actor: "system",
+        action: "run.cancelled",
+        summary:
+          "Run closed out: its conversation was deleted from the runtime",
+        entityType: "run",
+        entityId: run.runId,
+        workspaceId: run.workspaceId,
+      });
+      await this.store.upsertRun(run);
+      this.logger.info(
+        `[agentops] closed out ${run.runId}: conversation no longer exists at the runtime`,
+      );
+    }
   }
 
   async #trackerFor(conversation, observedAt) {

@@ -56,9 +56,17 @@ describe("evaluateRunControl", () => {
       ok: true,
       status: "running",
     });
-    expect(evaluateRunControl("cancel", "paused")).toEqual({
-      ok: true,
-      status: "paused",
+  });
+
+  it("refuses stop on a paused run, which the runtime would ignore", () => {
+    // `interrupt()` on a PAUSED conversation falls back to `pause()`, which
+    // only acts on IDLE/RUNNING — so the run would stay paused, in Live Runs,
+    // with a "cancelled" audit row about a run that is still there.
+    const verdict = evaluateRunControl("cancel", "paused");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.status).toBe("paused");
+    expect(verdict).toMatchObject({
+      reason: expect.stringContaining("ignores Stop on a paused run"),
     });
   });
 
@@ -125,6 +133,25 @@ describe("controlRun", () => {
     });
     expect(client.interruptConversation).not.toHaveBeenCalled();
     expect(client.runConversation).not.toHaveBeenCalled();
+    expect(store.appendAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses to stop a paused run and leaves no audit row", async () => {
+    // A budget halt paused the run; Stop from the Control Tower was accepted,
+    // did nothing at the runtime, and wrote "Run cancelled from the Control
+    // Tower" above a run that stayed paused in Live Runs indefinitely.
+    const store = makeStore({ ...RUN, status: "paused" });
+    const client = makeClient("paused");
+
+    await expect(
+      controlRun({ client, store, runId: "run-1", action: "cancel", now: NOW }),
+    ).rejects.toMatchObject({
+      name: "RunControlError",
+      status: 409,
+      runtimeStatus: "paused",
+      message: expect.stringContaining("paused"),
+    });
+    expect(client.interruptConversation).not.toHaveBeenCalled();
     expect(store.appendAudit).not.toHaveBeenCalled();
   });
 
