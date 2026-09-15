@@ -513,6 +513,79 @@ Full skill body.`,
     );
   });
 
+  it("snaps the toggle back to the saved state when the settings save fails", async () => {
+    // Regression: a failed save left the optimistic flip in place (and the
+    // State facet counts with it), so the page drifted from the server until
+    // a reload.
+    const user = userEvent.setup();
+    const skill = buildSkill({ name: "add-javadoc" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ disabled_skills: [] }),
+    );
+    const saveSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockRejectedValue(new Error("Request failed: Failed to fetch"));
+    const toastSpy = vi
+      .spyOn(ToastHandlers, "displayErrorToast")
+      .mockImplementation(() => {});
+
+    renderSkillsSettingsScreen();
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+    const toggle = within(card).getByTestId(`skill-toggle-${skill.name}`);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    await user.click(toggle);
+
+    await waitFor(() => expect(saveSpy).toHaveBeenCalled());
+    await waitFor(() => expect(toastSpy).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(
+        within(card).getByTestId(`skill-toggle-${skill.name}`),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(card).not.toHaveClass("opacity-70");
+  });
+
+  it("keeps a successful toggle flipped even though another card's save failed earlier", async () => {
+    // The revert restores the server's last known state, not a blanket
+    // "undo everything": a later save that succeeds must still win.
+    const user = userEvent.setup();
+    const skill = buildSkill({ name: "flaky-skill" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+    const getSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockResolvedValue(buildSettings({ disabled_skills: [] }));
+    const saveSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockRejectedValueOnce(new Error("Request failed: Failed to fetch"))
+      .mockImplementation(async () => {
+        getSpy.mockResolvedValue(
+          buildSettings({ disabled_skills: [skill.name] }),
+        );
+        return true;
+      });
+    vi.spyOn(ToastHandlers, "displayErrorToast").mockImplementation(() => {});
+
+    renderSkillsSettingsScreen();
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+
+    await user.click(within(card).getByTestId(`skill-toggle-${skill.name}`));
+    await waitFor(() =>
+      expect(
+        within(card).getByTestId(`skill-toggle-${skill.name}`),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+
+    await user.click(within(card).getByTestId(`skill-toggle-${skill.name}`));
+    await waitFor(() => expect(saveSpy).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(
+        within(card).getByTestId(`skill-toggle-${skill.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
+  });
+
   it("toggles a skill from the card without opening the modal", async () => {
     const user = userEvent.setup();
     const skill = buildSkill({ name: "card-toggle" });

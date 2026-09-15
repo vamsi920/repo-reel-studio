@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { ExtensionsNavigation } from "#/components/features/skills/extensions-navigation";
 import { AddSkillModal } from "#/components/features/skills/add-skill-modal";
@@ -22,6 +23,7 @@ import {
 } from "#/components/features/skills/skill-filter";
 import { SkillsToolbar } from "#/components/features/skills/skills-toolbar";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
+import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { useSettings } from "#/hooks/query/use-settings";
 import { useSkills } from "#/hooks/query/use-skills";
 import { I18nKey } from "#/i18n/declaration";
@@ -41,6 +43,7 @@ const SEARCH_URL_SYNC_DELAY_MS = 300;
 function SkillsSettingsScreen() {
   const { t } = useTranslation("openhands");
 
+  const queryClient = useQueryClient();
   const { mutate: saveSettings } = useSaveSettings();
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: skills, isLoading: skillsLoading } = useSkills();
@@ -147,6 +150,16 @@ function SkillsSettingsScreen() {
         onError: (error) => {
           const errorMessage = retrieveAxiosErrorMessage(error);
           displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
+          // The toggle flipped optimistically; the server never took the
+          // change, so snap back to its last known state instead of leaving
+          // the card (and the State facet counts) claiming a save that never
+          // happened. The sync effect above only re-runs when the query data
+          // changes, which a failed save does not do, so revert here and
+          // refetch in case another save landed in the meantime.
+          setDisabledSet(new Set(settings?.disabled_skills ?? []));
+          queryClient.invalidateQueries({
+            queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+          });
         },
       },
     );
