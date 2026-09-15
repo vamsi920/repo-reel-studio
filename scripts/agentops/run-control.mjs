@@ -10,7 +10,10 @@
  *
  * - `pause()` only moves IDLE/RUNNING to PAUSED; every other state is ignored.
  * - `interrupt()` cancels an in-flight `arun()` task, else falls back to
- *   `pause()` — so on a halted conversation it too is ignored.
+ *   `pause()` — so on a halted conversation it too is ignored. Stop on a
+ *   *paused* run in particular does nothing: the run stays paused, in Live
+ *   Runs, with its clock ticking, so it is refused rather than audited as
+ *   "cancelled".
  * - `run()` restarts IDLE/PAUSED/ERROR/STUCK, but the stuck detector inspects
  *   every event since the last user message, so a STUCK conversation re-trips
  *   it on the first iteration and is back to STUCK within milliseconds. Only a
@@ -34,6 +37,10 @@ const REFUSALS = {
     "send the conversation a new message to continue it, or leave it halted.",
   finished: "This run has already finished; there is nothing to {action}.",
   error: "This run already ended in an error; there is nothing to {action}.",
+  stopPaused:
+    "This run is already paused, and the runtime ignores Stop on a paused " +
+    "run — it would stay in Live Runs exactly as it is. Leave it paused, " +
+    "resume it, or delete its conversation to close the run out.",
 };
 
 /**
@@ -70,6 +77,9 @@ export function evaluateRunControl(action, executionStatus) {
   // pause / cancel — both are `/interrupt` on the runtime.
   if (action === "pause" && status === "paused") {
     return { ok: false, status, reason: "This run is already paused." };
+  }
+  if (action === "cancel" && status === "paused") {
+    return { ok: false, status, reason: REFUSALS.stopPaused };
   }
   if (status === "finished" || status === "error") {
     return {

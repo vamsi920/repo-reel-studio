@@ -94,7 +94,15 @@ const INSPECTION_COMMAND_PATTERN =
 const REVIEW_COMMAND_PATTERN =
   /\b(lint|eslint|ruff|flake8|mypy|tsc|typecheck|prettier|black|gofmt|clippy)\b/i;
 
-/** agent-server execution_status → run status. Unknown values fall back to idle. */
+/**
+ * agent-server execution_status → run status. Unknown values fall back to idle.
+ *
+ * "cancelled" is the one status the runtime never reports: the collector
+ * assigns it to a run whose conversation was deleted from the runtime while
+ * the store still held it as active (see Collector#closeOrphanedRuns), so
+ * Live Runs and Active Agents stop counting a conversation that no longer
+ * exists.
+ */
 const RUN_STATUSES = new Set([
   "idle",
   "running",
@@ -103,6 +111,7 @@ const RUN_STATUSES = new Set([
   "finished",
   "error",
   "stuck",
+  "cancelled",
 ]);
 
 export function normalizeRunStatus(executionStatus) {
@@ -141,7 +150,12 @@ export function normalizeTimestamp(value) {
  * is nothing live left to pause, stop, or resume.
  */
 export function isTerminalStatus(status) {
-  return status === "finished" || status === "error" || status === "stuck";
+  return (
+    status === "finished" ||
+    status === "error" ||
+    status === "stuck" ||
+    status === "cancelled"
+  );
 }
 
 /** Live statuses — what the "Active Agents" tile counts. */

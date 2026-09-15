@@ -40,6 +40,7 @@ const ACTION_ICONS: Record<string, ReactNode> = {
   "run.paused": <Pause size={14} />,
   "run.resumed": <Play size={14} />,
   "run.cancel": <Ban size={14} />,
+  "run.cancelled": <Ban size={14} />,
   "policy.updated": <Flag size={14} />,
 };
 

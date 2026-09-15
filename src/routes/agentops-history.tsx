@@ -6,8 +6,10 @@ import { AuditList } from "#/components/features/agentops/audit-list";
 import { LiveRunsTable } from "#/components/features/agentops/live-runs-table";
 
 // Terminal statuses, mirroring the collector's isTerminalStatus(): a stuck
-// run is history too — the runtime halted it and only a new message restarts it.
-const FINISHED_STATUSES = "finished,error,stuck";
+// run is history too — the runtime halted it and only a new message restarts
+// it — and so is a cancelled one, closed out after its conversation was
+// deleted from the runtime.
+const FINISHED_STATUSES = "finished,error,stuck,cancelled";
 
 function AgentOpsHistory() {
   const { t } = useTranslation("openhands");
