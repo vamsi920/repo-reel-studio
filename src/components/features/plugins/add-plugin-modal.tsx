@@ -8,6 +8,7 @@ import { useInstallPlugin } from "#/hooks/mutation/use-install-plugin";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
+import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
 
 interface AddPluginModalProps {
   onClose: () => void;
@@ -24,6 +25,11 @@ export function AddPluginModal({ onClose, onInstalled }: AddPluginModalProps) {
 
   const trimmedSource = source.trim();
   const canSubmit = trimmedSource.length > 0 && !installPlugin.isPending;
+  // Keep the server's reason (e.g. "Failed to fetch plugin source…") visible
+  // in the modal so the user can correct the source without reopening it.
+  const installError = installPlugin.error
+    ? retrieveAxiosErrorMessage(installPlugin.error) || t(I18nKey.ERROR$GENERIC)
+    : null;
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -91,6 +97,15 @@ export function AddPluginModal({ onClose, onInstalled }: AddPluginModalProps) {
             onChange={setRepoPath}
             showOptionalTag
           />
+          {installError && (
+            <p
+              role="alert"
+              data-testid="add-plugin-error"
+              className="text-sm text-red-400"
+            >
+              {installError}
+            </p>
+          )}
         </div>
 
         <footer className="flex flex-shrink-0 justify-end gap-2 px-6 pb-6 pt-4">

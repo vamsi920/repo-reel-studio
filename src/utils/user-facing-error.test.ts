@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { HttpError } from "@openhands/typescript-client";
 import {
   BACKEND_REQUEST_TIMEOUT_MESSAGE,
   CORS_OR_NETWORK_ERROR_MESSAGE,
   getUserFacingConnectionErrorMessage,
+  isCorsOrNetworkError,
   isCorsOrNetworkErrorMessage,
 } from "./user-facing-error";
 
@@ -43,5 +45,29 @@ describe("user-facing connection errors", () => {
     expect(
       getUserFacingConnectionErrorMessage(new Error("Invalid API key")),
     ).toBe("Invalid API key");
+  });
+
+  it("does not treat a real HTTP response whose body says 'failed to fetch' as a network failure", () => {
+    // The agent server answered 400 with FastAPI's `{"detail": ...}`; the
+    // shared client wraps it as `HTTP request failed (400 Bad Request): {...}`.
+    const detail =
+      "Failed to fetch plugin source. Check that the source is valid.";
+    const error = new HttpError(
+      400,
+      "Bad Request",
+      { detail },
+      `HTTP request failed (400 Bad Request): ${JSON.stringify({ detail })}`,
+    );
+
+    expect(isCorsOrNetworkError(error)).toBe(false);
+    expect(getUserFacingConnectionErrorMessage(error)).toBe(detail);
+  });
+
+  it("falls back to the HttpError message when the body carries no reason", () => {
+    const error = new HttpError(500, "Internal Server Error", "oops");
+
+    expect(getUserFacingConnectionErrorMessage(error)).toBe(
+      "HTTP 500: Internal Server Error",
+    );
   });
 });

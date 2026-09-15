@@ -15,12 +15,18 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * Install a plugin from a git source or local path. Installing flips a catalog
  * entry from available to installed, so both the installed list and the
  * marketplace catalog are invalidated on success.
+ *
+ * Errors are toasted here once (`meta.disableToast` keeps the global
+ * MutationCache handler from stacking a second identical toast); the add
+ * modal also renders the same message inline so the user can correct the
+ * source without the modal closing.
  */
 export function useInstallPlugin() {
   const queryClient = useQueryClient();
   const { t } = useTranslation("openhands");
 
   return useMutation({
+    meta: { disableToast: true },
     mutationFn: (request: InstallPluginRequest) =>
       PluginsManagementService.installPlugin(request),
     onSuccess: () => {

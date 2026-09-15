@@ -17,21 +17,48 @@ export function getApiErrorBody(error: unknown): unknown {
 }
 
 /**
+ * Pull the server-provided reason out of a parsed error body. Reads the
+ * `message` / `detail` / `error` fields (FastAPI's default validation shape
+ * is `{"detail": "..."}`), so callers never surface the raw JSON blob.
+ */
+export function getApiErrorBodyMessage(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const { message, detail, error } = body as {
+    message?: unknown;
+    detail?: unknown;
+    error?: unknown;
+  };
+  if (typeof message === "string" && message) return message;
+  if (typeof detail === "string" && detail) return detail;
+  if (typeof error === "string" && error) return error;
+  return null;
+}
+
+/**
+ * Whether a failed call actually reached the server and got an HTTP status
+ * back — an SDK `HttpError` (numeric `status` on the error) or an
+ * `AxiosError` with a `response`. Such errors are, by definition, not
+ * network / CORS failures, whatever their body text happens to say.
+ */
+export function hasHttpResponseStatus(error: unknown): boolean {
+  const status = axios.isAxiosError(error)
+    ? error.response?.status
+    : error instanceof Error
+      ? (error as { status?: unknown }).status
+      : undefined;
+  // Some clients report a failed connection as status 0; only a real
+  // response status counts.
+  return typeof status === "number" && status > 0;
+}
+
+/**
  * Extract a human-readable message from a failed API call. Prefers the
  * server-provided `message`/`detail` fields, then the `Error` message,
  * then `fallback`.
  */
 export function getApiErrorMessage(error: unknown, fallback: string): string {
-  const body = getApiErrorBody(error);
-
-  if (body && typeof body === "object") {
-    const { message, detail } = body as {
-      message?: unknown;
-      detail?: unknown;
-    };
-    if (typeof message === "string" && message) return message;
-    if (typeof detail === "string" && detail) return detail;
-  }
+  const bodyMessage = getApiErrorBodyMessage(getApiErrorBody(error));
+  if (bodyMessage) return bodyMessage;
 
   if (error instanceof Error && error.message) return error.message;
   return fallback;
