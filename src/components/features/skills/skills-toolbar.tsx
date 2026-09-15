@@ -57,13 +57,14 @@ export function SkillsToolbar({
         ) : null}
       </div>
 
-      {/* The facet rail is desktop-only, so below md this is the only way in. */}
+      {/* The facet rail only fits from xl up, so below that this is the only
+          way in (see skills-settings.tsx). */}
       <button
         type="button"
         data-testid="skills-filters-button"
         onClick={onOpenFilters}
         className={cn(
-          "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm md:hidden",
+          "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm xl:hidden",
           "border border-[var(--oh-border)] bg-base-secondary text-white",
           "cursor-pointer hover:bg-[var(--oh-interactive-hover)]",
         )}

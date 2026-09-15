@@ -355,6 +355,28 @@ Full skill body.`,
     expect(screen.getByTestId("skill-card-global-rules")).toBeInTheDocument();
   });
 
+  it("keeps the facet rail off screen until xl, where the Filters button takes over", async () => {
+    // Two types, so the rail has a facet group to render at all.
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([
+      buildSkill({ name: "deno", type: "knowledge" }),
+      buildSkill({ name: "global-rules", type: "repo", triggers: [] }),
+    ]);
+
+    renderSkillsSettingsScreen();
+    await screen.findByTestId("skill-card-deno");
+
+    // At md/lg the main sidebar + ExtensionsNavigation + a 240px rail leave
+    // the results column ~100px wide (two-letter card names), so the rail is
+    // an xl-only column and the toolbar's Filters button covers every width
+    // below it — the two breakpoints must stay paired.
+    const rail = screen.getByTestId("skill-facet-rail");
+    expect(rail).toHaveClass("hidden", "xl:flex");
+    expect(rail).not.toHaveClass("md:flex", "lg:flex");
+    const filtersButton = screen.getByTestId("skills-filters-button");
+    expect(filtersButton).toHaveClass("xl:hidden");
+    expect(filtersButton).not.toHaveClass("md:hidden", "lg:hidden");
+  });
+
   it("opens a detail modal with full metadata when a skill card is clicked", async () => {
     const user = userEvent.setup();
     const skill = buildSkill({

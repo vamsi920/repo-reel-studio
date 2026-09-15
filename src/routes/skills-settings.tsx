@@ -223,7 +223,10 @@ function SkillsSettingsScreen() {
                 <SkillFacetRail
                   groups={groups}
                   onToggle={handleToggleFacet}
-                  className="hidden w-[240px] shrink-0 self-start md:flex"
+                  // Only from xl: at md/lg the main sidebar + ExtensionsNavigation
+                  // + this rail leave the results column ~100px wide, so those
+                  // widths use the toolbar's Filters button + modal instead.
+                  className="hidden w-[240px] shrink-0 self-start xl:flex"
                 />
 
                 <section className="flex min-w-0 flex-1 flex-col gap-3">
