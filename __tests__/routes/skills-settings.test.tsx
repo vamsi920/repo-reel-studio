@@ -114,14 +114,15 @@ describe("SkillsSettingsScreen", () => {
     );
     expect(description).toHaveTextContent("SETTINGS$SKILLS_PAGE_DESCRIPTION");
     expect(screen.getByText("NAV$CUSTOMIZE")).toBeInTheDocument();
+    // The rail labels are i18n keys now; the global mock returns keys as-is.
     expect(screen.getByTestId("sidebar-extensions-/skills")).toHaveTextContent(
-      "Skills",
+      "SETTINGS$SKILLS_TITLE",
     );
     expect(screen.getByTestId("sidebar-extensions-/plugins")).toHaveTextContent(
-      "Plugins",
+      "SETTINGS$PLUGINS_TITLE",
     );
     expect(screen.getByTestId("sidebar-extensions-/mcp")).toHaveTextContent(
-      "MCP Servers",
+      "NAV$MCP_SERVERS",
     );
   });
 

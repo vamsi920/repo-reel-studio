@@ -67,7 +67,7 @@ export function ExtensionsMobileHub() {
             <SidebarNavLink
               key={item.to}
               to={item.to}
-              label={item.label}
+              label={t(item.labelKey)}
               end={item.end}
               testId={`sidebar-extensions-${item.to}`}
               icon={item.icon}

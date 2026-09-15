@@ -20,7 +20,8 @@ const CLOUD_HIDDEN_EXTENSION_PATH = "/plugins";
 
 interface ExtensionNavItem {
   to: string;
-  label: string;
+  /** i18n key for the rail label, resolved with `t()` at render time. */
+  labelKey: I18nKey;
   icon: React.ReactElement;
   end?: boolean;
   comingSoon?: boolean;
@@ -29,19 +30,19 @@ interface ExtensionNavItem {
 export const EXTENSIONS_NAV_ITEMS: ExtensionNavItem[] = [
   {
     to: "/mcp",
-    label: "MCP Servers",
+    labelKey: I18nKey.NAV$MCP_SERVERS,
     icon: <ServerProcessIcon width={16} height={16} />,
     end: true,
   },
   {
     to: "/skills",
-    label: "Skills",
+    labelKey: I18nKey.SETTINGS$SKILLS_TITLE,
     icon: <SkillsIcon width={16} height={16} aria-hidden="true" />,
     end: true,
   },
   {
     to: "/plugins",
-    label: "Plugins",
+    labelKey: I18nKey.SETTINGS$PLUGINS_TITLE,
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +95,7 @@ export function ExtensionsNavigation() {
             <span className="truncate">
               {isCloudSkillsLink
                 ? t(I18nKey.SIDEBAR$SKILLS_AND_PLUGINS_CLOUD_LINK)
-                : item.label}
+                : t(item.labelKey)}
             </span>
           );
           const comingSoonBadge = item.comingSoon && (

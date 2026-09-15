@@ -33047,6 +33047,23 @@
     "uk": "Налаштувати",
     "ca": "Personalitza"
   },
+  "NAV$MCP_SERVERS": {
+    "en": "MCP Servers",
+    "ja": "MCPサーバー",
+    "zh-CN": "MCP 服务器",
+    "zh-TW": "MCP 伺服器",
+    "ko-KR": "MCP 서버",
+    "no": "MCP-servere",
+    "ar": "خوادم MCP",
+    "de": "MCP-Server",
+    "fr": "Serveurs MCP",
+    "it": "Server MCP",
+    "pt": "Servidores MCP",
+    "es": "Servidores MCP",
+    "tr": "MCP Sunucuları",
+    "uk": "Сервери MCP",
+    "ca": "Servidors MCP"
+  },
   "NAV$EXTENSIONS": {
     "en": "Extensions",
     "ja": "拡張機能",

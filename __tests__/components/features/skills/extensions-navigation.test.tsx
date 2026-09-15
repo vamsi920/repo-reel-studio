@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
@@ -11,8 +11,32 @@ import {
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
 import { useSidebarStore } from "#/stores/sidebar-store";
+import translations from "#/i18n/translation.json";
 
 import { ExtensionsNavigation } from "#/components/features/skills/extensions-navigation";
+
+// The global `useTranslation` mock in `vitest.setup.ts` returns the key
+// as-is. Override it here so `t(...)` resolves keys via the source-of-truth
+// `translation.json` in a switchable language — the rail labels used to be
+// hardcoded English strings, so this suite asserts they follow the app
+// language like the surrounding page copy.
+let mockLanguage = "en";
+
+vi.mock("react-i18next", async () => {
+  const actual = await vi.importActual("react-i18next");
+  return {
+    ...(actual as object),
+    useTranslation: () => ({
+      t: (key: string) => {
+        const entry = (translations as Record<string, Record<string, string>>)[
+          key
+        ];
+        return entry?.[mockLanguage] ?? entry?.en ?? key;
+      },
+      i18n: { language: mockLanguage, exists: () => false },
+    }),
+  };
+});
 
 const cloudBackend: Backend = {
   id: "cloud-1",
@@ -40,6 +64,7 @@ describe("ExtensionsNavigation", () => {
   beforeEach(() => {
     window.localStorage.clear();
     __resetActiveStoreForTests();
+    mockLanguage = "en";
   });
 
   afterEach(() => {
@@ -93,6 +118,26 @@ describe("ExtensionsNavigation", () => {
     ]);
   });
 
+  // Regression: the rail labels were hardcoded English strings, so a German
+  // or Japanese app language showed "MCP Servers / Skills / Plugins" next to
+  // a translated "Anpassen" heading and a translated page title.
+  it.each([
+    ["de", ["MCP-Server", "Fähigkeiten", "Plugins"]],
+    ["ja", ["MCPサーバー", "スキル", "プラグイン"]],
+  ])(
+    "translates the rail labels when the app language is %s",
+    (language, labels) => {
+      mockLanguage = language;
+
+      renderExtensionsNavigation(<ExtensionsNavigation />);
+
+      const nav = screen.getByTestId("extensions-navbar-desktop");
+      const navigationItems = within(nav).getAllByRole("link");
+
+      expect(navigationItems.map((item) => item.textContent)).toEqual(labels);
+    },
+  );
+
   it("renders the Plugins item as a live link without a Coming Soon badge", () => {
     renderExtensionsNavigation(<ExtensionsNavigation />);
 
@@ -121,9 +166,7 @@ describe("ExtensionsNavigation", () => {
       );
       expect(skillsItem).toHaveAttribute("target", "_blank");
       expect(skillsItem).toHaveAttribute("rel", "noopener noreferrer");
-      expect(skillsItem).toHaveTextContent(
-        "SIDEBAR$SKILLS_AND_PLUGINS_CLOUD_LINK",
-      );
+      expect(skillsItem).toHaveTextContent("Skills and Plugins");
     });
 
     it("hides the Plugins item", () => {
