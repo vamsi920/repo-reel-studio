@@ -1,16 +1,75 @@
+import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 
+function OpenerWithModal() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        open modal
+      </button>
+      <button type="button">next on page</button>
+      {open ? (
+        <ModalBackdrop onClose={() => setOpen(false)}>
+          <button type="button">first in dialog</button>
+          <button type="button">last in dialog</button>
+        </ModalBackdrop>
+      ) : null}
+    </>
+  );
+}
+
 describe("ModalBackdrop", () => {
+  it("moves focus into the dialog on open and returns it to the opener on close", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<OpenerWithModal />);
+    const opener = screen.getByRole("button", { name: "open modal" });
+
+    // Act: open from the keyboard, then dismiss with Escape.
+    await user.click(opener);
+    const firstInDialog = screen.getByRole("button", {
+      name: "first in dialog",
+    });
+    const focusedOnOpen = document.activeElement;
+    await user.keyboard("{Escape}");
+
+    // Assert
+    expect(focusedOnOpen).toBe(firstInDialog);
+    expect(opener).toHaveFocus();
+  });
+
+  it("keeps Tab and Shift+Tab cycling inside the dialog instead of reaching the page behind it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<OpenerWithModal />);
+    await user.click(screen.getByRole("button", { name: "open modal" }));
+    const first = screen.getByRole("button", { name: "first in dialog" });
+    const last = screen.getByRole("button", { name: "last in dialog" });
+
+    // Act + Assert: Tab past the last control wraps to the first, and
+    // Shift+Tab from the first wraps to the last — never "next on page".
+    await user.tab();
+    expect(last).toHaveFocus();
+    await user.tab();
+    expect(first).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(last).toHaveFocus();
+  });
+
   it("portals out of a transformed ancestor so position: fixed resolves against the viewport", () => {
     // Arrange: a transformed ancestor would otherwise become the
     // containing block for `position: fixed` descendants and trap the
     // modal inside it (the OnboardingModal / InstallServerModal bug).
     render(
-      <div data-testid="transformed-ancestor" style={{ transform: "translateX(0)" }}>
+      <div
+        data-testid="transformed-ancestor"
+        style={{ transform: "translateX(0)" }}
+      >
         <ModalBackdrop onClose={vi.fn()}>
           <p>modal content</p>
         </ModalBackdrop>

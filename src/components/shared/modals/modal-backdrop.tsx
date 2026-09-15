@@ -1,6 +1,20 @@
 import React from "react";
 import { createPortal } from "react-dom";
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+  "[contenteditable='true']",
+].join(",");
+
+function getFocusableElements(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+}
+
 interface ModalBackdropProps {
   children: React.ReactNode;
   onClose?: () => void;
@@ -33,6 +47,57 @@ export function ModalBackdrop({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [closeOnEscape, onClose]);
 
+  // Focus management for `role="dialog" aria-modal="true"`: move keyboard
+  // focus into the dialog on open, keep Tab / Shift+Tab cycling inside it,
+  // and hand focus back to whatever opened it on close. Without this a
+  // keyboard or screen-reader user tabs through the page hidden behind the
+  // backdrop. The Tab handler is a native listener on the dialog node (not a
+  // React prop) so a stacked modal, which portals to a sibling node, does not
+  // receive the outer modal's key events through React-tree bubbling.
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    // Children's effects run first, so respect a control they already focused.
+    if (!dialog.contains(document.activeElement)) {
+      const [first] = getFocusableElements(dialog);
+      (first ?? dialog).focus();
+    }
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusable = getFocusableElements(dialog);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      if (e.shiftKey) {
+        if (current === first || !dialog.contains(current)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (current === last || !dialog.contains(current)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialog.addEventListener("keydown", handleTab);
+    return () => {
+      dialog.removeEventListener("keydown", handleTab);
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+    };
+  }, []);
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) onClose?.(); // only close if the click was on the backdrop
@@ -47,10 +112,12 @@ export function ModalBackdrop({
   // parent modal.
   return createPortal(
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
-      className={`fixed inset-0 flex items-center justify-center ${
+      tabIndex={-1}
+      className={`fixed inset-0 flex items-center justify-center outline-none ${
         elevated ? "z-[70]" : "z-60"
       }`}
     >
