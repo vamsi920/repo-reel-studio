@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "MCP サーバーを検索",
   "MCP$SEARCH_CLEAR": "検索をクリア",
   "MCP$SECTION_FILTER_ALL": "すべて",
+  "MCP$SECTION_FILTER_LABEL": "MCPサーバーをフィルター",
   "MCP$SEARCH_EMPTY": "検索に一致する結果はありません。",
   "MCP$INSTALLED_BADGE": "インストール済み",
   "MCP$TOGGLE_ADD_SERVER": "サーバーをインストール",

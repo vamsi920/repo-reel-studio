@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "MCP 서버 검색",
   "MCP$SEARCH_CLEAR": "검색 지우기",
   "MCP$SECTION_FILTER_ALL": "전체",
+  "MCP$SECTION_FILTER_LABEL": "MCP 서버 필터",
   "MCP$SEARCH_EMPTY": "검색 결과가 없습니다.",
   "MCP$INSTALLED_BADGE": "설치됨",
   "MCP$TOGGLE_ADD_SERVER": "서버 설치",

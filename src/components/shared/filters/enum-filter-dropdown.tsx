@@ -18,7 +18,11 @@ interface EnumFilterDropdownProps<T extends string> {
   labelKeyByValue?: Record<T, I18nKey>;
   /** Plain-string labels, e.g. manifest-supplied copy. Wins over the keys. */
   labelByValue?: Record<T, string>;
-  ariaLabel?: string;
+  /**
+   * Accessible name for the trigger and menu. Required so every consumer
+   * describes what *it* filters instead of inheriting another page's label.
+   */
+  ariaLabel: string;
 }
 
 export function EnumFilterDropdown<T extends string>({
@@ -39,9 +43,6 @@ export function EnumFilterDropdown<T extends string>({
   const getOptionLabel = (option: T): string =>
     labelByValue?.[option] ??
     (labelKeyByValue ? t(labelKeyByValue[option]) : option);
-  const resolvedAriaLabel =
-    ariaLabel ?? t(I18nKey.CONVERSATION_PANEL$FILTER_LABEL);
-
   const defaultOption = options[0];
   const selectedLabel = getOptionLabel(value);
 
@@ -56,7 +57,7 @@ export function EnumFilterDropdown<T extends string>({
         data-testid="dropdown-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={resolvedAriaLabel}
+        aria-label={ariaLabel}
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
           dropdownFilterTriggerClassName,
@@ -79,7 +80,7 @@ export function EnumFilterDropdown<T extends string>({
         <div
           role="menu"
           data-testid={`${testId}-menu`}
-          aria-label={resolvedAriaLabel}
+          aria-label={ariaLabel}
           className={cn(
             "absolute right-0 top-full z-50 mt-1 min-w-full w-max",
             "max-h-60 overflow-auto rounded-[6px] bg-tertiary p-1 context-menu-box-shadow",

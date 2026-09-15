@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "MCP sunucularını ara",
   "MCP$SEARCH_CLEAR": "Aramayı temizle",
   "MCP$SECTION_FILTER_ALL": "Tümü",
+  "MCP$SECTION_FILTER_LABEL": "MCP sunucularını filtrele",
   "MCP$SEARCH_EMPTY": "Aramanızla eşleşen sonuç yok.",
   "MCP$INSTALLED_BADGE": "Yüklü",
   "MCP$TOGGLE_ADD_SERVER": "Sunucuyu yükle",

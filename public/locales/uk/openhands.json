@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "Пошук серверів MCP",
   "MCP$SEARCH_CLEAR": "Очистити пошук",
   "MCP$SECTION_FILTER_ALL": "Усі",
+  "MCP$SECTION_FILTER_LABEL": "Фільтрувати сервери MCP",
   "MCP$SEARCH_EMPTY": "Немає збігів для вашого пошуку.",
   "MCP$INSTALLED_BADGE": "Встановлено",
   "MCP$TOGGLE_ADD_SERVER": "Встановити сервер",

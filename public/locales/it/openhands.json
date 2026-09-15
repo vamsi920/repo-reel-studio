@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "Cerca server MCP",
   "MCP$SEARCH_CLEAR": "Cancella ricerca",
   "MCP$SECTION_FILTER_ALL": "Tutti",
+  "MCP$SECTION_FILTER_LABEL": "Filtra server MCP",
   "MCP$SEARCH_EMPTY": "Nessun risultato per la tua ricerca.",
   "MCP$INSTALLED_BADGE": "Installato",
   "MCP$TOGGLE_ADD_SERVER": "Installa server",

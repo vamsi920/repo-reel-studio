@@ -15775,6 +15775,23 @@
     "uk": "Усі",
     "ca": "Tot"
   },
+  "MCP$SECTION_FILTER_LABEL": {
+    "en": "Filter MCP servers",
+    "ja": "MCPサーバーをフィルター",
+    "zh-CN": "筛选 MCP 服务器",
+    "zh-TW": "篩選 MCP 伺服器",
+    "ko-KR": "MCP 서버 필터",
+    "no": "Filtrer MCP-servere",
+    "ar": "تصفية خوادم MCP",
+    "de": "MCP-Server filtern",
+    "fr": "Filtrer les serveurs MCP",
+    "it": "Filtra server MCP",
+    "pt": "Filtrar servidores MCP",
+    "es": "Filtrar servidores MCP",
+    "tr": "MCP sunucularını filtrele",
+    "uk": "Фільтрувати сервери MCP",
+    "ca": "Filtra servidors MCP"
+  },
   "MCP$SEARCH_EMPTY": {
     "en": "No matches for your search.",
     "ja": "検索に一致する結果はありません。",

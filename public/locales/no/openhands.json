@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "Søk i MCP-servere",
   "MCP$SEARCH_CLEAR": "Tøm søk",
   "MCP$SECTION_FILTER_ALL": "Alle",
+  "MCP$SECTION_FILTER_LABEL": "Filtrer MCP-servere",
   "MCP$SEARCH_EMPTY": "Ingen treff for søket ditt.",
   "MCP$INSTALLED_BADGE": "Installert",
   "MCP$TOGGLE_ADD_SERVER": "Installer server",

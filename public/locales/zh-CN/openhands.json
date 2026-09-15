@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "搜索 MCP 服务器",
   "MCP$SEARCH_CLEAR": "清除搜索",
   "MCP$SECTION_FILTER_ALL": "全部",
+  "MCP$SECTION_FILTER_LABEL": "筛选 MCP 服务器",
   "MCP$SEARCH_EMPTY": "未找到匹配的搜索结果。",
   "MCP$INSTALLED_BADGE": "已安装",
   "MCP$TOGGLE_ADD_SERVER": "安装服务器",

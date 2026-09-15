@@ -927,6 +927,7 @@
   "MCP$SEARCH_PLACEHOLDER": "البحث في خوادم MCP",
   "MCP$SEARCH_CLEAR": "مسح البحث",
   "MCP$SECTION_FILTER_ALL": "الكل",
+  "MCP$SECTION_FILTER_LABEL": "تصفية خوادم MCP",
   "MCP$SEARCH_EMPTY": "لا توجد نتائج مطابقة لبحثك.",
   "MCP$INSTALLED_BADGE": "مثبت",
   "MCP$TOGGLE_ADD_SERVER": "تثبيت الخادم",

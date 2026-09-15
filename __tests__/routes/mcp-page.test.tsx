@@ -160,6 +160,20 @@ describe("MCPPage", () => {
     expect(screen.getByTestId("mcp-marketplace-empty")).toBeInTheDocument();
   });
 
+  it("names the section filter after MCP servers, not conversations", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
+
+    renderPage();
+
+    await screen.findByTestId("mcp-marketplace-section");
+
+    const filter = screen.getByTestId("mcp-section-filter");
+    expect(within(filter).getByTestId("dropdown-trigger")).toHaveAttribute(
+      "aria-label",
+      "MCP$SECTION_FILTER_LABEL",
+    );
+  });
+
   it("hides the library section when the section filter is Installed", async () => {
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
 
