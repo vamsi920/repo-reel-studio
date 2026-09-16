@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "Die Dateien des Arbeitsbereichs konnten nicht geladen werden.",
   "FILES$LIST_REFRESH_ERROR": "Die Dateiliste konnte nicht aktualisiert werden – die zuletzt geladenen Dateien werden angezeigt.",
   "FILES$RETRY": "Wiederholen",
+  "FILES$LIST_TRUNCATED": "Die ersten {{shown}} von {{total}} Dateien werden angezeigt – bitte Neo, eine nicht aufgeführte Datei zu öffnen.",
   "FILES$MORE_FILES": "Weitere Dateien",
   "FILES$SHOW_FILE_TREE": "Dateibaum anzeigen",
   "FILES$HIDE_FILE_TREE": "Dateibaum ausblenden",

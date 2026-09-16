@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "Kunne ikke laste filene i arbeidsområdet.",
   "FILES$LIST_REFRESH_ERROR": "Kunne ikke oppdatere fillisten – viser de sist lastede filene.",
   "FILES$RETRY": "Prøv igjen",
+  "FILES$LIST_TRUNCATED": "Viser de første {{shown}} av {{total}} filer – be Neo om å åpne en fil som ikke er listet.",
   "FILES$MORE_FILES": "Flere filer",
   "FILES$SHOW_FILE_TREE": "Vis filtre",
   "FILES$HIDE_FILE_TREE": "Skjul filtre",

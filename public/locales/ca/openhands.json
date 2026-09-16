@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "No s'han pogut carregar els fitxers de l'espai de treball.",
   "FILES$LIST_REFRESH_ERROR": "No s'ha pogut actualitzar la llista de fitxers; es mostren els últims fitxers carregats.",
   "FILES$RETRY": "Torna-ho a provar",
+  "FILES$LIST_TRUNCATED": "Es mostren els primers {{shown}} de {{total}} fitxers; demana a Neo que obri un fitxer que no aparegui a la llista.",
   "FILES$MORE_FILES": "Més fitxers",
   "FILES$SHOW_FILE_TREE": "Mostra l'arbre de fitxers",
   "FILES$HIDE_FILE_TREE": "Amaga l'arbre de fitxers",

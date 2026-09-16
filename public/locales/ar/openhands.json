@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "تعذر تحميل ملفات مساحة العمل.",
   "FILES$LIST_REFRESH_ERROR": "تعذر تحديث قائمة الملفات — يتم عرض آخر الملفات التي تم تحميلها.",
   "FILES$RETRY": "إعادة المحاولة",
+  "FILES$LIST_TRUNCATED": "يتم عرض أول {{shown}} من أصل {{total}} ملفًا — اطلب من Neo فتح ملف غير مدرج.",
   "FILES$MORE_FILES": "مزيد من الملفات",
   "FILES$SHOW_FILE_TREE": "إظهار شجرة الملفات",
   "FILES$HIDE_FILE_TREE": "إخفاء شجرة الملفات",

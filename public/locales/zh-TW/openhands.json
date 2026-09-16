@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "無法載入工作區檔案。",
   "FILES$LIST_REFRESH_ERROR": "無法重新整理檔案清單，正在顯示上次載入的檔案。",
   "FILES$RETRY": "重試",
+  "FILES$LIST_TRUNCATED": "僅顯示 {{total}} 個檔案中的前 {{shown}} 個 — 未列出的檔案請請 Neo 開啟。",
   "FILES$MORE_FILES": "更多檔案",
   "FILES$SHOW_FILE_TREE": "顯示檔案樹",
   "FILES$HIDE_FILE_TREE": "隱藏檔案樹",

@@ -28,6 +28,7 @@ import {
   FileListErrorMessage,
   FileListStaleNotice,
 } from "#/components/features/files-tab/file-list-error";
+import { FileListTruncatedNotice } from "#/components/features/files-tab/file-list-truncated-notice";
 import { SegmentedToggle } from "#/components/features/files-tab/segmented-toggle";
 import type { ViewMode } from "#/components/features/files-tab/view-mode";
 import RefreshIcon from "#/icons/u-refresh.svg?react";
@@ -306,6 +307,12 @@ function FilesTab() {
             <>
               {listFailedWithStaleData && (
                 <FileListStaleNotice onRetry={retryFileList} />
+              )}
+              {filesQuery.isTruncated && (
+                <FileListTruncatedNotice
+                  shown={paths.length}
+                  total={filesQuery.totalCount}
+                />
               )}
               <FileQuickRow
                 paths={paths}

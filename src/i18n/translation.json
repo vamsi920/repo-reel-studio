@@ -25397,6 +25397,23 @@
     "uk": "Повторити",
     "ca": "Torna-ho a provar"
   },
+  "FILES$LIST_TRUNCATED": {
+    "en": "Showing the first {{shown}} of {{total}} files — ask Neo to open a file that isn't listed.",
+    "ja": "{{total}} 件中最初の {{shown}} 件のファイルを表示しています。一覧にないファイルは Neo に開くよう依頼してください。",
+    "zh-CN": "仅显示 {{total}} 个文件中的前 {{shown}} 个 — 未列出的文件请让 Neo 打开。",
+    "zh-TW": "僅顯示 {{total}} 個檔案中的前 {{shown}} 個 — 未列出的檔案請請 Neo 開啟。",
+    "ko-KR": "전체 {{total}}개 파일 중 처음 {{shown}}개만 표시됩니다. 목록에 없는 파일은 Neo에게 열어 달라고 요청하세요.",
+    "no": "Viser de første {{shown}} av {{total}} filer – be Neo om å åpne en fil som ikke er listet.",
+    "it": "Vengono mostrati i primi {{shown}} file su {{total}}: chiedi a Neo di aprire un file non in elenco.",
+    "pt": "Mostrando os primeiros {{shown}} de {{total}} arquivos — peça ao Neo para abrir um arquivo que não está na lista.",
+    "es": "Se muestran los primeros {{shown}} de {{total}} archivos; pide a Neo que abra un archivo que no aparezca en la lista.",
+    "ar": "يتم عرض أول {{shown}} من أصل {{total}} ملفًا — اطلب من Neo فتح ملف غير مدرج.",
+    "fr": "Affichage des {{shown}} premiers fichiers sur {{total}} — demandez à Neo d'ouvrir un fichier absent de la liste.",
+    "tr": "{{total}} dosyadan ilk {{shown}} tanesi gösteriliyor — listede olmayan bir dosyayı açması için Neo'ya sorun.",
+    "de": "Die ersten {{shown}} von {{total}} Dateien werden angezeigt – bitte Neo, eine nicht aufgeführte Datei zu öffnen.",
+    "uk": "Показано перші {{shown}} з {{total}} файлів — попросіть Neo відкрити файл, якого немає в списку.",
+    "ca": "Es mostren els primers {{shown}} de {{total}} fitxers; demana a Neo que obri un fitxer que no aparegui a la llista."
+  },
   "FILES$MORE_FILES": {
     "en": "More files",
     "ja": "他のファイル",

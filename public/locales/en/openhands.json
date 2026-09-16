@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "Couldn't load the workspace files.",
   "FILES$LIST_REFRESH_ERROR": "Couldn't refresh the file list — showing the last loaded files.",
   "FILES$RETRY": "Retry",
+  "FILES$LIST_TRUNCATED": "Showing the first {{shown}} of {{total}} files — ask Neo to open a file that isn't listed.",
   "FILES$MORE_FILES": "More files",
   "FILES$SHOW_FILE_TREE": "Show file tree",
   "FILES$HIDE_FILE_TREE": "Hide file tree",

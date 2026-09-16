@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "无法加载工作区文件。",
   "FILES$LIST_REFRESH_ERROR": "无法刷新文件列表，正在显示上次加载的文件。",
   "FILES$RETRY": "重试",
+  "FILES$LIST_TRUNCATED": "仅显示 {{total}} 个文件中的前 {{shown}} 个 — 未列出的文件请让 Neo 打开。",
   "FILES$MORE_FILES": "更多文件",
   "FILES$SHOW_FILE_TREE": "显示文件树",
   "FILES$HIDE_FILE_TREE": "隐藏文件树",

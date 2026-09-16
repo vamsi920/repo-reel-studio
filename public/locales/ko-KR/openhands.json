@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "작업 영역 파일을 불러올 수 없습니다.",
   "FILES$LIST_REFRESH_ERROR": "파일 목록을 새로 고칠 수 없습니다. 마지막으로 불러온 파일을 표시합니다.",
   "FILES$RETRY": "다시 시도",
+  "FILES$LIST_TRUNCATED": "전체 {{total}}개 파일 중 처음 {{shown}}개만 표시됩니다. 목록에 없는 파일은 Neo에게 열어 달라고 요청하세요.",
   "FILES$MORE_FILES": "다른 파일",
   "FILES$SHOW_FILE_TREE": "파일 트리 표시",
   "FILES$HIDE_FILE_TREE": "파일 트리 숨기기",

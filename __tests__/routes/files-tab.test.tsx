@@ -569,7 +569,9 @@ describe("FilesTab", () => {
         within(notice).getByText("FILES$LIST_REFRESH_ERROR"),
       ).toBeInTheDocument();
       // The stale list is still usable underneath the notice.
-      expect(screen.getByTestId("file-quick-row-item-index.html")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("file-quick-row-item-index.html"),
+      ).toBeInTheDocument();
       expect(
         screen.queryByTestId("files-tab-list-error"),
       ).not.toBeInTheDocument();
@@ -586,6 +588,46 @@ describe("FilesTab", () => {
       ).not.toBeInTheDocument();
       expect(
         screen.queryByTestId("files-tab-list-stale"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("capped file list", () => {
+    beforeEach(() => {
+      useHasAttachedSourceMock.mockReturnValue({
+        hasAttachedSource: false,
+        isLoading: false,
+      });
+    });
+
+    it("says how many files are hidden when the listing was cut", () => {
+      useWorkspaceFilesMock.mockReturnValue({
+        data: ["index.html", "many/f0001.txt"],
+        isLoading: false,
+        isError: false,
+        isTruncated: true,
+        totalCount: 2113,
+        refetch: refetchFilesMock,
+      });
+
+      renderTab();
+
+      const notice = screen.getByTestId("files-tab-list-truncated");
+      expect(notice).toHaveAttribute("role", "status");
+      expect(
+        within(notice).getByText("FILES$LIST_TRUNCATED"),
+      ).toBeInTheDocument();
+      // The capped list stays usable underneath the notice.
+      expect(
+        screen.getByTestId("file-quick-row-item-index.html"),
+      ).toBeInTheDocument();
+    });
+
+    it("shows no notice when the whole workspace is listed", () => {
+      renderTab();
+
+      expect(
+        screen.queryByTestId("files-tab-list-truncated"),
       ).not.toBeInTheDocument();
     });
   });

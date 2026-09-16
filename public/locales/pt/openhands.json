@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "Não foi possível carregar os arquivos do espaço de trabalho.",
   "FILES$LIST_REFRESH_ERROR": "Não foi possível atualizar a lista de arquivos — mostrando os últimos arquivos carregados.",
   "FILES$RETRY": "Tentar novamente",
+  "FILES$LIST_TRUNCATED": "Mostrando os primeiros {{shown}} de {{total}} arquivos — peça ao Neo para abrir um arquivo que não está na lista.",
   "FILES$MORE_FILES": "Mais arquivos",
   "FILES$SHOW_FILE_TREE": "Mostrar árvore de arquivos",
   "FILES$HIDE_FILE_TREE": "Ocultar árvore de arquivos",

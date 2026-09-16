@@ -1493,6 +1493,7 @@
   "FILES$LIST_LOAD_ERROR": "ワークスペースのファイルを読み込めませんでした。",
   "FILES$LIST_REFRESH_ERROR": "ファイル一覧を更新できませんでした。最後に読み込んだファイルを表示しています。",
   "FILES$RETRY": "再試行",
+  "FILES$LIST_TRUNCATED": "{{total}} 件中最初の {{shown}} 件のファイルを表示しています。一覧にないファイルは Neo に開くよう依頼してください。",
   "FILES$MORE_FILES": "他のファイル",
   "FILES$SHOW_FILE_TREE": "ファイルツリーを表示",
   "FILES$HIDE_FILE_TREE": "ファイルツリーを非表示",

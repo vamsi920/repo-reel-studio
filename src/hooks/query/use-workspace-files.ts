@@ -8,11 +8,25 @@ import { useRuntimeIsReady } from "#/hooks/use-runtime-is-ready";
 import { useUnifiedGetGitChanges } from "#/hooks/query/use-unified-get-git-changes";
 
 // Cap the number of files we render so a giant repo doesn't freeze the UI.
-const MAX_FILES = 2000;
+export const MAX_FILES = 2000;
+
+// Trailing line the listing command appends so the UI can tell how many
+// files the workspace really holds when the listing was cut at MAX_FILES.
+const TOTAL_MARKER = "__NEO_TOTAL__";
 
 export interface WorkspaceFilesResult {
   data: string[] | undefined;
   isLoading: boolean;
+  /**
+   * `data` holds only the first MAX_FILES of a larger workspace. The tab
+   * must say so — a silently cut list looks like the whole workspace.
+   */
+  isTruncated: boolean;
+  /**
+   * Number of files the workspace actually holds (`data.length` unless
+   * truncated). Only meaningful once `data` is defined.
+   */
+  totalCount: number;
   /**
    * The last fetch failed. `data` may still hold the previous successful
    * listing (a failed refresh keeps it), so callers must check both to tell
@@ -48,11 +62,56 @@ const EXCLUDED_DIRS = [
 ];
 
 // Build a `find` invocation that lists files relative to the workspace root.
+//
+// The listing is ordered by depth first, then by path, *before* it is cut at
+// MAX_FILES: a plain lexicographic `sort | head` let one large subdirectory
+// (`many/f0001.txt` … `many/f2100.txt`) push every root-level file that
+// sorts after it past the cap, so the workspace's own top-level files
+// silently vanished. The final `awk` keeps the first MAX_FILES lines and
+// appends `__NEO_TOTAL__ <n>` with the full count so the UI can say
+// "showing the first 2,000 of n".
 function buildListCommand(): string {
   const pruneExpr = EXCLUDED_DIRS.map((dir) => `-name '${dir}' -prune`).join(
     " -o ",
   );
-  return `find . \\( ${pruneExpr} \\) -o -type f -print 2>/dev/null | sort | head -n ${MAX_FILES}`;
+  return [
+    `find . \\( ${pruneExpr} \\) -o -type f -print 2>/dev/null`,
+    // Prefix each path with its depth (`./a/b.txt` → `3 ./a/b.txt`).
+    `awk -F/ '{ print NF " " $0 }'`,
+    // Numeric on depth, then byte order on the path.
+    `LC_ALL=C sort -k1,1n -k2`,
+    `cut -d ' ' -f2-`,
+    `awk -v max=${MAX_FILES} 'NR <= max { print } END { print "${TOTAL_MARKER} " NR }'`,
+  ].join(" | ");
+}
+
+interface WorkspaceListing {
+  paths: string[];
+  total: number;
+}
+
+// Split the command's stdout into the (already capped) paths and the total
+// count from the trailing marker line. An output without the marker (an
+// older listing, or a shell that printed nothing) counts what it has.
+export function parseListingOutput(stdout: string): WorkspaceListing {
+  const lines = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const isMarker = (line: string) => line.startsWith(`${TOTAL_MARKER} `);
+  const marker = lines.find(isMarker);
+  const reportedTotal = marker
+    ? Number.parseInt(marker.slice(TOTAL_MARKER.length + 1), 10)
+    : Number.NaN;
+
+  // Defensive: keep results unique and bounded.
+  const paths = Array.from(
+    new Set(lines.filter((line) => !isMarker(line)).map(normalizePath)),
+  ).slice(0, MAX_FILES);
+  const total = Number.isFinite(reportedTotal)
+    ? Math.max(reportedTotal, paths.length)
+    : paths.length;
+  return { paths, total };
 }
 
 function normalizePath(path: string): string {
@@ -79,7 +138,7 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
   const sessionApiKey = conversation?.session_api_key;
   const workingDir = conversation?.workspace?.working_dir?.trim();
 
-  const query = useQuery<string[]>({
+  const query = useQuery<WorkspaceListing>({
     queryKey: [
       "workspace-files",
       conversationId,
@@ -102,14 +161,7 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
         );
       }
 
-      const lines = result.stdout
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map(normalizePath);
-
-      // Defensive: keep results unique and bounded.
-      return Array.from(new Set(lines)).slice(0, MAX_FILES);
+      return parseListingOutput(result.stdout);
     },
     enabled: enabled && runtimeIsReady && !!conversationId && !!workingDir,
     retry: false,
@@ -118,9 +170,14 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
     meta: { disableToast: true },
   });
 
+  const paths = query.data?.paths;
+  const total = query.data?.total ?? 0;
+
   return {
-    data: query.data,
+    data: paths,
     isLoading: query.isLoading,
+    isTruncated: paths !== undefined && total > paths.length,
+    totalCount: total,
     isError: query.isError,
     isFetching: query.isFetching,
     refetch: () => {
@@ -143,23 +200,28 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
 function useCloudWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
   const gitChanges = useUnifiedGetGitChanges();
 
-  const data = useMemo(() => {
+  const listing = useMemo<WorkspaceListing | undefined>(() => {
     if (!enabled) return undefined;
     const paths = gitChanges.data
       .filter((change) => change.status !== "D")
       .map((change) => change.path);
-    const unique = Array.from(new Set(paths)).slice(0, MAX_FILES);
+    const unique = Array.from(new Set(paths));
     // `useUnifiedGetGitChanges` always hands back an array, so a request
     // that failed before anything arrived would otherwise look like an
     // empty workspace. Surface it as "no data" so the tab shows its error
     // state; a failed *refresh* keeps the previous non-empty list.
     if (gitChanges.isError && unique.length === 0) return undefined;
-    return unique;
+    return { paths: unique.slice(0, MAX_FILES), total: unique.length };
   }, [enabled, gitChanges.data, gitChanges.isError]);
 
+  const data = enabled ? listing : undefined;
+  const total = data?.total ?? 0;
+
   return {
-    data: enabled ? data : undefined,
+    data: data?.paths,
     isLoading: enabled ? gitChanges.isLoading : false,
+    isTruncated: data !== undefined && total > data.paths.length,
+    totalCount: total,
     isError: enabled ? gitChanges.isError : false,
     isFetching: enabled ? gitChanges.isFetching : false,
     refetch: () => {
