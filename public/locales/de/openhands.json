@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "Wird ausgeführt",
   "AUTOMATIONS$DETAIL$CANCELLED": "Abgebrochen",
   "AUTOMATIONS$DETAIL$SKIPPED": "Übersprungen",
+  "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "Inaktiv",
   "AUTOMATIONS$DETAIL$LAST_RUN": "Letzte Ausführung",
   "AUTOMATIONS$DETAIL$LOAD_MORE_RUNS": "Mehr laden",

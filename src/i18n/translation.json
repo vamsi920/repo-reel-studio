@@ -14755,6 +14755,23 @@
     "uk": "Пропущено",
     "ca": "Omès"
   },
+  "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": {
+    "en": "Failed — default model hit its daily quota",
+    "ja": "Failed — default model hit its daily quota",
+    "zh-CN": "Failed — default model hit its daily quota",
+    "zh-TW": "Failed — default model hit its daily quota",
+    "ko-KR": "Failed — default model hit its daily quota",
+    "no": "Failed — default model hit its daily quota",
+    "it": "Failed — default model hit its daily quota",
+    "pt": "Failed — default model hit its daily quota",
+    "es": "Failed — default model hit its daily quota",
+    "ar": "Failed — default model hit its daily quota",
+    "fr": "Failed — default model hit its daily quota",
+    "tr": "Failed — default model hit its daily quota",
+    "de": "Failed — default model hit its daily quota",
+    "uk": "Failed — default model hit its daily quota",
+    "ca": "Failed — default model hit its daily quota"
+  },
   "AUTOMATIONS$DETAIL$INACTIVE": {
     "en": "Inactive",
     "ja": "非アクティブ",

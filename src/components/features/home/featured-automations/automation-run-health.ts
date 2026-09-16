@@ -122,6 +122,18 @@ export function shouldShowAutomationErrorHovercard(
 }
 
 /**
+ * True when a run's `error_detail` is the LLM provider's daily-quota/rate-limit
+ * rejection (e.g. litellm's `RESOURCE_EXHAUSTED` / `RateLimitError` wrapping a
+ * Gemini `generate_requests_per_model_per_day` cap) rather than some other
+ * failure. Callers use this to show a specific "hit its daily quota" message
+ * instead of a bare "Failed" badge, since this failure mode is provider
+ * capacity, not a bug in the automation itself.
+ */
+export function isRateLimitErrorDetail(detail: string): boolean {
+  return /RESOURCE_EXHAUSTED|RateLimitError|rate.?limit|quota/i.test(detail);
+}
+
+/**
  * Timestamp to show as the run's "last run" moment, or null when the run
  * has no usable timestamp yet. The backend leaves started_at unset
  * (epoch/zero) while a run is PENDING and only populates it once execution

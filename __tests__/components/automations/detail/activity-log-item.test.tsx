@@ -300,6 +300,73 @@ describe("ActivityLogItem — run cost", () => {
   });
 });
 
+describe("ActivityLogItem — rate-limited run failures", () => {
+  beforeEach(() => {
+    __resetActiveStoreForTests();
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    __resetActiveStoreForTests();
+  });
+
+  it("shows a quota-specific message instead of a bare Failed badge when the run hit the provider's rate limit", () => {
+    // Arrange: the shape litellm actually reports for a Gemini daily-quota
+    // rejection (see INC-4).
+    const run = makeRun({
+      status: AutomationRunStatus.FAILED,
+      error_detail:
+        'litellm.RateLimitError: geminiException - {"error":{"code":429,"message":"Quota exceeded for metric: generativelanguage.googleapis.com/generate_requests_per_model_per_day, limit: 250, model: gemini-3.1-pro","status":"RESOURCE_EXHAUSTED"}}',
+    });
+
+    // Act
+    renderItem(run);
+
+    // Assert
+    expect(screen.getByTestId("run-rate-limit-failed")).toHaveTextContent(
+      I18nKey.AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED,
+    );
+    expect(
+      screen.queryByTestId("run-status-icon-failed"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the plain Failed badge for a failure that isn't rate-limit related", () => {
+    // Arrange
+    const run = makeRun({
+      status: AutomationRunStatus.FAILED,
+      error_detail: "sandbox provisioning failed: connection refused",
+    });
+
+    // Act
+    renderItem(run);
+
+    // Assert
+    expect(screen.getByTestId("run-status-icon-failed")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("run-rate-limit-failed"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the plain Failed badge when there is no error_detail at all", () => {
+    // Arrange
+    const run = makeRun({
+      status: AutomationRunStatus.FAILED,
+      error_detail: null,
+    });
+
+    // Act
+    renderItem(run);
+
+    // Assert
+    expect(screen.getByTestId("run-status-icon-failed")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("run-rate-limit-failed"),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("ActivityLogItem — cancel a stuck run", () => {
   beforeEach(() => {
     __resetActiveStoreForTests();

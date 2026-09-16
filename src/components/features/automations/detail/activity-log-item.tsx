@@ -7,6 +7,8 @@ import {
   type Automation,
   type AutomationRun,
 } from "#/types/automation";
+import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
+import { isRateLimitErrorDetail } from "#/components/features/home/featured-automations/automation-run-health";
 import { RunStatusBadge } from "./run-status-badge";
 import { RunLogsModal } from "./run-logs-modal";
 import { parseProactivationMarker } from "#/utils/proactivation-prompt";
@@ -242,6 +244,15 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
     i18n.language,
   );
   const formattedCost = formatRunCost(run.cost);
+  // The default LLM profile's daily provider quota can exhaust mid-day
+  // (litellm surfaces this as RESOURCE_EXHAUSTED / RateLimitError); a bare
+  // "Failed" badge reads as a bug in this automation when it's really
+  // upstream capacity, so call it out specifically and keep the raw detail
+  // available on hover.
+  const isRateLimitFailure =
+    run.status === AutomationRunStatus.FAILED &&
+    !!run.error_detail &&
+    isRateLimitErrorDetail(run.error_detail);
 
   const handleLogsClick = (
     e:
@@ -327,7 +338,18 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
           </button>
         )}
         {logsButton}
-        <RunStatusBadge status={run.status} />
+        {isRateLimitFailure ? (
+          <StyledTooltip content={run.error_detail ?? ""} placement="top">
+            <span
+              data-testid="run-rate-limit-failed"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--oh-danger)]/50 bg-[var(--oh-danger)]/10 px-2.5 py-1 text-xs font-medium text-danger"
+            >
+              {t(I18nKey.AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED)}
+            </span>
+          </StyledTooltip>
+        ) : (
+          <RunStatusBadge status={run.status} />
+        )}
       </div>
     </>
   );

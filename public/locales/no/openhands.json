@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "Kjører",
   "AUTOMATIONS$DETAIL$CANCELLED": "Avbrutt",
   "AUTOMATIONS$DETAIL$SKIPPED": "Hoppet over",
+  "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "Inaktiv",
   "AUTOMATIONS$DETAIL$LAST_RUN": "Siste kjøring",
   "AUTOMATIONS$DETAIL$LOAD_MORE_RUNS": "Last inn flere",
