@@ -10,6 +10,7 @@ import {
   isBackendRequestTimeoutMessage,
   isCorsOrNetworkErrorMessage,
 } from "./user-facing-error";
+import { hasHttpResponseStatus } from "./api-error-message";
 
 // react-hot-toast accepts only CSSProperties via the style option — cannot use className
 const TOAST_STYLE: CSSProperties = {
@@ -93,12 +94,30 @@ export const ERROR_TOAST_OPTIONS: ToastOptions = {
   style: ERROR_TOAST_STYLE,
 };
 
-export const displayErrorToast = (error: string | null | undefined) => {
+export interface DisplayErrorToastOptions {
+  /**
+   * The original error the message was extracted from. When it carries an
+   * HTTP status the backend was reached, so the message is shown verbatim —
+   * FastAPI's "Failed to fetch plugin source" must not be rewritten to the
+   * "Disconnected (check URL or network)" text just because it contains
+   * "failed to fetch".
+   */
+  error?: unknown;
+}
+
+export const displayErrorToast = (
+  error: string | null | undefined,
+  options: DisplayErrorToastOptions = {},
+) => {
   let errorMessage = error || i18n.t(I18nKey.STATUS$ERROR);
-  if (isCorsOrNetworkErrorMessage(errorMessage)) {
-    errorMessage = i18n.t(I18nKey.ERROR$CORS_OR_NETWORK);
-  } else if (isBackendRequestTimeoutMessage(errorMessage)) {
-    errorMessage = i18n.t(I18nKey.ERROR$BACKEND_REQUEST_TIMEOUT);
+  // Only a transport failure gets reclassified; a real HTTP response is the
+  // backend's own wording and is shown as-is.
+  if (!hasHttpResponseStatus(options.error)) {
+    if (isCorsOrNetworkErrorMessage(errorMessage)) {
+      errorMessage = i18n.t(I18nKey.ERROR$CORS_OR_NETWORK);
+    } else if (isBackendRequestTimeoutMessage(errorMessage)) {
+      errorMessage = i18n.t(I18nKey.ERROR$BACKEND_REQUEST_TIMEOUT);
+    }
   }
   const duration = calculateToastDuration(errorMessage, 4000);
   toast(<ErrorToastContent message={errorMessage} />, {

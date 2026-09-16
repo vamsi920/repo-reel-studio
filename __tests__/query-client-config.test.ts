@@ -44,7 +44,9 @@ describe("createAgentServerQueryClient", () => {
       }),
     ).rejects.toThrow("query error with toast");
 
-    expect(toastSpy).toHaveBeenCalledWith("query error with toast");
+    expect(toastSpy).toHaveBeenCalledWith("query error with toast", {
+      error: expect.anything(),
+    });
   });
 
   it("does not show raw 401 toasts while the active cloud backend is logged out", async () => {

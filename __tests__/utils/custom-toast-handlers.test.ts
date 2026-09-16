@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import toast from "react-hot-toast";
+import { AxiosError, AxiosHeaders } from "axios";
+import { I18nKey } from "#/i18n/declaration";
 import {
   displaySuccessToast,
   displayErrorToast,
@@ -75,6 +77,65 @@ describe("custom-toast-handlers", () => {
   });
 
   describe("displayErrorToast", () => {
+    const renderedMessage = () => {
+      const content = toastMock.mock.calls[0][0] as {
+        props: { message: string };
+      };
+      return content.props.message;
+    };
+
+    it("rewrites a bare transport failure to the connectivity message", () => {
+      displayErrorToast("TypeError: Failed to fetch");
+
+      expect(renderedMessage()).toBe(I18nKey.ERROR$CORS_OR_NETWORK);
+    });
+
+    it("shows a backend reason verbatim when the error carries an HTTP status", () => {
+      // FastAPI's detail for a bad plugin source contains "failed to fetch",
+      // which must not be mistaken for a network failure.
+      const detail =
+        "Failed to fetch plugin source. Check that the source is valid.";
+      const httpError = Object.assign(
+        new Error(
+          `HTTP request failed (400 Bad Request): {"detail":"${detail}"}`,
+        ),
+        { status: 400, response: { detail } },
+      );
+
+      displayErrorToast(detail, { error: httpError });
+
+      expect(renderedMessage()).toBe(detail);
+    });
+
+    it("shows an axios response body verbatim even when it reads like a network error", () => {
+      const detail = "Network error while cloning the plugin repository";
+      const axiosError = new AxiosError(
+        "Request failed with status code 502",
+        "ERR_BAD_RESPONSE",
+        { headers: new AxiosHeaders() },
+        undefined,
+        {
+          status: 502,
+          statusText: "Bad Gateway",
+          headers: {},
+          config: { headers: new AxiosHeaders() },
+          data: { detail },
+        },
+      );
+
+      displayErrorToast(detail, { error: axiosError });
+
+      expect(renderedMessage()).toBe(detail);
+    });
+
+    it("still rewrites the message when the error has no HTTP status", () => {
+      const transportError = new TypeError("Failed to fetch");
+
+      displayErrorToast(transportError.message, { error: transportError });
+
+      expect(renderedMessage()).toBe(I18nKey.ERROR$CORS_OR_NETWORK);
+    });
+
     it("should call toast with calculated duration for short message", () => {
       const shortMessage = "Error occurred";
       displayErrorToast(shortMessage);

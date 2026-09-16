@@ -97,7 +97,9 @@ describe("AddPluginModal", () => {
     expect(inlineError).toHaveTextContent(detail);
     expect(inlineError).toHaveAttribute("role", "alert");
     await waitFor(() => expect(toastSpy).toHaveBeenCalledTimes(1));
-    expect(toastSpy).toHaveBeenCalledWith(detail);
+    expect(toastSpy).toHaveBeenCalledWith(detail, {
+      error: expect.any(HttpError),
+    });
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByTestId("add-plugin-modal")).toBeInTheDocument();
   });

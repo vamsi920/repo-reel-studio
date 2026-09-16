@@ -52,7 +52,9 @@ export const createAgentServerQueryClient = () => {
           const errorMessage = retrieveAxiosErrorMessage(error);
 
           if (!shownErrors.has(errorMessage || "")) {
-            displayErrorToast(errorMessage || i18n.t(I18nKey.ERROR$GENERIC));
+            displayErrorToast(errorMessage || i18n.t(I18nKey.ERROR$GENERIC), {
+              error,
+            });
             shownErrors.add(errorMessage || "");
 
             setTimeout(() => {
@@ -71,7 +73,9 @@ export const createAgentServerQueryClient = () => {
 
         if (!disableToast && !isActiveCloudBackendAuthError(error)) {
           const message = retrieveAxiosErrorMessage(error);
-          displayErrorToast(message || i18n.t(I18nKey.ERROR$GENERIC));
+          displayErrorToast(message || i18n.t(I18nKey.ERROR$GENERIC), {
+            error,
+          });
         }
       },
     }),
