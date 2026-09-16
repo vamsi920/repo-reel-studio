@@ -50,6 +50,23 @@ function toUsageEventRow(row: Record<string, unknown>): UsageEventRow {
   };
 }
 
+/**
+ * `recordEvent` is fire-and-forget from every metrics update, so a broken
+ * write path (an RLS policy mismatch, for example) would otherwise fail
+ * silently on every single conversation. Warn once per page load -- enough to
+ * make the next silent 403 visible in the console without flooding it.
+ */
+let warnedRecordFailure = false;
+
+function warnRecordFailureOnce(reason: unknown): void {
+  if (warnedRecordFailure) return;
+  warnedRecordFailure = true;
+  console.warn(
+    "[usage-repository] recordEvent failed; conversation usage is only kept in this tab until the write path is fixed",
+    reason,
+  );
+}
+
 class SupabaseUsageRepository implements UsageRepository {
   async recordEvent(input: UsageEventInput): Promise<string | null> {
     if (!isSupabaseConfigured || !supabase || !input.workspaceId) return null;
@@ -66,10 +83,14 @@ class SupabaseUsageRepository implements UsageRepository {
         })
         .select("id")
         .single();
-      if (error || !data) return null;
+      if (error || !data) {
+        warnRecordFailureOnce(error ?? "no row returned");
+        return null;
+      }
       return data.id as string;
-    } catch {
+    } catch (error) {
       // Best-effort -- Usage is a reporting surface, never a blocking path.
+      warnRecordFailureOnce(error);
       return null;
     }
   }
@@ -123,3 +144,8 @@ class SupabaseUsageRepository implements UsageRepository {
 }
 
 export const usageRepository: UsageRepository = new SupabaseUsageRepository();
+
+/** Test-only. */
+export function resetUsageRecordFailureWarning(): void {
+  warnedRecordFailure = false;
+}
