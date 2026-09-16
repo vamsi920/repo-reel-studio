@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Bekreftelsesmodus aktivert",
   "COMMON$MOST_RECENT": "Nyeste",
   "HOME$NO_REPOSITORY_FOUND": "Ingen repository funnet for å starte samtale",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub er ikke tilkoblet — koble til på nytt under Miljø > Tilkoblinger",
   "CONVERSATION$VERSION_V1_NEW": "Samtale-API versjon 1 (Ny)",
   "CONVERSATION$VERSION_V0_LEGACY": "Samtale-API versjon 0 (Gammel)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Feil ved oppstart av samtale",

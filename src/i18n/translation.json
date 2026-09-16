@@ -26740,6 +26740,23 @@
     "uk": "Не знайдено репозиторій для запуску розмови",
     "ca": "No s'ha trobat cap repositori per llançar la conversa"
   },
+  "HOME$GITHUB_NOT_CONNECTED": {
+    "en": "GitHub isn't connected — reconnect in Environment > Connections",
+    "ja": "GitHubが接続されていません — [環境] > [接続]で再接続してください",
+    "zh-CN": "GitHub 未连接 — 请在“环境”>“连接”中重新连接",
+    "zh-TW": "GitHub 未連接 — 請在「環境」>「連接」中重新連接",
+    "ko-KR": "GitHub가 연결되어 있지 않습니다 — 환경 > 연결에서 다시 연결하세요",
+    "no": "GitHub er ikke tilkoblet — koble til på nytt under Miljø > Tilkoblinger",
+    "it": "GitHub non è connesso — riconnettiti in Ambiente > Connessioni",
+    "pt": "O GitHub não está conectado — reconecte em Ambiente > Conexões",
+    "es": "GitHub no está conectado — vuelve a conectarlo en Entorno > Conexiones",
+    "ar": "GitHub غير متصل — أعد الاتصال من البيئة > الاتصالات",
+    "fr": "GitHub n'est pas connecté — reconnectez-vous dans Environnement > Connexions",
+    "tr": "GitHub bağlı değil — Ortam > Bağlantılar bölümünden yeniden bağlanın",
+    "de": "GitHub ist nicht verbunden — unter Umgebung > Verbindungen erneut verbinden",
+    "uk": "GitHub не підключено — перепідключіть у розділі Середовище > З'єднання",
+    "ca": "GitHub no està connectat — torna a connectar-lo a Entorn > Connexions"
+  },
   "CONVERSATION$VERSION_V1_NEW": {
     "en": "Conversation API Version 1 (New)",
     "ja": "会話API バージョン1（新規）",

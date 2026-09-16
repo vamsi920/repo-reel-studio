@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "تم تفعيل وضع التأكيد",
   "COMMON$MOST_RECENT": "الأحدث",
   "HOME$NO_REPOSITORY_FOUND": "لم يتم العثور على مستودع لبدء المحادثة",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub غير متصل — أعد الاتصال من البيئة > الاتصالات",
   "CONVERSATION$VERSION_V1_NEW": "واجهة برمجة التطبيقات للمحادثة الإصدار 1 (جديد)",
   "CONVERSATION$VERSION_V0_LEGACY": "واجهة برمجة التطبيقات للمحادثة الإصدار 0 (قديم)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "خطأ في بدء المحادثة",

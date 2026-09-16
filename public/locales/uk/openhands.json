@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Режим підтвердження увімкнено",
   "COMMON$MOST_RECENT": "Найновіше",
   "HOME$NO_REPOSITORY_FOUND": "Не знайдено репозиторій для запуску розмови",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub не підключено — перепідключіть у розділі Середовище > З'єднання",
   "CONVERSATION$VERSION_V1_NEW": "API розмови версія 1 (Нова)",
   "CONVERSATION$VERSION_V0_LEGACY": "API розмови версія 0 (Застаріла)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Помилка запуску розмови",

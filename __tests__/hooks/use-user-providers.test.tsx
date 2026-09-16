@@ -195,4 +195,87 @@ describe("useUserProviders", () => {
       debugSpy.mockRestore();
     });
   });
+
+  // Mitigation for INC-1 (dead GitHub OAuth connection): a repo picker that
+  // simply omits "github" from `providers` while the connection is broken is
+  // indistinguishable from one still loading, so it fell through to a
+  // generic "no items" empty state. `isGithubDisconnected` gives callers a
+  // way to tell "confirmed no working connection" apart from "still
+  // checking" or "connected".
+  describe("isGithubDisconnected", () => {
+    it("is false for a local backend whose connection query hasn't settled yet", () => {
+      mockUseGithubConnection.mockReturnValue({
+        data: undefined,
+        isPending: true,
+        fetchStatus: "idle",
+        isError: false,
+      });
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(false);
+    });
+
+    it("is true once a local backend's connection query settles with no connection", () => {
+      mockUseGithubConnection.mockReturnValue({
+        data: null,
+        isPending: false,
+        fetchStatus: "idle",
+        isError: false,
+      });
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(true);
+    });
+
+    it("is false for a local backend with a working connection", () => {
+      setRegisteredBackends([localBackend]);
+      setActiveSelection({ backendId: localBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(false);
+    });
+
+    it("is false for a Cloud backend while settings are still loading", () => {
+      mockUseSettings.mockReturnValue({ data: undefined, isLoading: true });
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(false);
+    });
+
+    it("is true for a Cloud backend once settings resolve without a github token", () => {
+      mockUseSettings.mockReturnValue({
+        data: { provider_tokens_set: {} },
+        isLoading: false,
+      });
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(true);
+    });
+
+    it("is false for a Cloud backend once settings resolve with a github token", () => {
+      mockUseSettings.mockReturnValue({
+        data: { provider_tokens_set: { github: {} } },
+        isLoading: false,
+      });
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+
+      const { result } = renderUserProviders();
+
+      expect(result.current.isGithubDisconnected).toBe(false);
+    });
+  });
 });

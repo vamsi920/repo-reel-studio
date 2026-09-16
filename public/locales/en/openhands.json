@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Confirmation mode enabled",
   "COMMON$MOST_RECENT": "Most Recent",
   "HOME$NO_REPOSITORY_FOUND": "No repository found to launch conversation",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub isn't connected — reconnect in Environment > Connections",
   "CONVERSATION$VERSION_V1_NEW": "Conversation API Version 1 (New)",
   "CONVERSATION$VERSION_V0_LEGACY": "Conversation API Version 0 (Legacy)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Error starting conversation",

@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Mode de confirmació activat",
   "COMMON$MOST_RECENT": "Més recent",
   "HOME$NO_REPOSITORY_FOUND": "No s'ha trobat cap repositori per llançar la conversa",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub no està connectat — torna a connectar-lo a Entorn > Connexions",
   "CONVERSATION$VERSION_V1_NEW": "Versió 1 de l'API de conversa (nova)",
   "CONVERSATION$VERSION_V0_LEGACY": "Versió 0 de l'API de conversa (llegat)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Error en iniciar la conversa",

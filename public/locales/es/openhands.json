@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Modo de confirmación activado",
   "COMMON$MOST_RECENT": "Más reciente",
   "HOME$NO_REPOSITORY_FOUND": "No se encontró ningún repositorio para iniciar la conversación",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub no está conectado — vuelve a conectarlo en Entorno > Conexiones",
   "CONVERSATION$VERSION_V1_NEW": "API de conversación versión 1 (Nueva)",
   "CONVERSATION$VERSION_V0_LEGACY": "API de conversación versión 0 (Heredada)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Error al iniciar la conversación",

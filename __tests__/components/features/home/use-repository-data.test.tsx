@@ -133,4 +133,47 @@ describe("useRepositoryData", () => {
     expect(result.current.isError).toBe(true);
     expect(result.current.error).toBe(searchError);
   });
+
+  // Mitigation for INC-1 (dead GitHub OAuth connection): surface a
+  // confirmed-disconnected signal separately from isError/empty results so
+  // the dropdown can render a clear "reconnect GitHub" message instead of a
+  // generic empty state.
+  it("reports the provider as disconnected when useUserProviders confirms no github connection", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: [],
+      isGithubDisconnected: true,
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(true);
+  });
+
+  it("does not report disconnected for a non-github provider", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: [],
+      isGithubDisconnected: true,
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("gitlab", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(false);
+  });
+
+  it("does not report disconnected while github is connected", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(false);
+  });
 });

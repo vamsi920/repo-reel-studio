@@ -81,6 +81,7 @@ export function GitRepoDropdown({
     isError,
     error: repositoryError,
     isSearchLoading,
+    isProviderDisconnected,
   } = useRepositoryData(
     provider,
     disabled,
@@ -265,9 +266,21 @@ export function GitRepoDropdown({
   const renderEmptyState = (emptyInputValue: string) => (
     <EmptyState
       inputValue={emptyInputValue}
-      searchMessage={t(I18nKey.HOME$NO_REPOSITORY_FOUND)}
-      emptyMessage={t(I18nKey.COMMON$NO_REPOSITORY)}
-      testId="git-repo-dropdown-empty"
+      searchMessage={
+        isProviderDisconnected
+          ? t(I18nKey.HOME$GITHUB_NOT_CONNECTED)
+          : t(I18nKey.HOME$NO_REPOSITORY_FOUND)
+      }
+      emptyMessage={
+        isProviderDisconnected
+          ? t(I18nKey.HOME$GITHUB_NOT_CONNECTED)
+          : t(I18nKey.COMMON$NO_REPOSITORY)
+      }
+      testId={
+        isProviderDisconnected
+          ? "git-repo-dropdown-disconnected"
+          : "git-repo-dropdown-empty"
+      }
     />
   );
 

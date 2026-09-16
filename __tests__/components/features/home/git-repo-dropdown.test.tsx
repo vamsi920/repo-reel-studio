@@ -276,4 +276,42 @@ describe("GitRepoDropdown", () => {
       expect(await screen.findByText("Failed to load data")).toBeInTheDocument();
     });
   });
+
+  // Mitigation for INC-1 (dead GitHub OAuth connection): a disabled/gated
+  // query doesn't set isError, so a broken connection used to fall through
+  // to the same generic "No Repository" empty state as a genuinely-empty,
+  // working account. `isProviderDisconnected` renders an unambiguous
+  // "reconnect GitHub" message in that case instead.
+  describe("disconnected provider state", () => {
+    it("shows a reconnect message instead of the generic empty state when the provider is confirmed disconnected", async () => {
+      renderDropdown(
+        {},
+        { repositories: [], isProviderDisconnected: true },
+      );
+
+      const input = screen.getByTestId("git-repo-dropdown");
+      await userEvent.click(input);
+
+      // vitest.setup.ts mocks useTranslation's t() to return the raw key,
+      // not a translated string -- matches the pattern other tests in this
+      // file use (see the "falls back to a generic message" test above).
+      expect(
+        await screen.findByTestId("git-repo-dropdown-disconnected"),
+      ).toHaveTextContent("HOME$GITHUB_NOT_CONNECTED");
+    });
+
+    it("shows the generic empty state when there are simply no repositories", async () => {
+      renderDropdown(
+        {},
+        { repositories: [], isProviderDisconnected: false },
+      );
+
+      const input = screen.getByTestId("git-repo-dropdown");
+      await userEvent.click(input);
+
+      expect(
+        await screen.findByTestId("git-repo-dropdown-empty"),
+      ).toHaveTextContent("COMMON$NO_REPOSITORY");
+    });
+  });
 });

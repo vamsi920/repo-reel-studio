@@ -20,11 +20,11 @@ The daily digest reads this file as its primary source for "is the app healthy".
 ---
 
 ### INC-1 — CRITICAL — GitHub (and Jira) OAuth connection is dead for the account this app uses
-- status: OPEN
+- status: MITIGATED (GitHub repo-picker half only; Jira side and the underlying OAuth reconnect are still OPEN, see "needs from user")
 - affects: Automations (GitHub-triggered), Knowledge/KT generation (repo picker), Proactivation, CodeGraph, kt-video — anything that needs to attach a GitHub repo
 - first seen: 2026-09-10   last confirmed: 2026-09-16 (18:52 UTC, neo-focus-explorer run 12: /environment/connections GitHub still 'Failing / vamsi920 / Missing: read:user, repo', Jira still 'Failing / https://neodevex.atlassian.net / Missing: offline_access, read:jira-user, read:jira-work', unchanged)   confirmed by: neo-ui-tester / neo-focus-explorer
 - needs from user: reconnect the account in the app — Environment > Connections > GitHub (and Jira, same issue). This is an OAuth consent step; no routine can do it for you.
-- mitigation: none built yet — next routine to touch environment-onboarding or automations should add a clear "GitHub isn't connected — reconnect in Environment > Connections" banner anywhere this currently fails silently or confusingly, instead of an empty/misleading state
+- mitigation: 2026-09-16 (neo-focus-fixer-cloud): the shared repo picker (`GitRepoDropdown`, used by Proactivation, Automations manifest fields, the home page and the chat "open repository" modal) used to fall through to the generic "No Repository" empty state whenever the GitHub connection was dead, because a missing/disabled connection never set `isError` -- it just left the repositories query permanently disabled with no other signal. `useUserProviders` now exposes `isGithubDisconnected` (true once we've conclusively determined -- not just "still loading" -- that there's no working GitHub connection), threaded through `useRepositoryData`/`GitRepoDropdown` to render "GitHub isn't connected — reconnect in Environment > Connections" (`HOME$GITHUB_NOT_CONNECTED`) instead. `kt-list.tsx`'s separate "No connected repositories yet" empty state is NOT fed by live GitHub API data (it reflects locally-persisted conversation/knowledge history) and was left alone -- it's a different bug, not this incident. Jira has no equivalent picker in this app and was not touched.
 - evidence: github-api-proxy edge function logs: 401 "Bad credentials"; repo picker shows no repos
 
 ### INC-2 — CRITICAL — Supabase auth/session errors block Knowledge, CodeGraph and other persisted data for signed-in users

@@ -1572,6 +1572,7 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Bestätigungsmodus aktiviert",
   "COMMON$MOST_RECENT": "Neueste",
   "HOME$NO_REPOSITORY_FOUND": "Kein Repository gefunden, um das Gespräch zu starten",
+  "HOME$GITHUB_NOT_CONNECTED": "GitHub ist nicht verbunden — unter Umgebung > Verbindungen erneut verbinden",
   "CONVERSATION$VERSION_V1_NEW": "Konversations-API Version 1 (Neu)",
   "CONVERSATION$VERSION_V0_LEGACY": "Konversations-API Version 0 (Legacy)",
   "CONVERSATION$ERROR_STARTING_CONVERSATION": "Fehler beim Starten der Konversation",

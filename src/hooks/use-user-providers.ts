@@ -72,8 +72,21 @@ export const useUserProviders = () => {
     return list;
   }, [settings?.provider_tokens_set, hasLocalGithubConnection]);
 
+  // Whether we've conclusively determined (not just "still loading") that
+  // this account has no working GitHub connection -- distinct from
+  // `providers` simply not including "github" yet because a query is still
+  // in flight. Cloud backends know this once `settings` has resolved; local
+  // backends know it once the connection query itself has settled (ran and
+  // either found a connection or didn't -- a disabled/never-attempted query
+  // is NOT settled, see the dev diagnostic above).
+  const githubConnectionSettled =
+    backend.kind === "cloud" ? !isLoadingSettings : !isGithubConnectionPending;
+  const isGithubDisconnected =
+    githubConnectionSettled && !providers.includes("github");
+
   return {
     providers,
     isLoadingSettings,
+    isGithubDisconnected,
   };
 };

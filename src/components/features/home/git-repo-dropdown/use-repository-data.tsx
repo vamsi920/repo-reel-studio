@@ -43,8 +43,15 @@ export function useRepositoryData(
   // already withholds its fetch until `provider` is in `providers`; gate
   // the search query the same way so it can't fire -- and cache an empty
   // page -- ahead of that.
-  const { providers } = useUserProviders();
+  const { providers, isGithubDisconnected } = useUserProviders();
   const isProviderReady = !!provider && providers.includes(provider);
+
+  // Surfaced separately from `isError` -- a dead/missing GitHub connection
+  // doesn't fail the repositories query, it just leaves it disabled (see
+  // useGitRepositories' `queryEnabled` gate), so callers need an explicit
+  // signal to tell "confirmed disconnected" apart from "no repos" or
+  // "still loading".
+  const isProviderDisconnected = provider === "github" && isGithubDisconnected;
 
   // Search repositories when user types
   const {
@@ -148,5 +155,6 @@ export function useRepositoryData(
     isError: isError || isSearchError,
     error: listError ?? searchError ?? null,
     isSearchLoading,
+    isProviderDisconnected,
   };
 }
