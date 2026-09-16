@@ -21,6 +21,10 @@ import { sortFilesByPriority } from "#/utils/file-priority";
 import { FileQuickRow } from "#/components/features/files-tab/file-quick-row";
 import { FileTreeView } from "#/components/features/files-tab/file-tree-view";
 import { FileContentViewer } from "#/components/features/files-tab/file-content-viewer";
+import {
+  FileListErrorMessage,
+  FileListStaleNotice,
+} from "#/components/features/files-tab/file-list-error";
 import { SegmentedToggle } from "#/components/features/files-tab/segmented-toggle";
 import type { ViewMode } from "#/components/features/files-tab/view-mode";
 import RefreshIcon from "#/icons/u-refresh.svg?react";
@@ -83,6 +87,15 @@ function FilesTab() {
 
   const filesQuery = useWorkspaceFiles();
   const paths = useMemo(() => filesQuery.data ?? [], [filesQuery.data]);
+  // A failed listing must not masquerade as an empty workspace: with no
+  // data at all we replace the list with an error + Retry; with a stale
+  // list from an earlier success we keep showing it under a "couldn't
+  // refresh" notice so the user knows it may be out of date.
+  const listFailedWithNoData =
+    filesQuery.isError && filesQuery.data === undefined;
+  const listFailedWithStaleData =
+    filesQuery.isError && filesQuery.data !== undefined;
+  const retryFileList = filesQuery.refetch;
 
   const storedSelectedPath = useFilesTabStore((s) => s.selectedPath);
   const selectedConversationId = useFilesTabStore(
@@ -237,12 +250,19 @@ function FilesTab() {
       )}
       {activeView === "off" && (
         <div className="flex flex-1 flex-col min-h-0">
-          {filesQuery.isLoading ? (
+          {filesQuery.isLoading && (
             <div className="flex flex-1 items-center justify-center text-sm text-[var(--oh-muted)]">
               {t(I18nKey.FILES$LOADING_FILES)}
             </div>
-          ) : (
+          )}
+          {!filesQuery.isLoading && listFailedWithNoData && (
+            <FileListErrorMessage onRetry={retryFileList} />
+          )}
+          {!filesQuery.isLoading && !listFailedWithNoData && (
             <>
+              {listFailedWithStaleData && (
+                <FileListStaleNotice onRetry={retryFileList} />
+              )}
               <FileQuickRow
                 paths={paths}
                 selectedPath={selectedPath}

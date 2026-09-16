@@ -13,6 +13,14 @@ const MAX_FILES = 2000;
 export interface WorkspaceFilesResult {
   data: string[] | undefined;
   isLoading: boolean;
+  /**
+   * The last fetch failed. `data` may still hold the previous successful
+   * listing (a failed refresh keeps it), so callers must check both to tell
+   * "couldn't load anything" from "couldn't refresh, showing stale list".
+   */
+  isError: boolean;
+  /** Re-run the listing (the Files tab's inline Retry). */
+  refetch: () => void;
 }
 
 // Directory names that we never want to descend into when listing files.
@@ -104,7 +112,14 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
     meta: { disableToast: true },
   });
 
-  return { data: query.data, isLoading: query.isLoading };
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: () => {
+      query.refetch();
+    },
+  };
 }
 
 /**
@@ -126,12 +141,22 @@ function useCloudWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
     const paths = gitChanges.data
       .filter((change) => change.status !== "D")
       .map((change) => change.path);
-    return Array.from(new Set(paths)).slice(0, MAX_FILES);
-  }, [enabled, gitChanges.data]);
+    const unique = Array.from(new Set(paths)).slice(0, MAX_FILES);
+    // `useUnifiedGetGitChanges` always hands back an array, so a request
+    // that failed before anything arrived would otherwise look like an
+    // empty workspace. Surface it as "no data" so the tab shows its error
+    // state; a failed *refresh* keeps the previous non-empty list.
+    if (gitChanges.isError && unique.length === 0) return undefined;
+    return unique;
+  }, [enabled, gitChanges.data, gitChanges.isError]);
 
   return {
     data: enabled ? data : undefined,
     isLoading: enabled ? gitChanges.isLoading : false,
+    isError: enabled ? gitChanges.isError : false,
+    refetch: () => {
+      gitChanges.refetch();
+    },
   };
 }
 

@@ -110,6 +110,33 @@ describe("useWorkspaceFiles — local backend", () => {
     );
     expect(executeCommandSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("reports isError (no data) when find fails, and refetch re-runs the listing", async () => {
+    executeCommandSpy.mockResolvedValueOnce({
+      exit_code: 1,
+      stdout: "",
+      stderr: "boom",
+    });
+
+    const { result } = renderHook(() => useWorkspaceFiles(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isLoading).toBe(false);
+
+    executeCommandSpy.mockResolvedValueOnce({
+      exit_code: 0,
+      stdout: "./hello.txt\n",
+      stderr: "",
+    });
+    result.current.refetch();
+
+    await waitFor(() => expect(result.current.data).toEqual(["hello.txt"]));
+    expect(result.current.isError).toBe(false);
+    expect(executeCommandSpy).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("useWorkspaceFiles — cloud backend", () => {
@@ -148,6 +175,42 @@ describe("useWorkspaceFiles — cloud backend", () => {
     });
 
     await waitFor(() => expect(result.current.data).toEqual(["hello.txt"]));
+  });
+
+  it("surfaces a failed git-changes request as isError with no data", async () => {
+    const refetch = vi.fn();
+    useUnifiedGetGitChangesMock.mockReturnValue({
+      ...gitChangesResult([]),
+      isSuccess: false,
+      isError: true,
+      error: new Error("boom"),
+      refetch,
+    });
+
+    const { result } = renderHook(() => useWorkspaceFiles(), {
+      wrapper: makeWrapper(),
+    });
+
+    expect(result.current.isError).toBe(true);
+    expect(result.current.data).toBeUndefined();
+    result.current.refetch();
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the previous list when a git-changes refresh fails", async () => {
+    useUnifiedGetGitChangesMock.mockReturnValue({
+      ...gitChangesResult([{ status: "A", path: "hello.txt" }]),
+      isSuccess: false,
+      isError: true,
+      error: new Error("boom"),
+    });
+
+    const { result } = renderHook(() => useWorkspaceFiles(), {
+      wrapper: makeWrapper(),
+    });
+
+    expect(result.current.isError).toBe(true);
+    expect(result.current.data).toEqual(["hello.txt"]);
   });
 
   it("surfaces the git-changes loading state", async () => {

@@ -16,6 +16,7 @@ const useUnifiedGitCommitsMock = vi.fn();
 const useWorkspaceFilesMock = vi.fn();
 const useWorkspaceFileContentMock = vi.fn();
 const refetchGitChangesMock = vi.fn();
+const refetchFilesMock = vi.fn();
 
 vi.mock("#/hooks/use-has-attached-source", () => ({
   useHasAttachedSource: () => useHasAttachedSourceMock(),
@@ -95,6 +96,7 @@ describe("FilesTab", () => {
     useWorkspaceFilesMock.mockReset();
     useWorkspaceFileContentMock.mockReset();
     refetchGitChangesMock.mockReset();
+    refetchFilesMock.mockReset();
     // Default: pretend the probe has already resolved with at least one
     // commit. Individual tests can override this for "empty repo" cases.
     useHasGitCommitsMock.mockReturnValue({
@@ -116,6 +118,8 @@ describe("FilesTab", () => {
     useWorkspaceFilesMock.mockReturnValue({
       data: ["index.html", "src/main.ts", "README.md"],
       isLoading: false,
+      isError: false,
+      refetch: refetchFilesMock,
     });
     useWorkspaceFileContentMock.mockReturnValue({
       data: {
@@ -499,6 +503,85 @@ describe("FilesTab", () => {
     expect(refresh).toHaveAttribute("aria-label", "FILES$REFRESH");
     await user.click(refresh);
     expect(refetchGitChangesMock).toHaveBeenCalledTimes(1);
+  });
+
+  // A failed workspace listing must be visibly different from an empty
+  // workspace, and the user must have a way to retry that re-runs the
+  // listing itself (not just the git-changes refetch the toolbar fires).
+  describe("file list load errors", () => {
+    beforeEach(() => {
+      useHasAttachedSourceMock.mockReturnValue({
+        hasAttachedSource: false,
+        isLoading: false,
+      });
+    });
+
+    it("replaces the list with an alert + Retry when the listing failed with no data", async () => {
+      useWorkspaceFilesMock.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        refetch: refetchFilesMock,
+      });
+      const user = userEvent.setup();
+
+      renderTab();
+
+      const alert = screen.getByTestId("files-tab-list-error");
+      expect(alert).toHaveAttribute("role", "alert");
+      expect(
+        within(alert).getByText("FILES$LIST_LOAD_ERROR"),
+      ).toBeInTheDocument();
+      // Nothing that looks like an (empty) workspace is rendered.
+      expect(
+        screen.queryByTestId("files-tab-list-stale"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("FILES$NO_FILES")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("FILES$NO_FILE_SELECTED"),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId("files-tab-list-retry"));
+      expect(refetchFilesMock).toHaveBeenCalledTimes(1);
+      expect(refetchGitChangesMock).not.toHaveBeenCalled();
+    });
+
+    it("keeps the previous list but flags it as stale when a refresh failed", async () => {
+      useWorkspaceFilesMock.mockReturnValue({
+        data: ["index.html", "src/main.ts"],
+        isLoading: false,
+        isError: true,
+        refetch: refetchFilesMock,
+      });
+      const user = userEvent.setup();
+
+      renderTab();
+
+      const notice = screen.getByTestId("files-tab-list-stale");
+      expect(notice).toHaveAttribute("role", "alert");
+      expect(
+        within(notice).getByText("FILES$LIST_REFRESH_ERROR"),
+      ).toBeInTheDocument();
+      // The stale list is still usable underneath the notice.
+      expect(screen.getByTestId("file-quick-row-item-index.html")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("files-tab-list-error"),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId("files-tab-list-stale-retry"));
+      expect(refetchFilesMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows neither error state when the listing succeeded", () => {
+      renderTab();
+
+      expect(
+        screen.queryByTestId("files-tab-list-error"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("files-tab-list-stale"),
+      ).not.toBeInTheDocument();
+    });
   });
 
   // Regression coverage for issue #1350: a file selected in one conversation
