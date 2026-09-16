@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Bağlantı kesildi. Lütfen sayfayı yenileyin",
   "BROWSER$URL_PLACEHOLDER": "URL yüklenmedi",
   "BROWSER$NO_PAGE_LOADED": "Henüz hiçbir sayfa yüklenmedi. Neo'e bir URL açmasını isteyin. Örnek: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Sayfa yüklendi — ekran görüntüsü alınmadı. Burada önizlemek için Neo'dan ekran görüntüsü almasını isteyin.",
   "USER$AVATAR_PLACEHOLDER": "Kullanıcı avatarı yer tutucusu",
   "ACCOUNT_SETTINGS$LOGOUT": "Çıkış yap",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Gelişmiş seçenekler",

@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Déconnecté. Veuillez actualiser la page",
   "BROWSER$URL_PLACEHOLDER": "Aucune URL chargée",
   "BROWSER$NO_PAGE_LOADED": "Aucune page n'a encore été chargée. Demandez à Neo d'ouvrir une URL. Exemple : \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Page chargée — aucune capture d'écran effectuée. Demandez à Neo de prendre une capture d'écran pour l'afficher ici.",
   "USER$AVATAR_PLACEHOLDER": "espace réservé pour l'avatar de l'utilisateur",
   "ACCOUNT_SETTINGS$LOGOUT": "Déconnexion",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Options avancées",

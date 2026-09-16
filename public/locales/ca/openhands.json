@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Desconnectat. Actualitzeu la pàgina",
   "BROWSER$URL_PLACEHOLDER": "No s'ha carregat cap URL",
   "BROWSER$NO_PAGE_LOADED": "Encara no s'ha carregat cap pàgina. Demaneu a Neo que obri una URL. Exemple: \"Obre https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Pàgina carregada — no s'ha capturat cap captura de pantalla. Demaneu a Neo que faci una captura de pantalla per previsualitzar-la aquí.",
   "USER$AVATAR_PLACEHOLDER": "marcador de posició de l'avatar de l'usuari",
   "ACCOUNT_SETTINGS$LOGOUT": "Tanca la sessió",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Opcions avançades",

@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "연결이 끊어졌습니다. 페이지를 새로고침하세요",
   "BROWSER$URL_PLACEHOLDER": "로드된 URL 없음",
   "BROWSER$NO_PAGE_LOADED": "아직 페이지가 로드되지 않았습니다. Neo에 URL을 열도록 요청하세요. 예시: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "페이지가 로드되었지만 스크린샷이 캡처되지 않았습니다. 여기에서 미리 보려면 Neo에게 스크린샷을 요청하세요.",
   "USER$AVATAR_PLACEHOLDER": "사용자 아바타 플레이스홀더",
   "ACCOUNT_SETTINGS$LOGOUT": "로그아웃",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "고급 옵션",

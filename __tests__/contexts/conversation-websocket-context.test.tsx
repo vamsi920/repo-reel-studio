@@ -165,6 +165,33 @@ const makeBrowserObservation = (
   },
 });
 
+// The shape the agent-server actually emits for browser tools: a TextContent
+// list plus `is_error`, no `output`/`error`, and no `screenshot_data` key at
+// all unless the agent asked for a screenshot.
+const makeWireBrowserObservation = (
+  id: string,
+  actionId: string,
+  toolName: string,
+  text: string,
+  {
+    isError = false,
+    screenshotData,
+  }: { isError?: boolean; screenshotData?: string } = {},
+) => ({
+  id,
+  timestamp: new Date().toISOString(),
+  source: "environment",
+  action_id: actionId,
+  tool_name: toolName,
+  tool_call_id: `call-${actionId}`,
+  observation: {
+    kind: "BrowserObservation",
+    content: [{ type: "text", text }],
+    is_error: isError,
+    ...(screenshotData ? { screenshot_data: screenshotData } : {}),
+  },
+});
+
 const eventIds = () => useEventStore.getState().events.map((event) => event.id);
 
 describe("ConversationWebSocketProvider — conversation-scoped event store", () => {
@@ -596,17 +623,15 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     it("commits the confirmed URL when the navigate action and its observation arrive together via REST-preloaded history", async () => {
       // `searchEvents` mimics the real server's TIMESTAMP_DESC order (newest
       // first) — the hook reverses it back to chronological order.
-      vi.spyOn(EventService, "searchEvents").mockImplementation(
-        async () => ({
-          items: [
-            makeBrowserObservation("obs-hist-1", "nav-hist-1", {
-              screenshotData: "abc123",
-            }),
-            makeBrowserNavigateAction("nav-hist-1", "https://example.com"),
-          ] as unknown as OpenHandsEvent[],
-          next_page_id: null,
-        }),
-      );
+      vi.spyOn(EventService, "searchEvents").mockImplementation(async () => ({
+        items: [
+          makeBrowserObservation("obs-hist-1", "nav-hist-1", {
+            screenshotData: "abc123",
+          }),
+          makeBrowserNavigateAction("nav-hist-1", "https://example.com"),
+        ] as unknown as OpenHandsEvent[],
+        next_page_id: null,
+      }));
 
       await renderBrowserCaptured();
 
@@ -624,14 +649,12 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     // REST history, the live observation would have nothing pending to
     // confirm and the URL would never commit.
     it("confirms a pending navigation recorded from REST-preloaded history when the observation arrives live", async () => {
-      vi.spyOn(EventService, "searchEvents").mockImplementation(
-        async () => ({
-          items: [
-            makeBrowserNavigateAction("nav-hist-2", "https://example.com"),
-          ] as unknown as OpenHandsEvent[],
-          next_page_id: null,
-        }),
-      );
+      vi.spyOn(EventService, "searchEvents").mockImplementation(async () => ({
+        items: [
+          makeBrowserNavigateAction("nav-hist-2", "https://example.com"),
+        ] as unknown as OpenHandsEvent[],
+        next_page_id: null,
+      }));
 
       await renderBrowserCaptured();
       expect(useBrowserStore.getState().url).toBe("");
@@ -646,6 +669,101 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
       expect(useBrowserStore.getState().screenshotSrc).toBe(
         "data:image/png;base64,def456",
       );
+    });
+
+    // Reported bug: on the production tool the navigate observation is just
+    // "Navigated to: <url>" with no screenshot_data key at all, and the agent
+    // then calls browser_get_state (include_screenshot:false) whose JSON
+    // reports the browser's real current URL. Only the screenshot gate above
+    // existed, so the URL was never committed and the Browser tab stayed on
+    // "No page loaded yet" after a genuine navigation.
+    it("commits the URL a browser_get_state observation reports even with no screenshot", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-4", "http://localhost:8765/index.html"),
+      );
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-4",
+          "nav-4",
+          "browser_navigate",
+          "Navigated to: http://localhost:8765/index.html",
+        ),
+      );
+      // The navigate's own reply is still not trusted on its own.
+      expect(useBrowserStore.getState().url).toBe("");
+
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-5",
+          "state-1",
+          "browser_get_state",
+          JSON.stringify({
+            url: "http://localhost:8765/index.html",
+            title: "localhost:8765/index.html",
+            tabs: [],
+            interactive_elements: [],
+          }),
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe(
+        "http://localhost:8765/index.html",
+      );
+      expect(useBrowserStore.getState().screenshotSrc).toBe("");
+    });
+
+    it("commits the URL a browser_get_content observation reports", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-6",
+          "content-1",
+          "browser_get_content",
+          "<url>\nhttp://localhost:8765/index.html\n</url>\n<content>\n<webpage_content>\n# QA site OK\n</webpage_content>\n</content>",
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe(
+        "http://localhost:8765/index.html",
+      );
+    });
+
+    it("stores the screenshot when browser_get_state was asked for one", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-7",
+          "state-2",
+          "browser_get_state",
+          JSON.stringify({ url: "https://example.com", title: "Example" }),
+          { screenshotData: "ghi789" },
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("https://example.com");
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,ghi789",
+      );
+    });
+
+    it("ignores a failed browser_get_state observation", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-8",
+          "state-3",
+          "browser_get_state",
+          JSON.stringify({ url: "https://example.com" }),
+          { isError: true },
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("");
     });
   });
 

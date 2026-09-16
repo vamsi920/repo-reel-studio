@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "تم قطع الاتصال. يرجى تحديث الصفحة",
   "BROWSER$URL_PLACEHOLDER": "لم يتم تحميل عنوان URL",
   "BROWSER$NO_PAGE_LOADED": "لم يتم تحميل أي صفحة بعد. اطلب من Neo فتح عنوان URL. مثال: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "تم تحميل الصفحة — لم يتم التقاط لقطة شاشة. اطلب من Neo التقاط لقطة شاشة لمعاينتها هنا.",
   "USER$AVATAR_PLACEHOLDER": "عنصر نائب لصورة المستخدم",
   "ACCOUNT_SETTINGS$LOGOUT": "تسجيل الخروج",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "خيارات متقدمة",

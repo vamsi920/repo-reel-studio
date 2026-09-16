@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "切断されました。ページを更新してください",
   "BROWSER$URL_PLACEHOLDER": "URLが読み込まれていません",
   "BROWSER$NO_PAGE_LOADED": "まだページは読み込まれていません。NeoにURLを開くよう指示してください。例: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "ページは読み込まれましたが、スクリーンショットは取得されていません。ここでプレビューするには、Neoにスクリーンショットを撮るよう依頼してください。",
   "USER$AVATAR_PLACEHOLDER": "ユーザーアバターのプレースホルダー",
   "ACCOUNT_SETTINGS$LOGOUT": "ログアウト",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "詳細オプション",

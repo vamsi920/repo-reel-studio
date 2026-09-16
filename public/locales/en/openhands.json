@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Disconnected. Please refresh the page",
   "BROWSER$URL_PLACEHOLDER": "No URL loaded",
   "BROWSER$NO_PAGE_LOADED": "No page loaded yet. Ask Neo to open a URL. Example: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Page loaded — no screenshot captured. Ask Neo to take a screenshot to preview it here.",
   "USER$AVATAR_PLACEHOLDER": "user avatar placeholder",
   "ACCOUNT_SETTINGS$LOGOUT": "Logout",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Advanced Options",

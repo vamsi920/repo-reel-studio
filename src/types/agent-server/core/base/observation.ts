@@ -52,6 +52,16 @@ export interface BrowserObservation extends ObservationBase<"BrowserObservation"
    * Base64 screenshot data if available
    */
   screenshot_data: string | null;
+  /**
+   * The tool's text output as the SDK actually serialises it (the same
+   * TextContent list every other tool observation carries). `output` above is
+   * the legacy shape; the agent-server only ever sends this.
+   */
+  content?: Array<TextContent | ImageContent>;
+  /**
+   * Whether the browser call resulted in an error
+   */
+  is_error?: boolean;
 }
 
 export interface ExecuteBashObservation extends ObservationBase<"ExecuteBashObservation"> {

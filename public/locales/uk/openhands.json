@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Відключено. Будь ласка, оновіть сторінку",
   "BROWSER$URL_PLACEHOLDER": "URL не завантажено",
   "BROWSER$NO_PAGE_LOADED": "Сторінка ще не завантажена. Попросіть Neo відкрити URL-адресу. Приклад: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Сторінку завантажено — знімок екрана не зроблено. Попросіть Neo зробити знімок екрана, щоб переглянути її тут.",
   "USER$AVATAR_PLACEHOLDER": "заповнювач аватара користувача",
   "ACCOUNT_SETTINGS$LOGOUT": "Вийти",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Розширені параметри",

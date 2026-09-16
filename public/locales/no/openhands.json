@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Koblet fra. Vennligst oppdater siden",
   "BROWSER$URL_PLACEHOLDER": "Ingen URL lastet",
   "BROWSER$NO_PAGE_LOADED": "Ingen side er lastet inn ennå. Be Neo om å åpne en URL. Eksempel: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Siden er lastet inn – ingen skjermbilde tatt. Be Neo om å ta et skjermbilde for å forhåndsvise den her.",
   "USER$AVATAR_PLACEHOLDER": "plassholder for brukeravatar",
   "ACCOUNT_SETTINGS$LOGOUT": "Logg ut",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Avanserte alternativer",

@@ -40,7 +40,10 @@ describe("Browser", () => {
     vi.clearAllMocks();
   });
 
-  it("renders a message if no screenshotSrc is provided", () => {
+  // A committed URL means the browser tool confirmed the page; the tool only
+  // sends a screenshot when the agent asks for one, so this is the common
+  // state on production and must not look like "nothing ever loaded".
+  it("renders a page-loaded state with the url when there is no screenshot", () => {
     useBrowserStore.setState({
       url: "https://example.com",
       screenshotSrc: "",
@@ -48,9 +51,18 @@ describe("Browser", () => {
 
     render(<BrowserPanel />);
 
-    expect(screen.getByText("BROWSER$NO_PAGE_LOADED")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("browser-page-loaded-no-screenshot"),
+    ).toHaveTextContent("BROWSER$PAGE_LOADED_NO_SCREENSHOT");
+    expect(
+      screen.queryByText("BROWSER$NO_PAGE_LOADED"),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("browser-chrome-bar")).toBeInTheDocument();
     expect(screen.getByTestId("browser-chrome-url")).toHaveTextContent(
+      "https://example.com",
+    );
+    expect(screen.getByTestId("browser-chrome-open-external")).toHaveAttribute(
+      "href",
       "https://example.com",
     );
   });

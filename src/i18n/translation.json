@@ -18155,6 +18155,23 @@
     "uk": "Сторінка ще не завантажена. Попросіть Neo відкрити URL-адресу. Приклад: \"Open https://example.com\"",
     "ca": "Encara no s'ha carregat cap pàgina. Demaneu a Neo que obri una URL. Exemple: \"Obre https://example.com\""
   },
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": {
+    "en": "Page loaded — no screenshot captured. Ask Neo to take a screenshot to preview it here.",
+    "ja": "ページは読み込まれましたが、スクリーンショットは取得されていません。ここでプレビューするには、Neoにスクリーンショットを撮るよう依頼してください。",
+    "zh-CN": "页面已加载，但未截取屏幕截图。请让 Neo 截图以在此处预览。",
+    "zh-TW": "頁面已載入，但未擷取螢幕截圖。請讓 Neo 擷取螢幕截圖以在此處預覽。",
+    "de": "Seite geladen – kein Screenshot aufgenommen. Bitten Sie Neo, einen Screenshot zu machen, um sie hier anzuzeigen.",
+    "ko-KR": "페이지가 로드되었지만 스크린샷이 캡처되지 않았습니다. 여기에서 미리 보려면 Neo에게 스크린샷을 요청하세요.",
+    "no": "Siden er lastet inn – ingen skjermbilde tatt. Be Neo om å ta et skjermbilde for å forhåndsvise den her.",
+    "it": "Pagina caricata: nessuno screenshot acquisito. Chiedi a Neo di fare uno screenshot per vederla in anteprima qui.",
+    "pt": "Página carregada — nenhuma captura de ecrã foi feita. Peça ao Neo para tirar uma captura de ecrã para a pré-visualizar aqui.",
+    "es": "Página cargada: no se ha capturado ninguna captura de pantalla. Pídele a Neo que haga una captura de pantalla para verla aquí.",
+    "ar": "تم تحميل الصفحة — لم يتم التقاط لقطة شاشة. اطلب من Neo التقاط لقطة شاشة لمعاينتها هنا.",
+    "fr": "Page chargée — aucune capture d'écran effectuée. Demandez à Neo de prendre une capture d'écran pour l'afficher ici.",
+    "tr": "Sayfa yüklendi — ekran görüntüsü alınmadı. Burada önizlemek için Neo'dan ekran görüntüsü almasını isteyin.",
+    "uk": "Сторінку завантажено — знімок екрана не зроблено. Попросіть Neo зробити знімок екрана, щоб переглянути її тут.",
+    "ca": "Pàgina carregada — no s'ha capturat cap captura de pantalla. Demaneu a Neo que faci una captura de pantalla per previsualitzar-la aquí."
+  },
   "USER$AVATAR_PLACEHOLDER": {
     "en": "user avatar placeholder",
     "ja": "ユーザーアバターのプレースホルダー",

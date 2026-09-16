@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "Getrennt. Bitte aktualisieren Sie die Seite",
   "BROWSER$URL_PLACEHOLDER": "Keine URL geladen",
   "BROWSER$NO_PAGE_LOADED": "Es wurde noch keine Seite geladen. Bitten Sie Neo, eine URL zu öffnen. Beispiel: \"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "Seite geladen – kein Screenshot aufgenommen. Bitten Sie Neo, einen Screenshot zu machen, um sie hier anzuzeigen.",
   "USER$AVATAR_PLACEHOLDER": "Platzhalter für Benutzeravatar",
   "ACCOUNT_SETTINGS$LOGOUT": "Abmelden",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "Erweiterte Optionen",

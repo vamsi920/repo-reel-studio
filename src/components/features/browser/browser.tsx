@@ -6,7 +6,10 @@ import { useBrowserStore } from "#/stores/browser-store";
 export function BrowserPanel() {
   const url = useBrowserStore((state) => state.url);
   const screenshotSrc = useBrowserStore((state) => state.screenshotSrc);
-  const hasPage = Boolean(screenshotSrc);
+  // `url` is only ever committed once the browser tool confirms the page (see
+  // browser-store), so it — not the screenshot — is what says a page loaded:
+  // the tool only sends a screenshot when the agent explicitly asks for one.
+  const hasPage = Boolean(url);
 
   // Screenshots arrive either as a complete data URL (any image type — the
   // legacy `extras.screenshot` path is not normalised) or as bare base64,
@@ -24,7 +27,7 @@ export function BrowserPanel() {
         {screenshotSrc ? (
           <BrowserSnapshot src={imgSrc} />
         ) : (
-          <EmptyBrowserMessage />
+          <EmptyBrowserMessage url={url} />
         )}
       </div>
     </div>

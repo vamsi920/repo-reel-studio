@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "已斷開連接。請重新整理頁面",
   "BROWSER$URL_PLACEHOLDER": "未載入 URL",
   "BROWSER$NO_PAGE_LOADED": "尚未載入頁面。請指示 Neo 開啟網址。範例：\"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "頁面已載入，但未擷取螢幕截圖。請讓 Neo 擷取螢幕截圖以在此處預覽。",
   "USER$AVATAR_PLACEHOLDER": "使用者頭像佔位符",
   "ACCOUNT_SETTINGS$LOGOUT": "登出",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "進階選項",

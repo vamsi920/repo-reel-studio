@@ -60,6 +60,10 @@ import type {
 } from "#/types/agent-server/core";
 import { handleActionEventCacheInvalidation } from "#/utils/cache-utils";
 import { buildWebSocketUrl } from "#/utils/websocket-url";
+import {
+  getReportedBrowserUrl,
+  isBrowserObservationError,
+} from "#/utils/browser-observation";
 import type {
   AppConversation,
   SendMessageRequest,
@@ -190,14 +194,25 @@ export function ConversationWebSocketProvider({
     [],
   );
 
-  // Confirms (or drops) a pending navigation. Gated on a real screenshot,
-  // not merely the absence of an error — see the commit that introduced this
-  // pairing for why a "successful" navigate with no screenshot must not be
-  // trusted.
+  // Confirms (or drops) a pending navigation. Two things count as proof the
+  // browser is really on a page:
+  //
+  // 1. A real screenshot on the observation that answers the navigate (not
+  //    merely the absence of an error — see the commit that introduced this
+  //    pairing for why a "successful" navigate with no screenshot must not
+  //    be trusted).
+  // 2. A `browser_get_state` / `browser_get_content` observation reporting
+  //    the browser's *current* URL. The browser-use tool never attaches a
+  //    screenshot unless the agent asks for one (`include_screenshot`), so
+  //    on the production tool rule 1 alone never fires and the panel stayed
+  //    on its empty state after a genuine navigation. These two tools
+  //    describe what the browser is actually showing, not what the agent
+  //    requested, so the URL they carry is committed as-is.
   const applyBrowserObservation = useCallback(
     (event: ObservationEvent<BrowserObservation>) => {
-      const { screenshot_data: screenshotData, error } = event.observation;
-      const confirmed = Boolean(screenshotData) && !error;
+      const { screenshot_data: screenshotData } = event.observation;
+      const failed = isBrowserObservationError(event.observation);
+      const confirmed = Boolean(screenshotData) && !failed;
       if (confirmed) {
         const screenshotSrc = screenshotData!.startsWith("data:")
           ? screenshotData!
@@ -212,6 +227,13 @@ export function ConversationWebSocketProvider({
         if (confirmed) {
           useBrowserStore.getState().setUrl(pendingUrl);
         }
+      }
+      const reportedUrl = getReportedBrowserUrl(event.observation);
+      if (reportedUrl !== null) {
+        // The browser's own report supersedes anything still pending: every
+        // earlier navigate either landed here or didn't land at all.
+        pendingBrowserNavigationsRef.current.clear();
+        useBrowserStore.getState().setUrl(reportedUrl);
       }
     },
     [],
@@ -732,11 +754,11 @@ export function ConversationWebSocketProvider({
 
           // Handle BrowserObservation events - update browser store with
           // screenshot, and commit any navigation this observation confirms.
-          // Both are gated on an actual screenshot being present, not merely
-          // on the absence of an error: the browser tool can report a
-          // navigate as successful (no `error`) while the browser silently
-          // never moved and no screenshot comes back either, so requiring a
-          // real screenshot is what catches that silent-failure case.
+          // A navigate is confirmed by a real screenshot, or by a later
+          // get_state / get_content observation reporting the browser's
+          // current URL — never by the navigate's own "no error" reply,
+          // since the tool can report a navigate as successful while the
+          // browser silently never moved (see applyBrowserObservation).
           if (isBrowserObservationEvent(event)) {
             applyBrowserObservation(event);
           }

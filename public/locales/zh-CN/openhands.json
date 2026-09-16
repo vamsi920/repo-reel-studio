@@ -1067,6 +1067,7 @@
   "STATUS$DISCONNECTED_REFRESH_PAGE": "已断开连接。请刷新页面",
   "BROWSER$URL_PLACEHOLDER": "未加载 URL",
   "BROWSER$NO_PAGE_LOADED": "尚未加载页面。请使用Neo打开网址。示例：\"Open https://example.com\"",
+  "BROWSER$PAGE_LOADED_NO_SCREENSHOT": "页面已加载，但未截取屏幕截图。请让 Neo 截图以在此处预览。",
   "USER$AVATAR_PLACEHOLDER": "用户头像占位符",
   "ACCOUNT_SETTINGS$LOGOUT": "退出登录",
   "SETTINGS_FORM$ADVANCED_OPTIONS_LABEL": "高级选项",
