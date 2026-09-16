@@ -42,7 +42,7 @@
   (`vendor/understand-anything/**` TS6059 rootDir errors, identical on base
   commit `ffaf829`, unrelated to this change — `tsconfig.lib.json`'s rootDir
   doesn't cover `vendor/`)
-- deploy: not checked yet (best-effort `gh run list` after push)
+- deploy: green (Deploy to Fly.io run 35143006342 on commit `8afc895` completed successfully)
 - notes: `npm run build:lib` is currently broken on `main` independent of any
   fixer routine's changes (vendor/understand-anything files fall outside
   tsconfig.lib.json's `rootDir: src`), and the full test suite has ~149
