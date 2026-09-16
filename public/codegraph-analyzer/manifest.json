@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-15T16:57:07.352Z",
+  "builtAt": "2026-09-16T11:18:04.767Z",
   "entry": "analyze.mjs",
   "runtime": [
     "node_modules/web-tree-sitter/package.json",
