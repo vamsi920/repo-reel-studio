@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -92,6 +93,39 @@ describe("FileContentViewer", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("shows the translated load error (never the raw Error message) with the HTTP status and a Retry", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    });
+
+    renderViewer("big.json", "plain");
+
+    const error = await screen.findByTestId("file-content-viewer-error");
+    expect(error).toHaveAttribute("role", "alert");
+    expect(error).toHaveTextContent("FILES$LOAD_ERROR");
+    expect(error).not.toHaveTextContent("Failed to read");
+    expect(
+      screen.getByTestId("file-content-viewer-error-status"),
+    ).toHaveTextContent("FILES$LOAD_ERROR_STATUS");
+
+    // Retry re-fetches; a now-OK response replaces the error state.
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(new TextEncoder().encode("{}").buffer),
+    });
+    await userEvent.click(screen.getByTestId("file-content-viewer-retry"));
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("file-content-viewer-error"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // The acceptance criteria require the clear message in BOTH view modes. The

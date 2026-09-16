@@ -1,7 +1,10 @@
 import { useTranslation } from "react-i18next";
 
 import { I18nKey } from "#/i18n/declaration";
-import { useWorkspaceFileContent } from "#/hooks/query/use-workspace-file-content";
+import {
+  useWorkspaceFileContent,
+  WorkspaceFileReadError,
+} from "#/hooks/query/use-workspace-file-content";
 import {
   useWorkspaceMutationCounter,
   withWorkspaceCacheBuster,
@@ -88,15 +91,35 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
     // these are completely different failure modes (couldn't even fetch
     // the file vs. fetched fine but the bytes aren't previewable) and
     // mixing them up hides real backend failures behind a misleading
-    // "Binary file" label. Prefer the underlying error's own message when
-    // we have one; fall back to the generic translated string otherwise.
+    // "Binary file" label. The headline is always the translated copy:
+    // the query's Error.message is a developer string ("Failed to read
+    // x: 404"), never user-facing. A fileserver status, when we have one,
+    // is appended as muted secondary detail so bug reports keep the code.
+    const status =
+      query.error instanceof WorkspaceFileReadError ? query.error.status : null;
     return (
       <div
-        className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]"
+        className="flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-[var(--oh-muted)]"
         data-testid="file-content-viewer-error"
+        role="alert"
       >
-        {(query.error as Error | undefined)?.message ??
-          t(I18nKey.FILES$LOAD_ERROR)}
+        <span>{t(I18nKey.FILES$LOAD_ERROR)}</span>
+        {status !== null && (
+          <span
+            className="text-xs text-[var(--oh-text-tertiary)]"
+            data-testid="file-content-viewer-error-status"
+          >
+            {t(I18nKey.FILES$LOAD_ERROR_STATUS, { status })}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => query.refetch()}
+          data-testid="file-content-viewer-retry"
+          className="rounded-[7px] px-3 py-1 text-white hover:bg-[var(--oh-interactive-hover)] cursor-pointer"
+        >
+          {t(I18nKey.FILES$RETRY)}
+        </button>
       </div>
     );
   }

@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Оновити файли",
   "FILES$NO_FILE_SELECTED": "Виберіть файл, щоб переглянути його вміст",
   "FILES$LOAD_ERROR": "Не вдалося завантажити цей файл",
+  "FILES$LOAD_ERROR_STATUS": "Сервер відповів HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "Двійковий файл – попередній перегляд недоступний",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Великий файл – підсвічування синтаксису вимкнено",
   "FILES$UNSUPPORTED_DOCUMENT": "Попередній перегляд недоступний для файлів {{type}}.",

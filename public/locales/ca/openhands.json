@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Actualitza els fitxers",
   "FILES$NO_FILE_SELECTED": "Selecciona un fitxer per veure'n el contingut",
   "FILES$LOAD_ERROR": "No s'ha pogut carregar aquest fitxer",
+  "FILES$LOAD_ERROR_STATUS": "El servidor ha respost amb HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "Fitxer binari – previsualització no disponible",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Fitxer gran – el ressaltat de sintaxi està desactivat",
   "FILES$UNSUPPORTED_DOCUMENT": "La previsualització no està disponible per als fitxers {{type}}.",

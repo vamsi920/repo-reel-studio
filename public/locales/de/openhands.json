@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Dateien aktualisieren",
   "FILES$NO_FILE_SELECTED": "Wählen Sie eine Datei aus, um ihren Inhalt anzuzeigen",
   "FILES$LOAD_ERROR": "Diese Datei konnte nicht geladen werden",
+  "FILES$LOAD_ERROR_STATUS": "Der Server hat mit HTTP {{status}} geantwortet.",
   "FILES$BINARY_FALLBACK": "Binärdatei – keine Vorschau verfügbar",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Große Datei – Syntaxhervorhebung ist deaktiviert",
   "FILES$UNSUPPORTED_DOCUMENT": "Für {{type}}-Dateien ist keine Vorschau verfügbar.",

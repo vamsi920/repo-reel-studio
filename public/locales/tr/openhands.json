@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Dosyaları yenile",
   "FILES$NO_FILE_SELECTED": "İçeriğini görmek için bir dosya seçin",
   "FILES$LOAD_ERROR": "Bu dosya yüklenemedi",
+  "FILES$LOAD_ERROR_STATUS": "Sunucu HTTP {{status}} ile yanıt verdi.",
   "FILES$BINARY_FALLBACK": "İkili dosya – önizleme kullanılamıyor",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Büyük dosya – sözdizimi vurgulama kapalı",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} dosyaları için önizleme kullanılamıyor.",

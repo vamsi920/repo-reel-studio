@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Oppdater filer",
   "FILES$NO_FILE_SELECTED": "Velg en fil for å vise innholdet",
   "FILES$LOAD_ERROR": "Kunne ikke laste denne filen",
+  "FILES$LOAD_ERROR_STATUS": "Serveren svarte med HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "Binærfil – forhåndsvisning er ikke tilgjengelig",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Stor fil – syntaksutheving er av",
   "FILES$UNSUPPORTED_DOCUMENT": "Forhåndsvisning er ikke tilgjengelig for {{type}}-filer.",

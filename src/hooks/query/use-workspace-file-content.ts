@@ -46,6 +46,25 @@ export interface WorkspaceFileContent {
   mimeType: string;
 }
 
+/**
+ * Thrown when the workspace fileserver answers a read with a non-2xx status.
+ * Carries the status separately so the UI can show a translated headline
+ * and only append the code as secondary detail — the message itself is a
+ * developer string and must never be rendered to the user as-is.
+ */
+export class WorkspaceFileReadError extends Error {
+  readonly status: number;
+
+  readonly path: string;
+
+  constructor(path: string, status: number) {
+    super(`Failed to read ${path}: ${status}`);
+    this.name = "WorkspaceFileReadError";
+    this.status = status;
+    this.path = path;
+  }
+}
+
 function getExtension(path: string): string {
   const idx = path.lastIndexOf(".");
   if (idx === -1) return "";
@@ -267,7 +286,7 @@ export function useWorkspaceFileContent(relativePath: string | null) {
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error(`Failed to read ${relativePath}: ${response.status}`);
+        throw new WorkspaceFileReadError(relativePath, response.status);
       }
 
       const buffer = await response.arrayBuffer();

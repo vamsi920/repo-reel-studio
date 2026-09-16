@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Aggiorna file",
   "FILES$NO_FILE_SELECTED": "Seleziona un file per visualizzarne il contenuto",
   "FILES$LOAD_ERROR": "Impossibile caricare questo file",
+  "FILES$LOAD_ERROR_STATUS": "Il server ha risposto con HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "File binario – anteprima non disponibile",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "File di grandi dimensioni – evidenziazione della sintassi disattivata",
   "FILES$UNSUPPORTED_DOCUMENT": "L'anteprima non è disponibile per i file {{type}}.",

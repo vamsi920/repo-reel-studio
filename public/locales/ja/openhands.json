@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "ファイルを更新",
   "FILES$NO_FILE_SELECTED": "内容を表示するファイルを選択してください",
   "FILES$LOAD_ERROR": "このファイルを読み込めませんでした",
+  "FILES$LOAD_ERROR_STATUS": "サーバーは HTTP {{status}} を返しました。",
   "FILES$BINARY_FALLBACK": "バイナリファイル - プレビューを利用できません",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "大きなファイル – シンタックスハイライトはオフです",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} ファイルのプレビューは利用できません。",

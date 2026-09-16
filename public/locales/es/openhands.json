@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Actualizar archivos",
   "FILES$NO_FILE_SELECTED": "Selecciona un archivo para ver su contenido",
   "FILES$LOAD_ERROR": "No se pudo cargar este archivo",
+  "FILES$LOAD_ERROR_STATUS": "El servidor respondió con HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "Archivo binario – vista previa no disponible",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Archivo grande – el resaltado de sintaxis está desactivado",
   "FILES$UNSUPPORTED_DOCUMENT": "La vista previa no está disponible para archivos {{type}}.",

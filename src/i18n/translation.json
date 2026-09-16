@@ -25244,6 +25244,23 @@
     "uk": "Не вдалося завантажити цей файл",
     "ca": "No s'ha pogut carregar aquest fitxer"
   },
+  "FILES$LOAD_ERROR_STATUS": {
+    "en": "The server responded with HTTP {{status}}.",
+    "ja": "サーバーは HTTP {{status}} を返しました。",
+    "zh-CN": "服务器返回了 HTTP {{status}}。",
+    "zh-TW": "伺服器回應了 HTTP {{status}}。",
+    "ko-KR": "서버가 HTTP {{status}}(으)로 응답했습니다.",
+    "no": "Serveren svarte med HTTP {{status}}.",
+    "it": "Il server ha risposto con HTTP {{status}}.",
+    "pt": "O servidor respondeu com HTTP {{status}}.",
+    "es": "El servidor respondió con HTTP {{status}}.",
+    "ar": "استجاب الخادم بـ HTTP {{status}}.",
+    "fr": "Le serveur a répondu HTTP {{status}}.",
+    "tr": "Sunucu HTTP {{status}} ile yanıt verdi.",
+    "de": "Der Server hat mit HTTP {{status}} geantwortet.",
+    "uk": "Сервер відповів HTTP {{status}}.",
+    "ca": "El servidor ha respost amb HTTP {{status}}."
+  },
   "FILES$BINARY_FALLBACK": {
     "en": "Binary file – preview not available",
     "ja": "バイナリファイル - プレビューを利用できません",

@@ -3,7 +3,10 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useWorkspaceFileContent } from "#/hooks/query/use-workspace-file-content";
+import {
+  useWorkspaceFileContent,
+  WorkspaceFileReadError,
+} from "#/hooks/query/use-workspace-file-content";
 import { useWorkspaceMutationCounter } from "#/stores/use-workspace-mutation-counter";
 
 const useWorkspaceSessionMock = vi.fn();
@@ -264,9 +267,13 @@ describe("useWorkspaceFileContent", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
+    // A typed error: the UI reads `status` and never renders the message.
+    expect(result.current.error).toBeInstanceOf(WorkspaceFileReadError);
     expect(result.current.error).toEqual(
       expect.objectContaining({
         message: "Failed to read missing.txt: 404",
+        status: 404,
+        path: "missing.txt",
       }),
     );
   });

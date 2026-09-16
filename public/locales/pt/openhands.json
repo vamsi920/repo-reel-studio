@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "Atualizar arquivos",
   "FILES$NO_FILE_SELECTED": "Selecione um arquivo para ver o conteúdo",
   "FILES$LOAD_ERROR": "Não foi possível carregar este arquivo",
+  "FILES$LOAD_ERROR_STATUS": "O servidor respondeu com HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "Arquivo binário – visualização indisponível",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Arquivo grande – o realce de sintaxe está desativado",
   "FILES$UNSUPPORTED_DOCUMENT": "A visualização não está disponível para arquivos {{type}}.",

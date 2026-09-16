@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "刷新文件",
   "FILES$NO_FILE_SELECTED": "选择文件以查看其内容",
   "FILES$LOAD_ERROR": "无法加载此文件",
+  "FILES$LOAD_ERROR_STATUS": "服务器返回了 HTTP {{status}}。",
   "FILES$BINARY_FALLBACK": "二进制文件 – 无法预览",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "大文件 – 已关闭语法高亮",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} 文件无法预览。",

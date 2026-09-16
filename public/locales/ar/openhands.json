@@ -1484,6 +1484,7 @@
   "FILES$REFRESH": "تحديث الملفات",
   "FILES$NO_FILE_SELECTED": "اختر ملفًا لعرض محتواه",
   "FILES$LOAD_ERROR": "تعذّر تحميل هذا الملف",
+  "FILES$LOAD_ERROR_STATUS": "استجاب الخادم بـ HTTP {{status}}.",
   "FILES$BINARY_FALLBACK": "ملف ثنائي – المعاينة غير متاحة",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "ملف كبير – تمييز بناء الجملة متوقف",
   "FILES$UNSUPPORTED_DOCUMENT": "المعاينة غير متاحة لملفات {{type}}.",
