@@ -1,0 +1,15 @@
+{
+  "today": { "date": null, "module": null, "pickedAt": null },
+  "modules": {
+    "automations": { "lastFocusDay": null, "focusCount": 0 },
+    "agentops": { "lastFocusDay": null, "focusCount": 0 },
+    "environment-onboarding": { "lastFocusDay": null, "focusCount": 0 },
+    "conversation-chat": { "lastFocusDay": null, "focusCount": 0 },
+    "knowledge-kt": { "lastFocusDay": null, "focusCount": 0 },
+    "kt-video": { "lastFocusDay": null, "focusCount": 0 },
+    "codegraph": { "lastFocusDay": null, "focusCount": 0 },
+    "settings": { "lastFocusDay": null, "focusCount": 0 },
+    "skills-plugins-mcp": { "lastFocusDay": null, "focusCount": 0 },
+    "files-terminal-browser": { "lastFocusDay": null, "focusCount": 0 }
+  }
+}

@@ -1,0 +1,5 @@
+# Neo cloud focus findings — hand-off between the focus-explorer and focus-fixer
+#
+# Same rules as TODO.txt: items separated by ONE blank line, each item ONE
+# continuous paragraph with NO line breaks inside it. The fixer polls this
+# hourly, takes the FIRST live item, fixes it, pushes, deletes it.

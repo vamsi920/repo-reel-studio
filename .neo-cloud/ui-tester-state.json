@@ -1,0 +1,14 @@
+{
+  "lastModule": null,
+  "testedToday": { "date": null, "flows": [] },
+  "modules": {
+    "automations": { "lastRun": null },
+    "agentops": { "lastRun": null },
+    "environment-onboarding": { "lastRun": null },
+    "settings": { "lastRun": null },
+    "conversation-chat": { "lastRun": null },
+    "skills-plugins-mcp": { "lastRun": null },
+    "files-terminal-browser": { "lastRun": null },
+    "codegraph": { "lastRun": null }
+  }
+}

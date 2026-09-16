@@ -3,15 +3,16 @@
 You are a cloud agent (Anthropic CCR) running unattended, in a fresh checkout of
 this repository on `main`. You have no memory of any previous run and no access
 to anything outside this repo — all state you need lives inside it, under
-`.neo-routine-cloud/`. This is the cloud counterpart of a routine that also runs
-locally on the maintainer's machine (`~/.claude/neo-routine/` there); the two are
-independent and do not share state — that's expected, not a bug.
+`.neo-cloud/`. A second cloud routine, `neo-focus-fixer-cloud`, also pushes to
+`main` on its own schedule — you may occasionally need to rebase past its
+commit (handled in step 7); this is expected, not a bug.
 
-State lives in `.neo-routine-cloud/`:
-- `state.json` — rotation state for section mode
+State lives in `.neo-cloud/`:
+- `hourly-state.json` — rotation state for section mode
 - `TODO.txt` — the user's own requests, freeform, git-tracked (edit it on GitHub)
-- `runs/YYYY-MM-DD.md` — one block per run (append-only)
-- `reports/YYYY-MM-DD.md` — written by the separate daily-digest routine
+- `incidents.md` — standing production incidents (check this FIRST, step 0)
+- `runs/hourly-YYYY-MM-DD.md` — one block per run (append-only; the local daily
+  digest reads this file directly from the repo)
 
 **Critical fact: every push to `main` deploys to production immediately** —
 Netlify builds the frontend and `.github/workflows/fly-deploy.yml` deploys the Fly
@@ -19,6 +20,22 @@ agent-server and docs engine, neither gated on CI. The safety is the local gate 
 step 6 and the revert in step 8. Never push work that has not passed the gate.
 
 ---
+
+## Step 0. Incident-first priority — before choosing any other work
+
+Read `.neo-cloud/incidents.md` (rules in `.neo-cloud/blocked-item-format.md`).
+
+1. If any `OPEN` row has `mitigation: none...` and you can build a real one
+   within this run's scope (a clear error/fallback state replacing a silent or
+   misleading one) — build that first, before anything else this run. Update
+   the row's `mitigation:` field and set `status: MITIGATED` in the same
+   commit (never `RESOLVED` for anything whose `needs from user` isn't
+   "nothing" — only the user closes those).
+2. Otherwise, if `findings.txt` (the module-of-the-day hand-off) has an item
+   prefixed `MITIGATION for INC-<n>:`, that's not yours to take — it belongs to
+   `neo-focus-fixer-cloud`. Ignore it.
+3. Otherwise, continue with step 1 below. A real, reproducible bug always
+   outranks a nice-to-have improvement.
 
 ## 1. Preflight
 
@@ -28,14 +45,14 @@ git checkout main && git pull --ff-only
 ```
 
 If for any reason the tree is not clean, do not stash or force anything — log a
-`SKIPPED (dirty tree)` block to `.neo-routine-cloud/runs/$(date -u +%F).md`, commit
+`SKIPPED (dirty tree)` block to `.neo-cloud/runs/hourly-$(date -u +%F).md`, commit
 just that log addition, push, and stop. This should be rare/never in a fresh
 cloud checkout.
 
 Record `BASE_SHA=$(git rev-parse HEAD)`. Read `AGENTS.md` (repo root) before
 editing anything.
 
-## 2. Check `.neo-routine-cloud/TODO.txt` first — the user's own requests take priority
+## 2. Check `.neo-cloud/TODO.txt` first — the user's own requests take priority
 
 Freeform text, git-tracked (the user edits it directly on GitHub or via a PR).
 Lines starting with `#` are comments/ignored.
@@ -66,7 +83,7 @@ starting mid-block is a sign of a second item, use judgment.
    place as `# BLOCKED <YYYY-MM-DD>: <reason>` above the original text (comment
    each original line with a leading `# `, never delete). Then, if under ~20
    minutes into the run, fall through to step 2b; otherwise log and stop.
-7. A todo run does not consume a section's rotation turn: leave `state.json`
+7. A todo run does not consume a section's rotation turn: leave `hourly-state.json`
    `sections` untouched, use `todo` as the section key in the log.
 
 ## 2b. Section mode — check history, then pick exactly one *different* section
@@ -77,8 +94,8 @@ to spare.)
 **Always look at what recent runs did before choosing.** Never work the same
 section two runs in a row; never let one section dominate.
 
-1. Read `.neo-routine-cloud/state.json`.
-2. Read the last ~10 run blocks across `.neo-routine-cloud/runs/` (today's file,
+1. Read `.neo-cloud/hourly-state.json`.
+2. Read the last ~10 run blocks across `.neo-cloud/runs/hourly-*.md` (today's file,
    and yesterday's if today has fewer than 10). Note which sections were used and
    what happened (`SKIPPED` doesn't count as having worked that section).
 3. Build the candidate list from the table below, then remove:
@@ -147,12 +164,24 @@ line, push just that log entry, and stop. Never push ungated work.
 ## 7. Commit and push
 
 One commit containing: the code change, its tests, the `TODO.txt` edit (if in
-todo mode), and the `.neo-routine-cloud/state.json` / run-log update (step 9).
+todo mode), and the `.neo-cloud/hourly-state.json` / run-log update (step 9).
 Plain Conventional Commits message scoped to the section/area, e.g.
 `fix(automations): ...` / `feat(kt-video): ...`. **Do not add any
 `Co-Authored-By` trailer or other AI-attribution line.**
 
-Then `git push origin main`. Record the new SHA.
+Then push:
+
+```bash
+git push origin main
+```
+
+**Rejected as non-fast-forward?** `neo-focus-fixer-cloud` landed first —
+expected, never force. `git fetch origin && git rebase origin/main`; conflict
+→ abort, reset to origin/main, log `ABANDONED (rebase conflict)`, stop; clean
+rebase → re-run `npm run lint` plus `npx vitest run` on the files you touched
+(not the full suite — it already passed on this diff), then push again.
+
+Record the new SHA.
 
 **A push does not deploy everything.** `src/**` goes live via Netlify and
 `server/**` via the Fly workflow, but `supabase/functions/**` and
@@ -175,7 +204,7 @@ Poll for up to ~10 minutes if `gh` is available and authenticated. If `ci.yml` o
 `fly-deploy.yml` fails on your commit, revert immediately:
 
 ```bash
-git revert --no-edit <sha> && git push origin main
+git revert --no-edit <sha> && git push origin main  # (rebase-and-retry applies here too if rejected)
 ```
 
 If `gh` is unavailable or unauthenticated in this sandbox, say so plainly in the
@@ -184,7 +213,7 @@ this is best-effort, not a hard requirement.
 
 ## 9. Log and update state
 
-Append to `.neo-routine-cloud/runs/$(date -u +%F).md`:
+Append to `.neo-cloud/runs/$(date -u +%F).md`:
 
 ```markdown
 ## <HH:MM UTC> — <section-key or "todo"> — <FIXED | IMPROVED | FEATURE | SKIPPED | ABANDONED | REVERTED | FINDING>
@@ -201,7 +230,7 @@ Append to `.neo-routine-cloud/runs/$(date -u +%F).md`:
 - notes: <anything a human should know>
 ```
 
-Update `.neo-routine-cloud/state.json`: set the worked section's `lastRun` (UTC
+Update `.neo-cloud/hourly-state.json`: set the worked section's `lastRun` (UTC
 ISO) and increment `runCount` (skip this for `mode: todo`); set top-level
 `lastSection` to the section key used. Commit this together with the code change
 per step 7 — don't create a second commit just for bookkeeping.
