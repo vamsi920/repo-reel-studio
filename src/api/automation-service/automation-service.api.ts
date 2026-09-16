@@ -161,10 +161,26 @@ async function resolveAutomationBaseUrl(host: string): Promise<string> {
   const resolution = (async () => {
     const origin = getAppOrigin();
     let baseUrl = host;
-    if (origin && origin !== host && !(await servesAutomationMount(host))) {
-      if (await servesAutomationMount(origin)) baseUrl = origin;
+    let verified: boolean;
+    if (!origin || origin === host) {
+      // No alternate origin to fall back to, so the host is the only
+      // candidate and there is nothing left to verify.
+      verified = true;
+    } else if (await servesAutomationMount(host)) {
+      verified = true;
+    } else if (await servesAutomationMount(origin)) {
+      baseUrl = origin;
+      verified = true;
+    } else {
+      verified = false;
     }
-    resolvedBaseUrlForHost = { host, baseUrl };
+    // Only cache a resolution once something actually answered. Caching the
+    // "neither host nor origin served the mount" outcome forever would pin
+    // callers to a dead host even after the real service finishes booting —
+    // defeating `useAutomationHealth`'s poll-until-healthy retry.
+    if (verified) {
+      resolvedBaseUrlForHost = { host, baseUrl };
+    }
     return baseUrl;
   })();
   inFlightResolutions.set(host, resolution);

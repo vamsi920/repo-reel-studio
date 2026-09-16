@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "运行中",
   "AUTOMATIONS$DETAIL$CANCELLED": "已取消",
   "AUTOMATIONS$DETAIL$SKIPPED": "已跳过",
+  "AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR": "Could not start a debugging conversation.",
   "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "非活动",
   "AUTOMATIONS$DETAIL$LAST_RUN": "上次运行",

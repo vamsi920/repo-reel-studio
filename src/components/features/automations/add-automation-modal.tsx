@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { ModalCloseButton } from "#/components/shared/modals/modal-close-button";
@@ -22,6 +22,15 @@ export function AddAutomationModal({
   // which left "Add Automation" as a dead end. The form is now the primary
   // path; describing it in a conversation stays available underneath.
   const [showChatInstructions, setShowChatInstructions] = useState(false);
+
+  // The parent always renders this component, only toggling `isOpen`, so
+  // this instance never unmounts on close — unlike the form/instructions
+  // content below, which do unmount (they're only rendered while `isOpen`).
+  // Without this, switching to the chat-instructions view and closing the
+  // modal left it reopening on that view instead of back on the create form.
+  useEffect(() => {
+    if (isOpen) setShowChatInstructions(false);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

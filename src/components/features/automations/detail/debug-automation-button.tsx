@@ -4,6 +4,8 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { useNavigation } from "#/context/navigation-context";
 import { buildAutomationDebugPrompt } from "#/utils/automation-debug-prompt";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
+import { getApiErrorMessage } from "#/utils/api-error-message";
 import type { Automation, AutomationRun } from "#/types/automation";
 
 interface DebugAutomationButtonProps {
@@ -46,6 +48,14 @@ export function DebugAutomationButton({
       {
         onSuccess: (data) => {
           navigate(`/conversations/${data.conversation_id}`);
+        },
+        onError: (error) => {
+          displayErrorToast(
+            getApiErrorMessage(
+              error,
+              t(I18nKey.AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR),
+            ),
+          );
         },
       },
     );

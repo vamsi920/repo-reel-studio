@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "Çalışıyor",
   "AUTOMATIONS$DETAIL$CANCELLED": "İptal edildi",
   "AUTOMATIONS$DETAIL$SKIPPED": "Atlandı",
+  "AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR": "Could not start a debugging conversation.",
   "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "Pasif",
   "AUTOMATIONS$DETAIL$LAST_RUN": "Son çalıştırma",

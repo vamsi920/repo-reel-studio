@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "Running",
   "AUTOMATIONS$DETAIL$CANCELLED": "Cancelled",
   "AUTOMATIONS$DETAIL$SKIPPED": "Skipped",
+  "AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR": "Could not start a debugging conversation.",
   "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "Inactive",
   "AUTOMATIONS$DETAIL$LAST_RUN": "Last run",

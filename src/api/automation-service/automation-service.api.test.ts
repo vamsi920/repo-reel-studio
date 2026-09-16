@@ -617,4 +617,38 @@ describe("pinned local requests", () => {
       expect.objectContaining({ baseURL: bareHostBackend.host }),
     );
   });
+
+  it("re-probes and heals once the origin starts serving the mount after an earlier failed resolution", async () => {
+    // Arrange — the very first resolution finds neither the host nor the
+    // origin serving the mount (e.g. the origin's proxy hasn't finished
+    // booting yet). Caching that outcome forever would leave every later
+    // call pinned to the dead host even after the origin comes up, defeating
+    // `useAutomationHealth`'s poll-until-healthy retry.
+    localAxios.get.mockResolvedValue({ data: { status: "error" } });
+    await AutomationService.createAutomation(spec);
+    expect(localAxios.post).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ baseURL: bareHostBackend.host }),
+    );
+
+    // Act — the origin now answers healthy, as it would once it finishes
+    // booting.
+    localAxios.get.mockImplementation(
+      async (_path: string, config: { baseURL?: string }) => ({
+        data: {
+          status: config.baseURL === window.location.origin ? "ok" : "error",
+        },
+      }),
+    );
+    await AutomationService.createAutomation(spec);
+
+    // Assert — the next call re-probes instead of reusing the stale, unhealed
+    // resolution, and routes through the now-healthy origin.
+    expect(localAxios.post).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.objectContaining({ baseURL: window.location.origin }),
+    );
+  });
 });

@@ -867,6 +867,7 @@
   "AUTOMATIONS$DETAIL$RUNNING": "قيد التشغيل",
   "AUTOMATIONS$DETAIL$CANCELLED": "أُلغي",
   "AUTOMATIONS$DETAIL$SKIPPED": "تم التخطي",
+  "AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR": "Could not start a debugging conversation.",
   "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": "Failed — default model hit its daily quota",
   "AUTOMATIONS$DETAIL$INACTIVE": "غير نشط",
   "AUTOMATIONS$DETAIL$LAST_RUN": "آخر تشغيل",

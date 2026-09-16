@@ -35,6 +35,16 @@ vi.mock("#/api/profiles-service/profiles-service.api", () => ({
   default: { listProfiles: vi.fn() },
 }));
 
+const mockDisplayErrorToast = vi.fn();
+vi.mock("#/utils/custom-toast-handlers", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("#/utils/custom-toast-handlers")>();
+  return {
+    ...actual,
+    displayErrorToast: (...args: unknown[]) => mockDisplayErrorToast(...args),
+  };
+});
+
 type CreatedConversation = Awaited<
   ReturnType<typeof AgentServerConversationService.createConversation>
 >;
@@ -157,5 +167,25 @@ describe("DebugAutomationButton", () => {
     // Assert
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("shows an error toast and re-enables the button when conversation creation fails", async () => {
+    // Arrange — every other mutation in this feature area surfaces a toast on
+    // failure; this one used to fail silently, leaving the user with no idea
+    // the debug launch didn't happen.
+    vi.mocked(
+      AgentServerConversationService.createConversation,
+    ).mockRejectedValue(new Error("network error"));
+    const { navigate } = renderButton();
+
+    const button = screen.getByTestId("debug-automation-button");
+
+    // Act
+    fireEvent.click(button);
+
+    // Assert
+    await waitFor(() => expect(mockDisplayErrorToast).toHaveBeenCalledTimes(1));
+    expect(button).not.toBeDisabled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

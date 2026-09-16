@@ -14755,6 +14755,23 @@
     "uk": "Пропущено",
     "ca": "Omès"
   },
+  "AUTOMATIONS$DETAIL$DEBUG_LAUNCH_ERROR": {
+    "en": "Could not start a debugging conversation.",
+    "ja": "Could not start a debugging conversation.",
+    "zh-CN": "Could not start a debugging conversation.",
+    "zh-TW": "Could not start a debugging conversation.",
+    "ko-KR": "Could not start a debugging conversation.",
+    "no": "Could not start a debugging conversation.",
+    "it": "Could not start a debugging conversation.",
+    "pt": "Could not start a debugging conversation.",
+    "es": "Could not start a debugging conversation.",
+    "ar": "Could not start a debugging conversation.",
+    "fr": "Could not start a debugging conversation.",
+    "tr": "Could not start a debugging conversation.",
+    "de": "Could not start a debugging conversation.",
+    "uk": "Could not start a debugging conversation.",
+    "ca": "Could not start a debugging conversation."
+  },
   "AUTOMATIONS$DETAIL$RATE_LIMIT_FAILED": {
     "en": "Failed — default model hit its daily quota",
     "ja": "Failed — default model hit its daily quota",

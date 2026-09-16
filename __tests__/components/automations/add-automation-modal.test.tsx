@@ -78,7 +78,7 @@ function renderModal(isOpen = true) {
     defaultOptions: { queries: { retry: false } },
   });
 
-  render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <NavigationProvider value={navigation}>
         <AddAutomationModal isOpen={isOpen} onClose={onClose} />
@@ -86,7 +86,17 @@ function renderModal(isOpen = true) {
     </QueryClientProvider>,
   );
 
-  return { onClose };
+  const setIsOpen = (nextIsOpen: boolean) => {
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <NavigationProvider value={navigation}>
+          <AddAutomationModal isOpen={nextIsOpen} onClose={onClose} />
+        </NavigationProvider>
+      </QueryClientProvider>,
+    );
+  };
+
+  return { onClose, setIsOpen };
 }
 
 describe("AddAutomationModal", () => {
@@ -132,5 +142,28 @@ describe("AddAutomationModal", () => {
     await user.click(screen.getByTestId("add-automation-modal-close"));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("resets back to the create form on reopen after switching to the chat-instructions view", async () => {
+    // This component instance is never unmounted by the parent (only its
+    // `isOpen` prop toggles), so `showChatInstructions` used to survive a
+    // close/reopen cycle and the modal would reopen on the wrong view.
+    const user = userEvent.setup();
+    const { setIsOpen } = renderModal();
+
+    await user.click(screen.getByTestId("add-automation-use-chat"));
+    expect(
+      screen.getByTestId("automations-create-instructions-example"),
+    ).toBeInTheDocument();
+
+    setIsOpen(false);
+    expect(screen.queryByTestId("add-automation-modal")).not.toBeInTheDocument();
+
+    setIsOpen(true);
+
+    expect(screen.getByTestId("create-automation-form")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("automations-create-instructions-example"),
+    ).not.toBeInTheDocument();
   });
 });
