@@ -295,6 +295,64 @@ describe("SkillsPluginsScreen", () => {
     expect(screen.getByTestId("plugins-no-match")).toBeInTheDocument();
   });
 
+  it("says nothing is installed, not 'no match', under the Installed chip with an empty search", async () => {
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
+      buildCatalogPlugin(),
+    ]);
+
+    renderPluginsScreen();
+    await screen.findByTestId("plugin-card-demo-plugin");
+
+    fireEvent.click(screen.getByTestId("plugins-filter-installed"));
+
+    expect(
+      screen.getByTestId("plugins-filter-empty-installed"),
+    ).toHaveTextContent("SETTINGS$PLUGINS_NO_INSTALLED");
+    expect(screen.queryByTestId("plugins-no-match")).not.toBeInTheDocument();
+  });
+
+  it("describes the empty Available and Local chips instead of blaming the search", async () => {
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([buildInstalledPlugin()]);
+
+    renderPluginsScreen();
+    await screen.findByTestId("plugin-card-demo-plugin");
+
+    fireEvent.click(screen.getByTestId("plugins-filter-available"));
+    expect(
+      screen.getByTestId("plugins-filter-empty-available"),
+    ).toHaveTextContent("SETTINGS$PLUGINS_NO_AVAILABLE");
+
+    fireEvent.click(screen.getByTestId("plugins-filter-local"));
+    expect(screen.getByTestId("plugins-filter-empty-local")).toHaveTextContent(
+      "SETTINGS$PLUGINS_NO_LOCAL",
+    );
+  });
+
+  it("keeps the no-match state when a status chip and a search query both exclude everything", async () => {
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([buildInstalledPlugin()]);
+
+    renderPluginsScreen();
+    await screen.findByTestId("plugin-card-demo-plugin");
+
+    fireEvent.click(screen.getByTestId("plugins-filter-installed"));
+    fireEvent.change(screen.getByTestId("plugins-search-input"), {
+      target: { value: "no-such-plugin-xyz" },
+    });
+
+    expect(screen.getByTestId("plugins-no-match")).toHaveTextContent(
+      "SETTINGS$PLUGINS_NO_MATCH",
+    );
+    expect(
+      screen.queryByTestId("plugins-filter-empty-installed"),
+    ).not.toBeInTheDocument();
+  });
+
   it("navigates to the launch flow with the plugin's coordinates when Start Conversation is clicked", async () => {
     const user = userEvent.setup();
     vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([

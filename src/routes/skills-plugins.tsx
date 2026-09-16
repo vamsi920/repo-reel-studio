@@ -32,6 +32,15 @@ import {
   extensionModuleEmptyStateClassName,
 } from "#/utils/extension-module-card-classes";
 
+// Empty-state copy for each status chip when no search query is active. "all"
+// is omitted because it can only be empty when there are no plugins at all,
+// which the page reports separately as SETTINGS$PLUGINS_NO_PLUGINS.
+const STATUS_FILTER_EMPTY_KEYS: Partial<Record<PluginStatusFilter, I18nKey>> = {
+  installed: I18nKey.SETTINGS$PLUGINS_NO_INSTALLED,
+  available: I18nKey.SETTINGS$PLUGINS_NO_AVAILABLE,
+  local: I18nKey.SETTINGS$PLUGINS_NO_LOCAL,
+};
+
 export default function SkillsPluginsScreen() {
   const { t } = useTranslation("openhands");
   const { backend } = useActiveBackend();
@@ -79,6 +88,15 @@ export default function SkillsPluginsScreen() {
       ),
     [plugins, statusFilter, searchQuery],
   );
+
+  // A search query is the user's own filter, so an empty list under it is
+  // a "no match". With no query, an empty list under a status chip describes
+  // the real state (nothing installed, nothing installable, no local plugins)
+  // and "match your search" would blame a search the user never typed.
+  const hasSearchQuery = searchQuery.trim().length > 0;
+  const filterEmptyKey = hasSearchQuery
+    ? null
+    : (STATUS_FILTER_EMPTY_KEYS[statusFilter] ?? null);
 
   const selectedPlugin = selectedName
     ? (plugins.find((plugin) => plugin.name === selectedName) ?? null)
@@ -209,11 +227,15 @@ export default function SkillsPluginsScreen() {
               />
               {filteredPlugins.length === 0 ? (
                 <div
-                  data-testid="plugins-no-match"
+                  data-testid={
+                    filterEmptyKey
+                      ? `plugins-filter-empty-${statusFilter}`
+                      : "plugins-no-match"
+                  }
                   className={extensionModuleEmptyStateClassName}
                 >
                   <p className="text-sm text-tertiary-light">
-                    {t(I18nKey.SETTINGS$PLUGINS_NO_MATCH)}
+                    {t(filterEmptyKey ?? I18nKey.SETTINGS$PLUGINS_NO_MATCH)}
                   </p>
                 </div>
               ) : (
