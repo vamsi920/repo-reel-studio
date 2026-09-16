@@ -5,6 +5,21 @@ import { useBrowserStore } from "#/stores/browser-store";
 import { useAgentStore } from "#/stores/agent-store";
 import { AgentState } from "#/types/agent-state";
 
+// URL first, screenshot second: `setUrl` drops the previous page's
+// screenshot when the URL changes, so a browse observation that reports a
+// new URL without a screenshot can't leave the old page's image under it.
+function applyLegacyBrowserExtras(message: ObservationMessage) {
+  if (message.extras?.url && typeof message.extras.url === "string") {
+    useBrowserStore.getState().setUrl(message.extras.url);
+  }
+  if (
+    message.extras?.screenshot &&
+    typeof message.extras.screenshot === "string"
+  ) {
+    useBrowserStore.getState().setScreenshotSrc(message.extras.screenshot);
+  }
+}
+
 export function handleObservationMessage(message: ObservationMessage) {
   switch (message.observation) {
     case ObservationType.RUN: {
@@ -23,15 +38,7 @@ export function handleObservationMessage(message: ObservationMessage) {
     }
     case ObservationType.BROWSE:
     case ObservationType.BROWSE_INTERACTIVE:
-      if (
-        message.extras?.screenshot &&
-        typeof message.extras.screenshot === "string"
-      ) {
-        useBrowserStore.getState().setScreenshotSrc(message.extras.screenshot);
-      }
-      if (message.extras?.url && typeof message.extras.url === "string") {
-        useBrowserStore.getState().setUrl(message.extras.url);
-      }
+      applyLegacyBrowserExtras(message);
       break;
     case ObservationType.AGENT_STATE_CHANGED:
       if (typeof message.extras.agent_state === "string") {
@@ -59,30 +66,8 @@ export function handleObservationMessage(message: ObservationMessage) {
 
     switch (observation) {
       case "browse":
-        if (
-          message.extras?.screenshot &&
-          typeof message.extras.screenshot === "string"
-        ) {
-          useBrowserStore
-            .getState()
-            .setScreenshotSrc(message.extras.screenshot);
-        }
-        if (message.extras?.url && typeof message.extras.url === "string") {
-          useBrowserStore.getState().setUrl(message.extras.url);
-        }
-        break;
       case "browse_interactive":
-        if (
-          message.extras?.screenshot &&
-          typeof message.extras.screenshot === "string"
-        ) {
-          useBrowserStore
-            .getState()
-            .setScreenshotSrc(message.extras.screenshot);
-        }
-        if (message.extras?.url && typeof message.extras.url === "string") {
-          useBrowserStore.getState().setUrl(message.extras.url);
-        }
+        applyLegacyBrowserExtras(message);
         break;
       default:
         // For any unhandled observation types, just ignore them

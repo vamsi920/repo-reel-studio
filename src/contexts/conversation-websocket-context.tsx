@@ -213,12 +213,6 @@ export function ConversationWebSocketProvider({
       const { screenshot_data: screenshotData } = event.observation;
       const failed = isBrowserObservationError(event.observation);
       const confirmed = Boolean(screenshotData) && !failed;
-      if (confirmed) {
-        const screenshotSrc = screenshotData!.startsWith("data:")
-          ? screenshotData!
-          : `data:image/png;base64,${screenshotData}`;
-        useBrowserStore.getState().setScreenshotSrc(screenshotSrc);
-      }
       const pendingUrl = pendingBrowserNavigationsRef.current.get(
         event.action_id,
       );
@@ -234,6 +228,18 @@ export function ConversationWebSocketProvider({
         // earlier navigate either landed here or didn't land at all.
         pendingBrowserNavigationsRef.current.clear();
         useBrowserStore.getState().setUrl(reportedUrl);
+      }
+      // The URL is committed first on purpose: `setUrl` drops the previous
+      // page's screenshot when the URL changes, so a get_state report with
+      // no screenshot leaves the panel on its "no screenshot" state instead
+      // of showing the old page under the new address — and a screenshot
+      // that did come with this observation is stored *after* that, so it
+      // survives.
+      if (confirmed) {
+        const screenshotSrc = screenshotData!.startsWith("data:")
+          ? screenshotData!
+          : `data:image/png;base64,${screenshotData}`;
+        useBrowserStore.getState().setScreenshotSrc(screenshotSrc);
       }
     },
     [],

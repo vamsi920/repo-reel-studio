@@ -750,6 +750,105 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
       );
     });
 
+    // Reported bug: after a.html was navigated to *with* a screenshot, the
+    // agent navigated to b.html and only called browser_get_state
+    // (include_screenshot: false). The URL bar moved to b.html but the
+    // a.html screenshot stayed, so the user saw "PAGE A" labelled b.html.
+    it("drops the previous page's screenshot when get_state reports a new URL without one", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-a", "http://127.0.0.1:8765/a.html"),
+      );
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-a", "nav-a", { screenshotData: "pageA" }),
+      );
+      expect(useBrowserStore.getState().url).toBe(
+        "http://127.0.0.1:8765/a.html",
+      );
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,pageA",
+      );
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-b", "http://127.0.0.1:8765/b.html"),
+      );
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-b",
+          "nav-b",
+          "browser_navigate",
+          "Navigated to: http://127.0.0.1:8765/b.html",
+        ),
+      );
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-b-state",
+          "state-b",
+          "browser_get_state",
+          JSON.stringify({ url: "http://127.0.0.1:8765/b.html", title: "B" }),
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe(
+        "http://127.0.0.1:8765/b.html",
+      );
+      expect(useBrowserStore.getState().screenshotSrc).toBe("");
+    });
+
+    // A click/scroll/get_state on the *same* page reports the same URL; the
+    // screenshot taken on that page is still valid and must stay.
+    it("keeps the screenshot when get_state reports the same URL without one", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-same", "https://example.com"),
+      );
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-same", "nav-same", {
+          screenshotData: "same",
+        }),
+      );
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-same-state",
+          "state-same",
+          "browser_get_state",
+          JSON.stringify({ url: "https://example.com", title: "Example" }),
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("https://example.com");
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,same",
+      );
+    });
+
+    it("replaces the screenshot when get_state reports a new URL with a new one", async () => {
+      await renderBrowserCaptured();
+
+      deliverBrowserEvent(
+        makeBrowserNavigateAction("nav-c", "https://example.com/c"),
+      );
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-c", "nav-c", { screenshotData: "pageC" }),
+      );
+      deliverBrowserEvent(
+        makeWireBrowserObservation(
+          "obs-d-state",
+          "state-d",
+          "browser_get_state",
+          JSON.stringify({ url: "https://example.com/d", title: "D" }),
+          { screenshotData: "pageD" },
+        ),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("https://example.com/d");
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,pageD",
+      );
+    });
+
     it("ignores a failed browser_get_state observation", async () => {
       await renderBrowserCaptured();
 
