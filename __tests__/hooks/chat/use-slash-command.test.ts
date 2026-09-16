@@ -50,6 +50,35 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
   useActiveConversation: () => mockConversation,
 }));
 
+const mockConversationPlugins = vi.hoisted(() => ({
+  data: [] as Array<{
+    source: string;
+    ref?: string | null;
+    repo_path?: string | null;
+    name?: string | null;
+  }>,
+}));
+
+const mockInstalledPlugins = vi.hoisted(() => ({
+  data: undefined as
+    | Array<{
+        name: string;
+        source: string;
+        repo_path?: string | null;
+        skills?: Array<{ name: string; description?: string | null }> | null;
+      }>
+    | undefined,
+  isLoading: false,
+}));
+
+vi.mock("#/hooks/use-conversation-plugins", () => ({
+  useConversationPlugins: () => mockConversationPlugins.data,
+}));
+
+vi.mock("#/hooks/query/use-plugins", () => ({
+  usePlugins: () => mockInstalledPlugins,
+}));
+
 function makeSkill(
   name: string,
   triggers: string[] = [],
@@ -94,6 +123,8 @@ describe("useSlashCommand", () => {
     mockLlmProfiles.data = undefined;
     mockLlmProfiles.isLoading = false;
     mockConversation.data = undefined;
+    mockConversationPlugins.data = [];
+    mockInstalledPlugins.data = undefined;
   });
 
   afterEach(() => {
@@ -115,6 +146,73 @@ describe("useSlashCommand", () => {
     const commands = result.current.filteredItems.map((i) => i.command);
     expect(commands).not.toContain("/new");
     expect(commands).toEqual(expect.arrayContaining(["/btw", "/code-search"]));
+  });
+
+  it("lists the bundled skills of the conversation's plugins as slash commands", () => {
+    // Arrange — a plugin attached to the conversation (coordinates only, as
+    // the /launch flow stores it) whose installed record bundles one skill.
+    mockSkills.data = [makeSkill("code-search", ["/code-search"])];
+    mockConversationPlugins.data = [
+      { source: "/home/me/plugins/city-weather", ref: null, repo_path: null },
+    ];
+    mockInstalledPlugins.data = [
+      {
+        name: "city-weather",
+        source: "/home/me/plugins/city-weather",
+        repo_path: null,
+        skills: [
+          {
+            name: "city-weather:now",
+            description: "Current weather for a city",
+          },
+        ],
+      },
+      {
+        name: "not-loaded",
+        source: "github:acme/not-loaded",
+        skills: [{ name: "not-loaded:run" }],
+      },
+    ];
+
+    // Act
+    const ref = makeChatInputRef();
+    setInputText(ref.current, "/city");
+    const { result } = renderHook(() => useSlashCommand(ref));
+    act(() => result.current.updateSlashMenu());
+
+    // Assert — the plugin command is listed and filters on its name, while a
+    // plugin that is installed but not loaded into this conversation is not.
+    expect(result.current.isMenuOpen).toBe(true);
+    const commands = result.current.filteredItems.map((i) => i.command);
+    expect(commands).toEqual(["/city-weather:now"]);
+    expect(result.current.filteredItems[0].skill).toMatchObject({
+      name: "city-weather:now",
+      description: "Current weather for a city",
+    });
+  });
+
+  it("does not duplicate a plugin command already provided by the skills catalog", () => {
+    mockSkills.data = [makeSkill("city-weather:now")];
+    mockConversationPlugins.data = [{ source: "local", name: "city-weather" }];
+    mockInstalledPlugins.data = [
+      {
+        name: "city-weather",
+        source: "/somewhere/else",
+        skills: [{ name: "city-weather:now" }],
+      },
+    ];
+
+    const ref = makeChatInputRef();
+    const { result } = renderHook(() => useSlashCommand(ref));
+
+    const commands = result.current.filteredItems.filter(
+      (i) => i.command === "/city-weather:now",
+    );
+    expect(commands).toHaveLength(1);
+    // The catalog entry wins (matched by name, not coordinates).
+    expect(commands[0].skill).toMatchObject({
+      content: "Description of city-weather:now",
+    });
   });
 
   it("includes /new in the built-in commands on a cloud backend", () => {

@@ -6,6 +6,7 @@ import { BUILT_IN_COMMANDS, MODEL_COMMAND } from "#/utils/constants";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
+import { useConversationPluginCommands } from "#/hooks/use-conversation-plugin-commands";
 
 export type SlashCommandSkill = SkillInfo | Microagent;
 
@@ -39,6 +40,9 @@ export const useSlashCommand = (
   // Scope the skill catalog to this conversation's attached workspace so the
   // slash menu lists the same project skills that were loaded into it.
   const { data: skills, isLoading: isSkillsLoading } = useConversationSkills();
+  // Commands of the plugins loaded into this conversation (their bundled
+  // skills, e.g. /city-weather:now) — not part of the skills catalog.
+  const pluginItems = useConversationPluginCommands();
   const isCloud = useActiveBackend().backend.kind === "cloud";
   const { data: profilesData, isLoading: isProfilesLoading } = useLlmProfiles();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -53,6 +57,7 @@ export const useSlashCommand = (
   // - /model lists/switches LLM profiles; both local and cloud support them
   // - Skills with explicit "/" triggers use those triggers
   // - AgentSkills without "/" triggers get a derived "/<name>" command
+  // - Plugins loaded into the conversation contribute "/<bundled skill>"
   const slashItems = useMemo(() => {
     const items: SlashCommandItem[] = BUILT_IN_COMMANDS.filter((cmd) => {
       if (cmd.command === "/new") return isCloud;
@@ -62,8 +67,7 @@ export const useSlashCommand = (
     // Wait for skills to finish initial load so all commands appear together
     if (isSkillsLoading) return items;
 
-    if (!skills) return items;
-    skills.forEach((skill) => {
+    (skills ?? []).forEach((skill) => {
       const triggers = skill.triggers || [];
       const slashTriggers = triggers.filter((t) => t.startsWith("/"));
 
@@ -77,8 +81,14 @@ export const useSlashCommand = (
         items.push({ skill, command: `/${skill.name}` });
       }
     });
+    // Plugin commands come last and never shadow a catalog skill of the
+    // same name.
+    const known = new Set(items.map((item) => item.command));
+    pluginItems.forEach((item) => {
+      if (!known.has(item.command)) items.push(item);
+    });
     return items;
-  }, [skills, isSkillsLoading, isCloud]);
+  }, [skills, isSkillsLoading, isCloud, pluginItems]);
 
   const modelProfileItems = useMemo<SlashCommandItem[]>(() => {
     return (profilesData?.profiles ?? []).map((profile) => {
