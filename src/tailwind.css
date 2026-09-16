@@ -145,6 +145,10 @@
   --oh-border-subtle: var(--cool-grey-800);  /* within-panel separators, list dividers */
   --oh-separator: rgba(113, 120, 136, 0.5);
   --oh-focus: #0b81b7;
+  /* Brand tints — bring the landing page's cyan wash into the product shell. */
+  --neo-brand-tint: color-mix(in srgb, var(--oh-color-primary) 10%, transparent);
+  --neo-brand-tint-strong: color-mix(in srgb, var(--oh-color-primary) 16%, transparent);
+  --neo-brand-border: color-mix(in srgb, var(--oh-color-primary) 22%, var(--oh-border));
   --oh-status-success: #1FBD53;
   --oh-status-error: #FF684E;
   --oh-link: var(--cool-grey-100);
@@ -675,4 +679,36 @@ button.extension-module-card-interactive {
   box-shadow:
     0px 4px 6px -4px rgba(0, 0, 0, 0.1),
     0px 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/*
+ * Product-shell brand wash. The landing page and auth screens sit on a soft
+ * cyan radial glow (--primary-bg-subtle); the app inside was plain grey.
+ * These give the shell the same touch without changing any component.
+ */
+.neo-shell-wash {
+  background-image:
+    radial-gradient(70% 55% at 0% 0%, color-mix(in srgb, var(--oh-color-primary) 12%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 100% 100%, color-mix(in srgb, var(--oh-accent) 6%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+
+.neo-sidebar-wash {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--oh-color-primary) 7%, transparent) 0%,
+    transparent 45%
+  );
+  border-right-color: var(--neo-brand-border) !important;
+}
+
+/* Active nav row: brand tint + brand ink instead of neutral grey. */
+.neo-nav-active {
+  background-color: var(--neo-brand-tint);
+  color: var(--oh-color-primary);
+  box-shadow: inset 2px 0 0 var(--oh-color-primary);
+}
+.neo-nav-active:hover {
+  background-color: var(--neo-brand-tint-strong);
+  color: var(--oh-color-primary);
 }
