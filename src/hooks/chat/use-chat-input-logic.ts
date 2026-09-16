@@ -59,20 +59,35 @@ export const useChatInputLogic = () => {
     clearMessageRestoreIfEmpty,
   ]);
 
-  // Save current input value when drawer state changes (conversation view only)
+  // Keep the right-panel visibility in sync with this conversation's toggle
+  // state, on both a route change and a toggle change.
   useEffect(() => {
     if (!conversationId) return;
+    setIsRightPanelShown(hasRightPanelToggled);
+  }, [conversationId, hasRightPanelToggled, setIsRightPanelShown]);
+
+  // Save the current input value into messageToSend right before the drawer
+  // toggle shifts the layout, so that re-render doesn't lose what the user
+  // had typed. This must NOT also fire on a bare conversationId change (a
+  // route navigation): the composer element persists across navigation
+  // (it isn't remounted per conversation), so "current" DOM text at that
+  // instant is really leftover text from before the navigation, not
+  // something worth saving for the newly-mounted conversation -- and
+  // overwriting messageToSend with it raced with (and silently clobbered)
+  // deferred composer prefills fired right after navigate(), such as
+  // "Branch from here"'s window.setTimeout(() => setMessageToSend(...), 0).
+  const prevKeyRef = useRef({ conversationId, hasRightPanelToggled });
+  useEffect(() => {
+    const prev = prevKeyRef.current;
+    const sameConversation = prev.conversationId === conversationId;
+    const toggleChanged = prev.hasRightPanelToggled !== hasRightPanelToggled;
+    prevKeyRef.current = { conversationId, hasRightPanelToggled };
+
+    if (!conversationId || !sameConversation || !toggleChanged) return;
     if (chatInputRef.current) {
-      const currentText = getTextContent(chatInputRef.current);
-      setMessageToSend(currentText);
-      setIsRightPanelShown(hasRightPanelToggled);
+      setMessageToSend(getTextContent(chatInputRef.current));
     }
-  }, [
-    conversationId,
-    hasRightPanelToggled,
-    setMessageToSend,
-    setIsRightPanelShown,
-  ]);
+  }, [conversationId, hasRightPanelToggled, setMessageToSend]);
 
   // Helper function to check if contentEditable is truly empty
   const checkIsContentEmpty = useCallback(
