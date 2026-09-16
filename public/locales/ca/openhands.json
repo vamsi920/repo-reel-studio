@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Selecciona el model de llenguatge que vols fer servir.",
   "SETTINGS$AGENT_TOOLTIP": "Selecciona l'agent que vols fer servir.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Selecciona l'idioma de la interfície.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "La disposició de dreta a esquerra encara no està disponible; aquest idioma es mostra en una disposició d'esquerra a dreta.",
   "SETTINGS$DISABLED_RUNNING": "No es pot canviar mentre l'agent s'executa.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Introduïu la vostra clau d'API.",
   "SETTINGS$LLM_API_KEY": "Clau LLM d'Neo",

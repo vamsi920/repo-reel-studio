@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Kullanılacak dil modelini seçin.",
   "SETTINGS$AGENT_TOOLTIP": "Kullanılacak ajanı seçin.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Kullanıcı arayüzü için dil seçin.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "Sağdan sola düzen henüz kullanılamıyor; bu dil soldan sağa düzende gösterilir.",
   "SETTINGS$DISABLED_RUNNING": "Ajan çalışırken değiştirilemez.",
   "SETTINGS$API_KEY_PLACEHOLDER": "API anahtarınızı girin.",
   "SETTINGS$LLM_API_KEY": "Neo LLM Anahtarı",

@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "اختر نموذج اللغة المراد استخدامه.",
   "SETTINGS$AGENT_TOOLTIP": "اختر الوكيل المراد استخدامه.",
   "SETTINGS$LANGUAGE_TOOLTIP": "اختر لغة واجهة المستخدم.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "تخطيط من اليمين إلى اليسار غير متاح بعد؛ تُعرض هذه اللغة بتخطيط من اليسار إلى اليمين.",
   "SETTINGS$DISABLED_RUNNING": "لا يمكن تغييره أثناء تشغيل الوكيل.",
   "SETTINGS$API_KEY_PLACEHOLDER": "أدخل مفتاح API الخاص بك.",
   "SETTINGS$LLM_API_KEY": "مفتاح LLM Neo",

@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "選擇要使用的語言模型。",
   "SETTINGS$AGENT_TOOLTIP": "選擇要使用的智慧代理。",
   "SETTINGS$LANGUAGE_TOOLTIP": "選擇 UI 的語言。",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "從右到左的版面配置尚不可用；此語言將以從左到右的版面配置顯示。",
   "SETTINGS$DISABLED_RUNNING": "智慧代理正在執行時無法更改。",
   "SETTINGS$API_KEY_PLACEHOLDER": "輸入您的 API 金鑰。",
   "SETTINGS$LLM_API_KEY": "Neo LLM 金鑰",

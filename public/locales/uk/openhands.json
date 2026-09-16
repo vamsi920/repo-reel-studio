@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Виберіть мовну модель, яку потрібно використовувати.",
   "SETTINGS$AGENT_TOOLTIP": "Виберіть агента для використання.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Виберіть мову для інтерфейсу користувача.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "Макет справа наліво поки що недоступний; ця мова відображається в макеті зліва направо.",
   "SETTINGS$DISABLED_RUNNING": "Не можна змінити, поки агент працює.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Введіть свій ключ API.",
   "SETTINGS$LLM_API_KEY": "Ключ LLM Neo",

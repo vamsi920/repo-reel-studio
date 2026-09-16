@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Sélectionnez le modèle de langage à utiliser.",
   "SETTINGS$AGENT_TOOLTIP": "Sélectionnez l'agent à utiliser.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Sélectionnez la langue de l'interface utilisateur.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "La mise en page de droite à gauche n'est pas encore disponible ; cette langue est affichée de gauche à droite.",
   "SETTINGS$DISABLED_RUNNING": "Ne peut pas être modifié pendant que l'agent est en cours d'exécution.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Entrez votre clé API.",
   "SETTINGS$LLM_API_KEY": "Clé LLM Neo",

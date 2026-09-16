@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "사용할 언어 모델을 선택하세요.",
   "SETTINGS$AGENT_TOOLTIP": "사용할 에이전트를 선택하세요.",
   "SETTINGS$LANGUAGE_TOOLTIP": "UI 언어를 선택하세요.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "오른쪽에서 왼쪽 레이아웃은 아직 지원되지 않습니다. 이 언어는 왼쪽에서 오른쪽 레이아웃으로 표시됩니다.",
   "SETTINGS$DISABLED_RUNNING": "에이전트가 실행 중일 때는 변경할 수 없습니다.",
   "SETTINGS$API_KEY_PLACEHOLDER": "API 키를 입력하세요.",
   "SETTINGS$LLM_API_KEY": "Neo LLM 키",

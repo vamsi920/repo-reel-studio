@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "使用するモデルを選択",
   "SETTINGS$AGENT_TOOLTIP": "使用するエージェントを選択",
   "SETTINGS$LANGUAGE_TOOLTIP": "インターフェースの言語を選択",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "右から左へのレイアウトはまだ利用できません。この言語は左から右のレイアウトで表示されます。",
   "SETTINGS$DISABLED_RUNNING": "エージェントの実行中は設定を変更できません",
   "SETTINGS$API_KEY_PLACEHOLDER": "APIキーを入力",
   "SETTINGS$LLM_API_KEY": "Neo LLMキー",

@@ -37,7 +37,10 @@ vi.mock("#/components/features/alerts/alert-banner", () => ({
 
 vi.mock("#/i18n", () => ({
   default: {
+    language: "en",
     changeLanguage: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
   },
 }));
 

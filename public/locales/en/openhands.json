@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Select the language model to use.",
   "SETTINGS$AGENT_TOOLTIP": "Select the agent to use.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Select the language for the UI.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "Right-to-left layout is not available yet; this language is displayed in a left-to-right layout.",
   "SETTINGS$DISABLED_RUNNING": "Cannot be changed while the agent is running.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Enter your API key.",
   "SETTINGS$LLM_API_KEY": "Neo LLM Key",

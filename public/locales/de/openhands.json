@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Wähle das zu verwendende Modell.",
   "SETTINGS$AGENT_TOOLTIP": "Wähle den zu verwendenden Agenten.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Wähle die Sprache für die Oberfläche.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "Ein Rechts-nach-links-Layout ist noch nicht verfügbar; diese Sprache wird in einem Links-nach-rechts-Layout angezeigt.",
   "SETTINGS$DISABLED_RUNNING": "Kann bei laufender Aufgabe nicht geändert werden.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Modell API Schlüssel.",
   "SETTINGS$LLM_API_KEY": "Neo LLM Schlüssel",

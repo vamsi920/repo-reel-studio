@@ -12222,6 +12222,23 @@
     "uk": "Виберіть мову для інтерфейсу користувача.",
     "ca": "Selecciona l'idioma de la interfície."
   },
+  "SETTINGS$LANGUAGE_RTL_NOTE": {
+    "en": "Right-to-left layout is not available yet; this language is displayed in a left-to-right layout.",
+    "ja": "右から左へのレイアウトはまだ利用できません。この言語は左から右のレイアウトで表示されます。",
+    "zh-CN": "从右到左的布局尚不可用；此语言将以从左到右的布局显示。",
+    "zh-TW": "從右到左的版面配置尚不可用；此語言將以從左到右的版面配置顯示。",
+    "ko-KR": "오른쪽에서 왼쪽 레이아웃은 아직 지원되지 않습니다. 이 언어는 왼쪽에서 오른쪽 레이아웃으로 표시됩니다.",
+    "no": "Høyre-til-venstre-oppsett er ikke tilgjengelig ennå; dette språket vises i et venstre-til-høyre-oppsett.",
+    "ar": "تخطيط من اليمين إلى اليسار غير متاح بعد؛ تُعرض هذه اللغة بتخطيط من اليسار إلى اليمين.",
+    "de": "Ein Rechts-nach-links-Layout ist noch nicht verfügbar; diese Sprache wird in einem Links-nach-rechts-Layout angezeigt.",
+    "fr": "La mise en page de droite à gauche n'est pas encore disponible ; cette langue est affichée de gauche à droite.",
+    "it": "Il layout da destra a sinistra non è ancora disponibile; questa lingua viene mostrata con un layout da sinistra a destra.",
+    "pt": "O layout da direita para a esquerda ainda não está disponível; este idioma é exibido em um layout da esquerda para a direita.",
+    "es": "El diseño de derecha a izquierda aún no está disponible; este idioma se muestra en un diseño de izquierda a derecha.",
+    "ca": "La disposició de dreta a esquerra encara no està disponible; aquest idioma es mostra en una disposició d'esquerra a dreta.",
+    "tr": "Sağdan sola düzen henüz kullanılamıyor; bu dil soldan sağa düzende gösterilir.",
+    "uk": "Макет справа наліво поки що недоступний; ця мова відображається в макеті зліва направо."
+  },
   "SETTINGS$DISABLED_RUNNING": {
     "en": "Cannot be changed while the agent is running.",
     "zh-CN": "在智能体运行时无法更改",

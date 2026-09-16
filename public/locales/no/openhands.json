@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "Velg språkmodellen som skal brukes.",
   "SETTINGS$AGENT_TOOLTIP": "Velg agenten som skal brukes.",
   "SETTINGS$LANGUAGE_TOOLTIP": "Velg språk for brukergrensesnittet.",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "Høyre-til-venstre-oppsett er ikke tilgjengelig ennå; dette språket vises i et venstre-til-høyre-oppsett.",
   "SETTINGS$DISABLED_RUNNING": "Kan ikke endres mens agenten kjører.",
   "SETTINGS$API_KEY_PLACEHOLDER": "Skriv inn din API-nøkkel.",
   "SETTINGS$LLM_API_KEY": "Neo LLM-nøkkel",

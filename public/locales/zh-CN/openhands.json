@@ -718,6 +718,7 @@
   "SETTINGS$MODEL_TOOLTIP": "选择要使用的语言模型",
   "SETTINGS$AGENT_TOOLTIP": "选择要使用的智能体",
   "SETTINGS$LANGUAGE_TOOLTIP": "选择界面语言",
+  "SETTINGS$LANGUAGE_RTL_NOTE": "从右到左的布局尚不可用；此语言将以从左到右的布局显示。",
   "SETTINGS$DISABLED_RUNNING": "在智能体运行时无法更改",
   "SETTINGS$API_KEY_PLACEHOLDER": "输入您的 API key",
   "SETTINGS$LLM_API_KEY": "Neo LLM 密钥",
