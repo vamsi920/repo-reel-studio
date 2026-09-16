@@ -41,6 +41,14 @@ export function getApiErrorBodyMessage(body: unknown): string | null {
  * network / CORS failures, whatever their body text happens to say.
  */
 export function hasHttpResponseStatus(error: unknown): boolean {
+  return getHttpResponseStatus(error) !== undefined;
+}
+
+/**
+ * The HTTP status the server answered with, or `undefined` when the call
+ * never got a response (network / CORS failure, non-HTTP error).
+ */
+export function getHttpResponseStatus(error: unknown): number | undefined {
   const status = axios.isAxiosError(error)
     ? error.response?.status
     : error instanceof Error
@@ -48,7 +56,23 @@ export function hasHttpResponseStatus(error: unknown): boolean {
       : undefined;
   // Some clients report a failed connection as status 0; only a real
   // response status counts.
-  return typeof status === "number" && status > 0;
+  return typeof status === "number" && status > 0 ? status : undefined;
+}
+
+/**
+ * Whether the server answered with a client error that retrying the same
+ * request cannot fix. 408 (timeout) and 429 (rate limit) are the two 4xx
+ * codes that are transient by definition, so they stay retryable.
+ */
+export function isNonRetryableClientError(error: unknown): boolean {
+  const status = getHttpResponseStatus(error);
+  return (
+    status !== undefined &&
+    status >= 400 &&
+    status < 500 &&
+    status !== 408 &&
+    status !== 429
+  );
 }
 
 /**

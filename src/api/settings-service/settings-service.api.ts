@@ -7,6 +7,7 @@ import type {
 import { DEFAULT_SETTINGS } from "#/services/settings";
 import { Settings, SettingsSchema, SettingsValue } from "#/types/settings";
 import { stringRecord } from "#/utils/mcp-config";
+import { isNonRetryableClientError } from "#/utils/api-error-message";
 import { getActiveBackend } from "../backend-registry/active-store";
 import {
   fetchCloudConversationSettingsSchema,
@@ -140,7 +141,10 @@ async function withRetry<T>(
     try {
       return await fn();
     } catch (error) {
-      if (attempt >= maxRetries - 1) {
+      // A 4xx is the server's definitive answer (e.g. 404 for a server the
+      // agent-server no longer has); re-sending the identical request only
+      // triples the traffic and delays the caller's error handling.
+      if (attempt >= maxRetries - 1 || isNonRetryableClientError(error)) {
         throw error;
       }
 

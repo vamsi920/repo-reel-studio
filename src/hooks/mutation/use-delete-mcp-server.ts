@@ -4,6 +4,7 @@ import { MCPServerConfig } from "#/types/mcp-server";
 import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { clearMcpServerHealth } from "#/api/mcp-health/mcp-health-store";
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
+import { getHttpResponseStatus } from "#/utils/api-error-message";
 
 /**
  * Delete an installed MCP server.
@@ -17,6 +18,9 @@ export function useDeleteMcpServer() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // The editor toasts the failure itself; keep the global MutationCache
+    // handler from adding a duplicate.
+    meta: { disableToast: true },
     mutationFn: async (target: MCPServerConfig): Promise<void> => {
       await SettingsService.deleteMcpServer(target.id);
     },
@@ -28,6 +32,18 @@ export function useDeleteMcpServer() {
       queryClient.invalidateQueries({
         queryKey: SETTINGS_QUERY_KEYS.personal(),
       });
+    },
+    onError: (error, target) => {
+      // Already gone server-side: the outcome the user asked for is the
+      // state we have, so drop the health entry and refetch settings so the
+      // ghost card leaves the page.
+      if (getHttpResponseStatus(error) === 404) {
+        clearMcpServerHealth(getMcpServerHealthKey(target));
+        SettingsService.invalidateCache();
+        queryClient.invalidateQueries({
+          queryKey: SETTINGS_QUERY_KEYS.personal(),
+        });
+      }
     },
   });
 }

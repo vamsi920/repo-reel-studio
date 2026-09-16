@@ -22,6 +22,7 @@ import {
 } from "#/utils/custom-toast-handlers";
 import { makeMcpTestErrorMessage } from "#/utils/mcp-test-error-message";
 import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
+import { getHttpResponseStatus } from "#/utils/api-error-message";
 import { cn } from "#/utils/utils";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
 import McpService from "#/api/mcp-service/mcp-service.api";
@@ -114,6 +115,12 @@ export function CustomServerEditor({
     }
     const message = retrieveAxiosErrorMessage(err as AxiosError);
     displayErrorToast(message || t(I18nKey.ERROR$GENERIC));
+    // The server being edited no longer exists on the agent-server; the
+    // mutation hook is already refetching settings so its card goes away,
+    // and an editor for a vanished server has nothing left to save.
+    if (getHttpResponseStatus(err) === 404) {
+      onClose();
+    }
   };
 
   const handleSubmit = (payload: MCPServerConfig) => {

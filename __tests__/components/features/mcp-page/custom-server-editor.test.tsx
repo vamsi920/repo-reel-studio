@@ -1,7 +1,7 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { AxiosError } from "axios";
+import { AxiosError, AxiosHeaders } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import McpService from "#/api/mcp-service/mcp-service.api";
@@ -231,6 +231,64 @@ describe("CustomServerEditor", () => {
 
     await waitFor(() => expect(saveSpy).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it("closes the editor when deleting a server the agent-server no longer has", async () => {
+    // Ghost card scenario: the agent-server restarted and forgot the
+    // server. The delete 404 must not leave the editor open on top of a
+    // card that is about to disappear.
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettingsWithMcp(),
+    );
+    const notFound = new AxiosError(
+      "Request failed with status code 404",
+      "ERR_BAD_REQUEST",
+      { headers: new AxiosHeaders() },
+      undefined,
+      {
+        status: 404,
+        statusText: "Not Found",
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+        data: { detail: "MCP server 'github' was not found" },
+      },
+    );
+    vi.spyOn(SettingsService, "deleteMcpServer").mockRejectedValue(notFound);
+    const invalidateCacheSpy = vi.spyOn(SettingsService, "invalidateCache");
+
+    const onClose = vi.fn();
+    renderWith(<EditEditorOnceSettingsLoaded onClose={onClose} />);
+    await screen.findByTestId("mcp-custom-editor");
+
+    fireEvent.click(screen.getByTestId("mcp-custom-editor-delete"));
+    fireEvent.click(await screen.findByTestId("confirm-button"));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(invalidateCacheSpy).toHaveBeenCalled();
+  });
+
+  it("keeps the editor open when a delete fails for another reason", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettingsWithMcp(),
+    );
+    vi.spyOn(SettingsService, "deleteMcpServer").mockRejectedValue(
+      new Error("boom"),
+    );
+
+    const onClose = vi.fn();
+    renderWith(<EditEditorOnceSettingsLoaded onClose={onClose} />);
+    await screen.findByTestId("mcp-custom-editor");
+
+    fireEvent.click(screen.getByTestId("mcp-custom-editor-delete"));
+    fireEvent.click(await screen.findByTestId("confirm-button"));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("confirmation-modal"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("mcp-custom-editor")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("calls onClose when the header close button is clicked", async () => {

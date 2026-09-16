@@ -11,6 +11,7 @@ import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { clearMcpServerHealth } from "#/api/mcp-health/mcp-health-store";
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
 import { toMcpServerName } from "#/utils/mcp-server-name";
+import { getHttpResponseStatus } from "#/utils/api-error-message";
 
 // @spec MCP-001 — Sparse mutations preserve sibling servers
 export function useUpdateMcpServer() {
@@ -18,6 +19,9 @@ export function useUpdateMcpServer() {
   const { data: settings } = useSettings();
 
   return useMutation({
+    // Every caller toasts its own failure; without this the global
+    // MutationCache handler stacks a second identical toast per click.
+    meta: { disableToast: true },
     mutationFn: async ({
       serverId,
       server,
@@ -80,6 +84,17 @@ export function useUpdateMcpServer() {
       queryClient.invalidateQueries({
         queryKey: SETTINGS_QUERY_KEYS.personal(),
       });
+    },
+    onError: (error) => {
+      // A 404 means the server we are showing no longer exists on the
+      // agent-server (it forgets `mcp_config` on restart). Refetch so the
+      // ghost card disappears instead of failing again on the next click.
+      if (getHttpResponseStatus(error) === 404) {
+        SettingsService.invalidateCache();
+        queryClient.invalidateQueries({
+          queryKey: SETTINGS_QUERY_KEYS.personal(),
+        });
+      }
     },
   });
 }

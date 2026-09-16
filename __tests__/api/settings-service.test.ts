@@ -420,6 +420,59 @@ describe("SettingsService", () => {
     ]);
   });
 
+  it("does not retry a 404 from the named MCP endpoint", async () => {
+    // The agent-server forgets `mcp_config` on restart; its 404 is a
+    // definitive answer, so re-sending the identical PATCH/DELETE would
+    // only triple the traffic and delay the caller's error handling.
+    let patchCount = 0;
+    let deleteCount = 0;
+    server.use(
+      http.patch("*/api/settings/mcp/:settingsKey", () => {
+        patchCount += 1;
+        return HttpResponse.json(
+          { detail: "MCP server 'github' was not found" },
+          { status: 404 },
+        );
+      }),
+      http.delete("*/api/settings/mcp/:settingsKey", () => {
+        deleteCount += 1;
+        return HttpResponse.json(
+          { detail: "MCP server 'github' was not found" },
+          { status: 404 },
+        );
+      }),
+    );
+
+    await expect(
+      SettingsService.patchMcpServer("github", { enabled: false }),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      SettingsService.deleteMcpServer("github"),
+    ).rejects.toMatchObject({ status: 404 });
+
+    expect(patchCount).toBe(1);
+    expect(deleteCount).toBe(1);
+  });
+
+  it("still retries a 5xx from the named MCP endpoint", async () => {
+    let deleteCount = 0;
+    server.use(
+      http.delete("*/api/settings/mcp/:settingsKey", () => {
+        deleteCount += 1;
+        if (deleteCount < 2) {
+          return HttpResponse.json({ detail: "boom" }, { status: 503 });
+        }
+        return HttpResponse.json({
+          agent_settings: {},
+          conversation_settings: {},
+        });
+      }),
+    );
+
+    await expect(SettingsService.deleteMcpServer("github")).resolves.toBe(true);
+    expect(deleteCount).toBe(2);
+  });
+
   it("sends auth replacement tombstones to the named MCP endpoint", async () => {
     const patchBodies: Array<Record<string, unknown>> = [];
     server.use(
@@ -869,7 +922,8 @@ describe("SettingsService", () => {
     ).rejects.toBeDefined();
 
     expect(getCount).toBe(0);
-    expect(patchBodies).toHaveLength(3);
+    // A 400 is the server's final answer; it is not retried.
+    expect(patchBodies).toHaveLength(1);
     expect(patchBodies).not.toContainEqual({
       agent_settings_diff: { mcp_config: null },
     });

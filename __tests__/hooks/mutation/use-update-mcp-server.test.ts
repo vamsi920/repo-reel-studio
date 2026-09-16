@@ -1,6 +1,7 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+import { AxiosError, AxiosHeaders } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import {
@@ -9,6 +10,7 @@ import {
   setMcpServerHealth,
 } from "#/api/mcp-health/mcp-health-store";
 import { useUpdateMcpServer } from "#/hooks/mutation/use-update-mcp-server";
+import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import type { MCPServerConfig } from "#/types/mcp-server";
 import { REDACTED_MCP_SECRET_VALUE } from "#/utils/mcp-config";
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
@@ -18,10 +20,11 @@ vi.mock("#/hooks/query/use-settings", () => ({
   useSettings: () => useSettingsMock(),
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
+const createWrapper = (
+  queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  }),
+) => {
   function Wrapper({ children }: { children: React.ReactNode }) {
     return React.createElement(
       QueryClientProvider,
@@ -271,5 +274,69 @@ describe("useUpdateMcpServer", () => {
 
     expect(getMcpHealthSnapshot()[oldKey]).toBeUndefined();
     expect(getMcpHealthSnapshot()[newKey]).toBeUndefined();
+  });
+
+  it("refetches settings when the agent-server answers 404 for the server", async () => {
+    // The agent-server forgets `mcp_config` on restart; a PUT for a server
+    // it no longer knows must reconcile the page instead of failing again
+    // on every click.
+    const notFound = new AxiosError(
+      "Request failed with status code 404",
+      "ERR_BAD_REQUEST",
+      { headers: new AxiosHeaders() },
+      undefined,
+      {
+        status: 404,
+        statusText: "Not Found",
+        headers: {},
+        config: { headers: new AxiosHeaders() },
+        data: { detail: "MCP server 'github' was not found" },
+      },
+    );
+    vi.spyOn(SettingsService, "patchMcpServer").mockRejectedValue(notFound);
+    const invalidateCacheSpy = vi.spyOn(SettingsService, "invalidateCache");
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useUpdateMcpServer(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await expect(
+      result.current.mutateAsync({
+        serverId: "github",
+        server: {
+          id: "github",
+          type: "shttp",
+          name: "github",
+          url: "https://github.example/mcp",
+          enabled: false,
+        },
+      }),
+    ).rejects.toBe(notFound);
+
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: SETTINGS_QUERY_KEYS.personal(),
+      }),
+    );
+    expect(invalidateCacheSpy).toHaveBeenCalled();
+  });
+
+  it("opts out of the global error toast so callers toast exactly once", () => {
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useUpdateMcpServer(), {
+      wrapper: createWrapper(queryClient),
+    });
+    result.current.mutate({
+      serverId: "missing",
+      server: { id: "missing", type: "shttp", name: "missing", url: "x" },
+    });
+    const [mutation] = queryClient.getMutationCache().getAll();
+    expect(mutation.options.meta).toEqual({ disableToast: true });
   });
 });
