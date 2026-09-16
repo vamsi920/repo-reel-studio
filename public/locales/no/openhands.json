@@ -1667,6 +1667,8 @@
   "SETTINGS$SKILLS_DISABLED": "Deaktivert",
   "SETTINGS$SKILLS_ENABLE_SKILL": "Aktiver ferdighet",
   "SETTINGS$SKILLS_DISABLE_SKILL": "Deaktiver ferdighet",
+  "SETTINGS$PLUGINS_ENABLE_PLUGIN": "Aktiver programtillegg",
+  "SETTINGS$PLUGINS_DISABLE_PLUGIN": "Deaktiver programtillegg",
   "SETTINGS$SKILLS_TYPE_LABEL": "Type",
   "SETTINGS$SKILLS_VERSION_LABEL": "Versjon",
   "SETTINGS$SKILLS_CONTENT": "Innhold",

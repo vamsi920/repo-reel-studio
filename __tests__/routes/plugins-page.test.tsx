@@ -123,6 +123,21 @@ describe("SkillsPluginsScreen", () => {
 
     const toggle = await screen.findByTestId("plugin-toggle-demo-plugin");
     expect(toggle).toHaveAttribute("aria-checked", "true");
+    // The accessible name must say "plugin", not the toggle's default "skill".
+    expect(toggle).toHaveAccessibleName("SETTINGS$PLUGINS_DISABLE_PLUGIN");
+  });
+
+  it("names a disabled plugin's toggle as enabling a plugin", async () => {
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([buildInstalledPlugin({ enabled: false })]);
+
+    renderPluginsScreen();
+
+    const toggle = await screen.findByTestId("plugin-toggle-demo-plugin");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(toggle).toHaveAccessibleName("SETTINGS$PLUGINS_ENABLE_PLUGIN");
   });
 
   it("installs a catalog plugin with its coordinates when Install is clicked", async () => {

@@ -88,6 +88,8 @@ export function PluginCard({
             isSelected={plugin.enabled}
             isDisabled={isDisabled || isBusy}
             onToggle={onToggle}
+            enableLabelKey={I18nKey.SETTINGS$PLUGINS_ENABLE_PLUGIN}
+            disableLabelKey={I18nKey.SETTINGS$PLUGINS_DISABLE_PLUGIN}
             disableTooltipKey={I18nKey.COMMON$DISABLE}
           />
         ) : plugin.isLocal ? (

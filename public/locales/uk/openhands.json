@@ -1667,6 +1667,8 @@
   "SETTINGS$SKILLS_DISABLED": "Вимкнено",
   "SETTINGS$SKILLS_ENABLE_SKILL": "Увімкнути навичку",
   "SETTINGS$SKILLS_DISABLE_SKILL": "Вимкнути навичку",
+  "SETTINGS$PLUGINS_ENABLE_PLUGIN": "Увімкнути плагін",
+  "SETTINGS$PLUGINS_DISABLE_PLUGIN": "Вимкнути плагін",
   "SETTINGS$SKILLS_TYPE_LABEL": "Тип",
   "SETTINGS$SKILLS_VERSION_LABEL": "Версія",
   "SETTINGS$SKILLS_CONTENT": "Вміст",

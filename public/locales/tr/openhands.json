@@ -1667,6 +1667,8 @@
   "SETTINGS$SKILLS_DISABLED": "Devre dışı",
   "SETTINGS$SKILLS_ENABLE_SKILL": "Yeteneği etkinleştir",
   "SETTINGS$SKILLS_DISABLE_SKILL": "Yeteneği devre dışı bırak",
+  "SETTINGS$PLUGINS_ENABLE_PLUGIN": "Eklentiyi etkinleştir",
+  "SETTINGS$PLUGINS_DISABLE_PLUGIN": "Eklentiyi devre dışı bırak",
   "SETTINGS$SKILLS_TYPE_LABEL": "Tür",
   "SETTINGS$SKILLS_VERSION_LABEL": "Sürüm",
   "SETTINGS$SKILLS_CONTENT": "İçerik",

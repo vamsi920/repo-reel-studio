@@ -1667,6 +1667,8 @@
   "SETTINGS$SKILLS_DISABLED": "Desactivat",
   "SETTINGS$SKILLS_ENABLE_SKILL": "Activa l'habilitat",
   "SETTINGS$SKILLS_DISABLE_SKILL": "Desactiva l'habilitat",
+  "SETTINGS$PLUGINS_ENABLE_PLUGIN": "Activa el connector",
+  "SETTINGS$PLUGINS_DISABLE_PLUGIN": "Desactiva el connector",
   "SETTINGS$SKILLS_TYPE_LABEL": "Tipus",
   "SETTINGS$SKILLS_VERSION_LABEL": "Versió",
   "SETTINGS$SKILLS_CONTENT": "Contingut",
