@@ -102,6 +102,105 @@ describe("ModalBackdrop", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("closes on Escape from a control that stops propagation of the keydown (react-aria combobox)", async () => {
+    // Arrange: HeroUI/react-aria comboboxes stop propagation of their Escape
+    // keydown, which hid the key from the old window-level listener.
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <ModalBackdrop onClose={onClose}>
+        <input
+          aria-label="server type"
+          role="combobox"
+          aria-expanded="false"
+          onKeyDown={(e) => e.stopPropagation()}
+        />
+      </ModalBackdrop>,
+    );
+
+    // Act
+    screen.getByRole("combobox", { name: "server type" }).focus();
+    await user.keyboard("{Escape}");
+
+    // Assert
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves Escape to an open combobox popover instead of closing the dialog", async () => {
+    // Arrange: with the listbox open, Escape must close the popover first.
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <ModalBackdrop onClose={onClose}>
+        <input
+          aria-label="server type"
+          role="combobox"
+          aria-expanded="true"
+          onKeyDown={(e) => e.stopPropagation()}
+        />
+      </ModalBackdrop>,
+    );
+
+    // Act
+    screen.getByRole("combobox", { name: "server type" }).focus();
+    await user.keyboard("{Escape}");
+
+    // Assert
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the parent open when Escape is pressed in a stacked child that opted out of closeOnEscape", async () => {
+    // Arrange: 'Add a backend' (closeOnEscape={false}) over 'Manage backends'.
+    const user = userEvent.setup();
+    const onCloseParent = vi.fn();
+    const onCloseChild = vi.fn();
+    render(
+      <ModalBackdrop onClose={onCloseParent} aria-label="parent">
+        <button type="button">parent control</button>
+        <ModalBackdrop
+          onClose={onCloseChild}
+          closeOnEscape={false}
+          aria-label="child"
+        >
+          <button type="button">child close</button>
+        </ModalBackdrop>
+      </ModalBackdrop>,
+    );
+
+    // Act
+    screen.getByRole("button", { name: "child close" }).focus();
+    await user.keyboard("{Escape}");
+
+    // Assert
+    expect(onCloseChild).not.toHaveBeenCalled();
+    expect(onCloseParent).not.toHaveBeenCalled();
+  });
+
+  it("closes only the topmost of two stacked modals on Escape", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const onCloseParent = vi.fn();
+    const onCloseChild = vi.fn();
+    render(
+      <ModalBackdrop onClose={onCloseParent} aria-label="parent">
+        <button type="button">parent control</button>
+        <ModalBackdrop onClose={onCloseChild} aria-label="child">
+          <button type="button">child control</button>
+        </ModalBackdrop>
+      </ModalBackdrop>,
+    );
+
+    // Act: once with focus inside the child, once with focus on <body>.
+    screen.getByRole("button", { name: "child control" }).focus();
+    await user.keyboard("{Escape}");
+    (document.activeElement as HTMLElement | null)?.blur();
+    await user.keyboard("{Escape}");
+
+    // Assert
+    expect(onCloseChild).toHaveBeenCalledTimes(2);
+    expect(onCloseParent).not.toHaveBeenCalled();
+  });
+
   it("calls onClose when the backdrop is clicked but not when the content is clicked", async () => {
     // Arrange
     const user = userEvent.setup();
