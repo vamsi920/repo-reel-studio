@@ -82,6 +82,7 @@ export function UserMessageBody({
           includeStandard
           includeHeadings
           allowHtml={false}
+          enableMath={false}
           components={chatBubbleMarkdownComponents}
         >
           {message}

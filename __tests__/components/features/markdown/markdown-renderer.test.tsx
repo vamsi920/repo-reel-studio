@@ -213,6 +213,29 @@ describe("MarkdownRenderer", () => {
       expect(container.textContent).toContain("Broken:");
       expect(container.textContent).toContain("end.");
     });
+
+    it("with enableMath=false, leaves dollar signs as literal text instead of parsing math", () => {
+      // Regression: a shell command like `for i in $(seq -w 1 2100); do ...`
+      // or a price list like `$5 and $10` has two dollar signs and used to
+      // be swallowed by remark-math's single-`$` heuristic and rendered as
+      // garbled KaTeX glyphs. `enableMath={false}` is what user-authored
+      // chat text now passes to opt out of that entirely.
+      const md = "for i in $(seq -w 1 2100); do : > many/f$i.txt; done";
+      const { container } = render(
+        <MarkdownRenderer enableMath={false}>{md}</MarkdownRenderer>,
+      );
+      expect(container.querySelector("math")).toBeNull();
+      expect(container.textContent).toBe(md);
+    });
+
+    it("with enableMath=false, does not parse $$...$$ as display math either", () => {
+      const md = "$$x = 1$$";
+      const { container } = render(
+        <MarkdownRenderer enableMath={false}>{md}</MarkdownRenderer>,
+      );
+      expect(container.querySelector("math")).toBeNull();
+      expect(container.textContent).toContain("$$x = 1$$");
+    });
   });
 
   describe("GitHub-style alert blockquotes", () => {

@@ -205,6 +205,15 @@ interface MarkdownRendererProps {
    * blocks, anchor targets, etc.).
    */
   allowHtml?: boolean;
+  /**
+   * Whether to parse `$...$` / `$$...$$` math syntax via remark-math and
+   * render it with KaTeX. Defaults to `true`. Set to `false` for
+   * user-authored chat text: a raw shell command or price list routinely
+   * contains two dollar signs (`$(seq ...)`, `$5 and $10`), and remark-math's
+   * single-`$` heuristic then swallows everything between them and renders
+   * it as garbled math glyphs instead of the text the user actually typed.
+   */
+  enableMath?: boolean;
 }
 
 /**
@@ -227,6 +236,7 @@ export function MarkdownRenderer({
   includeStandard = false,
   includeHeadings = false,
   allowHtml = true,
+  enableMath = true,
 }: MarkdownRendererProps) {
   // Build the components object with defaults and optional additions
   const components: Components = {
@@ -264,24 +274,29 @@ export function MarkdownRenderer({
   // strips anything dangerous (scripts, event handlers, `javascript:` URLs,
   // etc.). The order matters: sanitize must run *after* both so it sees the
   // final tree.
+  const katexRehypePlugin: PluggableList = enableMath
+    ? [[rehypeKatex, KATEX_OPTIONS]]
+    : [];
   const rehypePlugins: PluggableList = allowHtml
     ? [
-        [rehypeKatex, KATEX_OPTIONS],
+        ...katexRehypePlugin,
         rehypeRaw,
         [rehypeSanitize, MARKDOWN_SANITIZE_SCHEMA],
       ]
-    : [[rehypeKatex, KATEX_OPTIONS]];
+    : katexRehypePlugin;
+
+  const remarkPlugins: PluggableList = [
+    remarkGithubAlerts,
+    remarkGfm,
+    remarkBreaks,
+    ...(enableMath ? [remarkMath] : []),
+  ];
 
   return (
     <div data-testid="markdown-renderer">
       <Markdown
         components={components}
-        remarkPlugins={[
-          remarkGithubAlerts,
-          remarkGfm,
-          remarkBreaks,
-          remarkMath,
-        ]}
+        remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
       >
         {markdownContent}

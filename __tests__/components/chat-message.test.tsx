@@ -296,4 +296,41 @@ describe("ChatMessage", () => {
 
     expect(container.querySelector("mark")?.textContent).toBe("world");
   });
+
+  it("renders a shell command with two dollar signs as literal text, not math", () => {
+    // Regression: remark-math's single-`$` heuristic treated everything
+    // between the first two dollar signs in a pasted shell command as inline
+    // math and rendered it as garbled KaTeX glyphs instead of the command
+    // the user actually typed.
+    const message =
+      "Run: mkdir -p many && for i in $(seq -w 1 2100); do : > many/f$i.txt; done";
+    const { container } = render(<ChatMessage type="user" message={message} />);
+
+    expect(container.querySelector("math")).toBeNull();
+    expect(container.textContent).toContain(
+      "for i in $(seq -w 1 2100); do : > many/f$i.txt; done",
+    );
+  });
+
+  it("renders a sending user message with two dollar signs as literal text, not math", () => {
+    // The pending/sending bubble renders through a different branch than the
+    // settled message, so it gets its own guard.
+    const message = "Prices: $5 and $10";
+    const { container } = render(
+      <ChatMessage type="user" message={message} pendingStatus="sending" />,
+    );
+
+    expect(container.querySelector("math")).toBeNull();
+    expect(container.textContent).toContain("Prices: $5 and $10");
+  });
+
+  it("still parses math for agent messages", () => {
+    // The fix is scoped to user input: agent output keeps math rendering so
+    // real formulas in explanations still render via KaTeX.
+    const { container } = render(
+      <ChatMessage type="agent" message="The answer is $1+1$." />,
+    );
+
+    expect(container.querySelector("math")).not.toBeNull();
+  });
 });
