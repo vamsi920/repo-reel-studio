@@ -71,4 +71,18 @@ describe("Terminal empty state", () => {
     expect(screen.queryByText("TERMINAL$NO_OUTPUT")).not.toBeInTheDocument();
     expect(screen.getByTestId("runtime-waiting")).toBeInTheDocument();
   });
+
+  it("shows the empty state, not the runtime waiting state, when the agent errored", () => {
+    // The sandbox process stays up when the agent/LLM loop errors out — only
+    // the agent's turn failed. Showing "Waiting for runtime to start..."
+    // here is misleading and never clears.
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.ERROR,
+    });
+
+    renderWithProviders(<Terminal />);
+
+    expect(screen.queryByTestId("runtime-waiting")).not.toBeInTheDocument();
+    expect(screen.getByText("TERMINAL$NO_OUTPUT")).toBeInTheDocument();
+  });
 });

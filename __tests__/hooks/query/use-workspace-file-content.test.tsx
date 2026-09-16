@@ -30,7 +30,7 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
 
 const useRuntimeIsReadyMock = vi.fn();
 vi.mock("#/hooks/use-runtime-is-ready", () => ({
-  useRuntimeIsReady: () => useRuntimeIsReadyMock(),
+  useRuntimeIsReady: (options?: unknown) => useRuntimeIsReadyMock(options),
 }));
 
 const getActiveBackendMock = vi.fn();
@@ -135,6 +135,22 @@ describe("useWorkspaceFileContent", () => {
       text: "# Hello",
       staticUrl: `${BASE_URL}docs/readme.md`,
       mimeType: "text/markdown",
+    });
+  });
+
+  it("keeps reading file content when the agent errored, since the sandbox itself is still up", () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () => Promise.resolve(arrayBufferFromString("hi")),
+    });
+
+    renderHook(() => useWorkspaceFileContent("docs/readme.md"), {
+      wrapper: makeWrapper(),
+    });
+
+    expect(useRuntimeIsReadyMock).toHaveBeenCalledWith({
+      allowAgentError: true,
     });
   });
 

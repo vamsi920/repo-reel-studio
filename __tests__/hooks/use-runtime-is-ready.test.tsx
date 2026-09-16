@@ -14,7 +14,9 @@ function asMockReturnValue<T>(value: Partial<T>): T {
   return value as T;
 }
 
-function makeConversation(): AppConversation {
+function makeConversation(
+  execution_status: ExecutionStatus = ExecutionStatus.RUNNING,
+): AppConversation {
   return {
     id: "conv-123",
     title: "Test Conversation",
@@ -23,7 +25,7 @@ function makeConversation(): AppConversation {
     git_provider: null,
     updated_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
-    execution_status: ExecutionStatus.RUNNING,
+    execution_status,
     conversation_url: null,
     session_api_key: null,
     sandbox_id: null,
@@ -67,5 +69,49 @@ describe("useRuntimeIsReady", () => {
     );
 
     expect(result.current).toBe(true);
+  });
+
+  it("treats an errored execution_status as not ready by default", () => {
+    vi.mocked(useActiveConversation).mockReturnValue(
+      asMockReturnValue<ReturnType<typeof useActiveConversation>>({
+        data: makeConversation(ExecutionStatus.ERROR),
+      }),
+    );
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.ERROR,
+    });
+
+    const { result } = renderHook(() => useRuntimeIsReady());
+
+    expect(result.current).toBe(false);
+  });
+
+  it("allows runtime-backed tabs to stay ready when execution_status itself is errored (LLM failure)", () => {
+    vi.mocked(useActiveConversation).mockReturnValue(
+      asMockReturnValue<ReturnType<typeof useActiveConversation>>({
+        data: makeConversation(ExecutionStatus.ERROR),
+      }),
+    );
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.ERROR,
+    });
+
+    const { result } = renderHook(() =>
+      useRuntimeIsReady({ allowAgentError: true }),
+    );
+
+    expect(result.current).toBe(true);
+  });
+
+  it("still requires the runtime to have actually started even with allowAgentError", () => {
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.INIT,
+    });
+
+    const { result } = renderHook(() =>
+      useRuntimeIsReady({ allowAgentError: true }),
+    );
+
+    expect(result.current).toBe(false);
   });
 });

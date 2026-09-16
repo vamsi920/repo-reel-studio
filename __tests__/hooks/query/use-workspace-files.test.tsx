@@ -23,7 +23,7 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
 
 const useRuntimeIsReadyMock = vi.fn();
 vi.mock("#/hooks/use-runtime-is-ready", () => ({
-  useRuntimeIsReady: () => useRuntimeIsReadyMock(),
+  useRuntimeIsReady: (options?: unknown) => useRuntimeIsReadyMock(options),
 }));
 
 const useUnifiedGetGitChangesMock = vi.fn();
@@ -115,6 +115,16 @@ describe("useWorkspaceFiles — local backend", () => {
     expect(executeCommandSpy).toHaveBeenCalledTimes(1);
     expect(result.current.isTruncated).toBe(false);
     expect(result.current.totalCount).toBe(2);
+  });
+
+  it("keeps listing files when the agent errored, since the sandbox itself is still up", () => {
+    executeCommandSpy.mockResolvedValue({ exit_code: 0, stdout: "", stderr: "" });
+
+    renderHook(() => useWorkspaceFiles(), { wrapper: makeWrapper() });
+
+    expect(useRuntimeIsReadyMock).toHaveBeenCalledWith({
+      allowAgentError: true,
+    });
   });
 
   it("orders the listing by depth before cutting it, so a big folder can't hide root files", async () => {

@@ -46,7 +46,7 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
 
 const useRuntimeIsReadyMock = vi.fn();
 vi.mock("#/hooks/use-runtime-is-ready", () => ({
-  useRuntimeIsReady: () => useRuntimeIsReadyMock(),
+  useRuntimeIsReady: (options?: unknown) => useRuntimeIsReadyMock(options),
 }));
 
 function makeWrapper() {
@@ -137,6 +137,9 @@ describe("useWorkspaceSession", () => {
       });
       expect(startWorkspaceSessionMock).toHaveBeenCalledTimes(1);
       expect(startWorkspaceSessionMock).toHaveBeenCalledWith("conv-1");
+      expect(useRuntimeIsReadyMock).toHaveBeenCalledWith({
+        allowAgentError: true,
+      });
       expect(callCloudProxyMock).not.toHaveBeenCalled();
     });
   });

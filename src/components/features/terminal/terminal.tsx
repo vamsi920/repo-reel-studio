@@ -1,6 +1,6 @@
 import { useTerminal } from "#/hooks/use-terminal";
 import "@xterm/xterm/css/xterm.css";
-import { RUNTIME_INACTIVE_STATES } from "#/types/agent-state";
+import { RUNTIME_STARTING_STATES } from "#/types/agent-state";
 import { cn } from "#/utils/utils";
 import { WaitingForRuntimeMessage } from "../chat/waiting-for-runtime-message";
 import { useAgentState } from "#/hooks/use-agent-state";
@@ -11,7 +11,11 @@ function Terminal() {
   const { curAgentState } = useAgentState();
   const commands = useCommandStore((state) => state.commands);
 
-  const isRuntimeInactive = RUNTIME_INACTIVE_STATES.includes(curAgentState);
+  // Only the "still booting" states mean the sandbox process itself isn't up
+  // yet. An agent/LLM error (AgentState.ERROR) leaves the runtime alive —
+  // show the terminal's normal empty/history state instead of "Waiting for
+  // runtime to start...", which is misleading and never clears.
+  const isRuntimeInactive = RUNTIME_STARTING_STATES.includes(curAgentState);
   const hasOutput = commands.length > 0;
   const hideTerminalSurface = isRuntimeInactive || !hasOutput;
 
