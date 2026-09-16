@@ -2315,6 +2315,7 @@
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",
+  "KT$LOAD_ERROR": "We can't load your data right now. Try again in a bit.",
   "KT$LOADING": "Loading repositories…",
   "KT$GENERATE": "Generate Knowledge",
   "KT$STARTING": "Starting…",

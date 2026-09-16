@@ -23,6 +23,15 @@ export interface PersistedRepositorySummary {
   branch: string | null;
 }
 
+export interface ListGeneratedRepositoriesResult {
+  summaries: PersistedRepositorySummary[];
+  /** True when the Supabase lookup itself failed (auth/session error, RLS
+   * denial, network failure) rather than genuinely returning zero rows --
+   * callers must not render "nothing generated yet" copy when this is true,
+   * since real generations may exist and just couldn't be read. */
+  error: boolean;
+}
+
 export interface KnowledgePersistenceRepository {
   saveFullKnowledge(
     repositoryUuid: string,
@@ -41,7 +50,7 @@ export interface KnowledgePersistenceRepository {
    * automatically to workspaces they belong to. Used to populate the /kt
    * list page with previously-generated repos that have no open
    * conversation right now. */
-  listGeneratedRepositories(): Promise<PersistedRepositorySummary[]>;
+  listGeneratedRepositories(): Promise<ListGeneratedRepositoriesResult>;
 }
 
 interface GenerationRow {
@@ -270,8 +279,9 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
     }
   }
 
-  async listGeneratedRepositories(): Promise<PersistedRepositorySummary[]> {
-    if (!isSupabaseConfigured || !supabase) return [];
+  async listGeneratedRepositories(): Promise<ListGeneratedRepositoriesResult> {
+    if (!isSupabaseConfigured || !supabase)
+      return { summaries: [], error: false };
     try {
       const { data: generations, error: generationsError } = await supabase
         .from("knowledge_generations")
@@ -282,8 +292,11 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
           "listGeneratedRepositories: knowledge_generations",
           generationsError,
         );
+        return { summaries: [], error: true };
       }
-      if (!generations || generations.length === 0) return [];
+      if (!generations || generations.length === 0) {
+        return { summaries: [], error: false };
+      }
 
       const repositoryIds = Array.from(
         new Set(generations.map((row) => row.repository_id as string)),
@@ -300,17 +313,21 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         .in("id", repositoryIds);
       if (reposError) {
         logFailure("listGeneratedRepositories: repositories", reposError);
+        return { summaries: [], error: true };
       }
-      if (!repos) return [];
+      if (!repos) return { summaries: [], error: false };
 
-      return repos.map((row) => ({
-        owner: row.owner as string,
-        repo: row.name as string,
-        branch: branchByRepo.get(row.id as string) ?? null,
-      }));
+      return {
+        summaries: repos.map((row) => ({
+          owner: row.owner as string,
+          repo: row.name as string,
+          branch: branchByRepo.get(row.id as string) ?? null,
+        })),
+        error: false,
+      };
     } catch (error) {
       logFailure("listGeneratedRepositories", error);
-      return [];
+      return { summaries: [], error: true };
     }
   }
 }

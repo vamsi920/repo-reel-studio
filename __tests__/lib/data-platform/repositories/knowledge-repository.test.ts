@@ -190,16 +190,20 @@ describe("knowledgePersistenceRepository.listGeneratedRepositories", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns an empty list without logging when there are genuinely no generations", async () => {
+  it("returns an empty, non-error list when there are genuinely no generations", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(
       knowledgePersistenceRepository.listGeneratedRepositories(),
-    ).resolves.toEqual([]);
+    ).resolves.toEqual({ summaries: [], error: false });
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  it("logs when the generations query errors", async () => {
+  // Regression: a genuine query error (RLS denial, network failure) used to
+  // be indistinguishable from "no generations exist" -- both resolved to an
+  // identical empty array, so the /kt list page rendered "nothing generated
+  // yet" even when real generations existed and just couldn't be read.
+  it("logs and flags an error when the generations query errors", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     state.tables.knowledge_generations = {
       data: null,
@@ -208,10 +212,48 @@ describe("knowledgePersistenceRepository.listGeneratedRepositories", () => {
 
     await expect(
       knowledgePersistenceRepository.listGeneratedRepositories(),
-    ).resolves.toEqual([]);
+    ).resolves.toEqual({ summaries: [], error: true });
     expect(errorSpy).toHaveBeenCalledWith(
       "[knowledge-repository] listGeneratedRepositories: knowledge_generations failed",
       state.tables.knowledge_generations.error,
     );
+  });
+
+  it("logs and flags an error when the repositories query errors", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    state.tables.knowledge_generations = {
+      data: [{ repository_id: "repo-1", branch: "main" }],
+      error: null,
+    };
+    state.tables.repositories = {
+      data: null,
+      error: { message: "permission denied" },
+    };
+
+    await expect(
+      knowledgePersistenceRepository.listGeneratedRepositories(),
+    ).resolves.toEqual({ summaries: [], error: true });
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[knowledge-repository] listGeneratedRepositories: repositories failed",
+      state.tables.repositories.error,
+    );
+  });
+
+  it("returns the resolved summaries with no error when both queries succeed", async () => {
+    state.tables.knowledge_generations = {
+      data: [{ repository_id: "repo-1", branch: "main" }],
+      error: null,
+    };
+    state.tables.repositories = {
+      data: [{ id: "repo-1", owner: "vamsi920", name: "layman" }],
+      error: null,
+    };
+
+    await expect(
+      knowledgePersistenceRepository.listGeneratedRepositories(),
+    ).resolves.toEqual({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
   });
 });

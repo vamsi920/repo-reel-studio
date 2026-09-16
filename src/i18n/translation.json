@@ -39371,6 +39371,23 @@
     "tr": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",
     "uk": "No connected repositories yet. Open a conversation with a repo attached, then come back here."
   },
+  "KT$LOAD_ERROR": {
+    "en": "We can't load your data right now. Try again in a bit.",
+    "ja": "We can't load your data right now. Try again in a bit.",
+    "zh-CN": "We can't load your data right now. Try again in a bit.",
+    "zh-TW": "We can't load your data right now. Try again in a bit.",
+    "ko-KR": "We can't load your data right now. Try again in a bit.",
+    "no": "We can't load your data right now. Try again in a bit.",
+    "ar": "We can't load your data right now. Try again in a bit.",
+    "de": "We can't load your data right now. Try again in a bit.",
+    "fr": "We can't load your data right now. Try again in a bit.",
+    "it": "We can't load your data right now. Try again in a bit.",
+    "pt": "We can't load your data right now. Try again in a bit.",
+    "es": "We can't load your data right now. Try again in a bit.",
+    "ca": "We can't load your data right now. Try again in a bit.",
+    "tr": "We can't load your data right now. Try again in a bit.",
+    "uk": "We can't load your data right now. Try again in a bit."
+  },
   "KT$LOADING": {
     "en": "Loading repositories…",
     "ja": "Loading repositories…",

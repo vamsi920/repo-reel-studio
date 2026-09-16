@@ -41,25 +41,36 @@ interface PersistedRepositories {
    * until this is true — doing so flashes the empty state for the whole
    * round trip on every visit. */
   loaded: boolean;
+  /** True when the lookup itself failed (auth/session error, RLS denial,
+   * rejected promise) rather than genuinely finding zero generations —
+   * distinct from `summaries.length === 0`, which is also true in that case
+   * but doesn't say why. Lets KtList show "we can't load your data right
+   * now" instead of the misleading "nothing generated yet" empty state when
+   * real generations may exist and just couldn't be read. */
+  error: boolean;
 }
 
 function usePersistedRepositories(): PersistedRepositories {
   const [state, setState] = useState<PersistedRepositories>({
     summaries: [],
     loaded: false,
+    error: false,
   });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const list =
+        const { summaries, error } =
           await knowledgePersistenceRepository.listGeneratedRepositories();
-        if (!cancelled) setState({ summaries: list, loaded: true });
+        if (!cancelled) setState({ summaries, loaded: true, error });
       } catch {
         // Best-effort: an unconfigured/unreachable Supabase must not reject
         // out of this effect (an unhandled rejection) — the list still
-        // renders every connected and in-memory repository.
-        if (!cancelled) setState((prev) => ({ ...prev, loaded: true }));
+        // renders every connected and in-memory repository, just flagged as
+        // an error so a fully-empty result doesn't read as "nothing here".
+        if (!cancelled) {
+          setState((prev) => ({ ...prev, loaded: true, error: true }));
+        }
       }
     })();
     return () => {
@@ -74,6 +85,11 @@ interface AllRepositories {
   /** True while either source (conversation history or the Supabase
    * generated-repositories lookup) has not answered yet. */
   isLoading: boolean;
+  /** True when the Supabase generated-repositories lookup failed outright
+   * (see `PersistedRepositories.error`). Connected repositories are sourced
+   * from local conversation history, not Supabase, so this only ever
+   * reflects the persisted half of the list. */
+  error: boolean;
 }
 
 function useAllRepositories({
@@ -81,8 +97,11 @@ function useAllRepositories({
   isLoading: connectedLoading,
 }: ConnectedRepositories): AllRepositories {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
-  const { summaries: persisted, loaded: persistedLoaded } =
-    usePersistedRepositories();
+  const {
+    summaries: persisted,
+    loaded: persistedLoaded,
+    error: persistedError,
+  } = usePersistedRepositories();
   const repositories = useMemo(() => {
     // Repos already generated in Supabase, regardless of whether they also
     // have a live conversation right now -- without this, a repo that's
@@ -138,7 +157,11 @@ function useAllRepositories({
         candidate.knownGenerated || persistedIds.has(candidate.repositoryId),
     }));
   }, [connected, byRepositoryId, persisted]);
-  return { repositories, isLoading: connectedLoading || !persistedLoaded };
+  return {
+    repositories,
+    isLoading: connectedLoading || !persistedLoaded,
+    error: persistedError,
+  };
 }
 
 async function resolveSnapshot(
@@ -440,7 +463,7 @@ function AddRepositoryTrigger() {
 
 function KtList() {
   const { t } = useTranslation("openhands");
-  const { repositories, isLoading } = useAllRepositories(
+  const { repositories, isLoading, error } = useAllRepositories(
     useConnectedRepositories(),
   );
   const [search, setSearch] = useState("");
@@ -485,6 +508,19 @@ function KtList() {
           >
             <Loader2 className="size-4 animate-spin" aria-hidden />
             {t(I18nKey.KT$LOADING)}
+          </div>
+        ) : repositories.length === 0 && error ? (
+          // The Supabase lookup itself failed (auth/session error, RLS
+          // denial) rather than genuinely finding zero generations — never
+          // render the "nothing generated yet" copy here, since real
+          // generations may exist and just couldn't be read.
+          <div
+            data-testid="kt-list-error"
+            role="alert"
+            className="rounded-lg border border-dashed border-[var(--error-500)] p-8 text-center text-sm text-[var(--error-500)]"
+          >
+            <RefreshCw className="mx-auto mb-2 size-5" aria-hidden />
+            {t(I18nKey.KT$LOAD_ERROR)}
           </div>
         ) : repositories.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-center text-sm text-[var(--oh-muted)]">

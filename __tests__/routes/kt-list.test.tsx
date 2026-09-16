@@ -70,7 +70,7 @@ describe("KtList", () => {
       byRepositoryId: {},
       provisioningByRepositoryId: {},
     });
-    listGeneratedRepositories.mockResolvedValue([]);
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: false });
   });
 
   afterEach(() => {
@@ -113,9 +113,10 @@ describe("KtList", () => {
   });
 
   it("shows a loading placeholder, not the empty state, until the persisted lookup settles", async () => {
-    let resolveList: (value: never[]) => void = () => {};
+    let resolveList: (value: { summaries: never[]; error: boolean }) => void =
+      () => {};
     listGeneratedRepositories.mockReturnValue(
-      new Promise<never[]>((resolve) => {
+      new Promise((resolve) => {
         resolveList = resolve;
       }),
     );
@@ -127,7 +128,7 @@ describe("KtList", () => {
     expect(screen.getByTestId("kt-list-loading")).toBeInTheDocument();
     expect(screen.queryByText("KT$EMPTY")).toBeNull();
 
-    resolveList([]);
+    resolveList({ summaries: [], error: false });
 
     expect(await screen.findByText("KT$EMPTY")).toBeInTheDocument();
     expect(screen.queryByTestId("kt-list-loading")).toBeNull();
@@ -135,7 +136,7 @@ describe("KtList", () => {
 
   it("keeps the loading placeholder while conversation history is still loading", async () => {
     connectedLoading = true;
-    listGeneratedRepositories.mockResolvedValue([]);
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: false });
 
     renderWithProviders(<KtList />);
 
@@ -146,19 +147,50 @@ describe("KtList", () => {
     expect(screen.queryByText("KT$EMPTY")).toBeNull();
   });
 
-  it("falls through to the empty state when the persisted lookup fails and nothing is connected", async () => {
+  it("falls through to the empty state when the persisted lookup rejects and nothing is connected", async () => {
     listGeneratedRepositories.mockRejectedValue(new Error("no supabase"));
 
     renderWithProviders(<KtList />);
 
-    expect(await screen.findByText("KT$EMPTY")).toBeInTheDocument();
+    expect(await screen.findByTestId("kt-list-error")).toHaveTextContent(
+      "KT$LOAD_ERROR",
+    );
     expect(screen.queryByTestId("kt-list-loading")).toBeNull();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+  });
+
+  // Regression: a genuine Supabase query error (auth/session failure, RLS
+  // denial) resolved to the same empty array as "nothing generated yet",
+  // so a user whose data really exists but couldn't be read saw the
+  // misleading "No connected repositories yet" copy with no indication
+  // anything had gone wrong (INC-2).
+  it("shows a load-error state, not the generic empty state, when the persisted lookup reports an error", async () => {
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: true });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-list-error")).toHaveTextContent(
+      "KT$LOAD_ERROR",
+    );
+    expect(screen.queryByTestId("kt-list-loading")).toBeNull();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+  });
+
+  it("still lists connected repositories when the persisted lookup reports an error", async () => {
+    setConnected(UNPROVISIONED);
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: true });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-repo-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-list-error")).toBeNull();
   });
 
   it("renders persisted repositories as View Knowledge cards without an empty-state flash", async () => {
-    listGeneratedRepositories.mockResolvedValue([
-      { owner: "vamsi920", repo: "layman", branch: "main" },
-    ]);
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
 
     renderWithProviders(<KtList />);
 
