@@ -56,9 +56,12 @@ function isBashObservation(event: OHEvent): boolean {
  *
  * Bash observations also refresh the git-diff queries (`file_changes` /
  * `file_diff`) — a `git commit` or `git push` changes what the Diff view
- * should display, and shell commands can edit files too. They deliberately
- * do NOT touch the workspace file queries or the workspace mutation
- * counter: bumping the counter reloads canvas iframes, and doing that for
+ * should display — and the workspace file list / content queries, since
+ * shell commands create, edit and delete files too (a Files tab that is
+ * open while the agent works otherwise sits on a stale or empty list until
+ * the user clicks Refresh: the list's 30 s staleTime never refetches a
+ * query that stays mounted). They deliberately do NOT bump the workspace
+ * mutation counter: bumping it reloads canvas iframes, and doing that for
  * every shell command the agent runs would cause constant flicker.
  * Invalidation only refetches actively-mounted queries, so the cost is
  * limited to when the Files tab is open.
@@ -135,10 +138,13 @@ export function useAutoRefreshFilesOnEdit(): void {
     queryClient.invalidateQueries({ queryKey: ["file_changes"] });
     queryClient.invalidateQueries({ queryKey: ["file_diff"] });
     queryClient.invalidateQueries({ queryKey: ["git_commits"] });
+    // The file list and any open text viewer refetch for both kinds of
+    // mutation. This is the cheap half of "refresh": it only re-runs the
+    // mounted list/content queries and leaves the iframe cache-buster alone.
+    queryClient.invalidateQueries({ queryKey: ["workspace-files"] });
+    queryClient.invalidateQueries({ queryKey: ["workspace-file-content"] });
 
     if (hasNewFileEdits) {
-      queryClient.invalidateQueries({ queryKey: ["workspace-files"] });
-      queryClient.invalidateQueries({ queryKey: ["workspace-file-content"] });
       // Force iframes / <img> tags pointing at the static workspace
       // fileserver to re-fetch. Without this they happily keep showing the
       // stale (browser-cached) bytes even after the agent has rewritten the
