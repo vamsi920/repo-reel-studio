@@ -582,6 +582,71 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
       expect(useBrowserStore.getState().url).toBe("");
       expect(useBrowserStore.getState().screenshotSrc).toBe("");
     });
+
+    // Reported bug: a navigation genuinely succeeds (a real screenshot comes
+    // back) but the address bar stays on the placeholder forever. Root cause:
+    // the REST history page can independently deliver a
+    // BrowserNavigateAction/BrowserObservation pair (e.g. a background
+    // refetch that resolves ahead of the live WebSocket message for the same
+    // events) *before* `handleMainMessage` ever sees them live — and once an
+    // event is already known to the store, the live handler's duplicate-event
+    // guard skips the pairing side effects entirely. Without replaying the
+    // pair from REST history too, the URL never commits even though the
+    // observation genuinely confirmed the navigation.
+    it("commits the confirmed URL when the navigate action and its observation arrive together via REST-preloaded history", async () => {
+      // `searchEvents` mimics the real server's TIMESTAMP_DESC order (newest
+      // first) — the hook reverses it back to chronological order.
+      vi.spyOn(EventService, "searchEvents").mockImplementation(
+        async () => ({
+          items: [
+            makeBrowserObservation("obs-hist-1", "nav-hist-1", {
+              screenshotData: "abc123",
+            }),
+            makeBrowserNavigateAction("nav-hist-1", "https://example.com"),
+          ] as unknown as OpenHandsEvent[],
+          next_page_id: null,
+        }),
+      );
+
+      await renderBrowserCaptured();
+
+      await waitFor(() =>
+        expect(useBrowserStore.getState().url).toBe("https://example.com"),
+      );
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,abc123",
+      );
+    });
+
+    // Same bug, the more common shape: the navigate action was already
+    // captured by a REST history refetch, but its confirming observation is
+    // still in flight and arrives live. Without replaying the action from
+    // REST history, the live observation would have nothing pending to
+    // confirm and the URL would never commit.
+    it("confirms a pending navigation recorded from REST-preloaded history when the observation arrives live", async () => {
+      vi.spyOn(EventService, "searchEvents").mockImplementation(
+        async () => ({
+          items: [
+            makeBrowserNavigateAction("nav-hist-2", "https://example.com"),
+          ] as unknown as OpenHandsEvent[],
+          next_page_id: null,
+        }),
+      );
+
+      await renderBrowserCaptured();
+      expect(useBrowserStore.getState().url).toBe("");
+
+      deliverBrowserEvent(
+        makeBrowserObservation("obs-hist-2", "nav-hist-2", {
+          screenshotData: "def456",
+        }),
+      );
+
+      expect(useBrowserStore.getState().url).toBe("https://example.com");
+      expect(useBrowserStore.getState().screenshotSrc).toBe(
+        "data:image/png;base64,def456",
+      );
+    });
   });
 
   it("resets the metrics store when switching conversations", async () => {

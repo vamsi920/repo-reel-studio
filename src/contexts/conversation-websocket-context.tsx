@@ -52,6 +52,12 @@ import type {
   ConversationErrorEvent,
   ServerErrorEvent,
 } from "#/types/agent-server/core/events/conversation-state-event";
+import type {
+  ActionEvent,
+  ObservationEvent,
+  BrowserNavigateAction,
+  BrowserObservation,
+} from "#/types/agent-server/core";
 import { handleActionEventCacheInvalidation } from "#/utils/cache-utils";
 import { buildWebSocketUrl } from "#/utils/websocket-url";
 import type {
@@ -166,6 +172,50 @@ export function ConversationWebSocketProvider({
   // falsely reports success" report. Keyed off `action_id` correlation
   // rather than assuming in-order 1:1 delivery.
   const pendingBrowserNavigationsRef = useRef<Map<string, string>>(new Map());
+
+  // Shared by both the live WS handler and the REST-preload replay below, so
+  // a BrowserNavigateAction/BrowserObservation pair is paired correctly no
+  // matter which path first learns about it. This matters because the REST
+  // history refetch (line ~356 below) can independently add an event to the
+  // store — via `addEvents`, which only dedups and never runs these side
+  // effects — before the *live* WS delivery of that same event arrives; when
+  // it then does arrive, `handleMainMessage`'s duplicate-event guard skips
+  // its side effects entirely (see the #1656 comment there), so without a
+  // replay here the pending-navigation entry would silently never be
+  // created and the observation that follows would have nothing to confirm.
+  const recordBrowserNavigateAction = useCallback(
+    (event: ActionEvent<BrowserNavigateAction>) => {
+      pendingBrowserNavigationsRef.current.set(event.id, event.action.url);
+    },
+    [],
+  );
+
+  // Confirms (or drops) a pending navigation. Gated on a real screenshot,
+  // not merely the absence of an error — see the commit that introduced this
+  // pairing for why a "successful" navigate with no screenshot must not be
+  // trusted.
+  const applyBrowserObservation = useCallback(
+    (event: ObservationEvent<BrowserObservation>) => {
+      const { screenshot_data: screenshotData, error } = event.observation;
+      const confirmed = Boolean(screenshotData) && !error;
+      if (confirmed) {
+        const screenshotSrc = screenshotData!.startsWith("data:")
+          ? screenshotData!
+          : `data:image/png;base64,${screenshotData}`;
+        useBrowserStore.getState().setScreenshotSrc(screenshotSrc);
+      }
+      const pendingUrl = pendingBrowserNavigationsRef.current.get(
+        event.action_id,
+      );
+      if (pendingUrl !== undefined) {
+        pendingBrowserNavigationsRef.current.delete(event.action_id);
+        if (confirmed) {
+          useBrowserStore.getState().setUrl(pendingUrl);
+        }
+      }
+    },
+    [],
+  );
 
   // History loading state.
   // - Main conversation history is now loaded via REST (`useConversationHistory`),
@@ -338,6 +388,22 @@ export function ConversationWebSocketProvider({
         ),
     );
 
+    // Same reasoning as the terminal seed above, for the Browser panel: a
+    // BrowserNavigateAction/BrowserObservation pair that reaches the client
+    // through this REST page rather than the live WS handler never runs
+    // `handleMainMessage`'s side effects (the dup-event guard there assumes
+    // anything already in the store was already handled live), so replay
+    // them here in order to pair navigations and commit the confirmed
+    // screenshot/URL — otherwise the address bar can stay on the
+    // placeholder forever even though the browser genuinely navigated.
+    for (const event of freshEvents) {
+      if (isBrowserNavigateActionEvent(event)) {
+        recordBrowserNavigateAction(event);
+      } else if (isBrowserObservationEvent(event)) {
+        applyBrowserObservation(event);
+      }
+    }
+
     // The first user message of a cloud start-task conversation is persisted
     // server-side and reaches us via this REST preload, not over the WebSocket
     // (which subscribes with resend_mode='since' after the latest preloaded
@@ -370,6 +436,8 @@ export function ConversationWebSocketProvider({
     appendCommands,
     conversationId,
     consumeMatchingPendingMessage,
+    recordBrowserNavigateAction,
+    applyBrowserObservation,
   ]);
 
   /**
@@ -670,24 +738,7 @@ export function ConversationWebSocketProvider({
           // never moved and no screenshot comes back either, so requiring a
           // real screenshot is what catches that silent-failure case.
           if (isBrowserObservationEvent(event)) {
-            const { screenshot_data: screenshotData, error } =
-              event.observation;
-            const confirmed = Boolean(screenshotData) && !error;
-            if (confirmed) {
-              const screenshotSrc = screenshotData!.startsWith("data:")
-                ? screenshotData!
-                : `data:image/png;base64,${screenshotData}`;
-              useBrowserStore.getState().setScreenshotSrc(screenshotSrc);
-            }
-            const pendingUrl = pendingBrowserNavigationsRef.current.get(
-              event.action_id,
-            );
-            if (pendingUrl !== undefined) {
-              pendingBrowserNavigationsRef.current.delete(event.action_id);
-              if (confirmed) {
-                useBrowserStore.getState().setUrl(pendingUrl);
-              }
-            }
+            applyBrowserObservation(event);
           }
 
           // Handle BrowserNavigateAction events - hold the requested URL
@@ -695,10 +746,7 @@ export function ConversationWebSocketProvider({
           // rather than showing it immediately, since the action only
           // records what the agent asked for, not what actually happened.
           if (isBrowserNavigateActionEvent(event)) {
-            pendingBrowserNavigationsRef.current.set(
-              event.id,
-              event.action.url,
-            );
+            recordBrowserNavigateAction(event);
           }
 
           if (
@@ -781,6 +829,8 @@ export function ConversationWebSocketProvider({
       appendOutput,
       updateMetricsFromStats,
       handleNonErrorEvent,
+      recordBrowserNavigateAction,
+      applyBrowserObservation,
     ],
   );
 
