@@ -19,6 +19,12 @@ export interface WorkspaceFilesResult {
    * "couldn't load anything" from "couldn't refresh, showing stale list".
    */
   isError: boolean;
+  /**
+   * A (re)fetch is in flight. While true the current `data` may be an
+   * out-of-date snapshot, so callers must not draw conclusions from a path
+   * being absent from it.
+   */
+  isFetching: boolean;
   /** Re-run the listing (the Files tab's inline Retry). */
   refetch: () => void;
 }
@@ -116,6 +122,7 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
     data: query.data,
     isLoading: query.isLoading,
     isError: query.isError,
+    isFetching: query.isFetching,
     refetch: () => {
       query.refetch();
     },
@@ -154,6 +161,7 @@ function useCloudWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
     data: enabled ? data : undefined,
     isLoading: enabled ? gitChanges.isLoading : false,
     isError: enabled ? gitChanges.isError : false,
+    isFetching: enabled ? gitChanges.isFetching : false,
     refetch: () => {
       gitChanges.refetch();
     },

@@ -7,6 +7,7 @@ import { MemoryRouter } from "react-router";
 
 import FilesTab from "#/routes/files-tab";
 import { useFilesTabStore } from "#/stores/files-tab-store";
+import { WorkspaceFileReadError } from "#/hooks/query/use-workspace-file-content";
 import { NavigationProvider } from "#/context/navigation-context";
 
 // Mocks must be declared before the SUT is imported.
@@ -35,7 +36,12 @@ vi.mock("#/hooks/query/use-workspace-files", () => ({
   useWorkspaceFiles: () => useWorkspaceFilesMock(),
 }));
 
-vi.mock("#/hooks/query/use-workspace-file-content", () => ({
+vi.mock("#/hooks/query/use-workspace-file-content", async (importOriginal) => ({
+  // Keep the real WorkspaceFileReadError so the tab's "file is gone"
+  // reconcile (an instanceof check) can be exercised below.
+  ...(await importOriginal<
+    typeof import("#/hooks/query/use-workspace-file-content")
+  >()),
   useWorkspaceFileContent: (path: string | null) =>
     useWorkspaceFileContentMock(path),
 }));
@@ -691,6 +697,99 @@ describe("FilesTab", () => {
       });
       expect(useFilesTabStore.getState().selectedConversationId).toBe("conv-b");
       expect(useWorkspaceFileContentMock).not.toHaveBeenCalledWith("demo.html");
+    });
+  });
+
+  describe("selected file deleted by the agent", () => {
+    // The agent ran `rm one.txt`: the content query now 404s and the
+    // refreshed listing no longer contains the file.
+    function selectGoneFile(listing: string[], isFetching = false) {
+      useHasAttachedSourceMock.mockReturnValue({
+        hasAttachedSource: false,
+        isLoading: false,
+      });
+      useFilesTabStore.setState({
+        selectedPath: "one.txt",
+        selectedConversationId: "conv-b",
+      });
+      useWorkspaceFilesMock.mockReturnValue({
+        data: listing,
+        isLoading: false,
+        isError: false,
+        isFetching,
+        refetch: refetchFilesMock,
+      });
+      useWorkspaceFileContentMock.mockImplementation((path: string | null) =>
+        path === "one.txt"
+          ? {
+              data: undefined,
+              isLoading: false,
+              isError: true,
+              error: new WorkspaceFileReadError("one.txt", 404),
+            }
+          : {
+              data: {
+                path,
+                kind: "text",
+                text: "hello",
+                staticUrl: `http://localhost:3000/api/conversations/c1/workspace/${path}`,
+                mimeType: "text/plain",
+              },
+              isLoading: false,
+              isError: false,
+            },
+      );
+    }
+
+    it("falls back to the highest-priority remaining file once the listing no longer has it", async () => {
+      selectGoneFile(["notes/two.txt", "README.md"]);
+
+      renderTab("conv-b");
+
+      await waitFor(() => {
+        expect(useFilesTabStore.getState().selectedPath).toBe("README.md");
+      });
+      expect(useFilesTabStore.getState().selectedConversationId).toBe("conv-b");
+      // The viewer and the open-in-new-window link follow the new selection.
+      expect(
+        screen.getByTestId("files-tab-open-in-new-window"),
+      ).toHaveAttribute("href", expect.stringContaining("README.md"));
+      expect(
+        screen.queryByTestId("file-content-viewer-error"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the empty state when the deleted file was the last one", async () => {
+      selectGoneFile([]);
+
+      renderTab("conv-b");
+
+      await waitFor(() => {
+        expect(useFilesTabStore.getState().selectedPath).toBeNull();
+      });
+    });
+
+    it("keeps the selection while the listing is still refetching", async () => {
+      selectGoneFile(["README.md"], true);
+
+      renderTab("conv-b");
+
+      // Give the effects a tick to (not) fire.
+      await waitFor(() => {
+        expect(useWorkspaceFileContentMock).toHaveBeenCalledWith("one.txt");
+      });
+      expect(useFilesTabStore.getState().selectedPath).toBe("one.txt");
+    });
+
+    it("keeps a file that 404s but is still listed (read failure, not a delete)", async () => {
+      selectGoneFile(["one.txt", "README.md"]);
+
+      renderTab("conv-b");
+
+      await waitFor(() => {
+        expect(useWorkspaceFileContentMock).toHaveBeenCalledWith("one.txt");
+      });
+      expect(useFilesTabStore.getState().selectedPath).toBe("one.txt");
     });
   });
 

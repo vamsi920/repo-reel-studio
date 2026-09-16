@@ -6,7 +6,10 @@ import { NoFileSelectedMessage } from "#/components/features/files-tab/no-file-s
 import { I18nKey } from "#/i18n/declaration";
 import { useFilesTabStore } from "#/stores/files-tab-store";
 import { useWorkspaceFiles } from "#/hooks/query/use-workspace-files";
-import { useWorkspaceFileContent } from "#/hooks/query/use-workspace-file-content";
+import {
+  WorkspaceFileReadError,
+  useWorkspaceFileContent,
+} from "#/hooks/query/use-workspace-file-content";
 import { useHasAttachedSource } from "#/hooks/use-has-attached-source";
 import { useHasGitCommits } from "#/hooks/query/use-has-git-commits";
 import { useAutoRefreshFilesOnEdit } from "#/hooks/use-auto-refresh-files-on-edit";
@@ -140,6 +143,47 @@ function FilesTab() {
     const [first] = sortFilesByPriority(paths);
     if (first) setSelectedPath(first, conversationId);
   }, [paths, selectedPath, conversationId, setSelectedPath]);
+
+  // Reconcile the selection when the agent deletes the open file (e.g.
+  // `rm one.txt` through the shell): the refreshed list no longer contains
+  // it, so nothing is highlighted, yet the viewer would stay pinned to the
+  // dead path and the "open in new window" link would 404. Fall back the
+  // way first load does — the highest-priority remaining file, or the
+  // "no file selected" state when the workspace is empty.
+  //
+  // Both signals are required before we let go of a selection:
+  //   - the fileserver answered 404 for the path (proof it is gone — a
+  //     stale list alone is not, e.g. right after `navigate_to_file` on a
+  //     freshly created file whose listing hasn't refetched yet), and
+  //   - a settled, successful listing does not contain it (so an explicit
+  //     click on a file that merely failed to read keeps its error + Retry).
+  const selectedFileError = selectedFileContent.error;
+  const selectedFileIsGone =
+    selectedFileError instanceof WorkspaceFileReadError &&
+    selectedFileError.status === 404;
+  useEffect(() => {
+    if (!selectedPath || !selectedFileIsGone) return;
+    if (
+      filesQuery.data === undefined ||
+      filesQuery.isFetching ||
+      filesQuery.isError
+    )
+      return;
+    if (paths.includes(selectedPath)) return;
+    const [first] = sortFilesByPriority(
+      paths.filter((path) => path !== selectedPath),
+    );
+    setSelectedPath(first ?? null, conversationId);
+  }, [
+    paths,
+    selectedPath,
+    selectedFileIsGone,
+    filesQuery.data,
+    filesQuery.isFetching,
+    filesQuery.isError,
+    conversationId,
+    setSelectedPath,
+  ]);
 
   // Refresh button: covers the diff view (git changes) and the file viewer
   // (workspace listing + cached file contents). Lives in this toolbar — not
