@@ -428,6 +428,79 @@ describe("LlmSettingsLocalView", () => {
       );
     });
 
+    it("ignores a stale getProfile response when a later Edit click supersedes it", async () => {
+      const user = userEvent.setup();
+
+      let resolveFirst: (value: Awaited<
+        ReturnType<typeof ProfilesService.getProfile>
+      >) => void = () => {};
+      let resolveSecond: (value: Awaited<
+        ReturnType<typeof ProfilesService.getProfile>
+      >) => void = () => {};
+      const firstResponse = new Promise<
+        Awaited<ReturnType<typeof ProfilesService.getProfile>>
+      >((resolve) => {
+        resolveFirst = resolve;
+      });
+      const secondResponse = new Promise<
+        Awaited<ReturnType<typeof ProfilesService.getProfile>>
+      >((resolve) => {
+        resolveSecond = resolve;
+      });
+
+      vi.mocked(ProfilesService.getProfile).mockImplementation((name) => {
+        if (name === "gpt-4-profile") return firstResponse;
+        if (name === "claude-profile") return secondResponse;
+        throw new Error(`unexpected profile name: ${name}`);
+      });
+
+      renderWithProviders(<LlmSettingsLocalView />);
+
+      // Click Edit on the first profile; its request stays pending.
+      let menuTriggers = screen.getAllByTestId("profile-menu-trigger");
+      await user.click(menuTriggers[0]);
+      await user.click(screen.getByTestId("profile-edit"));
+
+      // Before it resolves, click Edit on the second profile — the list is
+      // still showing because the first request hasn't resolved yet.
+      menuTriggers = screen.getAllByTestId("profile-menu-trigger");
+      await user.click(menuTriggers[1]);
+      await user.click(screen.getByTestId("profile-edit"));
+
+      // The second (most recent) request resolves first.
+      resolveSecond({
+        name: "claude-profile",
+        api_key_set: true,
+        config: {
+          model: "anthropic/claude-3-opus",
+          api_key: "key-2",
+          base_url: "",
+        },
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId("profile-name-input")).toHaveValue(
+          "claude-profile",
+        );
+      });
+
+      // The stale first request resolves after — it must not clobber the
+      // editor, which should keep showing the profile actually clicked last.
+      resolveFirst({
+        name: "gpt-4-profile",
+        api_key_set: true,
+        config: {
+          model: "openai/gpt-4",
+          api_key: "key-1",
+          base_url: "",
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(screen.getByTestId("profile-name-input")).toHaveValue(
+        "claude-profile",
+      );
+    });
+
     it("passes profile values as initialValueOverrides when editing", async () => {
       const user = userEvent.setup();
 

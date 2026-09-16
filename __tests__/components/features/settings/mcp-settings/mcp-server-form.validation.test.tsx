@@ -398,4 +398,73 @@ describe("MCPServerForm validation", () => {
 
     r2.unmount();
   });
+
+  it("rejects an sse/shttp name that collides with an existing stdio server", () => {
+    const onSubmit = vi.fn();
+
+    const existingServers = [
+      { id: "stdio-1", type: "stdio" as const, name: "github" },
+    ];
+
+    render(
+      <MCPServerForm
+        mode="add"
+        server={{ id: "tmp", type: "sse" }}
+        existingServers={existingServers}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("server-name-input"), {
+      target: { value: "github" },
+    });
+    fireEvent.change(screen.getByTestId("url-input"), {
+      target: { value: "https://api.example.com" },
+    });
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    expect(
+      screen.getByText("SETTINGS$MCP_ERROR_NAME_DUPLICATE"),
+    ).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("rejects an sse/shttp name that collides with an existing sse/shttp server", () => {
+    const onSubmit = vi.fn();
+
+    const existingServers = [
+      {
+        id: "sse-1",
+        type: "sse" as const,
+        name: "github",
+        url: "https://api.example.com",
+      },
+    ];
+
+    render(
+      <MCPServerForm
+        mode="add"
+        server={{ id: "tmp2", type: "shttp" }}
+        existingServers={existingServers}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("server-name-input"), {
+      target: { value: "github" },
+    });
+    fireEvent.change(screen.getByTestId("url-input"), {
+      target: { value: "https://x.example.com" },
+    });
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    expect(
+      screen.getByText("SETTINGS$MCP_ERROR_NAME_DUPLICATE"),
+    ).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

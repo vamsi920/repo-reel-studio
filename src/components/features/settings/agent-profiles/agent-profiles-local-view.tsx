@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AgentProfilesManager } from "./agent-profiles-manager";
 import { mergeAgentProfileSaveInput } from "./merge-agent-profile-save-input";
@@ -86,6 +86,12 @@ export function AgentProfilesLocalView() {
     useState<AgentSettingsSaveControl | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // `handleEditProfile` awaits a network round-trip before seeding the form.
+  // If a second Edit click fires before the first request resolves, whichever
+  // response lands last would otherwise win regardless of click order. Track
+  // the most recently requested profile so a stale response is dropped.
+  const editRequestRef = useRef<string | null>(null);
+
   useEffect(() => {
     setHideSectionHeader(viewMode !== "list");
     return () => setHideSectionHeader(false);
@@ -125,6 +131,7 @@ export function AgentProfilesLocalView() {
 
   const handleEditProfile = useCallback(
     async (summary: AgentProfileSummary) => {
+      editRequestRef.current = summary.name;
       try {
         // Fetch with encrypted secret exposure so any `skills[].mcp_tools`
         // values arrive as Fernet tokens rather than masks — the save below
@@ -134,6 +141,10 @@ export function AgentProfilesLocalView() {
           summary.name,
           "encrypted",
         );
+
+        // A newer Edit click superseded this request while it was in flight;
+        // drop this response instead of clobbering the newer one's state.
+        if (editRequestRef.current !== summary.name) return;
         const profile = detail.profile;
         setEditingProfile(profile);
         setOverride(toAgentSettingsOverride(profile));
@@ -158,6 +169,7 @@ export function AgentProfilesLocalView() {
         setSaveControl(null);
         setViewMode("edit");
       } catch (error) {
+        if (editRequestRef.current !== summary.name) return;
         console.error("Failed to fetch agent profile:", error);
         displayErrorToast(t(I18nKey.ERROR$GENERIC));
       }

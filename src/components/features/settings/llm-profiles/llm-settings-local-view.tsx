@@ -114,6 +114,12 @@ export function LlmSettingsLocalView() {
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  // `handleEditProfile` awaits a network round-trip before seeding the form.
+  // If a second Edit click fires before the first request resolves, whichever
+  // response lands last would otherwise win regardless of click order. Track
+  // the most recently requested profile so a stale response is dropped.
+  const editRequestRef = useRef<string | null>(null);
+
   useEffect(() => {
     setHideSectionHeader(viewMode !== "list");
     return () => setHideSectionHeader(false);
@@ -150,12 +156,17 @@ export function LlmSettingsLocalView() {
 
   const handleEditProfile = useCallback(
     async (profile: ProfileInfo) => {
+      editRequestRef.current = profile.name;
       try {
         // Fetch profile details with encrypted secrets to preserve API key
         const detail = await ProfilesService.getProfile(
           profile.name,
           "encrypted",
         );
+
+        // A newer Edit click superseded this request while it was in flight;
+        // drop this response instead of clobbering the newer one's state.
+        if (editRequestRef.current !== profile.name) return;
 
         // Profile config contains llm settings directly at the top level
         // The structure is: { model, api_key, base_url, ... }
@@ -200,6 +211,7 @@ export function LlmSettingsLocalView() {
         setProfileName(profile.name);
         setViewMode("edit");
       } catch (error) {
+        if (editRequestRef.current !== profile.name) return;
         console.error("Failed to fetch profile details:", error);
         displayErrorToast(t(I18nKey.ERROR$GENERIC));
       }

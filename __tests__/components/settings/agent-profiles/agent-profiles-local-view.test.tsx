@@ -59,6 +59,12 @@ vi.mock(
           onClick={() => onEditProfile?.({ name: "default" })}
           aria-label="edit"
         />
+        <button
+          type="button"
+          data-testid="edit-agent-profile-second"
+          onClick={() => onEditProfile?.({ name: "second" })}
+          aria-label="edit second"
+        />
       </>
     ),
   }),
@@ -239,6 +245,70 @@ describe("AgentProfilesLocalView save mapping", () => {
     expect(profile).not.toHaveProperty("id");
     expect(profile).not.toHaveProperty("name");
     expect(profile).not.toHaveProperty("revision");
+  });
+
+  it("ignores a stale getProfile response when a later Edit click supersedes it", async () => {
+    let resolveFirst: (value: unknown) => void = () => {};
+    let resolveSecond: (value: unknown) => void = () => {};
+    const firstResponse = new Promise((resolve) => {
+      resolveFirst = resolve;
+    });
+    const secondResponse = new Promise((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    vi.mocked(AgentProfilesService.getProfile).mockImplementation((name) => {
+      if (name === "default") return firstResponse as never;
+      if (name === "second") return secondResponse as never;
+      throw new Error(`unexpected profile name: ${name}`);
+    });
+
+    render(<AgentProfilesLocalView />);
+    const user = userEvent.setup();
+
+    // Click Edit on the first profile; its request stays pending.
+    await user.click(screen.getByTestId("edit-agent-profile"));
+    // Before it resolves, click Edit on the second profile.
+    await user.click(screen.getByTestId("edit-agent-profile-second"));
+
+    // The second (most recent) request resolves first.
+    resolveSecond({
+      name: "second",
+      profile: {
+        schema_version: 1,
+        id: "p-2",
+        name: "second",
+        revision: 1,
+        agent_kind: "openhands",
+        llm_profile_ref: "default",
+        enable_sub_agents: false,
+      },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-profile-name-input")).toHaveValue(
+        "second",
+      );
+    });
+
+    // The stale first request resolves after — it must not clobber the
+    // editor, which should keep showing the profile actually clicked last.
+    resolveFirst({
+      name: "default",
+      profile: {
+        schema_version: 1,
+        id: "p-1",
+        name: "default",
+        revision: 3,
+        agent_kind: "openhands",
+        llm_profile_ref: "default",
+        enable_sub_agents: false,
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(screen.getByTestId("agent-profile-name-input")).toHaveValue(
+      "second",
+    );
   });
 
   it("kind-switch edit-save sends a clean variant payload", async () => {
