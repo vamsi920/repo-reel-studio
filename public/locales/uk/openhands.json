@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "Виберіть файл, щоб переглянути його вміст",
   "FILES$LOAD_ERROR": "Не вдалося завантажити цей файл",
   "FILES$BINARY_FALLBACK": "Двійковий файл – попередній перегляд недоступний",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Великий файл – підсвічування синтаксису вимкнено",
   "FILES$UNSUPPORTED_DOCUMENT": "Попередній перегляд недоступний для файлів {{type}}.",
   "FILES$LOADING_FILES": "Завантаження файлів…",
   "FILES$NO_FILES": "У робочій області немає файлів",

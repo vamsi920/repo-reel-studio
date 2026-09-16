@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "Wählen Sie eine Datei aus, um ihren Inhalt anzuzeigen",
   "FILES$LOAD_ERROR": "Diese Datei konnte nicht geladen werden",
   "FILES$BINARY_FALLBACK": "Binärdatei – keine Vorschau verfügbar",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Große Datei – Syntaxhervorhebung ist deaktiviert",
   "FILES$UNSUPPORTED_DOCUMENT": "Für {{type}}-Dateien ist keine Vorschau verfügbar.",
   "FILES$LOADING_FILES": "Dateien werden geladen…",
   "FILES$NO_FILES": "Keine Dateien im Arbeitsbereich",

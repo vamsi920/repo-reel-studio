@@ -25261,6 +25261,23 @@
     "uk": "Двійковий файл – попередній перегляд недоступний",
     "ca": "Fitxer binari – previsualització no disponible"
   },
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": {
+    "en": "Large file – syntax highlighting is off",
+    "ja": "大きなファイル – シンタックスハイライトはオフです",
+    "zh-CN": "大文件 – 已关闭语法高亮",
+    "zh-TW": "大型檔案 – 已關閉語法標示",
+    "ko-KR": "큰 파일 – 구문 강조가 꺼져 있습니다",
+    "no": "Stor fil – syntaksutheving er av",
+    "it": "File di grandi dimensioni – evidenziazione della sintassi disattivata",
+    "pt": "Arquivo grande – o realce de sintaxe está desativado",
+    "es": "Archivo grande – el resaltado de sintaxis está desactivado",
+    "ar": "ملف كبير – تمييز بناء الجملة متوقف",
+    "fr": "Fichier volumineux – la coloration syntaxique est désactivée",
+    "tr": "Büyük dosya – sözdizimi vurgulama kapalı",
+    "de": "Große Datei – Syntaxhervorhebung ist deaktiviert",
+    "uk": "Великий файл – підсвічування синтаксису вимкнено",
+    "ca": "Fitxer gran – el ressaltat de sintaxi està desactivat"
+  },
   "FILES$UNSUPPORTED_DOCUMENT": {
     "en": "Preview isn't available for {{type}} files.",
     "ja": "{{type}} ファイルのプレビューは利用できません。",

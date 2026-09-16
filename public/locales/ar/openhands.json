@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "اختر ملفًا لعرض محتواه",
   "FILES$LOAD_ERROR": "تعذّر تحميل هذا الملف",
   "FILES$BINARY_FALLBACK": "ملف ثنائي – المعاينة غير متاحة",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "ملف كبير – تمييز بناء الجملة متوقف",
   "FILES$UNSUPPORTED_DOCUMENT": "المعاينة غير متاحة لملفات {{type}}.",
   "FILES$LOADING_FILES": "جارٍ تحميل الملفات…",
   "FILES$NO_FILES": "لا توجد ملفات في مساحة العمل",

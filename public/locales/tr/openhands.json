@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "İçeriğini görmek için bir dosya seçin",
   "FILES$LOAD_ERROR": "Bu dosya yüklenemedi",
   "FILES$BINARY_FALLBACK": "İkili dosya – önizleme kullanılamıyor",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Büyük dosya – sözdizimi vurgulama kapalı",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} dosyaları için önizleme kullanılamıyor.",
   "FILES$LOADING_FILES": "Dosyalar yükleniyor…",
   "FILES$NO_FILES": "Çalışma alanında dosya yok",

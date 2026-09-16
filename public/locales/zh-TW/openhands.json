@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "選擇檔案以查看其內容",
   "FILES$LOAD_ERROR": "無法載入此檔案",
   "FILES$BINARY_FALLBACK": "二進位檔案 – 無法預覽",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "大型檔案 – 已關閉語法標示",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} 檔案無法預覽。",
   "FILES$LOADING_FILES": "正在載入檔案……",
   "FILES$NO_FILES": "工作區中沒有檔案",

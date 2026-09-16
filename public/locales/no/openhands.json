@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "Velg en fil for å vise innholdet",
   "FILES$LOAD_ERROR": "Kunne ikke laste denne filen",
   "FILES$BINARY_FALLBACK": "Binærfil – forhåndsvisning er ikke tilgjengelig",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Stor fil – syntaksutheving er av",
   "FILES$UNSUPPORTED_DOCUMENT": "Forhåndsvisning er ikke tilgjengelig for {{type}}-filer.",
   "FILES$LOADING_FILES": "Laster filer …",
   "FILES$NO_FILES": "Ingen filer i arbeidsområdet",

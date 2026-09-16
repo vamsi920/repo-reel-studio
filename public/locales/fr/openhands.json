@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "Sélectionnez un fichier pour voir son contenu",
   "FILES$LOAD_ERROR": "Impossible de charger ce fichier",
   "FILES$BINARY_FALLBACK": "Fichier binaire – aperçu indisponible",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Fichier volumineux – la coloration syntaxique est désactivée",
   "FILES$UNSUPPORTED_DOCUMENT": "L'aperçu n'est pas disponible pour les fichiers {{type}}.",
   "FILES$LOADING_FILES": "Chargement des fichiers…",
   "FILES$NO_FILES": "Aucun fichier dans l'espace de travail",

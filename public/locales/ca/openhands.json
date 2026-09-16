@@ -1485,6 +1485,7 @@
   "FILES$NO_FILE_SELECTED": "Selecciona un fitxer per veure'n el contingut",
   "FILES$LOAD_ERROR": "No s'ha pogut carregar aquest fitxer",
   "FILES$BINARY_FALLBACK": "Fitxer binari – previsualització no disponible",
+  "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Fitxer gran – el ressaltat de sintaxi està desactivat",
   "FILES$UNSUPPORTED_DOCUMENT": "La previsualització no està disponible per als fitxers {{type}}.",
   "FILES$LOADING_FILES": "S'estan carregant els fitxers…",
   "FILES$NO_FILES": "No hi ha fitxers a l'espai de treball",
