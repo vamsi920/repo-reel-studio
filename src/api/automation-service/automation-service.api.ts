@@ -40,6 +40,38 @@ import {
 
 const AUTOMATION_BASE_PATH = "/api/automation";
 
+/**
+ * The real automation service nests an automation's target repository under
+ * `preset_metadata.repos[]` rather than the top-level `repository`/`branch`
+ * fields the `Automation` type (and every UI reading it) expects — only the
+ * mock server populates those top-level fields directly. Without this, every
+ * automation's repository is silently invisible in the UI even though it's
+ * genuinely persisted server-side.
+ */
+interface AutomationPresetRepo {
+  url: string;
+  provider?: string;
+  ref?: string;
+}
+
+interface RawAutomation extends Automation {
+  preset_metadata?: { repos?: AutomationPresetRepo[] };
+}
+
+function normalizeAutomation(raw: RawAutomation): Automation {
+  const { preset_metadata: presetMetadata, ...automation } = raw;
+  const primaryRepo = presetMetadata?.repos?.[0];
+  if (automation.repository || !primaryRepo) {
+    return automation;
+  }
+
+  return {
+    ...automation,
+    repository: primaryRepo.url,
+    branch: primaryRepo.ref ?? automation.branch,
+  };
+}
+
 export interface AutomationHealthResponse {
   status: "ok" | "error";
   message?: string;
@@ -357,19 +389,30 @@ class AutomationService {
     const active = getActiveBackend().backend;
 
     if (active.kind === "cloud") {
-      return callCloudProxy<AutomationsResponse>({
+      const response = await callCloudProxy<AutomationsResponse>({
         backend: active,
         method: "GET",
         path: `${AUTOMATION_BASE_PATH}${getAutomationEndpoint("list")}?${buildPaginationQuery(limit, offset)}`,
         headers: await buildAutomationRequestHeaders(),
       });
+      return {
+        ...response,
+        automations: response.automations.map((automation) =>
+          normalizeAutomation(automation as RawAutomation),
+        ),
+      };
     }
 
     const { data } = await localAutomationAxios.get<AutomationsResponse>(
       `${AUTOMATION_BASE_PATH}${getAutomationEndpoint("list")}`,
       { params: { limit, offset } },
     );
-    return data;
+    return {
+      ...data,
+      automations: data.automations.map((automation) =>
+        normalizeAutomation(automation as RawAutomation),
+      ),
+    };
   }
 
   static async getAutomations(
@@ -384,16 +427,17 @@ class AutomationService {
     const path = `${AUTOMATION_BASE_PATH}${getAutomationIdEndpoint("detail", id)}`;
 
     if (active.kind === "cloud") {
-      return callCloudProxy<Automation>({
+      const automation = await callCloudProxy<Automation>({
         backend: active,
         method: "GET",
         path,
         headers: await buildAutomationRequestHeaders(),
       });
+      return normalizeAutomation(automation as RawAutomation);
     }
 
     const { data } = await localAutomationAxios.get<Automation>(path);
-    return data;
+    return normalizeAutomation(data as RawAutomation);
   }
 
   static async createAutomation(spec: AutomationSpec): Promise<Automation> {

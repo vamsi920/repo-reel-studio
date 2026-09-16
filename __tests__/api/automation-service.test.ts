@@ -191,6 +191,43 @@ describe("AutomationService", () => {
         params: { limit: 50, offset: 0 },
       });
     });
+
+    it("derives repository/branch from preset_metadata.repos when the server omits the top-level fields", async () => {
+      const rawAutomation = {
+        ...mockAutomation,
+        repository: undefined,
+        branch: undefined,
+        preset_metadata: {
+          repos: [{ url: "acme/other-repo", provider: "github", ref: "main" }],
+        },
+      };
+      mockGet.mockResolvedValue({
+        data: { automations: [rawAutomation], total: 1 },
+      });
+
+      const result = await AutomationService.listAutomations();
+
+      expect(result.automations[0].repository).toBe("acme/other-repo");
+      expect(result.automations[0].branch).toBe("main");
+      expect(result.automations[0]).not.toHaveProperty("preset_metadata");
+    });
+
+    it("prefers an already-populated top-level repository over preset_metadata", async () => {
+      const rawAutomation = {
+        ...mockAutomation,
+        repository: "acme/repo",
+        preset_metadata: {
+          repos: [{ url: "acme/other-repo" }],
+        },
+      };
+      mockGet.mockResolvedValue({
+        data: { automations: [rawAutomation], total: 1 },
+      });
+
+      const result = await AutomationService.listAutomations();
+
+      expect(result.automations[0].repository).toBe("acme/repo");
+    });
   });
 
   describe("getAutomations", () => {
@@ -223,6 +260,25 @@ describe("AutomationService", () => {
 
       expect(mockGet).toHaveBeenCalledWith("/api/automation/v1/1");
       expect(result).toEqual(mockAutomation);
+    });
+
+    it("derives repository/branch from preset_metadata.repos when the server omits the top-level fields", async () => {
+      mockGet.mockResolvedValue({
+        data: {
+          ...mockAutomation,
+          repository: undefined,
+          branch: undefined,
+          preset_metadata: {
+            repos: [{ url: "acme/imported-repo", ref: "develop" }],
+          },
+        },
+      });
+
+      const result = await AutomationService.getAutomation("1");
+
+      expect(result.repository).toBe("acme/imported-repo");
+      expect(result.branch).toBe("develop");
+      expect(result).not.toHaveProperty("preset_metadata");
     });
   });
 
@@ -401,6 +457,20 @@ describe("AutomationService", () => {
         headers: expectedAutomationTelemetryHeaders,
       });
       expect(result).toEqual(mockAutomation);
+    });
+
+    it("getAutomation normalizes preset_metadata.repos from a cloud response too", async () => {
+      mockCallCloudProxy.mockResolvedValue({
+        ...mockAutomation,
+        repository: undefined,
+        branch: undefined,
+        preset_metadata: { repos: [{ url: "acme/cloud-repo", ref: "main" }] },
+      });
+
+      const result = await AutomationService.getAutomation("abc");
+
+      expect(result.repository).toBe("acme/cloud-repo");
+      expect(result.branch).toBe("main");
     });
 
     it("dispatchAutomation forwards method POST via callCloudProxy", async () => {
