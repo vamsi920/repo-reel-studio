@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "مزيد من الملفات",
   "FILES$SHOW_FILE_TREE": "إظهار شجرة الملفات",
   "FILES$HIDE_FILE_TREE": "إخفاء شجرة الملفات",
+  "FILES$VIEW_TOGGLE_LABEL": "العرض",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "وضع المحتوى",
   "COMMON$PLANNER": "المخطط",
   "COMMON$APPLICATION_SETTINGS": "إعدادات التطبيق",
   "COMMON$BROWSER": "المتصفح",

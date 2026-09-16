@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Weitere Dateien",
   "FILES$SHOW_FILE_TREE": "Dateibaum anzeigen",
   "FILES$HIDE_FILE_TREE": "Dateibaum ausblenden",
+  "FILES$VIEW_TOGGLE_LABEL": "Ansicht",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Inhaltsmodus",
   "COMMON$PLANNER": "Planer",
   "COMMON$APPLICATION_SETTINGS": "Anwendungseinstellungen",
   "COMMON$BROWSER": "Browser",

@@ -65,4 +65,29 @@ describe("FileTreeView", () => {
     expect(onSelectFile).toHaveBeenCalledTimes(1);
     expect(onSelectFile).toHaveBeenCalledWith("README.md");
   });
+
+  it("marks the selected file row with aria-current", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(
+      <FileTreeView
+        paths={["src/a.txt", "src/b.txt"]}
+        selectedPath="src/a.txt"
+        onSelectFile={vi.fn()}
+      />,
+    );
+
+    // Act
+    await user.click(screen.getByTestId("file-tree-dir-src"));
+
+    // Assert: the selection is exposed to assistive technology, not only
+    // through the background colour.
+    expect(screen.getByTestId("file-tree-file-src/a.txt")).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByTestId("file-tree-file-src/b.txt")).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
 });

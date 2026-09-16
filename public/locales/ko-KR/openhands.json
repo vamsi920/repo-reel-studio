@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "다른 파일",
   "FILES$SHOW_FILE_TREE": "파일 트리 표시",
   "FILES$HIDE_FILE_TREE": "파일 트리 숨기기",
+  "FILES$VIEW_TOGGLE_LABEL": "보기",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "콘텐츠 모드",
   "COMMON$PLANNER": "플래너",
   "COMMON$APPLICATION_SETTINGS": "애플리케이션 설정",
   "COMMON$BROWSER": "브라우저",

@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Més fitxers",
   "FILES$SHOW_FILE_TREE": "Mostra l'arbre de fitxers",
   "FILES$HIDE_FILE_TREE": "Amaga l'arbre de fitxers",
+  "FILES$VIEW_TOGGLE_LABEL": "Vista",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Mode de contingut",
   "COMMON$PLANNER": "Planificador",
   "COMMON$APPLICATION_SETTINGS": "Configuració de l'aplicació",
   "COMMON$BROWSER": "Navegador",

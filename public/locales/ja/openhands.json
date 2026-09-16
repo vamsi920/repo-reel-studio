@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "他のファイル",
   "FILES$SHOW_FILE_TREE": "ファイルツリーを表示",
   "FILES$HIDE_FILE_TREE": "ファイルツリーを非表示",
+  "FILES$VIEW_TOGGLE_LABEL": "表示",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "コンテンツモード",
   "COMMON$PLANNER": "プランナー",
   "COMMON$APPLICATION_SETTINGS": "アプリケーション設定",
   "COMMON$BROWSER": "ブラウザ",

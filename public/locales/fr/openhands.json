@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Plus de fichiers",
   "FILES$SHOW_FILE_TREE": "Afficher l'arborescence des fichiers",
   "FILES$HIDE_FILE_TREE": "Masquer l'arborescence des fichiers",
+  "FILES$VIEW_TOGGLE_LABEL": "Vue",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Mode de contenu",
   "COMMON$PLANNER": "Planificateur",
   "COMMON$APPLICATION_SETTINGS": "Paramètres de l'application",
   "COMMON$BROWSER": "Navigateur",

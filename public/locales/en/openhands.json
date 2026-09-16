@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "More files",
   "FILES$SHOW_FILE_TREE": "Show file tree",
   "FILES$HIDE_FILE_TREE": "Hide file tree",
+  "FILES$VIEW_TOGGLE_LABEL": "View",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Content mode",
   "COMMON$PLANNER": "Planner",
   "COMMON$APPLICATION_SETTINGS": "Application Settings",
   "COMMON$BROWSER": "Browser",

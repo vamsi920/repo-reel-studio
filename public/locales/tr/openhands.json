@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Daha fazla dosya",
   "FILES$SHOW_FILE_TREE": "Dosya ağacını göster",
   "FILES$HIDE_FILE_TREE": "Dosya ağacını gizle",
+  "FILES$VIEW_TOGGLE_LABEL": "Görünüm",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "İçerik modu",
   "COMMON$PLANNER": "Planlayıcı",
   "COMMON$APPLICATION_SETTINGS": "Uygulama Ayarları",
   "COMMON$BROWSER": "Tarayıcı",

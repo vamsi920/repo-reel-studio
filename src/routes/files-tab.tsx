@@ -151,7 +151,7 @@ function FilesTab() {
           the refresh button on the right. */}
       <div className="flex items-center gap-3 px-3 py-1.5 border-b border-[var(--oh-border)]">
         <SegmentedToggle<"on" | "off" | "commits">
-          ariaLabel={t(I18nKey.FILES$DIFF_VIEW)}
+          ariaLabel={t(I18nKey.FILES$VIEW_TOGGLE_LABEL)}
           testId="files-tab-diff-toggle"
           value={activeView}
           options={[
@@ -178,7 +178,7 @@ function FilesTab() {
 
         {activeView === "off" && (
           <SegmentedToggle<ViewMode>
-            ariaLabel={t(I18nKey.FILES$RICH)}
+            ariaLabel={t(I18nKey.FILES$CONTENT_MODE_TOGGLE_LABEL)}
             testId="files-tab-content-mode-toggle"
             value={contentViewMode}
             options={[

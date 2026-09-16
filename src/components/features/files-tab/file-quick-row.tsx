@@ -72,6 +72,7 @@ export function FileQuickRow({
                 type="button"
                 onClick={() => onSelectFile(path)}
                 title={path}
+                aria-current={isSelected ? "true" : undefined}
                 data-testid={`file-quick-row-item-${path}`}
                 className={cn(
                   "inline-flex items-center px-2 py-0.5 text-xs whitespace-nowrap rounded-md cursor-pointer",

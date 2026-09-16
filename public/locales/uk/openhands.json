@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Більше файлів",
   "FILES$SHOW_FILE_TREE": "Показати дерево файлів",
   "FILES$HIDE_FILE_TREE": "Сховати дерево файлів",
+  "FILES$VIEW_TOGGLE_LABEL": "Вигляд",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Режим вмісту",
   "COMMON$PLANNER": "Планувальник",
   "COMMON$APPLICATION_SETTINGS": "Налаштування застосунку",
   "COMMON$BROWSER": "Браузер",

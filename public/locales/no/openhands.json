@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Flere filer",
   "FILES$SHOW_FILE_TREE": "Vis filtre",
   "FILES$HIDE_FILE_TREE": "Skjul filtre",
+  "FILES$VIEW_TOGGLE_LABEL": "Visning",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Innholdsmodus",
   "COMMON$PLANNER": "Planlegger",
   "COMMON$APPLICATION_SETTINGS": "Applikasjonsinnstillinger",
   "COMMON$BROWSER": "Nettleser",

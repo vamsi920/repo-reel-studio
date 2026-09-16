@@ -1491,6 +1491,8 @@
   "FILES$MORE_FILES": "Más archivos",
   "FILES$SHOW_FILE_TREE": "Mostrar árbol de archivos",
   "FILES$HIDE_FILE_TREE": "Ocultar árbol de archivos",
+  "FILES$VIEW_TOGGLE_LABEL": "Vista",
+  "FILES$CONTENT_MODE_TOGGLE_LABEL": "Modo de contenido",
   "COMMON$PLANNER": "Planificador",
   "COMMON$APPLICATION_SETTINGS": "Configuración de la aplicación",
   "COMMON$BROWSER": "Navegador",

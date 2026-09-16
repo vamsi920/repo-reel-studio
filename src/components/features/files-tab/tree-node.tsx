@@ -45,7 +45,7 @@ export function TreeNode({
           >
             ▶
           </span>
-          <FolderIcon className="w-3.5 h-3.5 shrink-0" />
+          <FolderIcon className="w-3.5 h-3.5 shrink-0" aria-hidden />
           <span className="truncate">{node.name}</span>
         </button>
         {isOpen && node.children.length > 0 && (
@@ -71,6 +71,7 @@ export function TreeNode({
       <button
         type="button"
         onClick={() => onSelectFile(node.path)}
+        aria-current={isSelected ? "true" : undefined}
         data-testid={`file-tree-file-${node.path}`}
         className={cn(
           "flex w-full items-center gap-1.5 py-1 pr-2 text-left text-sm",
@@ -82,7 +83,7 @@ export function TreeNode({
         // per-row indentation computed from tree depth at runtime
         style={{ paddingLeft: `${indentPx + 16}px` }}
       >
-        <FileIcon className="w-3.5 h-3.5 shrink-0" />
+        <FileIcon className="w-3.5 h-3.5 shrink-0" aria-hidden />
         <span className="truncate">{node.name}</span>
       </button>
     </li>
