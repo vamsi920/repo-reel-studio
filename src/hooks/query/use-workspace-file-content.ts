@@ -282,8 +282,17 @@ export function useWorkspaceFileContent(relativePath: string | null) {
       // (it travels because we opt in to credentialed requests). This
       // matches the auth path the iframe / <img> uses, and avoids a CORS
       // preflight for a custom header.
+      //
+      // `cache: "no-store"` is essential: the fileserver answers with only
+      // `last-modified` (no `cache-control` / `etag`), so the browser
+      // applies heuristic freshness and would happily satisfy a refetch —
+      // triggered by an agent-side edit or the Refresh button — from its
+      // HTTP cache, leaving the viewer on stale bytes (or on the body of a
+      // file that has since been deleted). Bypass the cache so every
+      // react-query refetch actually reaches the server.
       const response = await fetch(staticUrl, {
         credentials: "include",
+        cache: "no-store",
       });
       if (!response.ok) {
         throw new WorkspaceFileReadError(relativePath, response.status);

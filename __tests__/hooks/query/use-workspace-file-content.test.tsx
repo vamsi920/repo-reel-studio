@@ -138,6 +138,30 @@ describe("useWorkspaceFileContent", () => {
     });
   });
 
+  it("bypasses the browser HTTP cache so a refetch always reaches the server", async () => {
+    // The fileserver sends no cache-control/etag, so with the default cache
+    // mode Chrome's heuristic freshness would serve a refetch (after an
+    // agent edit or the Refresh button) from cache and the viewer would
+    // keep stale bytes — or the body of a file that no longer exists.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () => Promise.resolve(arrayBufferFromString("v1")),
+    });
+
+    const { result } = renderHook(
+      () => useWorkspaceFileContent("notes/alpha.txt"),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE_URL}notes/alpha.txt`,
+      expect.objectContaining({ cache: "no-store" }),
+    );
+  });
+
   it("does not fetch image bytes — image staticUrl is rendered directly", async () => {
     const { result } = renderHook(
       () => useWorkspaceFileContent("assets/logo.png"),
