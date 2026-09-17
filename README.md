@@ -4,7 +4,7 @@
   <img src="/icon.png" alt="Neo logo" width="200">
   <h1 align="center" style="border-bottom: none">Neo</h1>
   <p align="center">
-    <strong>The self-hosted developer control center for coding agents and automations.</strong>
+    <strong>The self-hosted developer control center for coding agents and automations.</strong>.
   </p>
   <p align="center">
     Run Neo's built-in agent, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
