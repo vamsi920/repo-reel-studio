@@ -194,6 +194,14 @@ export function ChatInterface() {
     scrollHeight: number;
     scrollTop: number;
   } | null>(null);
+  // `ChatInterface` stays mounted across a conversation switch (same route,
+  // new `:conversationId`), so a "load older" triggered just before
+  // switching can leave this ref holding the previous conversation's scroll
+  // metrics. Clear it on every conversation change so the restore effect
+  // below never applies a stale delta to the new conversation's DOM.
+  React.useEffect(() => {
+    preserveScrollPosition.current = null;
+  }, [conversationId]);
   const maybeLoadOlder = React.useCallback(
     (target: HTMLElement) => {
       if (isProvisioningTask || isLoadingOlderEvents || !hasMoreOlderEvents) {
@@ -332,15 +340,27 @@ export function ChatInterface() {
       return; // Stop processing if validation fails
     }
 
-    const promises = images.map((image) => convertImageToBase64(image));
-    const imageUrls = await Promise.all(promises);
+    let imageUrls: string[];
+    let skippedFiles: { reason: string }[];
+    let uploadedFiles: string[];
+    try {
+      const promises = images.map((image) => convertImageToBase64(image));
+      imageUrls = await Promise.all(promises);
+
+      ({ skipped_files: skippedFiles, uploaded_files: uploadedFiles } =
+        files.length > 0
+          ? await uploadFiles({ conversationId: conversationId!, files })
+          : { skipped_files: [], uploaded_files: [] });
+    } catch (attachmentError) {
+      const attachmentErrorMessage =
+        attachmentError instanceof Error && attachmentError.message
+          ? attachmentError.message
+          : t(I18nKey.CHAT_INTERFACE$FAILED_TO_SEND_MESSAGE);
+      displayErrorToast(attachmentErrorMessage);
+      return;
+    }
 
     const timestamp = new Date().toISOString();
-
-    const { skipped_files: skippedFiles, uploaded_files: uploadedFiles } =
-      files.length > 0
-        ? await uploadFiles({ conversationId: conversationId!, files })
-        : { skipped_files: [], uploaded_files: [] };
 
     skippedFiles.forEach((f) => displayErrorToast(f.reason));
 

@@ -17,8 +17,14 @@ interface MessagesProps {
   allEvents: OpenHandsEvent[]; // Full event history (for action lookup)
 }
 
-const getLastEventId = (events: OpenHandsEvent[]) => events.at(-1)?.id;
-const getLastEvent = (events: OpenHandsEvent[]) => events.at(-1);
+// `handleEventForUI` sometimes replaces an event in place at its original
+// index (e.g. an ACP tool-call event resolving from "running" to
+// "completed"/"failed") rather than appending it at the tail, so comparing
+// only array length and the last element misses that change. Compare every
+// element's reference instead — still O(n) reference checks, and still lets
+// unchanged arrays (same references throughout) skip a re-render.
+const sameEvents = (prev: OpenHandsEvent[], next: OpenHandsEvent[]) =>
+  prev.length === next.length && prev.every((event, i) => event === next[i]);
 
 export const Messages: React.FC<MessagesProps> = React.memo(
   ({ messages, allEvents }) => {
@@ -131,13 +137,8 @@ export const Messages: React.FC<MessagesProps> = React.memo(
     );
   },
   (prevProps, nextProps) =>
-    prevProps.messages.length === nextProps.messages.length &&
-    prevProps.allEvents.length === nextProps.allEvents.length &&
-    getLastEventId(prevProps.messages) === getLastEventId(nextProps.messages) &&
-    getLastEventId(prevProps.allEvents) ===
-      getLastEventId(nextProps.allEvents) &&
-    getLastEvent(prevProps.messages) === getLastEvent(nextProps.messages) &&
-    getLastEvent(prevProps.allEvents) === getLastEvent(nextProps.allEvents),
+    sameEvents(prevProps.messages, nextProps.messages) &&
+    sameEvents(prevProps.allEvents, nextProps.allEvents),
 );
 
 Messages.displayName = "Messages";

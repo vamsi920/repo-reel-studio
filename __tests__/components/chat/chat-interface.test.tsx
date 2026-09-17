@@ -38,6 +38,15 @@ vi.mock("#/hooks/use-send-message", () => ({
   useSendMessage: () => ({ send: mockSend }),
 }));
 
+const { mockDisplayErrorToast } = vi.hoisted(() => ({
+  mockDisplayErrorToast: vi.fn(),
+}));
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast: mockDisplayErrorToast,
+  displaySuccessToast: vi.fn(),
+  TOAST_OPTIONS: { position: "top-right" },
+}));
+
 vi.mock("#/hooks/query/use-config");
 vi.mock("#/hooks/mutation/use-unified-upload-files");
 // Treat the LLM as configured by default so the "not configured" gate/banner
@@ -593,6 +602,150 @@ describe("ChatInterface - Scroll-up loads older events", () => {
     // leaving a blank chat with nothing to scroll).
     expect(scrollContainer!.children.length).toBeGreaterThan(0);
   });
+
+  it("clears a stale scroll-restore snapshot when the conversation changes before loadOlder resolves", async () => {
+    // ChatInterface stays mounted across a conversation switch (same route,
+    // new :conversationId), so a "load older" triggered just before
+    // switching must not later apply its stale scroll delta to the new
+    // conversation's DOM.
+    let resolveLoadOlder: (() => void) | undefined;
+    const loadOlder = vi.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveLoadOlder = resolve;
+        }),
+    );
+    vi.mocked(useLoadOlderEvents).mockReturnValue({
+      isLoading: false,
+      hasMore: true,
+      loadOlder,
+    });
+
+    const seedEvent: MessageEvent = {
+      id: "msg-seed",
+      timestamp: "2025-07-01T00:00:00Z",
+      source: "user",
+      llm_message: {
+        role: "user",
+        content: [{ type: "text", text: "Conversation A message" }],
+      },
+      activated_microagents: [],
+      extended_content: [],
+    };
+    useEventStore.setState({
+      events: [seedEvent],
+      eventIds: new Set(["msg-seed"]),
+      uiEvents: [seedEvent],
+    });
+
+    const tree = (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/conversation-a"]}>
+          <Routes>
+            <Route path=":conversationId" element={<ChatInterface />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree);
+
+    const scrollContainer = document.querySelector(
+      "[data-testid='chat-scroll-container']",
+    ) as HTMLElement | null;
+    expect(scrollContainer).not.toBeNull();
+
+    // Pin scrollTop as a stable getter (mirroring the pagination tests
+    // above): the auto-scroll-to-bottom hook schedules a rAF that does
+    // `dom.scrollTop = dom.scrollHeight`, which would otherwise clobber the
+    // "near the top" position this test depends on. Record every attempted
+    // write instead of applying it, so we can assert on what the component
+    // tried to set scrollTop to without it feeding back into later reads.
+    const scrollTopSets: number[] = [];
+    const currentScrollTop = 0;
+    let currentScrollHeight = 5000;
+    Object.defineProperty(scrollContainer!, "scrollTop", {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (v: number) => {
+        scrollTopSets.push(v);
+      },
+    });
+    Object.defineProperty(scrollContainer!, "scrollHeight", {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(scrollContainer!, "clientHeight", {
+      configurable: true,
+      value: 800,
+    });
+
+    // Let the on-mount "no overflow" auto-trigger settle before driving the
+    // scenario manually.
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
+    loadOlder.mockClear();
+    scrollTopSets.length = 0;
+
+    // User scrolls near the top of conversation A: this snapshots the
+    // pre-load scroll metrics into the "restore position" ref.
+    fireEvent.scroll(scrollContainer!);
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
+    expect(loadOlder).toHaveBeenCalledTimes(1);
+
+    // Before that page resolves, the user switches to a different
+    // conversation (same route/component instance, new :conversationId).
+    vi.mocked(useOptionalConversationId).mockReturnValue({
+      conversationId: "conversation-b",
+    });
+    rerender(tree);
+
+    // Conversation B has no more older pages — this also flips a dependency
+    // of the "no overflow" auto-load effect, so it settles without firing
+    // another loadOlder call that would overwrite the snapshot we're
+    // observing.
+    vi.mocked(useLoadOlderEvents).mockReturnValue({
+      isLoading: false,
+      hasMore: false,
+      loadOlder,
+    });
+    rerender(tree);
+
+    // Conversation A's stale loadOlder call finally resolves, and
+    // conversation B's own history streams in, growing the event list and
+    // changing scrollHeight.
+    resolveLoadOlder?.();
+    currentScrollHeight = 6000;
+    const conversationBEvent: MessageEvent = {
+      id: "msg-b",
+      timestamp: "2025-07-01T00:01:00Z",
+      source: "user",
+      llm_message: {
+        role: "user",
+        content: [{ type: "text", text: "Conversation B message" }],
+      },
+      activated_microagents: [],
+      extended_content: [],
+    };
+    act(() => {
+      useEventStore.setState({
+        events: [seedEvent, conversationBEvent],
+        eventIds: new Set(["msg-seed", "msg-b"]),
+        uiEvents: [seedEvent, conversationBEvent],
+      });
+    });
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
+
+    // Buggy behavior: the leftover snapshot from conversation A
+    // (scrollHeight 5000, scrollTop 0) computes delta = 6000 - 5000 = 1000
+    // and sets scrollTop to 1000 — a value with no relation to
+    // conversation B's actual state. That must never happen.
+    expect(scrollTopSets).not.toContain(1000);
+  });
 });
 
 describe("ChatInterface - Pending message queue", () => {
@@ -684,6 +837,31 @@ describe("ChatInterface - Pending message queue", () => {
     });
     expect(screen.getByTestId("chat-message-error")).toBeInTheDocument();
     expect(screen.getByTestId("chat-message-retry")).toBeInTheDocument();
+  });
+
+  it("shows an error toast and never enqueues or sends the message when the file upload fails", async () => {
+    const uploadError = new Error("upload failed: 413 Payload Too Large");
+    (
+      useUnifiedUploadFiles as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue({
+      mutateAsync: vi.fn().mockRejectedValue(uploadError),
+      isLoading: false,
+    });
+
+    renderInterface();
+
+    const file = new File(["contents"], "notes.txt", { type: "text/plain" });
+    act(() => {
+      useConversationStore.setState({ files: [file] });
+    });
+
+    submitMessage("see attached");
+
+    await waitFor(() => {
+      expect(mockDisplayErrorToast).toHaveBeenCalledWith(uploadError.message);
+    });
+    expect(screen.queryByTestId("user-message")).not.toBeInTheDocument();
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it("queues multiple submitted messages, each with its own pending entry", async () => {
