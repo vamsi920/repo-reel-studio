@@ -313,7 +313,7 @@ export const useCreateConversation = () => {
         let installed: InstalledPluginInfo[] = [];
         try {
           installed = await queryClient.ensureQueryData({
-            queryKey: PLUGINS_QUERY_KEYS.installed,
+            queryKey: PLUGINS_QUERY_KEYS.installed(backend.id),
             queryFn: () => PluginsManagementService.listInstalledPlugins(),
           });
         } catch {

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import PluginsManagementService from "#/api/plugins-management-service";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 import { PLUGINS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { I18nKey } from "#/i18n/declaration";
 import {
@@ -11,16 +12,20 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
 
 /**
  * Update an installed plugin from its source. Version / resolved coordinates may
- * change, so the installed list is invalidated on success.
+ * change, so the installed list is invalidated on success, scoped to the
+ * backend the mutation actually ran against.
  */
 export function useRefreshPlugin() {
   const queryClient = useQueryClient();
   const { t } = useTranslation("openhands");
+  const { backend } = useActiveBackend();
 
   return useMutation({
     mutationFn: (name: string) => PluginsManagementService.refreshPlugin(name),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_QUERY_KEYS.installed });
+      queryClient.invalidateQueries({
+        queryKey: PLUGINS_QUERY_KEYS.installed(backend.id),
+      });
       displaySuccessToast(t(I18nKey.SETTINGS$PLUGINS_REFRESH_SUCCESS));
     },
     onError: (error) => {

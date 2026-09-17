@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import PluginsManagementService from "#/api/plugins-management-service";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 import { PLUGINS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { I18nKey } from "#/i18n/declaration";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
@@ -9,17 +10,21 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
 /**
  * Enable or disable an installed plugin. Enabled installed plugins auto-load
  * into new conversations (via the SDK auto-load wiring), so the enabled flag is
- * the enforced source of truth — invalidate the installed list on success.
+ * the enforced source of truth — invalidate the installed list on success,
+ * scoped to the backend the mutation actually ran against.
  */
 export function useSetPluginEnabled() {
   const queryClient = useQueryClient();
   const { t } = useTranslation("openhands");
+  const { backend } = useActiveBackend();
 
   return useMutation({
     mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
       PluginsManagementService.setPluginEnabled(name, enabled),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_QUERY_KEYS.installed });
+      queryClient.invalidateQueries({
+        queryKey: PLUGINS_QUERY_KEYS.installed(backend.id),
+      });
     },
     onError: (error) => {
       displayErrorToast(

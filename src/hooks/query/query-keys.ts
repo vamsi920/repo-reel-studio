@@ -59,11 +59,24 @@ export const LOCAL_WORKSPACES_QUERY_KEYS = {
 
 export const PLUGINS_QUERY_KEYS = {
   /** Dynamic marketplace catalog (used by `use-plugins-marketplace`). */
-  marketplace: ["plugins-marketplace"] as const,
+  marketplace: (backendId: string) =>
+    ["plugins-marketplace", backendId] as const,
   /** Installed plugins from the local agent-server. */
-  installed: ["plugins-installed"] as const,
+  installed: (backendId: string) => ["plugins-installed", backendId] as const,
   /** Locally-discovered ambient plugins (used by `use-local-plugins`). */
-  local: ["plugins-local"] as const,
+  local: (backendId: string) => ["plugins-local", backendId] as const,
+  /** One plugin file's content, shown in the plugin detail modal. */
+  fileContent: (
+    backendId: string,
+    basePath: string | null,
+    relativePath: string | null,
+  ) => ["plugin-file-content", backendId, basePath, relativePath] as const,
+} as const;
+
+export const SKILLS_QUERY_KEYS = {
+  all: (backendId: string) => ["skills", backendId] as const,
+  byProjectDir: (backendId: string, projectDir?: string) =>
+    ["skills", backendId, projectDir ?? null] as const,
 } as const;
 
 export const SETUP_QUERY_KEYS = {
