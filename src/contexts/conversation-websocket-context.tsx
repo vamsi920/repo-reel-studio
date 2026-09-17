@@ -828,6 +828,7 @@ export function ConversationWebSocketProvider({
           if (conversationId && isOnboardingControlActionEvent(event)) {
             void handleOnboardingControlAction(event.action, {
               postResult: createConversationResultPoster(conversationId),
+              conversationId,
             });
           }
 

@@ -28,6 +28,7 @@ import {
   type SetupStep,
 } from "#/stores/onboarding-studio-store";
 import { EnvironmentService } from "#/api/environment-service/environment-service.api";
+import { completeOnboardingSessionForConversation } from "#/hooks/query/use-onboarding-session";
 import type { ProbeKind } from "#/lib/environment/types/probe";
 import { scanForSecrets } from "#/lib/environment/discovery-guard";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
@@ -58,6 +59,9 @@ export type PostResultFn = (message: string) => void;
 
 interface DispatchContext {
   postResult: PostResultFn;
+  /** Present for every real dispatch; absent only in unit tests that don't
+   *  need `complete_setup`'s session bookkeeping. */
+  conversationId?: string;
 }
 
 /**
@@ -650,6 +654,14 @@ export async function handleOnboardingControlAction(
         kind: "summary",
         readiness: null,
       });
+      // Best-effort: a failed update must not stop the agent from telling the
+      // user setup is done, but leaving the session "active" would permanently
+      // block a fresh onboarding session for this org (see the function doc).
+      if (context.conversationId) {
+        void completeOnboardingSessionForConversation(
+          context.conversationId,
+        ).catch(() => undefined);
+      }
       postReceipt(context, {
         status: "completed",
         // The agent does not get to declare victory over blocking work: the

@@ -103,6 +103,29 @@ export function useStartOnboardingSession() {
   });
 }
 
+/**
+ * Marks the org's onboarding session for this conversation finished.
+ *
+ * A plain function rather than a mutation hook because the `complete_setup`
+ * client-tool command is dispatched from `onboarding-control.ts`, which runs
+ * from a WebSocket event handler -- outside any component render, where a
+ * hook cannot be called. Without this, a session created by
+ * `useStartOnboardingSession` stayed `status: "active"` forever once the
+ * agent finished: the partial unique index backing "one active session per
+ * org" then permanently resolved every future visit to this same, already
+ * finished conversation instead of allowing a fresh one to start.
+ */
+export async function completeOnboardingSessionForConversation(
+  conversationId: string,
+): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+  await supabase
+    .from("onboarding_sessions")
+    .update({ status: "completed", updated_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .eq("status", "active");
+}
+
 export function useEndOnboardingSession() {
   const queryClient = useQueryClient();
   const { data: orgId } = useEnvironmentOrgId();

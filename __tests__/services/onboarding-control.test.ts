@@ -8,6 +8,7 @@ import {
   ONBOARDING_RESULT_PREFIX,
 } from "#/constants/onboarding-control";
 import { ONBOARDING_CONTROL_CLIENT_TOOL } from "#/api/onboarding-control-client-tool";
+import { completeOnboardingSessionForConversation } from "#/hooks/query/use-onboarding-session";
 import type { OnboardingControlAction } from "#/types/agent-server/core";
 
 vi.mock("#/api/environment-service/environment-service.api", () => ({
@@ -34,6 +35,10 @@ vi.mock(
   () => ({ default: { sendMessage: vi.fn(async () => undefined) } }),
 );
 
+vi.mock("#/hooks/query/use-onboarding-session", () => ({
+  completeOnboardingSessionForConversation: vi.fn(async () => undefined),
+}));
+
 function action(
   overrides: Partial<OnboardingControlAction>,
 ): OnboardingControlAction {
@@ -47,6 +52,7 @@ function action(
 let posted: string[];
 const context = {
   postResult: (message: string) => posted.push(message),
+  conversationId: "conv-1",
 };
 
 beforeEach(() => {
@@ -246,6 +252,28 @@ describe("handleOnboardingControlAction", () => {
     const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
     expect(payload.status).toBe("awaiting_user");
     expect(payload.patch_keys).toEqual(["mode"]);
+  });
+
+  it("ends the onboarding session so a finished conversation is never resumed forever", async () => {
+    // Without this, the session row stayed `status: "active"` after
+    // complete_setup, and the partial unique index on "one active session
+    // per org" permanently pinned every future visit to this same finished
+    // conversation.
+    await handleOnboardingControlAction(action({ command: "complete_setup" }), context);
+    expect(completeOnboardingSessionForConversation).toHaveBeenCalledWith(
+      "conv-1",
+    );
+    const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
+    expect(payload.status).toBe("completed");
+  });
+
+  it("still completes setup for a caller that has no conversation id to end", async () => {
+    await handleOnboardingControlAction(action({ command: "complete_setup" }), {
+      postResult: (message: string) => posted.push(message),
+    });
+    expect(completeOnboardingSessionForConversation).not.toHaveBeenCalled();
+    const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
+    expect(payload.status).toBe("completed");
   });
 });
 
