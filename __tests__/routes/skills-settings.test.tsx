@@ -21,6 +21,12 @@ import { MOCK_DEFAULT_USER_SETTINGS } from "#/mocks/handlers";
 import { Settings, SkillInfo } from "#/types/settings";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import * as ToastHandlers from "#/utils/custom-toast-handlers";
+import {
+  __resetActiveStoreForTests,
+  setActiveSelection,
+  setRegisteredBackends,
+} from "#/api/backend-registry/active-store";
+import type { Backend } from "#/api/backend-registry/types";
 
 const navigateMock = vi.fn();
 
@@ -654,5 +660,54 @@ Full skill body.`,
     await user.click(screen.getByTestId("add-skill-modal-example-copy"));
 
     expect(writeText).toHaveBeenCalledWith(ADD_SKILL_EXAMPLE_COMMAND);
+  });
+
+  it("closes the detail modal instead of keeping another backend's skill on screen after a backend switch", async () => {
+    const backendA: Backend = {
+      id: "local-a",
+      name: "Local A",
+      host: "http://127.0.0.1:8001",
+      apiKey: "",
+      kind: "local",
+    };
+    const backendB: Backend = {
+      id: "local-b",
+      name: "Local B",
+      host: "http://127.0.0.1:8002",
+      apiKey: "",
+      kind: "local",
+    };
+    __resetActiveStoreForTests();
+    setRegisteredBackends([backendA, backendB]);
+    setActiveSelection({ backendId: backendA.id });
+
+    const skillA = buildSkill({ name: "from-backend-a" });
+    const skillB = buildSkill({ name: "from-backend-b" });
+    vi.spyOn(SkillsService, "getSkills")
+      .mockResolvedValueOnce([skillA])
+      .mockResolvedValueOnce([skillB]);
+
+    try {
+      renderSkillsSettingsScreen();
+      const card = await screen.findByTestId(`skill-card-${skillA.name}`);
+      await userEvent.setup().click(card);
+
+      const modal = await screen.findByTestId("skill-detail-modal");
+      expect(modal).toHaveAttribute("data-skill-name", skillA.name);
+
+      act(() => setActiveSelection({ backendId: backendB.id }));
+
+      await screen.findByTestId(`skill-card-${skillB.name}`);
+      // `from-backend-a` no longer exists once the new backend's skill list
+      // has loaded, so the modal (derived from the live list, not a stale
+      // snapshot) must close rather than keep showing it.
+      expect(
+        screen.queryByTestId("skill-detail-modal"),
+      ).not.toBeInTheDocument();
+    } finally {
+      setRegisteredBackends([]);
+      setActiveSelection(null);
+      __resetActiveStoreForTests();
+    }
   });
 });

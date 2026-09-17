@@ -56,9 +56,9 @@ function SkillsSettingsScreen() {
   const lastWrittenQuery = React.useRef(queryInput);
 
   const [disabledSet, setDisabledSet] = React.useState<Set<string>>(new Set());
-  const [selectedSkill, setSelectedSkill] = React.useState<SkillInfo | null>(
-    null,
-  );
+  const [selectedSkillName, setSelectedSkillName] = React.useState<
+    string | null
+  >(null);
   const [showAddSkillModal, setShowAddSkillModal] = React.useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = React.useState(false);
 
@@ -81,6 +81,14 @@ function SkillsSettingsScreen() {
   );
 
   const activeFilterCount = countActiveFilters(filter);
+
+  // Derived rather than a stored snapshot: a skill-list refetch (settings
+  // save, or the active backend switching to one with a different catalog)
+  // must not leave the modal showing another backend's stale skill, or let a
+  // toggle write a disabled-skills entry for a name that no longer exists.
+  const selectedSkill: SkillInfo | null = selectedSkillName
+    ? (allSkills.find((skill) => skill.name === selectedSkillName) ?? null)
+    : null;
 
   // Sync local state with server settings when data first arrives
   React.useEffect(() => {
@@ -280,7 +288,7 @@ function SkillsSettingsScreen() {
                             key={skill.name}
                             skill={skill}
                             enabled={!disabledSet.has(skill.name)}
-                            onOpen={() => setSelectedSkill(skill)}
+                            onOpen={() => setSelectedSkillName(skill.name)}
                             onToggle={(enabled) =>
                               handleToggle(skill.name, enabled)
                             }
@@ -310,7 +318,7 @@ function SkillsSettingsScreen() {
             skill={selectedSkill}
             enabled={!disabledSet.has(selectedSkill.name)}
             onToggle={(enabled) => handleToggle(selectedSkill.name, enabled)}
-            onClose={() => setSelectedSkill(null)}
+            onClose={() => setSelectedSkillName(null)}
           />
         )}
 
