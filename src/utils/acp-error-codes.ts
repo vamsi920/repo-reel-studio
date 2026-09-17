@@ -15,6 +15,18 @@ const ACP_ERROR_HEADER_KEYS: Record<string, I18nKey> = {
   ACPInitError: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
   ACPPromptError: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
   UsagePolicyRefusal: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
+  // The SDK's litellm-backed LLM layer (openhands-sdk's `LLMError` subclasses)
+  // reports these on a ConversationErrorEvent. Without a header key, the
+  // banner falls straight to the raw litellm exception/traceback as the only
+  // visible text — give the two most actionable ones their own plain-English
+  // header and fold the rest into the generic "Agent error" bucket like the
+  // ACP codes above.
+  LLMRateLimitError: I18nKey.ERROR$LLM_RATE_LIMITED_TITLE,
+  LLMServiceUnavailableError: I18nKey.ERROR$LLM_UNAVAILABLE_TITLE,
+  LLMTimeoutError: I18nKey.ERROR$LLM_UNAVAILABLE_TITLE,
+  LLMAuthenticationError: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
+  LLMBadRequestError: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
+  LLMContextWindowExceedError: I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
 };
 
 /** Localized header key for an error code, or null when the code is unknown. */

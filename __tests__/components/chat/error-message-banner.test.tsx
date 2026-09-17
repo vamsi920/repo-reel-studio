@@ -129,6 +129,34 @@ describe("ErrorMessageBanner", () => {
     ).toHaveTextContent("invalid x-api-key");
   });
 
+  it("renders a plain-English header for a litellm rate-limit code, keeping the raw detail collapsed", () => {
+    render(
+      <ErrorMessageBanner
+        message={`litellm.RateLimitError: geminiException - Quota exceeded for metric: generativelanguage.googleapis.com/generate_requests_per_model_per_day, limit: 250, model: gemini-3.1-pro. ${"Please retry later. ".repeat(10)}`}
+        code="LLMRateLimitError"
+      />,
+    );
+
+    const header = screen.getByTestId("error-message-banner-header");
+    expect(header).toHaveTextContent("ERROR$LLM_RATE_LIMITED_TITLE");
+    expect(screen.getByTestId("error-message-banner-toggle")).toHaveTextContent(
+      "COMMON$VIEW_MORE",
+    );
+  });
+
+  it("renders a plain-English header for a litellm service-unavailable code", () => {
+    render(
+      <ErrorMessageBanner
+        message="litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable."
+        code="LLMServiceUnavailableError"
+      />,
+    );
+
+    expect(
+      screen.getByTestId("error-message-banner-header"),
+    ).toHaveTextContent("ERROR$LLM_UNAVAILABLE_TITLE");
+  });
+
   it("renders no header for an unknown or absent code", () => {
     render(<ErrorMessageBanner message="boom" code={null} />);
     expect(

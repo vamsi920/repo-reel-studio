@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Une erreur s'est produite",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Authentification requise",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Mettre à jour les identifiants",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Limite de débit ou de quota atteinte",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "Modèle d'IA indisponible",
   "ERROR$CORS_OR_NETWORK": "Déconnecté (vérifiez l'URL ou le réseau). Vérifiez que l'URL du backend est correcte et que le serveur backend est joignable. Si le backend se trouve sur une autre origine, vérifiez aussi qu'il autorise cette origine du frontend.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Déconnecté (délai de requête dépassé). Vérifiez que l'URL du backend est correcte et joignable.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "En feil oppstod",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Autentisering kreves",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Oppdater legitimasjon",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Hastighets- eller kvotegrense nådd",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "KI-modellen er utilgjengelig",
   "ERROR$CORS_OR_NETWORK": "Frakoblet (sjekk URL eller nettverk). Kontroller at backend-URL-en er riktig og at backend-serveren er tilgjengelig. Hvis backend-en er på en annen origin, må du også kontrollere at den tillater denne frontend-originen.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Frakoblet (forespørselen tidsavbrøt). Kontroller at backend-URL-en er riktig og tilgjengelig.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

@@ -25,6 +25,30 @@ describe("acp-error-codes", () => {
     }
   });
 
+  it("maps rate-limit and unavailability codes to their own headers", () => {
+    expect(getAcpErrorHeaderKey("LLMRateLimitError")).toBe(
+      I18nKey.ERROR$LLM_RATE_LIMITED_TITLE,
+    );
+    expect(getAcpErrorHeaderKey("LLMServiceUnavailableError")).toBe(
+      I18nKey.ERROR$LLM_UNAVAILABLE_TITLE,
+    );
+    expect(getAcpErrorHeaderKey("LLMTimeoutError")).toBe(
+      I18nKey.ERROR$LLM_UNAVAILABLE_TITLE,
+    );
+  });
+
+  it("maps other litellm-originated codes to the generic agent-error header", () => {
+    for (const code of [
+      "LLMAuthenticationError",
+      "LLMBadRequestError",
+      "LLMContextWindowExceedError",
+    ]) {
+      expect(getAcpErrorHeaderKey(code)).toBe(
+        I18nKey.CHAT_INTERFACE$AGENT_ERROR_MESSAGE,
+      );
+    }
+  });
+
   it("returns null for unknown, empty, or missing codes", () => {
     expect(getAcpErrorHeaderKey(null)).toBeNull();
     expect(getAcpErrorHeaderKey(undefined)).toBeNull();

@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Si è verificato un errore",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Autenticazione richiesta",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Aggiorna le credenziali",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Limite di frequenza o quota raggiunto",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "Modello AI non disponibile",
   "ERROR$CORS_OR_NETWORK": "Disconnesso (controlla URL o rete). Verifica che l'URL del backend sia corretto e che il server backend sia raggiungibile. Se il backend si trova su un'altra origine, verifica anche che consenta questa origine del frontend.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Disconnesso (richiesta scaduta). Verifica che l'URL del backend sia corretto e raggiungibile.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

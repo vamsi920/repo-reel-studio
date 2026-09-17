@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Bir hata oluştu",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Kimlik doğrulaması gerekli",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Kimlik bilgilerini güncelle",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Hız veya kota sınırına ulaşıldı",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "Yapay zekâ modeli kullanılamıyor",
   "ERROR$CORS_OR_NETWORK": "Bağlantı kesildi (URL'yi veya ağı kontrol edin). Backend URL'sinin doğru olduğundan ve backend sunucusuna erişilebildiğinden emin olun. Backend farklı bir origin üzerindeyse bu frontend origin'ine izin verdiğini de kontrol edin.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Bağlantı kesildi (istek zaman aşımına uğradı). Backend URL'sinin doğru ve erişilebilir olduğundan emin olun.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

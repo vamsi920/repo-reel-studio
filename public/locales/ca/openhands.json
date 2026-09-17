@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "S'ha produït un error",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Cal autenticació",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Actualitza les credencials",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "S'ha arribat al límit de velocitat o de quota",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "El model d'IA no està disponible",
   "ERROR$CORS_OR_NETWORK": "Desconnectat (comproveu l'URL o la xarxa). Comproveu que l'URL del backend sigui correcta i que el servidor backend sigui accessible. Si el backend és en un altre origen, comproveu també que permeti aquest origen del frontend.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Desconnectat (la sol·licitud ha esgotat el temps). Comproveu que l'URL del backend sigui correcta i accessible.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

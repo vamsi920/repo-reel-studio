@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "An error occurred",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Authentication required",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Update credentials",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Rate or quota limit reached",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "AI model unavailable",
   "ERROR$CORS_OR_NETWORK": "Disconnected (check URL or network). Check that the backend URL is correct and the backend server is reachable. If the backend is on another origin, check that it allows this frontend origin.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Disconnected (request timed out). Check that the backend URL is correct and reachable.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "发生错误",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "需要身份验证",
   "ERROR$ACP_UPDATE_CREDENTIALS": "更新凭据",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "已达到速率或配额限制",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "AI 模型不可用",
   "ERROR$CORS_OR_NETWORK": "已断开连接（检查 URL 或网络）。请确认后端 URL 正确且后端服务器可访问。如果后端位于其他源，请确认它允许此前端源。",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "已断开连接（请求超时）。请确认后端 URL 正确且可访问。",
   "GITHUB$AUTH_SCOPE": "openid email profile",

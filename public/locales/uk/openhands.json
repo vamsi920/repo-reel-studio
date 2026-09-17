@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Сталася помилка",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Потрібна автентифікація",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Оновити облікові дані",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Досягнуто ліміту швидкості або квоти",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "Модель ШІ недоступна",
   "ERROR$CORS_OR_NETWORK": "Від’єднано (перевірте URL або мережу). Переконайтеся, що URL бекенду правильний і сервер бекенду доступний. Якщо бекенд розміщено на іншому origin, також перевірте, чи він дозволяє цей origin фронтенду.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Від’єднано (час очікування запиту минув). Переконайтеся, що URL бекенду правильний і доступний.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

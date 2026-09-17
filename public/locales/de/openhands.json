@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Ein Fehler ist aufgetreten",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Authentifizierung erforderlich",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Anmeldedaten aktualisieren",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Rate- oder Kontingentlimit erreicht",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "KI-Modell nicht verfügbar",
   "ERROR$CORS_OR_NETWORK": "Getrennt (URL oder Netzwerk prüfen). Prüfen Sie, ob die Backend-URL korrekt und der Backend-Server erreichbar ist. Wenn das Backend auf einem anderen Origin liegt, prüfen Sie außerdem, ob es diesen Frontend-Origin zulässt.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Getrennt (Anfragezeit überschritten). Prüfen Sie, ob die Backend-URL korrekt und erreichbar ist.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

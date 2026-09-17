@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "Ocorreu um erro",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "Autenticação necessária",
   "ERROR$ACP_UPDATE_CREDENTIALS": "Atualizar credenciais",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "Limite de taxa ou cota atingido",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "Modelo de IA indisponível",
   "ERROR$CORS_OR_NETWORK": "Desconectado (verifique URL ou rede). Verifique se a URL do backend está correta e se o servidor backend está acessível. Se o backend estiver em outra origem, verifique também se ele permite esta origem do frontend.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "Desconectado (a solicitação expirou). Verifique se a URL do backend está correta e acessível.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

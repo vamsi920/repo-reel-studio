@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "エラーが発生しました",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "認証が必要です",
   "ERROR$ACP_UPDATE_CREDENTIALS": "認証情報を更新",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "レートまたはクォータの上限に達しました",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "AIモデルを利用できません",
   "ERROR$CORS_OR_NETWORK": "切断されています（URL またはネットワークを確認）。バックエンド URL が正しく、バックエンドサーバーに到達できることを確認してください。バックエンドが別のオリジンにある場合は、このフロントエンドのオリジンを許可していることも確認してください。",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "切断されています（リクエストがタイムアウトしました）。バックエンド URL が正しく、到達可能であることを確認してください。",
   "GITHUB$AUTH_SCOPE": "openid email profile",

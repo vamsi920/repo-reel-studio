@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "حدث خطأ",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "المصادقة مطلوبة",
   "ERROR$ACP_UPDATE_CREDENTIALS": "تحديث بيانات الاعتماد",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "تم الوصول إلى حد المعدل أو الحصة",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "نموذج الذكاء الاصطناعي غير متاح",
   "ERROR$CORS_OR_NETWORK": "تم قطع الاتصال (تحقق من عنوان URL أو الشبكة). تأكد من صحة عنوان URL للواجهة الخلفية وأن خادم الواجهة الخلفية يمكن الوصول إليه. إذا كانت الواجهة الخلفية على أصل مختلف، فتأكد أيضًا من أنها تسمح بأصل هذه الواجهة الأمامية.",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "تم قطع الاتصال (انتهت مهلة الطلب). تأكد من صحة عنوان URL للواجهة الخلفية وإمكانية الوصول إليه.",
   "GITHUB$AUTH_SCOPE": "openid email profile",

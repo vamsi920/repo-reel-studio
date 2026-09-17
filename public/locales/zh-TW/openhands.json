@@ -466,6 +466,8 @@
   "ERROR$GENERIC": "發生錯誤",
   "ERROR$ACP_AUTH_REQUIRED_TITLE": "需要驗證",
   "ERROR$ACP_UPDATE_CREDENTIALS": "更新憑證",
+  "ERROR$LLM_RATE_LIMITED_TITLE": "已達到速率或配額限制",
+  "ERROR$LLM_UNAVAILABLE_TITLE": "AI 模型無法使用",
   "ERROR$CORS_OR_NETWORK": "已中斷連線（檢查 URL 或網路）。請確認後端 URL 正確且後端伺服器可連線。如果後端位於其他來源，請確認它允許此前端來源。",
   "ERROR$BACKEND_REQUEST_TIMEOUT": "已中斷連線（請求逾時）。請確認後端 URL 正確且可連線。",
   "GITHUB$AUTH_SCOPE": "openid email profile",
