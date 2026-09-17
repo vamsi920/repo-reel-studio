@@ -132,12 +132,20 @@ describe("KtGraph search", () => {
         },
       },
     });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
   });
 
   afterEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
     vi.clearAllMocks();
   });
 
@@ -359,6 +367,84 @@ describe("KtGraph search", () => {
       useKnowledgeStore.getState().byRepositoryId[REPOSITORY_ID].snapshot
         .commitSha,
     ).toBe(COMMIT);
+  });
+
+  it("keeps the existing graph on screen when a forced rebuild to a new HEAD commit fails", async () => {
+    const HEAD = "fedcba0987654321";
+    useKnowledgeStore.setState((current) => ({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          ...current.byRepositoryId[REPOSITORY_ID],
+          conversationUrl: "http://agent.test/conversations/1",
+          sessionApiKey: "key",
+        },
+      },
+    }));
+    vi.mocked(resolveHeadCommitSha).mockResolvedValue(HEAD);
+    vi.mocked(runAnalysis).mockRejectedValue(new Error("sandbox timed out"));
+
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const handle: AnalysisHandle = {
+      meta: {
+        workspaceId: WORKSPACE_ID,
+        repositoryId: REPOSITORY_ID,
+        commitSha: COMMIT,
+        generatedAt: "2026-01-01T00:00:00.000Z",
+        fileCount: 1,
+        symbolCount: 1,
+        languages: [],
+        frameworks: [],
+      },
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+
+    const oldKey = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(oldKey, handle);
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByTestId("codegraph-stale-banner"),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("codegraph-reanalyze"));
+
+    await waitFor(() => expect(runAnalysis).toHaveBeenCalledTimes(1));
+
+    // The rebuild targeted the new HEAD and failed -- the graph that was
+    // already valid and on screen must survive that, not be replaced by a
+    // full error screen.
+    await waitFor(() => {
+      expect(useCodeGraphStore.getState().byKey[oldKey]?.status).toBe(
+        "ready",
+      );
+      expect(useCodeGraphStore.getState().byKey[oldKey]?.rebuilding).toBe(
+        false,
+      );
+    });
+    expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+      "System",
+    );
+    expect(screen.queryByText("sandbox timed out")).not.toBeInTheDocument();
+    // The failed, retargeted attempt leaves no orphaned store entry and no
+    // premature pin to a commit that was never actually analyzed.
+    const newKey = codeGraphKey(WORKSPACE_ID, REPOSITORY_ID, HEAD);
+    expect(useCodeGraphStore.getState().byKey[newKey]).toBeUndefined();
+    expect(
+      useCodeGraphStore.getState().pinnedCommitByRepositoryId[REPOSITORY_ID],
+    ).toBeUndefined();
   });
 
   it("fetches the search index once even when the user types before the first fetch resolves", async () => {
@@ -652,12 +738,20 @@ describe("KtGraph cold rehydration", () => {
         },
       },
     });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
   });
 
   afterEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
     vi.clearAllMocks();
   });
 
@@ -765,12 +859,20 @@ describe("KtGraph deep link on a cold store", () => {
     // A reload / bookmark of the CodeGraph tab: nothing in memory yet, but
     // the repository has a completed generation persisted in Supabase.
     useKnowledgeStore.setState({ byRepositoryId: {} });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
   });
 
   afterEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByRepositoryId: {},
+    });
     vi.clearAllMocks();
   });
 

@@ -312,6 +312,24 @@ describe("codegraph store", () => {
     expect(useCodeGraphStore.getState().byKey[key].rebuilding).toBe(false);
   });
 
+  it("ends a rebuild without disturbing the graph that was already on screen", () => {
+    const key = start();
+    const root = level(null, [node("a")]);
+    useCodeGraphStore.getState().setReady(key, handle(root));
+    useCodeGraphStore.getState().beginRebuild(key);
+
+    // A rebuild that failed while its graph was kept on screen must clear
+    // only the in-progress flag -- the status, meta and cached levels stay
+    // exactly as they were, unlike `setError`, which would blank them out.
+    useCodeGraphStore.getState().endRebuild(key);
+    const state = useCodeGraphStore.getState().byKey[key];
+
+    expect(state.rebuilding).toBe(false);
+    expect(state.status).toBe("ready");
+    expect(state.meta).toEqual(META);
+    expect(selectCurrentLevel(state)).toEqual(root);
+  });
+
   it("ignores updates for a key that no longer exists", () => {
     expect(() =>
       useCodeGraphStore.getState().selectNode("missing::key::sha", "a"),

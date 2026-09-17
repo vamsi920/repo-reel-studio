@@ -83,6 +83,7 @@ interface CodeGraphStore {
   setError: (key: string, error: string) => void;
   setFreshness: (key: string, freshness: FreshnessResult) => void;
   beginRebuild: (key: string) => void;
+  endRebuild: (key: string) => void;
   pinCommit: (repositoryId: string, pin: PinnedGraphCommit) => void;
 
   beginLoadLevel: (key: string, parentId: string) => void;
@@ -200,6 +201,14 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
 
     beginRebuild: (key) =>
       update(key, (state) => ({ ...state, rebuilding: true })),
+
+    // A rebuild that fails must not blank out a graph that was already valid
+    // and on screen -- the whole point of `beginRebuild` keeping `status:
+    // "ready"` is that the user keeps looking at real data while the rebuild
+    // runs. This only clears the in-progress flag; `meta`/`levels`/`status`
+    // are left exactly as they were.
+    endRebuild: (key) =>
+      update(key, (state) => ({ ...state, rebuilding: false })),
 
     pinCommit: (repositoryId, pin) =>
       set((store) => ({

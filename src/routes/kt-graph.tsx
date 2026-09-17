@@ -337,8 +337,21 @@ function KtGraph() {
             : error instanceof Error
               ? error.message
               : String(error);
-        useCodeGraphStore.getState().setError(targetKey, reason);
-        settle();
+        // A failed rebuild must not discard a graph that was already valid
+        // and on screen -- `keepOnScreen` exists precisely so the user keeps
+        // looking at real data while a rebuild runs in the background, and
+        // `settle()` unconditionally pinning + resetting `key` here would
+        // throw that graph away over a transient failure (e.g. a sandbox
+        // timeout), replacing it with a full error screen. Just clear the
+        // spinner and drop the orphaned retargeted attempt instead; the
+        // failure is still recorded below via the activity feed.
+        if (keepOnScreen) {
+          useCodeGraphStore.getState().endRebuild(key);
+          if (retargeted) useCodeGraphStore.getState().reset(targetKey);
+        } else {
+          useCodeGraphStore.getState().setError(targetKey, reason);
+          settle();
+        }
         emitCodeGraphMilestone(context, { kind: "analysis.failed", reason });
       }
     },
