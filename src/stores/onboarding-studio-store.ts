@@ -175,6 +175,13 @@ export const useOnboardingStudioStore = create<OnboardingStudioStore>()(
         const steps = state.steps.map((step) =>
           step.id === stepId ? { ...step, status } : step,
         );
+        // The agent just told us this step is the one it's working on now --
+        // trust that directly rather than falling back to array order, which
+        // would point at an earlier, untouched step whenever the agent
+        // revisits or reorders work.
+        if (status === "active") {
+          return { steps, currentStepId: stepId };
+        }
         // Move the pointer to the first step that still needs doing, so the
         // plan card always shows where the user actually is.
         const next = steps.find((step) => step.status === "pending");

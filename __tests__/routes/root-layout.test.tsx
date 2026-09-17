@@ -35,6 +35,10 @@ vi.mock("#/components/features/alerts/alert-banner", () => ({
   AlertBanner: () => <div data-testid="alert-banner" />,
 }));
 
+vi.mock("#/components/features/onboarding", () => ({
+  OnboardingHost: () => <div data-testid="onboarding-host-stub" />,
+}));
+
 vi.mock("#/i18n", () => ({
   default: {
     language: "en",
@@ -130,6 +134,21 @@ describe("root layout", () => {
     expect(
       screen.queryByTestId("user-capture-consent-form"),
     ).not.toBeInTheDocument();
+  });
+
+  it("mounts OnboardingHost unconditionally, not only behind the onboarding-preview query param", () => {
+    // Regression: OnboardingHost owns its own show/hide logic (completion
+    // flag, Cloud LLM state, preview mode). Root layout must always mount
+    // it so a real first-run user - who never has
+    // `?previewOnboardingStep=` in the URL - gets a chance to see the
+    // welcome modal at all.
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RouterStub initialEntries={["/"]} />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("onboarding-host-stub")).toBeInTheDocument();
   });
 
   it("renders an identical root-layout className across routes so navigation never shifts the outer container", () => {

@@ -24,7 +24,6 @@ import { useAppTitle } from "#/hooks/use-app-title";
 import { ReactRouterNavigationProvider } from "./react-router-navigation-provider";
 import { OnboardingHost } from "#/components/features/onboarding";
 import { ConnectionSyncSentinel } from "#/components/features/environment/connection-sync-sentinel";
-import { isOnboardingPreviewActive } from "#/components/features/onboarding/onboarding-preview";
 
 const EnvironmentSwitchOverlay = React.lazy(
   () => import("#/components/features/backends/environment-switch-overlay"),
@@ -115,7 +114,6 @@ export default function MainApp() {
   const hideMobileSidebarMenuBar = /^\/conversations\/[^/]+/.test(
     location.pathname,
   );
-  const showOnboardingPreview = isOnboardingPreviewActive(location.search);
 
   return (
     <ReactRouterNavigationProvider>
@@ -157,7 +155,7 @@ export default function MainApp() {
           <OnboardingDock />
         </React.Suspense>
         <ConnectionSyncSentinel />
-        {showOnboardingPreview ? <OnboardingHost /> : null}
+        <OnboardingHost />
       </SidebarMobileNavProvider>
     </ReactRouterNavigationProvider>
   );

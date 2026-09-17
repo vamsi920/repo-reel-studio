@@ -54,4 +54,21 @@ describe("onboarding studio store", () => {
     // "b" was skipped, so the next thing that actually needs doing is "c".
     expect(useOnboardingStudioStore.getState().currentStepId).toBe("c");
   });
+
+  it("points the cursor at the step the agent just marked active, even out of order", () => {
+    const store = useOnboardingStudioStore.getState();
+    store.setPlan(
+      [
+        { id: "a", title: "A", status: "pending" },
+        { id: "b", title: "B", status: "pending" },
+        { id: "c", title: "C", status: "pending" },
+      ],
+      "a",
+    );
+    // The agent jumps ahead to "c" while "a" and "b" are still untouched.
+    store.advancePlan("c", "active");
+    const state = useOnboardingStudioStore.getState();
+    expect(state.currentStepId).toBe("c");
+    expect(state.steps.find((step) => step.id === "c")?.status).toBe("active");
+  });
 });
