@@ -718,6 +718,28 @@ describe("KtGraph cold rehydration", () => {
     );
   });
 
+  it("shows the clear no-session error instead of getting stuck on \"analyzing\" when openExistingAnalysis throws", async () => {
+    // `openExistingAnalysis` can throw synchronously (no live backend/session
+    // and the Storage fast path missed) instead of resolving null. Before
+    // this was guarded, the auto-check effect's unhandled rejection left the
+    // store on "analyzing" forever instead of falling through to the
+    // existing "open a live session" guard below it.
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockResolvedValue("real-workspace-1");
+    vi.mocked(openExistingAnalysis).mockRejectedValue(
+      new Error("No backend is configured."),
+    );
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByText(/open this repository's conversation/i),
+    ).toBeInTheDocument();
+  });
+
   it("keeps showing the empty state, not an error, when no prior snapshot exists for this commit", async () => {
     vi.mocked(resolveOrgId).mockResolvedValue("org-1");
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");

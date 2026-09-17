@@ -215,7 +215,12 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
         loadingParents: state.loadingParents.includes(parentId)
           ? state.loadingParents
           : [...state.loadingParents, parentId],
-        levelError: state.levelError === parentId ? null : state.levelError,
+        // Per the field's own contract, any new attempt clears a stale error
+        // -- not just a retry of the exact parent that failed. Otherwise
+        // navigating to an unrelated node while a previous one is still
+        // showing "failed to load" leaves that stale banner on screen next
+        // to the new load spinner, pointing its retry button at the wrong id.
+        levelError: null,
       })),
 
     setLevel: (key, parentId, level) =>

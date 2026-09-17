@@ -111,6 +111,54 @@ describe("buildHierarchy", () => {
     expect(units).toHaveLength(400);
   });
 
+  it("does not merge two sibling folders whose names collide after slugging", () => {
+    // "Foo-Bar" and "foo_bar" both reduce to the same `foo-bar` slug, so the
+    // module ids `buildModuleTree` derives from them would collide unless
+    // deduped -- corrupting one aggregate with the other's children.
+    const collisionA = [file("src/Foo-Bar/a.ts"), file("src/Foo-Bar/b.ts")];
+    const collisionB = [file("src/foo_bar/c.ts"), file("src/foo_bar/d.ts")];
+    // Padding pushes the folder past the level budget so the real
+    // folder-splitting path (not "just attach everything") is exercised.
+    const padding = Array.from({ length: 25 }, (_, index) =>
+      file(`src/pad${index}/only.ts`),
+    );
+    const nodes = [...collisionA, ...collisionB, ...padding];
+    const graph = graphOf(nodes);
+    // One shared layer keeps every file in a single subsystem bucket, so the
+    // two colliding folders are guaranteed to be siblings inside the same
+    // `buildModuleTree` call.
+    graph.layers = [
+      {
+        id: "svc",
+        name: "Service",
+        description: "",
+        nodeIds: nodes.map((node) => node.id),
+      },
+    ];
+
+    const result = buildHierarchy(graph);
+    const subsystemId = result.childrenByParent[""][0];
+    const moduleIds = result.childrenByParent[subsystemId].filter((id) =>
+      id.includes("/module:"),
+    );
+    const moduleNames = moduleIds.map((id) => result.nodesById[id].name);
+
+    expect(new Set(moduleIds).size).toBe(moduleIds.length);
+    expect(moduleNames).toContain("Foo-Bar");
+    expect(moduleNames).toContain("foo_bar");
+
+    const fooBarId = moduleIds[moduleNames.indexOf("Foo-Bar")];
+    const fooBarUnderscoreId = moduleIds[moduleNames.indexOf("foo_bar")];
+    expect(fooBarId).not.toBe(fooBarUnderscoreId);
+    expect(result.nodesById[fooBarId].filePaths.slice().sort()).toEqual([
+      "src/Foo-Bar/a.ts",
+      "src/Foo-Bar/b.ts",
+    ]);
+    expect(
+      result.nodesById[fooBarUnderscoreId].filePaths.slice().sort(),
+    ).toEqual(["src/foo_bar/c.ts", "src/foo_bar/d.ts"]);
+  });
+
   it("names subsystems from DeepWiki sections rather than folder names", () => {
     const nodes = [
       file("src/pay/charge.ts"),

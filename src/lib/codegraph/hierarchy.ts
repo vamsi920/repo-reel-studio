@@ -107,6 +107,24 @@ function slug(value: string): string {
   );
 }
 
+/**
+ * `slug()` is lossy (case-folds, collapses punctuation), so two distinct
+ * sibling folder/container names processed in the same `buildModuleTree`
+ * call can otherwise collide on the same id -- e.g. `Foo-Bar` and `foo_bar`
+ * both slug to `foo-bar`. Reusing an id already registered in `nodesById`
+ * would make the second group's recursive call share (and corrupt) the
+ * first group's `childrenByParent` entry and then overwrite its aggregate
+ * node, silently merging two unrelated folders into one. Appending a
+ * disambiguating suffix keeps every id unique without touching the
+ * (still lossy, still fine for the common case) `slug()` format itself.
+ */
+function dedupeId(ctx: Pick<TreeContext, "nodesById">, id: string): string {
+  if (!(id in ctx.nodesById)) return id;
+  let suffix = 2;
+  while (`${id}-${suffix}` in ctx.nodesById) suffix += 1;
+  return `${id}-${suffix}`;
+}
+
 function normalizePath(path: string): string {
   return path.replace(/^\.\//, "").replace(/^\/+/, "");
 }
@@ -393,7 +411,10 @@ function buildModuleTree(
       );
       const byId = new Map(withoutPath.map((unit) => [unit.id, unit]));
       for (const container of containers) {
-        const moduleId = `${parentId}/module:${slug(container.name)}`;
+        const moduleId = dedupeId(
+          ctx,
+          `${parentId}/module:${slug(container.name)}`,
+        );
         const members = container.nodeIds
           .map((id) => byId.get(id))
           .filter((unit): unit is GraphNode => Boolean(unit));
@@ -460,7 +481,10 @@ function buildModuleTree(
       created.push(attachUnit(ctx, members[0], parentId, chain));
       continue;
     }
-    const moduleId = `${parentId}/module:${slug(`${prefix}${segment}`)}`;
+    const moduleId = dedupeId(
+      ctx,
+      `${parentId}/module:${slug(`${prefix}${segment}`)}`,
+    );
     const children = buildModuleTree(
       ctx,
       members,

@@ -161,6 +161,15 @@ describe("codegraph store", () => {
     expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
   });
 
+  it("clears a stale failure when a different level starts loading", () => {
+    const key = start();
+    useCodeGraphStore.getState().failLevel(key, "a");
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBe("a");
+
+    useCodeGraphStore.getState().beginLoadLevel(key, "b");
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
+  });
+
   it("clears the failure when the user navigates elsewhere", () => {
     const key = start();
     useCodeGraphStore.getState().failLevel(key, "sub");

@@ -232,7 +232,15 @@ function KtGraph() {
       // to a graph that was already generated and mirrored elsewhere instead
       // of always landing on "open a live session".
       if (!force) {
-        const existingResult = await openExistingAnalysis(shared);
+        // `openExistingAnalysis` can throw synchronously (e.g. no live
+        // backend/session available yet) when its Storage fast path misses
+        // and it falls back to a sandbox lookup -- treated the same as "no
+        // existing analysis found" so the live-session guard right below
+        // gets a chance to show its clear message instead of an unhandled
+        // rejection leaving the store stuck on "analyzing" forever.
+        const existingResult = await openExistingAnalysis(shared).catch(
+          () => null,
+        );
         if (existingResult) {
           useCodeGraphStore.getState().setReady(key, existingResult);
           emitCodeGraphMilestone(context, {
