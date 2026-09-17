@@ -12,7 +12,21 @@ export const useUnifiedGetGitChanges = () => {
   const { data: conversation } = useActiveConversation();
   const [orderedChanges, setOrderedChanges] = React.useState<GitChange[]>([]);
   const previousDataRef = React.useRef<GitChange[] | null>(null);
+  const previousConversationIdRef = React.useRef(conversationId);
   const runtimeIsReady = useRuntimeIsReady();
+
+  // The Files/Changes tab isn't remounted on a conversation switch (only the
+  // terminal tab gets a conversationId-keyed remount), so this hook's own
+  // locally-ordered list must reset itself — otherwise it keeps rendering the
+  // previous conversation's changed files (or, for paths both share, its
+  // stale status) until the new conversation's fetch happens to resolve.
+  if (previousConversationIdRef.current !== conversationId) {
+    previousConversationIdRef.current = conversationId;
+    previousDataRef.current = null;
+    if (orderedChanges.length > 0) {
+      setOrderedChanges([]);
+    }
+  }
 
   const conversationUrl = conversation?.conversation_url;
   const sessionApiKey = conversation?.session_api_key;
