@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Binærfil – forhåndsvisning er ikke tilgjengelig",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Stor fil – syntaksutheving er av",
   "FILES$UNSUPPORTED_DOCUMENT": "Forhåndsvisning er ikke tilgjengelig for {{type}}-filer.",
+  "FILES$INVALID_IMAGE": "Denne filen er ikke et gyldig bilde",
   "FILES$LOADING_FILES": "Laster filer …",
   "FILES$NO_FILES": "Ingen filer i arbeidsområdet",
   "FILES$LIST_LOAD_ERROR": "Kunne ikke laste filene i arbeidsområdet.",

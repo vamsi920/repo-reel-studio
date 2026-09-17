@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "ملف ثنائي – المعاينة غير متاحة",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "ملف كبير – تمييز بناء الجملة متوقف",
   "FILES$UNSUPPORTED_DOCUMENT": "المعاينة غير متاحة لملفات {{type}}.",
+  "FILES$INVALID_IMAGE": "هذا الملف ليس صورة صالحة",
   "FILES$LOADING_FILES": "جارٍ تحميل الملفات…",
   "FILES$NO_FILES": "لا توجد ملفات في مساحة العمل",
   "FILES$LIST_LOAD_ERROR": "تعذر تحميل ملفات مساحة العمل.",

@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "二进制文件 – 无法预览",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "大文件 – 已关闭语法高亮",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} 文件无法预览。",
+  "FILES$INVALID_IMAGE": "此文件不是有效的图像",
   "FILES$LOADING_FILES": "正在加载文件……",
   "FILES$NO_FILES": "工作区中没有文件",
   "FILES$LIST_LOAD_ERROR": "无法加载工作区文件。",

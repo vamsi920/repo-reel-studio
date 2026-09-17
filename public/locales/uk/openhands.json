@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Двійковий файл – попередній перегляд недоступний",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Великий файл – підсвічування синтаксису вимкнено",
   "FILES$UNSUPPORTED_DOCUMENT": "Попередній перегляд недоступний для файлів {{type}}.",
+  "FILES$INVALID_IMAGE": "Цей файл не є дійсним зображенням",
   "FILES$LOADING_FILES": "Завантаження файлів…",
   "FILES$NO_FILES": "У робочій області немає файлів",
   "FILES$LIST_LOAD_ERROR": "Не вдалося завантажити файли робочої області.",

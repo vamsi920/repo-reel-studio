@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "이진 파일 – 미리 보기를 사용할 수 없습니다",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "큰 파일 – 구문 강조가 꺼져 있습니다",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} 파일은 미리 보기를 사용할 수 없습니다.",
+  "FILES$INVALID_IMAGE": "이 파일은 올바른 이미지가 아닙니다",
   "FILES$LOADING_FILES": "파일을 불러오는 중…",
   "FILES$NO_FILES": "작업 영역에 파일이 없습니다",
   "FILES$LIST_LOAD_ERROR": "작업 영역 파일을 불러올 수 없습니다.",

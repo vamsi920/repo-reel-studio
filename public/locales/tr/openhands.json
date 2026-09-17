@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "İkili dosya – önizleme kullanılamıyor",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Büyük dosya – sözdizimi vurgulama kapalı",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} dosyaları için önizleme kullanılamıyor.",
+  "FILES$INVALID_IMAGE": "Bu dosya geçerli bir görsel değil",
   "FILES$LOADING_FILES": "Dosyalar yükleniyor…",
   "FILES$NO_FILES": "Çalışma alanında dosya yok",
   "FILES$LIST_LOAD_ERROR": "Çalışma alanı dosyaları yüklenemedi.",

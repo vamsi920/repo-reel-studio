@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18nKey } from "#/i18n/declaration";
 import {
+  useWorkspaceFileBinaryTextSniff,
   useWorkspaceFileContent,
   WorkspaceFileReadError,
 } from "#/hooks/query/use-workspace-file-content";
@@ -63,6 +65,42 @@ function UnpreviewableFallback({ path }: { path: string }) {
 }
 
 /**
+ * Renders an image kind's `<img>`. Keyed by `src` in the parent so a new
+ * file (or a cache-busted refresh) always remounts with a clean slate —
+ * `onError` alone can't tell "still loading" from "a previous file's
+ * failure lingering after the src changed".
+ */
+function ImagePreview({ path, src }: { path: string; src: string }) {
+  const { t } = useTranslation("openhands");
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]"
+        data-testid="file-content-viewer-invalid-image"
+      >
+        {t(I18nKey.FILES$INVALID_IMAGE)}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center bg-[var(--oh-surface)] p-4"
+      data-testid="file-content-viewer-image"
+    >
+      <img
+        src={src}
+        alt={path}
+        className="max-h-full max-w-full object-contain"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+}
+
+/**
  * Renders the contents of a single workspace file. In `rich` mode we point
  * an iframe / <img> straight at the agent server's static workspace
  * fileserver for HTML / SVG / images / PDFs, so relative asset references
@@ -77,6 +115,16 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
   // the *path* hasn't moved (e.g. agent rewrote `style.css` referenced by
   // the currently-displayed `index.html`).
   const mutationCounter = useWorkspaceMutationCounter((state) => state.count);
+  // Only image/pdf kinds need this, and only once the user is actually
+  // looking at Plain mode — see useWorkspaceFileBinaryTextSniff.
+  const needsPlainTextSniff =
+    viewMode === "plain" &&
+    (query.data?.kind === "image" || query.data?.kind === "pdf");
+  const textSniff = useWorkspaceFileBinaryTextSniff(
+    path,
+    query.data?.staticUrl ?? null,
+    needsPlainTextSniff,
+  );
 
   if (query.isLoading) {
     return (
@@ -141,22 +189,31 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
         />
       );
     }
+    if (kind === "image" || kind === "pdf") {
+      if (textSniff.isLoading) {
+        return (
+          <div className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]">
+            {t(I18nKey.FILES$LOADING_FILES)}
+          </div>
+        );
+      }
+      if (textSniff.data?.text !== null && textSniff.data?.text !== undefined) {
+        return (
+          <HighlightedSourceView
+            path={path}
+            text={textSniff.data.text}
+            mimeType="text/plain"
+          />
+        );
+      }
+    }
     return <UnpreviewableFallback path={path} />;
   }
 
   // ----- Rich mode: render HTML, markdown, images, PDFs from staticUrl. ----
   if (kind === "image") {
     return (
-      <div
-        className="flex h-full w-full items-center justify-center bg-[var(--oh-surface)] p-4"
-        data-testid="file-content-viewer-image"
-      >
-        <img
-          src={bustedStaticUrl}
-          alt={path}
-          className="max-h-full max-w-full object-contain"
-        />
-      </div>
+      <ImagePreview key={bustedStaticUrl} path={path} src={bustedStaticUrl} />
     );
   }
 

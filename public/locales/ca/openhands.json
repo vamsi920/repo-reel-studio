@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Fitxer binari – previsualització no disponible",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Fitxer gran – el ressaltat de sintaxi està desactivat",
   "FILES$UNSUPPORTED_DOCUMENT": "La previsualització no està disponible per als fitxers {{type}}.",
+  "FILES$INVALID_IMAGE": "Aquest fitxer no és una imatge vàlida",
   "FILES$LOADING_FILES": "S'estan carregant els fitxers…",
   "FILES$NO_FILES": "No hi ha fitxers a l'espai de treball",
   "FILES$LIST_LOAD_ERROR": "No s'han pogut carregar els fitxers de l'espai de treball.",

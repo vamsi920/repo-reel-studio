@@ -25397,6 +25397,23 @@
     "uk": "Попередній перегляд недоступний для файлів {{type}}.",
     "ca": "La previsualització no està disponible per als fitxers {{type}}."
   },
+  "FILES$INVALID_IMAGE": {
+    "ar": "هذا الملف ليس صورة صالحة",
+    "ca": "Aquest fitxer no és una imatge vàlida",
+    "de": "Diese Datei ist kein gültiges Bild",
+    "en": "This file isn't a valid image",
+    "es": "Este archivo no es una imagen válida",
+    "fr": "Ce fichier n'est pas une image valide",
+    "it": "Questo file non è un'immagine valida",
+    "ja": "このファイルは有効な画像ではありません",
+    "ko-KR": "이 파일은 올바른 이미지가 아닙니다",
+    "no": "Denne filen er ikke et gyldig bilde",
+    "pt": "Este arquivo não é uma imagem válida",
+    "tr": "Bu dosya geçerli bir görsel değil",
+    "uk": "Цей файл не є дійсним зображенням",
+    "zh-CN": "此文件不是有效的图像",
+    "zh-TW": "此檔案不是有效的圖片"
+  },
   "FILES$LOADING_FILES": {
     "en": "Loading files…",
     "ja": "ファイルを読み込んでいます…",

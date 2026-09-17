@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "バイナリファイル - プレビューを利用できません",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "大きなファイル – シンタックスハイライトはオフです",
   "FILES$UNSUPPORTED_DOCUMENT": "{{type}} ファイルのプレビューは利用できません。",
+  "FILES$INVALID_IMAGE": "このファイルは有効な画像ではありません",
   "FILES$LOADING_FILES": "ファイルを読み込んでいます…",
   "FILES$NO_FILES": "ワークスペースにファイルがありません",
   "FILES$LIST_LOAD_ERROR": "ワークスペースのファイルを読み込めませんでした。",

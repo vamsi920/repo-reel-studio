@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  useWorkspaceFileBinaryTextSniff,
   useWorkspaceFileContent,
   WorkspaceFileReadError,
 } from "#/hooks/query/use-workspace-file-content";
@@ -211,6 +212,92 @@ describe("useWorkspaceFileContent", () => {
       staticUrl: `${BASE_URL}report.pdf`,
       mimeType: "application/pdf",
     });
+  });
+
+  it("useWorkspaceFileBinaryTextSniff: does not fetch when disabled", async () => {
+    const { result } = renderHook(
+      () =>
+        useWorkspaceFileBinaryTextSniff(
+          "assets/logo.png",
+          `${BASE_URL}assets/logo.png`,
+          false,
+        ),
+      { wrapper: makeWrapper() },
+    );
+
+    // React Query never runs the queryFn for a disabled query; give it a
+    // tick and confirm nothing fired.
+    await act(async () => {});
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it("useWorkspaceFileBinaryTextSniff: decodes text bytes hiding behind an image extension", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(
+          arrayBufferFromString("this is plain text, not an image"),
+        ),
+    });
+
+    const { result } = renderHook(
+      () =>
+        useWorkspaceFileBinaryTextSniff(
+          "fake.png",
+          `${BASE_URL}fake.png`,
+          true,
+        ),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE_URL}fake.png`,
+      expect.objectContaining({ cache: "no-store" }),
+    );
+    expect(result.current.data).toEqual({
+      text: "this is plain text, not an image",
+    });
+  });
+
+  it("useWorkspaceFileBinaryTextSniff: leaves genuinely binary bytes as null", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00]).buffer),
+    });
+
+    const { result } = renderHook(
+      () =>
+        useWorkspaceFileBinaryTextSniff(
+          "real.png",
+          `${BASE_URL}real.png`,
+          true,
+        ),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ text: null });
+  });
+
+  it("useWorkspaceFileBinaryTextSniff: decodes a cloud data-URI staticUrl without a network fetch", async () => {
+    const text = "hello from a cloud data URI";
+    const dataUrl = `data:image/png;base64,${btoa(text)}`;
+
+    const { result } = renderHook(
+      () => useWorkspaceFileBinaryTextSniff("fake.png", dataUrl, true),
+      { wrapper: makeWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.data).toEqual({ text });
   });
 
   it("flips text → binary when the fetched bytes contain a NUL", async () => {

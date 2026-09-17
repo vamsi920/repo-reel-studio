@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Fichier binaire – aperçu indisponible",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Fichier volumineux – la coloration syntaxique est désactivée",
   "FILES$UNSUPPORTED_DOCUMENT": "L'aperçu n'est pas disponible pour les fichiers {{type}}.",
+  "FILES$INVALID_IMAGE": "Ce fichier n'est pas une image valide",
   "FILES$LOADING_FILES": "Chargement des fichiers…",
   "FILES$NO_FILES": "Aucun fichier dans l'espace de travail",
   "FILES$LIST_LOAD_ERROR": "Impossible de charger les fichiers de l'espace de travail.",

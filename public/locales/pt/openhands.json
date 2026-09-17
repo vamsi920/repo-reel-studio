@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Arquivo binário – visualização indisponível",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Arquivo grande – o realce de sintaxe está desativado",
   "FILES$UNSUPPORTED_DOCUMENT": "A visualização não está disponível para arquivos {{type}}.",
+  "FILES$INVALID_IMAGE": "Este arquivo não é uma imagem válida",
   "FILES$LOADING_FILES": "Carregando arquivos…",
   "FILES$NO_FILES": "Nenhum arquivo no espaço de trabalho",
   "FILES$LIST_LOAD_ERROR": "Não foi possível carregar os arquivos do espaço de trabalho.",

@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Binärdatei – keine Vorschau verfügbar",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Große Datei – Syntaxhervorhebung ist deaktiviert",
   "FILES$UNSUPPORTED_DOCUMENT": "Für {{type}}-Dateien ist keine Vorschau verfügbar.",
+  "FILES$INVALID_IMAGE": "Diese Datei ist kein gültiges Bild",
   "FILES$LOADING_FILES": "Dateien werden geladen…",
   "FILES$NO_FILES": "Keine Dateien im Arbeitsbereich",
   "FILES$LIST_LOAD_ERROR": "Die Dateien des Arbeitsbereichs konnten nicht geladen werden.",

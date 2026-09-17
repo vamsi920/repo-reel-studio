@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -155,4 +155,57 @@ describe("FileContentViewer", () => {
       ).toBeInTheDocument();
     },
   );
+
+  it("rich mode shows a clear message when an image's bytes fail to decode, instead of a broken <img>", async () => {
+    // fake.png is classified as "image" by extension alone, so
+    // useWorkspaceFileContent never fetches its bytes — the failure can
+    // only be observed via the <img> itself failing to decode.
+    renderViewer("fake.png", "rich");
+
+    const img = await screen.findByAltText("fake.png");
+    fireEvent.error(img);
+
+    expect(
+      await screen.findByTestId("file-content-viewer-invalid-image"),
+    ).toHaveTextContent("FILES$INVALID_IMAGE");
+    expect(screen.queryByAltText("fake.png")).not.toBeInTheDocument();
+  });
+
+  it("plain mode shows the real bytes as text for a file with a misleading image extension", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(
+          new TextEncoder().encode("this is plain text, not an image")
+            .buffer,
+        ),
+    });
+
+    renderViewer("fake.png", "plain");
+
+    expect(
+      await screen.findByTestId("file-content-viewer-plain"),
+    ).toHaveTextContent("this is plain text, not an image");
+    expect(
+      screen.queryByTestId("file-content-viewer-binary-fallback"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("plain mode keeps the binary fallback for a genuinely binary image", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(
+          new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x00]).buffer,
+        ),
+    });
+
+    renderViewer("real.png", "plain");
+
+    expect(
+      await screen.findByTestId("file-content-viewer-binary-fallback"),
+    ).toBeInTheDocument();
+  });
 });

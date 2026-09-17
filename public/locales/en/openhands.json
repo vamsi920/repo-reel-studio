@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Binary file – preview not available",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Large file – syntax highlighting is off",
   "FILES$UNSUPPORTED_DOCUMENT": "Preview isn't available for {{type}} files.",
+  "FILES$INVALID_IMAGE": "This file isn't a valid image",
   "FILES$LOADING_FILES": "Loading files…",
   "FILES$NO_FILES": "No files in workspace",
   "FILES$LIST_LOAD_ERROR": "Couldn't load the workspace files.",

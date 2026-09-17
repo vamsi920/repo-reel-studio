@@ -1493,6 +1493,7 @@
   "FILES$BINARY_FALLBACK": "Archivo binario – vista previa no disponible",
   "FILES$LARGE_FILE_HIGHLIGHTING_OFF": "Archivo grande – el resaltado de sintaxis está desactivado",
   "FILES$UNSUPPORTED_DOCUMENT": "La vista previa no está disponible para archivos {{type}}.",
+  "FILES$INVALID_IMAGE": "Este archivo no es una imagen válida",
   "FILES$LOADING_FILES": "Cargando archivos…",
   "FILES$NO_FILES": "No hay archivos en el espacio de trabajo",
   "FILES$LIST_LOAD_ERROR": "No se pudieron cargar los archivos del espacio de trabajo.",

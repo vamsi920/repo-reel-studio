@@ -329,3 +329,72 @@ export function useWorkspaceFileContent(relativePath: string | null) {
     meta: { disableToast: true },
   });
 }
+
+export interface BinaryTextSniffResult {
+  /**
+   * Decoded UTF-8 text when the bytes are plausibly text; `null` when
+   * they look like genuine binary data (or the sniff hasn't run).
+   */
+  text: string | null;
+}
+
+/**
+ * `useWorkspaceFileContent` never inspects the bytes of a file classified
+ * as "image"/"pdf" by extension alone — Rich mode renders those straight
+ * from `staticUrl` (an `<img>`/`<iframe>` src) so the browser streams
+ * large files natively instead of us holding them in JS memory. That's
+ * the right trade-off for Rich mode, but it means a text file saved with
+ * a misleading `.png`/`.pdf` extension has no real content to show when
+ * the user switches to Plain mode. This hook fetches (or, for a cloud
+ * data-URI `staticUrl`, just decodes) the bytes once, on demand, and
+ * reuses the same NUL-byte sniff `useWorkspaceFileContent` applies to
+ * everything else — call it only when Plain mode actually needs it
+ * (`enabled`), so normal image/PDF viewing never pays this cost.
+ */
+export function useWorkspaceFileBinaryTextSniff(
+  relativePath: string | null,
+  staticUrl: string | null,
+  enabled: boolean,
+) {
+  return useQuery<BinaryTextSniffResult>({
+    queryKey: ["workspace-file-binary-text-sniff", relativePath, staticUrl],
+    queryFn: async () => {
+      if (!staticUrl) return { text: null };
+
+      let buffer: ArrayBuffer;
+      if (staticUrl.startsWith("data:")) {
+        const base64 = staticUrl.slice(staticUrl.indexOf(",") + 1);
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        buffer = bytes.buffer;
+      } else {
+        const response = await fetch(staticUrl, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!response.ok) return { text: null };
+        buffer = await response.arrayBuffer();
+      }
+
+      if (isLikelyBinary(buffer)) return { text: null };
+      try {
+        // `fatal: true` rejects invalid UTF-8, so real binary formats
+        // that happen to lack a NUL byte in the sampled window (e.g. some
+        // JPEGs) still correctly fall through to "not text" here.
+        return {
+          text: new TextDecoder("utf-8", { fatal: true }).decode(buffer),
+        };
+      } catch {
+        return { text: null };
+      }
+    },
+    enabled: enabled && !!relativePath && !!staticUrl,
+    retry: false,
+    staleTime: 1000 * 5,
+    gcTime: 1000 * 60,
+    meta: { disableToast: true },
+  });
+}
