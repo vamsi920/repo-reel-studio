@@ -144,12 +144,14 @@ export function RepositorySelectionForm({
 
     return (
       <GitRepoDropdown
-        provider={selectedProvider || providers[0]}
+        provider={selectedProvider || providers[0] || "github"}
         value={selectedRepository?.id || null}
         repositoryName={selectedRepository?.full_name || null}
         // eslint-disable-next-line i18next/no-literal-string -- example value, not translatable
         placeholder="user/repo"
-        disabled={!selectedProvider || isLoadingSettings}
+        disabled={
+          (providers.length > 1 && !selectedProvider) || isLoadingSettings
+        }
         onChange={handleRepoSelection}
         className="max-w-auto"
       />
@@ -162,7 +164,7 @@ export function RepositorySelectionForm({
     return (
       <GitBranchDropdown
         repository={selectedRepository?.full_name || null}
-        provider={selectedProvider || providers[0]}
+        provider={selectedProvider || providers[0] || "github"}
         selectedBranch={selectedBranch}
         onBranchSelect={handleBranchSelection}
         defaultBranch={defaultBranch}

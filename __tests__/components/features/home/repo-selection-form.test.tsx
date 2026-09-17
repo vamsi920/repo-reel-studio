@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, vi, beforeEach, it } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RepositorySelectionForm } from "../../../../src/components/features/home/repo-selection-form";
@@ -129,7 +129,7 @@ const mockOnRepoSelection = vi.fn();
 const renderForm = (
   storeOverrides: Partial<{
     recentRepositories: GitRepository[];
-    lastSelectedProvider: 'gitlab' | null;
+    lastSelectedProvider: "gitlab" | null;
   }> = {},
 ) => {
   // Set up the store state before rendering
@@ -229,7 +229,10 @@ describe("RepositorySelectionForm", () => {
 
     // Create a spy on the API call
     const searchGitReposSpy = vi.spyOn(GitService, "searchGitRepositories");
-    searchGitReposSpy.mockResolvedValue({ items: MOCK_SEARCH_REPOS, next_page_id: null });
+    searchGitReposSpy.mockResolvedValue({
+      items: MOCK_SEARCH_REPOS,
+      next_page_id: null,
+    });
 
     mockUseGitRepositories.mockReturnValue({
       data: { pages: [] },
@@ -328,4 +331,45 @@ describe("RepositorySelectionForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the GitHub-disconnected message instead of a generic empty state when no providers are connected", async () => {
+    // Mock zero connected providers (the dead-OAuth-connection case)
+    mockUseUserProviders.mockReturnValue({
+      providers: [],
+      isGithubDisconnected: true,
+    });
+    // Explicit empty result set -- don't rely on whatever an earlier test
+    // left `mockUseGitRepositories` returning.
+    mockUseGitRepositories.mockReturnValue({
+      data: { pages: [] },
+      isLoading: false,
+      isError: false,
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: vi.fn(),
+      onLoadMore: vi.fn(),
+    });
+    mockUseSearchRepositories.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+
+    renderForm();
+
+    const repoInput = await screen.findByTestId("git-repo-dropdown");
+
+    // The dropdown must not be inert here -- with no provider ever selected
+    // (there's nothing to select), a naive `disabled={!selectedProvider}`
+    // would block the combobox from ever opening, hiding the message below.
+    expect(repoInput).not.toBeDisabled();
+
+    fireEvent.click(repoInput);
+    fireEvent.keyDown(repoInput, { key: "ArrowDown" });
+
+    expect(
+      await screen.findByTestId("git-repo-dropdown-disconnected"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("git-repo-dropdown-empty"),
+    ).not.toBeInTheDocument();
+  });
 });
