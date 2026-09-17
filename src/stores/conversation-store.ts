@@ -323,6 +323,13 @@ export const useConversationStore = create<ConversationStore>()(
       setSubmittedMessage: (submittedMessage) =>
         set({ submittedMessage }, false, "setSubmittedMessage"),
 
+      // Also clears staged-but-unsent attachments (images/files and their
+      // upload-as-file/pasted-name markers). The chat composer tree stays
+      // mounted across a conversation switch (it never remounts on route
+      // param change), so nothing else clears these when the route's
+      // `conversationId`-keyed effect calls this on switch — without it, an
+      // attachment staged for one conversation silently rode along into
+      // whichever conversation the user opened next.
       resetConversationState: () =>
         set(
           {
@@ -330,6 +337,12 @@ export const useConversationStore = create<ConversationStore>()(
             conversationMode: getInitialConversationMode(),
             subConversationTaskId: null,
             planContent: null,
+            images: [],
+            files: [],
+            imagesMarkedUploadAsFile: [],
+            pastedImageNames: [],
+            loadingFiles: [],
+            loadingImages: [],
           },
           false,
           "resetConversationState",

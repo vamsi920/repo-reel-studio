@@ -117,5 +117,27 @@ describe("conversation store", () => {
       expect(useConversationStore.getState().conversationMode).toBe("code");
       expect(mockGetConversationState).toHaveBeenCalledWith(CONV_ID);
     });
+
+    it("clears staged-but-unsent attachments so they don't carry over to the next conversation", () => {
+      const image = new File(["x"], "paste.png", { type: "image/png" });
+      const file = new File(["y"], "notes.txt", { type: "text/plain" });
+      useConversationStore.getState().addImages([image]);
+      useConversationStore.getState().addFiles([file]);
+      useConversationStore.getState().toggleImageUploadAsFile("paste.png");
+      useConversationStore.getState().markImagesAsPasted(["paste.png"]);
+      useConversationStore.getState().addFileLoading("notes.txt");
+      useConversationStore.getState().addImageLoading("paste.png");
+
+      useConversationStore.getState().resetConversationState();
+
+      expect(useConversationStore.getState().images).toEqual([]);
+      expect(useConversationStore.getState().files).toEqual([]);
+      expect(useConversationStore.getState().imagesMarkedUploadAsFile).toEqual(
+        [],
+      );
+      expect(useConversationStore.getState().pastedImageNames).toEqual([]);
+      expect(useConversationStore.getState().loadingFiles).toEqual([]);
+      expect(useConversationStore.getState().loadingImages).toEqual([]);
+    });
   });
 });

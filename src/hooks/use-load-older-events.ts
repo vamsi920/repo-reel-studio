@@ -139,8 +139,18 @@ export const useLoadOlderEvents = (
         );
       }
 
+      // The user may have switched to a different conversation while this
+      // request was in flight — the chat-panel tree (and this hook instance)
+      // stays mounted across a conversation switch, so nothing else stops a
+      // stale response from landing. `loadedConversationId` reflects whichever
+      // conversation `clearEventsForConversation` last claimed the store for;
+      // if it no longer matches, these events belong to a conversation the
+      // store has already moved on from and must not be merged in.
+      const stillActiveConversation =
+        useEventStore.getState().loadedConversationId === conversationId;
+
       const older = [...page.items].reverse();
-      if (older.length > 0) {
+      if (older.length > 0 && stillActiveConversation) {
         addEvents(older);
         // The initial preload only seeds switches from the tail page; a switch
         // in an older page is hidden as a card but never seeded — silently lost.
@@ -152,10 +162,12 @@ export const useLoadOlderEvents = (
       }
       // Stop once the server signals there are no more pages, OR — for
       // servers that don't fill in `next_page_id` for filtered queries —
-      // when we get back a short page.
+      // when we get back a short page. Skipped for a stale response: the
+      // conversation-id-keyed effect above already reset this hook's
+      // `hasMore` for whichever conversation is actually active now.
       const exhausted =
         !page.next_page_id || page.items.length < INITIAL_HISTORY_PAGE_SIZE;
-      if (exhausted) {
+      if (exhausted && stillActiveConversation) {
         hasMoreRef.current = false;
         setHasMore(false);
       }

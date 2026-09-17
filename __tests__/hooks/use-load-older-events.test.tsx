@@ -77,8 +77,11 @@ describe("useLoadOlderEvents", () => {
       );
 
     // Reset event store between tests so prior tests don't leak state.
+    // `clearEventsForConversation` also mirrors what the real websocket
+    // context does on mount: it records "conv-1" as the loaded conversation,
+    // which `loadOlder`'s stale-response guard now checks against.
     act(() => {
-      useEventStore.getState().clearEvents();
+      useEventStore.getState().clearEventsForConversation("conv-1");
       useModelStore.getState().clearAll();
     });
 
@@ -381,6 +384,51 @@ describe("useLoadOlderEvents", () => {
     await waitFor(() => {
       expect(result.current.hasMore).toBe(false);
     });
+  });
+
+  it("discards a stale page if the active conversation changed while the request was in flight", async () => {
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(makeEvent("evt-recent", "2024-06-01T00:00:00Z"));
+    });
+
+    let resolvePage!: (page: EventSearchPage<OpenHandsEvent>) => void;
+    const pendingPage = new Promise<EventSearchPage<OpenHandsEvent>>(
+      (resolve) => {
+        resolvePage = resolve;
+      },
+    );
+    vi.spyOn(EventService, "searchEvents").mockReturnValue(pendingPage);
+
+    const { result } = renderHook(() => useLoadOlderEvents("conv-1"), {
+      wrapper,
+    });
+
+    let loadPromise!: Promise<void>;
+    act(() => {
+      loadPromise = result.current.loadOlder();
+    });
+
+    // The user navigates to a different conversation before "conv-1"'s
+    // older-events request resolves. The real websocket context does this
+    // via `clearEventsForConversation`, wiping the store for the new
+    // conversation and recording its id.
+    act(() => {
+      useEventStore.getState().clearEventsForConversation("conv-2");
+    });
+
+    await act(async () => {
+      resolvePage(
+        makePage([makeEvent("evt-older-stale", "2024-05-01T00:00:00Z")], null),
+      );
+      await loadPromise;
+    });
+
+    // "conv-1"'s stale older page must not be merged into "conv-2"'s
+    // now-active (and otherwise empty) event store.
+    expect(useEventStore.getState().events).toEqual([]);
+    expect(useEventStore.getState().loadedConversationId).toBe("conv-2");
   });
 
   it("does not paginate on start-task placeholder conversation ids", async () => {
