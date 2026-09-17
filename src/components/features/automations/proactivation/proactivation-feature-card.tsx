@@ -55,6 +55,7 @@ export function ProactivationFeatureCard({
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isRunningAll, setIsRunningAll] = useState(false);
   const toggleMutation = useToggleAutomation();
   const dispatchMutation = useDispatchAutomation();
 
@@ -83,19 +84,39 @@ export function ProactivationFeatureCard({
     return latest;
   }, [proactivationAutomations, runSummaries]);
 
-  const handleRunAll = () => {
-    proactivationAutomations
-      .filter((a) => a.enabled)
-      .forEach((automation) => {
-        dispatchMutation.mutate(automation.id, {
-          onError: (error) => {
-            displayErrorToast(
-              getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
-            );
-          },
-        });
-      });
-    if (proactivationAutomations.some((a) => a.enabled)) {
+  const handleRunAll = async () => {
+    const enabledAutomations = proactivationAutomations.filter(
+      (a) => a.enabled,
+    );
+    if (enabledAutomations.length === 0) return;
+
+    // `dispatchMutation` is one mutation shared across every dispatch here.
+    // react-query's mutation observer only keeps the *last* `mutate()`
+    // call's per-call callbacks, so firing several `mutate()` calls back to
+    // back (as this used to) silently drops the error toast for every
+    // automation but the last one to settle. `mutateAsync` returns each
+    // call's own execution promise instead, so Promise.allSettled below
+    // sees every outcome.
+    setIsRunningAll(true);
+    const results = await Promise.allSettled(
+      enabledAutomations.map((automation) =>
+        dispatchMutation.mutateAsync(automation.id),
+      ),
+    );
+    setIsRunningAll(false);
+
+    const failures = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    if (failures.length > 0) {
+      displayErrorToast(
+        getApiErrorMessage(
+          failures[0].reason,
+          t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR),
+        ),
+      );
+    }
+    if (failures.length < results.length) {
       displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
     }
   };
@@ -206,7 +227,7 @@ export function ProactivationFeatureCard({
           type="button"
           variant="secondary"
           onClick={handleRunAll}
-          isDisabled={dispatchMutation.isPending}
+          isDisabled={isRunningAll}
         >
           {t(I18nKey.AUTOMATIONS$RUN_NOW)}
         </BrandButton>

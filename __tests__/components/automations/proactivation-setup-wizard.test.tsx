@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProactivationSetupWizard } from "#/components/features/automations/proactivation/proactivation-setup-wizard";
 
 const mockUseUserProviders = vi.fn();
+const mockUseActiveBackend = vi.fn();
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -15,7 +16,7 @@ vi.mock("#/hooks/use-user-providers", () => ({
 }));
 
 vi.mock("#/contexts/active-backend-context", () => ({
-  useActiveBackend: () => ({ backend: { kind: "cloud" } }),
+  useActiveBackend: () => mockUseActiveBackend(),
 }));
 
 vi.mock("#/api/git-service/github-connection-flag", () => ({
@@ -52,10 +53,26 @@ vi.mock(
 
 const queryClient = new QueryClient();
 
-function Wizard() {
+beforeEach(() => {
+  mockUseActiveBackend.mockReturnValue({ backend: { kind: "cloud" } });
+});
+
+function Wizard({
+  isOpen = true,
+  onClose = vi.fn(),
+  onEnabled = vi.fn(),
+}: {
+  isOpen?: boolean;
+  onClose?: () => void;
+  onEnabled?: () => void;
+}) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ProactivationSetupWizard isOpen onClose={vi.fn()} onEnabled={vi.fn()} />
+      <ProactivationSetupWizard
+        isOpen={isOpen}
+        onClose={onClose}
+        onEnabled={onEnabled}
+      />
     </QueryClientProvider>
   );
 }
@@ -105,5 +122,55 @@ describe("ProactivationSetupWizard repositories step", () => {
       expect(ancestor.className).not.toContain("overflow-y-auto");
       ancestor = ancestor.parentElement;
     }
+  });
+});
+
+describe("ProactivationSetupWizard state reset on reopen", () => {
+  it("resets step, repo selection, and watch areas when reopened after being cancelled", async () => {
+    // The parent always renders this component and only toggles `isOpen`
+    // (see ProactivationFeatureCard), so the instance never unmounts on
+    // close -- reproduce that by keeping the same tree across rerenders and
+    // only flipping the `isOpen` prop.
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+    mockUseActiveBackend.mockReturnValue({ backend: { kind: "local" } });
+
+    const user = userEvent.setup();
+    const { rerender } = render(<Wizard isOpen />);
+
+    // Advance from "workspace" to "repositories" and add a repo manually
+    // (canListRepositories is false for a local backend with no GitHub
+    // connection, per the mocked isLocalGithubConnected).
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+    await user.type(
+      screen.getByTestId("proactivation-manual-repo"),
+      "acme/repo",
+    );
+    await user.click(screen.getByTestId("proactivation-manual-repo-add"));
+
+    // Advance to "watch" and flip on an area that isn't part of the default
+    // selection.
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+    await user.click(
+      screen.getByLabelText("AUTOMATIONS$PROACTIVATION_WATCH_CI"),
+    );
+    expect(
+      screen.getByLabelText("AUTOMATIONS$PROACTIVATION_WATCH_CI"),
+    ).toBeChecked();
+
+    // Cancel out without submitting, then reopen.
+    rerender(<Wizard isOpen={false} />);
+    rerender(<Wizard isOpen />);
+
+    // Back on the first ("workspace") step, not the stale "watch" step.
+    expect(
+      screen.queryByLabelText("AUTOMATIONS$PROACTIVATION_WATCH_CI"),
+    ).not.toBeInTheDocument();
+
+    // The repositories step shows its empty state again -- the manually
+    // added repo did not survive the reopen.
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+    expect(
+      screen.getByText("AUTOMATIONS$PROACTIVATION_NO_REPOSITORIES"),
+    ).toBeInTheDocument();
   });
 });

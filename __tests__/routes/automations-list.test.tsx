@@ -341,6 +341,95 @@ describe("AutomationsList — Run now toasts", () => {
   });
 });
 
+describe("AutomationsList — concurrent Run Now dispatches stay isolated per row", () => {
+  const secondAutomation: Automation = {
+    ...automation,
+    id: "auto-2",
+    name: "Weekly report",
+  };
+
+  beforeEach(() => {
+    vi.mocked(AutomationService.getAutomations).mockResolvedValue({
+      automations: [automation, secondAutomation],
+      total: 2,
+    });
+  });
+
+  it("keeps an earlier row's spinner/disabled state while a later row's dispatch resolves", async () => {
+    // Arrange — the list route creates a single dispatch mutation shared by
+    // every row. Automation 1's dispatch is left pending (a deferred promise
+    // we resolve manually below); automation 2's resolves immediately.
+    let resolveFirstDispatch: (() => void) | undefined;
+    const firstDispatchPromise = new Promise<{
+      id: string;
+      status: AutomationRunStatus;
+      conversation_id: string | null;
+      bash_command_id: string | null;
+      error_detail: string | null;
+      started_at: string;
+      completed_at: string | null;
+    }>((resolve) => {
+      resolveFirstDispatch = () =>
+        resolve({
+          id: "run-1",
+          status: AutomationRunStatus.PENDING,
+          conversation_id: null,
+          bash_command_id: null,
+          error_detail: null,
+          started_at: "2026-01-02T00:00:00Z",
+          completed_at: null,
+        });
+    });
+    vi.mocked(AutomationService.dispatchAutomation).mockImplementation(
+      (id: string) => {
+        if (id === automation.id) return firstDispatchPromise;
+        return Promise.resolve({
+          id: "run-2",
+          status: AutomationRunStatus.PENDING,
+          conversation_id: null,
+          bash_command_id: null,
+          error_detail: null,
+          started_at: "2026-01-02T00:00:00Z",
+          completed_at: null,
+        });
+      },
+    );
+
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+    await screen.findByText(secondAutomation.name);
+
+    // Act — dispatch automation 1 first (stays pending), then automation 2
+    // (resolves right away).
+    const firstButton = screen.getByTestId(
+      `automation-run-now-${automation.id}`,
+    );
+    const secondButton = screen.getByTestId(
+      `automation-run-now-${secondAutomation.id}`,
+    );
+    await user.click(firstButton);
+    expect(firstButton).toBeDisabled();
+
+    await user.click(secondButton);
+    await waitFor(() => {
+      expect(AutomationService.dispatchAutomation).toHaveBeenCalledWith(
+        secondAutomation.id,
+      );
+    });
+    await waitFor(() => expect(secondButton).not.toBeDisabled());
+
+    // Assert — automation 2 finishing must not re-enable automation 1's
+    // still-in-flight row.
+    expect(firstButton).toBeDisabled();
+    expect(firstButton).toHaveAttribute("aria-busy", "true");
+
+    // Cleanup — release automation 1's dispatch so it settles too.
+    resolveFirstDispatch?.();
+    await waitFor(() => expect(firstButton).not.toBeDisabled());
+  });
+});
+
 describe("AutomationsList — list freshness on remount", () => {
   it("surfaces automations created since the last visit without a manual refresh", async () => {
     // Arrange — share a QueryClient across two mounts to simulate the user

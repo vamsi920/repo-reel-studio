@@ -204,17 +204,34 @@ export default function AutomationsList() {
     }
   };
 
-  const handleRunNow = (id: string) => {
-    dispatchMutation.mutate(id, {
-      onSuccess: () => {
-        displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
-      },
-      onError: (error) => {
-        displayErrorToast(
-          getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
-        );
-      },
-    });
+  const [pendingRunIds, setPendingRunIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const handleRunNow = async (id: string) => {
+    // `dispatchMutation` is one mutation shared by every row (see
+    // `pendingRunIds` above), and react-query's mutation observer keeps only
+    // the *last* `mutate()` call's per-call `onSuccess`/`onError`/`onSettled`
+    // -- dispatching a second automation while the first is still in flight
+    // silently drops the first call's callbacks (no toast, stuck spinner).
+    // `mutateAsync` sidesteps that: it returns the promise for this specific
+    // call's own execution, so awaiting it here is safe under concurrency.
+    setPendingRunIds((prev) => new Set(prev).add(id));
+    try {
+      await dispatchMutation.mutateAsync(id);
+      displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
+      );
+    } finally {
+      setPendingRunIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const handleDeleteRequest = (id: string) => {
@@ -508,11 +525,7 @@ export default function AutomationsList() {
                 view={viewMode}
                 onToggle={handleToggle}
                 onRunNow={handleRunNow}
-                runPendingId={
-                  dispatchMutation.isPending
-                    ? (dispatchMutation.variables ?? null)
-                    : null
-                }
+                pendingRunIds={pendingRunIds}
                 onDelete={handleDeleteRequest}
                 onExport={handleExport}
                 onEdit={canEdit ? handleEditRequest : undefined}
@@ -525,11 +538,7 @@ export default function AutomationsList() {
                 view={viewMode}
                 onToggle={handleToggle}
                 onRunNow={handleRunNow}
-                runPendingId={
-                  dispatchMutation.isPending
-                    ? (dispatchMutation.variables ?? null)
-                    : null
-                }
+                pendingRunIds={pendingRunIds}
                 onDelete={handleDeleteRequest}
                 onExport={handleExport}
                 onEdit={canEdit ? handleEditRequest : undefined}

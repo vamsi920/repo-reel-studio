@@ -181,6 +181,22 @@ export function ProactivationSetupWizard({
     [],
   );
 
+  // The parent always renders this component, only toggling `isOpen`, so
+  // this instance never unmounts on close. Without this, cancelling out of
+  // the wizard partway through and reopening it later resumed on the stale
+  // step with the previous run's repo/watch-area/autonomy/schedule
+  // selections still filled in, instead of starting fresh.
+  useEffect(() => {
+    if (!isOpen) return;
+    setStepIndex(0);
+    setManualRepo("");
+    setSelectedRepos([]);
+    setWatchAreas(new Set(["dependency", "test", "code-quality"]));
+    setAutonomyLevel("recommend");
+    setFrequency("daily");
+    setSubmitError(null);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const canGoNext = !(
