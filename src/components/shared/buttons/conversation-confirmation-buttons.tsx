@@ -6,12 +6,32 @@ import { ActionTooltip } from "../action-tooltip";
 import { RiskAlert } from "#/components/shared/risk-alert";
 import WarningIcon from "#/icons/u-warning.svg?react";
 import { useEventMessageStore } from "#/stores/event-message-store";
-import { useEventStore } from "#/stores/use-event-store";
+import { useEventStore, type OHEvent } from "#/stores/use-event-store";
 import { isActionEvent } from "#/types/agent-server/type-guards";
+import type { ActionEvent } from "#/types/agent-server/core/events/action-event";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useAgentState } from "#/hooks/use-agent-state";
 import { useRespondToConfirmation } from "#/hooks/mutation/use-respond-to-confirmation";
 import { SecurityRisk } from "#/types/agent-server/core/base/common";
+
+/**
+ * The action the agent is blocked on, if any. Must be the most recent
+ * agent-authored *action* specifically — not just the most recent
+ * agent-sourced event — because non-action agent events (a streaming text
+ * delta, the system prompt, an ACP tool call) carry no `security_risk` and
+ * would make a real high-risk pending action read as unknown/low risk if
+ * picked instead.
+ */
+export function findAwaitingConfirmationAction(
+  events: OHEvent[],
+): ActionEvent | undefined {
+  return events
+    .slice()
+    .reverse()
+    .find(
+      (ev): ev is ActionEvent => ev.source === "agent" && isActionEvent(ev),
+    );
+}
 
 export function ConversationConfirmationButtons() {
   const submittedEventIds = useEventMessageStore(
@@ -27,13 +47,7 @@ export function ConversationConfirmationButtons() {
   const { mutate: respondToConfirmation } = useRespondToConfirmation();
   const events = useEventStore((state) => state.events);
 
-  const awaitingAction = events
-    .slice()
-    .reverse()
-    .find((ev) => {
-      if (ev.source !== "agent") return false;
-      return curAgentState === AgentState.AWAITING_USER_CONFIRMATION;
-    });
+  const awaitingAction = findAwaitingConfirmationAction(events);
 
   const handleConfirmation = useCallback(
     (accept: boolean) => {
@@ -98,12 +112,7 @@ export function ConversationConfirmationButtons() {
     return null;
   }
 
-  // Get security risk from the action (only ActionEvent has security_risk)
-  const risk = isActionEvent(awaitingAction)
-    ? awaitingAction.security_risk
-    : SecurityRisk.UNKNOWN;
-
-  const isHighRisk = risk === SecurityRisk.HIGH;
+  const isHighRisk = awaitingAction.security_risk === SecurityRisk.HIGH;
 
   return (
     <div className="flex flex-col gap-2 pt-4">

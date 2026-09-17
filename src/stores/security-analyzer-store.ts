@@ -54,21 +54,30 @@ export const useSecurityAnalyzerStore = create<SecurityAnalyzerStore>(
           confirmed_changed: false,
         };
 
-        const existingLog = state.logs.find(
+        const existingIndex = state.logs.findIndex(
           (stateLog) =>
             stateLog.id === log.id ||
             (stateLog.confirmation_state === "awaiting_confirmation" &&
               stateLog.content === log.content),
         );
 
-        if (existingLog) {
-          if (existingLog.confirmation_state !== log.confirmation_state) {
-            existingLog.confirmation_state = log.confirmation_state;
-            existingLog.confirmed_changed = true;
-          }
-          return { logs: [...state.logs] }; // Return new array to trigger re-render
+        if (existingIndex === -1) {
+          return { logs: [...state.logs, log] };
         }
-        return { logs: [...state.logs, log] };
+
+        const existingLog = state.logs[existingIndex];
+        if (existingLog.confirmation_state === log.confirmation_state) {
+          // Still return a new array reference to trigger a re-render.
+          return { logs: [...state.logs] };
+        }
+
+        const logs = [...state.logs];
+        logs[existingIndex] = {
+          ...existingLog,
+          confirmation_state: log.confirmation_state,
+          confirmed_changed: true,
+        };
+        return { logs };
       }),
     clearLogs: () => set({ logs: initialLogs }),
   }),
