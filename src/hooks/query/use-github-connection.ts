@@ -8,7 +8,7 @@ export const useGithubConnection = () => {
   return useQuery({
     queryKey: ["github-connection"],
     queryFn: () => githubConnectionsRepository.getConnection(),
-    enabled: status === "real",
+    enabled: status === "real" || status === "none" || status === "anonymous", // Enable for local connections regardless of real Supabase session
     staleTime: 1000 * 60,
     retry: false,
     meta: { disableToast: true },
