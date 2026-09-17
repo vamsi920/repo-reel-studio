@@ -39915,6 +39915,23 @@
     "tr": "Search projects",
     "uk": "Search projects"
   },
+  "KT$SEARCH_NO_RESULTS": {
+    "en": "No repositories match \"{{query}}\".",
+    "ja": "「{{query}}」に一致するリポジトリがありません。",
+    "zh-CN": "没有与 \"{{query}}\" 匹配的仓库。",
+    "zh-TW": "沒有與「{{query}}」相符的儲存庫。",
+    "ko-KR": "\"{{query}}\"과 일치하는 리포지토리가 없습니다.",
+    "no": "Ingen depoter samsvarer med «{{query}}».",
+    "ar": "لا توجد مستودعات تطابق \"{{query}}\".",
+    "de": "Keine Repositorys entsprechen „{{query}}“.",
+    "fr": "Aucun dépôt ne correspond à « {{query}} ».",
+    "it": "Nessun repository corrisponde a \"{{query}}\".",
+    "pt": "Nenhum repositório corresponde a \"{{query}}\".",
+    "es": "Ningún repositorio coincide con «{{query}}».",
+    "ca": "Cap repositori coincideix amb «{{query}}».",
+    "tr": "\"{{query}}\" ile eşleşen depo yok.",
+    "uk": "Немає репозиторіїв, що відповідають «{{query}}»."
+  },
   "KT$TAB_DOCS": {
     "en": "Docs",
     "ja": "Docs",

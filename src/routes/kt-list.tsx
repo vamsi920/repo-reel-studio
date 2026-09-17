@@ -537,11 +537,24 @@ function KtList() {
               data-testid="kt-search-input"
               className="mb-4 w-full rounded-md border border-[var(--oh-border)] bg-transparent px-3 py-2 text-sm text-[var(--oh-foreground)] placeholder:text-[var(--oh-muted)]"
             />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filtered.map((candidate) => (
-                <RepoCard key={candidate.repositoryId} candidate={candidate} />
-              ))}
-            </div>
+            {filtered.length === 0 ? (
+              <div
+                data-testid="kt-search-no-results"
+                role="status"
+                className="rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-center text-sm text-[var(--oh-muted)]"
+              >
+                {t(I18nKey.KT$SEARCH_NO_RESULTS, { query: search.trim() })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {filtered.map((candidate) => (
+                  <RepoCard
+                    key={candidate.repositoryId}
+                    candidate={candidate}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

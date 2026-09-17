@@ -201,4 +201,28 @@ describe("KtList", () => {
     expect(screen.getByText("KT$VIEW_KNOWLEDGE")).toBeInTheDocument();
     expect(screen.queryByText("KT$EMPTY")).toBeNull();
   });
+
+  // Regression: a search query matching zero repositories rendered a
+  // completely empty grid with no feedback, indistinguishable from a
+  // loading or broken state.
+  it("shows a no-results message instead of an empty grid when the search matches nothing", async () => {
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtList />);
+    await screen.findByTestId("kt-repo-card");
+
+    await user.type(
+      screen.getByTestId("kt-search-input"),
+      "zzz-no-match",
+    );
+
+    expect(await screen.findByTestId("kt-search-no-results")).toHaveTextContent(
+      "KT$SEARCH_NO_RESULTS",
+    );
+    expect(screen.queryByTestId("kt-repo-card")).toBeNull();
+  });
 });

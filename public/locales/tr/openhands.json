@@ -2347,6 +2347,7 @@
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
+  "KT$SEARCH_NO_RESULTS": "\"{{query}}\" ile eşleşen depo yok.",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",
