@@ -5,18 +5,21 @@ import { ExtraProps } from "react-markdown";
 const URL_SCHEME_RE = /^[a-z][a-z\d+.-]*:/i;
 
 /**
- * True for a markdown link href that is a bare relative path (no scheme, no
- * leading `/`, not an in-page `#anchor`) — e.g. `.github/workflows/foo.yml`.
- * The browser resolves a href like that against the *current* page's URL,
- * which for our generated docs (DeepWiki's `generate_file_url()` returns the
- * raw repo path unchanged for local repos — see
- * `vendor/deepwiki-open/api/services/wiki/content.py`) always lands on a
- * nonexistent in-app route instead of the intended source file. There is no
- * safe destination to navigate to, so these render as plain text instead of
- * a broken link.
+ * True for a markdown link href with no safe destination to navigate to:
+ * either empty (DeepWiki's `post_process_wiki_content` leaves unresolved
+ * `[path:start-end]()` citation markers as a literal empty href for
+ * `type: "local"` repos — see `citation-parser.ts`'s header comment) or a
+ * bare relative path (no scheme, no leading `/`, not an in-page `#anchor`,
+ * e.g. `.github/workflows/foo.yml`) that the browser would otherwise resolve
+ * against the *current* page's URL (DeepWiki's `generate_file_url()` returns
+ * the raw repo path unchanged for local repos — see
+ * `vendor/deepwiki-open/api/services/wiki/content.py`), landing on a
+ * nonexistent in-app route instead of the intended source file. Both render
+ * as plain text instead of a link that looks clickable but goes nowhere.
  */
-function isBareRelativePath(href: string): boolean {
-  if (!href || href.startsWith("#") || href.startsWith("/")) return false;
+function hasNoSafeDestination(href: string): boolean {
+  if (!href) return true;
+  if (href.startsWith("#") || href.startsWith("/")) return false;
   return !URL_SCHEME_RE.test(href);
 }
 
@@ -26,7 +29,7 @@ export function anchor({
 }: React.ClassAttributes<HTMLAnchorElement> &
   React.AnchorHTMLAttributes<HTMLAnchorElement> &
   ExtraProps) {
-  if (isBareRelativePath(href ?? "")) {
+  if (hasNoSafeDestination(href ?? "")) {
     return (
       <span className="text-[var(--oh-muted)]" title={href}>
         {children}

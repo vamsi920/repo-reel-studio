@@ -2,6 +2,14 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { anchor } from "#/components/features/markdown/anchor";
 
+// jsdom (via aria-query) does not grant the implicit "link" role to an
+// `<a href="">`, unlike a real browser — so `queryByRole("link")` alone
+// can't prove an empty-href citation renders as inert text instead of a
+// dead-but-clickable-looking anchor. Assert directly on the tag name too.
+function queryAnchorTag(): HTMLAnchorElement | null {
+  return document.body.querySelector("a");
+}
+
 describe("anchor", () => {
   it("renders a real link for an absolute http(s) href", () => {
     render(anchor({ href: "https://example.com/foo", children: "Example" }));
@@ -52,8 +60,16 @@ describe("anchor", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("renders an empty href as inert text", () => {
+  it("renders an empty href as inert text, not a dead-looking link", () => {
     render(anchor({ href: "", children: "path/to/file.ts" }));
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(queryAnchorTag()).toBeNull();
+    expect(screen.getByText("path/to/file.ts")).toBeInTheDocument();
+  });
+
+  it("renders an unresolved DeepWiki citation marker as inert text", () => {
+    render(anchor({ href: "", children: "README.md:3-8" }));
+    expect(queryAnchorTag()).toBeNull();
+    expect(screen.getByText("README.md:3-8")).toBeInTheDocument();
   });
 });
