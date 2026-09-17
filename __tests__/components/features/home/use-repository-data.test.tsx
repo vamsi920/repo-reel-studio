@@ -176,4 +176,64 @@ describe("useRepositoryData", () => {
 
     expect(result.current.isProviderDisconnected).toBe(false);
   });
+
+  // Regression (INC-1 "token present but dead"): a GitHub connection whose
+  // DB row still exists but whose token is expired/revoked never flips
+  // `isGithubDisconnected` -- the list query instead fails live with the
+  // github-api-proxy's own "GitHub API error (401)" text. That live failure
+  // must be treated as disconnected too, or the dropdown shows a generic
+  // empty state plus a separate raw error line instead of one clear message.
+  it("reports the provider as disconnected on a live GitHub 401 even when the DB connection row still exists", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: new Error("GitHub API error (401)"),
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(true);
+  });
+
+  it("reports the provider as disconnected on a live GitHub 403 too", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: new Error("GitHub API error (403)"),
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(true);
+  });
+
+  it("does not report disconnected for an unrelated list-query error", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: new Error("GitHub API error (502)"),
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(false);
+  });
 });

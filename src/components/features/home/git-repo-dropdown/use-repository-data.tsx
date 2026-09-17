@@ -46,12 +46,26 @@ export function useRepositoryData(
   const { providers, isGithubDisconnected } = useUserProviders();
   const isProviderReady = !!provider && providers.includes(provider);
 
+  // A GitHub connection with a dead/expired token still has a DB row, so
+  // `isGithubDisconnected` (DB-row presence only) stays false and the list
+  // query instead fails live with the github-api-proxy's own
+  // `GitHub API error (401)` / `GitHub API error (403)` text (see
+  // supabase/functions/github-api-proxy/index.ts). Treat that the same as a
+  // confirmed disconnect so the two never render as separate, conflicting
+  // messages -- see the "token present but dead" report.
+  const isGithubAuthFailure =
+    provider === "github" &&
+    isError &&
+    listError instanceof Error &&
+    /GitHub API error \(40[13]\)/.test(listError.message);
+
   // Surfaced separately from `isError` -- a dead/missing GitHub connection
   // doesn't fail the repositories query, it just leaves it disabled (see
   // useGitRepositories' `queryEnabled` gate), so callers need an explicit
   // signal to tell "confirmed disconnected" apart from "no repos" or
   // "still loading".
-  const isProviderDisconnected = provider === "github" && isGithubDisconnected;
+  const isProviderDisconnected =
+    provider === "github" && (isGithubDisconnected || isGithubAuthFailure);
 
   // Search repositories when user types
   const {

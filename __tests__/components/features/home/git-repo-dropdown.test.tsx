@@ -313,5 +313,31 @@ describe("GitRepoDropdown", () => {
         await screen.findByTestId("git-repo-dropdown-empty"),
       ).toHaveTextContent("COMMON$NO_REPOSITORY");
     });
+
+    // Regression (INC-1 "token present but dead"): a live 401 used to
+    // render the friendly "GitHub isn't connected" empty state AND a
+    // separate raw "GitHub API error (401)" line below the combobox --
+    // two conflicting messages for the same failure. Once the query error
+    // is what makes `isProviderDisconnected` true, the raw line must not
+    // render too.
+    it("does not also show the raw error message when the provider is confirmed disconnected", async () => {
+      renderDropdown(
+        {},
+        {
+          repositories: [],
+          isError: true,
+          error: new Error("GitHub API error (401)"),
+          isProviderDisconnected: true,
+        },
+      );
+
+      const input = screen.getByTestId("git-repo-dropdown");
+      await userEvent.click(input);
+
+      await screen.findByTestId("git-repo-dropdown-disconnected");
+      expect(
+        screen.queryByText("GitHub API error (401)"),
+      ).not.toBeInTheDocument();
+    });
   });
 });

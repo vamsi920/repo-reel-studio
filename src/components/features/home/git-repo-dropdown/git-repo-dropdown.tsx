@@ -359,7 +359,14 @@ export function GitRepoDropdown({
         itemKey={(repo) => repo.id}
       />
 
-      <ErrorMessage isError={isError} message={repositoryError?.message} />
+      {/* `isProviderDisconnected` already covers this failure with the
+          friendlier "GitHub isn't connected" copy above -- showing the raw
+          error too would duplicate the same problem as two separate,
+          conflicting messages. */}
+      <ErrorMessage
+        isError={isError && !isProviderDisconnected}
+        message={repositoryError?.message}
+      />
     </div>
   );
 }
