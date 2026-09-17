@@ -38,6 +38,10 @@ export function handleObservationMessage(message: ObservationMessage) {
     }
     case ObservationType.BROWSE:
     case ObservationType.BROWSE_INTERACTIVE:
+      // Same rule as RUN above and handleActionMessage's `args.hidden` check:
+      // a hidden observation is internal bookkeeping, not something the user
+      // asked to see, so it must not update the visible browser panel either.
+      if (message.extras.hidden) break;
       applyLegacyBrowserExtras(message);
       break;
     case ObservationType.AGENT_STATE_CHANGED:
@@ -59,19 +63,5 @@ export function handleObservationMessage(message: ObservationMessage) {
       break; // We don't display the default message for these observations
     default:
       break;
-  }
-  if (!message.extras?.hidden) {
-    // Convert the message to the appropriate observation type
-    const { observation } = message;
-
-    switch (observation) {
-      case "browse":
-      case "browse_interactive":
-        applyLegacyBrowserExtras(message);
-        break;
-      default:
-        // For any unhandled observation types, just ignore them
-        break;
-    }
   }
 }

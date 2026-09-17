@@ -82,4 +82,26 @@ describe("handleObservationMessage", () => {
       "data:image/png;base64,same",
     );
   });
+
+  // A `hidden` browse observation is internal bookkeeping (mirrors
+  // handleActionMessage's `args.hidden` check) and must not surface in the
+  // visible browser panel.
+  it("ignores a hidden browse observation", () => {
+    handleObservationMessage({
+      ...makeBrowse("browse", {
+        url: "https://example.com/hidden",
+        screenshot: "data:image/png;base64,hidden",
+      }),
+      extras: {
+        metadata: {},
+        error_id: "",
+        url: "https://example.com/hidden",
+        screenshot: "data:image/png;base64,hidden",
+        hidden: "true",
+      },
+    });
+
+    expect(useBrowserStore.getState().url).toBe("");
+    expect(useBrowserStore.getState().screenshotSrc).toBe("");
+  });
 });
