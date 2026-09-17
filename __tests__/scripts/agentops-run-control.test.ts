@@ -70,6 +70,30 @@ describe("evaluateRunControl", () => {
     });
   });
 
+  it("refuses stop on an idle run, which would just pause it instead", () => {
+    // `interrupt()` on an IDLE conversation falls back to `pause()`, which
+    // *does* act on IDLE — so the run really moves to PAUSED, but there was
+    // no in-flight task to cancel, so a "cancelled" audit row would
+    // misdescribe a run that just got paused.
+    const verdict = evaluateRunControl("cancel", "idle");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.status).toBe("idle");
+    expect(verdict).toMatchObject({
+      reason: expect.stringContaining("no in-flight task"),
+    });
+  });
+
+  it("refuses stop on a run waiting for confirmation, which the runtime would ignore", () => {
+    // Neither IDLE nor RUNNING, so even `pause()`'s fallback does nothing —
+    // approve or reject the pending action in the Approvals queue instead.
+    const verdict = evaluateRunControl("cancel", "waiting_for_confirmation");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.status).toBe("waiting_for_confirmation");
+    expect(verdict).toMatchObject({
+      reason: expect.stringContaining("Approvals queue"),
+    });
+  });
+
   it("refuses pause and stop once the run is over", () => {
     expect(evaluateRunControl("pause", "finished").ok).toBe(false);
     expect(evaluateRunControl("cancel", "error").ok).toBe(false);
@@ -150,6 +174,44 @@ describe("controlRun", () => {
       status: 409,
       runtimeStatus: "paused",
       message: expect.stringContaining("paused"),
+    });
+    expect(client.interruptConversation).not.toHaveBeenCalled();
+    expect(store.appendAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses to stop an idle run and leaves no audit row", async () => {
+    // Regression: `/interrupt` on an idle conversation falls back to
+    // `pause()`, which succeeds on IDLE — so the tower used to record
+    // "run.cancel" for a run that had simply been paused, not cancelled.
+    const store = makeStore({ ...RUN, status: "idle" });
+    const client = makeClient("idle");
+
+    await expect(
+      controlRun({ client, store, runId: "run-1", action: "cancel", now: NOW }),
+    ).rejects.toMatchObject({
+      name: "RunControlError",
+      status: 409,
+      runtimeStatus: "idle",
+      message: expect.stringContaining("no in-flight task"),
+    });
+    expect(client.interruptConversation).not.toHaveBeenCalled();
+    expect(store.appendAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses to stop a run waiting for confirmation and leaves no audit row", async () => {
+    // Regression: the run is neither idle nor running, so `/interrupt`'s
+    // `pause()` fallback does nothing at all — the tower still recorded
+    // "run.cancel" as if it had.
+    const store = makeStore({ ...RUN, status: "waiting_for_confirmation" });
+    const client = makeClient("waiting_for_confirmation");
+
+    await expect(
+      controlRun({ client, store, runId: "run-1", action: "cancel", now: NOW }),
+    ).rejects.toMatchObject({
+      name: "RunControlError",
+      status: 409,
+      runtimeStatus: "waiting_for_confirmation",
+      message: expect.stringContaining("Approvals queue"),
     });
     expect(client.interruptConversation).not.toHaveBeenCalled();
     expect(store.appendAudit).not.toHaveBeenCalled();

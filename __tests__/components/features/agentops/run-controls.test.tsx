@@ -77,6 +77,29 @@ describe("RunControls", () => {
     expect(screen.queryByTestId("agentops-run-pause")).toBeNull();
   });
 
+  it("offers only Resume on an idle run", () => {
+    // Stop is /interrupt, which the runtime treats as an idle conversation
+    // exactly like Pause (there's no in-flight task to cancel) — the
+    // collector refuses it with a 409 rather than misrecording it as
+    // "cancelled" when it would really just pause, so the button is not
+    // offered.
+    renderControls("idle");
+    expect(screen.getByTestId("agentops-run-resume")).toBeInTheDocument();
+    expect(screen.queryByTestId("agentops-run-stop")).toBeNull();
+    expect(screen.queryByTestId("agentops-run-pause")).toBeNull();
+  });
+
+  it("renders no controls on a run waiting for confirmation", () => {
+    // The runtime ignores /interrupt while a conversation is
+    // waiting_for_confirmation (neither idle nor running, so even Pause's
+    // fallback does nothing) — approve or reject the pending action in the
+    // Approvals queue instead.
+    renderControls("waiting_for_confirmation");
+    expect(screen.queryByTestId("agentops-run-pause")).toBeNull();
+    expect(screen.queryByTestId("agentops-run-stop")).toBeNull();
+    expect(screen.queryByTestId("agentops-run-resume")).toBeNull();
+  });
+
   it("renders no controls on a stuck run, only an explanation", () => {
     // The runtime ignores /interrupt on a stuck conversation and /run
     // re-trips the stuck detector immediately, so Pause/Stop/Resume would all

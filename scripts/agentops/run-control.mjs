@@ -13,7 +13,14 @@
  *   `pause()` — so on a halted conversation it too is ignored. Stop on a
  *   *paused* run in particular does nothing: the run stays paused, in Live
  *   Runs, with its clock ticking, so it is refused rather than audited as
- *   "cancelled".
+ *   "cancelled". Stop on an *idle* run isn't a no-op — idle qualifies for
+ *   `pause()`'s IDLE/RUNNING fallback, so it really does move to PAUSED — but
+ *   it is refused anyway, for the same reason: there was no in-flight task to
+ *   cancel, so an audit row saying "cancelled" would misdescribe a run that
+ *   simply got paused. Stop on a run *waiting for confirmation* is refused
+ *   for the first reason instead: it is neither IDLE nor RUNNING, so even
+ *   `pause()`'s fallback does nothing — approve or reject the pending action
+ *   in the Approvals queue instead.
  * - `run()` restarts IDLE/PAUSED/ERROR/STUCK, but the stuck detector inspects
  *   every event since the last user message, so a STUCK conversation re-trips
  *   it on the first iteration and is back to STUCK within milliseconds. Only a
@@ -41,6 +48,15 @@ const REFUSALS = {
     "This run is already paused, and the runtime ignores Stop on a paused " +
     "run — it would stay in Live Runs exactly as it is. Leave it paused, " +
     "resume it, or delete its conversation to close the run out.",
+  stopIdle:
+    "This run is idle, so there is no in-flight task for Stop to cancel — " +
+    "the runtime would just pause it instead, which would record a " +
+    'misleading "cancelled" audit row about a run that is still there. ' +
+    "Leave it idle, resume it, or delete its conversation to close it out.",
+  stopWaitingForConfirmation:
+    "This run is waiting for your decision on a pending action, and the " +
+    "runtime ignores Stop while it waits — approve or reject the pending " +
+    "action in the Approvals queue instead.",
 };
 
 /**
@@ -80,6 +96,12 @@ export function evaluateRunControl(action, executionStatus) {
   }
   if (action === "cancel" && status === "paused") {
     return { ok: false, status, reason: REFUSALS.stopPaused };
+  }
+  if (action === "cancel" && status === "idle") {
+    return { ok: false, status, reason: REFUSALS.stopIdle };
+  }
+  if (action === "cancel" && status === "waiting_for_confirmation") {
+    return { ok: false, status, reason: REFUSALS.stopWaitingForConfirmation };
   }
   if (status === "finished" || status === "error") {
     return {

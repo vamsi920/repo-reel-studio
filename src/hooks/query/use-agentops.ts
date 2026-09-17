@@ -252,16 +252,28 @@ export function useSaveAgentOpsPolicies() {
     ...COMPONENT_OWNS_TOAST,
     mutationFn: (policies: AgentOpsPolicies) =>
       AgentOpsService.savePolicies(policies),
-    onSuccess: (saved) => {
+    // `mutationFn` sends the PUT to whichever backend `agentops-service.api.ts`
+    // resolves at *call* time, but `onSuccess` below is the mutation
+    // observer's current hook-level option, re-bound to this hook's latest
+    // render on every render — including a backend switch that happens while
+    // the request is still in flight. Reading the closed-over `backend.id`
+    // there would key the write by whichever backend is active when the
+    // *response* arrives, not the one the request was actually sent to.
+    // `onMutate` runs synchronously as part of the same `mutate()` call, so
+    // it still sees the backend active when Save was clicked; stash it in
+    // context and use that instead.
+    onMutate: () => ({ backendId: backend.id }),
+    onSuccess: (saved, _policies, context) => {
+      const backendId = context.backendId;
       // Write the collector's confirmed copy into the caches the budgets form
       // reads from before the refetch lands, so a form that drops its local
       // edits on success shows the new limits rather than the old ones for
       // a round trip.
-      queryClient.setQueryData(AGENTOPS_QUERY_KEYS.policies(backend.id), saved);
+      queryClient.setQueryData(AGENTOPS_QUERY_KEYS.policies(backendId), saved);
       queryClient.setQueryData<{
         budgets: AgentOpsBudget[];
         agents: AgentOpsPolicies["agents"];
-      }>(AGENTOPS_QUERY_KEYS.budgets(backend.id), (current) =>
+      }>(AGENTOPS_QUERY_KEYS.budgets(backendId), (current) =>
         current
           ? {
               agents: saved.agents,

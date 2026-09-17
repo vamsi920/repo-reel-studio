@@ -40,10 +40,13 @@ export function RunControls({ run }: RunControlsProps) {
   // resuming an errored run). A "stuck" run is none of these: the runtime's
   // loop detector has already halted it, `/interrupt` is a no-op on it and
   // `/run` re-trips the detector immediately, so the only way forward is a
-  // new message in the conversation — say so instead. Stop is `/interrupt`
-  // too, which the runtime ignores on a paused run — the collector refuses it
-  // (409) and so the button is not offered; a cancelled run's conversation is
-  // already gone.
+  // new message in the conversation — say so instead. Stop is `/interrupt`,
+  // which the collector refuses (409) on "paused" (the run would stay
+  // paused), "idle" (there's no in-flight task, so it would just pause the
+  // run instead of cancelling it) and "waiting_for_confirmation" (neither
+  // idle nor running, so even the pause fallback does nothing — approve or
+  // reject the pending action in the Approvals queue instead); a cancelled
+  // run's conversation is already gone.
   const isStuck = run.status === "stuck";
   const canPause = run.status === "running";
   const canResume =
@@ -51,6 +54,8 @@ export function RunControls({ run }: RunControlsProps) {
   const canStop =
     !isStuck &&
     run.status !== "paused" &&
+    run.status !== "idle" &&
+    run.status !== "waiting_for_confirmation" &&
     run.status !== "finished" &&
     run.status !== "error" &&
     run.status !== "cancelled";
