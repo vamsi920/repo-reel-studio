@@ -16,7 +16,7 @@
 </div>
 <div align="center">
   <a href="#quickstart">Quickstart</a> |
-  <a href="./docs/README.md">Docs</a> |
+  <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/backends">Docs</a> |
   <a href="./docs/SELF_HOSTING.md">Self-Hosting</a> |
   <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents">ACP Agents</a> |
   <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/prebuilt-automations">Automations</a> |
