@@ -14,18 +14,23 @@ import { KtVideoComposition } from "#/components/features/kt-video/kt-video-comp
 const MAX_SELECTABLE_FILES = 8;
 
 /** Fetches text content for a bounded set of workspace files, keyed by path. */
-function useSelectedFileContents(paths: string[]): {
+export function useSelectedFileContents(paths: string[]): {
   contents: Record<string, string>;
   isLoading: boolean;
 } {
   // Hook-count is stable across renders for a fixed MAX_SELECTABLE_FILES —
   // we always call the same number of hooks, just with null paths for
   // unused slots, which use-workspace-file-content treats as disabled.
+  // Keyed on the serialized path list rather than the `paths` array
+  // reference: the caller (KtVideoTab's `effectiveSelected`) recomputes a
+  // fresh array on every render even when the selection hasn't changed, so
+  // a reference-keyed memo here would never actually stay stable.
+  const pathsKey = JSON.stringify(paths);
   const slots = useMemo(() => {
     const padded = [...paths];
     while (padded.length < MAX_SELECTABLE_FILES) padded.push("");
     return padded.slice(0, MAX_SELECTABLE_FILES);
-  }, [paths]);
+  }, [pathsKey]);
 
   const results = [
     useWorkspaceFileContent(slots[0] || null),
@@ -38,16 +43,38 @@ function useSelectedFileContents(paths: string[]): {
     useWorkspaceFileContent(slots[7] || null),
   ];
 
-  const contents: Record<string, string> = {};
-  let isLoading = false;
-  slots.forEach((path, i) => {
-    if (!path) return;
-    const result = results[i];
-    if (result.isLoading) isLoading = true;
-    if (result.data?.kind === "text" && result.data.text != null) {
-      contents[path] = result.data.text;
-    }
-  });
+  // `results` is a fresh array every render (react-query returns a new
+  // result object whenever any field changes), but each entry's `.data` is
+  // referentially stable across renders where the fetched content hasn't
+  // changed. Keying the memo on the actual `.data` values (rather than
+  // rebuilding `contents` as a plain object literal every render) keeps
+  // `contents` — and therefore the manifest built from it downstream —
+  // referentially stable across unrelated re-renders. Without this, every
+  // background refetch/poll elsewhere in the tree rebuilds the manifest and
+  // retriggers `useSceneNarration`'s effect, which cancels and restarts
+  // in-progress narration audio.
+  const contents = useMemo(() => {
+    const out: Record<string, string> = {};
+    slots.forEach((path, i) => {
+      const result = results[i];
+      if (path && result.data?.kind === "text" && result.data.text != null) {
+        out[path] = result.data.text;
+      }
+    });
+    return out;
+  }, [
+    slots,
+    results[0].data,
+    results[1].data,
+    results[2].data,
+    results[3].data,
+    results[4].data,
+    results[5].data,
+    results[6].data,
+    results[7].data,
+  ]);
+
+  const isLoading = slots.some((path, i) => path && results[i].isLoading);
 
   return { contents, isLoading };
 }
