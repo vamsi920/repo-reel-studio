@@ -13,6 +13,9 @@ const MOCK_MD_DIFF = {
 let mockDiff = MOCK_DIFF;
 let mockIsSuccess = true;
 let mockIsLoading = false;
+let mockIsError = false;
+let mockError: unknown = null;
+const mockRefetch = vi.fn();
 // Content height Monaco reports for the mocked editor(s), settable per test
 // so we can exercise the small-diff (auto-fit) and huge-diff (capped) paths.
 let mockContentHeight = 380;
@@ -23,6 +26,9 @@ vi.mock("#/hooks/query/use-unified-git-diff", () => ({
     isLoading: mockIsLoading,
     isSuccess: mockIsSuccess,
     isRefetching: false,
+    isError: mockIsError,
+    error: mockError,
+    refetch: mockRefetch,
   }),
 }));
 
@@ -74,6 +80,9 @@ describe("FileDiffViewer", () => {
     mockDiff = MOCK_DIFF;
     mockIsSuccess = true;
     mockIsLoading = false;
+    mockIsError = false;
+    mockError = null;
+    mockRefetch.mockClear();
     mockContentHeight = 380;
   });
 
@@ -194,6 +203,24 @@ describe("FileDiffViewer", () => {
     expect(screen.queryByTestId("view-mode-old")).not.toBeInTheDocument();
     expect(screen.queryByTestId("view-mode-diff")).not.toBeInTheDocument();
     expect(screen.queryByTestId("view-mode-new")).not.toBeInTheDocument();
+  });
+
+  it("shows a retryable error message instead of a blank row when the diff fails to load", async () => {
+    mockDiff = undefined as unknown as typeof MOCK_DIFF;
+    mockIsSuccess = false;
+    mockIsError = true;
+    mockError = new Error("Request failed with status code 400");
+    const user = userEvent.setup();
+    render(<FileDiffViewer path="dangling.txt" type="M" />);
+
+    await expand(user);
+
+    expect(screen.getByTestId("file-diff-viewer-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("file-diff-viewer")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("file-single-viewer")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("file-diff-viewer-retry"));
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 
   it("renders a deleted file's diff content in commit mode instead of the placeholder", async () => {

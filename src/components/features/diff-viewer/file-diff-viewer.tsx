@@ -2,6 +2,7 @@ import { DiffEditor, Editor, Monaco } from "@monaco-editor/react";
 import React from "react";
 import { editor as editor_t } from "monaco-editor";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import {
   LuFileDiff,
   LuFileMinus,
@@ -13,6 +14,7 @@ import {
 import { IconType } from "react-icons/lib";
 import { GitChangeStatus } from "#/api/open-hands.types";
 import { I18nKey } from "#/i18n/declaration";
+import { isSdkHttpError } from "#/api/agent-server-compatibility";
 import { getLanguageFromPath } from "#/utils/get-language-from-path";
 import { cn } from "#/utils/utils";
 import ChevronUp from "#/icons/chveron-up.svg?react";
@@ -21,6 +23,17 @@ import { MarkdownRenderer } from "#/components/features/markdown/markdown-render
 import { Typography } from "#/ui/typography";
 import { LoadingSpinner } from "./loading-spinner";
 import { EditorContainer } from "./editor-container";
+
+/**
+ * The runtime's `/api/git/diff` failure shape mirrors the workspace file
+ * reader: cloud calls throw axios errors, local calls throw the SDK's
+ * `HttpError` — see `use-bash-command-logs.ts` for the same extraction.
+ */
+function getHttpStatus(error: unknown): number | null {
+  if (axios.isAxiosError(error)) return error.response?.status ?? null;
+  if (isSdkHttpError(error)) return (error as { status: number }).status;
+  return null;
+}
 
 type ViewMode = "diff" | "old" | "new";
 
@@ -112,6 +125,9 @@ export function FileDiffViewer({ path, type, commit }: FileDiffViewerProps) {
     isLoading,
     isSuccess,
     isRefetching,
+    isError,
+    error,
+    refetch,
   } = useUnifiedGitDiff({
     filePath,
     type,
@@ -278,6 +294,37 @@ export function FileDiffViewer({ path, type, commit }: FileDiffViewerProps) {
           className="w-full border-b border-[var(--oh-border)] p-4 bg-base text-[var(--oh-text-dim)] text-sm"
         >
           {t(I18nKey.DIFF_VIEWER$FILE_DELETED)}
+        </div>
+      )}
+
+      {!isCollapsed && (!isDeleted || !!commit) && isError && (
+        <div
+          className="flex w-full flex-col items-center justify-center gap-2 border-b border-[var(--oh-border)] bg-base p-4 text-center text-sm text-[var(--oh-muted)]"
+          data-testid="file-diff-viewer-error"
+          role="alert"
+        >
+          <span>{t(I18nKey.FILES$LOAD_ERROR)}</span>
+          {(() => {
+            const status = getHttpStatus(error);
+            return (
+              status !== null && (
+                <span
+                  className="text-xs text-[var(--oh-text-tertiary)]"
+                  data-testid="file-diff-viewer-error-status"
+                >
+                  {t(I18nKey.FILES$LOAD_ERROR_STATUS, { status })}
+                </span>
+              )
+            );
+          })()}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            data-testid="file-diff-viewer-retry"
+            className="cursor-pointer rounded-[7px] px-3 py-1 text-white hover:bg-[var(--oh-interactive-hover)]"
+          >
+            {t(I18nKey.FILES$RETRY)}
+          </button>
         </div>
       )}
 
