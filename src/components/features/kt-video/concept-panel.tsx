@@ -43,7 +43,7 @@ export function ConceptPanel({
     [1, 0.4],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  const opacity = Math.min(enterSpring, exit === 0.4 ? 1 : exit);
+  const opacity = Math.min(enterSpring, exit);
 
   const lines = active.code.split("\n");
 
@@ -93,6 +93,7 @@ export function ConceptPanel({
       </div>
 
       <div
+        data-testid="kt-concept-active-segment"
         style={{
           borderRadius: 12,
           overflow: "hidden",
