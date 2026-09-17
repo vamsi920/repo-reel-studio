@@ -33,21 +33,24 @@ export function buildEvidenceSummary(
   handle: AnalysisHandle,
 ): CodeEvidenceSummary {
   const { meta, root } = handle;
+  const topNodes = root.nodes
+    .slice()
+    .sort((a, b) => b.filePaths.length - a.filePaths.length)
+    .slice(0, MAX_SUBSYSTEMS);
   // `CodeGraphNode` only carries `layerId`, not a separate display name, and
   // `CodeGraphLevelPayload` doesn't expose a layers list to resolve it
   // against — the id itself is the best available label for this summary.
-  const subsystems: CodeEvidenceSubsystem[] = root.nodes
-    .slice()
-    .sort((a, b) => b.filePaths.length - a.filePaths.length)
-    .slice(0, MAX_SUBSYSTEMS)
-    .map((node) => ({
-      name: node.name,
-      layerName: node.layerId,
-      fileCount: node.filePaths.length,
-      exampleFiles: node.filePaths.slice(0, MAX_EXAMPLE_FILES),
-    }));
+  const subsystems: CodeEvidenceSubsystem[] = topNodes.map((node) => ({
+    name: node.name,
+    layerName: node.layerId,
+    fileCount: node.filePaths.length,
+    exampleFiles: node.filePaths.slice(0, MAX_EXAMPLE_FILES),
+  }));
 
-  const nameById = new Map(root.nodes.map((n) => [n.id, n.name]));
+  // Built from `topNodes` only, not all of `root.nodes` — an edge must never
+  // reference a subsystem name absent from the "Detected subsystems" list
+  // rendered just above it in the same prompt text.
+  const nameById = new Map(topNodes.map((n) => [n.id, n.name]));
   const subsystemEdges = root.edges
     .filter((e) => nameById.has(e.source) && nameById.has(e.target))
     .map((e) => ({

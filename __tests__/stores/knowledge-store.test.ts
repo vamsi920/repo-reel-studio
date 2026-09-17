@@ -78,3 +78,34 @@ describe("useKnowledgeStore setProgress", () => {
     expect(state.lastNonTerminalStatus).toBe("generating");
   });
 });
+
+describe("useKnowledgeStore reset", () => {
+  it("drops every in-memory entry, including provisioning state", () => {
+    const {
+      startGenerating,
+      startProvisioning,
+      reset: resetStore,
+    } = useKnowledgeStore.getState();
+    startGenerating(snapshot, "https://example.test", "key");
+    startProvisioning("acme/other@main", {
+      owner: "acme",
+      repo: "other",
+      branch: "main",
+    });
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId],
+    ).toBeDefined();
+    expect(
+      useKnowledgeStore.getState().provisioningByRepositoryId[
+        "acme/other@main"
+      ],
+    ).toBeDefined();
+
+    resetStore();
+
+    expect(useKnowledgeStore.getState().byRepositoryId).toEqual({});
+    expect(useKnowledgeStore.getState().provisioningByRepositoryId).toEqual(
+      {},
+    );
+  });
+});

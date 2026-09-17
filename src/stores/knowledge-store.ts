@@ -101,6 +101,18 @@ interface KnowledgeStore {
   ) => void;
   setProvisioningError: (repositoryId: string, error: string) => void;
   clearProvisioning: (repositoryId: string) => void;
+
+  /** Drops every in-memory entry. `repositoryId` here is a bare
+   * `"owner/repo@branch"` string with no active-backend/org scoping, unlike
+   * every other long-lived cache in this app (see the convention documented
+   * in `active-backend-context.tsx`'s `setActive()`), so switching backends
+   * without this call would let one backend's conversationUrl/sessionApiKey/
+   * knowledge content leak into another backend that happens to have a
+   * same-named repo/branch. Called from `setActive()` on every real
+   * backend/org switch; each affected route already re-derives its entry
+   * from a live conversation or Supabase via `useKnowledgeRehydration`, so
+   * this is a cheap reset, not a destructive one. */
+  reset: () => void;
 }
 
 /**
@@ -257,4 +269,6 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       delete rest[repositoryId];
       return { provisioningByRepositoryId: rest };
     }),
+
+  reset: () => set({ byRepositoryId: {}, provisioningByRepositoryId: {} }),
 }));

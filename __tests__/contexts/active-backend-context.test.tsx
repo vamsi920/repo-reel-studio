@@ -28,6 +28,8 @@ import {
   ActiveBackendProvider,
   useActiveBackendContext,
 } from "#/contexts/active-backend-context";
+import { useKnowledgeStore } from "#/stores/knowledge-store";
+import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 
 function makeWrapper(queryClient = new QueryClient()) {
   function Wrapper({ children }: { children: React.ReactNode }) {
@@ -46,6 +48,7 @@ beforeEach(() => {
   vi.stubEnv("VITE_SESSION_API_KEY", "session-key");
   __resetActiveStoreForTests();
   __resetHealthStoreForTests();
+  useKnowledgeStore.getState().reset();
   vi.clearAllMocks();
 });
 
@@ -54,6 +57,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   __resetActiveStoreForTests();
   __resetHealthStoreForTests();
+  useKnowledgeStore.getState().reset();
 });
 
 describe("ActiveBackendProvider", () => {
@@ -149,6 +153,46 @@ describe("ActiveBackendProvider", () => {
     const dummyState = queryClient.getQueryState(["dummy"]);
     expect(dummyState?.isInvalidated).toBe(false);
     expect(queryClient.getQueryData(["dummy"])).toEqual({ value: 1 });
+  });
+
+  it("setActive drops the knowledge store's in-memory entries so a stale backend's data can't leak into the newly active one", () => {
+    const snapshot: RepositorySnapshot = {
+      repositoryId: "acme/widgets@main",
+      owner: "acme",
+      repo: "widgets",
+      branch: "main",
+      commitSha: "abc123",
+      localPath: "/workspace/widgets",
+    };
+    const { result } = renderHook(() => useActiveBackendContext(), {
+      wrapper: makeWrapper(),
+    });
+
+    // addBackend auto-switches to the newly added backend (@spec BM-001),
+    // so re-seed the store afterward and switch back to the seeded default
+    // to exercise setActive's own reset call on a genuine backend change.
+    act(() => {
+      result.current.addBackend({
+        name: "Backend B",
+        host: "http://localhost:9001",
+        apiKey: "key-b",
+        kind: "local",
+      });
+    });
+    useKnowledgeStore
+      .getState()
+      .startGenerating(snapshot, "https://backend-a.test", "key-a");
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId],
+    ).toBeDefined();
+
+    act(() => {
+      result.current.setActive(SEEDED_DEFAULT_BACKEND_ID);
+    });
+
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId],
+    ).toBeUndefined();
   });
 
   it("clears Cloud context but preserves identity when switching from Cloud to local", () => {

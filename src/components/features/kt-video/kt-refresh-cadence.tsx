@@ -9,6 +9,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { formatRelativeTime } from "#/utils/format-relative-time";
 import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
 import { useActiveBackend } from "#/contexts/active-backend-context";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 const CADENCE_MS: Record<Exclude<RefreshCadence, "manual">, number> = {
   daily: 24 * 60 * 60 * 1000,
@@ -53,6 +54,18 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
   const isRegenerating = state.status === "generating";
 
   const handleRegenerate = () => {
+    if (!state.conversationUrl || !state.sessionApiKey) {
+      // A cold-rehydrated (Supabase) entry has real Docs content but no live
+      // session/localPath — regenerating would ask DeepWiki to (re-)index a
+      // null/empty target and risk overwriting good persisted Knowledge with
+      // garbage. Same real scope boundary Watch KT already enforces
+      // (see kt-page.tsx's generateWatchManifest): open/reopen the
+      // conversation first.
+      displayErrorToast(
+        "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+      );
+      return;
+    }
     void generateKnowledge(
       state.snapshot,
       state.conversationUrl,

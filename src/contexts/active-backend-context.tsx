@@ -21,6 +21,7 @@ import {
 } from "#/api/backend-registry/types";
 import { QUERY_KEYS } from "#/hooks/query/query-keys";
 import { queryClient } from "#/query-client-config";
+import { useKnowledgeStore } from "#/stores/knowledge-store";
 import {
   setTelemetryCloudContext,
   setTelemetryIdentity,
@@ -108,6 +109,15 @@ export function ActiveBackendProvider({
       const next: BackendSelection = { backendId, orgId: nextOrgId };
       setActiveSelection(next);
       retryBootstrapProbe();
+
+      // `useKnowledgeStore.byRepositoryId` is keyed only by
+      // `"owner/repo@branch"`, with no active-backend/org scoping unlike the
+      // query-keyed caches below — without this, switching to a backend that
+      // happens to have a same-named repo/branch would read the previous
+      // backend's stale conversationUrl/sessionApiKey/knowledge content.
+      // Every affected route re-derives its entry from a live conversation
+      // or Supabase via `useKnowledgeRehydration`, so this is a cheap reset.
+      useKnowledgeStore.getState().reset();
 
       // No blanket `invalidateQueries()` here. Long-lived queries
       // (`useSettings`, `usePaginatedConversations`,
