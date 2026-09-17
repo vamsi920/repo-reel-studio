@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FileDiffViewer } from "#/components/features/diff-viewer/file-diff-viewer";
 
@@ -12,6 +13,9 @@ const MOCK_MD_DIFF = {
 let mockDiff = MOCK_DIFF;
 let mockIsSuccess = true;
 let mockIsLoading = false;
+// Content height Monaco reports for the mocked editor(s), settable per test
+// so we can exercise the small-diff (auto-fit) and huge-diff (capped) paths.
+let mockContentHeight = 380;
 
 vi.mock("#/hooks/query/use-unified-git-diff", () => ({
   useUnifiedGitDiff: () => ({
@@ -23,12 +27,36 @@ vi.mock("#/hooks/query/use-unified-git-diff", () => ({
 }));
 
 vi.mock("@monaco-editor/react", () => ({
-  DiffEditor: (props: Record<string, unknown>) => (
-    <div data-testid="file-diff-viewer" data-original={props.original} data-modified={props.modified} />
-  ),
-  Editor: (props: Record<string, unknown>) => (
-    <div data-testid="file-single-viewer" data-value={props.value} />
-  ),
+  DiffEditor: (props: Record<string, unknown>) => {
+    const onMount = props.onMount as ((editor: unknown) => void) | undefined;
+    useEffect(() => {
+      const fakeSubEditor = {
+        getContentHeight: () => mockContentHeight,
+        onDidContentSizeChange: () => {},
+      };
+      onMount?.({
+        getOriginalEditor: () => fakeSubEditor,
+        getModifiedEditor: () => fakeSubEditor,
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div data-testid="file-diff-viewer" data-original={props.original} data-modified={props.modified} />
+    );
+  },
+  Editor: (props: Record<string, unknown>) => {
+    const onMount = props.onMount as ((editor: unknown) => void) | undefined;
+    useEffect(() => {
+      onMount?.({
+        getContentHeight: () => mockContentHeight,
+        onDidContentSizeChange: () => {},
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div data-testid="file-single-viewer" data-value={props.value} />
+    );
+  },
 }));
 
 vi.mock("#/components/features/markdown/markdown-renderer", () => ({
@@ -46,6 +74,7 @@ describe("FileDiffViewer", () => {
     mockDiff = MOCK_DIFF;
     mockIsSuccess = true;
     mockIsLoading = false;
+    mockContentHeight = 380;
   });
 
   it("starts collapsed with no view mode buttons", () => {
@@ -211,5 +240,46 @@ describe("FileDiffViewer", () => {
       "aria-pressed",
       "false",
     );
+  });
+
+  it("sizes the editor container to fit a small diff's content", async () => {
+    mockContentHeight = 380;
+    const user = userEvent.setup();
+    render(<FileDiffViewer path="src/index.ts" type="M" />);
+
+    await expand(user);
+
+    expect(screen.getByTestId("editor-container")).toHaveStyle({
+      "--editor-height": "400px",
+    });
+  });
+
+  it("caps the editor container height for a huge diff instead of growing to fit every line", async () => {
+    // Regression test: Monaco used to be sized to the full content height,
+    // so a 78,000-line added file rendered one DOM row per line and froze
+    // the page. The container must stay capped so Monaco keeps scrolling
+    // (and virtualizing rows) internally instead.
+    mockContentHeight = 1_404_085;
+    const user = userEvent.setup();
+    render(<FileDiffViewer path="big.json" type="A" />);
+
+    await expand(user);
+
+    expect(screen.getByTestId("editor-container")).toHaveStyle({
+      "--editor-height": "600px",
+    });
+  });
+
+  it("caps the single-editor container height for a huge file", async () => {
+    mockContentHeight = 1_404_085;
+    const user = userEvent.setup();
+    render(<FileDiffViewer path="big.json" type="A" />);
+
+    await expand(user);
+    await user.click(screen.getByTestId("view-mode-new"));
+
+    expect(screen.getByTestId("editor-container")).toHaveStyle({
+      "--editor-height": "600px",
+    });
   });
 });

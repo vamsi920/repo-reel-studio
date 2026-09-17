@@ -30,6 +30,14 @@ const VIEW_MODES: { mode: ViewMode; icon: IconType }[] = [
   { mode: "new", icon: LuFileCheck },
 ];
 
+// Monaco virtualizes rows based on its own layout height. Sizing the
+// container to the full content height (as we do for compact diffs) makes
+// every row "visible" from Monaco's perspective, so a huge added/changed
+// file renders one DOM row per line instead of only the on-screen ones.
+// Capping the height keeps Monaco's internal scrolling — and therefore its
+// virtualization — active past this point.
+const MAX_EDITOR_HEIGHT = 600;
+
 const SHARED_EDITOR_OPTIONS: editor_t.IEditorOptions = {
   renderValidationDecorations: "off",
   readOnly: true,
@@ -117,17 +125,25 @@ export function FileDiffViewer({ path, type, commit }: FileDiffViewerProps) {
     const modifiedEditor = diffEditorRef.current.getModifiedEditor();
     if (originalEditor && modifiedEditor) {
       setEditorHeight(
-        Math.max(
-          originalEditor.getContentHeight(),
-          modifiedEditor.getContentHeight(),
-        ) + 20,
+        Math.min(
+          Math.max(
+            originalEditor.getContentHeight(),
+            modifiedEditor.getContentHeight(),
+          ) + 20,
+          MAX_EDITOR_HEIGHT,
+        ),
       );
     }
   }, []);
 
   const updateSingleEditorHeight = React.useCallback(() => {
     if (singleEditorRef.current) {
-      setEditorHeight(singleEditorRef.current.getContentHeight() + 20);
+      setEditorHeight(
+        Math.min(
+          singleEditorRef.current.getContentHeight() + 20,
+          MAX_EDITOR_HEIGHT,
+        ),
+      );
     }
   }, []);
 
