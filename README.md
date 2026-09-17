@@ -15,6 +15,9 @@
   <a href="https://go.openhands.dev/slack"><img src="https://img.shields.io/badge/Slack-Join%20the%20community-611f69?logo=slack&logoColor=white&style=for-the-badge" alt="Join us on Slack"></a>
 </div>
 <div align="center">
+  <a href="https://github.com/vamsi920/repo-reel-studio/actions/workflows/ci.yml"><img src="https://github.com/vamsi920/repo-reel-studio/actions/workflows/ci.yml/badge.svg" alt="CI Workflow Status"></a>
+</div>
+<div align="center">
   <a href="#quickstart">Quickstart</a> |
   <a href="./docs/README.md">Docs</a> |
   <a href="./docs/SELF_HOSTING.md">Self-Hosting</a> |
