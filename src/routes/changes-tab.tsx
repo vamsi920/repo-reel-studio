@@ -20,6 +20,12 @@ const RUNTIME_STATUS_KEYS = new Set<I18nKey>([
   I18nKey.DIFF_VIEWER$LOADING,
 ]);
 
+// Rendering every FileDiffViewer for a huge change set (thousands of files)
+// would be prohibitively expensive, so the list is capped; when it is, tell
+// the user rather than silently hiding the rest (mirrors DIFF_VIEWER$COMMITS_CAP
+// in commit-list.tsx).
+const CHANGES_CAP = 100;
+
 function ChangesTabStatus({ messages }: { messages: string[] }) {
   const { t } = useTranslation("openhands");
 
@@ -47,6 +53,7 @@ function ChangesTabStatus({ messages }: { messages: string[] }) {
 }
 
 function GitChanges() {
+  const { t } = useTranslation("openhands");
   const {
     data: gitChanges,
     isSuccess,
@@ -105,13 +112,24 @@ function GitChanges() {
         </div>
       ) : (
         <div className="h-full overflow-y-auto flex flex-col items-stretch custom-scrollbar-always">
-          {gitChanges.slice(0, 100).map((change) => (
+          {gitChanges.slice(0, CHANGES_CAP).map((change) => (
             <FileDiffViewer
               key={change.path}
               path={change.path}
               type={change.status}
             />
           ))}
+          {gitChanges.length > CHANGES_CAP && (
+            <div
+              data-testid="changes-tab-cap-notice"
+              className="px-3 py-2.5 text-xs text-[var(--oh-muted)]"
+            >
+              {t(I18nKey.DIFF_VIEWER$CHANGES_CAP, {
+                count: CHANGES_CAP,
+                total: gitChanges.length,
+              })}
+            </div>
+          )}
         </div>
       )}
     </main>

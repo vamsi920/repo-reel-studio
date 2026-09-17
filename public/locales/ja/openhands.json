@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "コミット",
   "DIFF_VIEWER$NO_COMMITS": "コミットはまだありません",
   "DIFF_VIEWER$COMMITS_CAP": "最新の{{count}}件のコミットを表示しています",
+  "DIFF_VIEWER$CHANGES_CAP": "変更されたファイルの最初の{{count}}件（全{{total}}件中）を表示しています",
   "SYSTEM_MESSAGE_MODAL$TITLE": "エージェントツールとメタデータ",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "エージェントクラス：",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Neo バージョン：",

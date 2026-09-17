@@ -20977,6 +20977,23 @@
     "uk": "Показано останні {{count}} комітів",
     "ca": "Es mostren els darrers {{count}} commits"
   },
+  "DIFF_VIEWER$CHANGES_CAP": {
+    "en": "Showing the first {{count}} of {{total}} changed files",
+    "ja": "変更されたファイルの最初の{{count}}件（全{{total}}件中）を表示しています",
+    "zh-CN": "正在显示前 {{count}} 个更改的文件（共 {{total}} 个）",
+    "zh-TW": "正在顯示前 {{count}} 個變更的檔案（共 {{total}} 個）",
+    "ko-KR": "변경된 파일 {{total}}개 중 처음 {{count}}개를 표시 중",
+    "no": "Viser de første {{count}} av {{total}} endrede filer",
+    "it": "Visualizzazione dei primi {{count}} file modificati su {{total}}",
+    "pt": "Mostrando os primeiros {{count}} de {{total}} arquivos alterados",
+    "es": "Mostrando los primeros {{count}} de {{total}} archivos modificados",
+    "ar": "عرض أول {{count}} من أصل {{total}} ملفًا تم تغييره",
+    "fr": "Affichage des {{count}} premiers fichiers modifiés sur {{total}}",
+    "tr": "{{total}} değiştirilen dosyadan ilk {{count}} tanesi gösteriliyor",
+    "de": "Die ersten {{count}} von {{total}} geänderten Dateien werden angezeigt",
+    "uk": "Показано перші {{count}} з {{total}} змінених файлів",
+    "ca": "Es mostren els primers {{count}} de {{total}} fitxers modificats"
+  },
   "SYSTEM_MESSAGE_MODAL$TITLE": {
     "en": "Agent Tools & Metadata",
     "zh-CN": "代理工具和元数据",

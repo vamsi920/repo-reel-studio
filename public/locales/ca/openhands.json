@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Encara no hi ha commits",
   "DIFF_VIEWER$COMMITS_CAP": "Es mostren els darrers {{count}} commits",
+  "DIFF_VIEWER$CHANGES_CAP": "Es mostren els primers {{count}} de {{total}} fitxers modificats",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Eines i metadades de l'agent",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "Classe de l'agent:",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Versió d'Neo:",

@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Aún no hay commits",
   "DIFF_VIEWER$COMMITS_CAP": "Mostrando los últimos {{count}} commits",
+  "DIFF_VIEWER$CHANGES_CAP": "Mostrando los primeros {{count}} de {{total}} archivos modificados",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Herramientas y metadatos del agente",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "Clase de agente:",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Versión de Neo:",

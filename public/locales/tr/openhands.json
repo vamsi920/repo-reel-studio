@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "Commit'ler",
   "DIFF_VIEWER$NO_COMMITS": "Henüz commit yok",
   "DIFF_VIEWER$COMMITS_CAP": "En son {{count}} commit gösteriliyor",
+  "DIFF_VIEWER$CHANGES_CAP": "{{total}} değiştirilen dosyadan ilk {{count}} tanesi gösteriliyor",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Ajan Araçları ve Meta Verileri",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "Ajan Sınıfı:",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Neo Sürümü:",

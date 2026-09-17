@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "No commits yet",
   "DIFF_VIEWER$COMMITS_CAP": "Showing the latest {{count}} commits",
+  "DIFF_VIEWER$CHANGES_CAP": "Showing the first {{count}} of {{total}} changed files",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Agent Tools & Metadata",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "Agent Class:",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Neo Version:",

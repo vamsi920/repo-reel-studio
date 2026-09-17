@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "الإيداعات",
   "DIFF_VIEWER$NO_COMMITS": "لا توجد إيداعات بعد",
   "DIFF_VIEWER$COMMITS_CAP": "عرض أحدث {{count}} إيداعًا",
+  "DIFF_VIEWER$CHANGES_CAP": "عرض أول {{count}} من أصل {{total}} ملفًا تم تغييره",
   "SYSTEM_MESSAGE_MODAL$TITLE": "أدوات الوكيل والبيانات الوصفية",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "فئة الوكيل:",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "إصدار Neo:",

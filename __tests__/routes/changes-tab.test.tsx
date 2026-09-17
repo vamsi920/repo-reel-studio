@@ -111,6 +111,51 @@ describe("Changes Tab", () => {
     ).toBeInTheDocument();
   });
 
+  it("should not show the cap notice when the change set is within the cap", () => {
+    vi.mocked(useUnifiedGetGitChanges).mockReturnValue({
+      data: [{ path: "src/file.ts", status: "M" }],
+      isLoading: false,
+      isFetching: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.RUNNING,
+    });
+
+    render(<GitChanges />, { wrapper });
+
+    expect(
+      screen.queryByTestId("changes-tab-cap-notice"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should cap rendered files at 100 and show a truncation notice for larger change sets", () => {
+    const changes = Array.from({ length: 105 }, (_, i) => ({
+      path: `src/file-${i}.ts`,
+      status: "M" as const,
+    }));
+    vi.mocked(useUnifiedGetGitChanges).mockReturnValue({
+      data: changes,
+      isLoading: false,
+      isFetching: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.RUNNING,
+    });
+
+    render(<GitChanges />, { wrapper });
+
+    expect(screen.getAllByTestId("file-diff-viewer-outer")).toHaveLength(100);
+    expect(screen.getByTestId("changes-tab-cap-notice")).toBeInTheDocument();
+  });
+
   it("should show the loading message while git changes are loading", () => {
     vi.mocked(useUnifiedGetGitChanges).mockReturnValue({
       data: [],

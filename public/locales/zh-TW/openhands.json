@@ -1233,6 +1233,7 @@
   "DIFF_VIEWER$COMMITS": "提交記錄",
   "DIFF_VIEWER$NO_COMMITS": "尚無提交",
   "DIFF_VIEWER$COMMITS_CAP": "顯示最新的 {{count}} 個提交",
+  "DIFF_VIEWER$CHANGES_CAP": "正在顯示前 {{count}} 個變更的檔案（共 {{total}} 個）",
   "SYSTEM_MESSAGE_MODAL$TITLE": "代理工具和元數據",
   "SYSTEM_MESSAGE_MODAL$AGENT_CLASS": "代理類別：",
   "SYSTEM_MESSAGE_MODAL$OPENHANDS_VERSION": "Neo 版本：",
