@@ -17,6 +17,7 @@ import AgentOpsService, {
   isAgentOpsNotFoundError,
   isAgentOpsSupportedBackend,
 } from "#/api/agentops-service/agentops-service.api";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 import type {
   AgentOpsApproval,
   AgentOpsAuditRecord,
@@ -28,15 +29,25 @@ import type {
   AgentOpsSummary,
 } from "#/api/agentops-service/agentops-service.types";
 
+// Every request goes to whichever backend's host/API key
+// `agentops-service.api.ts` resolves *at fetch time* — a local agent-server
+// the collector polls. Keying every query on `backendId` (as the other
+// per-backend hooks in this codebase do, see `active-backend-context.tsx`)
+// makes React Query treat switching backends as a brand-new query instead of
+// reusing/overwriting the previous backend's cached runs/budgets/audit.
 export const AGENTOPS_QUERY_KEYS = {
   all: ["agentops"] as const,
-  summary: ["agentops", "summary"] as const,
-  runs: (filter?: string) => ["agentops", "runs", filter ?? "all"] as const,
-  run: (runId: string) => ["agentops", "run", runId] as const,
-  approvals: (state: string) => ["agentops", "approvals", state] as const,
-  policies: ["agentops", "policies"] as const,
-  budgets: ["agentops", "budgets"] as const,
-  audit: (entity?: string) => ["agentops", "audit", entity ?? "all"] as const,
+  summary: (backendId: string) => ["agentops", "summary", backendId] as const,
+  runs: (backendId: string, filter?: string) =>
+    ["agentops", "runs", backendId, filter ?? "all"] as const,
+  run: (backendId: string, runId: string) =>
+    ["agentops", "run", backendId, runId] as const,
+  approvals: (backendId: string, state: string) =>
+    ["agentops", "approvals", backendId, state] as const,
+  policies: (backendId: string) => ["agentops", "policies", backendId] as const,
+  budgets: (backendId: string) => ["agentops", "budgets", backendId] as const,
+  audit: (backendId: string, entity?: string) =>
+    ["agentops", "audit", backendId, entity ?? "all"] as const,
 } as const;
 
 /** Live surfaces (Overview tiles, Live Runs, Approvals). */
@@ -64,8 +75,9 @@ const COMPONENT_OWNS_TOAST = {
 } as const;
 
 export function useAgentOpsSummary(): UseQueryResult<AgentOpsSummary> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.summary,
+    queryKey: AGENTOPS_QUERY_KEYS.summary(backend.id),
     queryFn: AgentOpsService.getSummary,
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: LIVE_REFETCH_MS,
@@ -80,8 +92,9 @@ export function useAgentOpsRuns(
   } = {},
 ): UseQueryResult<AgentOpsRun[]> {
   const { status, live = true } = options;
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.runs(status),
+    queryKey: AGENTOPS_QUERY_KEYS.runs(backend.id, status),
     queryFn: () => AgentOpsService.getRuns({ status }),
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: live ? LIVE_REFETCH_MS : SLOW_REFETCH_MS,
@@ -113,8 +126,9 @@ export function runDetailRefetchInterval(
 export function useAgentOpsRun(
   runId: string | null,
 ): UseQueryResult<AgentOpsRunDetail> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.run(runId ?? ""),
+    queryKey: AGENTOPS_QUERY_KEYS.run(backend.id, runId ?? ""),
     queryFn: () => AgentOpsService.getRun(runId as string),
     enabled: Boolean(runId) && isAgentOpsSupportedBackend(),
     refetchInterval: (query) =>
@@ -126,8 +140,9 @@ export function useAgentOpsRun(
 export function useAgentOpsApprovals(
   state: "pending" | "all" = "pending",
 ): UseQueryResult<AgentOpsApproval[]> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.approvals(state),
+    queryKey: AGENTOPS_QUERY_KEYS.approvals(backend.id, state),
     queryFn: () => AgentOpsService.getApprovals(state),
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: LIVE_REFETCH_MS,
@@ -143,8 +158,9 @@ export function useAgentOpsApprovals(
  * "collector down") would stay on that card until the tab was remounted.
  */
 export function useAgentOpsPolicies(): UseQueryResult<AgentOpsPolicies> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.policies,
+    queryKey: AGENTOPS_QUERY_KEYS.policies(backend.id),
     queryFn: AgentOpsService.getPolicies,
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: SLOW_REFETCH_MS,
@@ -156,8 +172,9 @@ export function useAgentOpsBudgets(): UseQueryResult<{
   budgets: AgentOpsBudget[];
   agents: AgentOpsPolicies["agents"];
 }> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.budgets,
+    queryKey: AGENTOPS_QUERY_KEYS.budgets(backend.id),
     queryFn: AgentOpsService.getBudgets,
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: SLOW_REFETCH_MS,
@@ -168,8 +185,9 @@ export function useAgentOpsBudgets(): UseQueryResult<{
 export function useAgentOpsAudit(
   entity?: string,
 ): UseQueryResult<AgentOpsAuditRecord[]> {
+  const { backend } = useActiveBackend();
   return useQuery({
-    queryKey: AGENTOPS_QUERY_KEYS.audit(entity),
+    queryKey: AGENTOPS_QUERY_KEYS.audit(backend.id, entity),
     queryFn: () => AgentOpsService.getAudit({ entity }),
     enabled: isAgentOpsSupportedBackend(),
     refetchInterval: SLOW_REFETCH_MS,
@@ -228,6 +246,7 @@ export function useAgentOpsApprovalDecision() {
 
 export function useSaveAgentOpsPolicies() {
   const queryClient = useQueryClient();
+  const { backend } = useActiveBackend();
   return useMutation({
     mutationKey: ["agentops", "save-policies"],
     ...COMPONENT_OWNS_TOAST,
@@ -238,11 +257,11 @@ export function useSaveAgentOpsPolicies() {
       // reads from before the refetch lands, so a form that drops its local
       // edits on success shows the new limits rather than the old ones for
       // a round trip.
-      queryClient.setQueryData(AGENTOPS_QUERY_KEYS.policies, saved);
+      queryClient.setQueryData(AGENTOPS_QUERY_KEYS.policies(backend.id), saved);
       queryClient.setQueryData<{
         budgets: AgentOpsBudget[];
         agents: AgentOpsPolicies["agents"];
-      }>(AGENTOPS_QUERY_KEYS.budgets, (current) =>
+      }>(AGENTOPS_QUERY_KEYS.budgets(backend.id), (current) =>
         current
           ? {
               agents: saved.agents,

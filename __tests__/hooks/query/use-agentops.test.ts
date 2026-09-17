@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { runDetailRefetchInterval } from "#/hooks/query/use-agentops";
+import {
+  AGENTOPS_QUERY_KEYS,
+  runDetailRefetchInterval,
+} from "#/hooks/query/use-agentops";
 import {
   AgentOpsRequestError,
   AgentOpsUnavailableError,
@@ -41,6 +44,45 @@ function detail(status: AgentOpsRunDetail["run"]["status"]): AgentOpsRunDetail {
     approvals: [],
   };
 }
+
+describe("AGENTOPS_QUERY_KEYS", () => {
+  it("keys every surface on the backend id, so switching backends is a new query", () => {
+    // Requests go to whichever backend agentops-service.api.ts resolves at
+    // fetch time; without the backend id in the key, switching backends
+    // would keep serving the previous backend's cached runs/budgets/audit
+    // until the next poll happened to overwrite it.
+    expect(AGENTOPS_QUERY_KEYS.summary("backend-a")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.summary("backend-b"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.runs("backend-a")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.runs("backend-b"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.run("backend-a", "run-1")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.run("backend-b", "run-1"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.approvals("backend-a", "pending")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.approvals("backend-b", "pending"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.policies("backend-a")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.policies("backend-b"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.budgets("backend-a")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.budgets("backend-b"),
+    );
+    expect(AGENTOPS_QUERY_KEYS.audit("backend-a")).not.toEqual(
+      AGENTOPS_QUERY_KEYS.audit("backend-b"),
+    );
+  });
+
+  it("keeps every surface's key prefixed with the shared 'agentops' root so a blanket invalidation still matches", () => {
+    expect(AGENTOPS_QUERY_KEYS.summary("backend-a")[0]).toBe(
+      AGENTOPS_QUERY_KEYS.all[0],
+    );
+    expect(AGENTOPS_QUERY_KEYS.budgets("backend-a")[0]).toBe(
+      AGENTOPS_QUERY_KEYS.all[0],
+    );
+  });
+});
 
 describe("runDetailRefetchInterval", () => {
   it("polls a live run at the live cadence, before and after the first load", () => {

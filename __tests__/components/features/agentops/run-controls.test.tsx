@@ -88,6 +88,16 @@ describe("RunControls", () => {
     expect(screen.getByTestId("agentops-run-stuck-note")).toBeInTheDocument();
   });
 
+  it("offers Resume on an errored run", () => {
+    // `run()` in software-agent-sdk restarts an ERROR conversation just like
+    // a paused one (see run-control.mjs's evaluateRunControl), so Resume must
+    // be offered here too, not just for "paused"/"idle".
+    renderControls("error");
+    expect(screen.getByTestId("agentops-run-resume")).toBeInTheDocument();
+    expect(screen.queryByTestId("agentops-run-pause")).toBeNull();
+    expect(screen.queryByTestId("agentops-run-stop")).toBeNull();
+  });
+
   it("renders nothing actionable on a finished run", () => {
     renderControls("finished");
     expect(screen.queryByRole("button")).toBeNull();

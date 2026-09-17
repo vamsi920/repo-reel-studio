@@ -11,6 +11,7 @@ import AgentOpsService, {
   AgentOpsUnavailableError,
 } from "#/api/agentops-service/agentops-service.api";
 import { AGENTOPS_QUERY_KEYS } from "#/hooks/query/use-agentops";
+import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backend";
 import { createAgentServerQueryClient } from "#/query-client-config";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type {
@@ -207,10 +208,13 @@ describe("BudgetsPanel", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    queryClient.setQueryData(AGENTOPS_QUERY_KEYS.budgets, {
-      budgets: [budget()],
-      agents: {},
-    });
+    queryClient.setQueryData(
+      AGENTOPS_QUERY_KEYS.budgets(SEEDED_DEFAULT_BACKEND_ID),
+      {
+        budgets: [budget()],
+        agents: {},
+      },
+    );
     const { rerender } = renderPanel([budget()], EMPTY_POLICIES, queryClient);
 
     await userEvent.clear(monthlyInput());
@@ -219,7 +223,7 @@ describe("BudgetsPanel", () => {
 
     await waitFor(() => expect(saveButton()).toBeDisabled());
     const cached = queryClient.getQueryData<{ budgets: AgentOpsBudget[] }>(
-      AGENTOPS_QUERY_KEYS.budgets,
+      AGENTOPS_QUERY_KEYS.budgets(SEEDED_DEFAULT_BACKEND_ID),
     );
     expect(cached?.budgets[0].policy.monthlyBudgetUsd).toBe(40);
 

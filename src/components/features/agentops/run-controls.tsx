@@ -34,16 +34,20 @@ export function RunControls({ run }: RunControlsProps) {
   const [confirmStopOpen, setConfirmStopOpen] = useState(false);
 
   // Only a run the runtime is actually working on can be paused or stopped;
-  // only a halted-but-unfinished run can be resumed. A "stuck" run is none of
-  // these: the runtime's loop detector has already halted it, `/interrupt` is
-  // a no-op on it and `/run` re-trips the detector immediately, so the only
-  // way forward is a new message in the conversation — say so instead. Stop
-  // is `/interrupt` too, which the runtime ignores on a paused run — the
-  // collector refuses it (409) and so the button is not offered; a cancelled
-  // run's conversation is already gone.
+  // only a halted-but-unfinished run can be resumed — that includes "error",
+  // since `run()` in software-agent-sdk restarts IDLE/PAUSED/ERROR/STUCK
+  // (see run-control.mjs's `evaluateRunControl`, which returns `ok: true` for
+  // resuming an errored run). A "stuck" run is none of these: the runtime's
+  // loop detector has already halted it, `/interrupt` is a no-op on it and
+  // `/run` re-trips the detector immediately, so the only way forward is a
+  // new message in the conversation — say so instead. Stop is `/interrupt`
+  // too, which the runtime ignores on a paused run — the collector refuses it
+  // (409) and so the button is not offered; a cancelled run's conversation is
+  // already gone.
   const isStuck = run.status === "stuck";
   const canPause = run.status === "running";
-  const canResume = run.status === "paused" || run.status === "idle";
+  const canResume =
+    run.status === "paused" || run.status === "idle" || run.status === "error";
   const canStop =
     !isStuck &&
     run.status !== "paused" &&
