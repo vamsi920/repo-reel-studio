@@ -4,7 +4,9 @@ import {
   beginMcpHealthCheck,
   clearMcpServerHealth,
   getMcpHealthSnapshot,
+  resetMcpHealthStore,
   resolveMcpHealthCheck,
+  setMcpServerHealth,
 } from "#/api/mcp-health/mcp-health-store";
 import type { McpServerHealth } from "#/types/mcp-health";
 
@@ -60,5 +62,15 @@ describe("mcp-health-store", () => {
     resolveMcpHealthCheck("key", checkId, HEALTHY);
 
     expect(getMcpHealthSnapshot().key).toBeUndefined();
+  });
+
+  it("resetMcpHealthStore drops every entry, so a same-named server on a different backend starts unchecked instead of inheriting a stale verdict", () => {
+    setMcpServerHealth("server-a", HEALTHY);
+    setMcpServerHealth("server-b", FAILED);
+    expect(Object.keys(getMcpHealthSnapshot())).toHaveLength(2);
+
+    resetMcpHealthStore();
+
+    expect(getMcpHealthSnapshot()).toEqual({});
   });
 });

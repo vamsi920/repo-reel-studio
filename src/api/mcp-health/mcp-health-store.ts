@@ -71,6 +71,21 @@ export function clearMcpServerHealth(key: string): void {
   commit(rest);
 }
 
+/**
+ * Drop every entry — used when the active backend changes. `healthMap` is
+ * keyed only by a server's structural fields (type/name/command/url/auth
+ * strategy, see `getMcpServerHealthKey`), with no backend identity in the
+ * key, so two different backends that happen to configure a same-named
+ * server (a common catalog entry) would otherwise show the previous
+ * backend's stale health verdict for the new one. Mirrors
+ * `useKnowledgeStore.reset()`'s same-shaped fix in
+ * `active-backend-context.tsx`.
+ */
+export function resetMcpHealthStore(): void {
+  if (Object.keys(healthMap).length === 0) return;
+  commit({});
+}
+
 /** Test-only: reset state and listeners. */
 export function __resetMcpHealthStoreForTests(): void {
   healthMap = {};

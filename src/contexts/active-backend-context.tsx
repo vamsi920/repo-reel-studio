@@ -21,6 +21,8 @@ import {
 } from "#/api/backend-registry/types";
 import { QUERY_KEYS } from "#/hooks/query/query-keys";
 import { queryClient } from "#/query-client-config";
+import SettingsService from "#/api/settings-service/settings-service.api";
+import { resetMcpHealthStore } from "#/api/mcp-health/mcp-health-store";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import {
   setTelemetryCloudContext,
@@ -82,6 +84,17 @@ export function ActiveBackendProvider({
 
   const retryBootstrapProbe = React.useCallback(() => {
     clearCachedAgentServerInfo();
+    // `SettingsService`'s in-memory settings cache (redacted + encrypted) is
+    // a bare module-level object with no backend scoping at all — unlike
+    // every React-Query-keyed cache in this file, it isn't automatically
+    // "a new cache" when the effectively active backend changes. Without
+    // this, a local backend switch (or editing the active local backend's
+    // host/apiKey in place) can keep serving the previous connection's
+    // LLM model/API key/agent config for up to the cache's 5-minute TTL.
+    // `retryBootstrapProbe` already runs on every one of those transitions
+    // (setActive on a real switch, addBackend, an active-backend-affecting
+    // updateBackend, removeBackend), so it's the natural place to clear it.
+    SettingsService.invalidateCache();
     void queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.WEB_CLIENT_CONFIG,
     });
@@ -118,6 +131,12 @@ export function ActiveBackendProvider({
       // Every affected route re-derives its entry from a live conversation
       // or Supabase via `useKnowledgeRehydration`, so this is a cheap reset.
       useKnowledgeStore.getState().reset();
+
+      // Same class of bug: MCP server health is keyed only by a server's
+      // structural fields (name/command/url/auth strategy), not by backend
+      // — two backends configuring a same-named server would otherwise
+      // show the previous backend's stale health verdict for the new one.
+      resetMcpHealthStore();
 
       // No blanket `invalidateQueries()` here. Long-lived queries
       // (`useSettings`, `usePaginatedConversations`,

@@ -135,11 +135,18 @@ export const useSettings = (scope: SettingsScope = "personal") => {
   const query = useQuery({
     // Include the active backend identity so switching backends or orgs
     // produces a fresh query — the `staleTime` cache for one backend
-    // never serves another's data.
+    // never serves another's data. Also include host/apiKey (matching
+    // useAgentSettingsSchema's key) so editing an existing local backend's
+    // connection details in place — same backend.id, corrected host or a
+    // rotated API key — is treated as a new query too, instead of quietly
+    // serving the previous connection's settings until staleTime lapses.
     queryKey: [
       ...SETTINGS_QUERY_KEYS.byScope(scope),
       active.backend.id,
       active.orgId,
+      active.backend.kind,
+      active.backend.host,
+      active.backend.apiKey,
     ],
     queryFn: () => getSettingsQueryFn(scope),
     retry: (_, error) => getErrorStatus(error) !== 404,

@@ -30,6 +30,11 @@ import {
 } from "#/contexts/active-backend-context";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
+import SettingsService from "#/api/settings-service/settings-service.api";
+import {
+  getMcpHealthSnapshot,
+  setMcpServerHealth,
+} from "#/api/mcp-health/mcp-health-store";
 
 function makeWrapper(queryClient = new QueryClient()) {
   function Wrapper({ children }: { children: React.ReactNode }) {
@@ -193,6 +198,63 @@ describe("ActiveBackendProvider", () => {
     expect(
       useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId],
     ).toBeUndefined();
+  });
+
+  it("setActive drops MCP server health entries so a stale backend's verdict can't leak into the newly active one", () => {
+    const { result } = renderHook(() => useActiveBackendContext(), {
+      wrapper: makeWrapper(),
+    });
+
+    act(() => {
+      result.current.addBackend({
+        name: "Backend B",
+        host: "http://localhost:9001",
+        apiKey: "key-b",
+        kind: "local",
+      });
+    });
+    setMcpServerHealth("same-server-key", {
+      status: "healthy",
+      verification: "verified",
+      toolCount: 3,
+      checkedAt: 1,
+    });
+    expect(getMcpHealthSnapshot()["same-server-key"]).toBeDefined();
+
+    act(() => {
+      result.current.setActive(SEEDED_DEFAULT_BACKEND_ID);
+    });
+
+    expect(getMcpHealthSnapshot()["same-server-key"]).toBeUndefined();
+  });
+
+  it("invalidates SettingsService's in-memory cache on a real backend switch, so the new backend's settings aren't served from the old one's cache", () => {
+    const invalidateCacheSpy = vi.spyOn(SettingsService, "invalidateCache");
+    const { result } = renderHook(() => useActiveBackendContext(), {
+      wrapper: makeWrapper(),
+    });
+
+    let added: { id: string } | null = null;
+    act(() => {
+      added = result.current.addBackend({
+        name: "Backend B",
+        host: "http://localhost:9001",
+        apiKey: "key-b",
+        kind: "local",
+      });
+    });
+    invalidateCacheSpy.mockClear();
+
+    act(() => {
+      result.current.setActive(SEEDED_DEFAULT_BACKEND_ID);
+    });
+    expect(invalidateCacheSpy).toHaveBeenCalled();
+
+    invalidateCacheSpy.mockClear();
+    act(() => {
+      result.current.setActive(added!.id);
+    });
+    expect(invalidateCacheSpy).toHaveBeenCalled();
   });
 
   it("clears Cloud context but preserves identity when switching from Cloud to local", () => {
@@ -367,6 +429,34 @@ describe("ActiveBackendProvider", () => {
     expect(
       result.current.backends.find((backend) => backend.id === id),
     ).toHaveProperty("connectionRevision", 1);
+  });
+
+  it("updateBackend invalidates SettingsService's cache when the active backend's host/apiKey change, but not for a cosmetic rename", () => {
+    const invalidateCacheSpy = vi.spyOn(SettingsService, "invalidateCache");
+    const { result } = renderHook(() => useActiveBackendContext(), {
+      wrapper: makeWrapper(),
+    });
+
+    let id = "";
+    act(() => {
+      id = result.current.addBackend({
+        name: "Stale",
+        host: "http://localhost:9000",
+        apiKey: "old-key",
+        kind: "local",
+      }).id;
+    });
+    invalidateCacheSpy.mockClear();
+
+    act(() => {
+      result.current.updateBackend(id, { name: "Renamed" });
+    });
+    expect(invalidateCacheSpy).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.updateBackend(id, { host: "http://localhost:9001" });
+    });
+    expect(invalidateCacheSpy).toHaveBeenCalled();
   });
 
   it("clears identity and re-keys data when active Cloud credentials change", () => {
