@@ -42,6 +42,7 @@ export type SecurityWorkspaceScopeResult =
 export interface SecurityRepositoryOption {
   repositoryId: string;
   label: string;
+  branch: string;
 }
 
 export interface SecurityWorkspaceScopeState {
@@ -85,6 +86,7 @@ export function useSecurityWorkspaceScope(
     const repositories = entries.map(({ snapshot }) => ({
       repositoryId: snapshot.repositoryId,
       label: `${snapshot.owner}/${snapshot.repo}`,
+      branch: snapshot.branch,
     }));
     if (entries.length === 0) {
       return { scope: { state: "no-repositories" }, repositories };
@@ -183,6 +185,17 @@ function RepositorySelect({
   onSelect,
 }: RepositorySelectProps) {
   const { t } = useTranslation("openhands");
+  // Two connected snapshots of the same owner/repo on different branches
+  // share the same `label` ("owner/repo") — without the branch, their
+  // options would render as identical, indistinguishable text and a user
+  // could not tell which one they were picking.
+  const labelCounts = new Map<string, number>();
+  repositories.forEach((repository) => {
+    labelCounts.set(
+      repository.label,
+      (labelCounts.get(repository.label) ?? 0) + 1,
+    );
+  });
   return (
     <select
       aria-label={t(I18nKey.SECURITY$REPOSITORY_SELECT_LABEL)}
@@ -198,7 +211,9 @@ function RepositorySelect({
       )}
       {repositories.map((repository) => (
         <option key={repository.repositoryId} value={repository.repositoryId}>
-          {repository.label}
+          {(labelCounts.get(repository.label) ?? 0) > 1
+            ? `${repository.label} (${repository.branch})`
+            : repository.label}
         </option>
       ))}
     </select>

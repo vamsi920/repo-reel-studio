@@ -31,6 +31,7 @@ function seedRepository(
     repositoryId: string;
     owner: string;
     repo: string;
+    branch: string;
   }> = {},
 ) {
   const repositoryId = overrides.repositoryId ?? "acme/api@main";
@@ -42,7 +43,7 @@ function seedRepository(
           repositoryId,
           owner: overrides.owner ?? "acme",
           repo: overrides.repo ?? "api",
-          branch: "main",
+          branch: overrides.branch ?? "main",
           commitSha: "abcdef1234567890",
           localPath: `/workspace/${overrides.repo ?? "api"}`,
         },
@@ -199,6 +200,19 @@ describe("Security route", () => {
       );
     });
 
+    it("says there is no workspace when ?repository= is stale and nothing is connected, rather than claiming it is unconnected", () => {
+      // Regression: with zero connected repositories, "no-repositories" must
+      // win over "requested-not-connected" — reporting a specific repository
+      // as "not connected" implies others are, which would be a lie when the
+      // workspace has no repositories at all.
+      renderSecurity("/security?repository=acme%2Fghost%40main");
+
+      expect(screen.getByTestId("security-no-workspace")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-repository-not-connected"),
+      ).not.toBeInTheDocument();
+    });
+
     it("identifies the workspace by the snapshot's checkout path", () => {
       seedRepository();
 
@@ -211,7 +225,7 @@ describe("Security route", () => {
         scope: { workspaceId: "/workspace/api", repositoryId: "acme/api@main" },
       });
       expect(result.current.repositories).toEqual([
-        { repositoryId: "acme/api@main", label: "acme/api" },
+        { repositoryId: "acme/api@main", label: "acme/api", branch: "main" },
       ]);
     });
   });
@@ -246,6 +260,39 @@ describe("Security route", () => {
       expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
         "acme/web@abcdef1",
       );
+    });
+
+    it("disambiguates two connected branches of the same repository by branch", async () => {
+      // Regression: the label used to be plain "owner/repo", so two branches
+      // of the same repository rendered as two options with identical text —
+      // a user could not tell which one they were picking.
+      seedRepository({ branch: "main" });
+      seedRepository({ repositoryId: "acme/api@develop", branch: "develop" });
+      renderSecurity();
+
+      const select = screen.getByRole("combobox", {
+        name: I18nKey.SECURITY$REPOSITORY_SELECT_LABEL,
+      });
+      const optionText = screen
+        .getAllByRole("option")
+        .map((option) => option.textContent);
+      expect(optionText).toEqual(["acme/api (develop)", "acme/api (main)"]);
+      expect(new Set(optionText).size).toBe(optionText.length);
+
+      await userEvent.setup().selectOptions(select, "acme/api@develop");
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+    });
+
+    it("does not disambiguate repositories with distinct owner/repo names", () => {
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity();
+
+      expect(
+        screen.getAllByRole("option").map((option) => option.textContent),
+      ).toEqual(["acme/api", "acme/web"]);
     });
 
     it("offers a way out of an unknown ?repository=", async () => {
