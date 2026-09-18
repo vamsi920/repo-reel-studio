@@ -19,6 +19,7 @@ import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { useSaveEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import type { PostResultFn } from "#/services/onboarding-control";
 import type { EnvironmentProfile } from "#/lib/environment/types/profile";
+import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 
 /**
  * Provider choice, rendered where the conversation is rather than on a
@@ -282,8 +283,12 @@ export function SummaryCard({
   const queryClient = useQueryClient();
   React.useEffect(() => {
     // The summary is the moment someone reads the board, so make sure it is
-    // not showing a cached picture from before the last connection.
-    queryClient.invalidateQueries({ queryKey: ["environment"] });
+    // not showing a cached picture from before the last connection. The
+    // readiness score's two heaviest inputs -- GitHub and Jira connection
+    // status -- live under ["github-connection"]/["jira-connection"], outside
+    // the ["environment"] prefix, so this needs the same full invalidation
+    // every other connection-changing action already uses.
+    void invalidateConnectionCaches(queryClient);
   }, [queryClient]);
 
   return (
