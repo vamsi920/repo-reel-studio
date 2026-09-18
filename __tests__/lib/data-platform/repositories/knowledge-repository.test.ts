@@ -145,6 +145,44 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
       state.tables.knowledge_pages.error,
     );
   });
+
+  // Regression: a `sectionsError`/`diagramsError` alongside a *successful*
+  // `pageRows` query used to fall through the old `!pageRows`-only gate and
+  // return a "successful" KnowledgeRepository with `sections: []` / no
+  // diagrams -- a generation that genuinely has sections/diagrams rendered
+  // with an empty table of contents, indistinguishable from one that really
+  // has none.
+  it("returns null (not a partial result) when only the sections sub-query errors", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    state.tables.knowledge_generations = { data: GENERATION_ROW, error: null };
+    state.tables.knowledge_pages = {
+      data: [
+        {
+          id: "page-1",
+          title: "Overview",
+          description: "desc",
+          content_markdown: "# Overview",
+          importance: "high",
+          relevant_files: [],
+          related_page_ids: [],
+          parent_section_id: null,
+        },
+      ],
+      error: null,
+    };
+    state.tables.knowledge_sections = {
+      data: null,
+      error: { message: "permission denied for table knowledge_sections" },
+    };
+
+    await expect(
+      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1"),
+    ).resolves.toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[knowledge-repository] reconstruct: knowledge_sections failed",
+      state.tables.knowledge_sections.error,
+    );
+  });
 });
 
 describe("knowledgePersistenceRepository.getFullGeneration", () => {

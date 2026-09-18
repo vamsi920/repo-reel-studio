@@ -76,6 +76,17 @@ describe("auth-flow", () => {
       state.allowlistError = { message: "permission denied" };
       await expect(loadSignupDomainAllowlist()).resolves.toEqual([]);
     });
+
+    it("does not cache a failed read, so a later call retries instead of staying unrestricted forever", async () => {
+      state.allowlistError = { message: "permission denied" };
+      await expect(loadSignupDomainAllowlist()).resolves.toEqual([]);
+
+      state.allowlistError = null;
+      state.allowlistRows = [{ domain: "neodevex.com" }];
+      await expect(loadSignupDomainAllowlist()).resolves.toEqual([
+        "neodevex.com",
+      ]);
+    });
   });
 
   describe("isEmailInDomainAllowlist", () => {

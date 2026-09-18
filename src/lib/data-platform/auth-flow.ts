@@ -21,6 +21,11 @@ let inFlightAllowlist: Promise<string[]> | null = null;
  * Every failure path resolves to `[]` rather than rejecting: this is a UX
  * pre-check, and a deployment whose allowlist cannot be read must not be
  * locked out of its own login screen. The trigger remains the real boundary.
+ * A failed read is NOT cached, though -- only a successful read (including a
+ * genuinely empty table) is remembered for the tab's lifetime. Caching a
+ * transient read failure (a network blip, a momentary RLS hiccup) would
+ * silently disable the allowlist pre-check for every later call this tab
+ * makes, even once the read would succeed again.
  */
 export async function loadSignupDomainAllowlist(): Promise<string[]> {
   if (cachedAllowlist) return cachedAllowlist;
@@ -35,19 +40,19 @@ export async function loadSignupDomainAllowlist(): Promise<string[]> {
       const { data, error } = await supabase!
         .from("signup_domain_allowlist")
         .select("domain");
-      if (error || !data) return [];
+      if (error || !data) return null;
       return data
         .map((row) => String((row as { domain: unknown }).domain ?? ""))
         .map((domain) => domain.trim().toLowerCase())
         .filter(Boolean);
     } catch {
-      return [];
+      return null;
     } finally {
       inFlightAllowlist = null;
     }
   })().then((domains) => {
-    cachedAllowlist = domains;
-    return domains;
+    if (domains !== null) cachedAllowlist = domains;
+    return domains ?? [];
   });
 
   return inFlightAllowlist;

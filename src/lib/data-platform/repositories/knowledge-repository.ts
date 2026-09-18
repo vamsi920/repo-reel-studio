@@ -105,7 +105,13 @@ async function reconstruct(
   if (diagramsError)
     logFailure("reconstruct: knowledge_diagrams", diagramsError);
 
-  if (!pageRows) return null;
+  // Any of the three failing must fail the whole reconstruction, not just
+  // the one that happened to be `pageRows`: a `sectionsError`/`diagramsError`
+  // with `pageRows` still present used to fall through to `sectionRows ?? []`
+  // / `diagramsByPage` staying empty, rendering a generation that genuinely
+  // has content as one with an empty table of contents or missing diagrams --
+  // indistinguishable downstream from "this generation really has none".
+  if (!pageRows || sectionsError || diagramsError) return null;
 
   const diagramsByPage = new Map<string, KnowledgeDiagram[]>();
   for (const row of diagramRows ?? []) {

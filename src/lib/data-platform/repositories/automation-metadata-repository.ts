@@ -1,5 +1,15 @@
 import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
 
+// A genuine write failure (RLS denial, constraint violation, schema
+// mismatch) previously returned exactly like a successful write, with no
+// console signal at all -- the caller's toggle would appear saved, then
+// silently revert on the next reload with nothing to explain why. Same fix
+// already applied across the sibling repositories in this directory
+// (connections-repository.ts, github/jira-connections-repository.ts, etc.).
+function logFailure(step: string, error: unknown): void {
+  console.error(`[automation-metadata-repository] ${step} failed`, error);
+}
+
 /**
  * Companion to the external Automation Server's own `Automation` record
  * (src/api/automation-service/), which remains authoritative for the record
@@ -32,7 +42,7 @@ class SupabaseAutomationMetadataRepository implements AutomationMetadataReposito
   }): Promise<void> {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      await supabase.from("automation_metadata").upsert(
+      const { error } = await supabase.from("automation_metadata").upsert(
         {
           automation_id: input.automationId,
           workspace_id: input.workspaceId,
@@ -40,9 +50,9 @@ class SupabaseAutomationMetadataRepository implements AutomationMetadataReposito
         },
         { onConflict: "automation_id" },
       );
-    } catch {
-      // Best-effort companion data -- the Automation Server's own record is
-      // still authoritative and unaffected.
+      if (error) logFailure("upsert", error);
+    } catch (error) {
+      logFailure("upsert", error);
     }
   }
 
@@ -56,7 +66,7 @@ class SupabaseAutomationMetadataRepository implements AutomationMetadataReposito
   }): Promise<void> {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      await supabase.from("proactivation_candidates").insert({
+      const { error } = await supabase.from("proactivation_candidates").insert({
         workspace_id: input.workspaceId,
         automation_id: input.automationId ?? null,
         watch_area: input.watchArea ?? null,
@@ -65,8 +75,9 @@ class SupabaseAutomationMetadataRepository implements AutomationMetadataReposito
         risk: input.risk ?? null,
         status: "proposed",
       });
-    } catch {
-      // Best-effort.
+      if (error) logFailure("recordCandidate", error);
+    } catch (error) {
+      logFailure("recordCandidate", error);
     }
   }
 }
