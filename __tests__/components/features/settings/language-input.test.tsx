@@ -10,15 +10,24 @@ vi.mock("react-i18next", async (importOriginal) => ({
 vi.mock("#/components/features/settings/settings-dropdown-input", () => ({
   SettingsDropdownInput: ({
     testId,
-    onInputChange,
+    items,
+    onSelectionChange,
   }: {
     testId: string;
-    onInputChange: (value: string) => void;
+    items: { key: React.Key; label: string }[];
+    onSelectionChange: (key: React.Key | null) => void;
   }) => (
-    <input
-      data-testid={testId}
-      onChange={(event) => onInputChange(event.target.value)}
-    />
+    <div data-testid={testId}>
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => onSelectionChange(item.key)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
   ),
 }));
 
@@ -59,14 +68,11 @@ describe("LanguageInput", () => {
       />,
     );
 
-    const input = screen.getByTestId("language-input");
-    await user.clear(input);
-    await user.type(input, "Arabic");
+    await user.click(screen.getByRole("button", { name: "Arabic" }));
     expect(screen.getByTestId("language-input-rtl-note")).toBeInTheDocument();
     expect(onChange).toHaveBeenLastCalledWith("Arabic");
 
-    await user.clear(input);
-    await user.type(input, "Deutsch");
+    await user.click(screen.getByRole("button", { name: "Deutsch" }));
     expect(screen.queryByTestId("language-input-rtl-note")).toBeNull();
   });
 });

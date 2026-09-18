@@ -20,6 +20,7 @@ import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 
 const DEFAULT_DEVICE_POLL_INTERVAL_SECONDS = 5;
 const MIN_DEVICE_POLL_INTERVAL_SECONDS = 1;
+const MAX_CONSECUTIVE_POLL_FAILURES = 3;
 
 interface OpenAISubscriptionAuthCardProps {
   isDisabled?: boolean;
@@ -43,6 +44,7 @@ export function OpenAISubscriptionAuthCard({
   const [copied, setCopied] = React.useState(false);
   const [isPendingLogin, setIsPendingLogin] = React.useState(false);
   const pollTimeoutRef = React.useRef<number | null>(null);
+  const pollFailureCountRef = React.useRef(0);
 
   const clearPollTimeout = React.useCallback(() => {
     if (pollTimeoutRef.current !== null) {
@@ -63,10 +65,13 @@ export function OpenAISubscriptionAuthCard({
     startLogin.isPending || pollLogin.isPending || logout.isPending;
   const connected = Boolean(status.data?.connected);
 
+  const pollMutateAsync = pollLogin.mutateAsync;
+
   const pollDeviceLogin = React.useCallback(
     async (deviceCode: string) => {
       try {
-        const nextStatus = await pollLogin.mutateAsync(deviceCode);
+        const nextStatus = await pollMutateAsync(deviceCode);
+        pollFailureCountRef.current = 0;
         if (nextStatus.connected) {
           setChallenge(null);
           setIsPendingLogin(false);
@@ -76,21 +81,42 @@ export function OpenAISubscriptionAuthCard({
         setIsPendingLogin(true);
         return false;
       } catch {
+        pollFailureCountRef.current += 1;
+        if (pollFailureCountRef.current < MAX_CONSECUTIVE_POLL_FAILURES) {
+          // A single failed poll is likely a transient network blip; keep
+          // retrying on the existing interval instead of abandoning the flow.
+          return false;
+        }
         displayErrorToast(t(I18nKey.SETTINGS$SUBSCRIPTION_CONNECT_ERROR));
         return true;
       }
     },
-    [pollLogin, t],
+    [pollMutateAsync, t],
   );
 
+  // `pollDeviceLogin` is recreated whenever its dependencies change identity
+  // (e.g. `t` from `useTranslation`, which is not guaranteed to be
+  // referentially stable across renders). Reading the latest version through
+  // a ref -- rather than depending on it directly -- keeps the effect below
+  // from tearing down and rescheduling on every incidental re-render, which
+  // would otherwise silently reset (and duplicate) the poll timer independent
+  // of the `shouldStop` signal `pollDeviceLogin` returns.
+  const pollDeviceLoginRef = React.useRef(pollDeviceLogin);
   React.useEffect(() => {
-    if (!challenge || connected || isDisabled) {
+    pollDeviceLoginRef.current = pollDeviceLogin;
+  }, [pollDeviceLogin]);
+
+  const deviceCode = challenge?.deviceCode ?? null;
+  const challengeIntervalSeconds = challenge?.intervalSeconds ?? null;
+
+  React.useEffect(() => {
+    if (!deviceCode || connected || isDisabled) {
       return undefined;
     }
 
     let cancelled = false;
     const intervalSeconds = Math.max(
-      challenge.intervalSeconds ?? DEFAULT_DEVICE_POLL_INTERVAL_SECONDS,
+      challengeIntervalSeconds ?? DEFAULT_DEVICE_POLL_INTERVAL_SECONDS,
       MIN_DEVICE_POLL_INTERVAL_SECONDS,
     );
 
@@ -101,7 +127,7 @@ export function OpenAISubscriptionAuthCard({
           return;
         }
 
-        const shouldStop = await pollDeviceLogin(challenge.deviceCode);
+        const shouldStop = await pollDeviceLoginRef.current(deviceCode);
         if (!cancelled && !shouldStop) {
           schedulePoll();
         }
@@ -114,11 +140,18 @@ export function OpenAISubscriptionAuthCard({
       cancelled = true;
       clearPollTimeout();
     };
-  }, [challenge, clearPollTimeout, connected, isDisabled, pollDeviceLogin]);
+  }, [
+    deviceCode,
+    challengeIntervalSeconds,
+    clearPollTimeout,
+    connected,
+    isDisabled,
+  ]);
 
   const handleStartLogin = async () => {
     try {
       const nextChallenge = await startLogin.mutateAsync();
+      pollFailureCountRef.current = 0;
       setChallenge(nextChallenge);
       setIsPendingLogin(true);
       openVerificationUrl(nextChallenge);
@@ -147,6 +180,7 @@ export function OpenAISubscriptionAuthCard({
 
   const handleCancelLogin = () => {
     clearPollTimeout();
+    pollFailureCountRef.current = 0;
     setChallenge(null);
     setIsPendingLogin(false);
   };

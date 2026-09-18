@@ -592,6 +592,53 @@ Full skill body.`,
     );
   });
 
+  it("applies both toggles when two different skills are switched before a re-render lands", async () => {
+    // Regression: handleToggle previously computed its next Set from the
+    // render closure's `disabledSet` rather than a functional update, so two
+    // toggles dispatched before React re-rendered between them both started
+    // from the same stale snapshot -- whichever `setDisabledSet` call landed
+    // last silently discarded the other card's toggle (and its save).
+    const skillA = buildSkill({ name: "skill-a" });
+    const skillB = buildSkill({ name: "skill-b" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skillA, skillB]);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ disabled_skills: [] }),
+    );
+    const saveSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+
+    renderSkillsSettingsScreen();
+    const cardA = await screen.findByTestId(`skill-card-${skillA.name}`);
+    const cardB = screen.getByTestId(`skill-card-${skillB.name}`);
+    const toggleA = within(cardA).getByTestId(`skill-toggle-${skillA.name}`);
+    const toggleB = within(cardB).getByTestId(`skill-toggle-${skillB.name}`);
+
+    act(() => {
+      fireEvent.click(toggleA);
+      fireEvent.click(toggleB);
+    });
+
+    await waitFor(() =>
+      expect(
+        within(cardA).getByTestId(`skill-toggle-${skillA.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
+    expect(
+      within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
+    ).toHaveAttribute("aria-checked", "false");
+
+    await waitFor(() => {
+      const lastCall = saveSpy.mock.calls.at(-1)?.[0] as {
+        disabled_skills?: string[];
+      };
+      expect(lastCall.disabled_skills).toEqual(
+        expect.arrayContaining([skillA.name, skillB.name]),
+      );
+      expect(lastCall.disabled_skills).toHaveLength(2);
+    });
+  });
+
   it("toggles a skill from the card without opening the modal", async () => {
     const user = userEvent.setup();
     const skill = buildSkill({ name: "card-toggle" });

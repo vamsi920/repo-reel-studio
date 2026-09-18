@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { RouterProvider, createMemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppSettingsScreen from "#/routes/app-settings";
 import SettingsService from "#/api/settings-service/settings-service.api";
@@ -35,7 +36,15 @@ function buildSettings(overrides: Partial<Settings> = {}): Settings {
 }
 
 function renderAppSettingsScreen() {
-  return render(<AppSettingsScreen />, {
+  // AppSettingsScreen calls `useNavigate()` (for the sign-out flow), which
+  // requires a Router context -- render it through a MemoryRouter like the
+  // other route-level screens' tests do.
+  const router = createMemoryRouter(
+    [{ path: "/settings/app", Component: AppSettingsScreen }],
+    { initialEntries: ["/settings/app"] },
+  );
+
+  return render(<RouterProvider router={router} />, {
     wrapper: ({ children }) => (
       <QueryClientProvider
         client={
@@ -158,6 +167,56 @@ describe("AppSettingsScreen", () => {
           git_user_name: "monalisa",
           git_user_email: "octocat@example.com",
         }),
+      );
+    });
+  });
+
+  it("does not enable Save just from filtering the language dropdown without selecting", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ language: "en" }),
+    );
+
+    renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    const languageInput = await screen.findByRole("combobox", {
+      name: "SETTINGS$LANGUAGE",
+    });
+    const submitButton = screen.getByTestId("submit-button");
+
+    expect(submitButton).toBeDisabled();
+
+    await user.click(languageInput);
+    await user.type(languageInput, "Ar");
+
+    expect(submitButton).toBeDisabled();
+  });
+
+  it("enables Save and submits the new language once one is actually selected", async () => {
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ language: "en" }),
+    );
+
+    renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    const languageInput = await screen.findByRole("combobox", {
+      name: "SETTINGS$LANGUAGE",
+    });
+    await user.click(languageInput);
+    await user.click(await screen.findByText("Arabic"));
+
+    const submitButton = screen.getByTestId("submit-button");
+    expect(submitButton).toBeEnabled();
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ language: "ar" }),
       );
     });
   });

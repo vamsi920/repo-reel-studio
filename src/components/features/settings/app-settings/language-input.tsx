@@ -11,9 +11,6 @@ interface LanguageInputProps {
   defaultKey: string;
 }
 
-const findLanguageValueByLabel = (label: string) =>
-  AvailableLanguages.find((language) => language.label === label)?.value;
-
 export function LanguageInput({
   defaultKey,
   onChange,
@@ -28,9 +25,16 @@ export function LanguageInput({
     setSelectedLanguage(defaultKey);
   }, [defaultKey]);
 
-  const handleInputChange = (label: string) => {
-    setSelectedLanguage(findLanguageValueByLabel(label));
-    onChange(label);
+  // Fire on the actual selection commit, not on every filter-box keystroke:
+  // `onInputChange` fires for every character typed while filtering the
+  // list, which previously flipped the parent's "unsaved changes" state
+  // (and this note) off of partial, uncommitted text.
+  const handleSelectionChange = (key: React.Key | null) => {
+    if (key === null) return;
+    const language = AvailableLanguages.find((l) => l.value === key);
+    if (!language) return;
+    setSelectedLanguage(language.value);
+    onChange(language.label);
   };
 
   return (
@@ -38,7 +42,7 @@ export function LanguageInput({
       <SettingsDropdownInput
         testId={name}
         name={name}
-        onInputChange={handleInputChange}
+        onSelectionChange={handleSelectionChange}
         label={t(I18nKey.SETTINGS$LANGUAGE)}
         items={AvailableLanguages.map((l) => ({
           key: l.value,

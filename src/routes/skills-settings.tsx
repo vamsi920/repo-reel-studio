@@ -56,6 +56,11 @@ function SkillsSettingsScreen() {
   const lastWrittenQuery = React.useRef(queryInput);
 
   const [disabledSet, setDisabledSet] = React.useState<Set<string>>(new Set());
+  // Mirrors `disabledSet` synchronously (React state updates -- including the
+  // functional-updater form -- are not applied until the next render, so a
+  // second toggle dispatched before that render lands would otherwise still
+  // read a stale set here).
+  const disabledSetRef = React.useRef(disabledSet);
   const [selectedSkillName, setSelectedSkillName] = React.useState<
     string | null
   >(null);
@@ -93,7 +98,9 @@ function SkillsSettingsScreen() {
   // Sync local state with server settings when data first arrives
   React.useEffect(() => {
     if (settingsLoading || !settings) return;
-    setDisabledSet(new Set(settings.disabled_skills ?? []));
+    const next = new Set(settings.disabled_skills ?? []);
+    disabledSetRef.current = next;
+    setDisabledSet(next);
   }, [settingsLoading, settings?.disabled_skills]);
 
   // Back and forward move `q` under a route that stays mounted, so the input has to take the URL's value back or it would keep showing — and debounce back — a query the user has already navigated away from.
@@ -145,12 +152,19 @@ function SkillsSettingsScreen() {
     handleFilterChange(clearSkillFilterFacets(filter));
 
   const handleToggle = (skillName: string, enabled: boolean) => {
-    const next = new Set(disabledSet);
+    // Derive `next` from the ref (always current) rather than the render
+    // closure's `disabledSet` or a functional state updater (which is not
+    // invoked until the next render) -- so two toggles dispatched before a
+    // re-render lands (e.g. two fast clicks on different skill cards) both
+    // apply, instead of the second silently clobbering the first with a
+    // stale snapshot.
+    const next = new Set(disabledSetRef.current);
     if (enabled) {
       next.delete(skillName);
     } else {
       next.add(skillName);
     }
+    disabledSetRef.current = next;
     setDisabledSet(next);
     saveSettings(
       { disabled_skills: Array.from(next) },
@@ -164,7 +178,9 @@ function SkillsSettingsScreen() {
           // happened. The sync effect above only re-runs when the query data
           // changes, which a failed save does not do, so revert here and
           // refetch in case another save landed in the meantime.
-          setDisabledSet(new Set(settings?.disabled_skills ?? []));
+          const reverted = new Set(settings?.disabled_skills ?? []);
+          disabledSetRef.current = reverted;
+          setDisabledSet(reverted);
           queryClient.invalidateQueries({
             queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
           });

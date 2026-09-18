@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -82,5 +82,77 @@ describe("OpenAISubscriptionAuthCard", () => {
 
     await waitFor(() => expect(toastSpy).toHaveBeenCalled());
     expect(copyButton).toHaveAttribute("aria-label", "BUTTON$COPY");
+  });
+
+  describe("device-flow polling resilience", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("keeps polling after a single transient poll failure instead of abandoning the flow", async () => {
+      const user = userEvent.setup();
+      const toastSpy = vi
+        .spyOn(ToastHandlers, "displayErrorToast")
+        .mockImplementation(() => "toast-id");
+      const pollSpy = vi
+        .spyOn(LLMSubscriptionService, "pollOpenAIDeviceLogin")
+        .mockRejectedValueOnce(new Error("network blip"))
+        .mockResolvedValueOnce({
+          vendor: "openai",
+          connected: true,
+          accountEmail: null,
+          expiresAt: null,
+        });
+
+      await openDeviceChallenge(user);
+      const intervalMs = challenge.intervalSeconds * 1000;
+
+      // First poll fails (transient) -- should not surface an error or stop.
+      await vi.advanceTimersByTimeAsync(intervalMs);
+      await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(1));
+      expect(toastSpy).not.toHaveBeenCalled();
+      expect(
+        screen.queryByTestId("subscription-device-challenge"),
+      ).not.toBeNull();
+
+      // Second poll succeeds -- the flow should still complete normally.
+      await vi.advanceTimersByTimeAsync(intervalMs);
+      await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(2));
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId("subscription-device-challenge"),
+        ).toBeNull(),
+      );
+    });
+
+    it("stops polling and shows an error after repeated consecutive poll failures", async () => {
+      const user = userEvent.setup();
+      const toastSpy = vi
+        .spyOn(ToastHandlers, "displayErrorToast")
+        .mockImplementation(() => "toast-id");
+      const pollSpy = vi
+        .spyOn(LLMSubscriptionService, "pollOpenAIDeviceLogin")
+        .mockRejectedValue(new Error("still down"));
+
+      await openDeviceChallenge(user);
+      const intervalMs = challenge.intervalSeconds * 1000;
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await vi.advanceTimersByTimeAsync(intervalMs);
+        // eslint-disable-next-line no-await-in-loop
+        await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(attempt));
+      }
+
+      await waitFor(() => expect(toastSpy).toHaveBeenCalled());
+
+      // No further polls are scheduled once the flow has given up.
+      await vi.advanceTimersByTimeAsync(intervalMs);
+      expect(pollSpy).toHaveBeenCalledTimes(3);
+    });
   });
 });
