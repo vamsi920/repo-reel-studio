@@ -67,6 +67,18 @@ describe("DiagramPanel", () => {
     expect(screen.queryByText("Rendering diagram…")).not.toBeInTheDocument();
   });
 
+  it("shows a neutral message instead of the error banner when the scene has no diagram source", () => {
+    render(
+      <DiagramPanel scene={diagramScene("")} relativeFrame={0} />,
+    );
+
+    expect(
+      screen.getByText("No diagram source for this scene."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(renderMock).not.toHaveBeenCalled();
+  });
+
   it("does not re-run a render that already failed when the scene remounts", async () => {
     renderMock.mockRejectedValue(new Error("Parse error"));
     const scene = diagramScene("graph TD; broken -->");

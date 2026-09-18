@@ -25,14 +25,20 @@ type MermaidResult = string | null;
 const svgCache = new Map<string, MermaidResult>();
 let renderCounter = 0;
 
-/** `undefined` while rendering, `null` once mermaid has rejected the source. */
+/** `undefined` while rendering (or when there's no source to render at all),
+ * `null` once mermaid has actually rejected the source. Conflating "never
+ * attempted" with "attempted and failed" would show the parse-error banner
+ * for a scene that never had a diagram to render in the first place. */
 function useMermaidSvg(source: string | undefined): MermaidResult | undefined {
   const [svg, setSvg] = useState<MermaidResult | undefined>(() =>
-    source ? svgCache.get(source) : null,
+    source ? svgCache.get(source) : undefined,
   );
 
   useEffect(() => {
-    if (!source) return undefined;
+    if (!source) {
+      setSvg(undefined);
+      return undefined;
+    }
     if (svgCache.has(source)) {
       setSvg(svgCache.get(source));
       return undefined;
@@ -122,9 +128,11 @@ export function DiagramPanel({
             fontSize: 14,
           }}
         >
-          {svg === null
-            ? "This diagram couldn't be rendered from its source."
-            : "Rendering diagram…"}
+          {!scene.mermaid
+            ? "No diagram source for this scene."
+            : svg === null
+              ? "This diagram couldn't be rendered from its source."
+              : "Rendering diagram…"}
         </span>
       )}
     </div>
