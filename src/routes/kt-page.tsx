@@ -87,6 +87,7 @@ function KtPage() {
   );
 
   const autoWatchStarted = useRef(false);
+  const activeGenerationIdRef = useRef(0);
 
   useSceneNarration(
     manifest ?? EMPTY_MANIFEST,
@@ -129,6 +130,15 @@ function KtPage() {
       setMode("read");
       return;
     }
+    // A page switch (or a second click that slips past the disabled button)
+    // can start a newer generation before an older one for a previous page
+    // has resolved. Without this id, whichever call's `finally` runs first
+    // flips `isGeneratingVideo` back off while the other is still running,
+    // and a slow older call's `setManifest` can land after the newer one's
+    // and silently show the wrong page's video. Every state write below is
+    // gated on this call still being the most recently started one.
+    const generationId = ++activeGenerationIdRef.current;
+    const isStale = () => activeGenerationIdRef.current !== generationId;
     setIsGeneratingVideo(true);
     try {
       const { contents: fileContents } = await readSnapshotFiles(
@@ -137,6 +147,7 @@ function KtPage() {
         targetState.sessionApiKey,
         targetPage.relevantFiles.map((f) => f.path),
       );
+      if (isStale()) return;
       if (
         targetPage.relevantFiles.length > 0 &&
         Object.keys(fileContents).length === 0
@@ -156,6 +167,7 @@ function KtPage() {
             targetPage.relevantFiles.map((f) => f.path),
           ).catch(() => [])
         : [];
+      if (isStale()) return;
       const builtManifest = buildKtManifestFromKnowledgePage(
         targetPage,
         fileContents,
@@ -170,12 +182,16 @@ function KtPage() {
         builtManifest,
         targetState.snapshot,
       ).catch(() => builtManifest);
+      if (isStale()) return;
       setManifest(narrated);
     } catch (error) {
+      if (isStale()) return;
       displayErrorToast(error instanceof Error ? error.message : String(error));
       setMode("read");
     } finally {
-      setIsGeneratingVideo(false);
+      if (!isStale()) {
+        setIsGeneratingVideo(false);
+      }
     }
   };
 
@@ -266,8 +282,9 @@ function KtPage() {
             <button
               type="button"
               onClick={handleWatchKt}
+              disabled={isGeneratingVideo}
               data-testid="kt-page-watch-button"
-              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 mode === "watch"
                   ? "border-[var(--primary-500)] bg-[var(--primary-bg-subtle)] text-[var(--primary-500)]"
                   : "border-[var(--oh-border)] text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"

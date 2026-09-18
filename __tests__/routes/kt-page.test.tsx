@@ -111,6 +111,7 @@ import {
   resolveOrgId,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
 
 const REPOSITORY_ID = "acme/api@main";
 
@@ -212,6 +213,79 @@ describe("KtPage", () => {
       ),
     );
     expect(buildManifestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("disables Watch KT while a video is already generating, preventing a duplicate concurrent generation", async () => {
+    const user = userEvent.setup();
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    let releaseRead: (() => void) | undefined;
+    vi.mocked(readSnapshotFiles).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseRead = () => resolve({ contents: {}, failedPaths: [] });
+        }),
+    );
+    render(<KtPage />);
+
+    const watchButton = screen.getByTestId("kt-page-watch-button");
+    await user.click(watchButton);
+    await waitFor(() => expect(watchButton).toBeDisabled());
+
+    // A second click while generation is in flight must not start a
+    // duplicate, fully-concurrent generation.
+    await user.click(watchButton);
+
+    releaseRead?.();
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toHaveTextContent(
+        "manifest-for-page-a",
+      ),
+    );
+    expect(buildManifestMock).toHaveBeenCalledTimes(1);
+    expect(watchButton).not.toBeDisabled();
+  });
+
+  it("ignores a slow generation for the previous page once a newer page's generation has already finished", async () => {
+    const user = userEvent.setup();
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    let releaseFirstRead: (() => void) | undefined;
+    vi.mocked(readSnapshotFiles)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseFirstRead = () => resolve({ contents: {}, failedPaths: [] });
+          }),
+      )
+      .mockImplementationOnce(async () => ({ contents: {}, failedPaths: [] }));
+
+    const { rerender } = render(<KtPage />);
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    await waitFor(() => expect(readSnapshotFiles).toHaveBeenCalledTimes(1));
+
+    // Switch pages before the slow page-a generation resolves. The route
+    // reuses this component across the param change, so the page-change
+    // effect fires a fresh generation for page-b directly (mode is already
+    // "watch").
+    mockUseParams.mockReturnValue(paramsFor("page-b"));
+    rerender(<KtPage />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toHaveTextContent(
+        "manifest-for-page-b",
+      ),
+    );
+
+    // Now let the stale page-a generation resolve -- it must not clobber
+    // page-b's already-loaded manifest. It bails out as soon as it notices
+    // it's stale, so it never even reaches buildKtManifestFromKnowledgePage.
+    releaseFirstRead?.();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    expect(buildManifestMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("kt-video-player")).toHaveTextContent(
+      "manifest-for-page-b",
+    );
   });
 
   it("shows a heads-up banner for a page flagged with weak source grounding", async () => {
