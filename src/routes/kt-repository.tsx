@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { FileText, Loader2 } from "lucide-react";
+import { AlertTriangle, FileText, Loader2 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
 import { useNavigation } from "#/context/navigation-context";
@@ -66,7 +66,7 @@ function KtRepository() {
     );
   }
 
-  const { knowledge } = state;
+  const { knowledge, qualityFlags } = state;
   const pagesById = new Map(knowledge.pages.map((page) => [page.id, page]));
   const sectioned = new Set(
     knowledge.sections.flatMap((section) => section.pageIds),
@@ -74,6 +74,14 @@ function KtRepository() {
   const unsectionedPages = knowledge.pages.filter(
     (page) => !sectioned.has(page.id),
   );
+  const flagDetailsByPageId = new Map<string, string>();
+  for (const flag of qualityFlags) {
+    const existing = flagDetailsByPageId.get(flag.pageId);
+    flagDetailsByPageId.set(
+      flag.pageId,
+      existing ? `${existing}\n${flag.detail}` : flag.detail,
+    );
+  }
 
   return (
     <main className="min-h-full" data-testid="kt-repository">
@@ -127,6 +135,17 @@ function KtRepository() {
                       aria-hidden
                     />
                     <span className="flex-1 truncate">{page.title}</span>
+                    {flagDetailsByPageId.has(pageId) && (
+                      <span
+                        className="shrink-0"
+                        title={flagDetailsByPageId.get(pageId)}
+                      >
+                        <AlertTriangle
+                          className="size-3.5 text-[var(--warning-500)]"
+                          aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
+                        />
+                      </span>
+                    )}
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPORTANCE_CLASSNAME[page.importance]}`}
                     >
@@ -157,6 +176,17 @@ function KtRepository() {
                   aria-hidden
                 />
                 <span className="flex-1 truncate">{page.title}</span>
+                {flagDetailsByPageId.has(page.id) && (
+                  <span
+                    className="shrink-0"
+                    title={flagDetailsByPageId.get(page.id)}
+                  >
+                    <AlertTriangle
+                      className="size-3.5 text-[var(--warning-500)]"
+                      aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
+                    />
+                  </span>
+                )}
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPORTANCE_CLASSNAME[page.importance]}`}
                 >

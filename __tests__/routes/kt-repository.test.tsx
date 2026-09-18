@@ -182,6 +182,63 @@ describe("KtRepository", () => {
     expect(await screen.findByText(I18nKey.KT$NOT_FOUND)).toBeInTheDocument();
   });
 
+  it("flags a page with weak source grounding instead of showing it unmarked", async () => {
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: {
+            repositoryId: REPOSITORY_ID,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abcdef1234567890",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: {
+            repositoryId: REPOSITORY_ID,
+            commitSha: "abcdef1234567890",
+            title: "API",
+            summary: "",
+            sections: [{ id: "s1", title: "Overview", pageIds: ["page-a"] }],
+            pages: [
+              {
+                id: "page-a",
+                title: "Page A",
+                description: "",
+                contentMarkdown: "# Page A",
+                importance: "medium",
+                relevantFiles: [],
+                diagrams: [],
+                relatedPageIds: [],
+              },
+            ],
+            generatedAt: new Date().toISOString(),
+          },
+          error: null,
+          qualityFlags: [
+            {
+              pageId: "page-a",
+              kind: "no-citations",
+              detail: "Page A cites no source files.",
+            },
+          ],
+          refreshCadence: "manual",
+        },
+      },
+    });
+
+    renderWithProviders(<KtRepository />);
+
+    expect(
+      await screen.findByLabelText(I18nKey.KT$QUALITY_FLAG_BADGE),
+    ).toBeInTheDocument();
+  });
+
   it("falls back to the empty state when cold rehydration rejects", async () => {
     const rejections: unknown[] = [];
     const onUnhandled = (reason: unknown) => rejections.push(reason);

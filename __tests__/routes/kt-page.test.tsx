@@ -213,6 +213,49 @@ describe("KtPage", () => {
     );
     expect(buildManifestMock).toHaveBeenCalledTimes(2);
   });
+
+  it("shows a heads-up banner for a page flagged with weak source grounding", async () => {
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: "http://localhost:3000/conversations/c1",
+          sessionApiKey: "key",
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: KNOWLEDGE,
+          error: null,
+          qualityFlags: [
+            {
+              pageId: "page-a",
+              kind: "no-citations",
+              detail: "Page A cites no source files.",
+            },
+          ],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+
+    render(<KtPage />);
+
+    expect(
+      await screen.findByTestId("kt-page-quality-flags"),
+    ).toHaveTextContent("Page A cites no source files.");
+  });
+
+  it("does not show the banner for a page with no quality flags", async () => {
+    mockUseParams.mockReturnValue(paramsFor("page-b"));
+
+    render(<KtPage />);
+
+    await screen.findByTestId("kt-page-markdown");
+    expect(
+      screen.queryByTestId("kt-page-quality-flags"),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("KtPage deep link on a cold store", () => {

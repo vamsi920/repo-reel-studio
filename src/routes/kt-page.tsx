@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useSearchParams } from "react-router";
 import { Player, type PlayerRef } from "@remotion/player";
-import { FileText, Loader2, Video, Volume2, VolumeX } from "lucide-react";
+import {
+  AlertTriangle,
+  FileText,
+  Loader2,
+  Video,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { I18nKey } from "#/i18n/declaration";
 import { MarkdownRenderer } from "#/components/features/markdown/markdown-renderer";
@@ -72,6 +79,11 @@ function KtPage() {
         (p) => p.id === (pageId ? decodeURIComponent(pageId) : undefined),
       ) ?? null,
     [state, pageId],
+  );
+
+  const pageQualityFlags = useMemo(
+    () => state?.qualityFlags.filter((flag) => flag.pageId === page?.id) ?? [],
+    [state, page],
   );
 
   const autoWatchStarted = useRef(false);
@@ -288,6 +300,28 @@ function KtPage() {
             ) : null}
           </div>
         </div>
+
+        {mode === "read" && pageQualityFlags.length > 0 && (
+          <div
+            data-testid="kt-page-quality-flags"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[var(--warning-500)] bg-[var(--warning-bg-subtle)] px-3 py-2 text-xs text-[var(--oh-foreground)]"
+          >
+            <AlertTriangle
+              className="size-4 shrink-0 text-[var(--warning-500)]"
+              aria-hidden
+            />
+            <div className="flex-1">
+              <p className="font-semibold text-[var(--warning-500)]">
+                {t(I18nKey.KT$QUALITY_FLAG_BANNER_TITLE)}
+              </p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                {pageQualityFlags.map((flag) => (
+                  <li key={flag.kind}>{flag.detail}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
 
         {mode === "read" ? (
           <div

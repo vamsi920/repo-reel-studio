@@ -2338,6 +2338,8 @@
   "KT$IMPORTANCE_HIGH": "High",
   "KT$IMPORTANCE_MEDIUM": "Medium",
   "KT$IMPORTANCE_LOW": "Low",
+  "KT$QUALITY_FLAG_BADGE": "Weak grounding",
+  "KT$QUALITY_FLAG_BANNER_TITLE": "This page may be weakly grounded in the actual source code",
   "KT$ADD_REPOSITORY": "Add Repository",
   "KT$AUTO_REFRESH": "Auto-refresh",
   "KT$REFRESH_MANUAL": "Manual",
