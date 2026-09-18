@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "技能",
   "SETTINGS$SKILLS_DESCRIPTION": "启用或禁用默认技能（微代理）。禁用的技能不会加载到代理上下文中。",
   "SETTINGS$SKILLS_NO_SKILLS": "未找到技能。",
+  "SETTINGS$SKILLS_LOAD_ERROR": "无法加载技能。",
   "SETTINGS$SKILLS_TRIGGERS": "触发器: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "按名称、描述或触发器搜索技能",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "自动发现",

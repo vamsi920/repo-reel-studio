@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "技能",
   "SETTINGS$SKILLS_DESCRIPTION": "啟用或停用預設技能（微代理）。停用的技能不會載入到代理上下文中。",
   "SETTINGS$SKILLS_NO_SKILLS": "找不到技能。",
+  "SETTINGS$SKILLS_LOAD_ERROR": "無法載入技能。",
   "SETTINGS$SKILLS_TRIGGERS": "觸發器: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "依名稱、描述或觸發器搜尋技能",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "自動探索",

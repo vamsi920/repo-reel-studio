@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Habilitats",
   "SETTINGS$SKILLS_DESCRIPTION": "Activeu o desactiveu les habilitats predeterminades. Les habilitats desactivades no es carregaran al context de l'agent.",
   "SETTINGS$SKILLS_NO_SKILLS": "No s'han trobat habilitats.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "No s'han pogut carregar les habilitats.",
   "SETTINGS$SKILLS_TRIGGERS": "Activadors: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Cerca habilitats per nom, descripció o activador",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Descoberta automàtica",

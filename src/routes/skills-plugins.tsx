@@ -73,6 +73,15 @@ export default function SkillsPluginsScreen() {
     React.useState<PluginStatusFilter>("all");
   const [selectedName, setSelectedName] = React.useState<string | null>(null);
   const [showAddModal, setShowAddModal] = React.useState(false);
+  // `setPluginEnabled` is one shared mutation instance for every card, so its
+  // own `isPending`/`variables` reflect only the most recently issued toggle
+  // call -- overlapping toggles on two different plugins would otherwise
+  // report only the latter as busy once it settles, letting the other's
+  // control re-enable and fire a second request while its first is still in
+  // flight. Track in-flight names explicitly instead.
+  const [pendingToggleNames, setPendingToggleNames] = React.useState<
+    Set<string>
+  >(new Set());
 
   const plugins = React.useMemo(
     () => buildPluginsViewModel(marketplace, installed, local),
@@ -108,15 +117,13 @@ export default function SkillsPluginsScreen() {
   const hasFailedSource = marketplaceFailed || installedFailed || localFailed;
 
   const pendingName =
-    (setPluginEnabled.isPending
-      ? setPluginEnabled.variables?.name
-      : undefined) ??
     (uninstallPlugin.isPending ? uninstallPlugin.variables : undefined) ??
     (refreshPlugin.isPending ? refreshPlugin.variables : undefined) ??
     null;
 
   const isPluginBusy = (plugin: PluginViewModel): boolean =>
     pendingName === plugin.name ||
+    pendingToggleNames.has(plugin.name) ||
     (installPlugin.isPending &&
       installPlugin.variables?.source === plugin.source);
 
@@ -130,7 +137,25 @@ export default function SkillsPluginsScreen() {
   };
 
   const handleToggle = (plugin: PluginViewModel, enabled: boolean) => {
-    setPluginEnabled.mutate({ name: plugin.name, enabled });
+    setPendingToggleNames((prev) => new Set(prev).add(plugin.name));
+    // `mutateAsync` (rather than `mutate` with per-call options) so the
+    // "clear busy" step is tied to this specific execution's own promise --
+    // per-call options passed to `mutate()` live on the shared mutation
+    // observer and a second concurrent `mutate()` call overwrites them
+    // before the first one settles, which would silently drop this cleanup.
+    setPluginEnabled
+      .mutateAsync({ name: plugin.name, enabled })
+      .catch(() => {
+        // Already reported via the hook's own onError toast.
+      })
+      .finally(() => {
+        setPendingToggleNames((prev) => {
+          if (!prev.has(plugin.name)) return prev;
+          const next = new Set(prev);
+          next.delete(plugin.name);
+          return next;
+        });
+      });
   };
 
   const handleUninstall = (plugin: PluginViewModel) => {

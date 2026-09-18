@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Yetenekler",
   "SETTINGS$SKILLS_DESCRIPTION": "Varsayılan yetenekleri (mikro ajanlar) etkinleştirin veya devre dışı bırakın. Devre dışı bırakılan yetenekler ajan bağlamına yüklenmez.",
   "SETTINGS$SKILLS_NO_SKILLS": "Yetenek bulunamadı.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Yetenekler yüklenemedi.",
   "SETTINGS$SKILLS_TRIGGERS": "Tetikleyiciler: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Yetenekleri ada, açıklamaya veya tetikleyiciye göre arayın",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Otomatik keşif",

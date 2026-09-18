@@ -38,6 +38,17 @@ vi.mock("@openhands/extensions/skills", () => ({
 
 import SkillsService from "#/api/skills-service";
 
+/** Matches the SDK's own `HttpError` shape (see `isSdkHttpError`). */
+class SdkHttpError extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super(`HTTP ${status}`);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
 const localBackend: Backend = {
   id: "local",
   name: "Local",
@@ -105,5 +116,24 @@ describe("SkillsService.getSkills against the agent-server backend", () => {
 
     expect(skills).toHaveLength(MOCK_PUBLIC_CATALOG.length);
     expect(skills.every((s) => s.source === "public")).toBe(true);
+  });
+
+  it("returns only bundled public skills when the agent-server predates the skills endpoint (404)", async () => {
+    mockGetSkills.mockRejectedValue(new SdkHttpError(404));
+
+    const skills = await SkillsService.getSkills();
+
+    expect(skills).toHaveLength(MOCK_PUBLIC_CATALOG.length);
+    expect(skills.every((s) => s.source === "public")).toBe(true);
+  });
+
+  it("propagates a real agent-server error instead of silently falling back to the public catalog", async () => {
+    // Regression: a bare `catch {}` treated a 500 from a running agent-server
+    // (e.g. a corrupt project .agents/skills file) identically to "endpoint
+    // unsupported" or "unreachable", so useSkills().isError never fired and
+    // the Skills page rendered an incomplete list with no error indication.
+    mockGetSkills.mockRejectedValue(new SdkHttpError(500));
+
+    await expect(SkillsService.getSkills()).rejects.toThrow();
   });
 });

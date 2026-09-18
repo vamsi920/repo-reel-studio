@@ -44,9 +44,13 @@ function SkillsSettingsScreen() {
   const { t } = useTranslation("openhands");
 
   const queryClient = useQueryClient();
-  const { mutate: saveSettings } = useSaveSettings();
+  const { mutateAsync: saveSettings } = useSaveSettings();
   const { data: settings, isLoading: settingsLoading } = useSettings();
-  const { data: skills, isLoading: skillsLoading } = useSkills();
+  const {
+    data: skills,
+    isLoading: skillsLoading,
+    isError: skillsFailed,
+  } = useSkills();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [queryInput, setQueryInput] = React.useState(
@@ -61,6 +65,11 @@ function SkillsSettingsScreen() {
   // second toggle dispatched before that render lands would otherwise still
   // read a stale set here).
   const disabledSetRef = React.useRef(disabledSet);
+  // Mirrors the latest `settings` query data so a save's `onError` (which can
+  // fire well after a later, already-succeeded save has moved the server
+  // state on) reverts to the current known-good state instead of whatever
+  // `settings` this closure captured when the failing save was issued.
+  const settingsRef = React.useRef(settings);
   const [selectedSkillName, setSelectedSkillName] = React.useState<
     string | null
   >(null);
@@ -97,11 +106,12 @@ function SkillsSettingsScreen() {
 
   // Sync local state with server settings when data first arrives
   React.useEffect(() => {
+    settingsRef.current = settings;
     if (settingsLoading || !settings) return;
     const next = new Set(settings.disabled_skills ?? []);
     disabledSetRef.current = next;
     setDisabledSet(next);
-  }, [settingsLoading, settings?.disabled_skills]);
+  }, [settingsLoading, settings, settings?.disabled_skills]);
 
   // Back and forward move `q` under a route that stays mounted, so the input has to take the URL's value back or it would keep showing — and debounce back — a query the user has already navigated away from.
   React.useEffect(() => {
@@ -166,27 +176,28 @@ function SkillsSettingsScreen() {
     }
     disabledSetRef.current = next;
     setDisabledSet(next);
-    saveSettings(
-      { disabled_skills: Array.from(next) },
-      {
-        onError: (error) => {
-          const errorMessage = retrieveAxiosErrorMessage(error);
-          displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
-          // The toggle flipped optimistically; the server never took the
-          // change, so snap back to its last known state instead of leaving
-          // the card (and the State facet counts) claiming a save that never
-          // happened. The sync effect above only re-runs when the query data
-          // changes, which a failed save does not do, so revert here and
-          // refetch in case another save landed in the meantime.
-          const reverted = new Set(settings?.disabled_skills ?? []);
-          disabledSetRef.current = reverted;
-          setDisabledSet(reverted);
-          queryClient.invalidateQueries({
-            queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
-          });
-        },
-      },
-    );
+    // `mutateAsync` (rather than `mutate` with a per-call `onError`) so this
+    // failure handler is tied to this specific save's own promise -- per-call
+    // options passed to `mutate()` live on the shared mutation observer, and
+    // a second toggle's `mutate()` call (issued before this one settles)
+    // would overwrite them, running the WRONG toggle's error handler (with
+    // the wrong `skillName` closure) or none at all.
+    saveSettings({ disabled_skills: Array.from(next) }).catch((error) => {
+      const errorMessage = retrieveAxiosErrorMessage(error);
+      displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
+      // The toggle flipped optimistically; the server never took the
+      // change, so snap back to its last known state instead of leaving
+      // the card (and the State facet counts) claiming a save that never
+      // happened. The sync effect above only re-runs when the query data
+      // changes, which a failed save does not do, so revert here and
+      // refetch in case another save landed in the meantime.
+      const reverted = new Set(settingsRef.current?.disabled_skills ?? []);
+      disabledSetRef.current = reverted;
+      setDisabledSet(reverted);
+      queryClient.invalidateQueries({
+        queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+      });
+    });
   };
 
   return (
@@ -234,7 +245,18 @@ function SkillsSettingsScreen() {
             </div>
           ) : null}
 
-          {!isLoading && allSkills.length === 0 ? (
+          {!isLoading && skillsFailed ? (
+            <div
+              data-testid="skills-error"
+              className={extensionModuleEmptyStateClassName}
+            >
+              <p className="text-sm text-tertiary-light">
+                {t(I18nKey.SETTINGS$SKILLS_LOAD_ERROR)}
+              </p>
+            </div>
+          ) : null}
+
+          {!isLoading && !skillsFailed && allSkills.length === 0 ? (
             <div
               data-testid="skills-empty"
               className={extensionModuleEmptyStateClassName}
@@ -245,7 +267,7 @@ function SkillsSettingsScreen() {
             </div>
           ) : null}
 
-          {!isLoading && allSkills.length > 0 ? (
+          {!isLoading && !skillsFailed && allSkills.length > 0 ? (
             <>
               <SkillsToolbar
                 search={filter.query}

@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Fähigkeiten",
   "SETTINGS$SKILLS_DESCRIPTION": "Standard-Fähigkeiten (Mikroagenten) aktivieren oder deaktivieren. Deaktivierte Fähigkeiten werden nicht in den Agentenkontext geladen.",
   "SETTINGS$SKILLS_NO_SKILLS": "Keine Fähigkeiten gefunden.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Fähigkeiten konnten nicht geladen werden.",
   "SETTINGS$SKILLS_TRIGGERS": "Auslöser: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Fähigkeiten nach Name, Beschreibung oder Auslöser suchen",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Automatische Erkennung",

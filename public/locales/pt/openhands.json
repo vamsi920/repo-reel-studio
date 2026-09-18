@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Habilidades",
   "SETTINGS$SKILLS_DESCRIPTION": "Ativar ou desativar habilidades padrão (micro-agentes). Habilidades desativadas não serão carregadas no contexto do agente.",
   "SETTINGS$SKILLS_NO_SKILLS": "Nenhuma habilidade encontrada.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Não foi possível carregar as habilidades.",
   "SETTINGS$SKILLS_TRIGGERS": "Gatilhos: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Pesquisar habilidades por nome, descrição ou gatilho",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Descoberta automática",

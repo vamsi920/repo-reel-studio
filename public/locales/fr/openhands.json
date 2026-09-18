@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Compétences",
   "SETTINGS$SKILLS_DESCRIPTION": "Activer ou désactiver les compétences par défaut (micro-agents). Les compétences désactivées ne seront pas chargées dans le contexte de l'agent.",
   "SETTINGS$SKILLS_NO_SKILLS": "Aucune compétence trouvée.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Impossible de charger les compétences.",
   "SETTINGS$SKILLS_TRIGGERS": "Déclencheurs : {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Rechercher des compétences par nom, description ou déclencheur",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Auto-découverte",

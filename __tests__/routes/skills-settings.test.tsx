@@ -132,6 +132,23 @@ describe("SkillsSettingsScreen", () => {
     );
   });
 
+  it("shows an error state instead of a misleading empty list when skills fail to load", async () => {
+    // Regression: SkillsService.getSkills() used to swallow every failure
+    // (a real agent-server 500 included) as "fall back to the public
+    // catalog", so a real outage rendered as an ordinary empty state with no
+    // indication anything had failed.
+    vi.spyOn(SkillsService, "getSkills").mockRejectedValue(
+      new Error("agent-server 500"),
+    );
+
+    renderSkillsSettingsScreen();
+
+    expect(await screen.findByTestId("skills-error")).toHaveTextContent(
+      "SETTINGS$SKILLS_LOAD_ERROR",
+    );
+    expect(screen.queryByTestId("skills-empty")).not.toBeInTheDocument();
+  });
+
   it("shows card subtitle text from skill content when description is omitted", async () => {
     const skill = buildSkill({
       name: "SSH Microagent",
@@ -590,6 +607,70 @@ Full skill body.`,
         within(card).getByTestId(`skill-toggle-${skill.name}`),
       ).toHaveAttribute("aria-checked", "false"),
     );
+  });
+
+  it("reverts a failed save using the latest known settings, not a stale pre-toggle snapshot from another still-in-flight save", async () => {
+    // Regression: onError's revert read `settings` from its own handleToggle
+    // closure -- the snapshot from when THAT save was issued, not what the
+    // server actually holds by the time the error fires. If a different
+    // card's save lands successfully in the meantime, the revert must not
+    // throw away that already-persisted change.
+    const user = userEvent.setup();
+    const skillA = buildSkill({ name: "skill-a" });
+    const skillB = buildSkill({ name: "skill-b" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skillA, skillB]);
+    const getSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockResolvedValue(buildSettings({ disabled_skills: [] }));
+
+    let rejectA: (error: Error) => void = () => {};
+    const pendingA = new Promise<boolean>((_resolve, reject) => {
+      rejectA = reject;
+    });
+
+    vi.spyOn(SettingsService, "saveSettings").mockImplementation(
+      async (settings: { disabled_skills?: string[] }) => {
+        if ((settings.disabled_skills ?? []).length < 2) {
+          // skill-a's own save: stays pending until rejectA() below fires.
+          return pendingA;
+        }
+        // skill-b's save, issued while skill-a's is still in flight: this
+        // one persists immediately, so the server now genuinely holds both
+        // disabled.
+        getSpy.mockResolvedValue(
+          buildSettings({ disabled_skills: [...settings.disabled_skills!] }),
+        );
+        return true;
+      },
+    );
+    vi.spyOn(ToastHandlers, "displayErrorToast").mockImplementation(() => {});
+
+    renderSkillsSettingsScreen();
+    const cardA = await screen.findByTestId(`skill-card-${skillA.name}`);
+    const cardB = screen.getByTestId(`skill-card-${skillB.name}`);
+
+    await user.click(within(cardA).getByTestId(`skill-toggle-${skillA.name}`));
+    await user.click(within(cardB).getByTestId(`skill-toggle-${skillB.name}`));
+
+    // skill-b's own save succeeds and settings refetches to reflect it.
+    await waitFor(() =>
+      expect(
+        within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
+
+    // Now skill-a's own (still in-flight) save fails.
+    rejectA(new Error("Request failed: Failed to fetch"));
+    await waitFor(() =>
+      expect(ToastHandlers.displayErrorToast).toHaveBeenCalled(),
+    );
+
+    // skill-b's card must keep reflecting the server's real, already-saved
+    // state instead of being wiped back to enabled by skill-a's unrelated,
+    // later-arriving failure reverting to a stale pre-toggle snapshot.
+    expect(
+      within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
+    ).toHaveAttribute("aria-checked", "false");
   });
 
   it("applies both toggles when two different skills are switched before a re-render lands", async () => {

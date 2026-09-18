@@ -28219,6 +28219,23 @@
     "uk": "Навички не знайдено.",
     "ca": "No s'han trobat habilitats."
   },
+  "SETTINGS$SKILLS_LOAD_ERROR": {
+    "en": "Couldn't load skills.",
+    "ja": "スキルを読み込めませんでした。",
+    "zh-CN": "无法加载技能。",
+    "zh-TW": "無法載入技能。",
+    "ko-KR": "스킬을 불러올 수 없습니다.",
+    "no": "Kunne ikke laste ferdigheter.",
+    "ar": "تعذّر تحميل المهارات.",
+    "de": "Fähigkeiten konnten nicht geladen werden.",
+    "fr": "Impossible de charger les compétences.",
+    "it": "Impossibile caricare le competenze.",
+    "pt": "Não foi possível carregar as habilidades.",
+    "es": "No se pudieron cargar las habilidades.",
+    "tr": "Yetenekler yüklenemedi.",
+    "uk": "Не вдалося завантажити навички.",
+    "ca": "No s'han pogut carregar les habilitats."
+  },
   "SETTINGS$SKILLS_TRIGGERS": {
     "en": "Triggers: {{triggers}}",
     "ja": "トリガー: {{triggers}}",

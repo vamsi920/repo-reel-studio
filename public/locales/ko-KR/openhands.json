@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "스킬",
   "SETTINGS$SKILLS_DESCRIPTION": "기본 스킬(마이크로에이전트)을 활성화하거나 비활성화합니다. 비활성화된 스킬은 에이전트 컨텍스트에 로드되지 않습니다.",
   "SETTINGS$SKILLS_NO_SKILLS": "스킬을 찾을 수 없습니다.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "스킬을 불러올 수 없습니다.",
   "SETTINGS$SKILLS_TRIGGERS": "트리거: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "이름, 설명 또는 트리거로 스킬 검색",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "자동 검색",

@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Skills",
   "SETTINGS$SKILLS_DESCRIPTION": "Enable or disable default skills. Disabled skills will not be loaded into agent context.",
   "SETTINGS$SKILLS_NO_SKILLS": "No skills found.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Couldn't load skills.",
   "SETTINGS$SKILLS_TRIGGERS": "Triggers: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Search skills by name, description, or trigger",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Auto-discovery",

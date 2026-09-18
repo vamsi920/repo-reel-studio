@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "スキル",
   "SETTINGS$SKILLS_DESCRIPTION": "デフォルトスキル（マイクロエージェント）を有効または無効にします。無効なスキルはエージェントコンテキストに読み込まれません。",
   "SETTINGS$SKILLS_NO_SKILLS": "スキルが見つかりません。",
+  "SETTINGS$SKILLS_LOAD_ERROR": "スキルを読み込めませんでした。",
   "SETTINGS$SKILLS_TRIGGERS": "トリガー: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "名前、説明、トリガーでスキルを検索",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "自動検出",

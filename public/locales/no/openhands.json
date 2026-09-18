@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Ferdigheter",
   "SETTINGS$SKILLS_DESCRIPTION": "Aktiver eller deaktiver standardferdigheter (mikroagenter). Deaktiverte ferdigheter lastes ikke inn i agentkonteksten.",
   "SETTINGS$SKILLS_NO_SKILLS": "Ingen ferdigheter funnet.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Kunne ikke laste ferdigheter.",
   "SETTINGS$SKILLS_TRIGGERS": "Utløsere: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Søk etter ferdigheter etter navn, beskrivelse eller utløser",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Automatisk oppdaging",

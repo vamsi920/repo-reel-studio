@@ -179,6 +179,53 @@ describe("SkillsPluginsScreen", () => {
     );
   });
 
+  it("keeps a plugin's toggle busy while its own request is still in flight, even after a different plugin's toggle resolves", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([
+      buildInstalledPlugin({ name: "plugin-a", enabled: true }),
+      buildInstalledPlugin({ name: "plugin-b", enabled: true }),
+    ]);
+
+    let resolveA: (value: { name: string; enabled: boolean }) => void =
+      () => {};
+    const pendingA = new Promise<{ name: string; enabled: boolean }>(
+      (resolve) => {
+        resolveA = resolve;
+      },
+    );
+    vi.spyOn(PluginsManagementService, "setPluginEnabled").mockImplementation(
+      (name: string) =>
+        name === "plugin-a"
+          ? pendingA
+          : Promise.resolve({ name, enabled: false }),
+    );
+
+    renderPluginsScreen();
+    await user.click(await screen.findByTestId("plugin-toggle-plugin-a"));
+    await user.click(await screen.findByTestId("plugin-toggle-plugin-b"));
+
+    // plugin-b's own request has already resolved...
+    await waitFor(() =>
+      expect(screen.getByTestId("plugin-toggle-plugin-b")).not.toBeDisabled(),
+    );
+    // ...but plugin-a's request is still in flight, so its own toggle must
+    // stay busy rather than being cleared by the shared mutation settling
+    // for a different plugin.
+    expect(screen.getByTestId("plugin-toggle-plugin-a")).toBeDisabled();
+
+    resolveA({ name: "plugin-a", enabled: false });
+    await waitFor(
+      () =>
+        expect(
+          screen.getByTestId("plugin-toggle-plugin-a"),
+        ).not.toBeDisabled(),
+      { timeout: 5000 },
+    );
+  });
+
   it("uninstalls an installed plugin from the detail modal", async () => {
     const user = userEvent.setup();
     vi.spyOn(

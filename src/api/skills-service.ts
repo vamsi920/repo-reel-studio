@@ -6,6 +6,25 @@ import { getAgentServerWorkingDir } from "./agent-server-config";
 import { getActiveBackend } from "./backend-registry/active-store";
 import { fetchCloudSkills } from "./cloud/skills-service.api";
 import { getAgentServerClientOptions } from "./agent-server-client-options";
+import {
+  isSdkHttpError,
+  isSdkHttpStatusError,
+} from "./agent-server-compatibility";
+
+/**
+ * Whether a failed skills call is a legitimate "public catalog only" case
+ * rather than a real outage. That covers both an agent-server that predates
+ * the skills endpoint (404/405) and one that's simply unreachable (a plain
+ * network error carries no HTTP status). Anything else means the
+ * agent-server is up and answered with a real error (e.g. a 500 from a
+ * corrupt local `.agents/skills` file), which must propagate so
+ * `useSkills().isError` can surface it instead of silently rendering an
+ * incomplete skill list as if it were complete.
+ */
+function isSkillsEndpointUnavailable(error: unknown): boolean {
+  if (!isSdkHttpError(error)) return true;
+  return isSdkHttpStatusError(error, 404) || isSdkHttpStatusError(error, 405);
+}
 
 function catalogEntryToSkillInfo(entry: SkillCatalogEntry): SkillInfo {
   return {
@@ -55,7 +74,10 @@ class SkillsService {
         project_dir: projectDir ?? getAgentServerWorkingDir(),
       });
       localSkills = (response.skills ?? []) as SkillInfo[];
-    } catch {
+    } catch (error) {
+      if (!isSkillsEndpointUnavailable(error)) {
+        throw error;
+      }
       // Agent-server may not support the skills endpoint or may be
       // unreachable; fall back to the bundled public catalog alone.
     }

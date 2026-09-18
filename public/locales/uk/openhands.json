@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Навички",
   "SETTINGS$SKILLS_DESCRIPTION": "Увімкніть або вимкніть навички за замовчуванням (мікроагенти). Вимкнені навички не завантажуватимуться в контекст агента.",
   "SETTINGS$SKILLS_NO_SKILLS": "Навички не знайдено.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "Не вдалося завантажити навички.",
   "SETTINGS$SKILLS_TRIGGERS": "Тригери: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Шукати навички за назвою, описом або тригером",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Автовиявлення",

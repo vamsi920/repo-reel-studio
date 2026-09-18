@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "المهارات",
   "SETTINGS$SKILLS_DESCRIPTION": "تفعيل أو تعطيل المهارات الافتراضية (الوكلاء الصغار). لن يتم تحميل المهارات المعطلة في سياق الوكيل.",
   "SETTINGS$SKILLS_NO_SKILLS": "لم يتم العثور على مهارات.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "تعذّر تحميل المهارات.",
   "SETTINGS$SKILLS_TRIGGERS": "المشغلات: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "ابحث في المهارات بالاسم أو الوصف أو المشغل",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "اكتشاف تلقائي",

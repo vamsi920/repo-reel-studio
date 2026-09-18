@@ -1659,6 +1659,7 @@
   "SETTINGS$SKILLS_TITLE": "Habilidades",
   "SETTINGS$SKILLS_DESCRIPTION": "Habilitar o deshabilitar habilidades predeterminadas (micro-agentes). Las habilidades deshabilitadas no se cargarán en el contexto del agente.",
   "SETTINGS$SKILLS_NO_SKILLS": "No se encontraron habilidades.",
+  "SETTINGS$SKILLS_LOAD_ERROR": "No se pudieron cargar las habilidades.",
   "SETTINGS$SKILLS_TRIGGERS": "Disparadores: {{triggers}}",
   "SETTINGS$SKILLS_SEARCH_PLACEHOLDER": "Buscar habilidades por nombre, descripción o disparador",
   "SETTINGS$SKILLS_TYPE_AGENTSKILLS": "Descubrimiento automático",
