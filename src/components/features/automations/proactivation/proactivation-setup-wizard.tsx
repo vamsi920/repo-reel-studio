@@ -308,6 +308,13 @@ export function ProactivationSetupWizard({
       displaySuccessToast(t(I18nKey.AUTOMATIONS$PROACTIVATION_ENABLE_SUCCESS));
       onEnabled();
     } catch (error) {
+      // The create loop is sequential and stops at the first failure (see
+      // comment above), but any repos processed before it still got created
+      // and enabled on the backend. Without this, the cache stays stale and
+      // those automations are invisible in the list until some unrelated
+      // refetch happens, even though the error toast implies nothing was
+      // created.
+      await queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       const message = getApiErrorMessage(
         error,
         t(I18nKey.AUTOMATIONS$PROACTIVATION_ENABLE_ERROR),

@@ -121,11 +121,37 @@ export function ProactivationFeatureCard({
     }
   };
 
-  const handlePauseResume = () => {
+  const handlePauseResume = async () => {
     const willEnable = !anyActive;
-    proactivationAutomations.forEach((automation) => {
-      toggleMutation.mutate({ id: automation.id, enabled: willEnable });
-    });
+    // `toggleMutation` is one mutation shared across every automation here,
+    // same pitfall as `handleRunAll` above: firing several `mutate()` calls
+    // back to back drops the per-call callbacks (and therefore the error
+    // toast) for every automation but the last one to settle. `mutateAsync`
+    // plus `Promise.allSettled` sees every outcome instead.
+    const results = await Promise.allSettled(
+      proactivationAutomations.map((automation) =>
+        toggleMutation.mutateAsync({
+          id: automation.id,
+          enabled: willEnable,
+        }),
+      ),
+    );
+
+    const failures = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    if (failures.length > 0) {
+      displayErrorToast(
+        getApiErrorMessage(
+          failures[0].reason,
+          t(
+            willEnable
+              ? I18nKey.AUTOMATIONS$EDIT_ERROR
+              : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
+          ),
+        ),
+      );
+    }
   };
 
   const handleViewRuns = () => {
