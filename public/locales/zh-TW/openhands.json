@@ -3033,6 +3033,7 @@
   "ENVIRONMENT$DEGRADING_EMPTY": "No features are running in a reduced state.",
   "ENVIRONMENT$UNKNOWN_TITLE": "Not yet checked",
   "ENVIRONMENT$UNKNOWN_HELP": "These have not been probed yet. They are unknown, not broken.",
+  "ENVIRONMENT$UNKNOWN_EMPTY": "Everything has been checked.",
   "ENVIRONMENT$CAPABILITIES_TITLE": "Capabilities",
   "ENVIRONMENT$CAPABILITIES_SUBTITLE": "What this app needs from your stack, and what you have pointed each one at.",
   "ENVIRONMENT$FIX_WITH_AGENT": "Fix with agent",

@@ -143,6 +143,22 @@ describe("Environment overview", () => {
     expect(screen.getByTestId("fix-with-agent-a")).toBeInTheDocument();
   });
 
+  it("says everything has been checked when nothing is unknown, not that items are unprobed", () => {
+    // Regression: the unknown panel's empty state used to reuse
+    // ENVIRONMENT$UNKNOWN_HELP ("These have not been probed yet...") -- the
+    // same copy shown as a footer hint when the list is non-empty -- so an
+    // install with zero unknown items still claimed things were unprobed.
+    state.readiness = baseReport({ unknown: [] });
+    renderScreen();
+    const panel = screen.getByTestId("environment-unknown");
+    expect(
+      within(panel).getByText("ENVIRONMENT$UNKNOWN_EMPTY"),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).queryByText("ENVIRONMENT$UNKNOWN_HELP"),
+    ).not.toBeInTheDocument();
+  });
+
   it("explains itself instead of rendering an empty board without Supabase", () => {
     state.supabaseConfigured = false;
     renderScreen();

@@ -51577,6 +51577,23 @@
     "tr": "These have not been probed yet. They are unknown, not broken.",
     "uk": "These have not been probed yet. They are unknown, not broken."
   },
+  "ENVIRONMENT$UNKNOWN_EMPTY": {
+    "en": "Everything has been checked.",
+    "ja": "Everything has been checked.",
+    "zh-CN": "Everything has been checked.",
+    "zh-TW": "Everything has been checked.",
+    "ko-KR": "Everything has been checked.",
+    "no": "Everything has been checked.",
+    "ar": "Everything has been checked.",
+    "de": "Everything has been checked.",
+    "fr": "Everything has been checked.",
+    "it": "Everything has been checked.",
+    "pt": "Everything has been checked.",
+    "es": "Everything has been checked.",
+    "ca": "Everything has been checked.",
+    "tr": "Everything has been checked.",
+    "uk": "Everything has been checked."
+  },
   "ENVIRONMENT$CAPABILITIES_TITLE": {
     "en": "Capabilities",
     "ja": "Capabilities",

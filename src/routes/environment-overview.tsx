@@ -94,7 +94,7 @@ function EnvironmentOverviewScreen() {
         <BlockingIssuesPanel
           testId="environment-unknown"
           titleKey={I18nKey.ENVIRONMENT$UNKNOWN_TITLE}
-          emptyKey={I18nKey.ENVIRONMENT$UNKNOWN_HELP}
+          emptyKey={I18nKey.ENVIRONMENT$UNKNOWN_EMPTY}
           items={readiness.unknown}
           tone="unknown"
         />
