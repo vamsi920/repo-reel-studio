@@ -26,4 +26,23 @@ describe("FileQuickRow", () => {
       screen.getByTestId("file-quick-row-item-README.md"),
     ).not.toHaveAttribute("aria-current");
   });
+
+  it("caps the number of rendered chips so a large workspace doesn't render thousands of off-screen, still-focusable buttons", () => {
+    // Arrange
+    const paths = Array.from({ length: 500 }, (_, i) => `src/file-${i}.ts`);
+
+    // Act
+    render(
+      <FileQuickRow
+        paths={paths}
+        selectedPath={null}
+        onSelectFile={vi.fn()}
+        isTreeVisible={false}
+        onToggleTree={vi.fn()}
+      />,
+    );
+
+    // Assert
+    expect(screen.getAllByRole("button").length).toBeLessThan(paths.length);
+  });
 });

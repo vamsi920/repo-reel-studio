@@ -15,6 +15,18 @@ interface FileQuickRowProps {
   onToggleTree: () => void;
 }
 
+// The row is a single `overflow-hidden` line, so only a handful of chips
+// are ever visible — but with no cap, a large workspace (up to
+// `MAX_FILES` = 2000 paths from `useWorkspaceFiles`) rendered one real
+// <button> per path anyway: thousands of off-screen elements laid out on
+// every keystroke-driven re-sort, and every one of them still focusable,
+// so Tab had to walk through the whole clipped list before reaching
+// anything past this row. Capping at a generous multiple of what any
+// viewport could show keeps the row itself unchanged in practice while
+// bounding both costs; anything past the cap is still reachable by
+// opening the tree.
+const MAX_QUICK_ROW_ITEMS = 30;
+
 /**
  * Horizontal "quick access" row of files at the top of the file viewer.
  * Important entrypoints (index.html, README.md, package.json, …) appear
@@ -31,7 +43,10 @@ export function FileQuickRow({
 }: FileQuickRowProps) {
   const { t } = useTranslation("openhands");
 
-  const sortedByPriority = useMemo(() => sortFilesByPriority(paths), [paths]);
+  const sortedByPriority = useMemo(
+    () => sortFilesByPriority(paths).slice(0, MAX_QUICK_ROW_ITEMS),
+    [paths],
+  );
 
   return (
     <div
