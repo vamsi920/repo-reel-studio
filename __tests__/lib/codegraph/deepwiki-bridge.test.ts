@@ -117,6 +117,25 @@ describe("toSubsystemHints", () => {
   it("returns nothing when Knowledge has not been generated", () => {
     expect(toSubsystemHints(undefined)).toEqual([]);
   });
+
+  it("ignores a section whose pageId no longer resolves to a real page", () => {
+    const hints = toSubsystemHints(
+      repository(
+        [page("p1", "Charging", ["src/pay/charge.ts"])],
+        [{ id: "s1", title: "Payments", pageIds: ["p1", "missing"] }],
+      ),
+    );
+
+    expect(hints).toEqual([
+      { id: "s1", title: "Payments", filePaths: ["src/pay/charge.ts"] },
+    ]);
+  });
+
+  it("skips an unsectioned page that cites no files", () => {
+    const hints = toSubsystemHints(repository([page("empty", "Empty", [])]));
+
+    expect(hints).toEqual([]);
+  });
 });
 
 describe("KnowledgeLinkIndex", () => {
@@ -214,5 +233,21 @@ describe("KnowledgeLinkIndex", () => {
     });
 
     expect(index.resolve(subsystem)).toBeNull();
+  });
+
+  it("returns null for an aggregate with no file paths at all", () => {
+    const index = new KnowledgeLinkIndex(
+      "acme/app",
+      repository([page("payments", "Payments", ["src/pay/a.ts"])]),
+    );
+
+    const emptyAggregate = node({
+      id: "subsystem:other",
+      level: "subsystem",
+      filePath: undefined,
+      filePaths: [],
+    });
+
+    expect(index.resolve(emptyAggregate)).toBeNull();
   });
 });

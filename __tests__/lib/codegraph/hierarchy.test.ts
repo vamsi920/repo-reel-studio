@@ -318,6 +318,97 @@ describe("buildHierarchy", () => {
 
     expect(result.nodesById[orphan.id]).toBeDefined();
   });
+
+  it("clusters more than one level's worth of pathless symbols by connectivity", () => {
+    // 30 orphan symbols with no file path can't be folder-split, so above the
+    // level budget this must fall through to the vendored connectivity
+    // clustering -- and a truly isolated symbol among them must still land
+    // somewhere rather than vanish.
+    const paired: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    for (let i = 0; i < 15; i += 1) {
+      const a = fn("", `paired-${i}-a`);
+      const b = fn("", `paired-${i}-b`);
+      a.filePath = undefined;
+      b.filePath = undefined;
+      paired.push(a, b);
+      edges.push({
+        source: a.id,
+        target: b.id,
+        type: "calls",
+        direction: "forward",
+        weight: 1,
+      });
+    }
+    const isolated = fn("", "isolated");
+    isolated.filePath = undefined;
+
+    const result = buildHierarchy(graphOf([...paired, isolated], edges));
+
+    // Nothing dropped: every one of the 31 symbols is still reachable.
+    for (const node of [...paired, isolated]) {
+      expect(result.nodesById[node.id]).toBeDefined();
+    }
+
+    const subsystemId = result.childrenByParent[""][0];
+    // The connected pairs earn their own module boxes...
+    const moduleChildren = result.childrenByParent[subsystemId].filter(
+      (id) => result.nodesById[id].level === "module",
+    );
+    expect(moduleChildren.length).toBeGreaterThan(0);
+    // ...but the isolated symbol, having no pair, is not worth a box of its
+    // own and is attached directly under the subsystem instead.
+    expect(result.parentById[isolated.id]).toBe(subsystemId);
+  });
+
+  it("still attaches files sitting directly in a folder once its subfolders are split out", () => {
+    // A folder with both loose files and several sub-packages, past the
+    // level budget: each sub-package earns a module box, and the loose files
+    // -- too few to need one of their own -- attach straight under the
+    // folder instead of disappearing.
+    const direct = [file("root/one.ts"), file("root/two.ts")];
+    const packaged: GraphNode[] = [];
+    for (let i = 0; i < 25; i += 1) {
+      packaged.push(file(`root/pkg${i}/a.ts`), file(`root/pkg${i}/b.ts`));
+    }
+    const nodes = [...direct, ...packaged];
+    const graph = graphOf(nodes);
+    // One shared layer forces every file into a single subsystem bucket, so
+    // `buildModuleTree`'s own folder-splitting (not the level-1 grouping)
+    // is what's under test.
+    graph.layers = [
+      {
+        id: "root-svc",
+        name: "Root",
+        description: "",
+        nodeIds: nodes.map((node) => node.id),
+      },
+    ];
+
+    const result = buildHierarchy(graph);
+    const subsystemId = result.childrenByParent[""][0];
+
+    for (const node of direct) {
+      // Attached straight under the subsystem, not nested inside a module.
+      expect(result.parentById[node.id]).toBe(subsystemId);
+    }
+    const moduleChildren = result.childrenByParent[subsystemId].filter(
+      (id) => result.nodesById[id].level === "module",
+    );
+    expect(moduleChildren.length).toBe(25);
+  });
+
+  it("buckets a lone root-level file under 'Other' when there are too few nodes to cluster", () => {
+    // A single file with no directory segment and no detected layer: too few
+    // nodes (< the connectivity-clustering minimum) to run folder/community
+    // grouping, so it must still land in the generic "Other" bucket rather
+    // than being dropped.
+    const result = buildHierarchy(graphOf([file("index.ts")]));
+    const subsystemId = result.childrenByParent[""][0];
+
+    expect(result.nodesById[subsystemId].name).toBe("Other");
+    expect(result.parentById["file:index.ts"]).toBeDefined();
+  });
 });
 
 describe("breadcrumbsFor", () => {
