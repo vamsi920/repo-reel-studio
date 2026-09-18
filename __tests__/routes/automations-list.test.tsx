@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
@@ -527,6 +527,75 @@ describe("AutomationsList — toggle and delete failures", () => {
     // was indistinguishable from a successful delete.
     await waitFor(() => {
       expect(displayErrorToast).toHaveBeenCalledWith("delete failed");
+    });
+  });
+
+  it("still reports an earlier row's toggle failure after a later row's toggle resolves first", async () => {
+    // Arrange — `toggleMutation` is one mutation instance shared by every
+    // row. Automation 1's toggle is left pending (a deferred promise we
+    // reject manually below, after automation 2's toggle has already
+    // resolved) to prove the two calls' error handling stays independent
+    // instead of the later call dropping the earlier call's callback.
+    const secondAutomation: Automation = {
+      ...automation,
+      id: "auto-2",
+      name: "Weekly report",
+    };
+    vi.mocked(AutomationService.getAutomations).mockResolvedValue({
+      automations: [automation, secondAutomation],
+      total: 2,
+    });
+    let rejectFirstToggle: ((error: unknown) => void) | undefined;
+    const firstTogglePromise = new Promise<Automation>((_resolve, reject) => {
+      rejectFirstToggle = reject;
+    });
+    vi.mocked(AutomationService.toggleAutomation).mockImplementation((id) =>
+      id === automation.id
+        ? firstTogglePromise
+        : Promise.resolve({ ...secondAutomation, enabled: false }),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+    await screen.findByText(secondAutomation.name);
+
+    const firstCard = screen.getByTestId(`automation-card-${automation.id}`);
+    const secondCard = screen.getByTestId(
+      `automation-card-${secondAutomation.id}`,
+    );
+
+    // Act — turn off automation 1 (stays pending), then automation 2 (which
+    // resolves right away) before automation 1 settles.
+    await user.click(
+      within(firstCard).getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU),
+    );
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await user.click(
+      within(secondCard).getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU),
+    );
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await waitFor(() => {
+      expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
+        secondAutomation.id,
+        false,
+      );
+    });
+
+    // Assert — rejecting automation 1's still-in-flight toggle after
+    // automation 2's already settled must still surface automation 1's own
+    // error, not silently no-op.
+    rejectFirstToggle?.(
+      new HttpError(500, "Internal Server Error", {
+        message: "Scheduler unavailable",
+      }),
+    );
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("Scheduler unavailable");
     });
   });
 });

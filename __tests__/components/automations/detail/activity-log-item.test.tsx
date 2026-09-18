@@ -9,6 +9,7 @@ import {
   type Automation,
   type AutomationRun,
 } from "#/types/automation";
+import { buildProactivationPrompt } from "#/utils/proactivation-prompt";
 import {
   __resetActiveStoreForTests,
   setActiveSelection,
@@ -427,5 +428,59 @@ describe("ActivityLogItem — cancel a stuck run", () => {
         name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
       }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("ActivityLogItem — Proactivation dismiss reason draft", () => {
+  beforeEach(() => {
+    __resetActiveStoreForTests();
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    __resetActiveStoreForTests();
+  });
+
+  it("does not prefill a cancelled dismiss reason the next time the dialog is reopened", () => {
+    // Arrange: a completed Proactivation run with its Dismiss/Create PR
+    // actions available. The dialog component is always mounted (only
+    // `isOpen` toggles), so its `reason` state used to survive a
+    // cancel-then-reopen cycle.
+    const automation = makeAutomation({
+      prompt: buildProactivationPrompt({
+        watchAreas: ["dependency"],
+        autonomyLevel: "prepare-fix",
+        repository: "acme/repo",
+      }),
+    });
+    const run = makeRun({
+      status: AutomationRunStatus.COMPLETED,
+      conversation_id: "conv-1",
+    });
+    renderItem(run, automation);
+
+    const dismissButton = screen.getByText(
+      I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS,
+    );
+
+    // Act: open the dialog, type a reason, cancel without submitting.
+    fireEvent.click(dismissButton);
+    const textarea = screen.getByPlaceholderText(
+      I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+    );
+    fireEvent.change(textarea, { target: { value: "stale abandoned draft" } });
+    fireEvent.click(screen.getByText(I18nKey.AUTOMATIONS$CANCEL));
+
+    // Act: reopen the dialog for the same run.
+    fireEvent.click(dismissButton);
+
+    // Assert: the textarea starts empty again, not pre-filled with the
+    // abandoned draft.
+    expect(
+      screen.getByPlaceholderText(
+        I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+      ),
+    ).toHaveValue("");
   });
 });

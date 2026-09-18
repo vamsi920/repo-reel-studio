@@ -8,8 +8,9 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+const navigateMock = vi.fn();
 vi.mock("#/context/navigation-context", () => ({
-  useNavigation: () => ({ navigate: vi.fn() }),
+  useNavigation: () => ({ navigate: navigateMock }),
 }));
 
 vi.mock("#/hooks/use-has-permission", () => ({
@@ -107,5 +108,27 @@ describe("AutomationCard", () => {
     expect(
       screen.queryByTestId("unsupported-trigger-badge"),
     ).not.toBeInTheDocument();
+  });
+
+  it("pressing Enter on the Run Now button runs it without also navigating the card away", async () => {
+    navigateMock.mockClear();
+    const onRunNow = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <AutomationCard
+        automation={automation}
+        onToggle={vi.fn()}
+        onRunNow={onRunNow}
+        onExport={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    screen.getByTestId("automation-run-now-automation-1").focus();
+    await user.keyboard("{Enter}");
+
+    expect(onRunNow).toHaveBeenCalledWith("automation-1");
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import TerminalIcon from "#/icons/terminal.svg?react";
@@ -76,6 +76,15 @@ function DismissReasonModal({
 }) {
   const { t } = useTranslation("openhands");
   const [reason, setReason] = useState("");
+
+  // The parent always renders this component, only toggling `isOpen` (it
+  // returns null internally below instead of unmounting), so this instance
+  // never unmounts on close. Without this, cancelling out of a typed-but-
+  // unsubmitted reason left it pre-filled with that stale draft the next
+  // time the dialog was reopened for the same or a different run.
+  useEffect(() => {
+    if (isOpen) setReason("");
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

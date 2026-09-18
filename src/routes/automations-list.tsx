@@ -174,33 +174,35 @@ export default function AutomationsList() {
   );
   const inactive = useMemo(() => visible.filter((a) => !a.enabled), [visible]);
 
-  const handleToggle = (id: string, currentEnabled: boolean) => {
+  const handleToggle = async (id: string, currentEnabled: boolean) => {
     const willEnable = !currentEnabled;
-    toggleMutation.mutate(
-      { id, enabled: willEnable },
-      {
-        // A rejected toggle used to fail silently: the switch snapped back and
-        // the automation stayed as it was with nothing said about why.
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(
-              error,
-              t(
-                willEnable
-                  ? I18nKey.AUTOMATIONS$EDIT_ERROR
-                  : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
-              ),
-            ),
-          );
-        },
-      },
-    );
     if (willEnable) {
       const automation = data?.automations.find((a) => a.id === id);
       trackPrebuiltAutomationEnabled({
         automationId: id,
         automationName: automation?.name ?? id,
       });
+    }
+    try {
+      // `toggleMutation` is one mutation instance shared by every row, so a
+      // second `.mutate()` call before the first settles drops the first
+      // call's `onError`/`onSuccess` (react-query's mutation observer keeps
+      // only the latest call's per-call callbacks) -- toggling two
+      // automations back-to-back used to leave the earlier one's failure
+      // completely silent. `mutateAsync` returns this specific call's own
+      // promise, so awaiting it here is safe under concurrency.
+      await toggleMutation.mutateAsync({ id, enabled: willEnable });
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(
+          error,
+          t(
+            willEnable
+              ? I18nKey.AUTOMATIONS$EDIT_ERROR
+              : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
+          ),
+        ),
+      );
     }
   };
 
@@ -302,18 +304,19 @@ export default function AutomationsList() {
     );
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteTarget) {
-      deleteMutation.mutate(deleteTarget.id, {
-        // The modal closes either way, so a failed delete previously looked
-        // exactly like a successful one until the list refetched.
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)),
-          );
-        },
-      });
-      setDeleteTarget(null);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      // `deleteMutation` is one mutation instance shared by every row, so
+      // confirming a delete on a second automation before the first
+      // settles used to drop the first call's `onError` (react-query keeps
+      // only the latest call's per-call callbacks) -- a failed delete
+      // looked exactly like a successful one until the list refetched.
+      await deleteMutation.mutateAsync(id);
+    } catch (error) {
+      displayErrorToast(getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)));
     }
   };
 

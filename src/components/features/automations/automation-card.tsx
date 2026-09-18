@@ -93,7 +93,13 @@ export function AutomationCard({
       data-testid={`automation-card-${automation.id}`}
       onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter") handleCardClick();
+        // Only treat Enter as "activate the card" when it lands on the card
+        // itself -- otherwise Enter on a focused Run Now button or kebab
+        // trigger bubbles up here too, firing that control's own action
+        // *and* navigating away from underneath it.
+        if (e.key === "Enter" && e.target === e.currentTarget) {
+          handleCardClick();
+        }
       }}
       className={cn(
         "flex min-w-0 flex-col gap-3 overflow-hidden p-4 text-left",

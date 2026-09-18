@@ -139,32 +139,35 @@ export default function AutomationDetail() {
     );
   }
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
     const willEnable = !automation.enabled;
-    toggleMutation.mutate(
-      { id: automation.id, enabled: willEnable },
-      {
-        // Without this a rejected toggle left the switch snapping back with
-        // no explanation, so the automation silently stayed as it was.
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(
-              error,
-              t(
-                willEnable
-                  ? I18nKey.AUTOMATIONS$EDIT_ERROR
-                  : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
-              ),
-            ),
-          );
-        },
-      },
-    );
     if (willEnable) {
       trackPrebuiltAutomationEnabled({
         automationId: automation.id,
         automationName: automation.name,
       });
+    }
+    try {
+      // A second toggle click before the first settles used to drop the
+      // first call's `onError` (react-query's mutation observer keeps only
+      // the latest call's per-call callbacks), leaving the switch snapped
+      // back with no explanation. `mutateAsync` returns this specific
+      // call's own promise, so awaiting it here is safe under concurrency.
+      await toggleMutation.mutateAsync({
+        id: automation.id,
+        enabled: willEnable,
+      });
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(
+          error,
+          t(
+            willEnable
+              ? I18nKey.AUTOMATIONS$EDIT_ERROR
+              : I18nKey.AUTOMATIONS$TURN_OFF_ERROR,
+          ),
+        ),
+      );
     }
   };
 

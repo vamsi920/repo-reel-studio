@@ -87,7 +87,11 @@ export function AutomationListRow({
       data-testid={`automation-list-row-${automation.id}`}
       onClick={handleRowClick}
       onKeyDown={(event) => {
-        if (event.key === "Enter") {
+        // Only treat Enter as "activate the row" when it lands on the row
+        // itself -- otherwise Enter on a focused Run Now button or kebab
+        // trigger bubbles up here too, firing that control's own action
+        // *and* navigating away from underneath it.
+        if (event.key === "Enter" && event.target === event.currentTarget) {
           handleRowClick();
         }
       }}
