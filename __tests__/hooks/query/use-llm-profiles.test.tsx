@@ -115,11 +115,12 @@ describe("useLlmProfiles", () => {
       queryKey: LLM_PROFILES_QUERY_KEYS.all,
     });
     expect(queries).toHaveLength(1);
-    // Verify full query key includes backend.id and orgId
+    // Verify full query key includes backend.id, orgId, and connectionRevision
     expect(queries[0].queryKey).toEqual([
       ...LLM_PROFILES_QUERY_KEYS.all,
       localBackend1.id,
       null, // orgId
+      0, // connectionRevision
     ]);
   });
 
@@ -183,12 +184,44 @@ describe("useLlmProfiles", () => {
       ...LLM_PROFILES_QUERY_KEYS.all,
       localBackend1.id,
       null,
+      0,
     ]);
     expect(queryKeys).toContainEqual([
       ...LLM_PROFILES_QUERY_KEYS.all,
       localBackend2.id,
       null,
+      0,
     ]);
+  });
+
+  it("refetches when the active backend's host/apiKey change in place, same backend.id", async () => {
+    vi.mocked(ProfilesService.listProfiles).mockResolvedValue({
+      profiles: [],
+      active_profile: null,
+    });
+
+    const { result } = renderHook(() => useLlmProfiles(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(1);
+
+    // Same backend.id/orgId — only the connection details changed, as
+    // updateBackend() does when a user edits a registered backend's host or
+    // rotates its API key in place (bumps connectionRevision).
+    act(() => {
+      setRegisteredBackends([
+        {
+          ...localBackend1,
+          host: "http://localhost:8000",
+          apiKey: "rotated-key",
+          connectionRevision: 1,
+        },
+        localBackend2,
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("has staleTime of 5 minutes", async () => {

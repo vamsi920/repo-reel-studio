@@ -19,7 +19,16 @@ export const useSearchSecrets = (options: UseSearchSecretsOptions = {}) => {
   const active = useActiveBackend();
 
   const query = useQuery<CustomSecretWithoutValue[], Error>({
-    queryKey: ["secrets", active.backend.id, active.orgId],
+    // Include connectionRevision (bumped on an in-place host/apiKey edit to
+    // the same backend.id, see active-backend-context.tsx) so correcting a
+    // local backend's connection details doesn't keep serving the previous
+    // agent-server's secrets list until staleTime lapses.
+    queryKey: [
+      "secrets",
+      active.backend.id,
+      active.orgId,
+      active.backend.connectionRevision ?? 0,
+    ],
     queryFn: SecretsService.getSecrets,
     enabled,
     staleTime: 1000 * 60 * 5,
