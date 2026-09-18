@@ -364,6 +364,11 @@ export function SdkSectionPage({
     Partial<Record<SettingsValueSource, SettingsDirtyState>>
   >({});
   const hasHydratedViewRef = React.useRef(false);
+  const hasHydratedValuesRef = React.useRef(false);
+  const dirtyBySourceRef = React.useRef(dirtyBySource);
+  React.useEffect(() => {
+    dirtyBySourceRef.current = dirtyBySource;
+  }, [dirtyBySource]);
 
   const initialValuesBySource = React.useMemo<Partial<
     Record<SettingsValueSource, SettingsFormValues>
@@ -416,6 +421,7 @@ export function SdkSectionPage({
 
   React.useEffect(() => {
     hasHydratedViewRef.current = false;
+    hasHydratedValuesRef.current = false;
     setView("basic");
     setValuesBySource({});
     setDirtyBySource({});
@@ -424,23 +430,58 @@ export function SdkSectionPage({
   React.useEffect(() => {
     if (!initialValuesBySource || !initialView) return;
 
-    setValuesBySource(initialValuesBySource);
-    if (initialValueOverrides) {
-      const firstSource = resolvedSources[0]?.settingsSource;
-      if (firstSource) {
-        const overrideDirty: SettingsDirtyState = Object.fromEntries(
-          Object.keys(initialValueOverrides).map((key) => [key, true]),
-        );
-        setDirtyBySource({ [firstSource]: overrideDirty });
+    if (!hasHydratedValuesRef.current) {
+      // First load for this scope/source set: take the fetched values as-is.
+      setValuesBySource(initialValuesBySource);
+      if (initialValueOverrides) {
+        const firstSource = resolvedSources[0]?.settingsSource;
+        if (firstSource) {
+          const overrideDirty: SettingsDirtyState = Object.fromEntries(
+            Object.keys(initialValueOverrides).map((key) => [key, true]),
+          );
+          setDirtyBySource({ [firstSource]: overrideDirty });
+        } else {
+          setDirtyBySource({});
+        }
       } else {
         setDirtyBySource({});
       }
     } else {
-      setDirtyBySource({});
+      // A later `settings` refetch (background staleTime refresh, or an
+      // invalidation from a save elsewhere) re-runs this effect with a new
+      // `initialValuesBySource` object. Only fold the fresh value into
+      // fields the user hasn't touched yet -- otherwise this would silently
+      // stomp an in-progress, unsaved edit out from under the user. Dirty
+      // state itself is left alone; it's only ever cleared by a successful
+      // save (see `handleSave`'s `onSuccess`) or the reset effect above.
+      setValuesBySource((prev) => {
+        const currentDirty = dirtyBySourceRef.current;
+        const merged: Partial<Record<SettingsValueSource, SettingsFormValues>> =
+          { ...prev };
+        for (const source of Object.keys(
+          initialValuesBySource,
+        ) as SettingsValueSource[]) {
+          const freshSourceValues = initialValuesBySource[source] ?? {};
+          const dirtyForSource = currentDirty[source] ?? {};
+          const mergedSourceValues: SettingsFormValues = {
+            ...(prev[source] ?? {}),
+          };
+          for (const key of Object.keys(freshSourceValues)) {
+            if (!dirtyForSource[key]) {
+              mergedSourceValues[key] = freshSourceValues[key];
+            }
+          }
+          merged[source] = mergedSourceValues;
+        }
+        return merged;
+      });
     }
     // The ref flip stays outside the updater: React double-invokes state
     // updaters in StrictMode, so mutating it in there makes the second
     // (kept) call take the already-hydrated branch and pin the view.
+    if (!hasHydratedValuesRef.current) {
+      hasHydratedValuesRef.current = true;
+    }
     if (!hasHydratedViewRef.current) {
       hasHydratedViewRef.current = true;
       setView(initialView);

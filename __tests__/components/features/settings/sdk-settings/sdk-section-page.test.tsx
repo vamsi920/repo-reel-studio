@@ -322,6 +322,86 @@ describe("SdkSectionPage", () => {
     });
   });
 
+  it("keeps an in-progress unsaved edit when the settings query refetches in the background", async () => {
+    const schema: NonNullable<Settings["agent_settings_schema"]> = {
+      model_name: "AgentSettings",
+      sections: [
+        {
+          key: "llm",
+          label: "LLM",
+          fields: [
+            {
+              key: "llm.endpoint",
+              label: "Endpoint",
+              section: "llm",
+              section_label: "LLM",
+              value_type: "string",
+              default: "https://api.example.com",
+              choices: [],
+              depends_on: [],
+              prominence: "critical",
+              secret: false,
+              required: true,
+            },
+          ],
+        },
+      ],
+    };
+
+    const getSettingsSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockImplementation(async () =>
+        buildSettings({
+          agent_settings_schema: schema,
+          agent_settings: { "llm.endpoint": "https://api.example.com" },
+        }),
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      React.createElement(SdkSectionPage, {
+        settingsSources: [
+          { settingsSource: "agent_settings", sectionKeys: ["llm"] },
+        ],
+      }),
+      {
+        wrapper: ({ children }) => (
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        ),
+      },
+    );
+
+    const endpointInput = await screen.findByTestId(
+      "sdk-settings-llm.endpoint",
+    );
+    await userEvent.clear(endpointInput);
+    await userEvent.type(endpointInput, "https://api.dirty.example.com");
+
+    await waitFor(() => {
+      expect(endpointInput).toHaveValue("https://api.dirty.example.com");
+    });
+    await waitFor(() => {
+      expect(getSettingsSpy).toHaveBeenCalledTimes(1);
+    });
+
+    // Simulate a background refetch landing mid-edit -- e.g. the shared
+    // "personal" settings query going stale, or some unrelated mutation
+    // elsewhere invalidating it -- unrelated to this page's own save flow.
+    await queryClient.refetchQueries();
+
+    await waitFor(() => {
+      expect(getSettingsSpy).toHaveBeenCalledTimes(2);
+    });
+
+    expect(endpointInput).toHaveValue("https://api.dirty.example.com");
+    expect(screen.getByTestId("save-button")).not.toBeDisabled();
+  });
+
   it("resets from advanced to the inferred basic view after saving when advanced settings match defaults", async () => {
     const schema: NonNullable<Settings["agent_settings_schema"]> = {
       model_name: "AgentSettings",
