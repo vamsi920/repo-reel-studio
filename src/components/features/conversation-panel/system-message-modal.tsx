@@ -7,13 +7,18 @@ import { TabContent } from "./system-message-modal/tab-content";
 import { SystemMessageForModal } from "#/utils/system-message-adapter";
 
 interface SystemMessageModalProps {
-  isOpen: boolean;
   onClose: () => void;
   systemMessage: SystemMessageForModal | null;
 }
 
+/**
+ * Callers must only mount this component while the modal should be visible
+ * (e.g. `{systemModalVisible && <SystemMessageModal .../>}`), never keep it
+ * mounted behind an `isOpen` prop: `activeTab`/`expandedTools` are local
+ * state, so an always-mounted instance would carry the previously viewed
+ * conversation's tab selection and expanded tools into the next one.
+ */
 export function SystemMessageModal({
-  isOpen,
   onClose,
   systemMessage,
 }: SystemMessageModalProps) {
@@ -34,39 +39,35 @@ export function SystemMessageModal({
   };
 
   return (
-    isOpen && (
-      <ModalBackdrop onClose={onClose}>
-        <ModalBody
-          width="lg"
-          className="relative max-h-[80vh] flex flex-col items-start border border-[var(--oh-border)]"
-          testID="system-message-modal"
-        >
-          <SystemMessageHeader
-            agentClass={systemMessage.agent_class}
-            openhandsVersion={systemMessage.openhands_version}
-            onClose={onClose}
+    <ModalBackdrop onClose={onClose}>
+      <ModalBody
+        width="lg"
+        className="relative max-h-[80vh] flex flex-col items-start border border-[var(--oh-border)]"
+        testID="system-message-modal"
+      >
+        <SystemMessageHeader
+          agentClass={systemMessage.agent_class}
+          openhandsVersion={systemMessage.openhands_version}
+          onClose={onClose}
+        />
+
+        <div className="w-full">
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            hasTools={!!(systemMessage.tools && systemMessage.tools.length > 0)}
           />
 
-          <div className="w-full">
-            <TabNavigation
+          <div className="h-[60vh] overflow-auto rounded-md border border-[var(--oh-border)] bg-surface-raised custom-scrollbar-always">
+            <TabContent
               activeTab={activeTab}
-              onTabChange={setActiveTab}
-              hasTools={
-                !!(systemMessage.tools && systemMessage.tools.length > 0)
-              }
+              systemMessage={systemMessage}
+              expandedTools={expandedTools}
+              onToggleTool={toggleTool}
             />
-
-            <div className="h-[60vh] overflow-auto rounded-md border border-[var(--oh-border)] bg-surface-raised custom-scrollbar-always">
-              <TabContent
-                activeTab={activeTab}
-                systemMessage={systemMessage}
-                expandedTools={expandedTools}
-                onToggleTool={toggleTool}
-              />
-            </div>
           </div>
-        </ModalBody>
-      </ModalBackdrop>
-    )
+        </div>
+      </ModalBody>
+    </ModalBackdrop>
   );
 }

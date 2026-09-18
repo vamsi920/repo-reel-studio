@@ -235,11 +235,12 @@ export function ConversationName() {
       )}
 
       {/* System Message Modal */}
-      <SystemMessageModal
-        isOpen={systemModalVisible}
-        onClose={() => setSystemModalVisible(false)}
-        systemMessage={systemMessage || null}
-      />
+      {systemModalVisible && (
+        <SystemMessageModal
+          onClose={() => setSystemModalVisible(false)}
+          systemMessage={systemMessage || null}
+        />
+      )}
 
       {/* Skills Modal */}
       {skillsModalVisible && (

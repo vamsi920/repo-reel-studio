@@ -116,11 +116,12 @@ export function ChatAddFileButton({
         />
       )}
 
-      <SystemMessageModal
-        isOpen={systemModalVisible}
-        onClose={() => setSystemModalVisible(false)}
-        systemMessage={systemMessage || null}
-      />
+      {systemModalVisible && (
+        <SystemMessageModal
+          onClose={() => setSystemModalVisible(false)}
+          systemMessage={systemMessage || null}
+        />
+      )}
       {skillsModalVisible && (
         <SkillsModal onClose={() => setSkillsModalVisible(false)} />
       )}

@@ -56,11 +56,7 @@ describe("SystemMessage UI Rendering", () => {
 
   it("should display the adapted v1 system prompt content correctly", () => {
     render(
-      <SystemMessageModal
-        isOpen
-        onClose={() => {}}
-        systemMessage={adaptedResult}
-      />,
+      <SystemMessageModal onClose={() => {}} systemMessage={adaptedResult} />,
     );
 
     const messageElement = screen.getByText("v1 prompt");
