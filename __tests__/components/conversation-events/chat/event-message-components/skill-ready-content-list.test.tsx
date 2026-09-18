@@ -96,6 +96,35 @@ describe("SkillReadyContentList", () => {
     expect(screen.queryByText("GitLab guide")).not.toBeInTheDocument();
   });
 
+  it("expands duplicate-named skills independently", async () => {
+    // The same skill can be re-triggered more than once within one event
+    // (e.g. matched by two different keywords), so `items` isn't guaranteed
+    // name-unique — each card's expand state must still be independent.
+    const user = userEvent.setup();
+    const items = makeItems(
+      ["docker", "First docker match"],
+      ["docker", "Second docker match"],
+    );
+
+    renderWithProviders(<SkillReadyContentList items={items} />);
+
+    const toggles = screen.getAllByText("docker");
+    expect(toggles).toHaveLength(2);
+
+    await user.click(toggles[0]);
+
+    expect(screen.getByText("First docker match")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Second docker match"),
+    ).not.toBeInTheDocument();
+
+    await user.click(toggles[1]);
+
+    // Expanding the second card must not collapse the still-open first one.
+    expect(screen.getByText("First docker match")).toBeInTheDocument();
+    expect(screen.getByText("Second docker match")).toBeInTheDocument();
+  });
+
   it("renders <important> content as bold text", async () => {
     const user = userEvent.setup();
     const content = "Some text <important>critical info</important> more text";

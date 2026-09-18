@@ -144,6 +144,13 @@ export function ConversationName() {
     }
   }, [titleMode]);
 
+  React.useEffect(() => {
+    // ConversationName stays mounted across a conversation switch (no route
+    // remount) — an in-progress rename must not leak into the newly active
+    // conversation's title bar, nor get saved onto it via a stale blur.
+    setTitleMode("view");
+  }, [conversationId]);
+
   if (!conversation) {
     return null;
   }

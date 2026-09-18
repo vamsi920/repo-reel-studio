@@ -39,6 +39,7 @@ const {
   useActiveConversationMock,
   useConfigMock,
   useActiveBackendMock,
+  useConversationIdMock,
 } = vi.hoisted(() => ({
   mockMutate: vi.fn(),
   mockDisplaySuccessToast: vi.fn(),
@@ -53,11 +54,24 @@ const {
     data: {},
   })),
   useActiveBackendMock: vi.fn(),
+  useConversationIdMock: vi.fn(() => ({
+    conversationId: "test-conversation-id",
+  })),
 }));
 
 vi.mock("#/hooks/query/use-active-conversation", () => ({
   useActiveConversation: () => useActiveConversationMock(),
 }));
+
+vi.mock("#/hooks/use-conversation-id", async () => {
+  const actual = await vi.importActual<
+    typeof import("#/hooks/use-conversation-id")
+  >("#/hooks/use-conversation-id");
+  return {
+    ...actual,
+    useConversationId: () => useConversationIdMock(),
+  };
+});
 
 vi.mock("#/hooks/query/use-config", () => ({
   useConfig: () => useConfigMock(),
@@ -387,6 +401,64 @@ describe("ConversationName", () => {
 
     const inputElement = screen.getByTestId("conversation-name-input");
     expect(inputElement).toHaveFocus();
+  });
+
+  it("drops an in-progress rename and shows the new title when the active conversation changes mid-edit", async () => {
+    // ConversationName stays mounted across a conversation switch (same
+    // route, new :conversationId — nothing up the tree keys on it), so an
+    // open rename draft for conversation A must not linger, or get blurred
+    // onto conversation B, once B becomes active.
+    const user = userEvent.setup();
+    useConversationIdMock.mockReturnValue({ conversationId: "conversation-a" });
+    useActiveConversationMock.mockReturnValue({
+      data: {
+        conversation_id: "conversation-a",
+        title: "Conversation A",
+        status: "RUNNING",
+      },
+    });
+
+    const { rerender } = renderConversationNameWithRouter();
+
+    await user.dblClick(screen.getByTestId("conversation-name-title"));
+    const inputElement = screen.getByTestId("conversation-name-input");
+    await user.clear(inputElement);
+    await user.type(inputElement, "Half-typed rename");
+
+    try {
+      useConversationIdMock.mockReturnValue({
+        conversationId: "conversation-b",
+      });
+      useActiveConversationMock.mockReturnValue({
+        data: {
+          conversation_id: "conversation-b",
+          title: "Conversation B",
+          status: "RUNNING",
+        },
+      });
+      rerender(<ConversationName />);
+
+      expect(
+        screen.queryByTestId("conversation-name-input"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("conversation-name-title"),
+      ).toHaveTextContent("Conversation B");
+      expect(mockMutate).not.toHaveBeenCalled();
+    } finally {
+      // Restore the module-level default so later tests/describe blocks
+      // (which don't re-set this mock) still get "test-conversation-id".
+      useConversationIdMock.mockReturnValue({
+        conversationId: "test-conversation-id",
+      });
+      useActiveConversationMock.mockReturnValue({
+        data: {
+          conversation_id: "test-conversation-id",
+          title: "Test Conversation",
+          status: "RUNNING",
+        },
+      });
+    }
   });
 });
 

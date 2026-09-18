@@ -47,10 +47,10 @@ export function SkillsModal({ onClose }: SkillsModalProps) {
     [skills, projectDir],
   );
 
-  const toggleAgent = (agentName: string) => {
+  const toggleAgent = (expandKey: string) => {
     setExpandedAgents((prev) => ({
       ...prev,
-      [agentName]: !prev[agentName],
+      [expandKey]: !prev[expandKey],
     }));
   };
 
@@ -89,12 +89,14 @@ export function SkillsModal({ onClose }: SkillsModalProps) {
                       count={scopedSkills.length}
                     >
                       {scopedSkills.map((skill) => {
-                        const isExpanded = expandedAgents[skill.name] || false;
+                        const expandKey = `${scope}-${skill.name}`;
+                        const isExpanded = expandedAgents[expandKey] || false;
 
                         return (
                           <SkillItem
-                            key={`${scope}-${skill.name}`}
+                            key={expandKey}
                             skill={skill}
+                            expandKey={expandKey}
                             isExpanded={isExpanded}
                             onToggle={toggleAgent}
                           />

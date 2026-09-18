@@ -7,7 +7,8 @@ import { SkillInfo } from "#/types/settings";
 interface SkillItemProps {
   skill: SkillInfo & { content?: string };
   isExpanded: boolean;
-  onToggle: (agentName: string) => void;
+  expandKey: string;
+  onToggle: (expandKey: string) => void;
 }
 
 const SKILL_TYPE_LABEL: Record<SkillInfo["type"], string> = {
@@ -19,12 +20,17 @@ const SKILL_TYPE_LABEL: Record<SkillInfo["type"], string> = {
 const SKILL_PILL_CLASS =
   "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-4 border border-[var(--oh-border)] bg-[var(--oh-surface)] text-tertiary-light";
 
-export function SkillItem({ skill, isExpanded, onToggle }: SkillItemProps) {
+export function SkillItem({
+  skill,
+  isExpanded,
+  expandKey,
+  onToggle,
+}: SkillItemProps) {
   return (
     <div>
       <button
         type="button"
-        onClick={() => onToggle(skill.name)}
+        onClick={() => onToggle(expandKey)}
         className="w-full py-3 px-3 text-left flex items-center justify-between hover:bg-tertiary transition-colors"
       >
         <div className="flex items-center">
