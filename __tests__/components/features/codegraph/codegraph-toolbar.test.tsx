@@ -145,6 +145,22 @@ describe("CodeGraphToolbar", () => {
     expect(screen.queryByTestId("codegraph-filters")).not.toBeInTheDocument();
   });
 
+  it("wires the filters toggle to the panel it controls, for assistive tech", async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+    const toggle = screen.getByTestId("codegraph-filters-toggle");
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "codegraph-filters-panel");
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const panel = screen.getByTestId("codegraph-filters");
+    expect(panel).toHaveAttribute("id", "codegraph-filters-panel");
+    expect(panel).toHaveAttribute("role", "group");
+  });
+
   it("shows search results only while there is a query", () => {
     const results: SearchEntry[] = [
       {

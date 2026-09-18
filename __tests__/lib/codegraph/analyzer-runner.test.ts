@@ -1,10 +1,37 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   analyzerFailureReason,
+  codegraphStoragePrefix,
   inWorkspace,
   mapSearchEntries,
+  openExistingAnalysis,
   parseProgress,
+  probeSandbox,
 } from "#/lib/codegraph/analyzer-runner";
+import type { CodeGraphMeta } from "#/lib/codegraph/codegraph-types";
+import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
+import type { RemoteWorkspace } from "@openhands/typescript-client/workspace/remote-workspace";
+
+const executeCommandMock = vi.fn();
+const downloadAsTextMock = vi.fn();
+
+vi.mock("@openhands/typescript-client/workspace/remote-workspace", () => ({
+  RemoteWorkspace: vi.fn(function RemoteWorkspaceMock() {
+    return {
+      executeCommand: executeCommandMock,
+      downloadAsText: downloadAsTextMock,
+    };
+  }),
+}));
+
+const getSignedUrlMock = vi.fn();
+
+vi.mock("#/lib/data-platform/artifact-store", () => ({
+  artifactStore: {
+    getSignedUrl: (...args: unknown[]) => getSignedUrlMock(...args),
+    put: vi.fn(),
+  },
+}));
 
 describe("inWorkspace", () => {
   // The agent-server's /api/file/upload and /api/file/download take the path
@@ -165,5 +192,173 @@ describe("mapSearchEntries", () => {
         level: "",
       },
     ]);
+  });
+});
+
+describe("probeSandbox", () => {
+  afterEach(() => {
+    executeCommandMock.mockReset();
+  });
+
+  function fakeWorkspace(): RemoteWorkspace {
+    return { executeCommand: executeCommandMock } as unknown as RemoteWorkspace;
+  }
+
+  it("accepts a sandbox with a recent enough Node", async () => {
+    executeCommandMock.mockResolvedValue({
+      exit_code: 0,
+      stdout: "v20.11.0\n",
+    });
+
+    expect(await probeSandbox(fakeWorkspace())).toEqual({
+      ok: true,
+      nodeVersion: "v20.11.0",
+    });
+  });
+
+  it("rejects a Node older than 18 — the analyzer payload needs it", async () => {
+    executeCommandMock.mockResolvedValue({ exit_code: 0, stdout: "v16.20.0" });
+
+    expect(await probeSandbox(fakeWorkspace())).toEqual({
+      ok: false,
+      reason: "node v16.20.0 is too old (need 18+)",
+    });
+  });
+
+  it("rejects a sandbox with no node on PATH before uploading anything", async () => {
+    executeCommandMock.mockResolvedValue({
+      exit_code: 127,
+      stdout: "",
+      stderr: "node: command not found",
+    });
+
+    expect(await probeSandbox(fakeWorkspace())).toEqual({
+      ok: false,
+      reason: "node is not available in this workspace",
+    });
+  });
+
+  it("rejects output that does not look like a node version", async () => {
+    executeCommandMock.mockResolvedValue({
+      exit_code: 0,
+      stdout: "not node at all\n",
+    });
+
+    expect(await probeSandbox(fakeWorkspace())).toEqual({
+      ok: false,
+      reason: "node is not available in this workspace",
+    });
+  });
+
+  it("reports a thrown error instead of letting it escape", async () => {
+    executeCommandMock.mockRejectedValue(new Error("sandbox unreachable"));
+
+    expect(await probeSandbox(fakeWorkspace())).toEqual({
+      ok: false,
+      reason: "sandbox unreachable",
+    });
+  });
+});
+
+describe("codegraphStoragePrefix", () => {
+  it("puts the workspace id first, matching the bucket's RLS path check", () => {
+    // uploadArtifactsToStorage's own docstring: "the bucket's RLS checks path
+    // segment 1 against is_workspace_member" — swapping this order would be a
+    // silent permission bug, not a rendering one, so the exact shape is
+    // worth locking in.
+    expect(codegraphStoragePrefix("ws-1", "repo-1", "abc123")).toBe(
+      "ws-1/codegraph/repo-1/abc123",
+    );
+  });
+});
+
+describe("openExistingAnalysis", () => {
+  const SNAPSHOT: RepositorySnapshot = {
+    repositoryId: "repo-1",
+    owner: "acme",
+    repo: "widgets",
+    branch: "main",
+    commitSha: "abc123",
+    localPath: "/workspace/project",
+  };
+
+  const META: CodeGraphMeta = {
+    workspaceId: "ws-1",
+    repositoryId: "repo-uuid",
+    commitSha: "abc123",
+    generatedAt: "2026-09-18T00:00:00.000Z",
+    fileCount: 1,
+    symbolCount: 1,
+    languages: ["ts"],
+    frameworks: [],
+  };
+  const ROOT = { parentId: null, nodes: [], edges: [], crumbs: [] };
+
+  function baseOptions(
+    storageIds: { workspaceId: string; repositoryUuid: string } | null,
+  ) {
+    return {
+      snapshot: SNAPSHOT,
+      conversationUrl: "http://localhost:3000",
+      sessionApiKey: null,
+      workspaceId: "ws-1",
+      storageIds,
+    };
+  }
+
+  afterEach(() => {
+    executeCommandMock.mockReset();
+    downloadAsTextMock.mockReset();
+    getSignedUrlMock.mockReset();
+    vi.unstubAllGlobals();
+  });
+
+  it("prefers Storage over the sandbox once both artefacts are mirrored", async () => {
+    getSignedUrlMock.mockImplementation(
+      async (_bucket: string, path: string) => `https://signed.example/${path}`,
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => ({
+        ok: true,
+        json: async () => (url.endsWith("meta.json") ? META : ROOT),
+      })),
+    );
+
+    const handle = await openExistingAnalysis(
+      baseOptions({ workspaceId: "ws-1", repositoryUuid: "repo-uuid" }),
+    );
+
+    expect(handle?.meta).toEqual(META);
+    expect(handle?.root).toEqual(ROOT);
+    // The whole point of the Storage mirror is skipping the sandbox entirely.
+    expect(downloadAsTextMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the sandbox when Storage has no mirror for this commit", async () => {
+    getSignedUrlMock.mockResolvedValue(null);
+    downloadAsTextMock.mockImplementation(async (path: string) => {
+      if (path.endsWith("meta.json")) return JSON.stringify(META);
+      if (path.endsWith("root.json")) return JSON.stringify(ROOT);
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    const handle = await openExistingAnalysis(
+      baseOptions({ workspaceId: "ws-1", repositoryUuid: "repo-uuid" }),
+    );
+
+    expect(handle?.meta).toEqual(META);
+    expect(handle?.root).toEqual(ROOT);
+  });
+
+  it("returns null rather than a graph from a different commit", async () => {
+    // No storageIds at all (Supabase unconfigured) and nothing in the
+    // sandbox for this commit either — this must not fall back to any other
+    // commit's graph.
+    downloadAsTextMock.mockRejectedValue(new Error("404"));
+
+    const handle = await openExistingAnalysis(baseOptions(null));
+
+    expect(handle).toBeNull();
   });
 });

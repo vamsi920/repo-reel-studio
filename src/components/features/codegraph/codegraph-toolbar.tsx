@@ -148,6 +148,7 @@ export function CodeGraphToolbar({
           type="button"
           data-testid="codegraph-filters-toggle"
           aria-expanded={filtersOpen}
+          aria-controls="codegraph-filters-panel"
           onClick={() => setFiltersOpen((open) => !open)}
           className="flex shrink-0 items-center gap-1 rounded-md border border-[var(--oh-border)] px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"
         >
@@ -279,7 +280,10 @@ export function CodeGraphToolbar({
 
       {filtersOpen ? (
         <div
+          id="codegraph-filters-panel"
           data-testid="codegraph-filters"
+          role="group"
+          aria-label={t(I18nKey.CODEGRAPH$FILTERS)}
           className="flex flex-wrap gap-1.5 rounded-md border border-[var(--oh-border)] p-2"
         >
           {types.map((type) => {
