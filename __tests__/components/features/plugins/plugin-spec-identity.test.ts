@@ -39,6 +39,18 @@ describe("plugin-spec-identity", () => {
     );
   });
 
+  it("does not collide when a coordinate value itself contains the field separator", () => {
+    // Arrange: two genuinely different plugins whose source/ref would tie
+    // under a naive `[source, ref, repo_path].join(" ")` key, since the
+    // boundary between fields is ambiguous once a value contains a space.
+    // Assert: their identities must stay distinct.
+    expect(
+      pluginSpecKey({ source: "foo", ref: "bar baz", repo_path: "qux" }),
+    ).not.toBe(
+      pluginSpecKey({ source: "foo bar", ref: "baz", repo_path: "qux" }),
+    );
+  });
+
   it("adds an unselected plugin to the selection", () => {
     // Arrange
     const selected = togglePluginSelection([], catalogPlugin);
