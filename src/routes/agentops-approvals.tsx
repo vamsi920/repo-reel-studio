@@ -17,7 +17,13 @@ function AgentOpsApprovals() {
   const { data, isLoading, error } = useAgentOpsApprovals(state);
 
   return (
-    <AgentOpsPanel isLoading={isLoading} error={error}>
+    // Each pending card holds an operator-typed reason and, for a budget
+    // breach, a headroom amount (see ApprovalCard in approvals-queue.tsx).
+    // Approvals poll every 3s, so an unmounting swap to CollectorUnavailable
+    // on the first failed poll would wipe whatever the operator was mid-typing;
+    // pass `hasData` so a transient blip shows the stale banner instead, the
+    // same fix agentops-budgets.tsx already applies to its own form.
+    <AgentOpsPanel isLoading={isLoading} error={error} hasData={Boolean(data)}>
       <div className="flex flex-col gap-3">
         <div className="flex gap-2">
           {STATE_FILTERS.map((filter) => (

@@ -53,7 +53,13 @@ function AgentOpsRunDetailScreen() {
   }
 
   return (
-    <AgentOpsPanel isLoading={isLoading} error={error}>
+    // The run detail page can render a pending approval's ApprovalsQueue card,
+    // which holds an operator-typed reason/headroom (see approvals-queue.tsx).
+    // A run still in progress polls every 3s; without `hasData`, the first
+    // failed poll would unmount that form behind CollectorUnavailable instead
+    // of showing the stale banner — the same fix agentops-budgets.tsx applies
+    // to its own form.
+    <AgentOpsPanel isLoading={isLoading} error={error} hasData={Boolean(data)}>
       {data ? (
         <div data-testid="agentops-run-detail" className="flex flex-col gap-5">
           <Link
