@@ -99,3 +99,49 @@ describe("AgentOpsStore.listAudit", () => {
     ]);
   });
 });
+
+describe("AgentOpsStore.listAudit ordering", () => {
+  let dir: string;
+  let store: AgentOpsStore;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "agentops-store-order-"));
+    store = new AgentOpsStore(dir);
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("returns rows newest-`at`-first even when they were appended out of `at` order", async () => {
+    // A live-socket flush for one run can land in the store at a wall-clock
+    // moment that is out of order relative to a slower REST-tail poll for a
+    // different run — append order is not a reliable proxy for `at` order.
+    await store.appendAudit({
+      at: "2026-09-14T16:08:00.000Z",
+      actor: "system",
+      action: "task.completed",
+      summary: "later event, appended first",
+      entityType: "run",
+      entityId: RUN_ID,
+      workspaceId: "/workspace/project",
+      metadata: {},
+    });
+    await store.appendAudit({
+      at: "2026-09-14T16:06:00.000Z",
+      actor: "system",
+      action: "tool.called",
+      summary: "earlier event, appended second",
+      entityType: "run",
+      entityId: RUN_ID,
+      workspaceId: "/workspace/project",
+      metadata: {},
+    });
+
+    const audit = await store.listAudit({ runId: RUN_ID });
+    expect(audit.map((entry) => entry.action)).toEqual([
+      "task.completed",
+      "tool.called",
+    ]);
+  });
+});

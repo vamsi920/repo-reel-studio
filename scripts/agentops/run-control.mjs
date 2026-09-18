@@ -17,10 +17,10 @@
  *   `pause()`'s IDLE/RUNNING fallback, so it really does move to PAUSED — but
  *   it is refused anyway, for the same reason: there was no in-flight task to
  *   cancel, so an audit row saying "cancelled" would misdescribe a run that
- *   simply got paused. Stop on a run *waiting for confirmation* is refused
- *   for the first reason instead: it is neither IDLE nor RUNNING, so even
- *   `pause()`'s fallback does nothing — approve or reject the pending action
- *   in the Approvals queue instead.
+ *   simply got paused. Stop *and* Pause on a run *waiting for confirmation*
+ *   are both refused for the first reason instead: it is neither IDLE nor
+ *   RUNNING, so even `pause()`'s fallback does nothing — approve or reject
+ *   the pending action in the Approvals queue instead.
  * - `run()` restarts IDLE/PAUSED/ERROR/STUCK, but the stuck detector inspects
  *   every event since the last user message, so a STUCK conversation re-trips
  *   it on the first iteration and is back to STUCK within milliseconds. Only a
@@ -56,6 +56,10 @@ const REFUSALS = {
   stopWaitingForConfirmation:
     "This run is waiting for your decision on a pending action, and the " +
     "runtime ignores Stop while it waits — approve or reject the pending " +
+    "action in the Approvals queue instead.",
+  pauseWaitingForConfirmation:
+    "This run is waiting for your decision on a pending action, and the " +
+    "runtime ignores Pause while it waits — approve or reject the pending " +
     "action in the Approvals queue instead.",
 };
 
@@ -102,6 +106,9 @@ export function evaluateRunControl(action, executionStatus) {
   }
   if (action === "cancel" && status === "waiting_for_confirmation") {
     return { ok: false, status, reason: REFUSALS.stopWaitingForConfirmation };
+  }
+  if (action === "pause" && status === "waiting_for_confirmation") {
+    return { ok: false, status, reason: REFUSALS.pauseWaitingForConfirmation };
   }
   if (status === "finished" || status === "error") {
     return {

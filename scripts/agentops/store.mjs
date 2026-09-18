@@ -214,7 +214,9 @@ export class AgentOpsStore {
       const cutoff = new Date(since).getTime();
       records = records.filter((r) => new Date(r.at).getTime() >= cutoff);
     }
-    return records.slice(-limit).reverse();
+    return [...records]
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, limit);
   }
 
   // ── Approvals ───────────────────────────────────────────────────────────

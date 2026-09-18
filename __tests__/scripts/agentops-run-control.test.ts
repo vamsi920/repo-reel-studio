@@ -94,6 +94,18 @@ describe("evaluateRunControl", () => {
     });
   });
 
+  it("refuses pause on a run waiting for confirmation, which the runtime would ignore", () => {
+    // Same reasoning as stop: neither IDLE nor RUNNING, so `pause()` (and
+    // `interrupt()`'s fallback to it) does nothing — approve or reject the
+    // pending action in the Approvals queue instead.
+    const verdict = evaluateRunControl("pause", "waiting_for_confirmation");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.status).toBe("waiting_for_confirmation");
+    expect(verdict).toMatchObject({
+      reason: expect.stringContaining("Approvals queue"),
+    });
+  });
+
   it("refuses pause and stop once the run is over", () => {
     expect(evaluateRunControl("pause", "finished").ok).toBe(false);
     expect(evaluateRunControl("cancel", "error").ok).toBe(false);
@@ -207,6 +219,27 @@ describe("controlRun", () => {
 
     await expect(
       controlRun({ client, store, runId: "run-1", action: "cancel", now: NOW }),
+    ).rejects.toMatchObject({
+      name: "RunControlError",
+      status: 409,
+      runtimeStatus: "waiting_for_confirmation",
+      message: expect.stringContaining("Approvals queue"),
+    });
+    expect(client.interruptConversation).not.toHaveBeenCalled();
+    expect(store.appendAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses to pause a run waiting for confirmation and leaves no audit row", async () => {
+    // Regression: only `cancel` on `waiting_for_confirmation` was refused;
+    // `pause` fell through to the generic "ok" branch and forwarded
+    // `/interrupt` anyway, recording a misleading "Run paused from the
+    // Control Tower" audit row for a run that never left
+    // waiting_for_confirmation.
+    const store = makeStore({ ...RUN, status: "waiting_for_confirmation" });
+    const client = makeClient("waiting_for_confirmation");
+
+    await expect(
+      controlRun({ client, store, runId: "run-1", action: "pause", now: NOW }),
     ).rejects.toMatchObject({
       name: "RunControlError",
       status: 409,

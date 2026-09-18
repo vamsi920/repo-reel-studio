@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { isAgentOpsNotFoundError } from "#/api/agentops-service/agentops-service.api";
 import { useAgentOpsRun } from "#/hooks/query/use-agentops";
+import { useLiveElapsedTick } from "#/hooks/use-live-elapsed-tick";
 import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { RunNotFound } from "#/components/features/agentops/run-not-found";
 import { AuditList } from "#/components/features/agentops/audit-list";
@@ -39,6 +40,11 @@ function AgentOpsRunDetailScreen() {
   const { t } = useTranslation("openhands");
   const { runId } = useParams<{ runId: string }>();
   const { data, isLoading, error } = useAgentOpsRun(runId ?? null);
+
+  // The "Elapsed" stat below is computed from `Date.now()` at render time —
+  // tick while the run hasn't ended so it keeps advancing even when a poll
+  // returns unchanged data (no re-render).
+  useLiveElapsedTick(data ? data.run.endedAt === null : false);
 
   // The collector is up and simply has no such run — not a "collector down"
   // condition, so it gets its own empty state rather than the start command.

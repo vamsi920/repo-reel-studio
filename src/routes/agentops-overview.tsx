@@ -6,6 +6,7 @@ import {
   useAgentOpsRuns,
   useAgentOpsSummary,
 } from "#/hooks/query/use-agentops";
+import { useLiveElapsedTick } from "#/hooks/use-live-elapsed-tick";
 import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 import { AgentOpsStatTiles } from "#/components/features/agentops/agentops-stat-tiles";
 import { AuditList } from "#/components/features/agentops/audit-list";
@@ -18,6 +19,11 @@ function AgentOpsOverview() {
   const summary = useAgentOpsSummary();
   const activeRuns = useAgentOpsRuns({ status: ACTIVE_RUN_STATUSES_QUERY });
   const audit = useAgentOpsAudit();
+
+  // The Live Runs preview below shows elapsed time, which is computed from
+  // `Date.now()` at render time — tick while there's an active run to keep it
+  // advancing even when a poll returns unchanged data (no re-render).
+  useLiveElapsedTick((activeRuns.data ?? []).length > 0);
 
   return (
     // Every section below reads from a different query. Gating only on the
