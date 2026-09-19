@@ -175,7 +175,14 @@ function useLocalWorkspaceFiles(enabled: boolean): WorkspaceFilesResult {
 
   return {
     data: paths,
-    isLoading: query.isLoading,
+    // `isPending`, not `isLoading`: this query is `enabled` only once the
+    // runtime/conversation/workingDir are known, and a disabled query has
+    // `isLoading: false` (it requires an in-flight fetch) even though it
+    // has never run and has no data yet. Using `isLoading` here made the
+    // Files tab skip straight past its loading state to the "no files"
+    // empty view during that window, instead of showing it was still
+    // waiting on the runtime.
+    isLoading: query.isPending,
     isTruncated: paths !== undefined && total > paths.length,
     totalCount: total,
     isError: query.isError,

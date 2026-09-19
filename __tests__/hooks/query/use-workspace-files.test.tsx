@@ -165,6 +165,24 @@ describe("useWorkspaceFiles — local backend", () => {
     expect(result.current.totalCount).toBe(2113);
   });
 
+  it("reports isLoading while disabled and waiting on the runtime, not a silent empty list", () => {
+    // Before `useRuntimeIsReady` resolves true the underlying query is
+    // disabled — it has never fetched, so react-query's own `isLoading`
+    // (which requires an in-flight fetch) stays false even though there is
+    // no data yet. The hook must still report `isLoading: true` here so the
+    // Files tab shows its loading state instead of flashing "no files".
+    useRuntimeIsReadyMock.mockReturnValue(false);
+    executeCommandSpy.mockResolvedValue({ exit_code: 0, stdout: "", stderr: "" });
+
+    const { result } = renderHook(() => useWorkspaceFiles(), {
+      wrapper: makeWrapper(),
+    });
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
+    expect(executeCommandSpy).not.toHaveBeenCalled();
+  });
+
   it("reports isError (no data) when find fails, and refetch re-runs the listing", async () => {
     executeCommandSpy.mockResolvedValueOnce({
       exit_code: 1,

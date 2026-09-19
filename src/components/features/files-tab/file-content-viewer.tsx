@@ -126,7 +126,14 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
     needsPlainTextSniff,
   );
 
-  if (query.isLoading) {
+  // `isPending` (not `isLoading`) so this also covers the disabled-query
+  // window before `enabled` flips true (runtime/session/conversation still
+  // resolving while a path is already selected, e.g. reopening the tab on
+  // an existing selection) — a disabled query has `isPending: true` but
+  // `isLoading: false` (isLoading requires an in-flight fetch), so relying
+  // on `isLoading` alone made that window fall through to the error/retry
+  // branch below instead of showing "loading".
+  if (query.isPending) {
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]">
         {t(I18nKey.FILES$LOADING_FILES)}

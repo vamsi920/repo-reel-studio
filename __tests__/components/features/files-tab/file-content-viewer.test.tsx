@@ -192,6 +192,24 @@ describe("FileContentViewer", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows loading (not the error/retry state) while the query is disabled because the runtime isn't ready yet", () => {
+    // A path can already be selected (e.g. reopening the Files tab on a
+    // prior selection) before `useRuntimeIsReady` flips true, so the
+    // underlying query stays disabled — `isPending` but never `isLoading`,
+    // since it hasn't fetched at all yet.
+    useRuntimeIsReadyMock.mockReturnValue(false);
+
+    renderViewer("big.json", "plain");
+
+    expect(
+      screen.getByText("FILES$LOADING_FILES"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("file-content-viewer-error"),
+    ).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("plain mode keeps the binary fallback for a genuinely binary image", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
