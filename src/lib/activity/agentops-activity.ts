@@ -25,7 +25,13 @@ const FEED_ACTIONS: Record<string, WorkspaceActivityStatus> = {
   "approval.rejected": "info",
   "budget.warning": "info",
   "budget.exceeded": "failed",
+  // "run.paused" is the collector's own budget-halt action (map-events.mjs /
+  // collector.mjs); "run.pause" is what run-control.mjs records for a user
+  // clicking Pause in the Control Tower — same as "run.cancel" vs.
+  // "run.cancelled" below, both need an entry or one halt reason silently
+  // never reaches the feed.
   "run.paused": "info",
+  "run.pause": "info",
   "run.resumed": "running",
   "run.cancel": "info",
 };

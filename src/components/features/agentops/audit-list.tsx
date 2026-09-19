@@ -38,6 +38,10 @@ const ACTION_ICONS: Record<string, ReactNode> = {
   "budget.warning": <CircleDollarSign size={14} />,
   "budget.exceeded": <CircleDollarSign size={14} />,
   "run.paused": <Pause size={14} />,
+  // Collector-recorded budget halt ("run.paused") vs. a user's own Pause
+  // click from the Control Tower ("run.pause", see run-control.mjs) — the
+  // same user/system split "run.cancel" vs. "run.cancelled" has below.
+  "run.pause": <Pause size={14} />,
   "run.resumed": <Play size={14} />,
   "run.cancel": <Ban size={14} />,
   "run.cancelled": <Ban size={14} />,
@@ -54,6 +58,7 @@ const ACTION_TONES: Record<string, string> = {
   "budget.warning": "var(--warning-500)",
   "approval.requested": "var(--warning-500)",
   "run.paused": "var(--warning-500)",
+  "run.pause": "var(--warning-500)",
   "tool.interrupted": "var(--warning-500)",
   "task.completed": "var(--success-500)",
   "approval.granted": "var(--success-500)",
