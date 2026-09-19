@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Не вдалося оновити автоматизацію",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Автоматизацію запущено",
   "AUTOMATIONS$RUN_NOW_ERROR": "Не вдалося запустити автоматизацію",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} з {{total}} автоматизацій не вдалося запустити",
   "AUTOMATIONS$NAME_REQUIRED": "Назва обов'язкова",
   "AUTOMATIONS$LOAD_MORE": "Завантажити більше",
   "AUTOMATIONS$ERROR_TITLE": "Не вдалося завантажити автоматизації",

@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "無法更新自動化",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "自動化已觸發",
   "AUTOMATIONS$RUN_NOW_ERROR": "無法觸發自動化",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{total}} 個自動化中有 {{failed}} 個執行失敗",
   "AUTOMATIONS$NAME_REQUIRED": "名稱為必填項",
   "AUTOMATIONS$LOAD_MORE": "載入更多",
   "AUTOMATIONS$ERROR_TITLE": "載入自動化失敗",

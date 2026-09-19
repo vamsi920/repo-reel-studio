@@ -333,7 +333,11 @@ export default function AutomationsList() {
   };
 
   const overviewTiles = useMemo(() => {
-    if (!dashboardSpec) return [];
+    // While the automations query is loading or errored, `data` is either
+    // absent or stale -- rendering tiles from `[]` here would flash
+    // fabricated "0" values and "no automations yet" copy under the
+    // skeleton, even for accounts with dozens of automations.
+    if (!dashboardSpec || isLoading || isError) return [];
     const automations = data?.automations ?? [];
     return dashboardSpec.overview.tiles.map((tile) => {
       const value = computeOverviewTile(tile.metric, automations, runSummaries);
@@ -347,7 +351,7 @@ export default function AutomationsList() {
         Icon: MANIFEST_ICON_BY_SLUG[tile.icon],
       };
     });
-  }, [dashboardSpec, data?.automations, runSummaries]);
+  }, [dashboardSpec, isLoading, isError, data?.automations, runSummaries]);
 
   const groupInsights = dashboard
     ? { spec: dashboard.spec.insights, byId: runSummaries }
@@ -465,8 +469,8 @@ export default function AutomationsList() {
         <ProactivationFeatureCard automations={data?.automations ?? []} />
       </div>
 
-      {/* Overview tiles — dashboard mode only */}
-      {dashboard && (
+      {/* Overview tiles — dashboard mode only, once real data has loaded */}
+      {dashboard && overviewTiles.length > 0 && (
         <ManifestOverviewTiles
           label={dashboard.spec.overview.label}
           tiles={overviewTiles}

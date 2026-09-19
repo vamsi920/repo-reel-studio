@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Otomasyon güncellenemedi",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Otomasyon başlatıldı",
   "AUTOMATIONS$RUN_NOW_ERROR": "Otomasyon başlatılamadı",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{total}} otomasyondan {{failed}} tanesi çalıştırılamadı",
   "AUTOMATIONS$NAME_REQUIRED": "Ad gereklidir",
   "AUTOMATIONS$LOAD_MORE": "Daha fazla yükle",
   "AUTOMATIONS$ERROR_TITLE": "Otomasyonlar yüklenemedi",

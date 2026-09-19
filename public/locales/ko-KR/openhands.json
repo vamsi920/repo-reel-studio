@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "자동화를 업데이트할 수 없습니다",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "자동화가 실행되었습니다",
   "AUTOMATIONS$RUN_NOW_ERROR": "자동화를 실행할 수 없습니다",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{total}}개 자동화 중 {{failed}}개 실행 실패",
   "AUTOMATIONS$NAME_REQUIRED": "이름은 필수입니다",
   "AUTOMATIONS$LOAD_MORE": "더 보기",
   "AUTOMATIONS$ERROR_TITLE": "자동화를 불러오지 못했습니다",

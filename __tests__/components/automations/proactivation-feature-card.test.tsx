@@ -11,7 +11,7 @@ import {
   setRegisteredBackends,
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
-import type { Automation } from "#/types/automation";
+import { AutomationRunStatus, type Automation, type AutomationRun } from "#/types/automation";
 import { buildProactivationPrompt } from "#/utils/proactivation-prompt";
 
 vi.mock("react-i18next", () => ({
@@ -42,6 +42,18 @@ const localBackend: Backend = {
   apiKey: "session-key",
   kind: "local",
 };
+
+function makeRun(id: string): AutomationRun {
+  return {
+    id,
+    status: AutomationRunStatus.COMPLETED,
+    conversation_id: null,
+    bash_command_id: null,
+    error_detail: null,
+    started_at: "2026-01-01T00:00:00Z",
+    completed_at: "2026-01-01T00:05:00Z",
+  };
+}
 
 function makeAutomation(id: string, enabled: boolean): Automation {
   return {
@@ -85,6 +97,7 @@ beforeEach(async () => {
     total: 0,
   });
   vi.mocked(AutomationService.toggleAutomation).mockReset();
+  vi.mocked(AutomationService.dispatchAutomation).mockReset();
 
   const { displayErrorToast, displaySuccessToast } = await import(
     "#/utils/custom-toast-handlers"
@@ -138,5 +151,79 @@ describe("ProactivationFeatureCard pause/resume", () => {
       expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(2);
     });
     expect(displayErrorToast).not.toHaveBeenCalled();
+  });
+});
+
+describe("ProactivationFeatureCard run all", () => {
+  it("shows only a combined partial-failure toast when some dispatches fail and others succeed", async () => {
+    vi.mocked(AutomationService.dispatchAutomation)
+      .mockResolvedValueOnce(makeRun("run-one"))
+      .mockRejectedValueOnce(new Error("scheduler offline"));
+
+    const { displayErrorToast, displaySuccessToast } = await import(
+      "#/utils/custom-toast-handlers"
+    );
+    const user = userEvent.setup();
+    renderCard([makeAutomation("one", true), makeAutomation("two", true)]);
+
+    await user.click(screen.getByText("AUTOMATIONS$RUN_NOW"));
+
+    await waitFor(() => {
+      expect(AutomationService.dispatchAutomation).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        "AUTOMATIONS$RUN_ALL_PARTIAL",
+      );
+    });
+    // Never also claim success -- that reads as a contradiction alongside
+    // the failure toast, with no way to tell only some runs started.
+    expect(displaySuccessToast).not.toHaveBeenCalled();
+  });
+
+  it("shows a plain success toast when every dispatch succeeds", async () => {
+    vi.mocked(AutomationService.dispatchAutomation).mockResolvedValue(
+      makeRun("run-one"),
+    );
+
+    const { displayErrorToast, displaySuccessToast } = await import(
+      "#/utils/custom-toast-handlers"
+    );
+    const user = userEvent.setup();
+    renderCard([makeAutomation("one", true), makeAutomation("two", true)]);
+
+    await user.click(screen.getByText("AUTOMATIONS$RUN_NOW"));
+
+    await waitFor(() => {
+      expect(AutomationService.dispatchAutomation).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(displaySuccessToast).toHaveBeenCalledWith(
+        "AUTOMATIONS$RUN_NOW_SUCCESS",
+      );
+    });
+    expect(displayErrorToast).not.toHaveBeenCalled();
+  });
+
+  it("shows the single-failure error toast when every dispatch fails", async () => {
+    vi.mocked(AutomationService.dispatchAutomation).mockRejectedValue(
+      new Error("scheduler offline"),
+    );
+
+    const { displayErrorToast, displaySuccessToast } = await import(
+      "#/utils/custom-toast-handlers"
+    );
+    const user = userEvent.setup();
+    renderCard([makeAutomation("one", true), makeAutomation("two", true)]);
+
+    await user.click(screen.getByText("AUTOMATIONS$RUN_NOW"));
+
+    await waitFor(() => {
+      expect(AutomationService.dispatchAutomation).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith("scheduler offline");
+    });
+    expect(displaySuccessToast).not.toHaveBeenCalled();
   });
 });

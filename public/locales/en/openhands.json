@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Could not update automation",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automation dispatched",
   "AUTOMATIONS$RUN_NOW_ERROR": "Could not dispatch automation",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} of {{total}} automations failed to run",
   "AUTOMATIONS$NAME_REQUIRED": "Name is required",
   "AUTOMATIONS$LOAD_MORE": "Load more",
   "AUTOMATIONS$ERROR_TITLE": "Failed to load automations",

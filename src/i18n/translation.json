@@ -14517,6 +14517,23 @@
     "uk": "Не вдалося запустити автоматизацію",
     "ca": "No s'ha pogut executar l'automatització"
   },
+  "AUTOMATIONS$RUN_ALL_PARTIAL": {
+    "en": "{{failed}} of {{total}} automations failed to run",
+    "ja": "{{total}}件中{{failed}}件のオートメーションの実行に失敗しました",
+    "zh-CN": "{{total}} 个自动化中有 {{failed}} 个运行失败",
+    "zh-TW": "{{total}} 個自動化中有 {{failed}} 個執行失敗",
+    "ko-KR": "{{total}}개 자동화 중 {{failed}}개 실행 실패",
+    "no": "{{failed}} av {{total}} automatiseringer kunne ikke kjøres",
+    "it": "{{failed}} automazioni su {{total}} non sono state eseguite",
+    "pt": "{{failed}} de {{total}} automações não puderam ser executadas",
+    "es": "{{failed}} de {{total}} automatizaciones no se pudieron ejecutar",
+    "ar": "فشل تشغيل {{failed}} من أصل {{total}} أتمتة",
+    "fr": "{{failed}} automatisation(s) sur {{total}} n'a/ont pas pu être lancée(s)",
+    "tr": "{{total}} otomasyondan {{failed}} tanesi çalıştırılamadı",
+    "de": "{{failed}} von {{total}} Automatisierungen konnten nicht gestartet werden",
+    "uk": "{{failed}} з {{total}} автоматизацій не вдалося запустити",
+    "ca": "{{failed}} de {{total}} automatitzacions no s'han pogut executar"
+  },
   "AUTOMATIONS$NAME_REQUIRED": {
     "en": "Name is required",
     "ja": "名前は必須です",

@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "No se pudo actualizar la automatización",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automatización ejecutada",
   "AUTOMATIONS$RUN_NOW_ERROR": "No se pudo ejecutar la automatización",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} de {{total}} automatizaciones no se pudieron ejecutar",
   "AUTOMATIONS$NAME_REQUIRED": "El nombre es obligatorio",
   "AUTOMATIONS$LOAD_MORE": "Cargar más",
   "AUTOMATIONS$ERROR_TITLE": "Error al cargar las automatizaciones",

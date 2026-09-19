@@ -108,16 +108,26 @@ export function ProactivationFeatureCard({
     const failures = results.filter(
       (r): r is PromiseRejectedResult => r.status === "rejected",
     );
-    if (failures.length > 0) {
+    if (failures.length === 0) {
+      displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
+    } else if (failures.length === results.length) {
       displayErrorToast(
         getApiErrorMessage(
           failures[0].reason,
           t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR),
         ),
       );
-    }
-    if (failures.length < results.length) {
-      displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
+    } else {
+      // Some dispatches succeeded and some failed -- a single combined
+      // count avoids showing a plain "dispatched" success toast stacked
+      // with an error toast, which used to read as a contradiction with
+      // no indication only some runs actually started.
+      displayErrorToast(
+        t(I18nKey.AUTOMATIONS$RUN_ALL_PARTIAL, {
+          failed: failures.length,
+          total: results.length,
+        }),
+      );
     }
   };
 

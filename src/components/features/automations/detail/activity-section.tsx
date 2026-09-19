@@ -12,6 +12,20 @@ interface ActivitySectionProps {
   lastRunAt: string | null | undefined;
 }
 
+/**
+ * The automation service leaves `last_triggered_at` as the epoch placeholder
+ * for an automation that has never run (same convention guarded against in
+ * `activity-log-item.tsx`'s `isInvalidTimestamp` and
+ * `automation-run-insights.tsx`'s `isValidTimestamp`).
+ */
+function isValidTimestamp(
+  dateStr: string | null | undefined,
+): dateStr is string {
+  if (!dateStr) return false;
+  const time = new Date(dateStr).getTime();
+  return !Number.isNaN(time) && time !== 0;
+}
+
 export function ActivitySection({
   createdAt,
   lastRunAt,
@@ -36,7 +50,7 @@ export function ActivitySection({
           icon={<ClockIcon className="size-3.5" />}
           label={t(I18nKey.AUTOMATIONS$DETAIL$LAST_RUN)}
         >
-          {lastRunAt
+          {isValidTimestamp(lastRunAt)
             ? formatRelativeTime(lastRunAt, locale, t)
             : t(I18nKey.AUTOMATIONS$DETAIL$TIME_NEVER)}
         </ConfigField>

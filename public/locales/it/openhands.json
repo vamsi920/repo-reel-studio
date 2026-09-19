@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Impossibile aggiornare l'automazione",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automazione avviata",
   "AUTOMATIONS$RUN_NOW_ERROR": "Impossibile avviare l'automazione",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} automazioni su {{total}} non sono state eseguite",
   "AUTOMATIONS$NAME_REQUIRED": "Il nome è obbligatorio",
   "AUTOMATIONS$LOAD_MORE": "Carica altro",
   "AUTOMATIONS$ERROR_TITLE": "Impossibile caricare le automazioni",

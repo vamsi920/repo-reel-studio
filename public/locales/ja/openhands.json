@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "オートメーションを更新できませんでした",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "オートメーションを実行しました",
   "AUTOMATIONS$RUN_NOW_ERROR": "オートメーションを実行できませんでした",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{total}}件中{{failed}}件のオートメーションの実行に失敗しました",
   "AUTOMATIONS$NAME_REQUIRED": "名前は必須です",
   "AUTOMATIONS$LOAD_MORE": "さらに読み込む",
   "AUTOMATIONS$ERROR_TITLE": "オートメーションの読み込みに失敗しました",

@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "تعذر تحديث الأتمتة",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "تم تشغيل الأتمتة",
   "AUTOMATIONS$RUN_NOW_ERROR": "تعذر تشغيل الأتمتة",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "فشل تشغيل {{failed}} من أصل {{total}} أتمتة",
   "AUTOMATIONS$NAME_REQUIRED": "الاسم مطلوب",
   "AUTOMATIONS$LOAD_MORE": "تحميل المزيد",
   "AUTOMATIONS$ERROR_TITLE": "فشل تحميل الأتمتة",

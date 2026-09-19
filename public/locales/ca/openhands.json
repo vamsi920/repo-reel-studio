@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "No s'ha pogut actualitzar l'automatització",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "S'ha executat l'automatització",
   "AUTOMATIONS$RUN_NOW_ERROR": "No s'ha pogut executar l'automatització",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} de {{total}} automatitzacions no s'han pogut executar",
   "AUTOMATIONS$NAME_REQUIRED": "El nom és obligatori",
   "AUTOMATIONS$LOAD_MORE": "Carrega'n més",
   "AUTOMATIONS$ERROR_TITLE": "No s'han pogut carregar les automatitzacions",

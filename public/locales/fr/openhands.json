@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Impossible de mettre à jour l'automatisation",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automatisation lancée",
   "AUTOMATIONS$RUN_NOW_ERROR": "Impossible de lancer l'automatisation",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} automatisation(s) sur {{total}} n'a/ont pas pu être lancée(s)",
   "AUTOMATIONS$NAME_REQUIRED": "Le nom est requis",
   "AUTOMATIONS$LOAD_MORE": "Charger plus",
   "AUTOMATIONS$ERROR_TITLE": "Impossible de charger les automatisations",

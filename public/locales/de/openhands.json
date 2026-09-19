@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Automatisierung konnte nicht aktualisiert werden",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automatisierung gestartet",
   "AUTOMATIONS$RUN_NOW_ERROR": "Automatisierung konnte nicht gestartet werden",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} von {{total}} Automatisierungen konnten nicht gestartet werden",
   "AUTOMATIONS$NAME_REQUIRED": "Name ist erforderlich",
   "AUTOMATIONS$LOAD_MORE": "Mehr laden",
   "AUTOMATIONS$ERROR_TITLE": "Automatisierungen konnten nicht geladen werden",

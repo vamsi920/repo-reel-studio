@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "Kunne ikke oppdatere automatiseringen",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "Automatisering startet",
   "AUTOMATIONS$RUN_NOW_ERROR": "Kunne ikke starte automatiseringen",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{failed}} av {{total}} automatiseringer kunne ikke kjøres",
   "AUTOMATIONS$NAME_REQUIRED": "Navn er påkrevd",
   "AUTOMATIONS$LOAD_MORE": "Last inn flere",
   "AUTOMATIONS$ERROR_TITLE": "Kunne ikke laste automatiseringer",

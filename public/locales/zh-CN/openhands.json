@@ -853,6 +853,7 @@
   "AUTOMATIONS$EDIT_ERROR": "无法更新自动化",
   "AUTOMATIONS$RUN_NOW_SUCCESS": "自动化已触发",
   "AUTOMATIONS$RUN_NOW_ERROR": "无法触发自动化",
+  "AUTOMATIONS$RUN_ALL_PARTIAL": "{{total}} 个自动化中有 {{failed}} 个运行失败",
   "AUTOMATIONS$NAME_REQUIRED": "名称为必填项",
   "AUTOMATIONS$LOAD_MORE": "加载更多",
   "AUTOMATIONS$ERROR_TITLE": "加载自动化失败",
