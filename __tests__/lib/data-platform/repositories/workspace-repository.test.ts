@@ -53,7 +53,7 @@ describe("workspaceRepository.ensureWorkspace", () => {
     expect(state.upserted).toHaveLength(0);
   });
 
-  it("upserts the workspace row with a null name when none is given", async () => {
+  it("omits name from the upsert when none is given, so a conflict never clobbers an existing name", async () => {
     await expect(
       workspaceRepository.ensureWorkspace({
         id: "ws-1",
@@ -68,7 +68,6 @@ describe("workspaceRepository.ensureWorkspace", () => {
         org_id: "org-1",
         backend_id: "backend-1",
         path: "/tmp/project",
-        name: null,
       },
     ]);
   });

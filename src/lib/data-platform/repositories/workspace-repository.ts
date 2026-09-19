@@ -35,16 +35,22 @@ class SupabaseWorkspaceRepository implements WorkspaceRepository {
   }): Promise<{ ok: boolean; error?: string }> {
     if (!isSupabaseConfigured || !supabase) return { ok: true };
     try {
-      const { error } = await supabase.from("workspaces").upsert(
-        {
-          id: input.id,
-          org_id: input.orgId,
-          backend_id: input.backendId,
-          path: input.path,
-          name: input.name ?? null,
-        },
-        { onConflict: "id" },
-      );
+      // `name` is only included when the caller actually has one. Some
+      // callers (e.g. `resolvePersistenceIds`'s workspace-membership step)
+      // ensure this same row without ever knowing a friendly name; omitting
+      // the key on conflict leaves the row's existing name untouched instead
+      // of an unconditional `name: input.name ?? null` clobbering whatever a
+      // previous caller (e.g. `useSupabaseIdentity`) had already set.
+      const row: Record<string, unknown> = {
+        id: input.id,
+        org_id: input.orgId,
+        backend_id: input.backendId,
+        path: input.path,
+      };
+      if (input.name !== undefined) row.name = input.name;
+      const { error } = await supabase
+        .from("workspaces")
+        .upsert(row, { onConflict: "id" });
       if (error) return { ok: false, error: error.message };
       return { ok: true };
     } catch (error) {
