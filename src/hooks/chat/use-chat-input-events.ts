@@ -5,6 +5,7 @@ import {
   clearEmptyContent,
   getClipboardFiles,
 } from "#/components/features/chat/utils/chat-input.utils";
+import { useConversationStore } from "#/stores/conversation-store";
 
 /**
  * Hook for handling chat input events
@@ -75,9 +76,16 @@ export const useChatInputEvents = (
       }
 
       if (checkIsContentEmpty()) {
-        e.preventDefault();
-        increaseHeightForEmptyContent();
-        return;
+        // Empty text is still submittable if the user has attached images
+        // or files (matching handleSubmit's own attachment check) - only
+        // bail out here when there's truly nothing to send.
+        const { images, files } = useConversationStore.getState();
+        const hasAttachments = images.length > 0 || files.length > 0;
+        if (!hasAttachments) {
+          e.preventDefault();
+          increaseHeightForEmptyContent();
+          return;
+        }
       }
 
       // Submit on Enter for everything except phones/tablets (where Enter

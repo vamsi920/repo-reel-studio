@@ -30,7 +30,7 @@ The daily digest reads this file as its primary source for "is the app healthy".
 ### INC-3 — HIGH — neo-agent-server has no persistent storage and restarts on every push to main
 - status: OPEN
 - affects: any in-progress conversation, KT/video generation, or agent run — killed mid-work by an unrelated deploy
-- first seen: 2026-09-16   last confirmed: 2026-09-19 (22:14 UTC neo-hourly-fixer-cloud liveness check: `GET https://neo-agent-server.fly.dev/server_info` returned `uptime: 971` seconds (~16 min) — still on the same frequent unrelated-push-triggered restart cadence, no change)   confirmed by: neo-hourly-fixer-cloud
+- first seen: 2026-09-16   last confirmed: 2026-09-19 (23:09 UTC neo-hourly-fixer-cloud liveness check: `GET https://neo-agent-server.fly.dev/server_info` returned `uptime: 1169` seconds (~19.5 min), up from the 22:14 UTC check's 971s with no restart in between — still the same underlying deploy-triggers-restart config, no change to report)   confirmed by: neo-hourly-fixer-cloud
 - needs from user: decide whether to add a persistent volume to the Fly deployment, and/or change fly-deploy.yml so it doesn't redeploy the agent-server on every frontend-only commit
 - mitigation: none — this is an infra/deploy-config decision, not something a routine should change unasked (touches .github/workflows, out of scope for all routines by standing rule)
 - evidence: 5+ agent-server restarts observed in one day so far, each following an unrelated push; today's push cadence (~every 20-30 min) means most live conversations/automations now have only a partial window before being wiped
