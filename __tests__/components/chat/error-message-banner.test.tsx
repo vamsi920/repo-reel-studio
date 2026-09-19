@@ -77,6 +77,25 @@ describe("ErrorMessageBanner", () => {
     expect(toggle).toHaveTextContent("COMMON$VIEW_LESS");
   });
 
+  it("collapses a new long message even if the previous one was expanded", async () => {
+    const user = userEvent.setup();
+    const firstMessage = "a".repeat(400);
+    const secondMessage = "b".repeat(400);
+
+    const { rerender } = render(<ErrorMessageBanner message={firstMessage} />);
+
+    await user.click(screen.getByTestId("error-message-banner-toggle"));
+    expect(screen.getByTestId("error-message-banner-toggle")).toHaveTextContent(
+      "COMMON$VIEW_LESS",
+    );
+
+    rerender(<ErrorMessageBanner message={secondMessage} />);
+
+    expect(screen.getByTestId("error-message-banner-toggle")).toHaveTextContent(
+      "COMMON$VIEW_MORE",
+    );
+  });
+
   it("copies the full error message when the copy button is clicked", async () => {
     const user = userEvent.setup();
     const longMessage = `first line\n${"long error detail ".repeat(40)}`;

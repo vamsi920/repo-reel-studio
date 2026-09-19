@@ -209,6 +209,30 @@ describe("NewConversationButton (cloud)", () => {
     expect(screen.getByTestId("cloud-provider-tab-gitlab")).toBeInTheDocument();
   });
 
+  it("keeps auto-paginating when an early page is empty but more pages remain", async () => {
+    const fetchNextPage = vi.fn();
+    mockUseGitRepositories.mockReturnValue({
+      // e.g. the first GitHub App installation page had zero visible repos,
+      // but a later installation/page still has more (hasNextPage: true).
+      data: { pages: [{ items: [], next_page_id: null }] },
+      isLoading: false,
+      isError: false,
+      hasNextPage: true,
+      isFetchingNextPage: false,
+      fetchNextPage,
+      onLoadMore: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderWithProviders(<NewConversationButton />);
+
+    await user.click(screen.getByTestId("new-conversation-button"));
+
+    await waitFor(() => {
+      expect(fetchNextPage).toHaveBeenCalled();
+    });
+  });
+
   it("shows an empty state when no repositories are returned", async () => {
     mockUseGitRepositories.mockReturnValue({
       data: { pages: [{ items: [], next_page_id: null }] },

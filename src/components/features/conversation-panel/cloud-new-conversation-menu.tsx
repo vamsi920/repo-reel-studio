@@ -194,7 +194,10 @@ export function CloudNewConversationMenu({
     if (!open) return;
     if (debouncedQuery) return;
     if (!hasNextPage || isFetchingNextPage || isLoading) return;
-    if (repositories.length === 0 || repositories.length >= 10) return;
+    // Keep paginating toward >=10 results even if an earlier page (e.g. a
+    // GitHub App installation with no visible repos) contributed zero items
+    // — repositories.length can be 0 with hasNextPage still true.
+    if (repositories.length >= 10) return;
     fetchNextPage();
   }, [
     open,

@@ -63,6 +63,10 @@ export function ErrorMessageBanner({
     setIsCopied(false);
   }, [displayTextForLength]);
 
+  React.useEffect(() => {
+    setIsExpanded(false);
+  }, [displayTextForLength]);
+
   React.useLayoutEffect(() => {
     const content = contentRef.current;
     if (!content) {
