@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, useParamsMock } from "test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -845,6 +845,68 @@ describe("KtGraph cold rehydration", () => {
 
     expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
     expect(openExistingAnalysis).not.toHaveBeenCalled();
+  });
+
+  it("does not fire a second concurrent cold-load lookup when the knowledge store emits a new object reference for the same repo before the first lookup settles", async () => {
+    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    let releaseSnapshotLookup: ((value: string | null) => void) | undefined;
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseSnapshotLookup = resolve;
+        }),
+    );
+
+    renderWithProviders(<KtGraph />);
+
+    // Let the first two (already-mocked-immediate) lookups in the async
+    // chain settle, landing it on the still-pending `findSnapshotWorkspaceId`
+    // call — the in-flight window this cold-load effect spends before it
+    // ever touches the CodeGraph store.
+    await waitFor(() => expect(findRepositoryUuid).toHaveBeenCalled());
+
+    // A knowledge store update unrelated to anything this effect reads (e.g.
+    // the polling metadata every other consumer of this same entry churns)
+    // hands the selector a brand-new object for the same repository, while
+    // the CodeGraph store still has no entry for this key.
+    act(() => {
+      useKnowledgeStore.setState((current) => ({
+        byRepositoryId: {
+          ...current.byRepositoryId,
+          [COLD_REPOSITORY_ID]: {
+            ...current.byRepositoryId[COLD_REPOSITORY_ID],
+          },
+        },
+      }));
+    });
+
+    act(() => {
+      releaseSnapshotLookup?.(null);
+    });
+
+    await screen.findByTestId("codegraph-generate");
+    // Give any duplicate in-flight chain a chance to also call through.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // This effect always calls `findRepositoryUuid` with 4 arguments
+    // (orgId, owner, repo, localPath-or-undefined). `findRepositoryUuid` and
+    // `resolveOrgId` are not asserted on by raw call count: both are also
+    // called, independently of this effect and with a different argument
+    // shape, by `useKnowledgeRehydration`'s own (unrelated) cold-rehydration
+    // path and by the app-wide `useConnectionsRealtimeSync` that
+    // `renderWithProviders` mounts alongside every route. Filtering by this
+    // effect's own call shape keeps the assertion specific to it regardless
+    // of what else legitimately calls the same mocked functions.
+    const callsFromThisEffect = vi
+      .mocked(findRepositoryUuid)
+      .mock.calls.filter((call) => call.length === 4);
+    expect(callsFromThisEffect).toHaveLength(1);
+    expect(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).toHaveBeenCalledTimes(1);
   });
 });
 

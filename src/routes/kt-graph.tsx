@@ -375,8 +375,23 @@ function KtGraph() {
   // already use for the same cold-rehydration problem needs neither, and
   // `findSnapshotWorkspaceId` then asks the snapshot row itself which
   // workspace actually generated it.
+  //
+  // `knowledgeState` is in this effect's deps only to keep `analyze`'s own
+  // inputs current, but (same as the conversation-polling object
+  // `use-knowledge-rehydration.ts` already documents this exact hazard for)
+  // it is a fresh object on nearly every unrelated store tick. The whole
+  // lookup chain below is several awaits deep before anything lands in the
+  // CodeGraph store (which is what `state` guards against), so without this
+  // ref a churn mid-chain re-entered the effect and fired a second, fully
+  // duplicate set of `resolveOrgId`/`findRepositoryUuid`/
+  // `findSnapshotWorkspaceId` calls for the exact same key. One attempt per
+  // key is enough; a failed attempt (nothing found) intentionally does not
+  // retry either, same as `useKnowledgeRehydration`'s own `attemptedRef`.
+  const coldLoadAttemptedKeyRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!snapshot || !key || state) return;
+    if (coldLoadAttemptedKeyRef.current === key) return;
+    coldLoadAttemptedKeyRef.current = key;
     let cancelled = false;
     (async () => {
       const orgId = await resolveOrgId();
