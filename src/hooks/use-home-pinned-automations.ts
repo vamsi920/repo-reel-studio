@@ -178,23 +178,22 @@ export function useHomePinnedAutomations() {
     [demo, setRawPinnedIds],
   );
 
-  /** Drop pin ids that no longer exist on the backend (deleted automations). */
+  /**
+   * Drop pin ids that no longer exist on the backend (deleted automations).
+   * Skips the `setRawPinnedIds` call entirely when nothing needs pruning —
+   * `pinnedIds` is already sanitized/deduped, so an unchanged length means no
+   * id was removed. Calling the setter on every no-op would otherwise write
+   * to localStorage and broadcast a `storage` event on every render this
+   * runs in (mirrors the early-return in `pruneMissingConversations`).
+   */
   const pruneMissing = useCallback(
     (knownIds: ReadonlySet<string>) => {
       if (demo) return;
-      setRawPinnedIds((current) => {
-        const sanitized = sanitizePinnedIds(current);
-        const next = sanitized.filter((id) => knownIds.has(id));
-        if (
-          next.length === sanitized.length &&
-          next.every((id, index) => id === sanitized[index])
-        ) {
-          return sanitized;
-        }
-        return next;
-      });
+      const next = pinnedIds.filter((id) => knownIds.has(id));
+      if (next.length === pinnedIds.length) return;
+      setRawPinnedIds(next);
     },
-    [demo, setRawPinnedIds],
+    [demo, pinnedIds, setRawPinnedIds],
   );
 
   return {

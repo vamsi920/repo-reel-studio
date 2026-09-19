@@ -252,6 +252,12 @@ export default function AutomationDetail() {
             lastRunAt={automation.last_triggered_at}
           />
           <ActivityLogSection
+            // Force a remount on automation change: the route doesn't
+            // change shape when only `:automationId` changes, so without a
+            // key the section's local pagination `limit` and
+            // `scrolledToRunIdRef` would carry over from the previous
+            // automation instead of resetting to the first page.
+            key={automation.id}
             automation={automation}
             highlightedRunId={highlightedRunId}
           />

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAutomationHealth } from "#/hooks/query/use-automation-health";
 import { useAutomations } from "#/hooks/query/use-automations";
 import {
@@ -50,8 +51,11 @@ export function useHomeAutomations() {
     .filter((automation) => automation.enabled)
     .slice(0, MAX_HOME_AUTOMATION_CHIPS);
 
-  const knownAutomationIds = new Set(
-    allAutomations.map((automation) => automation.id),
+  // Memoized so its identity is stable across renders that don't actually
+  // change the automation list — consumers depend on it in effect arrays.
+  const knownAutomationIds = useMemo(
+    () => new Set(allAutomations.map((automation) => automation.id)),
+    [allAutomations],
   );
 
   // False while loading or when the backend has more automations than the

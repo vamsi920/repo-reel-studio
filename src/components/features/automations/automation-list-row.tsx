@@ -147,8 +147,8 @@ export function AutomationListRow({
             )}
           >
             {lastRunText(
-              insights.state?.summary?.latestRun?.started_at ??
-                automation.last_triggered_at,
+              insights.state?.summary?.latestRun?.started_at,
+              automation.last_triggered_at,
               insights.spec.lastRun,
               t(I18nKey.CONVERSATION$AGO),
             )}

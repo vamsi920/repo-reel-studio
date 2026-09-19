@@ -157,8 +157,8 @@ export function AutomationCard({
           />
           <span data-testid={`automation-last-run-${automation.id}`}>
             {`${insights.spec.lastRun.label} ${lastRunText(
-              insights.state?.summary?.latestRun?.started_at ??
-                automation.last_triggered_at,
+              insights.state?.summary?.latestRun?.started_at,
+              automation.last_triggered_at,
               insights.spec.lastRun,
               t(I18nKey.CONVERSATION$AGO),
             )}`}

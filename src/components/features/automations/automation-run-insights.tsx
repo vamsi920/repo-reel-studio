@@ -9,16 +9,39 @@ import { formatTimeDelta } from "#/utils/format-time-delta";
 const SECONDS_DELTA_PATTERN = /^\d+s$/;
 
 /**
+ * The automation service leaves a run's `started_at` as the epoch
+ * placeholder while it is still PENDING, only populating it once execution
+ * begins (same convention guarded against in `activity-log-item.tsx`'s
+ * `isInvalidTimestamp` and `automation-run-health.ts`'s
+ * `getLastRunTimestamp`).
+ */
+function isValidTimestamp(
+  dateStr: string | null | undefined,
+): dateStr is string {
+  if (!dateStr) return false;
+  const time = new Date(dateStr).getTime();
+  return !Number.isNaN(time) && time !== 0;
+}
+
+/**
  * "Never", "Just now", or a localized "<delta> ago". The captions are the
  * manifest's; the delta and its "ago" suffix are the host's translations.
+ * `startedAt` is the latest run's own timestamp (possibly still pending and
+ * therefore epoch/invalid); `fallbackStartedAt` is used when it is.
  */
 export function lastRunText(
   startedAt: string | null | undefined,
+  fallbackStartedAt: string | null | undefined,
   copy: InterfaceListInsights["lastRun"],
   agoSuffix: string,
 ): string {
-  if (!startedAt) return copy.never;
-  const delta = formatTimeDelta(startedAt);
+  const effectiveStartedAt = isValidTimestamp(startedAt)
+    ? startedAt
+    : isValidTimestamp(fallbackStartedAt)
+      ? fallbackStartedAt
+      : null;
+  if (!effectiveStartedAt) return copy.never;
+  const delta = formatTimeDelta(effectiveStartedAt);
   return SECONDS_DELTA_PATTERN.test(delta)
     ? copy.justNow
     : `${delta} ${agoSuffix}`;

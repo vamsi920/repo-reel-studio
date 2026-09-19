@@ -1,10 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyPinnedOrder,
   getHomePinnedAutomationsKey,
   HOME_PINNED_AUTOMATIONS_KEY,
   movePinnedId,
+  useHomePinnedAutomations,
 } from "#/hooks/use-home-pinned-automations";
+
+vi.mock("#/contexts/active-backend-context", () => ({
+  useActiveBackend: () => ({
+    backend: { id: "test-backend", kind: "local" },
+    orgId: null,
+  }),
+}));
 
 describe("getHomePinnedAutomationsKey", () => {
   it("scopes the storage key by backend and org", () => {
@@ -42,5 +51,44 @@ describe("applyPinnedOrder", () => {
       "a",
       "b",
     ]);
+  });
+});
+
+describe("useHomePinnedAutomations pruneMissing", () => {
+  const storageKey = getHomePinnedAutomationsKey("test-backend", null);
+
+  afterEach(() => {
+    window.localStorage.removeItem(storageKey);
+    vi.restoreAllMocks();
+  });
+
+  it("does not touch storage when every pinned id is still known", () => {
+    window.localStorage.setItem(storageKey, JSON.stringify(["a", "b"]));
+    const { result } = renderHook(() => useHomePinnedAutomations());
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
+
+    act(() => {
+      result.current.pruneMissing(new Set(["a", "b", "c"]));
+    });
+
+    // Nothing was actually pruned, so the no-op must not write to
+    // localStorage or broadcast a `storage` event — every other consumer of
+    // this key would otherwise re-check on every render this runs in.
+    expect(setItemSpy).not.toHaveBeenCalled();
+    expect(result.current.pinnedIds).toEqual(["a", "b"]);
+  });
+
+  it("drops pin ids that no longer exist and persists the change", () => {
+    window.localStorage.setItem(storageKey, JSON.stringify(["a", "b", "c"]));
+    const { result } = renderHook(() => useHomePinnedAutomations());
+
+    act(() => {
+      result.current.pruneMissing(new Set(["a", "c"]));
+    });
+
+    expect(result.current.pinnedIds).toEqual(["a", "c"]);
+    expect(JSON.parse(window.localStorage.getItem(storageKey) ?? "[]")).toEqual(
+      ["a", "c"],
+    );
   });
 });
