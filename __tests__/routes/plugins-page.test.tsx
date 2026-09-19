@@ -226,6 +226,101 @@ describe("SkillsPluginsScreen", () => {
     );
   });
 
+  it("keeps a plugin's install button busy while its own request is still in flight, even after a different plugin's install resolves", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
+      buildCatalogPlugin({ name: "plugin-a", source: "github:org/plugin-a" }),
+      buildCatalogPlugin({ name: "plugin-b", source: "github:org/plugin-b" }),
+    ]);
+
+    let resolveA: (value: InstalledPluginInfo) => void = () => {};
+    const pendingA = new Promise<InstalledPluginInfo>((resolve) => {
+      resolveA = resolve;
+    });
+    vi.spyOn(PluginsManagementService, "installPlugin").mockImplementation(
+      (request) =>
+        request.source === "github:org/plugin-a"
+          ? pendingA
+          : Promise.resolve(buildInstalledPlugin({ name: "plugin-b" })),
+    );
+
+    renderPluginsScreen();
+    await user.click(await screen.findByTestId("plugin-install-plugin-a"));
+    await user.click(await screen.findByTestId("plugin-install-plugin-b"));
+
+    // plugin-b's own request has already resolved...
+    await waitFor(() =>
+      expect(screen.getByTestId("plugin-install-plugin-b")).not.toBeDisabled(),
+    );
+    // ...but plugin-a's request is still in flight, so its own Install button
+    // must stay busy rather than being cleared by the shared mutation
+    // settling for a different plugin (which would let a second, concurrent
+    // install fire for plugin-a while the first is still running).
+    expect(screen.getByTestId("plugin-install-plugin-a")).toBeDisabled();
+
+    resolveA(buildInstalledPlugin({ name: "plugin-a" }));
+    await waitFor(
+      () =>
+        expect(
+          screen.getByTestId("plugin-install-plugin-a"),
+        ).not.toBeDisabled(),
+      { timeout: 5000 },
+    );
+  });
+
+  it("does not close a different plugin's detail modal when an earlier uninstall for another plugin finally resolves", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(
+      PluginsManagementService,
+      "listInstalledPlugins",
+    ).mockResolvedValue([
+      buildInstalledPlugin({ name: "plugin-a" }),
+      buildInstalledPlugin({ name: "plugin-b" }),
+    ]);
+
+    let resolveUninstallA: (value: { message: string }) => void = () => {};
+    const pendingUninstallA = new Promise<{ message: string }>((resolve) => {
+      resolveUninstallA = resolve;
+    });
+    vi.spyOn(PluginsManagementService, "uninstallPlugin").mockImplementation(
+      (name: string) =>
+        name === "plugin-a"
+          ? pendingUninstallA
+          : Promise.resolve({ message: "ok" }),
+    );
+
+    renderPluginsScreen();
+
+    // Start uninstalling plugin-a, then close its modal before the request
+    // settles.
+    await user.click(await screen.findByTestId("plugin-card-plugin-a"));
+    await user.click(
+      await screen.findByTestId("plugin-detail-uninstall-plugin-a"),
+    );
+    await user.click(await screen.findByTestId("plugin-detail-modal-dismiss"));
+    expect(screen.queryByTestId("plugin-detail-modal")).not.toBeInTheDocument();
+
+    // Now open a different plugin's modal, just to look at it.
+    await user.click(await screen.findByTestId("plugin-card-plugin-b"));
+    expect(await screen.findByTestId("plugin-detail-modal")).toHaveAttribute(
+      "data-plugin-name",
+      "plugin-b",
+    );
+
+    // plugin-a's uninstall finally resolves -- it must not close whichever
+    // modal happens to be open now.
+    resolveUninstallA({ message: "ok" });
+    await waitFor(() =>
+      expect(
+        PluginsManagementService.uninstallPlugin,
+      ).toHaveBeenCalledWith("plugin-a"),
+    );
+    expect(screen.getByTestId("plugin-detail-modal")).toHaveAttribute(
+      "data-plugin-name",
+      "plugin-b",
+    );
+  });
+
   it("uninstalls an installed plugin from the detail modal", async () => {
     const user = userEvent.setup();
     vi.spyOn(

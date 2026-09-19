@@ -73,15 +73,33 @@ export default function SkillsPluginsScreen() {
     React.useState<PluginStatusFilter>("all");
   const [selectedName, setSelectedName] = React.useState<string | null>(null);
   const [showAddModal, setShowAddModal] = React.useState(false);
-  // `setPluginEnabled` is one shared mutation instance for every card, so its
-  // own `isPending`/`variables` reflect only the most recently issued toggle
-  // call -- overlapping toggles on two different plugins would otherwise
-  // report only the latter as busy once it settles, letting the other's
-  // control re-enable and fire a second request while its first is still in
-  // flight. Track in-flight names explicitly instead.
-  const [pendingToggleNames, setPendingToggleNames] = React.useState<
-    Set<string>
-  >(new Set());
+  // `installPlugin`/`setPluginEnabled`/`uninstallPlugin`/`refreshPlugin` are
+  // each one shared mutation instance for every card, so their own
+  // `isPending`/`variables` reflect only the most recently issued call --
+  // overlapping actions on two different plugins would otherwise report only
+  // the latter as busy once it settles, letting the other's control
+  // re-enable and fire a second request while its first is still in flight.
+  // Track in-flight plugin names explicitly instead, and use `mutateAsync`
+  // (rather than `mutate` with per-call options) everywhere below so both the
+  // "clear busy" step and any per-call callback are tied to this specific
+  // execution's own promise -- per-call options passed to `mutate()` live on
+  // the shared mutation observer and a second concurrent `mutate()` call
+  // overwrites them before the first one settles.
+  const [pendingBusyNames, setPendingBusyNames] = React.useState<Set<string>>(
+    new Set(),
+  );
+
+  const markBusy = (name: string) => {
+    setPendingBusyNames((prev) => new Set(prev).add(name));
+  };
+  const clearBusy = (name: string) => {
+    setPendingBusyNames((prev) => {
+      if (!prev.has(name)) return prev;
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  };
 
   const plugins = React.useMemo(
     () => buildPluginsViewModel(marketplace, installed, local),
@@ -116,56 +134,55 @@ export default function SkillsPluginsScreen() {
   // then would report a fetch failure as an empty catalog.
   const hasFailedSource = marketplaceFailed || installedFailed || localFailed;
 
-  const pendingName =
-    (uninstallPlugin.isPending ? uninstallPlugin.variables : undefined) ??
-    (refreshPlugin.isPending ? refreshPlugin.variables : undefined) ??
-    null;
-
   const isPluginBusy = (plugin: PluginViewModel): boolean =>
-    pendingName === plugin.name ||
-    pendingToggleNames.has(plugin.name) ||
-    (installPlugin.isPending &&
-      installPlugin.variables?.source === plugin.source);
+    pendingBusyNames.has(plugin.name);
 
   const handleInstall = (plugin: PluginViewModel) => {
     if (!plugin.source) return;
-    installPlugin.mutate({
-      source: plugin.source,
-      ref: plugin.ref,
-      repo_path: plugin.repoPath,
-    });
+    markBusy(plugin.name);
+    installPlugin
+      .mutateAsync({
+        source: plugin.source,
+        ref: plugin.ref,
+        repo_path: plugin.repoPath,
+      })
+      .catch(() => {
+        // Already reported via the hook's own onError toast.
+      })
+      .finally(() => clearBusy(plugin.name));
   };
 
   const handleToggle = (plugin: PluginViewModel, enabled: boolean) => {
-    setPendingToggleNames((prev) => new Set(prev).add(plugin.name));
-    // `mutateAsync` (rather than `mutate` with per-call options) so the
-    // "clear busy" step is tied to this specific execution's own promise --
-    // per-call options passed to `mutate()` live on the shared mutation
-    // observer and a second concurrent `mutate()` call overwrites them
-    // before the first one settles, which would silently drop this cleanup.
+    markBusy(plugin.name);
     setPluginEnabled
       .mutateAsync({ name: plugin.name, enabled })
       .catch(() => {
         // Already reported via the hook's own onError toast.
       })
-      .finally(() => {
-        setPendingToggleNames((prev) => {
-          if (!prev.has(plugin.name)) return prev;
-          const next = new Set(prev);
-          next.delete(plugin.name);
-          return next;
-        });
-      });
+      .finally(() => clearBusy(plugin.name));
   };
 
   const handleUninstall = (plugin: PluginViewModel) => {
-    uninstallPlugin.mutate(plugin.name, {
-      onSuccess: () => setSelectedName(null),
-    });
+    markBusy(plugin.name);
+    uninstallPlugin
+      .mutateAsync(plugin.name)
+      .then(() => {
+        setSelectedName((prev) => (prev === plugin.name ? null : prev));
+      })
+      .catch(() => {
+        // Already reported via the hook's own onError toast.
+      })
+      .finally(() => clearBusy(plugin.name));
   };
 
   const handleRefresh = (plugin: PluginViewModel) => {
-    refreshPlugin.mutate(plugin.name);
+    markBusy(plugin.name);
+    refreshPlugin
+      .mutateAsync(plugin.name)
+      .catch(() => {
+        // Already reported via the hook's own onError toast.
+      })
+      .finally(() => clearBusy(plugin.name));
   };
 
   const handleStartConversation = (plugin: PluginViewModel) => {
