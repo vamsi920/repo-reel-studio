@@ -79,12 +79,20 @@ function base64UrlDecodeToBytes(value: string): Uint8Array {
   return bytes;
 }
 
+/** Small leeway for clock drift between Atlassian and this function's host
+ * when checking `exp`, so a token doesn't get rejected a few seconds early. */
+const JWT_CLOCK_SKEW_LEEWAY_SECONDS = 60;
+
 /**
  * Verifies an Atlassian OAuth 2.0 webhook's bearer token: a JWT, HS256-signed
  * with the app's own OAuth client secret (per Atlassian's webhook docs --
  * "Webhooks for OAuth 2.0 apps are secured by bearer authentication...
  * signed with the app's client secret"). Returns the decoded payload only
- * when the signature is valid; never trusts an unverified payload.
+ * when the signature is valid AND the token's `exp` claim has not passed;
+ * never trusts an unverified or expired payload. A valid signature alone
+ * doesn't expire, so without this check any JWT this app ever issued (e.g.
+ * one captured in a log or proxy) would remain a usable bearer credential
+ * forever.
  */
 export async function verifyAtlassianWebhookJwt(
   token: string,
@@ -109,11 +117,21 @@ export async function verifyAtlassianWebhookJwt(
   );
   if (!valid) return null;
 
+  let payload: Record<string, unknown>;
   try {
-    return JSON.parse(new TextDecoder().decode(base64UrlDecodeToBytes(payloadB64)));
+    payload = JSON.parse(
+      new TextDecoder().decode(base64UrlDecodeToBytes(payloadB64)),
+    );
   } catch {
     return null;
   }
+
+  const exp = payload.exp;
+  if (typeof exp !== "number" || !Number.isFinite(exp)) return null;
+  const nowSeconds = Date.now() / 1000;
+  if (exp + JWT_CLOCK_SKEW_LEEWAY_SECONDS < nowSeconds) return null;
+
+  return payload;
 }
 
 /** Hex-encoded HMAC-SHA256, for signing requests forwarded to the

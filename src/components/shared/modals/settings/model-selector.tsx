@@ -70,13 +70,34 @@ export function ModelSelector({
     error: modelsError,
   } = useProviderModels(selectedProvider);
 
+  // `useSearchProviders` deliberately excludes "openhands" from the pickable
+  // list (its models are billed/served through OpenHands Cloud, not this
+  // fork), but an account's *existing* llm.model can still be an
+  // "openhands/..." value (it's DEFAULT_SETTINGS' own default). Without an
+  // AutocompleteItem for that key, HeroUI's Autocomplete has nothing to
+  // render as the provider input's text -- it stays blank even though
+  // `selectedProvider` state is correctly set -- and a blank input means an
+  // empty FormData value, so `extractSettings` silently drops `llm.model`
+  // from the save diff entirely. Always including the current provider keeps
+  // the input populated (and therefore the diff correct) without making it
+  // newly selectable from a fresh, unset state.
+  const providersForDisplay = React.useMemo(() => {
+    if (
+      !selectedProvider ||
+      providers.some((p) => p.name === selectedProvider)
+    ) {
+      return providers;
+    }
+    return [...providers, { name: selectedProvider, verified: false }];
+  }, [providers, selectedProvider]);
+
   const verifiedProviders = React.useMemo(
-    () => providers.filter((p) => p.verified),
-    [providers],
+    () => providersForDisplay.filter((p) => p.verified),
+    [providersForDisplay],
   );
   const unverifiedProviders = React.useMemo(
-    () => providers.filter((p) => !p.verified),
-    [providers],
+    () => providersForDisplay.filter((p) => !p.verified),
+    [providersForDisplay],
   );
 
   const verifiedModels = React.useMemo(
