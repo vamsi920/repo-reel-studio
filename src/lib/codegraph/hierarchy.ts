@@ -70,7 +70,7 @@ const SYMBOL_TYPES = new Set<NodeType>(["function", "step"]);
  * module level rather than dumped onto one canvas — this is what stops a
  * "misc" bucket from becoming an 898-node wall.
  */
-const MAX_LEVEL_CHILDREN = 24;
+export const MAX_LEVEL_CHILDREN = 24;
 
 /**
  * Cap on how many file paths an aggregate node reports. Aggregates exist to
@@ -206,6 +206,40 @@ function relabelBucketsWithHints(
     }
     if (best) bucket.name = best.title;
   }
+}
+
+/**
+ * Caps how many level-1 subsystem buckets exist before the tree is even
+ * assembled. Every other level in this module enforces `MAX_LEVEL_CHILDREN`
+ * by splitting a folder into further module levels, but the buckets here come
+ * straight from however many distinct architectural layers or top-level
+ * folders the analyzer found — a monorepo with, say, 40 packages would
+ * otherwise render 40 subsystem nodes on the system view with nothing to
+ * split them further, exactly the "wall of nodes" failure this module exists
+ * to prevent. The smallest buckets are the ones a user is least likely to be
+ * looking for by name, so they are the ones folded into a shared "Other"
+ * catch-all — the largest, most load-bearing subsystems stay visible as-is.
+ */
+function capSubsystemBuckets(
+  buckets: Map<string, { name: string; nodes: GraphNode[] }>,
+): void {
+  if (buckets.size <= MAX_LEVEL_CHILDREN) return;
+
+  const bySize = [...buckets.entries()].sort(
+    (a, b) => b[1].nodes.length - a[1].nodes.length,
+  );
+  // One slot is reserved for the merged "Other" bucket so the total never
+  // exceeds the budget.
+  const kept = bySize.slice(0, MAX_LEVEL_CHILDREN - 1);
+  const overflow = bySize.slice(MAX_LEVEL_CHILDREN - 1);
+
+  buckets.clear();
+  for (const [key, bucket] of kept) buckets.set(key, bucket);
+
+  const otherKey = "subsystem:other";
+  const other = buckets.get(otherKey) ?? { name: "Other", nodes: [] };
+  for (const [, bucket] of overflow) other.nodes.push(...bucket.nodes);
+  buckets.set(otherKey, other);
 }
 
 function aggregateFilePaths(nodes: CodeGraphNode[]): string[] {
@@ -690,6 +724,7 @@ export function buildHierarchy(
     }
   }
 
+  capSubsystemBuckets(buckets);
   relabelBucketsWithHints(buckets, hints);
 
   // --- Assemble the tree ---------------------------------------------------

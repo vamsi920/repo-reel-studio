@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   breadcrumbsFor,
   buildHierarchy,
+  MAX_LEVEL_CHILDREN,
   type SubsystemHint,
 } from "#/lib/codegraph/hierarchy";
 import type {
@@ -84,12 +85,52 @@ describe("buildHierarchy", () => {
     }
 
     const result = buildHierarchy(graphOf(nodes));
+
+    for (const level of result.levels) {
+      expect(level.nodes.length).toBeLessThanOrEqual(MAX_LEVEL_CHILDREN);
+    }
+    // Every file is still reachable — folding the overflow folders into
+    // "Other" must not drop any of them.
+    const units = Object.values(result.nodesById).filter(
+      (node) => node.level === "unit",
+    );
+    expect(units).toHaveLength(300);
+  });
+
+  it("caps the number of level-1 subsystems, folding the smallest into Other", () => {
+    // 40 detected architectural layers is more than MAX_LEVEL_CHILDREN — the
+    // root/system view has no further level above it to split into, so the
+    // overflow buckets fold together instead of blowing the budget.
+    const nodes: GraphNode[] = [];
+    const layers: KnowledgeGraph["layers"] = [];
+    for (let index = 0; index < 40; index += 1) {
+      const node = file(`layer${index}/one.ts`);
+      nodes.push(node);
+      layers.push({
+        id: `layer-${index}`,
+        name: `Layer ${index}`,
+        description: "",
+        nodeIds: [node.id],
+      });
+    }
+
+    const graph = graphOf(nodes);
+    graph.layers = layers;
+    const result = buildHierarchy(graph);
     const level1 = result.childrenByParent[""];
 
-    expect(level1.length).toBe(30);
-    for (const level of result.levels) {
-      expect(level.nodes.length).toBeLessThanOrEqual(30);
-    }
+    expect(level1.length).toBe(MAX_LEVEL_CHILDREN);
+    const other = level1
+      .map((id) => result.nodesById[id])
+      .find((node) => node.name === "Other");
+    expect(other).toBeDefined();
+    expect(other!.childCount).toBe(40 - (MAX_LEVEL_CHILDREN - 1));
+
+    // Still fully reachable — folded into Other, never dropped.
+    const units = Object.values(result.nodesById).filter(
+      (node) => node.level === "unit",
+    );
+    expect(units).toHaveLength(40);
   });
 
   it("never renders more than the level budget, even for one huge flat folder", () => {
