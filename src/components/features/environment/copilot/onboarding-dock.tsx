@@ -72,8 +72,13 @@ export function OnboardingDock() {
   }, [consumeSeed, navigate]);
 
   // The studio has its own workbench and its own credential card; a second
-  // set floating on top would be two views of the same request.
-  if (location.pathname.includes("/environment/setup")) return null;
+  // set floating on top would be two views of the same request. An exact
+  // match (not `.includes()`) so a future route that merely contains this
+  // one as a substring -- e.g. a hypothetical `/environment/setup-history`
+  // -- doesn't silently inherit this hide, taking the credential-request
+  // indicator down with it.
+  if (location.pathname === buildAgentCanvasPath("/environment/setup"))
+    return null;
 
   return (
     <>

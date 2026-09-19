@@ -153,7 +153,27 @@ function EnvironmentSetupScreen() {
     (state) => state.setConversationId,
   );
 
-  const conversationId = session?.conversationId ?? null;
+  // `complete_setup` flips the session row to "completed" so a *later* visit
+  // starts fresh (see `completeOnboardingSessionForConversation`), but that
+  // update also invalidates `ENVIRONMENT_QUERY_KEYS.all` (via the summary
+  // card's own cache refresh, since the readiness score it shows depends on
+  // connection state outside that prefix). This screen's session query sits
+  // under that same prefix, so the resulting refetch flips `session` to null
+  // mid-conversation -- unmounting the live studio and the summary card it
+  // was meant to leave on screen. Sticking to the last non-null id keeps this
+  // mount on its own conversation regardless of that background refetch; a
+  // genuinely different conversation (a new session in the same tab) still
+  // takes over below, and a real "no session" only shows up on a fresh mount.
+  const sessionConversationId = session?.conversationId ?? null;
+  const [conversationId, setConversationId] = React.useState<string | null>(
+    null,
+  );
+  if (
+    sessionConversationId !== null &&
+    sessionConversationId !== conversationId
+  ) {
+    setConversationId(sessionConversationId);
+  }
 
   // The store's cards/facts/plan belong to one onboarding conversation. If a
   // second, different session ever mounts this screen in the same tab (the

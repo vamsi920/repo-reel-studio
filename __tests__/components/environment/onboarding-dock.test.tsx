@@ -37,6 +37,13 @@ describe("OnboardingDock", () => {
     expect(screen.queryByTestId("onboarding-dock-trigger")).toBeNull();
   });
 
+  it("does not hide itself on a route that merely contains the studio path as a substring", () => {
+    // A prefix/substring check would also hide the dock -- credential-request
+    // indicator included -- on any future sibling route like this one.
+    renderDock("/environment/setup-history");
+    expect(screen.getByTestId("onboarding-dock-trigger")).toBeInTheDocument();
+  });
+
   it("flags a pending credential request on the trigger", () => {
     act(() => {
       useOnboardingCopilotStore.getState().requestCredentials({

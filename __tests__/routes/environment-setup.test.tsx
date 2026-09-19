@@ -188,4 +188,37 @@ describe("Environment setup studio workbench reset", () => {
     );
     expect(useOnboardingStudioStore.getState().cards).toHaveLength(0);
   });
+
+  it("stays on the studio when the session query is invalidated out from under it (complete_setup race)", async () => {
+    // `complete_setup` flips the session row to "completed", and the summary
+    // card it triggers then invalidates the whole `["environment"]` prefix --
+    // including this same session query -- as part of its own cache refresh.
+    // That refetch resolves to `null` (no more "active" row) while the studio
+    // is still mounted showing that very summary. It must not be torn down.
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+    const { rerender } = renderScreen("/environment/setup");
+
+    await waitFor(() =>
+      expect(useOnboardingStudioStore.getState().conversationId).toBe(
+        "conv-1",
+      ),
+    );
+    expect(screen.getByTestId("chat-stub")).toBeInTheDocument();
+
+    state.session = null;
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/environment/setup"]}>
+          <EnvironmentSetupScreen />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("chat-stub")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("environment-setup-start"),
+    ).not.toBeInTheDocument();
+    expect(useOnboardingStudioStore.getState().conversationId).toBe("conv-1");
+  });
 });
