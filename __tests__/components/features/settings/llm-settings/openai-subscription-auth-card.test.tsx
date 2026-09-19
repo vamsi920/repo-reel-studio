@@ -154,5 +154,43 @@ describe("OpenAISubscriptionAuthCard", () => {
       await vi.advanceTimersByTimeAsync(intervalMs);
       expect(pollSpy).toHaveBeenCalledTimes(3);
     });
+
+    it("keeps auto-polling after a manual 'Finish Sign In' click comes back not-yet-connected", async () => {
+      const user = userEvent.setup();
+      const pollSpy = vi
+        .spyOn(LLMSubscriptionService, "pollOpenAIDeviceLogin")
+        .mockResolvedValueOnce({
+          vendor: "openai",
+          connected: false,
+          accountEmail: null,
+          expiresAt: null,
+        })
+        .mockResolvedValueOnce({
+          vendor: "openai",
+          connected: true,
+          accountEmail: null,
+          expiresAt: null,
+        });
+
+      await openDeviceChallenge(user);
+      const intervalMs = challenge.intervalSeconds * 1000;
+
+      // Manual poll: not connected yet.
+      await user.click(await screen.findByTestId("subscription-poll"));
+      await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(1));
+      expect(
+        screen.queryByTestId("subscription-device-challenge"),
+      ).not.toBeNull();
+
+      // The background loop must still be alive: advancing the timer alone
+      // (no further manual clicks) should trigger the next poll and connect.
+      await vi.advanceTimersByTimeAsync(intervalMs);
+      await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(2));
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId("subscription-device-challenge"),
+        ).toBeNull(),
+      );
+    });
   });
 });

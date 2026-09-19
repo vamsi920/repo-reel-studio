@@ -109,8 +109,14 @@ export function OpenAISubscriptionAuthCard({
   const deviceCode = challenge?.deviceCode ?? null;
   const challengeIntervalSeconds = challenge?.intervalSeconds ?? null;
 
+  // Lets `handlePollLogin` (the manual "Finish Sign In" button) re-arm the
+  // same recursive timer loop the effect below owns, instead of only firing
+  // one poll and leaving the background loop dead -- see that handler.
+  const scheduleNextPollRef = React.useRef<(() => void) | null>(null);
+
   React.useEffect(() => {
     if (!deviceCode || connected || isDisabled) {
+      scheduleNextPollRef.current = null;
       return undefined;
     }
 
@@ -134,11 +140,13 @@ export function OpenAISubscriptionAuthCard({
       }, intervalSeconds * 1000);
     };
 
+    scheduleNextPollRef.current = schedulePoll;
     schedulePoll();
 
     return () => {
       cancelled = true;
       clearPollTimeout();
+      scheduleNextPollRef.current = null;
     };
   }, [
     deviceCode,
@@ -163,7 +171,13 @@ export function OpenAISubscriptionAuthCard({
   const handlePollLogin = async () => {
     if (!challenge) return;
     clearPollTimeout();
-    void pollDeviceLogin(challenge.deviceCode);
+    const shouldStop = await pollDeviceLogin(challenge.deviceCode);
+    if (!shouldStop) {
+      // Re-arm the background poll loop the effect owns -- otherwise a
+      // manual poll that comes back "not yet connected" would silently kill
+      // automatic retries for the rest of the device-flow window.
+      scheduleNextPollRef.current?.();
+    }
   };
 
   const handleLogout = async () => {
