@@ -1,7 +1,11 @@
 import { Terminal, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
-import { isAgentOpsSupportedBackend } from "#/api/agentops-service/agentops-service.api";
+import {
+  AgentOpsRequestError,
+  AgentOpsUnavailableError,
+  isAgentOpsSupportedBackend,
+} from "#/api/agentops-service/agentops-service.api";
 
 interface CollectorUnavailableProps {
   error: unknown;
@@ -9,6 +13,23 @@ interface CollectorUnavailableProps {
 
 /** The command that starts the collector when it is not already running. */
 const COLLECTOR_COMMAND = "node scripts/agentops-server.mjs";
+
+/**
+ * The only detail worth showing under the friendly copy below: the
+ * collector's own plain explanation (`AgentOpsRequestError#response.message`,
+ * parsed from its `{ error }` body) or the crafted "not reachable" text from
+ * a network-level `AgentOpsUnavailableError`. Anything else — a raw fetch
+ * failure string, or `AgentOpsRequestError`'s fallback message, which embeds
+ * the internal request path and the unparsed response body (an ingress 502
+ * page, for instance) — belongs in the console, not in front of the
+ * operator; mirrors `getAgentOpsErrorMessage` in agentops-service.api.ts.
+ */
+function safeErrorDetail(error: unknown): string {
+  if (error instanceof AgentOpsRequestError)
+    return error.response.message ?? "";
+  if (error instanceof AgentOpsUnavailableError) return error.message;
+  return "";
+}
 
 /**
  * What the Control Tower shows when it has no real telemetry.
@@ -20,7 +41,7 @@ const COLLECTOR_COMMAND = "node scripts/agentops-server.mjs";
 export function CollectorUnavailable({ error }: CollectorUnavailableProps) {
   const { t } = useTranslation("openhands");
   const unsupportedBackend = !isAgentOpsSupportedBackend();
-  const message = error instanceof Error ? error.message : String(error ?? "");
+  const message = safeErrorDetail(error);
 
   return (
     <div
