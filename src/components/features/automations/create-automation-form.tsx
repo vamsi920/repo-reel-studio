@@ -107,6 +107,19 @@ export function CreateAutomationForm({
     ...profiles.map((p) => ({ key: p.name, label: p.name })),
   ];
 
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (nameError && value.trim()) setNameError(null);
+  };
+
+  const handlePromptChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const { value } = event.target;
+    setPrompt(value);
+    if (promptError && value.trim()) setPromptError(null);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -197,7 +210,7 @@ export function CreateAutomationForm({
         type="text"
         label={t(I18nKey.AUTOMATIONS$CREATE_NAME_LABEL)}
         value={name}
-        onChange={setName}
+        onChange={handleNameChange}
         placeholder={t(I18nKey.AUTOMATIONS$CREATE_NAME_PLACEHOLDER)}
         error={nameError ?? undefined}
         showRequiredTag
@@ -211,7 +224,7 @@ export function CreateAutomationForm({
           data-testid="create-automation-prompt"
           name="prompt"
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={handlePromptChange}
           rows={6}
           placeholder={t(I18nKey.AUTOMATIONS$CREATE_INSTRUCTIONS_PLACEHOLDER)}
           className={cn(
