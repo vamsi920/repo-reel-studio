@@ -411,8 +411,8 @@ export default function AutomationsList() {
   return renderShell(
     <>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-[220px]">
           <h1 className="text-xl font-semibold text-content">
             {interfaceCopy.listTitle ?? t(I18nKey.AUTOMATIONS$TITLE)}
           </h1>
