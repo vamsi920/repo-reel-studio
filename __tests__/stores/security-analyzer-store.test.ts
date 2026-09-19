@@ -118,6 +118,49 @@ describe("security analyzer store", () => {
     expect(useSecurityAnalyzerStore.getState().logs).toHaveLength(2);
   });
 
+  it("falls back to args.code when args.command is absent", () => {
+    useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
+      id: 1,
+      args: { code: "print(1)", security_risk: ActionSecurityRisk.LOW },
+    });
+
+    expect(useSecurityAnalyzerStore.getState().logs[0].content).toBe(
+      "print(1)",
+    );
+  });
+
+  it("falls back to args.content when neither command nor code is present", () => {
+    useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
+      id: 1,
+      args: { content: "some content", security_risk: ActionSecurityRisk.LOW },
+    });
+
+    expect(useSecurityAnalyzerStore.getState().logs[0].content).toBe(
+      "some content",
+    );
+  });
+
+  it("falls back to the top-level message when no args field carries content", () => {
+    useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
+      id: 1,
+      args: { security_risk: ActionSecurityRisk.LOW },
+      message: "a plain message",
+    });
+
+    expect(useSecurityAnalyzerStore.getState().logs[0].content).toBe(
+      "a plain message",
+    );
+  });
+
+  it("defaults content to an empty string when nothing carries any text", () => {
+    useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
+      id: 1,
+      args: { security_risk: ActionSecurityRisk.LOW },
+    });
+
+    expect(useSecurityAnalyzerStore.getState().logs[0].content).toBe("");
+  });
+
   it("clearLogs empties the store", () => {
     useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
       id: 1,

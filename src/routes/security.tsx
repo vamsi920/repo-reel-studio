@@ -197,26 +197,37 @@ function RepositorySelect({
     );
   });
   return (
-    <select
-      aria-label={t(I18nKey.SECURITY$REPOSITORY_SELECT_LABEL)}
-      className="mt-3 rounded-md border border-[var(--oh-border)] bg-transparent px-2 py-1 text-xs text-[var(--oh-foreground)]"
-      data-testid="security-repository-select"
-      value={selectedRepositoryId ?? ""}
-      onChange={(event) => onSelect(event.target.value)}
-    >
-      {selectedRepositoryId === null && (
-        <option value="" disabled>
-          {t(I18nKey.SECURITY$REPOSITORY_SELECT_PICK)}
-        </option>
-      )}
-      {repositories.map((repository) => (
-        <option key={repository.repositoryId} value={repository.repositoryId}>
-          {(labelCounts.get(repository.label) ?? 0) > 1
-            ? `${repository.label} (${repository.branch})`
-            : repository.label}
-        </option>
-      ))}
-    </select>
+    <div className="mt-3 flex flex-col gap-1">
+      {/* A visible label, not just `aria-label`: a sighted mouse user needs
+          the same context a screen reader gets from the select's accessible
+          name — an unlabelled dropdown reads as "what does this pick?". */}
+      <label
+        className="text-xs text-[var(--oh-muted)]"
+        htmlFor="security-repository-select"
+      >
+        {t(I18nKey.SECURITY$REPOSITORY_SELECT_LABEL)}
+      </label>
+      <select
+        id="security-repository-select"
+        className="rounded-md border border-[var(--oh-border)] bg-transparent px-2 py-1 text-xs text-[var(--oh-foreground)]"
+        data-testid="security-repository-select"
+        value={selectedRepositoryId ?? ""}
+        onChange={(event) => onSelect(event.target.value)}
+      >
+        {selectedRepositoryId === null && (
+          <option value="" disabled>
+            {t(I18nKey.SECURITY$REPOSITORY_SELECT_PICK)}
+          </option>
+        )}
+        {repositories.map((repository) => (
+          <option key={repository.repositoryId} value={repository.repositoryId}>
+            {(labelCounts.get(repository.label) ?? 0) > 1
+              ? `${repository.label} (${repository.branch})`
+              : repository.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
