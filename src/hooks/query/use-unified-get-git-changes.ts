@@ -102,7 +102,15 @@ export const useUnifiedGetGitChanges = () => {
 
   return {
     data: orderedChanges,
-    isLoading: result.isLoading,
+    // `isPending`, not `isLoading`: the query is `enabled` only once
+    // `runtimeIsReady`/`conversationId` resolve, and a disabled query has
+    // `isLoading: false` (it requires an in-flight fetch) even though it has
+    // never run and has no data yet. Callers (GitChanges' "waiting for
+    // runtime" status, the Files tab's cloud-backend listing) used `isLoading`
+    // to gate their own loading state, so during that window they fell
+    // through to an empty/blank view instead of showing they were still
+    // waiting on the runtime.
+    isLoading: result.isPending,
     isFetching: result.isFetching,
     isSuccess: result.isSuccess,
     isError: result.isError,

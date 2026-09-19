@@ -17,8 +17,9 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
   useActiveConversation: () => useActiveConversationMock(),
 }));
 
+const useRuntimeIsReadyMock = vi.fn(() => true);
 vi.mock("#/hooks/use-runtime-is-ready", () => ({
-  useRuntimeIsReady: () => true,
+  useRuntimeIsReady: () => useRuntimeIsReadyMock(),
 }));
 
 const getGitChangesSpy = vi.spyOn(AgentServerGitService, "getGitChanges");
@@ -52,6 +53,8 @@ beforeEach(() => {
   useConversationIdMock.mockReset();
   useActiveConversationMock.mockReset();
   getGitChangesSpy.mockReset();
+  useRuntimeIsReadyMock.mockReset();
+  useRuntimeIsReadyMock.mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -134,5 +137,32 @@ describe("useUnifiedGetGitChanges", () => {
         { status: "M", path: "a.txt" },
       ]),
     );
+  });
+
+  it("reports isLoading while the query is disabled (runtime not ready yet), not just while fetching", async () => {
+    useRuntimeIsReadyMock.mockReturnValue(false);
+    useConversationIdMock.mockReturnValue({ conversationId: "conv-a" });
+    useActiveConversationMock.mockReturnValue({
+      data: conversationFor("conv-a"),
+    });
+
+    const { result, rerender } = renderHook(() => useUnifiedGetGitChanges(), {
+      wrapper: makeWrapper(),
+    });
+
+    // Disabled (runtime not ready): never fetched, so plain `isLoading` from
+    // react-query would read `false` here and a caller would wrongly treat
+    // this as "loaded, zero changes" instead of "still waiting".
+    expect(result.current.isLoading).toBe(true);
+    expect(getGitChangesSpy).not.toHaveBeenCalled();
+
+    getGitChangesSpy.mockResolvedValueOnce([
+      { status: "M", path: "a.txt" },
+    ] as GitChange[]);
+    useRuntimeIsReadyMock.mockReturnValue(true);
+    rerender();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data).toEqual([{ status: "M", path: "a.txt" }]);
   });
 });
