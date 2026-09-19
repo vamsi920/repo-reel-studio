@@ -8,6 +8,7 @@ import {
   useDispatchAutomation,
 } from "#/hooks/query/use-automations";
 import { useAutomationRunSummaries } from "#/hooks/query/use-automation-run-summaries";
+import { getLastRunTimestamp } from "#/components/features/home/featured-automations/automation-run-health";
 import { useNavigation } from "#/context/navigation-context";
 import { automationDetailPath } from "#/manifests/automation-interface";
 import { BrandButton } from "#/components/features/settings/brand-button";
@@ -77,9 +78,12 @@ export function ProactivationFeatureCard({
   const lastRunAt = useMemo(() => {
     let latest: string | null = null;
     proactivationAutomations.forEach((automation) => {
-      const summary = runSummaries.get(automation.id)?.summary;
-      const startedAt = summary?.latestRun?.started_at;
-      if (startedAt && (!latest || startedAt > latest)) latest = startedAt;
+      const latestRun = runSummaries.get(automation.id)?.summary?.latestRun;
+      // A run's `started_at` stays the epoch placeholder while it's still
+      // PENDING; `getLastRunTimestamp` filters that out the same way the
+      // rest of the automations UI does (see automation-run-health.ts).
+      const timestamp = latestRun ? getLastRunTimestamp(latestRun) : null;
+      if (timestamp && (!latest || timestamp > latest)) latest = timestamp;
     });
     return latest;
   }, [proactivationAutomations, runSummaries]);

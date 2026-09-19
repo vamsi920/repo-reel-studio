@@ -11,7 +11,11 @@ import {
   setRegisteredBackends,
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
-import { AutomationRunStatus, type Automation, type AutomationRun } from "#/types/automation";
+import {
+  AutomationRunStatus,
+  type Automation,
+  type AutomationRun,
+} from "#/types/automation";
 import { buildProactivationPrompt } from "#/utils/proactivation-prompt";
 
 vi.mock("react-i18next", () => ({
@@ -104,6 +108,39 @@ beforeEach(async () => {
   );
   vi.mocked(displayErrorToast).mockClear();
   vi.mocked(displaySuccessToast).mockClear();
+});
+
+describe("ProactivationFeatureCard last-run timestamp", () => {
+  it("shows 'never run' rather than the epoch placeholder when the only run is still pending", async () => {
+    // The automation service leaves `started_at` as the epoch placeholder
+    // while a run is PENDING and only populates it once execution begins.
+    vi.mocked(AutomationService.getAutomationRuns).mockResolvedValue({
+      runs: [
+        {
+          id: "run-1",
+          status: AutomationRunStatus.PENDING,
+          conversation_id: null,
+          bash_command_id: null,
+          error_detail: null,
+          started_at: "1970-01-01T00:00:00.000Z",
+          completed_at: null,
+        },
+      ],
+      total: 1,
+    });
+
+    renderCard([makeAutomation("one", true)]);
+
+    await waitFor(() => {
+      expect(AutomationService.getAutomationRuns).toHaveBeenCalled();
+    });
+    expect(
+      await screen.findByText(
+        /AUTOMATIONS\$PROACTIVATION_NEVER_RUN/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/1970/)).not.toBeInTheDocument();
+  });
 });
 
 describe("ProactivationFeatureCard pause/resume", () => {
