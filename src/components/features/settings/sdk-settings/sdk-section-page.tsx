@@ -657,7 +657,15 @@ export function SdkSectionPage({
       view,
       getDirtyPayload: stableGetDirtyPayload,
     });
-  }, [isPending, saveControlIsDirty, flatValues, view]);
+  }, [
+    onSaveControlChange,
+    isPending,
+    saveControlIsDirty,
+    flatValues,
+    view,
+    stableSave,
+    stableGetDirtyPayload,
+  ]);
 
   // Keep existing form content visible during background refetches to avoid
   // flashing the full skeleton (notably during onboarding Next transitions).

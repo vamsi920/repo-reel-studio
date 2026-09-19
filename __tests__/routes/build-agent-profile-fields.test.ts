@@ -72,6 +72,47 @@ describe("buildAgentProfileFields — ACP", () => {
       expect(fields.acp_model).toBeNull();
     }
   });
+
+  it("preserves an unrecognized loaded acp_server on a save that didn't touch the command", () => {
+    // detectPreset() can't recognize a server key this frontend's ACP_PROVIDERS
+    // doesn't mirror, so it falls back to "custom" — without the
+    // loadedAcpServer/commandUnchanged guard, an unrelated field edit would
+    // silently overwrite the profile's real, unknown server identity.
+    const fields = buildAgentProfileFields({
+      ...baseAcp,
+      selectedPreset: "custom",
+      isDefaultProviderCommand: false,
+      loadedAcpServer: "claude_code_beta",
+      commandUnchanged: true,
+    });
+    if (fields.agent_kind === "acp") {
+      expect(fields.acp_server).toBe("claude_code_beta");
+    }
+  });
+
+  it("demotes an unrecognized loaded acp_server to the detected preset once the command changes", () => {
+    const fields = buildAgentProfileFields({
+      ...baseAcp,
+      selectedPreset: "custom",
+      isDefaultProviderCommand: false,
+      loadedAcpServer: "claude_code_beta",
+      commandUnchanged: false,
+    });
+    if (fields.agent_kind === "acp") {
+      expect(fields.acp_server).toBe("custom");
+    }
+  });
+
+  it("does not treat a known built-in provider as an unrecognized loaded server", () => {
+    const fields = buildAgentProfileFields({
+      ...baseAcp,
+      loadedAcpServer: "claude-code",
+      commandUnchanged: true,
+    });
+    if (fields.agent_kind === "acp") {
+      expect(fields.acp_server).toBe("claude-code");
+    }
+  });
 });
 
 describe("buildAgentProfileFields — OpenHands", () => {

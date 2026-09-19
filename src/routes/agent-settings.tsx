@@ -121,6 +121,17 @@ export interface AgentProfileFieldsInput {
   subAgentsEnabled: boolean;
   toolConcurrencyField?: SettingsFieldSchema;
   toolConcurrency: string | boolean;
+  /**
+   * The `acp_server` the form was seeded from (before any edits), or `null`
+   * off the ACP path / on a brand-new profile. Together with
+   * `commandUnchanged`, lets an unrecognized/foreign server key (one the
+   * frontend's `ACP_PROVIDERS` doesn't know about) survive an edit-save that
+   * didn't touch the command — mirrors `handleSave`'s `preserveUnknownServer`
+   * in the non-embedded Settings → Agent page.
+   */
+  loadedAcpServer?: string | null;
+  /** True when the command text is identical to what the form was seeded with. */
+  commandUnchanged?: boolean;
 }
 
 /**
@@ -153,13 +164,24 @@ export function buildAgentProfileFields(
     subAgentsEnabled,
     toolConcurrencyField,
     toolConcurrency,
+    loadedAcpServer = null,
+    commandUnchanged = false,
   } = input;
   if (isAcp) {
     const isBuiltinDefault =
       isDefaultProviderCommand && selectedPreset !== ACP_CUSTOM_PRESET_KEY;
+    // An unrecognized `acp_server` the profile was loaded with (e.g. one added
+    // server-side that this frontend's `ACP_PROVIDERS` doesn't mirror yet)
+    // would otherwise be silently demoted to the `custom` sentinel by
+    // `detectPreset` on every save — even one that never touched the command.
+    const loadedServerIsUnknown =
+      !!loadedAcpServer &&
+      loadedAcpServer !== ACP_CUSTOM_PRESET_KEY &&
+      !ACP_PROVIDERS.some((provider) => provider.key === loadedAcpServer);
+    const preserveUnknownServer = commandUnchanged && loadedServerIsUnknown;
     return {
       agent_kind: "acp",
-      acp_server: selectedPreset,
+      acp_server: preserveUnknownServer ? loadedAcpServer : selectedPreset,
       acp_model: acpModel.trim() || null,
       acp_command: isBuiltinDefault
         ? null
@@ -443,6 +465,8 @@ export function AgentSettingsScreen({
       subAgentsEnabled,
       toolConcurrencyField,
       toolConcurrency,
+      loadedAcpServer: loadedAcpServerRef.current,
+      commandUnchanged: commandText === loadedCommandTextRef.current,
     });
 
   // Dirty tracking: for OpenHands path, also check sub-agents toggle and the
