@@ -298,6 +298,7 @@ function KtPage() {
                 type="button"
                 onClick={() => setNarrationEnabled((v) => !v)}
                 disabled={!speechSupported}
+                aria-pressed={narrationEnabled}
                 data-testid="kt-page-narration-toggle"
                 /* eslint-disable i18next/no-literal-string -- tooltip, not yet localized */
                 title={

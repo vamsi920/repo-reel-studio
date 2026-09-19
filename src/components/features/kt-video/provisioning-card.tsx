@@ -98,6 +98,16 @@ export function ProvisioningCard({
   );
   const showPageCount =
     activeIndex === 4 && !!pagesTotal && pagesTotal > 0 && !error;
+  // Every step's label renders unconditionally (only its icon/color changes
+  // as `activeIndex` advances), so a screen reader gets no signal that
+  // provisioning is progressing at all -- icons are `aria-hidden` and color
+  // alone isn't perceivable. This mirrors that same progress as text in a
+  // live region instead.
+  const currentStepStatus = error
+    ? `${STEP_LABELS[activeIndex]} failed: ${error}`
+    : `Step ${activeIndex + 1} of ${STEP_LABELS.length}: ${STEP_LABELS[activeIndex]}${
+        showPageCount ? ` (${pagesDone ?? 0}/${pagesTotal})` : ""
+      }`;
 
   return (
     <div
@@ -110,6 +120,10 @@ export function ProvisioningCard({
           {owner}/{repo}
         </span>
         <span className="text-xs text-[var(--oh-muted)]">{branch}</span>
+      </div>
+
+      <div role="status" aria-live="polite" className="sr-only">
+        {currentStepStatus}
       </div>
 
       <div className="flex flex-col gap-1.5">

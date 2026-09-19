@@ -145,6 +145,7 @@ function KtVideoTab() {
           type="button"
           onClick={() => setNarrationEnabled((v) => !v)}
           disabled={!speechSupported}
+          aria-pressed={narrationEnabled}
           title={
             speechSupported
               ? "Read each scene's narration aloud as it plays"

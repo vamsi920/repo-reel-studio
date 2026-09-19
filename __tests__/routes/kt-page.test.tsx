@@ -156,6 +156,10 @@ function paramsFor(pageId: string) {
 
 describe("KtPage", () => {
   beforeEach(() => {
+    // The narration toggle button is disabled without this -- the hook
+    // itself is mocked above, but `speechSupported` is a plain
+    // `"speechSynthesis" in window` check in the component.
+    vi.stubGlobal("speechSynthesis", {});
     buildManifestMock.mockReset();
     buildManifestMock.mockImplementation((pg: { id: string }) => ({
       repo_name: `manifest-for-${pg.id}`,
@@ -186,6 +190,7 @@ describe("KtPage", () => {
   afterEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("rebuilds the video for the new page instead of keeping the previous page's stale video", async () => {
@@ -329,6 +334,24 @@ describe("KtPage", () => {
     expect(
       screen.queryByTestId("kt-page-quality-flags"),
     ).not.toBeInTheDocument();
+  });
+
+  it("reflects the narration toggle's on/off state through aria-pressed", async () => {
+    const user = userEvent.setup();
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    render(<KtPage />);
+
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    const narrationToggle = await screen.findByTestId(
+      "kt-page-narration-toggle",
+    );
+    expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(narrationToggle);
+    expect(narrationToggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(narrationToggle);
+    expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
   });
 });
 
