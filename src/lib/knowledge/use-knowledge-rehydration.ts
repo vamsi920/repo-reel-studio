@@ -104,6 +104,19 @@ export function useKnowledgeRehydration(
   const hasEntry = useKnowledgeStore((s) =>
     repositoryId ? Boolean(s.byRepositoryId[repositoryId]) : true,
   );
+  // An entry existing is not the same as generation being *done*: a live
+  // attempt (this hook's own, or one started elsewhere, e.g. kt-list.tsx)
+  // creates the entry via `startGenerating` up front, well before real
+  // `knowledge` lands. Without this, the "already have an entry, nothing to
+  // do" branch below fired the moment that entry appeared and reported
+  // `checked: true` while `knowledge` was still null -- routes read that as
+  // "confirmed not generated" and rendered "hasn't been generated yet" for
+  // the entire duration of a real, in-progress generation.
+  const isEntrySettled = useKnowledgeStore((s) => {
+    if (!repositoryId) return true;
+    const status = s.byRepositoryId[repositoryId]?.status;
+    return status === "ready" || status === "error";
+  });
   const hydrate = useKnowledgeStore((s) => s.hydrate);
   const startGenerating = useKnowledgeStore((s) => s.startGenerating);
   const setProgress = useKnowledgeStore((s) => s.setProgress);
@@ -112,7 +125,7 @@ export function useKnowledgeRehydration(
   const { repositories: connected, isLoading: connectedLoading } =
     useConnectedRepositories();
   const { backend } = useActiveBackend();
-  const [checked, setChecked] = useState(hasEntry);
+  const [checked, setChecked] = useState(isEntrySettled);
   const attemptedRef = useRef<string | null>(null);
 
   const liveMatch = repositoryId
@@ -139,7 +152,12 @@ export function useKnowledgeRehydration(
 
   useEffect(() => {
     if (hasEntry || !repositoryId) {
-      setChecked(true);
+      // An entry already exists (ours or a sibling route's) -- never start a
+      // second, duplicate rehydration/generation attempt for it, but only
+      // report "checked" once it has actually settled (see `isEntrySettled`
+      // above); re-runs as the entry's status changes so a foreign
+      // in-flight generation still flips this to `true` once it lands.
+      setChecked(isEntrySettled);
       return undefined;
     }
     const parsed = parseRepositoryId(repositoryId);
@@ -232,6 +250,7 @@ export function useKnowledgeRehydration(
   }, [
     repositoryId,
     hasEntry,
+    isEntrySettled,
     hydrate,
     liveKey,
     connectedLoading,

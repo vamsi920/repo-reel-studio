@@ -117,9 +117,23 @@ describe("KtRepository", () => {
           finishClone = resolve;
         }),
     );
+    // Mirrors the real generateKnowledge: it never resolves until the
+    // attempt is genuinely settled (setReady/setError), so `startGenerating`
+    // alone must not be read as "done" -- see the "still shows the starting
+    // spinner while startGenerating has fired but nothing has landed yet"
+    // test below for that exact distinction.
     vi.mocked(generateKnowledge).mockImplementation(
       async (snapshot, conversationUrl, sessionApiKey, store) => {
         store.startGenerating(snapshot, conversationUrl, sessionApiKey);
+        store.setReady(snapshot.repositoryId, {
+          repositoryId: snapshot.repositoryId,
+          commitSha: snapshot.commitSha,
+          title: "API",
+          summary: "",
+          sections: [],
+          pages: [],
+          generatedAt: new Date().toISOString(),
+        });
       },
     );
 
@@ -149,6 +163,41 @@ describe("KtRepository", () => {
     );
     expect(resolveCommitSha).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(I18nKey.KT$STARTING)).not.toBeInTheDocument();
+  });
+
+  it("keeps showing the starting spinner, not 'not found', while generation is under way but nothing has landed yet", async () => {
+    connected.repositories = [
+      {
+        repositoryId: REPOSITORY_ID,
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "http://localhost:3000/conversations/c1",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      },
+    ];
+    vi.mocked(resolveCommitSha).mockResolvedValue("0123456789abcdef");
+    // Never settles within this test -- `startGenerating` fires (the entry
+    // now exists) but neither `setReady` nor `setError` is ever called, so
+    // the page must keep waiting instead of reporting "not found" just
+    // because an entry now exists.
+    vi.mocked(generateKnowledge).mockImplementation(
+      async (snapshot, conversationUrl, sessionApiKey, store) => {
+        store.startGenerating(snapshot, conversationUrl, sessionApiKey);
+        await new Promise(() => {});
+      },
+    );
+
+    renderWithProviders(<KtRepository />);
+
+    await waitFor(() =>
+      expect(
+        useKnowledgeStore.getState().byRepositoryId[REPOSITORY_ID]?.status,
+      ).toBe("generating"),
+    );
+    expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
+    expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
   });
 
   it("doesn't flash 'not found' for a new repository while the route component is reused", async () => {

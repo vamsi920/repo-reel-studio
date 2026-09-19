@@ -125,25 +125,32 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
   byRepositoryId: {},
 
   startGenerating: (snapshot, conversationUrl, sessionApiKey) =>
-    set((state) => ({
-      byRepositoryId: {
-        ...state.byRepositoryId,
-        [snapshot.repositoryId]: {
-          snapshot,
-          conversationUrl,
-          sessionApiKey,
-          status: "generating",
-          progress: null,
-          lastNonTerminalStatus: null,
-          knowledge: null,
-          error: null,
-          refreshCadence:
-            state.byRepositoryId[snapshot.repositoryId]?.refreshCadence ??
-            "manual",
-          qualityFlags: [],
+    set((state) => {
+      const existing = state.byRepositoryId[snapshot.repositoryId];
+      return {
+        byRepositoryId: {
+          ...state.byRepositoryId,
+          [snapshot.repositoryId]: {
+            snapshot,
+            conversationUrl,
+            sessionApiKey,
+            status: "generating",
+            progress: null,
+            lastNonTerminalStatus: null,
+            // Keep any previously-generated result visible while a
+            // regeneration runs instead of blanking it: every route that
+            // reads this store treats `knowledge: null` as "never
+            // generated", which used to flash a false "hasn't been
+            // generated yet" state over a repo that already has real
+            // content for the whole regeneration.
+            knowledge: existing?.knowledge ?? null,
+            error: null,
+            refreshCadence: existing?.refreshCadence ?? "manual",
+            qualityFlags: existing?.qualityFlags ?? [],
+          },
         },
-      },
-    })),
+      };
+    }),
 
   setProgress: (repositoryId, progress) =>
     set((state) => {
