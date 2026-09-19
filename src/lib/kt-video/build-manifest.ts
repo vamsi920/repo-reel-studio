@@ -961,7 +961,14 @@ function buildConceptScene(
     file_path: segments[0].file_path,
     title: `${pageTitle}: real flow`,
     code: segments[0].code,
-    highlight_lines: [segments[0].start_line, segments[0].end_line],
+    // Unlike every other scene type, `code` here is already just the
+    // windowed hop excerpt, not the full file — so `highlight_lines` must
+    // index into that excerpt (1..line count), not the hop's absolute file
+    // line numbers. Using the absolute numbers made every downstream
+    // consumer that windows `code` by `highlight_lines` (narrate-manifest's
+    // excerptFor) slice past the excerpt's own length and come back empty
+    // for any hop that doesn't start on line 1 of its file.
+    highlight_lines: [1, segments[0].code.split("\n").length],
     narration_text,
     sentences,
     focus_symbols: segments

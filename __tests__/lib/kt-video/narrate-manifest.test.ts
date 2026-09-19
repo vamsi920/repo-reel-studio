@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KtManifest, KtScene } from "#/lib/kt-video/build-manifest";
+import { buildKtManifestFromKnowledgePage } from "#/lib/kt-video/build-manifest";
 import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
 import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
 import { narrateManifest } from "#/lib/kt-video/narrate-manifest";
@@ -123,6 +124,37 @@ describe("narrateManifest", () => {
     expect(second.startFrame).toBe(180);
     expect(second.endFrame).toBe(360);
     expect(original.totalFrames).toBe(360);
+  });
+
+  it("sends a concept scene's real code excerpt even when its hop doesn't start at line 1", async () => {
+    // Regression: buildConceptScene's `code` is already just the windowed
+    // hop excerpt (not the full file), so a hop starting well past line 1
+    // used to make excerptFor's highlight_lines-based slice invert and
+    // return "", silently dropping all code grounding for concept scenes.
+    const page = {
+      id: "page-1",
+      title: "Auth Flow",
+      description: "How auth works.",
+      relevantFiles: [],
+      diagrams: [],
+    };
+    const fileContents = {
+      "src/entry.ts": Array.from(
+        { length: 120 },
+        (_, i) => `line ${i + 1}`,
+      ).join("\n"),
+      "src/util.ts": "export function helper() {\n  return 1;\n}\n",
+    };
+    const manifest = buildKtManifestFromKnowledgePage(page, fileContents, [], 5, [
+      { path: "src/entry.ts", startLine: 100, endLine: 105, symbol: "start" },
+      { path: "src/util.ts", startLine: 1, endLine: 1, symbol: "helper" },
+    ]);
+
+    chatCompletion.mockResolvedValue(JSON.stringify([]));
+    await narrateManifest(manifest, snapshot);
+
+    const promptSent = chatCompletion.mock.calls[0][0].messages[0].content;
+    expect(promptSent).toContain("line 100");
   });
 
   it("returns the deterministic manifest untouched when narration fails", async () => {
