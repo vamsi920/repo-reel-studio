@@ -165,6 +165,27 @@ function extractDiagrams(
   return diagrams;
 }
 
+/** Writes `diagrams` back into the page's own markdown, in the same order
+ * `extractDiagrams` pulled them out — so a repair applied to `diagrams[i]`
+ * (e.g. by `repairInvalidDiagrams`) is reflected in the fenced ```mermaid
+ * block Read-mode actually renders, instead of only in the parallel
+ * `diagrams[]` array nothing reads at render time. Blocks whose diagram
+ * text is unchanged are left byte-for-byte as-is. */
+export function applyDiagramsToContent(
+  contentMarkdown: string,
+  diagrams: KnowledgeDiagram[],
+): string {
+  let index = 0;
+  return contentMarkdown.replace(MERMAID_FENCE_RE, (fullMatch, original) => {
+    const diagram = diagrams[index];
+    index += 1;
+    if (!diagram || diagram.mermaid.trim() === (original as string).trim()) {
+      return fullMatch;
+    }
+    return `\`\`\`mermaid\n${diagram.mermaid.trim()}\n\`\`\``;
+  });
+}
+
 /** DeepWiki types `importance` as a loose `str` ("Should ideally be
  * Literal['high','medium','low']" per its own source comment) — coerce it
  * defensively rather than trusting it's always one of the three values. */

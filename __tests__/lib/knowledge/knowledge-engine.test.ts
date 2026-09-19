@@ -7,7 +7,9 @@ import type {
   DeepWikiWikiTaskStatus,
 } from "#/api/deepwiki-service/deepwiki-service.types";
 import {
+  applyDiagramsToContent,
   DeepWikiKnowledgeEngine,
+  type KnowledgeDiagram,
   type RepositorySnapshot,
 } from "#/lib/knowledge/knowledge-engine";
 
@@ -342,5 +344,54 @@ describe("DeepWikiKnowledgeEngine.generate", () => {
     expect(getWikiTask).toHaveBeenCalledTimes(5);
     expect(unsubscribe).not.toHaveBeenCalled();
     expect(getWikiCache).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyDiagramsToContent", () => {
+  function diagram(mermaid: string): KnowledgeDiagram {
+    return { id: "d", type: "flow", mermaid };
+  }
+
+  it("swaps in a changed diagram's text while leaving the fence markers alone", () => {
+    const content =
+      "# Title\n\n```mermaid\ngraph TD; A-->B;\n```\n\nSome text.";
+
+    const result = applyDiagramsToContent(content, [
+      diagram("graph TD; A-->C;"),
+    ]);
+
+    expect(result).toBe(
+      "# Title\n\n```mermaid\ngraph TD; A-->C;\n```\n\nSome text.",
+    );
+  });
+
+  it("leaves a block byte-for-byte untouched when its diagram text is unchanged", () => {
+    const content = "```mermaid\ngraph TD; A-->B;\n```";
+
+    const result = applyDiagramsToContent(content, [
+      diagram("graph TD; A-->B;"),
+    ]);
+
+    expect(result).toBe(content);
+  });
+
+  it("matches each fenced block to the diagram at the same position", () => {
+    const content =
+      "```mermaid\nfirst\n```\n\ntext\n\n```mermaid\nsecond\n```";
+
+    const result = applyDiagramsToContent(content, [
+      diagram("first"),
+      diagram("second-fixed"),
+    ]);
+
+    expect(result).toBe(
+      "```mermaid\nfirst\n```\n\ntext\n\n```mermaid\nsecond-fixed\n```",
+    );
+  });
+
+  it("leaves content with no mermaid fences unchanged", () => {
+    const content = "# No diagrams here.";
+
+    expect(applyDiagramsToContent(content, [])).toBe(content);
   });
 });

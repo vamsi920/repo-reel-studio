@@ -1,8 +1,9 @@
 import mermaid from "mermaid";
 import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
-import type {
-  KnowledgeRepository,
-  RepositorySnapshot,
+import {
+  applyDiagramsToContent,
+  type KnowledgeRepository,
+  type RepositorySnapshot,
 } from "./knowledge-engine";
 import { resolveDeepWikiRepoTarget } from "./deepwiki-repo-target";
 
@@ -100,7 +101,11 @@ export async function repairInvalidDiagrams(
         }),
       );
 
-      return { ...page, diagrams };
+      return {
+        ...page,
+        diagrams,
+        contentMarkdown: applyDiagramsToContent(page.contentMarkdown, diagrams),
+      };
     }),
   );
 

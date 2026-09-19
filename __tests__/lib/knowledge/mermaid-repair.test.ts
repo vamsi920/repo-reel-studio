@@ -103,6 +103,28 @@ describe("repairInvalidDiagrams", () => {
     expect(chatCompletion).toHaveBeenCalledTimes(1);
   });
 
+  it("writes a successful repair back into the page's own markdown, not just diagrams[]", async () => {
+    parseMock
+      .mockRejectedValueOnce(new Error("Parse error on line 1"))
+      .mockResolvedValueOnce(true);
+    chatCompletion.mockResolvedValue(
+      "Here you go:\n```mermaid\ngraph TD; A-->B;\n```",
+    );
+    const input = knowledge([
+      page({
+        contentMarkdown:
+          "# Overview\n\n```mermaid\ngraph TD A\n```\n\nMore text.",
+        diagrams: [{ id: "d1", type: "flow", mermaid: "graph TD A" }],
+      }),
+    ]);
+
+    const result = await repairInvalidDiagrams(input, snapshot);
+
+    expect(result.pages[0]!.contentMarkdown).toBe(
+      "# Overview\n\n```mermaid\ngraph TD; A-->B;\n```\n\nMore text.",
+    );
+  });
+
   it("keeps the original diagram when the repair attempt still fails to parse", async () => {
     parseMock.mockRejectedValue(new Error("still broken"));
     chatCompletion.mockResolvedValue("```mermaid\nstill broken\n```");
