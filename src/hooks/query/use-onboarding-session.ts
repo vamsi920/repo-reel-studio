@@ -79,15 +79,25 @@ export function useStartOnboardingSession() {
         // A partial unique index allows only one active session per org, so a
         // colleague who opened the studio a moment earlier wins the race. That
         // is the desired outcome -- join their thread rather than forking the
-        // company's onboarding into two transcripts nobody reconciles.
-        const { data: existing } = await supabase
-          .from("onboarding_sessions")
-          .select("id, conversation_id, phase, status, started_by, created_at")
-          .eq("org_id", orgId)
-          .eq("status", "active")
-          .maybeSingle();
-        if (existing) {
-          return toSession(existing as unknown as Record<string, unknown>);
+        // company's onboarding into two transcripts nobody reconciles. But
+        // that fallback only applies to the unique-violation this index
+        // produces (Postgres code 23505): any other error (an RLS denial, a
+        // malformed payload, a transient network failure) must still surface
+        // as a failure even if an unrelated active session happens to exist
+        // for this org, or the caller believes a session was created when
+        // nothing was written.
+        if (error.code === "23505") {
+          const { data: existing } = await supabase
+            .from("onboarding_sessions")
+            .select(
+              "id, conversation_id, phase, status, started_by, created_at",
+            )
+            .eq("org_id", orgId)
+            .eq("status", "active")
+            .maybeSingle();
+          if (existing) {
+            return toSession(existing as unknown as Record<string, unknown>);
+          }
         }
         throw new Error(error.message);
       }

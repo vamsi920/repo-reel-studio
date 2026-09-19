@@ -649,19 +649,25 @@ export async function handleOnboardingControlAction(
     }
 
     case "complete_setup": {
+      // Awaited, and before the summary card is pushed: that card's own
+      // mount effect invalidates and refetches the onboarding-session query,
+      // and if that refetch won the race against this write, it cached the
+      // session as still "active" for up to its staleTime -- reopening the
+      // studio would resume the already-finished conversation instead of
+      // offering a fresh one. Best-effort: a failed update must not stop the
+      // agent from telling the user setup is done, but leaving the session
+      // "active" would permanently block a fresh onboarding session for this
+      // org (see the function doc), so we still push the card either way.
+      if (context.conversationId) {
+        await completeOnboardingSessionForConversation(
+          context.conversationId,
+        ).catch(() => undefined);
+      }
       studio.pushCard({
         id: nextCardId("summary"),
         kind: "summary",
         readiness: null,
       });
-      // Best-effort: a failed update must not stop the agent from telling the
-      // user setup is done, but leaving the session "active" would permanently
-      // block a fresh onboarding session for this org (see the function doc).
-      if (context.conversationId) {
-        void completeOnboardingSessionForConversation(
-          context.conversationId,
-        ).catch(() => undefined);
-      }
       postReceipt(context, {
         status: "completed",
         // The agent does not get to declare victory over blocking work: the

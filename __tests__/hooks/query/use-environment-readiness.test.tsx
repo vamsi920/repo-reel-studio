@@ -115,6 +115,32 @@ describe("useEnvironmentReadiness", () => {
     expect(result.current.byCapability["source-control"]).toBe("unknown");
   });
 
+  it("does not let a second, non-default connection of the same capability override the default instance's status", () => {
+    // Regression: matching on `capability` alone meant a second instance for
+    // the same capability (e.g. a second GitHub Enterprise connection) could
+    // downgrade -- or, as here, mask a real problem on -- the default
+    // instance, depending on arbitrary array order from an unordered query.
+    state.github = { isLoading: false, data: { id: "row" } };
+    state.connections = {
+      isLoading: false,
+      data: [
+        githubConnectionRecord({
+          instanceKey: "default",
+          status: "error",
+        }),
+        githubConnectionRecord({
+          id: "conn-2",
+          instanceKey: "secondary",
+          status: "ok",
+        }),
+      ],
+    };
+
+    const { result } = renderHook(() => useEnvironmentReadiness(null));
+
+    expect(result.current.byCapability["source-control"]).toBe("missing");
+  });
+
   it("does not let an unrelated capability's connection record affect source-control", () => {
     state.github = { isLoading: false, data: { id: "row" } };
     state.connections = {

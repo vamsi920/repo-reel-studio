@@ -275,6 +275,32 @@ describe("handleOnboardingControlAction", () => {
     const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
     expect(payload.status).toBe("completed");
   });
+
+  it("waits for the session-completed write before rendering the summary card, so the card's own cache invalidation cannot race ahead of it", async () => {
+    // The summary card mounts and invalidates/refetches the onboarding-session
+    // query as soon as it is pushed. If that push happened before this write
+    // landed, the refetch could observe (and cache, for staleTime) the
+    // session as still "active".
+    const order: string[] = [];
+    vi.mocked(completeOnboardingSessionForConversation).mockImplementation(
+      async () => {
+        await Promise.resolve();
+        order.push("session-completed");
+      },
+    );
+    const originalPushCard = useOnboardingStudioStore.getState().pushCard;
+    const pushCardSpy = vi
+      .spyOn(useOnboardingStudioStore.getState(), "pushCard")
+      .mockImplementation((card) => {
+        order.push("summary-card-pushed");
+        return originalPushCard(card);
+      });
+
+    await handleOnboardingControlAction(action({ command: "complete_setup" }), context);
+
+    expect(order).toEqual(["session-completed", "summary-card-pushed"]);
+    pushCardSpy.mockRestore();
+  });
 });
 
 describe("the interview loop", () => {

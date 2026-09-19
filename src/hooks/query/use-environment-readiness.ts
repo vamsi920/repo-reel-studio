@@ -55,8 +55,17 @@ export function useEnvironmentReadiness(profile: EnvironmentProfile | null) {
       if (isLoading) return "unknown";
       if (!connected) return "missing";
       if (capability) {
+        // An org can have more than one connection for the same capability
+        // (e.g. a second GitHub Enterprise instance) -- match the specific
+        // "default" instance this readiness check's `connected` flag
+        // actually reflects, the same way `environment-connections.tsx`
+        // resolves "the" connection for a manifest. Matching on capability
+        // alone let an unrelated second instance's probe status (arbitrary
+        // array order from an unordered query) override or mask this one's.
         const record = connections.data?.find(
-          (candidate) => candidate.capability === capability,
+          (candidate) =>
+            candidate.capability === capability &&
+            candidate.instanceKey === "default",
         );
         const probeStatus = statusFromProbe(record?.status);
         if (probeStatus) return probeStatus;
