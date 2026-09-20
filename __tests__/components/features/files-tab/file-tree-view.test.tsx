@@ -66,9 +66,10 @@ describe("FileTreeView", () => {
     expect(onSelectFile).toHaveBeenCalledWith("README.md");
   });
 
-  it("marks the selected file row with aria-current", async () => {
-    // Arrange
-    const user = userEvent.setup();
+  it("marks the selected file row with aria-current", () => {
+    // Arrange + Act: the directory auto-expands because it holds the
+    // selection (see the dedicated auto-expand test below), so no click
+    // is needed here to reach the row.
     render(
       <FileTreeView
         paths={["src/a.txt", "src/b.txt"]}
@@ -76,9 +77,6 @@ describe("FileTreeView", () => {
         onSelectFile={vi.fn()}
       />,
     );
-
-    // Act
-    await user.click(screen.getByTestId("file-tree-dir-src"));
 
     // Assert: the selection is exposed to assistive technology, not only
     // through the background colour.
@@ -89,5 +87,54 @@ describe("FileTreeView", () => {
     expect(screen.getByTestId("file-tree-file-src/b.txt")).not.toHaveAttribute(
       "aria-current",
     );
+  });
+
+  it("auto-expands every ancestor directory of the selected file", () => {
+    // Arrange + Act: a file nested two directories deep is already
+    // selected when the tree first renders (e.g. the auto-select-on-load
+    // effect, or the agent's canvas_ui tool driving the files-tab store
+    // directly) — the user never clicked anything to expand these folders.
+    render(
+      <FileTreeView
+        paths={["src/features/widget.ts", "src/features/other.ts"]}
+        selectedPath="src/features/widget.ts"
+        onSelectFile={vi.fn()}
+      />,
+    );
+
+    // Assert: both ancestor directories are already open and the selected
+    // file's row is visible without any manual expand click.
+    expect(screen.getByTestId("file-tree-dir-src")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.getByTestId("file-tree-dir-src/features"),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByTestId("file-tree-file-src/features/widget.ts"),
+    ).toHaveAttribute("aria-current", "true");
+  });
+
+  it("does not force a directory back open after the user collapses it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(
+      <FileTreeView
+        paths={["src/a.txt"]}
+        selectedPath="src/a.txt"
+        onSelectFile={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("file-tree-file-src/a.txt")).toBeInTheDocument();
+
+    // Act: the user manually collapses the auto-opened directory while its
+    // file is still selected.
+    await user.click(screen.getByTestId("file-tree-dir-src"));
+
+    // Assert: their choice sticks — it isn't immediately re-opened.
+    expect(
+      screen.queryByTestId("file-tree-file-src/a.txt"),
+    ).not.toBeInTheDocument();
   });
 });

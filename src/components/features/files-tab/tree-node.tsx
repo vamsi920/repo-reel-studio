@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import FileIcon from "#/icons/file.svg?react";
 import FolderIcon from "#/icons/folder.svg?react";
@@ -12,13 +12,33 @@ interface TreeNodeProps {
   onSelectFile: (path: string) => void;
 }
 
+// True when `path` is `node.path` itself or lives somewhere under it.
+function containsPath(node: FileTreeNode, path: string | null): boolean {
+  if (!path) return false;
+  return path === node.path || path.startsWith(`${node.path}/`);
+}
+
 export function TreeNode({
   node,
   depth,
   selectedPath,
   onSelectFile,
 }: TreeNodeProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const holdsSelection = node.isDirectory && containsPath(node, selectedPath);
+  const [isOpen, setIsOpen] = useState(holdsSelection);
+
+  // Reveal the selected file the moment it lands inside this directory —
+  // the initial `useState` above only covers the first render, but a
+  // selection made after mount (auto-select-on-load, or the canvas_ui tool
+  // dispatcher driving `useFilesTabStore` directly) must still open every
+  // ancestor folder, not just highlight a row that's hidden behind a
+  // collapsed parent. Never forces a directory closed: a user who
+  // collapses it back keeps that choice even while it still holds the
+  // selection.
+  useEffect(() => {
+    if (holdsSelection) setIsOpen(true);
+  }, [holdsSelection]);
+
   const indentPx = 8 + depth * 12;
 
   if (node.isDirectory) {
