@@ -56,18 +56,40 @@ describe("PasswordAuthForm", () => {
     );
   });
 
-  it("rejects a non-allowlisted email locally without calling the auth API", async () => {
+  it("rejects a non-allowlisted email locally without calling the auth API when creating an account", async () => {
     flow.loadSignupDomainAllowlist.mockResolvedValue(["neodevex.com"]);
+    render(<PasswordAuthForm />);
+    await screen.findByText("neodevex.com");
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("auth-mode-toggle"));
+
+    await user.type(screen.getByTestId("auth-email"), "me@elsewhere.test");
+    await user.type(screen.getByTestId("auth-password"), "hunter22!");
+    await user.type(screen.getByTestId("auth-confirm-password"), "hunter22!");
+    await user.click(screen.getByTestId("auth-submit"));
+
+    expect(await screen.findByTestId("auth-email-error")).toHaveTextContent(
+      "NEODEVEX_AUTH$DOMAIN_REJECTED",
+    );
+    expect(flow.signUpWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("does not apply the signup domain allowlist when signing in", async () => {
+    flow.loadSignupDomainAllowlist.mockResolvedValue(["neodevex.com"]);
+    flow.signInWithPassword.mockResolvedValue({ kind: "signed_in" });
     render(<PasswordAuthForm />);
     await screen.findByText("neodevex.com");
 
     const user = await fillCredentials("me@elsewhere.test", "hunter22");
     await user.click(screen.getByTestId("auth-submit"));
 
-    expect(await screen.findByTestId("auth-email-error")).toHaveTextContent(
-      "NEODEVEX_AUTH$DOMAIN_REJECTED",
+    await waitFor(() =>
+      expect(flow.signInWithPassword).toHaveBeenCalledWith(
+        "me@elsewhere.test",
+        "hunter22",
+      ),
     );
-    expect(flow.signInWithPassword).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("auth-email-error")).toBeNull();
   });
 
   it("validates password length and confirmation before creating an account", async () => {

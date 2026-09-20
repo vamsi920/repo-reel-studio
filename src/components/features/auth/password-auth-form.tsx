@@ -78,7 +78,13 @@ export function PasswordAuthForm() {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) return;
 
-    if (!isEmailInDomainAllowlist(trimmedEmail, signupDomains)) {
+    // Sign-in isn't gated by the signup domain allowlist -- it applies to
+    // account creation only (see signInWithPassword's doc comment), so an
+    // existing account outside the current allowlist can still log in.
+    if (
+      (isSignUp || isForgot) &&
+      !isEmailInDomainAllowlist(trimmedEmail, signupDomains)
+    ) {
       clearFieldErrors();
       setDomainRejected(true);
       return;

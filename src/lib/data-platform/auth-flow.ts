@@ -351,15 +351,19 @@ export async function updatePasswordForRecovery(
  * upgrade -- only `signUpWithPassword` does that, since signing in to an
  * account that already exists isn't "this browser's data becoming real,"
  * it's switching to a different, already-established identity.
+ *
+ * Deliberately does NOT run the signup domain allowlist check: that
+ * allowlist gates account *creation* (it mirrors the
+ * `enforce_signup_domain_allowlist` trigger, which only fires on `insert`/
+ * `update of email`) and has no server-side bearing on login. An account
+ * that already exists -- created before the allowlist existed, or before an
+ * admin narrowed it -- must still be able to sign in.
  */
 export async function signInWithPassword(
   email: string,
   password: string,
 ): Promise<AuthOutcome> {
   const trimmedEmail = email.trim();
-  if (!(await isAllowedSignupEmail(trimmedEmail))) {
-    return { kind: "domain_rejected" };
-  }
   if (!isSupabaseConfigured || !supabase) {
     return {
       kind: "error",

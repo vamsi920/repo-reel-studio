@@ -180,6 +180,18 @@ describe("auth-flow", () => {
         signInWithPassword("me@neodevex.com", "hunter22"),
       ).resolves.toEqual({ kind: "error", message: "Too many requests" });
     });
+
+    it("does not gate sign-in on the signup domain allowlist", async () => {
+      state.allowlistRows = [{ domain: "neodevex.com" }];
+      state.signInWithPassword.mockResolvedValueOnce({ error: null });
+      await expect(
+        signInWithPassword("me@elsewhere.test", "hunter22"),
+      ).resolves.toEqual({ kind: "signed_in" });
+      expect(state.signInWithPassword).toHaveBeenCalledWith({
+        email: "me@elsewhere.test",
+        password: "hunter22",
+      });
+    });
   });
 
   describe("directPasswordReset", () => {
