@@ -72,6 +72,22 @@ const TERMINAL_STATUSES = new Set<AutomationRunStatus>([
   AutomationRunStatus.FAILED,
 ]);
 
+/**
+ * The automation service leaves `started_at` as the epoch placeholder
+ * (`getTime() === 0`) for a run that reached a terminal state without ever
+ * starting execution (e.g. sandbox provisioning failed before the agent
+ * loop began) — same convention guarded against elsewhere in this codebase
+ * (`activity-log-item.tsx`'s `isInvalidTimestamp`, `automation-run-health.ts`'s
+ * `getLastRunTimestamp`, `automation-run-insights.tsx`'s `isValidTimestamp`).
+ */
+function isValidRunTimestamp(
+  dateStr: string | null | undefined,
+): dateStr is string {
+  if (!dateStr) return false;
+  const time = new Date(dateStr).getTime();
+  return Number.isFinite(time) && time !== 0;
+}
+
 export function summarizeAutomationRuns(
   response: AutomationRunsResponse,
 ): AutomationRunSummary {
@@ -83,10 +99,15 @@ export function summarizeAutomationRuns(
   ).length;
 
   const durations = terminal.flatMap((run) => {
-    if (!run.completed_at) return [];
+    if (
+      !isValidRunTimestamp(run.completed_at) ||
+      !isValidRunTimestamp(run.started_at)
+    ) {
+      return [];
+    }
     const ms =
       new Date(run.completed_at).getTime() - new Date(run.started_at).getTime();
-    return Number.isFinite(ms) && ms >= 0 ? [ms] : [];
+    return ms >= 0 ? [ms] : [];
   });
 
   return {

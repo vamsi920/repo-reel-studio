@@ -177,6 +177,31 @@ describe("summarizeAutomationRuns", () => {
       duration: summary.averageDurationMs,
     }).toEqual({ rate: null, duration: null });
   });
+
+  it("excludes a terminal run whose started_at is still the epoch placeholder from the average duration", () => {
+    // Arrange — a run that reached FAILED without ever starting execution
+    // (e.g. sandbox provisioning failed) leaves started_at at the epoch
+    // placeholder while completed_at is a real timestamp. Without an epoch
+    // guard, `completed_at - epoch` is a ~56-year millisecond value that
+    // would corrupt the mean below.
+    const runs = [
+      createRun({
+        status: AutomationRunStatus.FAILED,
+        started_at: "1970-01-01T00:00:00Z",
+        completed_at: "2026-01-05T00:00:30Z",
+      }),
+      createRun({
+        started_at: "2026-01-01T00:00:00Z",
+        completed_at: "2026-01-01T00:01:30Z",
+      }),
+    ];
+
+    // Act
+    const summary = summarizeAutomationRuns({ runs, total: 2 });
+
+    // Assert — only the second run's real 90s duration counts.
+    expect(summary.averageDurationMs).toBe(90_000);
+  });
 });
 
 describe("matchesAutomationSearch", () => {
