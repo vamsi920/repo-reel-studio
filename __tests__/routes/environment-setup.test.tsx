@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,11 +8,14 @@ import EnvironmentSetupScreen from "#/routes/environment-setup";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { resetOAuthReceiptGuardForTests } from "#/lib/environment/oauth-receipt-guard";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 const state = vi.hoisted(() => ({
   session: null as { conversationId: string } | null,
   sessionLoading: true,
   posted: [] as string[],
+  startSession: vi.fn(),
+  createConversation: vi.fn(),
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -24,11 +28,19 @@ vi.mock("#/hooks/query/use-onboarding-session", () => ({
     data: state.session,
     isLoading: state.sessionLoading,
   }),
-  useStartOnboardingSession: () => ({ mutate: vi.fn() }),
+  useStartOnboardingSession: () => ({ mutate: state.startSession }),
 }));
 
 vi.mock("#/hooks/mutation/use-create-conversation", () => ({
-  useCreateConversation: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateConversation: () => ({
+    mutate: state.createConversation,
+    isPending: false,
+  }),
+}));
+
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast: vi.fn(),
+  displaySuccessToast: vi.fn(),
 }));
 
 vi.mock("#/hooks/query/use-environment-profile", () => ({
@@ -88,6 +100,9 @@ beforeEach(() => {
   state.session = null;
   state.sessionLoading = true;
   state.posted = [];
+  state.startSession.mockReset();
+  state.createConversation.mockReset();
+  vi.mocked(displayErrorToast).mockReset();
   resetOAuthReceiptGuardForTests();
   useOnboardingStudioStore.getState().reset();
 });
@@ -244,5 +259,29 @@ describe("Environment setup seed forwarding", () => {
 
     await screen.findByTestId("environment-setup-start");
     expect(state.posted).toEqual([]);
+  });
+});
+
+describe("Environment setup session start failure", () => {
+  it("surfaces an error instead of stranding the user when starting the session fails", async () => {
+    // The conversation itself was created successfully -- only the session
+    // row failed to save. Without an `onError` here, `conversationId` never
+    // gets set and the screen silently sits on "start a new session" forever
+    // with no indication that anything went wrong.
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onSuccess({ conversation_id: "conv-1" });
+    });
+    state.startSession.mockImplementation((_conversationId, options) => {
+      options.onError(new Error("insert failed"));
+    });
+
+    renderScreen("/environment/setup");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("environment-setup-start")).toBeInTheDocument();
   });
 });

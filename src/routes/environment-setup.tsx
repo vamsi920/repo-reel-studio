@@ -261,7 +261,14 @@ function EnvironmentSetupScreen() {
         entryPoint: "environment_setup_studio",
       },
       {
-        onSuccess: (response) => startSession(response.conversation_id),
+        onSuccess: (response) =>
+          startSession(response.conversation_id, {
+            // The conversation now exists, but with no session row nothing
+            // ever sets `conversationId`, so this screen silently sat on its
+            // "start a new session" state forever with no sign that anything
+            // had gone wrong.
+            onError: () => displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD)),
+          }),
         onError: () => displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD)),
       },
     );

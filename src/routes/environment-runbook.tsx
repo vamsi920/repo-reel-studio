@@ -26,6 +26,7 @@ function EnvironmentRunbookScreen() {
   const readiness = useEnvironmentReadiness(profile ?? null);
   const [packet, setPacket] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [exportBusy, setExportBusy] = React.useState(false);
 
   const handlePacket = React.useCallback(async () => {
     setBusy(true);
@@ -45,25 +46,36 @@ function EnvironmentRunbookScreen() {
 
   const handleExportBundle = React.useCallback(async () => {
     if (!profile) return;
-    const bundle = await buildEnvironmentBundle(
-      profile,
-      readiness,
-      (connections ?? []).map((connection) => ({
-        capability: connection.capability,
-        providerId: connection.providerId,
-        instanceKey: connection.instanceKey,
-      })),
-    );
-    const blob = new Blob([JSON.stringify(bundle, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "neodevex-environment-profile.json";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    displaySuccessToast(t(I18nKey.ENVIRONMENT$EXPORT_BUNDLE));
+    setExportBusy(true);
+    try {
+      const bundle = await buildEnvironmentBundle(
+        profile,
+        readiness,
+        (connections ?? []).map((connection) => ({
+          capability: connection.capability,
+          providerId: connection.providerId,
+          instanceKey: connection.instanceKey,
+        })),
+      );
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "neodevex-environment-profile.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      displaySuccessToast(t(I18nKey.ENVIRONMENT$EXPORT_BUNDLE));
+    } catch {
+      // `buildEnvironmentBundle` hashes the payload with `crypto.subtle`,
+      // which throws in an insecure context (no HTTPS, no localhost) instead
+      // of resolving -- previously an unhandled rejection that left the
+      // button looking like it did nothing.
+      displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD));
+    } finally {
+      setExportBusy(false);
+    }
   }, [profile, readiness, connections, t]);
 
   return (
@@ -119,7 +131,11 @@ function EnvironmentRunbookScreen() {
             type="button"
             data-testid="export-environment-bundle"
             onClick={handleExportBundle}
-            className="ame-btn-secondary ame-btn-sm self-start"
+            disabled={exportBusy}
+            className={cn(
+              "ame-btn-secondary ame-btn-sm self-start",
+              exportBusy && "loading",
+            )}
           >
             {t(I18nKey.ENVIRONMENT$DOWNLOAD)}
           </button>
