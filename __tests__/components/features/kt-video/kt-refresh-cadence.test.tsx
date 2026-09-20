@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { KtRefreshCadence } from "#/components/features/kt-video/kt-refresh-cadence";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
@@ -74,5 +74,34 @@ describe("KtRefreshCadence handleRegenerate", () => {
 
     expect(generateKnowledgeMock).not.toHaveBeenCalled();
     expect(displayErrorToastMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("KtRefreshCadence isDue", () => {
+  beforeEach(() => {
+    useKnowledgeStore.getState().reset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("flips from Regenerate to Update available purely from time passing, with no other store update", () => {
+    vi.useFakeTimers();
+    seedReadyEntry();
+    useKnowledgeStore.getState().setRefreshCadence(snapshot.repositoryId, "daily");
+    render(<KtRefreshCadence repositoryId={snapshot.repositoryId} />);
+
+    expect(screen.getByTestId("kt-regenerate-button")).toHaveTextContent(
+      "KT$REGENERATE",
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(25 * 60 * 60 * 1000);
+    });
+
+    expect(screen.getByTestId("kt-regenerate-button")).toHaveTextContent(
+      "KT$REFRESH_DUE",
+    );
   });
 });

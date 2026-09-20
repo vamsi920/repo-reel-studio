@@ -157,6 +157,69 @@ describe("narrateManifest", () => {
     expect(promptSent).toContain("line 100");
   });
 
+  it("sends every hop's code excerpt for a concept scene, not just the first", async () => {
+    // Regression: excerptFor used to read the concept scene's top-level
+    // `code`/`highlight_lines`, which buildConceptScene only ever sets from
+    // segments[0] — so the LLM was asked to narrate hops 2+ (named in
+    // focus_symbols) without ever seeing their code.
+    const segments = [
+      { file_path: "src/step-0.ts", start_line: 1, end_line: 1, code: "hop zero body" },
+      { file_path: "src/step-1.ts", start_line: 1, end_line: 1, code: "hop one body" },
+      { file_path: "src/step-2.ts", start_line: 1, end_line: 1, code: "hop two body" },
+    ];
+    const conceptScene = scene({
+      id: 0,
+      type: "concept",
+      segments,
+      code: segments[0].code,
+      highlight_lines: [1, 1],
+    });
+
+    chatCompletion.mockResolvedValue(JSON.stringify([]));
+    await narrateManifest(manifestOf([conceptScene]), snapshot);
+
+    const promptSent = chatCompletion.mock.calls[0][0].messages[0].content;
+    expect(promptSent).toContain("hop zero body");
+    expect(promptSent).toContain("hop one body");
+    expect(promptSent).toContain("hop two body");
+  });
+
+  it("leaves a concept scene's per-hop sentences (and their citations) untouched by narration", async () => {
+    // Regression: narration used to collapse every concept scene's sentences
+    // down to one entry — the new whole-scene narration text stamped with
+    // only hop 1's source_refs, discarding hops 2+'s citations entirely.
+    const sentences = [
+      {
+        sentence: "Follow the flow starting at a in step-0.",
+        source_refs: [{ file_path: "src/step-0.ts", start_line: 1, end_line: 1, symbol_name: "a" }],
+        on_screen_focus: ["a"],
+      },
+      {
+        sentence: "...which leads to b in step-1.",
+        source_refs: [{ file_path: "src/step-1.ts", start_line: 1, end_line: 1, symbol_name: "b" }],
+        on_screen_focus: ["b"],
+      },
+    ];
+    const conceptScene = scene({
+      id: 0,
+      type: "concept",
+      segments: [
+        { file_path: "src/step-0.ts", start_line: 1, end_line: 1, code: "a" },
+        { file_path: "src/step-1.ts", start_line: 1, end_line: 1, code: "b" },
+      ],
+      sentences,
+    });
+
+    chatCompletion.mockResolvedValue(
+      JSON.stringify([{ id: 0, narration: "New whole-scene narration." }]),
+    );
+
+    const result = await narrateManifest(manifestOf([conceptScene]), snapshot);
+
+    expect(result.scenes[0].narration_text).toBe("New whole-scene narration.");
+    expect(result.scenes[0].sentences).toEqual(sentences);
+  });
+
   it("returns the deterministic manifest untouched when narration fails", async () => {
     chatCompletion.mockRejectedValue(new Error("network down"));
     const original = manifestOf([scene({ id: 0 })]);

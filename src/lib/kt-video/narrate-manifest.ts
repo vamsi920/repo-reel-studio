@@ -18,6 +18,22 @@ interface NarratableScene {
 }
 
 function excerptFor(scene: KtScene): string {
+  // A "concept" scene's top-level `code`/`highlight_lines` are only ever
+  // the first hop's (see build-manifest's buildConceptScene) — using them
+  // here would show the LLM hop 1's code while still asking it to narrate
+  // every hop named in `focus_symbols`, inviting it to invent detail for
+  // hops it never saw. `segments` carries every hop's real, already-windowed
+  // excerpt, so use all of them.
+  if (scene.type === "concept" && scene.segments?.length) {
+    return scene.segments
+      .map((seg) => {
+        const label = seg.symbol
+          ? `${seg.file_path} (${seg.symbol})`
+          : seg.file_path;
+        return `// ${label}\n${seg.code}`;
+      })
+      .join("\n\n");
+  }
   if (!scene.code) return "";
   const lines = scene.code.split("\n");
   const [start, end] = scene.highlight_lines;
@@ -148,9 +164,20 @@ export async function narrateManifest(
       narration_text: narration,
       // Grounding (source_refs/on_screen_focus) stays exactly what the
       // deterministic builder computed — only the spoken text changes.
-      sentences: scene.sentences.length
-        ? [{ ...scene.sentences[0], sentence: narration }]
-        : [{ sentence: narration, source_refs: [], on_screen_focus: [] }],
+      // A multi-hop (concept) scene has one sentence per hop, each with its
+      // own real citation; the LLM returns a single narration for the whole
+      // scene, so there's no honest per-hop split to write back. Collapsing
+      // to one entry there would keep hop 1's citation while relabeling it
+      // with prose about every hop — leave those sentences exactly as the
+      // deterministic builder produced them instead.
+      sentences:
+        scene.sentences.length <= 1
+          ? [
+              scene.sentences[0]
+                ? { ...scene.sentences[0], sentence: narration }
+                : { sentence: narration, source_refs: [], on_screen_focus: [] },
+            ]
+          : scene.sentences,
       durationInFrames: Math.round(duration_seconds * FPS),
     };
   });

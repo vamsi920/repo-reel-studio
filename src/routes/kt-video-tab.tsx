@@ -17,6 +17,10 @@ const MAX_SELECTABLE_FILES = 8;
 export function useSelectedFileContents(paths: string[]): {
   contents: Record<string, string>;
   isLoading: boolean;
+  /** Selected paths that settled without usable text (read error, or a
+   * binary/image/pdf file) — silently absent from `contents` otherwise,
+   * with no signal to the caller that a checked file was dropped. */
+  unavailablePaths: Set<string>;
 } {
   // Hook-count is stable across renders for a fixed MAX_SELECTABLE_FILES —
   // we always call the same number of hooks, just with null paths for
@@ -76,7 +80,35 @@ export function useSelectedFileContents(paths: string[]): {
 
   const isLoading = slots.some((path, i) => path && results[i].isLoading);
 
-  return { contents, isLoading };
+  const unavailablePaths = useMemo(() => {
+    const out = new Set<string>();
+    slots.forEach((path, i) => {
+      const result = results[i];
+      const isText = result.data?.kind === "text" && result.data.text != null;
+      if (path && !result.isLoading && !isText) out.add(path);
+    });
+    return out;
+  }, [
+    slots,
+    results[0].data,
+    results[0].isLoading,
+    results[1].data,
+    results[1].isLoading,
+    results[2].data,
+    results[2].isLoading,
+    results[3].data,
+    results[3].isLoading,
+    results[4].data,
+    results[4].isLoading,
+    results[5].data,
+    results[5].isLoading,
+    results[6].data,
+    results[6].isLoading,
+    results[7].data,
+    results[7].isLoading,
+  ]);
+
+  return { contents, isLoading, unavailablePaths };
 }
 
 function KtVideoTab() {
@@ -98,8 +130,11 @@ function KtVideoTab() {
   const effectiveSelected =
     selected ?? changedPaths.slice(0, MAX_SELECTABLE_FILES);
 
-  const { contents, isLoading: filesLoading } =
-    useSelectedFileContents(effectiveSelected);
+  const {
+    contents,
+    isLoading: filesLoading,
+    unavailablePaths,
+  } = useSelectedFileContents(effectiveSelected);
 
   const manifest = useMemo(
     () =>
@@ -177,6 +212,7 @@ function KtVideoTab() {
                 .slice(0, 200)
                 .map((path) => {
                   const isChecked = effectiveSelected.includes(path);
+                  const isUnavailable = isChecked && unavailablePaths.has(path);
                   return (
                     <li key={path}>
                       <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]">
@@ -188,6 +224,11 @@ function KtVideoTab() {
                         <span className="truncate" title={path}>
                           {path}
                         </span>
+                        {isUnavailable && (
+                          <span className="shrink-0 text-[var(--oh-danger)]">
+                            {t(I18nKey.KT$VIDEO_TAB_FILE_UNAVAILABLE)}
+                          </span>
+                        )}
                       </label>
                     </li>
                   );

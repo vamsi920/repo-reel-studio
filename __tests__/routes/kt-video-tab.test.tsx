@@ -86,4 +86,52 @@ describe("useSelectedFileContents", () => {
     expect(result.current.isLoading).toBe(true);
     expect(result.current.contents).toEqual({});
   });
+
+  it("does not report a still-loading file as unavailable", () => {
+    fileResultsMock.set("a.ts", {
+      isLoading: true,
+      data: undefined as unknown as { kind: string; text: string | null },
+    });
+
+    const { result } = renderHook(() => useSelectedFileContents(["a.ts"]));
+
+    expect(result.current.unavailablePaths.has("a.ts")).toBe(false);
+  });
+
+  it("reports a selected file as unavailable once it settles with a read error", () => {
+    fileResultsMock.set("missing.ts", {
+      isLoading: false,
+      data: undefined as unknown as { kind: string; text: string | null },
+    });
+
+    const { result } = renderHook(() =>
+      useSelectedFileContents(["missing.ts"]),
+    );
+
+    expect(result.current.unavailablePaths.has("missing.ts")).toBe(true);
+    expect(result.current.contents).toEqual({});
+  });
+
+  it("reports a selected binary file as unavailable rather than silently dropping it", () => {
+    fileResultsMock.set("logo.png", {
+      isLoading: false,
+      data: { kind: "image", text: null },
+    });
+
+    const { result } = renderHook(() => useSelectedFileContents(["logo.png"]));
+
+    expect(result.current.unavailablePaths.has("logo.png")).toBe(true);
+    expect(result.current.contents).toEqual({});
+  });
+
+  it("does not report a successfully loaded text file as unavailable", () => {
+    fileResultsMock.set("a.ts", {
+      isLoading: false,
+      data: { kind: "text", text: "export const a = 1;" },
+    });
+
+    const { result } = renderHook(() => useSelectedFileContents(["a.ts"]));
+
+    expect(result.current.unavailablePaths.has("a.ts")).toBe(false);
+  });
 });

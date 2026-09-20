@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import {
@@ -41,6 +42,17 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
   const setProgress = useKnowledgeStore((s) => s.setProgress);
   const setReady = useKnowledgeStore((s) => s.setReady);
   const setError = useKnowledgeStore((s) => s.setError);
+
+  // isDue below is computed at render time from Date.now(), which nothing
+  // else here re-renders for — a page left open past its cadence threshold
+  // would keep showing "Regenerate" until some unrelated re-render happened
+  // to land after the threshold passed. Tick once a minute (cadences are
+  // measured in days) so it flips on its own.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => forceTick((n) => n + 1), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!state?.knowledge) return null;
 

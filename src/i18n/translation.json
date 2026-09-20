@@ -40153,6 +40153,23 @@
     "tr": "Loading file content…",
     "uk": "Loading file content…"
   },
+  "KT$VIDEO_TAB_FILE_UNAVAILABLE": {
+    "en": "couldn't load",
+    "ja": "couldn't load",
+    "zh-CN": "couldn't load",
+    "zh-TW": "couldn't load",
+    "ko-KR": "couldn't load",
+    "no": "couldn't load",
+    "ar": "couldn't load",
+    "de": "couldn't load",
+    "fr": "couldn't load",
+    "it": "couldn't load",
+    "pt": "couldn't load",
+    "es": "couldn't load",
+    "ca": "couldn't load",
+    "tr": "couldn't load",
+    "uk": "couldn't load"
+  },
   "KT$NARRATION_TOGGLE_LABEL": {
     "en": "Narration",
     "ja": "Narration",
