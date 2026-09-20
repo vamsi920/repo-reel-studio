@@ -46,6 +46,24 @@ describe("RepoTreePanel", () => {
     expect(deepDepth).toBeGreaterThan(shallowDepth);
   });
 
+  it("exposes the file list to assistive tech as a labelled list", () => {
+    render(
+      <RepoTreePanel
+        scene={treeScene({
+          title: "Auth Flow",
+          tree_files: ["src/index.ts", "src/lib/util/helper.ts"],
+        })}
+        relativeFrame={20}
+      />,
+    );
+
+    const list = screen.getByRole("list", {
+      name: "Repository files for Auth Flow",
+    });
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(list).toContainElement(screen.getByText("index.ts"));
+  });
+
   it("shows no overflow line when every in-scope file is listed", () => {
     render(
       <RepoTreePanel

@@ -13,7 +13,7 @@ import { ConceptPanel } from "./concept-panel";
 
 /* eslint-disable i18next/no-literal-string -- Remotion composition chrome */
 
-function getActiveLines(
+export function getActiveLines(
   scene: KtScene,
   maxLines: number,
 ): {

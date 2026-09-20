@@ -34,6 +34,8 @@ export function RepoTreePanel({
       }}
     >
       <div
+        role="list"
+        aria-label={`Repository files for ${scene.title}`}
         style={{
           padding: "16px 24px",
           fontFamily: "'IBM Plex Mono', Menlo, monospace",
@@ -47,6 +49,7 @@ export function RepoTreePanel({
           return (
             <div
               key={path}
+              role="listitem"
               style={{
                 paddingLeft: depth * 18,
                 color: "rgba(230,235,240,0.82)",

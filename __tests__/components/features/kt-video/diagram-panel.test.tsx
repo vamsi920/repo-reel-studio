@@ -50,6 +50,9 @@ describe("DiagramPanel", () => {
 
     expect(screen.getByText("Rendering diagram…")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("ok")).toBeInTheDocument());
+    expect(
+      screen.getByRole("img", { name: "Auth Flow diagram" }),
+    ).toBeInTheDocument();
   });
 
   it("says so when mermaid rejects the source instead of spinning forever", async () => {

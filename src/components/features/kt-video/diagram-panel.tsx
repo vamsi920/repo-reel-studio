@@ -116,6 +116,8 @@ export function DiagramPanel({
         // Trusted, locally-rendered SVG from mermaid.render() — not user HTML.
 
         <div
+          role="img"
+          aria-label={`${scene.title} diagram`}
           style={{ width: "100%", maxWidth: 900 }}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
