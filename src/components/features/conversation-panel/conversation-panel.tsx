@@ -364,17 +364,24 @@ export function ConversationPanel({
   );
 
   React.useEffect(() => {
-    if (!isFetched) {
+    // Only prune once every page has been loaded (`hasNextPage` is false) —
+    // pruning against a partial first page would unpin a real, still-existing
+    // conversation just because it isn't among the most-recently-updated
+    // `limit` rows yet. Archived IDs are intentionally not pruned here at
+    // all, for the same underlying reason.
+    if (!isFetched || hasNextPage) {
       return;
     }
-    // Prune pins against the unfiltered loaded pages so archived-but-still-
-    // pinned rows are not treated as missing. Archived IDs are intentionally
-    // not pruned here — pagination would otherwise drop archives that are not
-    // on the currently loaded pages and let them reappear in the list.
     const loadedIds =
       data?.pages.flatMap((page) => page.items.map((item) => item.id)) ?? [];
     pruneMissingPinnedConversations(activeBackend.id, loadedIds);
-  }, [activeBackend.id, data, isFetched, pruneMissingPinnedConversations]);
+  }, [
+    activeBackend.id,
+    data,
+    hasNextPage,
+    isFetched,
+    pruneMissingPinnedConversations,
+  ]);
 
   React.useEffect(() => {
     if (pinnedIds.length === 0) {

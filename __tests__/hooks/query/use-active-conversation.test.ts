@@ -247,3 +247,55 @@ describe("useActiveConversation — refetchInterval callback", () => {
     expect(result).toBe(30000);
   });
 });
+
+describe("useActiveConversation — ConversationService sync", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /**
+   * Regression: the sync effect's dependency array only listed
+   * `conversationId`, `isFetched`, and `execution_status` — not the actual
+   * `data` it reads. While the sandbox is starting, `execution_status` can
+   * stay constant across several 3 s poll ticks while `conversation_url`/
+   * `session_api_key` populate on a later tick. With the narrow deps, that
+   * later, complete snapshot never reached `ConversationService`, leaving
+   * callers (uploadFiles, getVSCodeUrl) reading a stale null session key.
+   */
+  it("re-syncs ConversationService.currentConversation when data changes without execution_status changing", () => {
+    let currentData: AppConversation = makeQuery({
+      conversation_url: null,
+      session_api_key: null,
+      execution_status: ExecutionStatus.RUNNING,
+    }).state.data as AppConversation;
+
+    mockUseUserConversation.mockImplementation(() => ({
+      data: currentData,
+      isLoading: false,
+      isPending: false,
+      isFetched: true,
+      error: null,
+      isError: false,
+    }));
+
+    const { rerender } = renderHook(() => useActiveConversation());
+
+    expect(mockSetCurrentConversation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ conversation_url: null, session_api_key: null }),
+    );
+
+    // A later poll tick resolves with the sandbox's real URL/key, but
+    // execution_status is unchanged.
+    currentData = makeQuery({
+      conversation_url: "https://sandbox.example.com/api/conversations/conv-1",
+      session_api_key: "secret-key",
+      execution_status: ExecutionStatus.RUNNING,
+    }).state.data as AppConversation;
+
+    rerender();
+
+    expect(mockSetCurrentConversation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ session_api_key: "secret-key" }),
+    );
+  });
+});

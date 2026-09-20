@@ -37,10 +37,11 @@ export const useActiveConversation = () => {
   useEffect(() => {
     const conversation = userConversation.data;
     ConversationService.setCurrentConversation(conversation || null);
-  }, [
-    conversationId,
-    userConversation.isFetched,
-    userConversation?.data?.execution_status,
-  ]);
+    // Depend on the actual data object, not a narrower subset of its fields:
+    // this fast-polls every 3s specifically because conversation_url/
+    // session_api_key/title can populate on a later tick without
+    // execution_status changing, and callers that read the cached singleton
+    // (uploadFiles, getVSCodeUrl) need that later, complete snapshot.
+  }, [conversationId, userConversation.data]);
   return userConversation;
 };

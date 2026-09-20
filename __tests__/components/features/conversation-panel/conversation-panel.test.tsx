@@ -2395,4 +2395,56 @@ describe("ConversationPanel", () => {
       within(pinnedSection).getByTestId("conversation-panel-pinned-view-more"),
     ).toHaveTextContent("CONVERSATION_PANEL$MORE");
   });
+
+  it("does not unpin a conversation that only lives on an unloaded page", async () => {
+    // The first page doesn't include the pinned conversation, but another
+    // page does (hasNextPage stays true) — pruning against just the loaded
+    // subset would incorrectly treat it as deleted.
+    vi.spyOn(
+      AgentServerConversationService,
+      "searchConversations",
+    ).mockResolvedValue({
+      items: [...mockConversations],
+      next_page_id: "page-2",
+    });
+    usePinnedConversationsStore
+      .getState()
+      .pinConversation("default-local", "not-loaded-yet");
+
+    renderConversationPanel();
+
+    await screen.findAllByTestId("conversation-card");
+    expect(screen.getByTestId("load-more-conversations")).toBeInTheDocument();
+
+    expect(
+      usePinnedConversationsStore.getState().pinsByBackendId["default-local"],
+    ).toContain("not-loaded-yet");
+  });
+
+  it("unpins a conversation once every page has loaded and it's still missing", async () => {
+    // With a single, fully-loaded page (no next_page_id), a pin that still
+    // isn't among the loaded ids really is gone and should be pruned.
+    vi.spyOn(
+      AgentServerConversationService,
+      "searchConversations",
+    ).mockResolvedValue({
+      items: [...mockConversations],
+      next_page_id: null,
+    });
+    usePinnedConversationsStore
+      .getState()
+      .pinConversation("default-local", "deleted-conversation");
+
+    renderConversationPanel();
+
+    await screen.findAllByTestId("conversation-card");
+
+    await waitFor(() => {
+      expect(
+        usePinnedConversationsStore.getState().pinsByBackendId[
+          "default-local"
+        ],
+      ).not.toContain("deleted-conversation");
+    });
+  });
 });
