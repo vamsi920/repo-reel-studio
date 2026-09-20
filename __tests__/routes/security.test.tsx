@@ -16,6 +16,7 @@ import {
 import {
   SECURITY_MILESTONE_COPY,
   buildSecurityActivityEvent,
+  type SecurityMilestoneKind,
 } from "#/lib/security/security-activity";
 
 function renderSecurity(initialPath = "/security") {
@@ -130,6 +131,25 @@ describe("Security route", () => {
     ).toBe(screen.getByTestId("security-future-areas"));
   });
 
+  it("lists every severity in the legend, worst-first, with its own label", () => {
+    // Regression: `SEVERITY_KEY` maps each `SecuritySeverity` to an `I18nKey`
+    // by hand; a copy/paste mistake there (e.g. swapping HIGH and MEDIUM)
+    // would previously slip past every test, since nothing asserted the
+    // legend's actual item order or content beyond its accessible name.
+    renderSecurity();
+
+    const items = screen
+      .getByTestId("security-severity-legend")
+      .querySelectorAll("li");
+    expect(Array.from(items).map((item) => item.textContent)).toEqual([
+      I18nKey.SECURITY$SEVERITY_CRITICAL,
+      I18nKey.SECURITY$SEVERITY_HIGH,
+      I18nKey.SECURITY$SEVERITY_MEDIUM,
+      I18nKey.SECURITY$SEVERITY_LOW,
+      I18nKey.SECURITY$SEVERITY_INFO,
+    ]);
+  });
+
   it("lists every future area", () => {
     renderSecurity();
 
@@ -161,9 +181,12 @@ describe("Security route", () => {
       seedRepository();
       renderSecurity();
 
-      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
-        "acme/api@abcdef1",
-      );
+      const scopeText = screen.getByTestId("security-workspace-scope");
+      expect(scopeText).toHaveTextContent("acme/api@abcdef1");
+      // `role="status"` so a screen reader hears the newly-scoped repository
+      // when the picker below changes it, the same way the sibling
+      // no-repositories/not-connected states already announce themselves.
+      expect(scopeText).toHaveAttribute("role", "status");
     });
 
     it("honours the ?repository= selection", () => {
@@ -257,9 +280,12 @@ describe("Security route", () => {
       await user.selectOptions(select, "acme/web@main");
 
       expect(select).toHaveValue("acme/web@main");
-      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
-        "acme/web@abcdef1",
-      );
+      const scopeText = screen.getByTestId("security-workspace-scope");
+      expect(scopeText).toHaveTextContent("acme/web@abcdef1");
+      // Regression: switching repositories via the picker must still land on
+      // the announced (role="status") element, not a re-render that drops it.
+      expect(scopeText).toHaveAttribute("role", "status");
+      expect(screen.getByRole("status")).toBe(scopeText);
     });
 
     it("disambiguates two connected branches of the same repository by branch", async () => {
@@ -384,6 +410,31 @@ describe("Security activity contract", () => {
       ].sort(),
     );
   });
+
+  it.each(Object.keys(SECURITY_MILESTONE_COPY) as SecurityMilestoneKind[])(
+    "builds %s from its exact SECURITY_MILESTONE_COPY entry",
+    (kind) => {
+      // Regression: only 3 of the 5 milestone kinds ("scan.started",
+      // "scan.failed", "findings.ready") had a built-event assertion; a typo
+      // in the other two entries' `status`/`title` (e.g.
+      // "dependencies.analyzed", "remediation.verified") would ship unnoticed.
+      const event = buildSecurityActivityEvent(
+        {
+          workspaceId: "/workspace/api",
+          repositoryId: "acme/api@main",
+          commitSha: "abcdef1234567890",
+        },
+        kind,
+        "2026-08-19T00:00:00.000Z",
+      );
+
+      expect(event).toMatchObject({
+        kind,
+        status: SECURITY_MILESTONE_COPY[kind].status,
+        title: SECURITY_MILESTONE_COPY[kind].title,
+      });
+    },
+  );
 
   it("builds a workspace-scoped event without publishing it", () => {
     const event = buildSecurityActivityEvent(

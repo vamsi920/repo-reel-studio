@@ -298,6 +298,7 @@ function SecurityScreen() {
           <p
             className="mt-3 font-mono text-xs text-[var(--oh-muted)]"
             data-testid="security-workspace-scope"
+            role="status"
           >
             {scope.scope.label}@{scope.scope.commitSha.slice(0, 7)}
           </p>
