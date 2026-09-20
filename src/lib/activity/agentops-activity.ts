@@ -34,6 +34,7 @@ const FEED_ACTIONS: Record<string, WorkspaceActivityStatus> = {
   "run.pause": "info",
   "run.resumed": "running",
   "run.cancel": "info",
+  "run.cancelled": "info",
 };
 
 export function toWorkspaceActivityEvent(

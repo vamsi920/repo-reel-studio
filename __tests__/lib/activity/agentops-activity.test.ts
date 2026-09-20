@@ -36,6 +36,24 @@ describe("toWorkspaceActivityEvent", () => {
     expect(userPause?.status).toBe(systemPause?.status);
   });
 
+  // Regression: collector.mjs's #closeOrphanedRuns writes "run.cancelled"
+  // (past tense) when a run's conversation was deleted out from under it;
+  // run-control.mjs writes "run.cancel" (present tense) for a user clicking
+  // Stop. FEED_ACTIONS only mapped "run.cancel", so an auto-closed run's
+  // halt silently never reached the workspace activity feed.
+  it("surfaces an auto-closed/orphaned run's cancellation, not just a user's Stop", () => {
+    const userCancel = toWorkspaceActivityEvent(
+      record({ action: "run.cancel" }),
+    );
+    const autoCancelled = toWorkspaceActivityEvent(
+      record({ action: "run.cancelled" }),
+    );
+
+    expect(userCancel).not.toBeNull();
+    expect(autoCancelled).not.toBeNull();
+    expect(autoCancelled?.status).toBe(userCancel?.status);
+  });
+
   it("drops a record whose action has no feed mapping", () => {
     expect(toWorkspaceActivityEvent(record({ action: "tool.called" }))).toBeNull();
   });
