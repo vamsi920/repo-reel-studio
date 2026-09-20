@@ -209,4 +209,45 @@ describe("ConversationConfirmationButtons", () => {
 
     expect(respondToConfirmationMock).not.toHaveBeenCalled();
   });
+
+  it("ignores a repeated keyboard shortcut once the pending action has already been submitted", () => {
+    // Regression: the `document`-level keydown listener stayed registered
+    // (its effect only re-runs when `awaitingAction`/`handleConfirmation`
+    // change, and the same event object staying pending kept both stable)
+    // even after the buttons unmount because `submittedEventIds` hides them.
+    // `handleConfirmation` itself never re-checked that guard, so a second
+    // Cmd+Enter after the first submission resent the mutation for an action
+    // that was no longer visibly awaiting a response.
+    setUpAwaitingConfirmation(mockActionEvent());
+
+    renderWithProviders(<ConversationConfirmationButtons />);
+    fireEvent.keyDown(document, { key: "Enter", metaKey: true });
+    expect(respondToConfirmationMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(document, { key: "Enter", metaKey: true });
+    expect(respondToConfirmationMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the keyboard shortcut once the agent is no longer awaiting confirmation", () => {
+    // Regression: the effect's dependency array doesn't include
+    // `curAgentState`, so if the pending action object itself hasn't
+    // changed, the listener survives a state transition away from
+    // AWAITING_USER_CONFIRMATION and `handleConfirmation` had no state
+    // check of its own to fall back on.
+    const action = mockActionEvent();
+    setUpAwaitingConfirmation(action);
+
+    const { rerender } = renderWithProviders(
+      <ConversationConfirmationButtons />,
+    );
+
+    vi.mocked(useAgentState).mockReturnValue({
+      curAgentState: AgentState.RUNNING,
+    });
+    rerender(<ConversationConfirmationButtons />);
+
+    fireEvent.keyDown(document, { key: "Enter", metaKey: true });
+
+    expect(respondToConfirmationMock).not.toHaveBeenCalled();
+  });
 });

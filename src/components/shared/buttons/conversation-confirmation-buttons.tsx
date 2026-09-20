@@ -51,7 +51,12 @@ export function ConversationConfirmationButtons() {
 
   const handleConfirmation = useCallback(
     (accept: boolean) => {
-      if (!awaitingAction || !conversation) {
+      if (
+        !awaitingAction ||
+        !conversation ||
+        curAgentState !== AgentState.AWAITING_USER_CONFIRMATION ||
+        submittedEventIds.includes(awaitingAction.id ?? "")
+      ) {
         return;
       }
 
@@ -68,7 +73,14 @@ export function ConversationConfirmationButtons() {
         accept,
       });
     },
-    [awaitingAction, conversation, addSubmittedEventId, respondToConfirmation],
+    [
+      awaitingAction,
+      conversation,
+      curAgentState,
+      submittedEventIds,
+      addSubmittedEventId,
+      respondToConfirmation,
+    ],
   );
 
   // Handle keyboard shortcuts
