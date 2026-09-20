@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { Automation } from "#/types/automation";
@@ -155,12 +155,19 @@ export function EditAutomationModal({
   const [nameError, setNameError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState<string | null>(null);
 
+  // `automation` is live react-query data, not a frozen snapshot: a
+  // background refetch (mutation-triggered invalidation, refetchOnWindowFocus)
+  // changes its reference while the modal stays open and would otherwise
+  // re-run this effect and silently overwrite an in-progress edit. Only reset
+  // on the closed -> open transition.
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
       setForm(initial);
       setNameError(null);
       setTimeoutError(null);
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen, initial]);
 
   if (!isOpen) return null;

@@ -566,6 +566,53 @@ describe("EditAutomationModal", () => {
     expect(screen.getByText("Widget name")).toBeInTheDocument();
   });
 
+  it("keeps an in-progress edit across a background refetch of the automation", async () => {
+    // Arrange -- the modal stays mounted on the detail route and receives
+    // `automation` straight from react-query. A background refetch (mutation
+    // invalidation, refetchOnWindowFocus) hands it a new object with the same
+    // id/content but a different reference; that used to re-run the "reset
+    // form on open" effect and silently overwrite whatever the user was
+    // mid-typing.
+    const onClose = vi.fn();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <ActiveBackendProvider>
+          <EditAutomationModal
+            automation={dailyAutomation}
+            isOpen
+            onClose={onClose}
+          />
+        </ActiveBackendProvider>
+      </QueryClientProvider>,
+    );
+
+    const user = userEvent.setup();
+    const nameInput = screen.getByTestId(
+      "edit-automation-name",
+    ) as HTMLInputElement;
+    await user.clear(nameInput);
+    await user.type(nameInput, "Mid-edit name");
+
+    // Act -- simulate the refetch: same data, new object reference.
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <ActiveBackendProvider>
+          <EditAutomationModal
+            automation={{ ...dailyAutomation }}
+            isOpen
+            onClose={onClose}
+          />
+        </ActiveBackendProvider>
+      </QueryClientProvider>,
+    );
+
+    // Assert -- the user's in-progress edit survives.
+    expect(nameInput.value).toBe("Mid-edit name");
+  });
+
   it("omits the timeout from the payload when it is left unchanged", async () => {
     // Arrange
     vi.mocked(AutomationService.updateAutomation).mockResolvedValue(

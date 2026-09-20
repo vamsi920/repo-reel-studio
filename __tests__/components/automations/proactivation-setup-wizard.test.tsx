@@ -45,8 +45,19 @@ vi.mock(
 vi.mock(
   "#/components/features/home/git-provider-dropdown/git-provider-dropdown",
   () => ({
-    GitProviderDropdown: () => (
-      <div data-testid="git-provider-dropdown">provider dropdown</div>
+    GitProviderDropdown: ({
+      value,
+      onChange,
+    }: {
+      value?: string | null;
+      onChange?: (provider: string) => void;
+    }) => (
+      <div data-testid="git-provider-dropdown">
+        {value}
+        <button type="button" onClick={() => onChange?.("gitlab")}>
+          switch to gitlab
+        </button>
+      </div>
     ),
   }),
 );
@@ -172,5 +183,36 @@ describe("ProactivationSetupWizard state reset on reopen", () => {
     expect(
       screen.getByText("AUTOMATIONS$PROACTIVATION_NO_REPOSITORIES"),
     ).toBeInTheDocument();
+  });
+
+  it("resets the selected git provider when reopened after switching it", async () => {
+    // Every other field in this same reset effect (repo selection, watch
+    // areas, autonomy, schedule) already starts fresh on reopen; the
+    // selected provider previously did not, so cancelling after switching
+    // providers silently kept the old choice on the next open.
+    mockUseUserProviders.mockReturnValue({ providers: ["github", "gitlab"] });
+    mockUseActiveBackend.mockReturnValue({ backend: { kind: "cloud" } });
+
+    const user = userEvent.setup();
+    const { rerender } = render(<Wizard isOpen />);
+
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+    expect(screen.getByTestId("git-provider-dropdown")).toHaveTextContent(
+      "github",
+    );
+
+    await user.click(screen.getByText("switch to gitlab"));
+    expect(screen.getByTestId("git-provider-dropdown")).toHaveTextContent(
+      "gitlab",
+    );
+
+    // Cancel out without submitting, then reopen.
+    rerender(<Wizard isOpen={false} />);
+    rerender(<Wizard isOpen />);
+
+    await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+    expect(screen.getByTestId("git-provider-dropdown")).toHaveTextContent(
+      "github",
+    );
   });
 });

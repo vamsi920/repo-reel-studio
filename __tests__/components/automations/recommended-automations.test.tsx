@@ -569,6 +569,38 @@ describe("recommended automations", () => {
     expect(mockCreateConversationMutate).not.toHaveBeenCalled();
   });
 
+  it("allows relaunching after opening a setup form, instead of leaving the launch flag stuck", () => {
+    // Arrange -- the in-flight launch guard used to only clear on the error
+    // path, never after a successful navigate. In production that's masked
+    // because navigating away unmounts the launcher, but any reuse of this
+    // component that outlives the navigation (or a test double for it, like
+    // the no-op mockNavigate here) would otherwise get permanently stuck
+    // after the very first launch.
+    mockUseSettings.mockReturnValue({
+      data: settingsWithGithubMcp(),
+    });
+
+    renderLauncher();
+
+    fireEvent.click(
+      screen.getByTestId("recommended-automation-card-github-pr-reviewer"),
+    );
+    fireEvent.click(screen.getByTestId("responder-deployment-continue-local"));
+    expect(mockNavigate).toHaveBeenNthCalledWith(
+      1,
+      "/automations/new/github-pr-reviewer",
+    );
+
+    fireEvent.click(
+      screen.getByTestId("recommended-automation-card-github-pr-reviewer"),
+    );
+    fireEvent.click(screen.getByTestId("responder-deployment-continue-local"));
+
+    // Assert -- the second selection reached navigate again instead of being
+    // silently swallowed by a launch flag that never cleared.
+    expect(mockNavigate).toHaveBeenCalledTimes(2);
+  });
+
   it("launches an automation that ships no setup form with its slash command", () => {
     // Arrange
     mockUseSettings.mockReturnValue({

@@ -105,6 +105,7 @@ export function RecommendedAutomationsLauncher({
       if (SETUP_REGISTRY.findById(automation.id)) {
         navigate?.(automationSetupPath(automation.id));
         onLaunched?.();
+        launchInFlightRef.current = false;
         return;
       }
 
@@ -131,6 +132,7 @@ export function RecommendedAutomationsLauncher({
             navigate?.(`/conversations/${conversation.conversation_id}`);
             onLaunched?.();
             window.setTimeout(() => setMessageToSend(prompt), 0);
+            launchInFlightRef.current = false;
           },
           onError: () => {
             launchInFlightRef.current = false;

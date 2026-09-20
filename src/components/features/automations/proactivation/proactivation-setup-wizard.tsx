@@ -189,6 +189,7 @@ export function ProactivationSetupWizard({
   useEffect(() => {
     if (!isOpen) return;
     setStepIndex(0);
+    setSelectedProvider(providers[0] ?? null);
     setManualRepo("");
     setSelectedRepos([]);
     setWatchAreas(new Set(["dependency", "test", "code-quality"]));
