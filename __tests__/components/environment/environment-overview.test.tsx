@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import EnvironmentOverviewScreen from "#/routes/environment-overview";
 import { createEmptyProfile } from "#/lib/environment/types/profile";
 import type { ReadinessReport } from "#/lib/environment/types/requirements";
+import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
 
 const state = vi.hoisted(() => ({
   supabaseConfigured: true,
   readiness: null as ReadinessReport | null,
+  connections: [] as ConnectionRecord[],
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -25,7 +27,7 @@ vi.mock("#/hooks/query/use-environment-profile", () => ({
 }));
 
 vi.mock("#/hooks/query/use-connections", () => ({
-  useConnections: () => ({ data: [] }),
+  useConnections: () => ({ data: state.connections }),
 }));
 
 vi.mock("#/hooks/query/use-environment-readiness", () => ({
@@ -58,9 +60,34 @@ function renderScreen() {
   );
 }
 
+function connectionRecord(
+  overrides: Partial<ConnectionRecord>,
+): ConnectionRecord {
+  return {
+    id: "conn-1",
+    orgId: "org-1",
+    capability: "source-control",
+    providerId: "github",
+    instanceKey: "default",
+    displayName: null,
+    config: {},
+    redactedSummary: {},
+    requestedScopes: [],
+    grantedScopes: [],
+    status: "ok",
+    lastProbe: null,
+    lastProbeAt: null,
+    expiresAt: null,
+    createdAt: "2026-08-30T00:00:00.000Z",
+    updatedAt: "2026-08-30T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   state.supabaseConfigured = true;
   state.readiness = baseReport();
+  state.connections = [];
 });
 
 describe("Environment overview", () => {
@@ -166,5 +193,33 @@ describe("Environment overview", () => {
       screen.getByTestId("environment-overview-unconfigured"),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("capability-grid")).not.toBeInTheDocument();
+  });
+
+  it("shows the default instance's provider on a tile, not an unrelated second instance for the same capability", () => {
+    // An org can have more than one connection for the same capability (e.g.
+    // a second GitHub Enterprise instance). The connections query has no
+    // secondary ordering, so which record comes back first is arbitrary --
+    // matching on capability alone could pick the non-default instance's
+    // logo/name next to a status pip that (via useEnvironmentReadiness)
+    // always reflects the "default" instance.
+    state.connections = [
+      connectionRecord({
+        id: "conn-ghes",
+        providerId: "github-enterprise",
+        instanceKey: "acme-ghes",
+      }),
+      connectionRecord({
+        id: "conn-github",
+        providerId: "github",
+        instanceKey: "default",
+      }),
+    ];
+    renderScreen();
+
+    const tile = screen.getByTestId("capability-tile-source-control");
+    expect(within(tile).getByText("CONNECTOR$GITHUB_NAME")).toBeInTheDocument();
+    expect(
+      within(tile).queryByText("CONNECTOR$GHES_NAME"),
+    ).not.toBeInTheDocument();
   });
 });

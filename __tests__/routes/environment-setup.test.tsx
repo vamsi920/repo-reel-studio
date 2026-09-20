@@ -222,3 +222,27 @@ describe("Environment setup studio workbench reset", () => {
     expect(useOnboardingStudioStore.getState().conversationId).toBe("conv-1");
   });
 });
+
+describe("Environment setup seed forwarding", () => {
+  it("posts a `?seed=` fix-with-agent request into an already-active conversation", async () => {
+    // The dock's Launch button always encodes the seed into this URL,
+    // whether or not a session is already running. `handleStart` (which
+    // otherwise consumes the seed as a new conversation's first message)
+    // never fires once a session is already active, so without this the
+    // seed text just vanished with no feedback.
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+    renderScreen("/environment/setup?seed=fix+my+thing");
+
+    await waitFor(() => expect(state.posted).toEqual(["fix my thing"]));
+  });
+
+  it("leaves the seed alone while there is no active session yet, so `handleStart` can still consume it", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    renderScreen("/environment/setup?seed=fix+my+thing");
+
+    await screen.findByTestId("environment-setup-start");
+    expect(state.posted).toEqual([]);
+  });
+});

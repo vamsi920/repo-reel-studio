@@ -31,8 +31,17 @@ function EnvironmentOverviewScreen() {
     // rather than a grid of blanks.
     for (const capability of CAPABILITIES) {
       const chosen = profile?.providers[capability]?.providerId;
+      // An org can have more than one connection for the same capability
+      // (e.g. a second GitHub Enterprise instance) -- match the "default"
+      // instance the same way `environment-connections.tsx` and
+      // `useEnvironmentReadiness` do. Matching on capability alone let
+      // arbitrary array order (the connections query has no secondary
+      // ordering) pick a non-default instance's provider/logo for a tile
+      // whose status pip still reflected the default instance.
       const connected = connections?.find(
-        (connection) => connection.capability === capability,
+        (connection) =>
+          connection.capability === capability &&
+          connection.instanceKey === "default",
       )?.providerId;
       const fallback = DEFAULT_PROVIDER_BY_CAPABILITY[capability];
       const resolved = chosen ?? connected ?? fallback;

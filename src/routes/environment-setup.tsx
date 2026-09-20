@@ -250,8 +250,10 @@ function EnvironmentSetupScreen() {
   // the conversation opens already knowing what the user wanted help with
   // rather than making them retype it.
   const seed = searchParams.get("seed");
+  const seedConsumedRef = React.useRef(false);
 
   const handleStart = React.useCallback(() => {
+    seedConsumedRef.current = true;
     createConversation(
       {
         query: seed || t(I18nKey.ENVIRONMENT$STUDIO_START_PROMPT),
@@ -264,6 +266,22 @@ function EnvironmentSetupScreen() {
       },
     );
   }, [createConversation, startSession, seed, t]);
+
+  // `handleStart` only runs from the "start a new session" screen below, so
+  // it never sees a `?seed=` that arrives while a session is already active
+  // (the dock's "Launch" button always encodes the seed into this URL,
+  // whether or not one is running). Left alone, that seed silently vanished:
+  // nothing ever read it once `conversationId` was already non-null. Post it
+  // as a follow-up message into the running conversation instead, once, and
+  // drop it from the URL so a refresh or remount can't resend it.
+  React.useEffect(() => {
+    if (!conversationId || !seed || seedConsumedRef.current) return;
+    seedConsumedRef.current = true;
+    createConversationResultPoster(conversationId)(seed);
+    const next = new URLSearchParams(searchParams);
+    next.delete("seed");
+    setSearchParams(next, { replace: true });
+  }, [conversationId, seed, searchParams, setSearchParams]);
 
   if (!isSupabaseConfigured) {
     return (
