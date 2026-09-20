@@ -12,6 +12,7 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { LlmSettingsScreen } from "#/routes/llm-settings";
 import { useSaveLlmProfile } from "#/hooks/mutation/use-save-llm-profile";
 import { useActivateLlmProfile } from "#/hooks/mutation/use-activate-llm-profile";
+import { useRenameLlmProfile } from "#/hooks/mutation/use-rename-llm-profile";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { useSettings } from "#/hooks/query/use-settings";
 import { useAgentSettingsSchema } from "#/hooks/query/use-agent-settings-schema";
@@ -89,6 +90,7 @@ export function LlmSettingsLocalView() {
   const { setHideSectionHeader } = useSettingsSectionHeader();
   const saveProfile = useSaveLlmProfile();
   const activateProfile = useActivateLlmProfile();
+  const renameProfile = useRenameLlmProfile();
   const { data: profilesData } = useLlmProfiles();
   const { data: settings } = useSettings();
   const { data: agentSchema } = useAgentSettingsSchema(
@@ -334,9 +336,15 @@ export function LlmSettingsLocalView() {
 
     setIsSaving(true);
     try {
-      // If editing and name changed, rename the profile first
+      // If editing and name changed, rename the profile first. Goes through
+      // the mutation hook (not the raw service) so its onSuccess can
+      // re-point settings.title_llm_profile at the new name when it was
+      // pointing at the profile being renamed.
       if (isRename) {
-        await ProfilesService.renameProfile(originalName, trimmedName);
+        await renameProfile.mutateAsync({
+          name: originalName,
+          newName: trimmedName,
+        });
       }
 
       await saveProfile.mutateAsync({
@@ -375,6 +383,7 @@ export function LlmSettingsLocalView() {
     profilesData?.active_profile,
     saveProfile,
     activateProfile,
+    renameProfile,
     t,
     handleBackToList,
   ]);

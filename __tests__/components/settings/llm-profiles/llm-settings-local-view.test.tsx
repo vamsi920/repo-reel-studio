@@ -11,6 +11,7 @@ import {
 import * as useLlmProfilesHook from "#/hooks/query/use-llm-profiles";
 import * as useActivateLlmProfileHook from "#/hooks/mutation/use-activate-llm-profile";
 import * as useSaveLlmProfileHook from "#/hooks/mutation/use-save-llm-profile";
+import * as useRenameLlmProfileHook from "#/hooks/mutation/use-rename-llm-profile";
 import ProfilesService from "#/api/profiles-service/profiles-service.api";
 
 vi.mock("#/routes/llm-settings", async () => {
@@ -115,6 +116,7 @@ vi.mock("#/routes/llm-settings", async () => {
 vi.mock("#/hooks/query/use-llm-profiles");
 vi.mock("#/hooks/mutation/use-activate-llm-profile");
 vi.mock("#/hooks/mutation/use-save-llm-profile");
+vi.mock("#/hooks/mutation/use-rename-llm-profile");
 vi.mock("#/api/profiles-service/profiles-service.api");
 
 const mockProfiles = [
@@ -183,6 +185,14 @@ function createMockMutationReturn<T>(
 describe("LlmSettingsLocalView", () => {
   const mockActivateMutateAsync = vi.fn();
   const mockSaveMutateAsync = vi.fn();
+  // Calls through to the (mocked) ProfilesService.renameProfile so existing
+  // assertions on that call, and the real rename API contract, still hold —
+  // this component must go through the mutation hook (not the raw service)
+  // so the hook's onSuccess can re-sync settings.title_llm_profile.
+  const mockRenameMutateAsync = vi.fn(
+    ({ name, newName }: { name: string; newName: string }) =>
+      ProfilesService.renameProfile(name, newName),
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -201,6 +211,12 @@ describe("LlmSettingsLocalView", () => {
       createMockMutationReturn<
         ReturnType<typeof useSaveLlmProfileHook.useSaveLlmProfile>
       >(mockSaveMutateAsync),
+    );
+
+    vi.mocked(useRenameLlmProfileHook.useRenameLlmProfile).mockReturnValue(
+      createMockMutationReturn<
+        ReturnType<typeof useRenameLlmProfileHook.useRenameLlmProfile>
+      >(mockRenameMutateAsync),
     );
   });
 
@@ -596,6 +612,15 @@ describe("LlmSettingsLocalView", () => {
           "gpt-4-profile",
           "my-renamed-profile",
         );
+      });
+
+      // Verify the rename went through the mutation hook, not a raw
+      // ProfilesService call — its onSuccess is what re-points
+      // settings.title_llm_profile at the new name when it was pointing at
+      // the profile being renamed. Bypassing the hook silently drops that.
+      expect(mockRenameMutateAsync).toHaveBeenCalledWith({
+        name: "gpt-4-profile",
+        newName: "my-renamed-profile",
       });
 
       // Verify save was called with the new name
