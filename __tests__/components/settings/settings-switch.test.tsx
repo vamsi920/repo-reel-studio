@@ -61,4 +61,30 @@ describe("SettingsSwitch", () => {
 
     expect(screen.getByTestId("test-switch")).not.toBeChecked();
   });
+
+  it("should resync to a changed defaultIsToggled prop (e.g. a background settings refetch)", () => {
+    const { rerender } = render(
+      <SettingsSwitch
+        testId="test-switch"
+        onToggle={vi.fn()}
+        defaultIsToggled={false}
+      >
+        Test Switch
+      </SettingsSwitch>,
+    );
+
+    expect(screen.getByTestId("test-switch")).not.toBeChecked();
+
+    rerender(
+      <SettingsSwitch
+        testId="test-switch"
+        onToggle={vi.fn()}
+        defaultIsToggled
+      >
+        Test Switch
+      </SettingsSwitch>,
+    );
+
+    expect(screen.getByTestId("test-switch")).toBeChecked();
+  });
 });

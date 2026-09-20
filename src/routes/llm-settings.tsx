@@ -490,7 +490,11 @@ export function LlmSettingsScreen({
           llm.auth_type = LLM_AUTH_TYPE_API_KEY;
           llm.subscription_vendor = null;
         }
-        if (context.view === "basic" && llm.model !== undefined) {
+        if (
+          context.view === "basic" &&
+          llm.model !== undefined &&
+          llm.model !== persistedLlmSettings?.model
+        ) {
           llm.base_url = getSchemaFieldDefaultValue(schema, "llm.base_url");
         }
       }
@@ -498,7 +502,7 @@ export function LlmSettingsScreen({
       agentSettings.llm = llm;
       return { agent_settings_diff: agentSettings };
     },
-    [schema, subscriptionModels],
+    [persistedLlmSettings, schema, subscriptionModels],
   );
 
   return (

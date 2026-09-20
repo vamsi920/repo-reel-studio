@@ -30,6 +30,14 @@ export function SettingsSwitch({
   const { t } = useTranslation("openhands");
   const [isToggled, setIsToggled] = React.useState(defaultIsToggled ?? false);
 
+  // Resync when the server value changes under us (a background refetch, a
+  // change made in another tab, etc.) — otherwise the uncontrolled switch
+  // keeps showing whatever it last rendered even after `defaultIsToggled`
+  // moves on.
+  React.useEffect(() => {
+    setIsToggled(defaultIsToggled ?? false);
+  }, [defaultIsToggled]);
+
   const handleToggle = (value: boolean) => {
     if (isDisabled) return;
     setIsToggled(value);

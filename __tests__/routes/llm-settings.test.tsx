@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 // Import the named export LlmSettingsScreen directly for testing the form component.
@@ -18,6 +19,17 @@ vi.mock("#/hooks/query/use-llm-profiles");
 // who can manage so the manager renders its full (editable) surface.
 vi.mock("#/hooks/use-can-manage-org-profiles", () => ({
   useCanManageOrgProfiles: () => true,
+}));
+// Stub the provider/model search queries the ModelSelector combobox depends
+// on so its dropdown can be driven deterministically instead of hitting the
+// real search endpoints.
+vi.mock("#/hooks/query/use-search-providers", () => ({
+  useSearchProviders: () => ({ data: [{ name: "openai", verified: true }] }),
+}));
+vi.mock("#/hooks/query/use-provider-models", () => ({
+  useProviderModels: () => ({
+    data: [{ provider: "openai", name: "gpt-4o", verified: true }],
+  }),
 }));
 
 function buildSettings(overrides: Partial<Settings> = {}): Settings {
@@ -179,6 +191,51 @@ describe("LlmSettingsScreen", () => {
     const llmPayload = (payload.agent_settings_diff as Record<string, unknown>)
       .llm as Record<string, unknown>;
     expect(llmPayload.api_key).toBe("test-api-key");
+    expect(llmPayload).not.toHaveProperty("base_url");
+  });
+
+  it("does not clear an existing base URL on Basic save when the model selector re-fires the same model (no-op reselection)", async () => {
+    const user = userEvent.setup();
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({
+        llm_model: "openai/gpt-4o",
+        llm_base_url: "https://custom.example/v1",
+        agent_settings: {
+          ...MOCK_DEFAULT_USER_SETTINGS.agent_settings,
+          llm: {
+            model: "openai/gpt-4o",
+            api_key: null,
+            base_url: "https://custom.example/v1",
+          },
+        },
+      }),
+    );
+
+    renderLlmSettingsScreen();
+
+    await screen.findByTestId("llm-settings-screen");
+    fireEvent.click(screen.getByTestId("sdk-section-basic-toggle"));
+
+    // HeroUI's Autocomplete fires onSelectionChange whenever an option is
+    // clicked, even when it's the option that's already selected -- so
+    // reopening the model dropdown and clicking "gpt-4o" again marks
+    // `llm.model` dirty without the value actually changing.
+    const modelInput = await screen.findByTestId("llm-model-input");
+    await user.click(modelInput);
+    await user.click(await screen.findByText("gpt-4o"));
+
+    fireEvent.click(screen.getByTestId("save-button"));
+
+    await waitFor(() => expect(saveSettingsSpy).toHaveBeenCalled());
+    const payload = saveSettingsSpy.mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    const llmPayload = (payload.agent_settings_diff as Record<string, unknown>)
+      .llm as Record<string, unknown>;
     expect(llmPayload).not.toHaveProperty("base_url");
   });
 
