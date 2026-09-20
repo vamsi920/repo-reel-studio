@@ -43,6 +43,15 @@ export interface JiraTriggersRepository {
   hasWebhookRegistration(): Promise<boolean>;
 }
 
+// A genuine query failure (RLS denial, network error) previously resolved
+// identically to "nothing happened" -- `false`/`null`, same as a legitimate
+// empty result -- with no console signal at all. Same fix already applied to
+// connections-repository.ts / github-connections-repository.ts /
+// jira-connections-repository.ts.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[jira-triggers-repository] ${step} failed`, error);
+}
+
 function toTrigger(row: Record<string, unknown>): JiraTrigger {
   return {
     id: row.id as string,
@@ -70,7 +79,11 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    if (error || !data) return [];
+    if (error) {
+      logFailure("listTriggers", error);
+      return [];
+    }
+    if (!data) return [];
     return data.map(toTrigger);
   }
 
@@ -94,7 +107,11 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
       })
       .select("*")
       .single();
-    if (error || !data) return null;
+    if (error) {
+      logFailure("createTrigger", error);
+      return null;
+    }
+    if (!data) return null;
     return toTrigger(data);
   }
 
@@ -104,6 +121,7 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
       .from("jira_automation_triggers")
       .update({ enabled, updated_at: new Date().toISOString() })
       .eq("id", id);
+    if (error) logFailure("setEnabled", error);
     return !error;
   }
 
@@ -113,6 +131,7 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
       .from("jira_automation_triggers")
       .delete()
       .eq("id", id);
+    if (error) logFailure("deleteTrigger", error);
     return !error;
   }
 

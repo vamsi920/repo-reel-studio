@@ -309,7 +309,14 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
         return;
       }
 
-      await jiraTriggersRepository.createTrigger({ ...values, automationId });
+      const trigger = await jiraTriggersRepository.createTrigger({
+        ...values,
+        automationId,
+      });
+      if (!trigger) {
+        displayErrorToast(t(I18nKey.CONNECTIONS$TRIGGER_CREATE_FAILED));
+        return;
+      }
       await invalidateTriggers();
       setProjectKey("");
       setLabelFilter("");
@@ -326,7 +333,11 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
   const handleToggle = async (id: string, enabled: boolean) => {
     setPendingTriggerId(id);
     try {
-      await jiraTriggersRepository.setEnabled(id, enabled);
+      const ok = await jiraTriggersRepository.setEnabled(id, enabled);
+      if (!ok) {
+        displayErrorToast(t(I18nKey.ERROR$GENERIC));
+        return;
+      }
       await invalidateTriggers();
     } catch {
       displayErrorToast(t(I18nKey.ERROR$GENERIC));
@@ -338,7 +349,11 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
   const handleDelete = async (id: string) => {
     setPendingTriggerId(id);
     try {
-      await jiraTriggersRepository.deleteTrigger(id);
+      const ok = await jiraTriggersRepository.deleteTrigger(id);
+      if (!ok) {
+        displayErrorToast(t(I18nKey.ERROR$GENERIC));
+        return;
+      }
       await invalidateTriggers();
     } catch {
       displayErrorToast(t(I18nKey.ERROR$GENERIC));

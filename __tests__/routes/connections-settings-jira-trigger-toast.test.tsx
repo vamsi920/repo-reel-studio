@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Unlike the other connections-settings tests, this file does NOT mock
@@ -37,14 +37,16 @@ vi.mock("#/hooks/query/use-jira-issues", () => ({
   useJiraIssues: () => ({ data: [] }),
 }));
 
+const jiraTriggersRepositoryMock = vi.hoisted(() => ({
+  listTriggers: vi.fn().mockResolvedValue([]),
+  hasWebhookRegistration: vi.fn().mockResolvedValue(false),
+  createTrigger: vi.fn().mockResolvedValue(undefined),
+  setEnabled: vi.fn(),
+  deleteTrigger: vi.fn(),
+}));
+
 vi.mock("#/lib/data-platform/repositories/jira-triggers-repository", () => ({
-  jiraTriggersRepository: {
-    listTriggers: vi.fn().mockResolvedValue([]),
-    hasWebhookRegistration: vi.fn().mockResolvedValue(false),
-    createTrigger: vi.fn().mockResolvedValue(undefined),
-    setEnabled: vi.fn(),
-    deleteTrigger: vi.fn(),
-  },
+  jiraTriggersRepository: jiraTriggersRepositoryMock,
 }));
 
 vi.mock("#/api/automation-service/automation-service.api", () => ({
@@ -89,6 +91,12 @@ async function fillAndSubmitTriggerForm() {
 
 describe("Jira instant triggers add-trigger toast", () => {
   beforeEach(() => {
+    // react-hot-toast's store is a module-level singleton, independent of
+    // the React tree -- a toast raised by one test otherwise survives into
+    // the next test's freshly-mounted <Toaster />, so two tests asserting
+    // the same toast copy (e.g. two different repository-failure paths that
+    // both fall back to ERROR$GENERIC) would find more than one match.
+    toast.remove();
     state.invoke.mockReset().mockResolvedValue({ error: null });
     state.createCustomWebhook.mockReset().mockResolvedValue({
       id: "webhook-1",
@@ -97,6 +105,17 @@ describe("Jira instant triggers add-trigger toast", () => {
       webhook_secret: "secret",
       signature_header: "X-Signature",
     });
+    jiraTriggersRepositoryMock.listTriggers.mockReset().mockResolvedValue([]);
+    jiraTriggersRepositoryMock.hasWebhookRegistration
+      .mockReset()
+      .mockResolvedValue(false);
+    jiraTriggersRepositoryMock.createTrigger
+      .mockReset()
+      .mockResolvedValue({ id: "trigger-1" });
+    jiraTriggersRepositoryMock.setEnabled.mockReset().mockResolvedValue(true);
+    jiraTriggersRepositoryMock.deleteTrigger
+      .mockReset()
+      .mockResolvedValue(true);
 
     // jsdom has no window.matchMedia, and react-hot-toast's <Toaster />
     // reads it unconditionally to check prefers-reduced-motion, so mounting
@@ -146,5 +165,84 @@ describe("Jira instant triggers add-trigger toast", () => {
       expect(screen.queryByText("CONNECTIONS$TRIGGER_CREATED")).not.toBeNull();
     });
     expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue("");
+  });
+
+  // Regression: jiraTriggersRepository.createTrigger resolves to `null` on a
+  // Supabase query error (RLS denial, etc.) -- it never throws. handleAdd
+  // used to await it and show the success toast unconditionally, so a
+  // completely un-persisted trigger looked identical to a real one.
+  it("surfaces an error toast, not a false success, when the repository write itself fails", async () => {
+    jiraTriggersRepositoryMock.createTrigger.mockResolvedValue(null);
+
+    renderConnectionsScreen();
+    await fillAndSubmitTriggerForm();
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("CONNECTIONS$TRIGGER_CREATE_FAILED"),
+      ).not.toBeNull();
+    });
+    expect(screen.queryByText("CONNECTIONS$TRIGGER_CREATED")).toBeNull();
+    // Input stays so the user can retry without retyping.
+    expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue(
+      "NEOQA",
+    );
+  });
+
+  // Regression: setEnabled/deleteTrigger resolve to `false` on a Supabase
+  // query error rather than throwing, so the old try/catch never saw it and
+  // the toggle/delete looked like it silently no-oped.
+  it("surfaces an error toast when toggling a trigger fails at the repository", async () => {
+    jiraTriggersRepositoryMock.listTriggers.mockResolvedValue([
+      {
+        id: "trigger-1",
+        projectKey: "NEOQA",
+        labelFilter: null,
+        readyStatus: "Ready for Development",
+        repository: "vamsi920/neo-qa-fixture",
+        branch: null,
+        automationId: "draft-1",
+        enabled: false,
+        createdAt: "2026-09-01T00:00:00.000Z",
+      },
+    ]);
+    jiraTriggersRepositoryMock.setEnabled.mockResolvedValue(false);
+
+    renderConnectionsScreen();
+    const toggleButton = await screen.findByTestId(
+      "jira-trigger-toggle-trigger-1",
+    );
+    await userEvent.click(toggleButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText("ERROR$GENERIC")).not.toBeNull();
+    });
+  });
+
+  it("surfaces an error toast when deleting a trigger fails at the repository", async () => {
+    jiraTriggersRepositoryMock.listTriggers.mockResolvedValue([
+      {
+        id: "trigger-1",
+        projectKey: "NEOQA",
+        labelFilter: null,
+        readyStatus: "Ready for Development",
+        repository: "vamsi920/neo-qa-fixture",
+        branch: null,
+        automationId: "draft-1",
+        enabled: true,
+        createdAt: "2026-09-01T00:00:00.000Z",
+      },
+    ]);
+    jiraTriggersRepositoryMock.deleteTrigger.mockResolvedValue(false);
+
+    renderConnectionsScreen();
+    const deleteButton = await screen.findByTestId(
+      "jira-trigger-delete-trigger-1",
+    );
+    await userEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText("ERROR$GENERIC")).not.toBeNull();
+    });
   });
 });
