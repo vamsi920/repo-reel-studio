@@ -534,6 +534,7 @@ function KtList() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
+              aria-label={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
               data-testid="kt-search-input"
               className="mb-4 w-full rounded-md border border-[var(--oh-border)] bg-transparent px-3 py-2 text-sm text-[var(--oh-foreground)] placeholder:text-[var(--oh-muted)]"
             />
