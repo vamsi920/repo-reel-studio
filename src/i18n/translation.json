@@ -17492,6 +17492,23 @@
     "uk": "Знімок екрана браузера",
     "ca": "Captura de pantalla del navegador"
   },
+  "BROWSER$SCREENSHOT_INVALID": {
+    "en": "Couldn't load this screenshot",
+    "zh-CN": "无法加载此截图",
+    "zh-TW": "無法載入此截圖",
+    "ko-KR": "이 스크린샷을 불러올 수 없습니다",
+    "ja": "このスクリーンショットを読み込めませんでした",
+    "no": "Kunne ikke laste inn dette skjermbildet",
+    "ar": "تعذّر تحميل لقطة الشاشة هذه",
+    "de": "Dieser Screenshot konnte nicht geladen werden",
+    "fr": "Impossible de charger cette capture d'écran",
+    "it": "Impossibile caricare questo screenshot",
+    "pt": "Não foi possível carregar esta captura de tela",
+    "es": "No se pudo cargar esta captura de pantalla",
+    "tr": "Bu ekran görüntüsü yüklenemedi",
+    "uk": "Не вдалося завантажити цей знімок екрана",
+    "ca": "No s'ha pogut carregar aquesta captura de pantalla"
+  },
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": {
     "en": "Close",
     "zh-CN": "关闭",

@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Projektmenü öffnen",
   "ACTION_BUTTON$RESUME": "Agentenaufgabe fortsetzen",
   "BROWSER$SCREENSHOT_ALT": "Browser-Screenshot",
+  "BROWSER$SCREENSHOT_INVALID": "Dieser Screenshot konnte nicht geladen werden",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Schließen",
   "FILE_EXPLORER$UPLOAD": "Datei hochladen",
   "ACTION_MESSAGE$RUN": "Führt <cmd>{{command}}</cmd> aus",

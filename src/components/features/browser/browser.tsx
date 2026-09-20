@@ -25,7 +25,7 @@ export function BrowserPanel() {
       <BrowserChromeBar url={url} hasPage={hasPage} />
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide bg-[var(--oh-surface)]">
         {screenshotSrc ? (
-          <BrowserSnapshot src={imgSrc} />
+          <BrowserSnapshot key={imgSrc} src={imgSrc} />
         ) : (
           <EmptyBrowserMessage url={url} />
         )}

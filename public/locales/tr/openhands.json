@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Proje menüsünü aç",
   "ACTION_BUTTON$RESUME": "Ajan görevine devam et",
   "BROWSER$SCREENSHOT_ALT": "Tarayıcı ekran görüntüsü",
+  "BROWSER$SCREENSHOT_INVALID": "Bu ekran görüntüsü yüklenemedi",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Kapat",
   "FILE_EXPLORER$UPLOAD": "Dosya yükle",
   "ACTION_MESSAGE$RUN": "<cmd>{{command}}</cmd> çalıştırılıyor",

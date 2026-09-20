@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Obre el menú del projecte",
   "ACTION_BUTTON$RESUME": "Reprèn la tasca de l'agent",
   "BROWSER$SCREENSHOT_ALT": "Captura de pantalla del navegador",
+  "BROWSER$SCREENSHOT_INVALID": "No s'ha pogut carregar aquesta captura de pantalla",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Tanca",
   "FILE_EXPLORER$UPLOAD": "Carrega un fitxer",
   "ACTION_MESSAGE$RUN": "S'executa <cmd>{{command}}</cmd>",

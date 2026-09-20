@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "فتح قائمة المشروع",
   "ACTION_BUTTON$RESUME": "استئناف مهمة الوكيل",
   "BROWSER$SCREENSHOT_ALT": "لقطة شاشة المتصفح",
+  "BROWSER$SCREENSHOT_INVALID": "تعذّر تحميل لقطة الشاشة هذه",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "إغلاق",
   "FILE_EXPLORER$UPLOAD": "تحميل ملف",
   "ACTION_MESSAGE$RUN": "تشغيل <cmd>{{command}}</cmd>",

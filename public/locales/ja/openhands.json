@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "開く",
   "ACTION_BUTTON$RESUME": "再開",
   "BROWSER$SCREENSHOT_ALT": "スクリーンショット",
+  "BROWSER$SCREENSHOT_INVALID": "このスクリーンショットを読み込めませんでした",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "閉じる",
   "FILE_EXPLORER$UPLOAD": "アップロード",
   "ACTION_MESSAGE$RUN": "実行 <cmd>{{command}}</cmd>",

@@ -350,14 +350,26 @@ export interface BinaryTextSniffResult {
  * reuses the same NUL-byte sniff `useWorkspaceFileContent` applies to
  * everything else — call it only when Plain mode actually needs it
  * (`enabled`), so normal image/PDF viewing never pays this cost.
+ *
+ * `staticUrl` alone doesn't change when the agent overwrites a file's bytes
+ * in place (it's derived from the path, not the content), so the caller
+ * must also pass the same workspace mutation counter `useWorkspaceFileContent`
+ * keys on — otherwise an edit to a file already sniffed in Plain mode leaves
+ * this cached indefinitely on the pre-edit decoded text.
  */
 export function useWorkspaceFileBinaryTextSniff(
   relativePath: string | null,
   staticUrl: string | null,
   enabled: boolean,
+  workspaceMutationCount: number,
 ) {
   return useQuery<BinaryTextSniffResult>({
-    queryKey: ["workspace-file-binary-text-sniff", relativePath, staticUrl],
+    queryKey: [
+      "workspace-file-binary-text-sniff",
+      relativePath,
+      staticUrl,
+      workspaceMutationCount,
+    ],
     queryFn: async () => {
       if (!staticUrl) return { text: null };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { screen, render } from "@testing-library/react";
+import { screen, render, fireEvent } from "@testing-library/react";
 import React from "react";
 
 // Mock modules before importing the component
@@ -172,5 +172,47 @@ describe("Browser", () => {
     expect(
       screen.queryByText("BROWSER$NO_PAGE_LOADED"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows a fallback message instead of a broken image when the screenshot fails to load", () => {
+    useBrowserStore.setState({
+      url: "https://example.com",
+      screenshotSrc: "data:image/png;base64,corrupted-payload",
+    });
+
+    render(<BrowserPanel />);
+
+    const img = screen.getByAltText("BROWSER$SCREENSHOT_ALT");
+    fireEvent.error(img);
+
+    expect(img).not.toBeInTheDocument();
+    expect(screen.getByTestId("browser-snapshot-invalid")).toHaveTextContent(
+      "BROWSER$SCREENSHOT_INVALID",
+    );
+  });
+
+  it("recovers from a failed screenshot once a new one arrives", () => {
+    const badSrc = "data:image/png;base64,corrupted-payload";
+    const goodSrc =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN0uGvyHwAFCAJS091fQwAAAABJRU5ErkJggg==";
+
+    useBrowserStore.setState({
+      url: "https://example.com",
+      screenshotSrc: badSrc,
+    });
+    const { rerender } = render(<BrowserPanel />);
+    fireEvent.error(screen.getByAltText("BROWSER$SCREENSHOT_ALT"));
+    expect(screen.getByTestId("browser-snapshot-invalid")).toBeInTheDocument();
+
+    useBrowserStore.setState({
+      url: "https://example.com",
+      screenshotSrc: goodSrc,
+    });
+    rerender(<BrowserPanel />);
+
+    expect(
+      screen.queryByTestId("browser-snapshot-invalid"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByAltText("BROWSER$SCREENSHOT_ALT")).toBeInTheDocument();
   });
 });

@@ -221,6 +221,7 @@ describe("useWorkspaceFileContent", () => {
           "assets/logo.png",
           `${BASE_URL}assets/logo.png`,
           false,
+          0,
         ),
       { wrapper: makeWrapper() },
     );
@@ -248,6 +249,7 @@ describe("useWorkspaceFileContent", () => {
           "fake.png",
           `${BASE_URL}fake.png`,
           true,
+          0,
         ),
       { wrapper: makeWrapper() },
     );
@@ -261,6 +263,45 @@ describe("useWorkspaceFileContent", () => {
     expect(result.current.data).toEqual({
       text: "this is plain text, not an image",
     });
+  });
+
+  it("useWorkspaceFileBinaryTextSniff: refetches after an agent-side edit even though relativePath/staticUrl are unchanged", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(arrayBufferFromString("pre-edit text content")),
+    });
+
+    const { result, rerender } = renderHook(
+      ({ mutationCount }) =>
+        useWorkspaceFileBinaryTextSniff(
+          "fake.png",
+          `${BASE_URL}fake.png`,
+          true,
+          mutationCount,
+        ),
+      { wrapper: makeWrapper(), initialProps: { mutationCount: 0 } },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ text: "pre-edit text content" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // The agent overwrites the same path in place — staticUrl and
+    // relativePath don't change, only the workspace mutation counter does.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: () =>
+        Promise.resolve(arrayBufferFromString("post-edit text content")),
+    });
+    rerender({ mutationCount: 1 });
+
+    await waitFor(() =>
+      expect(result.current.data).toEqual({ text: "post-edit text content" }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("useWorkspaceFileBinaryTextSniff: leaves genuinely binary bytes as null", async () => {
@@ -277,6 +318,7 @@ describe("useWorkspaceFileContent", () => {
           "real.png",
           `${BASE_URL}real.png`,
           true,
+          0,
         ),
       { wrapper: makeWrapper() },
     );
@@ -290,7 +332,7 @@ describe("useWorkspaceFileContent", () => {
     const dataUrl = `data:image/png;base64,${btoa(text)}`;
 
     const { result } = renderHook(
-      () => useWorkspaceFileBinaryTextSniff("fake.png", dataUrl, true),
+      () => useWorkspaceFileBinaryTextSniff("fake.png", dataUrl, true, 0),
       { wrapper: makeWrapper() },
     );
 

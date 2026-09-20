@@ -124,6 +124,7 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
     path,
     query.data?.staticUrl ?? null,
     needsPlainTextSniff,
+    mutationCounter,
   );
 
   // `isPending` (not `isLoading`) so this also covers the disabled-query

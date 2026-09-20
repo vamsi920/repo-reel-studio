@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "열기",
   "ACTION_BUTTON$RESUME": "재개",
   "BROWSER$SCREENSHOT_ALT": "스크린샷",
+  "BROWSER$SCREENSHOT_INVALID": "이 스크린샷을 불러올 수 없습니다",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "닫기",
   "FILE_EXPLORER$UPLOAD": "업로드",
   "ACTION_MESSAGE$RUN": "실행 <cmd>{{command}}</cmd>",

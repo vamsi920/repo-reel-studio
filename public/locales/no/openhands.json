@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Åpne prosjektmeny",
   "ACTION_BUTTON$RESUME": "Fortsett agentoppgaven",
   "BROWSER$SCREENSHOT_ALT": "Nettleser skjermbilde",
+  "BROWSER$SCREENSHOT_INVALID": "Kunne ikke laste inn dette skjermbildet",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Lukk",
   "FILE_EXPLORER$UPLOAD": "Last opp fil",
   "ACTION_MESSAGE$RUN": "Kjører <cmd>{{command}}</cmd>",

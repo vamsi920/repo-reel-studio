@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Відкрити меню проекту",
   "ACTION_BUTTON$RESUME": "Відновити завдання агента",
   "BROWSER$SCREENSHOT_ALT": "Знімок екрана браузера",
+  "BROWSER$SCREENSHOT_INVALID": "Не вдалося завантажити цей знімок екрана",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Закрити",
   "FILE_EXPLORER$UPLOAD": "Завантажити файл",
   "ACTION_MESSAGE$RUN": "Виконую <cmd>{{command}}</cmd>",

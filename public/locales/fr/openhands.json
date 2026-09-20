@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Ouvrir le menu du projet",
   "ACTION_BUTTON$RESUME": "Reprendre la tâche de l'agent",
   "BROWSER$SCREENSHOT_ALT": "Capture d'écran du navigateur",
+  "BROWSER$SCREENSHOT_INVALID": "Impossible de charger cette capture d'écran",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Fermer",
   "FILE_EXPLORER$UPLOAD": "Téléverser un fichier",
   "ACTION_MESSAGE$RUN": "Exécution de <cmd>{{command}}</cmd>",

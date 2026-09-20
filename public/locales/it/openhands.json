@@ -1028,6 +1028,7 @@
   "PROJECT_MENU_CARD$OPEN": "Apri menu progetto",
   "ACTION_BUTTON$RESUME": "Riprendi il compito dell'agente",
   "BROWSER$SCREENSHOT_ALT": "Screenshot del browser",
+  "BROWSER$SCREENSHOT_INVALID": "Impossibile caricare questo screenshot",
   "ERROR_TOAST$CLOSE_BUTTON_LABEL": "Chiudi",
   "FILE_EXPLORER$UPLOAD": "Carica file",
   "ACTION_MESSAGE$RUN": "Esecuzione di <cmd>{{command}}</cmd>",
