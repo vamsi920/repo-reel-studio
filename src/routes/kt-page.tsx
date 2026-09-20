@@ -300,13 +300,11 @@ function KtPage() {
                 disabled={!speechSupported}
                 aria-pressed={narrationEnabled}
                 data-testid="kt-page-narration-toggle"
-                /* eslint-disable i18next/no-literal-string -- tooltip, not yet localized */
                 title={
                   speechSupported
-                    ? "Read each scene's narration aloud as it plays"
-                    : "Speech synthesis isn't available in this browser"
+                    ? t(I18nKey.KT$NARRATION_TOOLTIP_ENABLED)
+                    : t(I18nKey.KT$NARRATION_TOOLTIP_UNSUPPORTED)
                 }
-                /* eslint-enable i18next/no-literal-string */
                 className="flex items-center gap-1.5 rounded-md border border-[var(--oh-border)] px-3 py-1.5 text-sm text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {narrationEnabled ? (

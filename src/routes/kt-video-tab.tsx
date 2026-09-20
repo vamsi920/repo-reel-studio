@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Player, type PlayerRef } from "@remotion/player";
 import { Film, Volume2, VolumeX } from "lucide-react";
 import { useWorkspaceFiles } from "#/hooks/query/use-workspace-files";
@@ -8,8 +9,7 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { buildKtManifest } from "#/lib/kt-video/build-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
-
-/* eslint-disable i18next/no-literal-string -- KT video tab chrome pending full i18n pass */
+import { I18nKey } from "#/i18n/declaration";
 
 const MAX_SELECTABLE_FILES = 8;
 
@@ -80,6 +80,7 @@ export function useSelectedFileContents(paths: string[]): {
 }
 
 function KtVideoTab() {
+  const { t } = useTranslation("openhands");
   const { data: conversation } = useActiveConversation();
   const gitChanges = useUnifiedGetGitChanges();
   const workspaceFiles = useWorkspaceFiles();
@@ -135,11 +136,12 @@ function KtVideoTab() {
       <div className="flex items-center gap-2 border-b border-[var(--oh-border)] px-3 py-2">
         <Film className="size-4 text-[var(--oh-muted)]" aria-hidden />
         <span className="text-sm font-medium text-[var(--oh-foreground)]">
-          KT Video
+          {t(I18nKey.KT$VIDEO_TAB_TITLE)}
         </span>
         <span className="text-xs text-[var(--oh-muted)]">
-          Deterministic walkthrough, rendered from real files — pick up to{" "}
-          {MAX_SELECTABLE_FILES}
+          {t(I18nKey.KT$VIDEO_TAB_DESCRIPTION, {
+            count: MAX_SELECTABLE_FILES,
+          })}
         </span>
         <button
           type="button"
@@ -148,8 +150,8 @@ function KtVideoTab() {
           aria-pressed={narrationEnabled}
           title={
             speechSupported
-              ? "Read each scene's narration aloud as it plays"
-              : "Speech synthesis isn't available in this browser"
+              ? t(I18nKey.KT$NARRATION_TOOLTIP_ENABLED)
+              : t(I18nKey.KT$NARRATION_TOOLTIP_UNSUPPORTED)
           }
           data-testid="kt-video-narration-toggle"
           className="ml-auto flex items-center gap-1.5 rounded-md border border-[var(--oh-border)] px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -159,7 +161,7 @@ function KtVideoTab() {
           ) : (
             <VolumeX className="size-3.5" aria-hidden />
           )}
-          Narration
+          {t(I18nKey.KT$NARRATION_TOGGLE_LABEL)}
         </button>
       </div>
 
@@ -167,7 +169,7 @@ function KtVideoTab() {
         <aside className="w-64 shrink-0 overflow-y-auto border-r border-[var(--oh-border)] p-2 custom-scrollbar-always">
           {workspaceFiles.isLoading ? (
             <p className="px-2 py-1 text-xs text-[var(--oh-muted)]">
-              Loading files…
+              {t(I18nKey.KT$VIDEO_TAB_LOADING_FILES)}
             </p>
           ) : (
             <ul className="flex flex-col gap-0.5">
@@ -198,8 +200,8 @@ function KtVideoTab() {
           {filesLoading || effectiveSelected.length === 0 ? (
             <p className="text-sm text-[var(--oh-muted)]">
               {effectiveSelected.length === 0
-                ? "Select files on the left to generate a KT video."
-                : "Loading file content…"}
+                ? t(I18nKey.KT$VIDEO_TAB_SELECT_FILES)
+                : t(I18nKey.KT$VIDEO_TAB_LOADING_CONTENT)}
             </p>
           ) : (
             <div className="aspect-video w-full max-w-4xl overflow-hidden rounded-lg shadow-2xl">
