@@ -264,7 +264,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             <GitControlBarTooltipWrapper
               tooltipMessage={t(I18nKey.COMMON$GIT_TOOLS_DISABLED_CONTENT)}
               testId="git-control-bar-pull-button-tooltip"
-              shouldShowTooltip={!hasRepository}
+              shouldShowTooltip={!providerTokensReady || !isConversationReady}
             >
               <GitControlBarPullButton
                 onSuggestionsClick={onSuggestionsClick}
@@ -277,7 +277,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             <GitControlBarTooltipWrapper
               tooltipMessage={t(I18nKey.COMMON$GIT_TOOLS_DISABLED_CONTENT)}
               testId="git-control-bar-push-button-tooltip"
-              shouldShowTooltip={!hasRepository}
+              shouldShowTooltip={!providerTokensReady || !isConversationReady}
             >
               <GitControlBarPushButton
                 onSuggestionsClick={onSuggestionsClick}
@@ -291,7 +291,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             <GitControlBarTooltipWrapper
               tooltipMessage={t(I18nKey.COMMON$GIT_TOOLS_DISABLED_CONTENT)}
               testId="git-control-bar-pr-button-tooltip"
-              shouldShowTooltip={!hasRepository}
+              shouldShowTooltip={!providerTokensReady || !isConversationReady}
             >
               <GitControlBarPrButton
                 onSuggestionsClick={onSuggestionsClick}

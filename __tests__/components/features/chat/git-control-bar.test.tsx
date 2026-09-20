@@ -24,6 +24,15 @@ const mocks = vi.hoisted(() => ({
   modalLaunchHandler: {
     current: null as ((repo: unknown, branch: unknown) => void) | null,
   },
+  useUserProviders: vi.fn(() => ({
+    providers: [] as string[],
+    isLoadingSettings: false,
+    isGithubDisconnected: false,
+  })),
+}));
+
+vi.mock("#/hooks/use-user-providers", () => ({
+  useUserProviders: () => mocks.useUserProviders(),
 }));
 
 vi.mock("#/hooks/use-conversation-id", () => ({
@@ -65,8 +74,22 @@ vi.mock("#/components/features/chat/git-control-bar-pr-button", () => ({
   GitControlBarPrButton: () => null,
 }));
 vi.mock("#/components/features/chat/git-control-bar-tooltip-wrapper", () => ({
-  GitControlBarTooltipWrapper: ({ children }: { children: React.ReactNode }) =>
+  GitControlBarTooltipWrapper: ({
     children,
+    shouldShowTooltip,
+    testId,
+  }: {
+    children: React.ReactNode;
+    shouldShowTooltip?: boolean;
+    testId?: string;
+  }) => (
+    <div
+      data-testid={testId}
+      data-should-show-tooltip={String(!!shouldShowTooltip)}
+    >
+      {children}
+    </div>
+  ),
 }));
 vi.mock("#/components/features/chat/open-repository-modal", () => ({
   OpenRepositoryModal: (props: {
@@ -210,6 +233,88 @@ describe("GitControlBar repo button visibility", () => {
 
     const button = screen.getByTestId("git-control-bar-repo-button");
     expect(button).toHaveAttribute("data-disabled", "true");
+  });
+});
+
+describe("GitControlBar git-tools-disabled tooltip", () => {
+  beforeEach(() => {
+    vi.mocked(useActiveBackend).mockReturnValue(makeBackend("cloud"));
+    vi.mocked(useActiveConversation).mockReturnValue({
+      data: { id: "test-conversation-id" },
+    } as ReturnType<typeof useActiveConversation>);
+    vi.mocked(useTaskPolling).mockReturnValue({
+      repositoryInfo: null,
+    } as unknown as ReturnType<typeof useTaskPolling>);
+    // A repository+provider resolved locally is enough to make
+    // `hasRepository` true regardless of provider-token readiness.
+    vi.mocked(useLocalGitInfo).mockReturnValue({
+      data: {
+        repository: { full_name: "user/repo" },
+        provider: "github",
+        branch: "main",
+      },
+    } as unknown as ReturnType<typeof useLocalGitInfo>);
+    vi.mocked(useUnifiedWebSocketStatus).mockReturnValue("OPEN");
+    vi.mocked(useConversationWebSocket).mockReturnValue({
+      isLoadingHistory: false,
+    } as ReturnType<typeof useConversationWebSocket>);
+    vi.mocked(useSendMessage).mockReturnValue({
+      send: vi.fn(),
+    } as unknown as ReturnType<typeof useSendMessage>);
+    vi.mocked(useUpdateConversationRepository).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useUpdateConversationRepository>);
+    vi.mocked(useHomeStore).mockReturnValue({
+      addRecentRepository: vi.fn(),
+    } as unknown as ReturnType<typeof useHomeStore>);
+    vi.mocked(useOptimisticUserMessageStore).mockImplementation(((
+      selector: (s: unknown) => unknown,
+    ) =>
+      selector({
+        enqueuePendingMessage: vi.fn(),
+        markPendingMessageError: vi.fn(),
+      })) as unknown as typeof useOptimisticUserMessageStore);
+    vi.mocked(getStoredConversationMetadata).mockReturnValue(null);
+  });
+
+  it("shows the disabled tooltip when a repository is attached but provider tokens aren't ready", () => {
+    mocks.useUserProviders.mockReturnValue({
+      providers: [],
+      isLoadingSettings: false,
+      isGithubDisconnected: true,
+    });
+
+    renderWithProviders(<GitControlBar onSuggestionsClick={vi.fn()} />);
+
+    expect(
+      screen.getByTestId("git-control-bar-pull-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "true");
+    expect(
+      screen.getByTestId("git-control-bar-push-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "true");
+    expect(
+      screen.getByTestId("git-control-bar-pr-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "true");
+  });
+
+  it("hides the disabled tooltip once a repository is attached and provider tokens are ready", () => {
+    mocks.useUserProviders.mockReturnValue({
+      providers: ["github"],
+      isLoadingSettings: false,
+      isGithubDisconnected: false,
+    });
+
+    renderWithProviders(<GitControlBar onSuggestionsClick={vi.fn()} />);
+
+    expect(
+      screen.getByTestId("git-control-bar-pull-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "false");
+    expect(
+      screen.getByTestId("git-control-bar-push-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "false");
+    expect(
+      screen.getByTestId("git-control-bar-pr-button-tooltip"),
+    ).toHaveAttribute("data-should-show-tooltip", "false");
   });
 });
 
