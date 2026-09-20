@@ -174,6 +174,21 @@ describe("CodeGraphNodeDetails", () => {
     expect(await screen.findByText(/line one/)).toBeInTheDocument();
   });
 
+  it("falls back to the file's head when the recorded line range no longer matches the live file", async () => {
+    const user = userEvent.setup();
+    // The node was analyzed from a commit where this symbol sat at lines
+    // 500-510; the file on disk now is much shorter, so that range slices
+    // to nothing and must not render as a blank box.
+    renderPanel({
+      node: node({ lineRange: [500, 510] }),
+      readSource: vi.fn().mockResolvedValue("line one\nline two\nline three"),
+    });
+
+    await user.click(screen.getByTestId("codegraph-open-source"));
+
+    expect(await screen.findByText(/line one/)).toBeInTheDocument();
+  });
+
   it("says the source is unavailable rather than showing an empty box", async () => {
     const user = userEvent.setup();
     // A file cited at analysis time can have moved since.

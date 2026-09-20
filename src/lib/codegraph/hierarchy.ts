@@ -313,8 +313,11 @@ function liftEdges(
 }
 
 /**
- * Attaches each symbol to the unit that defines it — via a `contains` edge when
- * the analyzer emitted one, otherwise by file path.
+ * Attaches each symbol to the unit that defines it — preferring a `class` unit
+ * whose line range encloses the symbol over a `contains` edge, since the
+ * analyzer always emits `contains` edges from the enclosing *file* (never from
+ * a class to its own methods, see `graph-builder.ts`), so relying on edges
+ * alone would nest every method under the file instead of its class.
  */
 function mapSymbolsToUnits(
   symbols: GraphNode[],
@@ -323,6 +326,7 @@ function mapSymbolsToUnits(
 ): Map<string, string> {
   const unitById = new Map(units.map((unit) => [unit.id, unit]));
   const unitsByPath = new Map<string, GraphNode>();
+  const classesByPath = new Map<string, GraphNode[]>();
   for (const unit of units) {
     if (!unit.filePath) continue;
     const path = normalizePath(unit.filePath);
@@ -330,6 +334,11 @@ function mapSymbolsToUnits(
     // Prefer a `class` over the enclosing `file` so methods nest under a class.
     if (!existing || (existing.type === "file" && unit.type === "class")) {
       unitsByPath.set(path, unit);
+    }
+    if (unit.type === "class" && unit.lineRange) {
+      const classes = classesByPath.get(path);
+      if (classes) classes.push(unit);
+      else classesByPath.set(path, [unit]);
     }
   }
 
@@ -340,8 +349,39 @@ function mapSymbolsToUnits(
     owner.set(edge.target, edge.source);
   }
 
+  /** The innermost class on `path` whose line range fully encloses `range`. */
+  function enclosingClass(
+    path: string,
+    range: [number, number],
+  ): GraphNode | undefined {
+    const classes = classesByPath.get(path);
+    if (!classes) return undefined;
+    let best: GraphNode | undefined;
+    for (const cls of classes) {
+      const [classStart, classEnd] = cls.lineRange!;
+      if (classStart > range[0] || classEnd < range[1]) continue;
+      if (
+        !best ||
+        classEnd - classStart < best.lineRange![1] - best.lineRange![0]
+      ) {
+        best = cls;
+      }
+    }
+    return best;
+  }
+
   const result = new Map<string, string>();
   for (const symbol of symbols) {
+    if (symbol.filePath && symbol.lineRange) {
+      const cls = enclosingClass(
+        normalizePath(symbol.filePath),
+        symbol.lineRange,
+      );
+      if (cls && cls.id !== symbol.id) {
+        result.set(symbol.id, cls.id);
+        continue;
+      }
+    }
     const viaEdge = owner.get(symbol.id);
     if (viaEdge) {
       result.set(symbol.id, viaEdge);

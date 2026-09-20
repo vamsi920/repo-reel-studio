@@ -155,7 +155,14 @@ export function CodeGraphNodeDetails({
     if (!node.lineRange) return lines.slice(0, 60).join("\n");
     const [start, end] = node.lineRange;
     // lineRange is 1-based and inclusive; pad a little for context.
-    return lines.slice(Math.max(0, start - 3), end + 2).join("\n");
+    const slice = lines.slice(Math.max(0, start - 3), end + 2);
+    // The recorded range can fall outside the live file (it was analyzed from
+    // a different commit than what's on disk now) and slice to nothing; fall
+    // back to the file's head instead of silently rendering an empty box that
+    // looks identical to a genuinely empty file.
+    if (slice.length === 0 && lines.length > 0)
+      return lines.slice(0, 60).join("\n");
+    return slice.join("\n");
   }, [source, node.lineRange]);
 
   return (

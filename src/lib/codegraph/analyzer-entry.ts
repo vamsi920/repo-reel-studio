@@ -139,10 +139,16 @@ async function main(): Promise<void> {
   );
 
   const allFiles = walk(repoRoot, args.maxFiles);
-  const codeFiles = allFiles.filter((file) => {
-    const dot = file.lastIndexOf(".");
-    return dot >= 0 && supported.has(file.slice(dot).toLowerCase());
-  });
+  const codeFiles = allFiles
+    .filter((file) => {
+      const dot = file.lastIndexOf(".");
+      return dot >= 0 && supported.has(file.slice(dot).toLowerCase());
+    })
+    // `walk()`'s traversal order follows `readdirSync`, which is filesystem-
+    // and OS-dependent, not stable across sandboxes. Sorting makes
+    // `functionOwner`'s "first definition wins" tie-break (below) — and the
+    // graph itself — deterministic for the same commit.
+    .sort();
 
   const builder = new GraphBuilder(
     repoRoot.split("/").filter(Boolean).pop() ?? "repository",

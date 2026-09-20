@@ -23,12 +23,30 @@ function file(path: string): GraphNode {
   };
 }
 
-function fn(path: string, name: string): GraphNode {
+function fn(
+  path: string,
+  name: string,
+  lineRange?: [number, number],
+): GraphNode {
   return {
     id: `function:${path}:${name}`,
     type: "function",
     name,
     filePath: path,
+    lineRange,
+    summary: "",
+    tags: [],
+    complexity: "simple",
+  };
+}
+
+function cls(path: string, name: string, lineRange: [number, number]): GraphNode {
+  return {
+    id: `class:${path}:${name}`,
+    type: "class",
+    name,
+    filePath: path,
+    lineRange,
     summary: "",
     tags: [],
     complexity: "simple",
@@ -303,6 +321,25 @@ describe("buildHierarchy", () => {
     expect(result.nodesById[one.id].level).toBe("symbol");
     expect(result.nodesById[one.id].childCount).toBe(0);
     expect(result.parentById[one.id]).toBe(target.id);
+  });
+
+  it("nests a method under its class, not the file, even though the analyzer only ever emits a file->method `contains` edge", () => {
+    // Mirrors vendor/understand-anything's graph-builder.ts: every function
+    // (including class methods, for the extractors that surface them, e.g.
+    // Java) gets a `contains` edge from the *file*, never from its class.
+    const target = file("src/a/service.ts");
+    const service = cls("src/a/service.ts", "PaymentService", [10, 40]);
+    const method = fn("src/a/service.ts", "chargeCard", [12, 20]);
+
+    const result = buildHierarchy(
+      graphOf(
+        [target, service, method],
+        [contains(target.id, service.id), contains(target.id, method.id)],
+      ),
+    );
+
+    expect(result.parentById[method.id]).toBe(service.id);
+    expect(result.nodesById[service.id].childCount).toBe(1);
   });
 
   it("lifts edges to the level being rendered and merges parallel ones", () => {
