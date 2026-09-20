@@ -119,6 +119,19 @@ describe("evaluateRunControl", () => {
     expect(evaluateRunControl("resume", "running").ok).toBe(false);
     expect(evaluateRunControl("resume", "finished").ok).toBe(false);
   });
+
+  it("refuses resume on a run waiting for confirmation, which the runtime would ignore", () => {
+    // Regression: `run()` only restarts IDLE/PAUSED/ERROR/STUCK, so
+    // waiting_for_confirmation is not on that list either — but only
+    // `pause`/`cancel` refused it explicitly, so resume fell through to the
+    // generic "ok" branch and forwarded `/run` as a no-op anyway.
+    const verdict = evaluateRunControl("resume", "waiting_for_confirmation");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.status).toBe("waiting_for_confirmation");
+    expect(verdict).toMatchObject({
+      reason: expect.stringContaining("Approvals queue"),
+    });
+  });
 });
 
 describe("controlRun", () => {
@@ -250,6 +263,27 @@ describe("controlRun", () => {
     expect(store.appendAudit).not.toHaveBeenCalled();
   });
 
+  it("refuses to resume a run waiting for confirmation and leaves no audit row", async () => {
+    // Regression: only `cancel`/`pause` on `waiting_for_confirmation` were
+    // refused; `resume` fell through to the generic "ok" branch and
+    // forwarded `/run` anyway, recording a misleading "Run resumed from the
+    // Control Tower" audit row for a run that never left
+    // waiting_for_confirmation.
+    const store = makeStore({ ...RUN, status: "waiting_for_confirmation" });
+    const client = makeClient("waiting_for_confirmation");
+
+    await expect(
+      controlRun({ client, store, runId: "run-1", action: "resume", now: NOW }),
+    ).rejects.toMatchObject({
+      name: "RunControlError",
+      status: 409,
+      runtimeStatus: "waiting_for_confirmation",
+      message: expect.stringContaining("Approvals queue"),
+    });
+    expect(client.runConversation).not.toHaveBeenCalled();
+    expect(store.appendAudit).not.toHaveBeenCalled();
+  });
+
   it("judges the control against the runtime's live status, not the store's copy", async () => {
     // The store still says "running" (one poll interval stale); the runtime
     // has already halted the run.
@@ -302,6 +336,21 @@ describe("resumeAfterApproval", () => {
     expect(outcome.resumed).toBe(false);
     expect(outcome.status).toBe("stuck");
     expect(outcome.reason).toContain("new message");
+    expect(client.runConversation).not.toHaveBeenCalled();
+  });
+
+  it("does not pretend to restart a run that has since moved to waiting_for_confirmation", async () => {
+    // Regression: a budget approval can be granted after the runtime moved
+    // on from the paused state that raised it (e.g. an unrelated chat
+    // message resumed the run in the meantime and it then hit a tool needing
+    // confirmation). resumeAfterApproval must judge the *current* live
+    // status, not assume the run is still parked where the approval left it,
+    // and must not claim a resume that `/run` would silently ignore.
+    const client = makeClient("waiting_for_confirmation");
+    const outcome = await resumeAfterApproval({ client, runId: "run-1" });
+    expect(outcome.resumed).toBe(false);
+    expect(outcome.status).toBe("waiting_for_confirmation");
+    expect(outcome.reason).toContain("Approvals queue");
     expect(client.runConversation).not.toHaveBeenCalled();
   });
 });

@@ -17,10 +17,11 @@
  *   `pause()`'s IDLE/RUNNING fallback, so it really does move to PAUSED — but
  *   it is refused anyway, for the same reason: there was no in-flight task to
  *   cancel, so an audit row saying "cancelled" would misdescribe a run that
- *   simply got paused. Stop *and* Pause on a run *waiting for confirmation*
- *   are both refused for the first reason instead: it is neither IDLE nor
- *   RUNNING, so even `pause()`'s fallback does nothing — approve or reject
- *   the pending action in the Approvals queue instead.
+ *   simply got paused. Stop *and* Pause *and* Resume on a run *waiting for
+ *   confirmation* are all refused for the first reason instead: it is
+ *   neither IDLE nor RUNNING, so even `pause()`'s fallback does nothing and
+ *   `run()` has nothing in its IDLE/PAUSED/ERROR/STUCK list either — approve
+ *   or reject the pending action in the Approvals queue instead.
  * - `run()` restarts IDLE/PAUSED/ERROR/STUCK, but the stuck detector inspects
  *   every event since the last user message, so a STUCK conversation re-trips
  *   it on the first iteration and is back to STUCK within milliseconds. Only a
@@ -61,6 +62,10 @@ const REFUSALS = {
     "This run is waiting for your decision on a pending action, and the " +
     "runtime ignores Pause while it waits — approve or reject the pending " +
     "action in the Approvals queue instead.",
+  resumeWaitingForConfirmation:
+    "This run is waiting for your decision on a pending action, and the " +
+    "runtime ignores Resume while it waits — approve or reject the pending " +
+    "action in the Approvals queue instead.",
 };
 
 /**
@@ -89,6 +94,13 @@ export function evaluateRunControl(action, executionStatus) {
         ok: false,
         status,
         reason: REFUSALS.finished.replace("{action}", "resume"),
+      };
+    }
+    if (status === "waiting_for_confirmation") {
+      return {
+        ok: false,
+        status,
+        reason: REFUSALS.resumeWaitingForConfirmation,
       };
     }
     return { ok: true, status };
