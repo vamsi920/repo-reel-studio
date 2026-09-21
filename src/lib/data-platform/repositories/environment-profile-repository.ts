@@ -16,6 +16,16 @@ export interface EnvironmentProfileRepository {
   put(orgId: string, profile: EnvironmentProfile): Promise<EnvironmentProfile>;
 }
 
+// Same fix as connections-repository.ts / github-connections-repository.ts /
+// jira-connections-repository.ts / environment-checks-repository.ts: a
+// genuine fetch failure (RLS denial, network error) previously returned null
+// identically to "this org has never saved a profile", with no console
+// signal -- and here that silently falls back to an empty default profile
+// that an admin can then unknowingly persist over their real saved one.
+function logFailure(step: string, error: unknown): void {
+  console.error(`[environment-profile-repository] ${step} failed`, error);
+}
+
 class SupabaseEnvironmentProfileRepository implements EnvironmentProfileRepository {
   async get(orgId: string): Promise<EnvironmentProfile | null> {
     if (!isSupabaseConfigured || !supabase || !orgId) return null;
@@ -24,7 +34,11 @@ class SupabaseEnvironmentProfileRepository implements EnvironmentProfileReposito
       .select("doc, revision, updated_at, updated_by")
       .eq("org_id", orgId)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      logFailure("get", error);
+      return null;
+    }
+    if (!data) return null;
 
     const doc = data.doc as Partial<EnvironmentProfile> | null;
     if (!doc || Object.keys(doc).length === 0) return null;
