@@ -23,6 +23,18 @@ const renderCommand = (
   }
 
   const trimmedContent = (content || "").replaceAll("\n", "\r\n").trim();
+
+  if (type === "input") {
+    // The caller already wrote the "$ " prompt for this command (see the two
+    // call sites in the effects below), so this line must always be
+    // terminated -- even when the command itself is blank, e.g. an
+    // ExecuteBashAction with an empty `command` (legitimately used to view
+    // additional logs after a previous command). Skipping the newline here
+    // leaves a dangling, unterminated "$ " that the next write lands on.
+    terminal.writeln(trimmedContent ? parseTerminalOutput(trimmedContent) : "");
+    return;
+  }
+
   // Only write if there's actual content to avoid empty newlines
   if (trimmedContent) {
     terminal.writeln(parseTerminalOutput(trimmedContent));

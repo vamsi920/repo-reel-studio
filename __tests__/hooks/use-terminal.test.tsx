@@ -183,6 +183,24 @@ describe("useTerminal", () => {
     expect(mockTerminal.writeln).toHaveBeenLastCalledWith("live");
   });
 
+  it("terminates the prompt line for a blank input command instead of leaving it dangling", () => {
+    // ExecuteBashAction.command can legitimately be an empty string (used to
+    // view additional logs after a previous command) -- the terminal must
+    // still close out the "$ " prompt line it wrote for it.
+    const commands: Command[] = [
+      { content: "", type: "input" },
+      { content: "some output", type: "output" },
+    ];
+
+    useCommandStore.setState({ commands });
+
+    renderWithProviders(<TestTerminalComponent />);
+
+    expect(mockTerminal.write).toHaveBeenCalledWith("$ ");
+    expect(mockTerminal.writeln).toHaveBeenNthCalledWith(1, "");
+    expect(mockTerminal.writeln).toHaveBeenNthCalledWith(2, "some output");
+  });
+
   it("does not reset the buffer while commands only grow", () => {
     useCommandStore.setState({
       commands: [{ content: "echo one", type: "input" }],
