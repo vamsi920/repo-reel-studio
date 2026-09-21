@@ -206,6 +206,37 @@ export function requiresConfirmationMode(policy) {
   );
 }
 
+/**
+ * Apply an approved budget-breach approval to policy, raising the limit of
+ * every scope that breached simultaneously (run/agent/workspace can all
+ * breach in the same tick) rather than only the first one recorded on the
+ * approval. Raising just one left the others unaddressed, so the collector
+ * halted the run again on its very next tick for a breach the operator had
+ * just approved past. Returns a new policies object; does not mutate the
+ * input.
+ */
+export function applyBudgetApproval(policies, approval, additionalUsd = 0) {
+  const workspaces = { ...(policies?.workspaces ?? {}) };
+  const agents = { ...(policies?.agents ?? {}) };
+  const workspace = { ...(workspaces[approval.workspaceId] ?? {}) };
+
+  for (const breach of approval.breaches ?? []) {
+    if (breach.scope === "run") {
+      workspace.runBudgetUsd = breach.usedUsd + additionalUsd;
+    } else if (breach.scope === "workspace") {
+      workspace.monthlyBudgetUsd = breach.usedUsd + additionalUsd;
+    } else if (breach.scope === "agent") {
+      agents[approval.agentName] = {
+        ...(agents[approval.agentName] ?? {}),
+        agentBudgetUsd: breach.usedUsd + additionalUsd,
+      };
+    }
+  }
+
+  workspaces[approval.workspaceId] = workspace;
+  return { workspaces, agents };
+}
+
 /** The Overview tiles. All counts derived from stored runs, never invented. */
 export function summarize(runs, approvals, now) {
   const since = dayStart(now);

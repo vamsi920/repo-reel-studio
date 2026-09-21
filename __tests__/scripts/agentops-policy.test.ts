@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyBudgetApproval,
   buildWorkspaceBudget,
   computeSpend,
   dayStart,
@@ -232,6 +233,67 @@ describe("summarize", () => {
     expect(summary.activeAgents).toBe(0);
     expect(summary.activeRuns).toBe(0);
     expect(summary.failures).toBe(1);
+  });
+});
+
+describe("applyBudgetApproval", () => {
+  it("raises every scope that breached simultaneously, not just the first", () => {
+    const policies = {
+      workspaces: { "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 } },
+      agents: { "OpenHands Agent": { agentBudgetUsd: 20 } },
+    };
+    const approval = {
+      workspaceId: "/workspace/project",
+      agentName: "OpenHands Agent",
+      breaches: [
+        { scope: "run", usedUsd: 2.5, limitUsd: 2 },
+        { scope: "workspace", usedUsd: 100.5, limitUsd: 100 },
+        { scope: "agent", usedUsd: 20.5, limitUsd: 20 },
+      ],
+    };
+
+    const updated = applyBudgetApproval(policies, approval, 1);
+
+    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(3.5);
+    expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
+      101.5,
+    );
+    expect(updated.agents["OpenHands Agent"].agentBudgetUsd).toBe(21.5);
+  });
+
+  it("raises only the breached scope, leaving the other limits untouched", () => {
+    const policies = {
+      workspaces: { "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 } },
+      agents: {},
+    };
+    const approval = {
+      workspaceId: "/workspace/project",
+      agentName: "OpenHands Agent",
+      breaches: [{ scope: "run", usedUsd: 2.5, limitUsd: 2 }],
+    };
+
+    const updated = applyBudgetApproval(policies, approval, 0);
+
+    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(2.5);
+    expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
+      100,
+    );
+  });
+
+  it("does not mutate the policies object it was given", () => {
+    const policies = {
+      workspaces: { "/workspace/project": { runBudgetUsd: 2 } },
+      agents: {},
+    };
+    applyBudgetApproval(
+      policies,
+      {
+        workspaceId: "/workspace/project",
+        breaches: [{ scope: "run", usedUsd: 2.5 }],
+      },
+      0,
+    );
+    expect(policies.workspaces["/workspace/project"].runBudgetUsd).toBe(2);
   });
 });
 

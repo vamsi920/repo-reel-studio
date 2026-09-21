@@ -45,7 +45,11 @@ import {
   SupabaseAgentOpsStore,
   isSupabaseConfigured,
 } from "./agentops/supabase-store.mjs";
-import { buildWorkspaceBudget, summarize } from "./agentops/policy.mjs";
+import {
+  applyBudgetApproval,
+  buildWorkspaceBudget,
+  summarize,
+} from "./agentops/policy.mjs";
 import {
   RunControlError,
   controlRun,
@@ -347,25 +351,17 @@ function createRouter({ store, client, collector, storeKind }) {
           // Approving a budget breach raises the limit to cover the overspend
           // plus the operator-supplied headroom, then resumes the run. Without
           // a new limit the collector would halt it again on the next tick.
+          // A single tick can breach more than one scope at once (run, agent,
+          // workspace), so every breach on the approval gets raised, not just
+          // the first.
           const additionalUsd =
             typeof body?.additionalBudgetUsd === "number"
               ? body.additionalBudgetUsd
               : 0;
           const policies = await store.getPolicies();
-          const workspace = policies.workspaces[approval.workspaceId] ?? {};
-          const breach = approval.breaches?.[0];
-          if (breach?.scope === "run") {
-            workspace.runBudgetUsd = breach.usedUsd + additionalUsd;
-          } else if (breach?.scope === "workspace") {
-            workspace.monthlyBudgetUsd = breach.usedUsd + additionalUsd;
-          } else if (breach?.scope === "agent") {
-            policies.agents[approval.agentName] = {
-              ...(policies.agents[approval.agentName] ?? {}),
-              agentBudgetUsd: breach.usedUsd + additionalUsd,
-            };
-          }
-          policies.workspaces[approval.workspaceId] = workspace;
-          await store.setPolicies(policies);
+          await store.setPolicies(
+            applyBudgetApproval(policies, approval, additionalUsd),
+          );
           // The limit is raised either way; the run only restarts if the
           // runtime will actually take a `/run` (not on a stuck run).
           resumeOutcome = await resumeAfterApproval({
