@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "test-utils";
 
 import { useActiveBackend } from "#/contexts/active-backend-context";
@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     isLoadingSettings: false,
     isGithubDisconnected: false,
   })),
+  useConversationId: vi.fn(() => ({ conversationId: "test-conversation-id" })),
 }));
 
 vi.mock("#/hooks/use-user-providers", () => ({
@@ -37,7 +38,7 @@ vi.mock("#/hooks/use-user-providers", () => ({
 
 vi.mock("#/hooks/use-conversation-id", () => ({
   useOptionalConversationId: () => ({ conversationId: "test-conversation-id" }),
-  useConversationId: () => ({ conversationId: "test-conversation-id" }),
+  useConversationId: () => mocks.useConversationId(),
 }));
 vi.mock("#/contexts/active-backend-context");
 vi.mock("#/hooks/query/use-active-conversation");
@@ -53,11 +54,18 @@ vi.mock("#/api/conversation-metadata-store");
 vi.mock("#/api/git-service/mint-local-github-clone-credential");
 
 vi.mock("#/components/features/chat/git-control-bar-repo-button", () => ({
-  GitControlBarRepoButton: ({ disabled }: { disabled?: boolean }) => (
+  GitControlBarRepoButton: ({
+    disabled,
+    onClick,
+  }: {
+    disabled?: boolean;
+    onClick?: () => void;
+  }) => (
     <button
       data-testid="git-control-bar-repo-button"
       type="button"
       data-disabled={String(!!disabled)}
+      onClick={onClick}
     />
   ),
 }));
@@ -93,10 +101,16 @@ vi.mock("#/components/features/chat/git-control-bar-tooltip-wrapper", () => ({
 }));
 vi.mock("#/components/features/chat/open-repository-modal", () => ({
   OpenRepositoryModal: (props: {
+    isOpen?: boolean;
     onLaunch?: (repo: unknown, branch: unknown) => void;
   }) => {
     mocks.modalLaunchHandler.current = props.onLaunch ?? null;
-    return null;
+    return (
+      <div
+        data-testid="open-repository-modal"
+        data-is-open={String(!!props.isOpen)}
+      />
+    );
   },
 }));
 
@@ -427,5 +441,78 @@ describe("GitControlBar - Auto-scroll on clone (issue #817)", () => {
       .invocationCallOrder[0];
     const sendOrder = send.mock.invocationCallOrder[0];
     expect(mintOrder).toBeLessThan(sendOrder);
+  });
+});
+
+describe("GitControlBar - modal state reset across a conversation switch", () => {
+  beforeEach(() => {
+    mocks.useConversationId.mockReturnValue({
+      conversationId: "conversation-a",
+    });
+    vi.mocked(useActiveBackend).mockReturnValue(makeBackend("cloud"));
+    vi.mocked(useActiveConversation).mockReturnValue({
+      data: { id: "conversation-a" },
+    } as ReturnType<typeof useActiveConversation>);
+    vi.mocked(useTaskPolling).mockReturnValue({
+      repositoryInfo: null,
+    } as unknown as ReturnType<typeof useTaskPolling>);
+    vi.mocked(useLocalGitInfo).mockReturnValue({
+      data: null,
+    } as unknown as ReturnType<typeof useLocalGitInfo>);
+    vi.mocked(useUnifiedWebSocketStatus).mockReturnValue("OPEN");
+    vi.mocked(useConversationWebSocket).mockReturnValue({
+      isLoadingHistory: false,
+    } as ReturnType<typeof useConversationWebSocket>);
+    vi.mocked(useSendMessage).mockReturnValue({
+      send: vi.fn(),
+    } as unknown as ReturnType<typeof useSendMessage>);
+    vi.mocked(useUpdateConversationRepository).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useUpdateConversationRepository>);
+    vi.mocked(useHomeStore).mockReturnValue({
+      addRecentRepository: vi.fn(),
+    } as unknown as ReturnType<typeof useHomeStore>);
+    vi.mocked(useOptimisticUserMessageStore).mockImplementation(((
+      selector: (s: unknown) => unknown,
+    ) =>
+      selector({
+        enqueuePendingMessage: vi.fn(),
+        markPendingMessageError: vi.fn(),
+      })) as unknown as typeof useOptimisticUserMessageStore);
+    vi.mocked(getStoredConversationMetadata).mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    mocks.useConversationId.mockReturnValue({
+      conversationId: "test-conversation-id",
+    });
+  });
+
+  it("closes an open 'Open Repository' modal when the active conversation changes", () => {
+    // GitControlBar stays mounted across a conversation switch (no route
+    // remount). handleLaunchRepository closes over the current (reactive)
+    // conversationId, so an "Open Repository" modal left open from
+    // conversation A must not survive into conversation B — a repo picked
+    // from it afterward would otherwise launch a clone against the wrong
+    // conversation with no indication anything changed.
+    const { rerender } = renderWithProviders(
+      <GitControlBar onSuggestionsClick={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByTestId("git-control-bar-repo-button"));
+    expect(screen.getByTestId("open-repository-modal")).toHaveAttribute(
+      "data-is-open",
+      "true",
+    );
+
+    mocks.useConversationId.mockReturnValue({
+      conversationId: "conversation-b",
+    });
+    rerender(<GitControlBar onSuggestionsClick={vi.fn()} />);
+
+    expect(screen.getByTestId("open-repository-modal")).toHaveAttribute(
+      "data-is-open",
+      "false",
+    );
   });
 });

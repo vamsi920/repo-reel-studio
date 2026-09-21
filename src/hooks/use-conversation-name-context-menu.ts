@@ -52,6 +52,21 @@ export function useConversationNameContextMenu({
   const { mutateAsync: downloadConversation } = useDownloadConversation();
   const { navigateToTab } = useSelectConversationTab();
 
+  React.useEffect(() => {
+    // Every consumer of this hook (ConversationName, ChatAddFileButton,
+    // Tools) stays mounted across a conversation switch (no route remount),
+    // so a modal opened for the old conversation must not linger, now
+    // silently re-targeted at the new one — most importantly the delete/stop
+    // confirmations, whose confirm buttons close over the current
+    // conversationId.
+    setSystemModalVisible(false);
+    setSkillsModalVisible(false);
+    setPluginsModalVisible(false);
+    setHooksModalVisible(false);
+    setConfirmDeleteModalVisible(false);
+    setConfirmStopModalVisible(false);
+  }, [conversationId]);
+
   const systemMessage: SystemMessageForModal | null =
     adaptSystemMessage(events);
 
@@ -104,10 +119,17 @@ export function useConversationNameContextMenu({
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    if (conversationId) {
-      await downloadConversation(conversationId);
+    try {
+      if (conversationId) {
+        await downloadConversation(conversationId);
+      }
+    } catch {
+      // mutateAsync still rejects even though the mutation's own onError
+      // already surfaced a toast — swallow here so a failed download
+      // doesn't also become an unhandled promise rejection.
+    } finally {
+      onContextMenuToggle?.(false);
     }
-    onContextMenuToggle?.(false);
   };
 
   const handleDisplayCost = (event: React.MouseEvent<HTMLButtonElement>) => {

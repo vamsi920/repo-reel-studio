@@ -111,6 +111,17 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
     !!conversation && webSocketStatus === "OPEN" && !isLoadingHistory;
 
   useEffect(() => {
+    // GitControlBar stays mounted across a conversation switch (no route
+    // remount), so an open "Open Repository" modal or workspace menu for the
+    // old conversation must not linger over the new one — handleLaunchRepository
+    // closes over the current (reactive) conversationId, so a repo picked
+    // from a leftover-open modal would otherwise launch a clone against the
+    // wrong conversation.
+    setIsOpenRepoModalOpen(false);
+    setIsWorkspaceMenuOpen(false);
+  }, [conversationId]);
+
+  useEffect(() => {
     if (!isWorkspaceMenuOpen) return undefined;
     const onMouseDown = (event: MouseEvent) => {
       if (

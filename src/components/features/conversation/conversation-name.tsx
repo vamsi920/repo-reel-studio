@@ -147,8 +147,13 @@ export function ConversationName() {
   React.useEffect(() => {
     // ConversationName stays mounted across a conversation switch (no route
     // remount) — an in-progress rename must not leak into the newly active
-    // conversation's title bar, nor get saved onto it via a stale blur.
+    // conversation's title bar, nor get saved onto it via a stale blur. The
+    // ellipsis menu and export-transcript modal are this component's own
+    // local state (the rest live in useConversationNameContextMenu, reset
+    // there) and need the same treatment.
     setTitleMode("view");
+    setContextMenuOpen(false);
+    setTranscriptExportModalVisible(false);
   }, [conversationId]);
 
   if (!conversation) {

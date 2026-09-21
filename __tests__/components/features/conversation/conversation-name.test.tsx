@@ -460,6 +460,96 @@ describe("ConversationName", () => {
       });
     }
   });
+
+  it("closes an open delete-confirmation modal when the active conversation changes", async () => {
+    // useConversationNameContextMenu's modal state (systemModalVisible,
+    // skillsModalVisible, confirmDeleteModalVisible, ...) lives in the same
+    // long-lived hook instance as ConversationName's own titleMode, so it
+    // must reset on a conversation switch too — otherwise the "Confirm
+    // Delete" dialog opened for conversation A stays open, now silently
+    // re-targeted at conversation B by handleConfirmDelete's reactive
+    // conversationId closure.
+    const user = userEvent.setup();
+    try {
+      useConversationIdMock.mockReturnValue({
+        conversationId: "conversation-a",
+      });
+      useActiveConversationMock.mockReturnValue({
+        data: {
+          conversation_id: "conversation-a",
+          title: "Conversation A",
+          status: "RUNNING",
+        },
+      });
+
+      const { rerender } = renderConversationNameWithRouter();
+
+      await user.click(screen.getByTestId("ellipsis-button"));
+      await user.click(screen.getByTestId("delete-button"));
+
+      // ConfirmDeleteModal's own confirm/cancel buttons carry a data-testid
+      // prop that BrandButton doesn't accept (it expects `testId`), so it
+      // never reaches the DOM — a separate, pre-existing test-id bug outside
+      // this run's scope. Assert on the dialog itself instead.
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+      useConversationIdMock.mockReturnValue({
+        conversationId: "conversation-b",
+      });
+      useActiveConversationMock.mockReturnValue({
+        data: {
+          conversation_id: "conversation-b",
+          title: "Conversation B",
+          status: "RUNNING",
+        },
+      });
+      rerender(<ConversationName />);
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    } finally {
+      useConversationIdMock.mockReturnValue({
+        conversationId: "test-conversation-id",
+      });
+      useActiveConversationMock.mockReturnValue({
+        data: {
+          conversation_id: "test-conversation-id",
+          title: "Test Conversation",
+          status: "RUNNING",
+        },
+      });
+    }
+  });
+
+  it("closes the context menu instead of leaving it stuck open when downloading the conversation fails", async () => {
+    // handleDownloadConversation awaits mutateAsync directly with no
+    // try/catch; the mutation's own onError only shows a toast, it doesn't
+    // swallow the rejection, so a failed download used to throw before
+    // reaching onContextMenuToggle?.(false) at the end of the handler —
+    // an unhandled rejection, and the context menu stuck open.
+    const user = userEvent.setup();
+    const downloadSpy = vi
+      .spyOn(AgentServerConversationService, "downloadConversation")
+      .mockRejectedValue(new Error("network error"));
+
+    renderConversationNameWithRouter();
+
+    await user.click(screen.getByTestId("ellipsis-button"));
+    await user.click(screen.getByTestId("download-trajectory-button"));
+
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByTestId("conversation-name-context-menu"),
+        ).not.toBeInTheDocument();
+      },
+      // This suite's beforeAll stubs `window` to a bare object with no
+      // `document`, which breaks waitFor's default container lookup.
+      { container: document.body },
+    );
+    expect(downloadSpy).toHaveBeenCalledWith("test-conversation-id");
+
+    downloadSpy.mockRestore();
+  });
 });
 
 describe("ConversationNameContextMenu", () => {
