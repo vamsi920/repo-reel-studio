@@ -74,7 +74,6 @@ import { useConversationStore } from "#/stores/conversation-store";
 import { trackError } from "#/utils/error-handler";
 import { useReadConversationFile } from "#/hooks/mutation/use-read-conversation-file";
 import useMetricsStore, { type MetricsState } from "#/stores/metrics-store";
-import { useSecurityAnalyzerStore } from "#/stores/security-analyzer-store";
 import { useConversationHistory } from "#/hooks/query/use-conversation-history";
 import { setConversationState } from "#/utils/conversation-local-storage";
 import {
@@ -390,12 +389,6 @@ export function ConversationWebSocketProvider({
     // conversation's meter until fresh WS stats arrive — and a brand-new
     // conversation sends none, so the stale figure stuck indefinitely.
     useMetricsStore.getState().resetMetrics();
-    // Same conversation-scoped leak as the terminal: `handleActionMessage`
-    // appends to this store for every action carrying a `security_risk`, with
-    // no other call site ever clearing it. Left unreset, one conversation's
-    // risk log keeps growing across every later conversation for the rest of
-    // the tab's lifetime.
-    useSecurityAnalyzerStore.getState().clearLogs();
   }, [conversationId, clearEventsForConversation, resetBrowserStore]);
 
   useLayoutEffect(() => {

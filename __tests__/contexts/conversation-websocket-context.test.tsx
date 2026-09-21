@@ -9,10 +9,6 @@ import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-
 import { useBrowserStore } from "#/stores/browser-store";
 import { useCommandStore } from "#/stores/command-store";
 import { useErrorMessageStore } from "#/stores/error-message-store";
-import {
-  ActionSecurityRisk,
-  useSecurityAnalyzerStore,
-} from "#/stores/security-analyzer-store";
 import { useUserConversation } from "#/hooks/query/use-user-conversation";
 import EventService from "#/api/event-service/event-service.api";
 import {
@@ -233,7 +229,6 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     useMetricsStore.getState().resetMetrics();
     useCommandStore.setState({ commands: [] });
     useErrorMessageStore.getState().removeErrorMessage();
-    useSecurityAnalyzerStore.getState().clearLogs();
 
     vi.mocked(useUserConversation).mockReturnValue({
       data: { conversation_url: "http://localhost/api", session_api_key: null },
@@ -902,31 +897,6 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     await waitFor(() => expect(useMetricsStore.getState().usage).toBeNull());
     expect(useMetricsStore.getState().cost).toBeNull();
     expect(useMetricsStore.getState().max_budget_per_task).toBeNull();
-  });
-
-  it("clears the previous conversation's security analyzer logs when switching conversations", async () => {
-    const { rerender } = renderProvider("conv-a");
-    await waitFor(() => expect(eventIds()).toEqual(["user-msg-conv-a"]));
-
-    useSecurityAnalyzerStore.getState().appendSecurityAnalyzerInput({
-      id: 1,
-      args: { command: "rm -rf /", security_risk: ActionSecurityRisk.HIGH },
-    });
-    expect(useSecurityAnalyzerStore.getState().logs).toHaveLength(1);
-
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <ConversationWebSocketProvider
-          conversationId="conv-b"
-          conversationUrl={null}
-        >
-          <div />
-        </ConversationWebSocketProvider>
-      </QueryClientProvider>,
-    );
-
-    await waitFor(() => expect(eventIds()).toEqual(["user-msg-conv-b"]));
-    expect(useSecurityAnalyzerStore.getState().logs).toEqual([]);
   });
 
   it("keeps events that arrived after history when re-entering the same conversation", async () => {
