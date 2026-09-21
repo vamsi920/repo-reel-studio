@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
 
@@ -18,6 +19,17 @@ import {
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import type { Backend } from "#/api/backend-registry/types";
 import { I18nKey } from "#/i18n/declaration";
+import AutomationService from "#/api/automation-service/automation-service.api";
+
+vi.mock("#/api/automation-service/automation-service.api", () => ({
+  default: {
+    cancelAutomationRun: vi.fn(),
+  },
+}));
+
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast: vi.fn(),
+}));
 
 // In tests the i18n backend doesn't resolve translation values, so the
 // aria-label resolves to the raw key string. Match it explicitly.
@@ -373,10 +385,40 @@ describe("ActivityLogItem — cancel a stuck run", () => {
     __resetActiveStoreForTests();
     setRegisteredBackends([localBackend]);
     setActiveSelection({ backendId: localBackend.id });
+    vi.mocked(AutomationService.cancelAutomationRun).mockReset();
   });
 
   afterEach(() => {
     __resetActiveStoreForTests();
+  });
+
+  it("shows an error toast when cancelling a run fails", async () => {
+    // Arrange — a rejected cancel call must still surface its own error.
+    // `handleCancelClick` used to fire-and-forget via `mutation.mutate`,
+    // which drops this call's `onError` if a second cancel call on the same
+    // row starts before this one settles (react-query's mutation observer
+    // keeps only the latest call's per-call callbacks).
+    vi.mocked(AutomationService.cancelAutomationRun).mockRejectedValue(
+      new Error("agent-server unreachable"),
+    );
+    const { displayErrorToast } = await import("#/utils/custom-toast-handlers");
+    const user = userEvent.setup();
+    const run = makeRun({ status: AutomationRunStatus.RUNNING });
+    renderItem(run, makeAutomation());
+
+    // Act
+    await user.click(
+      screen.getByRole("button", {
+        name: I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN,
+      }),
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        "agent-server unreachable",
+      );
+    });
   });
 
   it("offers Cancel for a RUNNING run left behind after a crash", () => {

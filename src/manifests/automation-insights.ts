@@ -193,12 +193,12 @@ function runCount(automation: Automation, byId: Summaries): number {
 }
 
 function lastRunTime(automation: Automation, byId: Summaries): number {
-  const startedAt =
-    byId.get(automation.id)?.summary?.latestRun?.started_at ??
-    automation.last_triggered_at;
-  if (!startedAt) return 0;
-  const time = new Date(startedAt).getTime();
-  return Number.isFinite(time) ? time : 0;
+  const latestStartedAt = byId.get(automation.id)?.summary?.latestRun
+    ?.started_at;
+  const startedAt = isValidRunTimestamp(latestStartedAt)
+    ? latestStartedAt
+    : automation.last_triggered_at;
+  return isValidRunTimestamp(startedAt) ? new Date(startedAt).getTime() : 0;
 }
 
 const SORT_COMPARATORS: Record<

@@ -198,7 +198,7 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
   const isCancelling =
     cancelMutation.isPending && cancelMutation.variables?.runId === run.id;
 
-  const handleCancelClick = (
+  const handleCancelClick = async (
     e:
       | React.MouseEvent<HTMLButtonElement>
       | React.KeyboardEvent<HTMLButtonElement>,
@@ -206,19 +206,24 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
     e.stopPropagation();
     e.preventDefault();
     if (!automation) return;
-    cancelMutation.mutate(
-      { automationId: automation.id, runId: run.id },
-      {
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(
-              error,
-              t(I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN_ERROR),
-            ),
-          );
-        },
-      },
-    );
+    try {
+      // A rapid double-click before the first call settles used to drop the
+      // first call's `onError` (react-query's mutation observer keeps only
+      // the latest call's per-call callbacks). `mutateAsync` returns this
+      // specific call's own promise, so awaiting it here is safe under
+      // concurrency, matching automation-detail.tsx's handleToggle.
+      await cancelMutation.mutateAsync({
+        automationId: automation.id,
+        runId: run.id,
+      });
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(
+          error,
+          t(I18nKey.AUTOMATIONS$DETAIL$CANCEL_RUN_ERROR),
+        ),
+      );
+    }
   };
 
   const handleDismissConfirm = (reason: string) => {

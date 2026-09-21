@@ -317,6 +317,42 @@ describe("applyDashboardView", () => {
       "failing",
     ]);
   });
+
+  it("falls back to last_triggered_at when the latest run's started_at is the epoch placeholder", () => {
+    // Arrange — a run that reached a terminal state without ever starting
+    // (e.g. sandbox provisioning failed) leaves started_at at the epoch.
+    const neverStarted = createAutomation({
+      id: "never-started",
+      name: "E never started",
+      last_triggered_at: "2026-01-04T00:00:00Z",
+    });
+    const byIdWithEpochRun = new Map(byId).set(
+      "never-started",
+      settled({
+        total: 1,
+        latestRun: createRun({
+          status: AutomationRunStatus.FAILED,
+          started_at: "1970-01-01T00:00:00Z",
+          completed_at: "1970-01-01T00:00:00Z",
+        }),
+      }),
+    );
+
+    // Act
+    const visible = applyDashboardView(
+      [failing, healthy, neverStarted],
+      { ...neutral, sort: "last-run" },
+      byIdWithEpochRun,
+    );
+
+    // Assert — sorts by last_triggered_at, not buried at the bottom as if
+    // it had never run.
+    expect(visible.map((a) => a.id)).toEqual([
+      "healthy",
+      "never-started",
+      "failing",
+    ]);
+  });
 });
 
 describe("computeOverviewTile", () => {
