@@ -13,6 +13,14 @@ const OVERFLOW_PILL_WIDTH_PX = 40;
 export interface SkillCardPill {
   id: string;
   node: React.ReactNode;
+  /**
+   * Plain-text form of `node`, shown in the overflow badge's tooltip. `node`
+   * is an arbitrary ReactNode (icons, nested spans) so it cannot be read back
+   * out as text; producers that skip this lose only the tooltip, never a
+   * crash — `id` (a stable key, not user-facing copy) is never used as a
+   * stand-in.
+   */
+  label?: string;
 }
 
 function computeVisiblePillCount(
@@ -73,6 +81,10 @@ export function SkillCardPillRow({ pills, testId }: SkillCardPillRowProps) {
   if (pills.length === 0) return null;
 
   const hiddenCount = Math.max(0, pills.length - visibleCount);
+  const hiddenLabels = pills
+    .slice(visibleCount)
+    .map((pill) => pill.label)
+    .filter((label): label is string => !!label);
 
   return (
     <div className="min-w-0 overflow-hidden">
@@ -104,10 +116,9 @@ export function SkillCardPillRow({ pills, testId }: SkillCardPillRowProps) {
               extensionModuleCardPillClassName,
               "font-medium text-tertiary-alt",
             )}
-            title={pills
-              .slice(visibleCount)
-              .map((pill) => pill.id)
-              .join(", ")}
+            title={
+              hiddenLabels.length > 0 ? hiddenLabels.join(", ") : undefined
+            }
           >
             {t(I18nKey.SETTINGS$SKILLS_PILLS_MORE, { count: hiddenCount })}
           </span>

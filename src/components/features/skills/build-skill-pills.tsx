@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { SkillInfo } from "#/types/settings";
 import { cn } from "#/utils/utils";
-import { SkillTypeBadge } from "./skill-type-badge";
+import { getSkillTypeLabelKey, SkillTypeBadge } from "./skill-type-badge";
 import {
   SKILL_CARD_PILL_CLASS,
   type SkillCardPill,
@@ -42,6 +42,7 @@ export function buildSkillPills(
   const pills: SkillCardPill[] = [
     {
       id: `type-${skill.type}`,
+      label: translate(getSkillTypeLabelKey(skill.type)),
       node: <SkillTypeBadge type={skill.type} />,
     },
   ];
@@ -51,6 +52,7 @@ export function buildSkillPills(
   if (category !== UNCATEGORIZED_SKILL_CATEGORY) {
     pills.push({
       id: `category-${category}`,
+      label: translate(SKILL_CATEGORY_LABEL_KEYS[category]),
       node: (
         <span
           data-testid={
@@ -68,6 +70,9 @@ export function buildSkillPills(
   if (skill.version) {
     pills.push({
       id: `version-${skill.version}`,
+      label: translate(I18nKey.SETTINGS$SKILLS_VERSION, {
+        version: skill.version,
+      }),
       node: (
         <span
           data-testid={
@@ -87,6 +92,7 @@ export function buildSkillPills(
   if (variant === "detail" && skill.license) {
     pills.push({
       id: `license-${skill.license}`,
+      label: skill.license,
       node: (
         <span
           data-testid={pillTestId(testIdPrefix, skill.name, "license")}
@@ -101,6 +107,7 @@ export function buildSkillPills(
   if (variant === "detail" && skill.compatibility) {
     pills.push({
       id: `compatibility-${skill.compatibility}`,
+      label: skill.compatibility,
       node: (
         <span
           data-testid={pillTestId(testIdPrefix, skill.name, "compatibility")}
@@ -115,6 +122,7 @@ export function buildSkillPills(
   if (skill.disable_model_invocation) {
     pills.push({
       id: "disable-model-invocation",
+      label: translate(I18nKey.SETTINGS$SKILLS_DISABLE_MODEL_INVOCATION),
       node: (
         <span
           data-testid={
@@ -134,6 +142,7 @@ export function buildSkillPills(
     for (const tool of skill.allowed_tools) {
       pills.push({
         id: `allowed-tool-${tool}`,
+        label: tool,
         node: (
           <span
             data-testid={pillTestId(testIdPrefix, skill.name, `tool-${tool}`)}
@@ -150,6 +159,7 @@ export function buildSkillPills(
     for (const [key, value] of Object.entries(skill.metadata)) {
       pills.push({
         id: `metadata-${key}`,
+        label: `${key}: ${value}`,
         node: (
           <span
             data-testid={pillTestId(
@@ -172,6 +182,7 @@ export function buildSkillPills(
   for (const trigger of skill.triggers ?? []) {
     pills.push({
       id: `trigger-${trigger}`,
+      label: trigger,
       node: (
         <span
           data-testid={pillTestId(
