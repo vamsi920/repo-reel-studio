@@ -185,6 +185,16 @@ export function useKnowledgeRehydration(
     setChecked(false);
 
     let cancelled = false;
+    // `generateKnowledge` calls `store.startGenerating` synchronously at the
+    // very start of every attempt (success or failure alike), which flips
+    // `hasEntry` true and makes React re-run this effect -- so by the time
+    // `await generateKnowledge(...)` below resolves, this closure's own
+    // `cancelled` is already true almost every time, including on the
+    // ordinary success path (it's just never read there). A live-generation
+    // failure needs to fall through to cold rehydration regardless of that
+    // self-inflicted flip, so it's tracked separately from real
+    // cancellation (an actual unmount/repositoryId change).
+    let liveGenerationFailed = false;
     const liveMatch = liveMatchRef.current;
     (async () => {
       if (liveMatch?.workingDir) {
@@ -213,14 +223,30 @@ export function useKnowledgeRehydration(
             {},
             backend.id,
           );
-          return;
+          // `generateKnowledge` never rethrows -- an internal failure (e.g.
+          // DeepWiki down or rate-limited) resolves normally after calling
+          // `store.setError`. Without this check that "success" short-circuited
+          // straight past the cold-rehydration fallback below, so a repo with
+          // real persisted Supabase content showed the raw live-attempt error
+          // instead whenever a (currently failing) live conversation happened
+          // to be open for it -- strictly worse than having no live
+          // conversation at all. Only fall through when it actually failed; a
+          // genuine "ready" (or still-"generating") must not be overwritten
+          // by stale persisted content.
+          if (
+            useKnowledgeStore.getState().byRepositoryId[repositoryId]
+              ?.status !== "error"
+          ) {
+            return;
+          }
+          liveGenerationFailed = true;
         } catch {
           // Fall through to the content-only Supabase stub below rather
           // than leaving the page stuck on a live-session attempt that
           // failed (e.g. the clone never finished).
         }
       }
-      if (!cancelled) {
+      if (!cancelled || liveGenerationFailed) {
         try {
           await tryColdRehydration(repositoryId, parsed, hydrate);
         } catch (error) {
@@ -238,7 +264,7 @@ export function useKnowledgeRehydration(
         }
       }
     })().finally(() => {
-      if (!cancelled) setChecked(true);
+      if (!cancelled || liveGenerationFailed) setChecked(true);
     });
     return () => {
       cancelled = true;

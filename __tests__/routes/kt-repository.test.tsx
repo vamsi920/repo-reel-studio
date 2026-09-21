@@ -7,6 +7,8 @@ import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 import { resolveCommitSha } from "#/lib/knowledge/connected-repositories";
 import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
+import { findRepositoryUuid } from "#/lib/data-platform/repositories/repository-identity";
+import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 
 const resolveOrgId = vi.fn();
 
@@ -286,6 +288,54 @@ describe("KtRepository", () => {
     expect(
       await screen.findByLabelText(I18nKey.KT$QUALITY_FLAG_BADGE),
     ).toBeInTheDocument();
+  });
+
+  it("falls back to persisted Supabase content when a live generation attempt fails", async () => {
+    // A live conversation is open for this repo *and* a real generation was
+    // already persisted for it in an earlier session -- the live attempt
+    // failing (DeepWiki down/rate-limited) must not hide that real content
+    // behind the raw live-attempt error, since a user with no live
+    // conversation at all would see the persisted content just fine.
+    connected.repositories = [
+      {
+        repositoryId: REPOSITORY_ID,
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "http://localhost:3000/conversations/c1",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      },
+    ];
+    vi.mocked(resolveCommitSha).mockResolvedValue("0123456789abcdef");
+    // Mirrors the real generateKnowledge: an internal DeepWiki failure never
+    // rethrows -- it resolves normally after recording `setError`.
+    vi.mocked(generateKnowledge).mockImplementation(
+      async (snapshot, conversationUrl, sessionApiKey, store) => {
+        store.startGenerating(snapshot, conversationUrl, sessionApiKey);
+        store.setError(snapshot.repositoryId, "DeepWiki rate limited.");
+      },
+    );
+    resolveOrgId.mockResolvedValue("org-1");
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid");
+    vi.mocked(
+      knowledgePersistenceRepository.getLatestGenerationForRepository,
+    ).mockResolvedValue({
+      repositoryId: REPOSITORY_ID,
+      commitSha: "abcdef1234567890",
+      title: "API (persisted)",
+      summary: "",
+      sections: [],
+      pages: [],
+      generatedAt: new Date().toISOString(),
+    });
+
+    renderWithProviders(<KtRepository />);
+
+    expect(await screen.findByText("API (persisted)")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("kt-repository-error"),
+    ).not.toBeInTheDocument();
   });
 
   it("falls back to the empty state when cold rehydration rejects", async () => {
