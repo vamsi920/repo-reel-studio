@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { resolveOrgId } from "#/lib/data-platform/repositories/repository-identity";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
+import { ENVIRONMENT_QUERY_KEYS } from "./query-keys";
 
 /**
  * The org every Environment row is scoped to. Reuses the same bootstrap the
@@ -10,7 +11,7 @@ import { isSupabaseConfigured } from "#/lib/data-platform/client";
  */
 export function useEnvironmentOrgId() {
   return useQuery({
-    queryKey: ["environment", "org-id"],
+    queryKey: ENVIRONMENT_QUERY_KEYS.orgId(),
     queryFn: () => resolveOrgId(),
     enabled: isSupabaseConfigured,
     staleTime: Infinity,

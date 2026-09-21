@@ -20,6 +20,7 @@ export const SETTINGS_QUERY_KEYS = {
 
 export const ENVIRONMENT_QUERY_KEYS = {
   all: ["environment"] as const,
+  orgId: () => ["environment", "org-id"] as const,
   profile: (orgId?: string) =>
     ["environment", "profile", orgId ?? null] as const,
   connections: (orgId?: string) =>
@@ -33,6 +34,15 @@ export const ENVIRONMENT_QUERY_KEYS = {
   companyProfile: (orgId?: string) =>
     ["environment", "company-profile", orgId ?? null] as const,
 } as const;
+
+/**
+ * Supabase-authenticated third-party connection status. Neither carries a
+ * user/org identity in the key itself -- callers that need to react to an
+ * identity change (sign-in/out, one real user handing off to another in the
+ * same tab) must invalidate these explicitly; see `useSupabaseSession`.
+ */
+export const GITHUB_CONNECTION_QUERY_KEY = ["github-connection"] as const;
+export const JIRA_CONNECTION_QUERY_KEY = ["jira-connection"] as const;
 
 export const LLM_PROFILES_QUERY_KEYS = {
   all: ["llm-profiles"] as const,

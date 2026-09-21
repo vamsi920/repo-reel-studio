@@ -3,6 +3,8 @@ import { setLocalGithubConnected } from "#/api/git-service/github-connection-fla
 import { getActiveBackend } from "#/api/backend-registry/active-store";
 import {
   ENVIRONMENT_QUERY_KEYS,
+  GITHUB_CONNECTION_QUERY_KEY,
+  JIRA_CONNECTION_QUERY_KEY,
   SETTINGS_QUERY_KEYS,
 } from "#/hooks/query/query-keys";
 import { NEODEVEX_PULL_REQUESTS_QUERY_KEY } from "#/hooks/query/use-neodevex-pull-requests";
@@ -30,18 +32,18 @@ export async function invalidateConnectionCaches(
   //
   // So: settle the connection query first, correct the flag from its result,
   // and only then invalidate everything that reads through it.
-  await queryClient.refetchQueries({ queryKey: ["github-connection"] });
+  await queryClient.refetchQueries({ queryKey: GITHUB_CONNECTION_QUERY_KEY });
 
   // Written directly rather than waiting for the effect in `useUserProviders`:
   // that hook only updates the flag while one of its consumers is mounted, and
   // the connection may well have been made from a screen where none is.
   setLocalGithubConnected(
     getActiveBackend().backend.kind !== "cloud" &&
-      Boolean(queryClient.getQueryData(["github-connection"])),
+      Boolean(queryClient.getQueryData(GITHUB_CONNECTION_QUERY_KEY)),
   );
 
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ["jira-connection"] }),
+    queryClient.invalidateQueries({ queryKey: JIRA_CONNECTION_QUERY_KEY }),
     // Prefix match: the real key carries provider, page size, backend and org.
     queryClient.invalidateQueries({ queryKey: ["repositories"] }),
     queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEYS.all }),
@@ -60,8 +62,8 @@ export async function invalidateConnectionCaches(
  * screen is stale, which is a bad way to find out.
  */
 export const CONNECTION_CACHE_KEYS = [
-  ["github-connection"],
-  ["jira-connection"],
+  GITHUB_CONNECTION_QUERY_KEY,
+  JIRA_CONNECTION_QUERY_KEY,
   ["repositories"],
   SETTINGS_QUERY_KEYS.all,
   ["jira-issues"],
