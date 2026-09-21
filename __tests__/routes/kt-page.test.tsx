@@ -220,6 +220,78 @@ describe("KtPage", () => {
     expect(buildManifestMock).toHaveBeenCalledTimes(2);
   });
 
+  it("clears the stale manifest when navigating to a different repository whose page shares the same page id", async () => {
+    const OTHER_REPOSITORY_ID = "acme/other@main";
+    const OTHER_SNAPSHOT = {
+      ...SNAPSHOT,
+      repositoryId: OTHER_REPOSITORY_ID,
+      repo: "other",
+    };
+    const OTHER_KNOWLEDGE: KnowledgeRepository = {
+      repositoryId: OTHER_REPOSITORY_ID,
+      commitSha: OTHER_SNAPSHOT.commitSha,
+      title: "Other",
+      summary: "",
+      sections: [],
+      pages: [page("page-a", "Other Page A")],
+      generatedAt: new Date().toISOString(),
+    };
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        ...useKnowledgeStore.getState().byRepositoryId,
+        [OTHER_REPOSITORY_ID]: {
+          snapshot: OTHER_SNAPSHOT,
+          conversationUrl: "http://localhost:3000/conversations/c2",
+          sessionApiKey: "key2",
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: OTHER_KNOWLEDGE,
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    // Both repos' "page-a" share a page id, so the manifest must be keyed by
+    // something repo-distinguishing here to tell a stale manifest apart from
+    // a freshly-rebuilt one.
+    buildManifestMock.mockImplementation((pg: { id: string; title: string }) => ({
+      repo_name: `manifest-for-${pg.title}`,
+      scenes: [{ id: `${pg.id}-scene` }],
+      totalFrames: 30,
+      fps: 30,
+      repo_files: [],
+    }));
+
+    const user = userEvent.setup();
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    const { rerender } = render(<KtPage />);
+
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toHaveTextContent(
+        "manifest-for-Page A",
+      ),
+    );
+
+    // Navigate to a DIFFERENT repository whose page happens to share the
+    // same "page-a" id -- only `repositoryId` changes, so this route is
+    // reused rather than remounted.
+    mockUseParams.mockReturnValue({
+      repositoryId: encodeURIComponent(OTHER_REPOSITORY_ID),
+      pageId: encodeURIComponent("page-a"),
+    });
+    rerender(<KtPage />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toHaveTextContent(
+        "manifest-for-Other Page A",
+      ),
+    );
+    expect(buildManifestMock).toHaveBeenCalledTimes(2);
+  });
+
   it("disables Watch KT while a video is already generating, preventing a duplicate concurrent generation", async () => {
     const user = userEvent.setup();
     mockUseParams.mockReturnValue(paramsFor("page-a"));

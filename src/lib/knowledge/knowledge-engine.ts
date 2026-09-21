@@ -177,9 +177,14 @@ export function applyDiagramsToContent(
 ): string {
   let index = 0;
   return contentMarkdown.replace(MERMAID_FENCE_RE, (fullMatch, original) => {
+    const trimmedOriginal = (original as string).trim();
+    // Mirror extractDiagrams's own skip: an empty fence is never pushed to
+    // `diagrams[]`, so it must not consume a position here either, or every
+    // later diagram in `diagrams[]` would be matched to the wrong fence.
+    if (!trimmedOriginal) return fullMatch;
     const diagram = diagrams[index];
     index += 1;
-    if (!diagram || diagram.mermaid.trim() === (original as string).trim()) {
+    if (!diagram || diagram.mermaid.trim() === trimmedOriginal) {
       return fullMatch;
     }
     return `\`\`\`mermaid\n${diagram.mermaid.trim()}\n\`\`\``;

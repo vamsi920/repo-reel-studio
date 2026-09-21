@@ -394,4 +394,21 @@ describe("applyDiagramsToContent", () => {
 
     expect(applyDiagramsToContent(content, [])).toBe(content);
   });
+
+  it("skips an empty fence without shifting later diagrams onto the wrong block", () => {
+    // extractDiagrams drops empty fences from `diagrams[]` without counting
+    // them, so a real fence positioned after one must still be matched by
+    // its own position, not by the empty fence's.
+    const content =
+      "```mermaid\n\n```\n\ntext\n\n```mermaid\nreal\n```\n\nmore\n\n```mermaid\nsecond\n```";
+
+    const result = applyDiagramsToContent(content, [
+      diagram("real-fixed"),
+      diagram("second-fixed"),
+    ]);
+
+    expect(result).toBe(
+      "```mermaid\n\n```\n\ntext\n\n```mermaid\nreal-fixed\n```\n\nmore\n\n```mermaid\nsecond-fixed\n```",
+    );
+  });
 });

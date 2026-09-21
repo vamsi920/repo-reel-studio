@@ -207,13 +207,19 @@ function KtPage() {
   // `:pageId` changed. Without this, `manifest` from the previous page would
   // stay set, so clicking Watch KT (or the auto-watch deep link) for the new
   // page would hit the `if (manifest) return;` guard below and silently keep
-  // showing the previous page's video under the new page's title.
-  const previousPageIdRef = useRef<string | null>(null);
+  // showing the previous page's video under the new page's title. Keyed on
+  // repositoryId+pageId together, not pageId alone: two different
+  // repositories can generate a page with the same short slug (e.g.
+  // "overview"), and an in-place navigation between them must still clear
+  // the previous repository's stale manifest.
+  const previousPageKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    const currentPageId = page?.id ?? null;
-    if (previousPageIdRef.current === currentPageId) return;
-    const isPageChange = previousPageIdRef.current !== null;
-    previousPageIdRef.current = currentPageId;
+    const currentPageKey = page
+      ? `${decodedRepositoryId ?? ""}::${page.id}`
+      : null;
+    if (previousPageKeyRef.current === currentPageKey) return;
+    const isPageChange = previousPageKeyRef.current !== null;
+    previousPageKeyRef.current = currentPageKey;
     if (!isPageChange) return;
     setManifest(null);
     autoWatchStarted.current = false;
@@ -221,7 +227,7 @@ function KtPage() {
       autoWatchStarted.current = true;
       void generateWatchManifest(page, state);
     }
-  }, [page?.id]);
+  }, [decodedRepositoryId, page?.id]);
 
   useEffect(() => {
     // `?view=watch` should behave exactly like pressing Watch KT, which means
