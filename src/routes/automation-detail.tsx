@@ -87,6 +87,17 @@ export default function AutomationDetail() {
 
   const is404 = isError && getErrorStatus(error) === 404;
 
+  // The backend switch may not navigate at all (e.g. picking a different
+  // backend from the "Manage Backends" modal while this page is mounted
+  // calls `setActive` directly, with no redirect). Disabling the query
+  // above isn't enough on its own: `automation` still holds the previous
+  // backend's cached object, so without this guard the page would keep
+  // rendering that stale automation — and any action on it — under the
+  // new backend's identity. Mirrors the same guard in `routes/conversation.tsx`.
+  if (backendChanged) {
+    return null;
+  }
+
   // Show loading state while checking health
   if (isHealthLoading) {
     return (

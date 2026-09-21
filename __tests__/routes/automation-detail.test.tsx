@@ -202,6 +202,24 @@ describe("AutomationDetail — backend-change guard", () => {
     expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
   });
 
+  it("stops rendering the stale automation once the active backend changes mid-mount", async () => {
+    // Arrange — mounts under local, same as the fetch-guard test above, but
+    // this asserts on the render output rather than the fetch count: picking
+    // a different backend from the "Manage Backends" modal calls `setActive`
+    // directly with no navigation, so the stale cached automation must not
+    // keep rendering (and be actionable) under the new backend's identity.
+    renderDetail();
+    expect(await screen.findByText("Test Automation")).toBeInTheDocument();
+
+    // Act — flip the active backend with no accompanying navigation.
+    setActiveSelection({ backendId: cloudBackend.id });
+
+    // Assert — the previously-rendered automation detail is gone.
+    await waitFor(() => {
+      expect(screen.queryByText("Test Automation")).not.toBeInTheDocument();
+    });
+  });
+
   it("shows the model field as the persisted model profile name", async () => {
     renderDetail();
 
