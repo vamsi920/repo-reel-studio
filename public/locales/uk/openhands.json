@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Завантаження...",
   "PLUGINS$PICKER_EMPTY": "Немає доступних плагінів.",
   "PLUGINS$PICKER_ERROR": "Не вдалося завантажити плагіни.",
+  "PLUGINS$PICKER_RETRY": "Повторити",
   "PLUGINS$PICKER_DONE": "Готово",
   "PLUGINS$PICKER_SELECTED_COUNT": "Вибрано {{count}}",
   "PLUGINS_MODAL$DESCRIPTION": "Плагіни, явно додані на початку цієї розмови.",

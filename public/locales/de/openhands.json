@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Wird geladen...",
   "PLUGINS$PICKER_EMPTY": "Keine Plugins verfügbar.",
   "PLUGINS$PICKER_ERROR": "Plugins konnten nicht geladen werden.",
+  "PLUGINS$PICKER_RETRY": "Wiederholen",
   "PLUGINS$PICKER_DONE": "Fertig",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} ausgewählt",
   "PLUGINS_MODAL$DESCRIPTION": "Plugins, die beim Start dieser Unterhaltung explizit angehängt wurden.",

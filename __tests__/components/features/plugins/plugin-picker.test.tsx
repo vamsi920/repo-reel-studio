@@ -108,6 +108,25 @@ describe("PluginPicker", () => {
     ).toBeInTheDocument();
   });
 
+  it("refetches the catalog when the error state's retry button is clicked", async () => {
+    const getPluginsMarketplace = vi
+      .spyOn(PluginsService, "getPluginsMarketplace")
+      .mockRejectedValueOnce(new Error("unreachable"))
+      .mockResolvedValueOnce([alpha]);
+
+    renderPicker();
+    await screen.findByTestId("plugin-picker-error");
+
+    await userEvent.click(
+      screen.getByTestId("plugin-picker-error-retry"),
+    );
+
+    expect(
+      await screen.findByTestId("plugin-picker-card-alpha"),
+    ).toBeInTheDocument();
+    expect(getPluginsMarketplace).toHaveBeenCalledTimes(2);
+  });
+
   it("filters the catalog by the search query", async () => {
     vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
       alpha,

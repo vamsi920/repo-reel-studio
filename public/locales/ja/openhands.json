@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "読み込み中...",
   "PLUGINS$PICKER_EMPTY": "利用可能なプラグインはありません。",
   "PLUGINS$PICKER_ERROR": "プラグインを読み込めませんでした。",
+  "PLUGINS$PICKER_RETRY": "再試行",
   "PLUGINS$PICKER_DONE": "完了",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} 件選択中",
   "PLUGINS_MODAL$DESCRIPTION": "この会話の開始時に明示的に添付されたプラグインです。",

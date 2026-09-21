@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Laster...",
   "PLUGINS$PICKER_EMPTY": "Ingen plugins tilgjengelig.",
   "PLUGINS$PICKER_ERROR": "Kunne ikke laste plugins.",
+  "PLUGINS$PICKER_RETRY": "Prøv igjen",
   "PLUGINS$PICKER_DONE": "Ferdig",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} valgt",
   "PLUGINS_MODAL$DESCRIPTION": "Plugins som ble eksplisitt lagt til da denne samtalen startet.",

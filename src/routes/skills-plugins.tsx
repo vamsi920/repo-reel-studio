@@ -227,10 +227,17 @@ export default function SkillsPluginsScreen() {
           </div>
 
           {isLoading && (
-            <div className="flex flex-col gap-4">
+            <div
+              data-testid="plugins-loading"
+              role="status"
+              aria-live="polite"
+              className="flex flex-col gap-4"
+            >
+              <span className="sr-only">{t(I18nKey.HOME$LOADING)}</span>
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
+                  aria-hidden="true"
                   className="h-24 rounded-2xl bg-tertiary animate-pulse"
                 />
               ))}

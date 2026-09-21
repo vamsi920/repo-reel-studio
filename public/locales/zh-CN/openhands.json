@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "加载中...",
   "PLUGINS$PICKER_EMPTY": "没有可用的插件。",
   "PLUGINS$PICKER_ERROR": "无法加载插件。",
+  "PLUGINS$PICKER_RETRY": "重试",
   "PLUGINS$PICKER_DONE": "完成",
   "PLUGINS$PICKER_SELECTED_COUNT": "已选择 {{count}} 个",
   "PLUGINS_MODAL$DESCRIPTION": "此对话启动时明确附加的插件。",

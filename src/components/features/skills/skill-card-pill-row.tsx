@@ -4,9 +4,6 @@ import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import { extensionModuleCardPillClassName } from "#/utils/extension-module-card-classes";
 
-/** @deprecated Use {@link extensionModuleCardPillClassName} from `#/utils/extension-module-card-classes`. */
-export const SKILL_CARD_PILL_CLASS = extensionModuleCardPillClassName;
-
 const PILL_GAP_PX = 6;
 const OVERFLOW_PILL_WIDTH_PX = 40;
 

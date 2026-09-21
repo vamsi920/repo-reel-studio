@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "로딩 중...",
   "PLUGINS$PICKER_EMPTY": "사용할 수 있는 플러그인이 없습니다.",
   "PLUGINS$PICKER_ERROR": "플러그인을 불러올 수 없습니다.",
+  "PLUGINS$PICKER_RETRY": "다시 시도",
   "PLUGINS$PICKER_DONE": "완료",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}}개 선택됨",
   "PLUGINS_MODAL$DESCRIPTION": "이 대화를 시작할 때 명시적으로 첨부된 플러그인입니다.",

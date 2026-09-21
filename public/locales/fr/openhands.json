@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Chargement...",
   "PLUGINS$PICKER_EMPTY": "Aucun plugin disponible.",
   "PLUGINS$PICKER_ERROR": "Impossible de charger les plugins.",
+  "PLUGINS$PICKER_RETRY": "Réessayer",
   "PLUGINS$PICKER_DONE": "Terminé",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} sélectionné(s)",
   "PLUGINS_MODAL$DESCRIPTION": "Plugins explicitement joints au démarrage de cette conversation.",

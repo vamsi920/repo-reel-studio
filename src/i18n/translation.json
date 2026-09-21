@@ -37433,6 +37433,23 @@
     "uk": "Не вдалося завантажити плагіни.",
     "ca": "No s'han pogut carregar els connectors."
   },
+  "PLUGINS$PICKER_RETRY": {
+    "en": "Retry",
+    "ja": "再試行",
+    "zh-CN": "重试",
+    "zh-TW": "重試",
+    "ko-KR": "다시 시도",
+    "no": "Prøv igjen",
+    "it": "Riprova",
+    "pt": "Tentar novamente",
+    "es": "Reintentar",
+    "ar": "إعادة المحاولة",
+    "fr": "Réessayer",
+    "tr": "Yeniden dene",
+    "de": "Wiederholen",
+    "uk": "Повторити",
+    "ca": "Torna-ho a provar"
+  },
   "PLUGINS$PICKER_DONE": {
     "en": "Done",
     "ja": "完了",

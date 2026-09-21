@@ -38,7 +38,12 @@ export function PluginPicker({
   disabled = false,
 }: PluginPickerProps) {
   const { t } = useTranslation("openhands");
-  const { data: catalog, isLoading, isError } = usePluginsMarketplace();
+  const {
+    data: catalog,
+    isLoading,
+    isError,
+    refetch,
+  } = usePluginsMarketplace();
   const [search, setSearch] = useState("");
 
   const visible = (catalog ?? []).filter((plugin) =>
@@ -58,12 +63,22 @@ export function PluginPicker({
     }
     if (isError) {
       return (
-        <p
+        <div
           data-testid="plugin-picker-error"
-          className="py-8 text-center text-sm text-tertiary-light"
+          className="flex flex-col items-center gap-2 py-8 text-center"
         >
-          {t(I18nKey.PLUGINS$PICKER_ERROR)}
-        </p>
+          <p className="text-sm text-tertiary-light">
+            {t(I18nKey.PLUGINS$PICKER_ERROR)}
+          </p>
+          <button
+            type="button"
+            data-testid="plugin-picker-error-retry"
+            onClick={() => void refetch()}
+            className="cursor-pointer text-sm text-tertiary-alt underline hover:text-white"
+          >
+            {t(I18nKey.PLUGINS$PICKER_RETRY)}
+          </button>
+        </div>
       );
     }
     if (visible.length === 0) {

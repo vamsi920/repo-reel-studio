@@ -3,11 +3,9 @@ import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { SkillInfo } from "#/types/settings";
 import { cn } from "#/utils/utils";
+import { extensionModuleCardPillClassName } from "#/utils/extension-module-card-classes";
 import { getSkillTypeLabelKey, SkillTypeBadge } from "./skill-type-badge";
-import {
-  SKILL_CARD_PILL_CLASS,
-  type SkillCardPill,
-} from "./skill-card-pill-row";
+import type { SkillCardPill } from "./skill-card-pill-row";
 import {
   getSkillCategory,
   SKILL_CATEGORY_LABEL_KEYS,
@@ -59,7 +57,7 @@ export function buildSkillPills(
             pillTestId(testIdPrefix, skill.name, "category") ??
             `skill-category-${skill.name}`
           }
-          className={SKILL_CARD_PILL_CLASS}
+          className={extensionModuleCardPillClassName}
         >
           {translate(SKILL_CATEGORY_LABEL_KEYS[category])}
         </span>
@@ -79,7 +77,7 @@ export function buildSkillPills(
             pillTestId(testIdPrefix, skill.name, "version") ??
             `skill-version-${skill.name}`
           }
-          className={SKILL_CARD_PILL_CLASS}
+          className={extensionModuleCardPillClassName}
         >
           {translate(I18nKey.SETTINGS$SKILLS_VERSION, {
             version: skill.version,
@@ -96,7 +94,7 @@ export function buildSkillPills(
       node: (
         <span
           data-testid={pillTestId(testIdPrefix, skill.name, "license")}
-          className={SKILL_CARD_PILL_CLASS}
+          className={extensionModuleCardPillClassName}
         >
           {skill.license}
         </span>
@@ -111,7 +109,7 @@ export function buildSkillPills(
       node: (
         <span
           data-testid={pillTestId(testIdPrefix, skill.name, "compatibility")}
-          className={SKILL_CARD_PILL_CLASS}
+          className={extensionModuleCardPillClassName}
         >
           {skill.compatibility}
         </span>
@@ -146,7 +144,7 @@ export function buildSkillPills(
         node: (
           <span
             data-testid={pillTestId(testIdPrefix, skill.name, `tool-${tool}`)}
-            className={cn(SKILL_CARD_PILL_CLASS, "font-mono")}
+            className={cn(extensionModuleCardPillClassName, "font-mono")}
           >
             {tool}
           </span>
@@ -167,7 +165,7 @@ export function buildSkillPills(
               skill.name,
               `metadata-${key}`,
             )}
-            className={SKILL_CARD_PILL_CLASS}
+            className={extensionModuleCardPillClassName}
           >
             <span className="font-mono text-[10px] text-tertiary-light">
               {key}:
@@ -190,7 +188,7 @@ export function buildSkillPills(
             skill.name,
             `trigger-${trigger}`,
           )}
-          className={SKILL_CARD_PILL_CLASS}
+          className={extensionModuleCardPillClassName}
         >
           {trigger}
         </span>

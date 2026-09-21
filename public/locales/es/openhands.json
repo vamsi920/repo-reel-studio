@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Cargando...",
   "PLUGINS$PICKER_EMPTY": "No hay complementos disponibles.",
   "PLUGINS$PICKER_ERROR": "No se pudieron cargar los complementos.",
+  "PLUGINS$PICKER_RETRY": "Reintentar",
   "PLUGINS$PICKER_DONE": "Hecho",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} seleccionado(s)",
   "PLUGINS_MODAL$DESCRIPTION": "Complementos adjuntados explícitamente cuando comenzó esta conversación.",

@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Yükleniyor...",
   "PLUGINS$PICKER_EMPTY": "Kullanılabilir eklenti yok.",
   "PLUGINS$PICKER_ERROR": "Eklentiler yüklenemedi.",
+  "PLUGINS$PICKER_RETRY": "Yeniden dene",
   "PLUGINS$PICKER_DONE": "Bitti",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} seçildi",
   "PLUGINS_MODAL$DESCRIPTION": "Bu konuşma başladığında açıkça eklenen eklentiler.",

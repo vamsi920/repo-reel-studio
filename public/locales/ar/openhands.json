@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "جار التحميل...",
   "PLUGINS$PICKER_EMPTY": "لا توجد إضافات متاحة.",
   "PLUGINS$PICKER_ERROR": "تعذّر تحميل الإضافات.",
+  "PLUGINS$PICKER_RETRY": "إعادة المحاولة",
   "PLUGINS$PICKER_DONE": "تم",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} محدد",
   "PLUGINS_MODAL$DESCRIPTION": "الإضافات التي تم إرفاقها صراحةً عند بدء هذه المحادثة.",

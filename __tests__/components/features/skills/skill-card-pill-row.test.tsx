@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import {
-  SKILL_CARD_PILL_CLASS,
-  SkillCardPillRow,
-} from "#/components/features/skills/skill-card-pill-row";
+import { SkillCardPillRow } from "#/components/features/skills/skill-card-pill-row";
+
+// Test fixtures stand in for the real pill styling; only the row's layout
+// behavior is under test here.
+const TEST_PILL_CLASS = "test-pill";
 
 describe("SkillCardPillRow", () => {
   it("keeps pills on a single nowrap row with overflow handling", () => {
@@ -22,11 +23,11 @@ describe("SkillCardPillRow", () => {
         pills={[
           {
             id: "type-knowledge",
-            node: <span className={SKILL_CARD_PILL_CLASS}>Trigger-based</span>,
+            node: <span className={TEST_PILL_CLASS}>Trigger-based</span>,
           },
           {
             id: "trigger-ssh",
-            node: <span className={SKILL_CARD_PILL_CLASS}>ssh</span>,
+            node: <span className={TEST_PILL_CLASS}>ssh</span>,
           },
         ]}
       />,
@@ -58,12 +59,12 @@ describe("SkillCardPillRow", () => {
           {
             id: "type-knowledge",
             label: "Knowledge",
-            node: <span className={SKILL_CARD_PILL_CLASS}>Knowledge</span>,
+            node: <span className={TEST_PILL_CLASS}>Knowledge</span>,
           },
           {
             id: "trigger-ssh",
             label: "ssh",
-            node: <span className={SKILL_CARD_PILL_CLASS}>ssh</span>,
+            node: <span className={TEST_PILL_CLASS}>ssh</span>,
           },
         ]}
       />,
@@ -91,7 +92,7 @@ describe("SkillCardPillRow", () => {
         pills={[
           {
             id: "repository",
-            node: <span className={SKILL_CARD_PILL_CLASS}>my-repo</span>,
+            node: <span className={TEST_PILL_CLASS}>my-repo</span>,
           },
         ]}
       />,

@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Caricamento in corso...",
   "PLUGINS$PICKER_EMPTY": "Nessun plugin disponibile.",
   "PLUGINS$PICKER_ERROR": "Impossibile caricare i plugin.",
+  "PLUGINS$PICKER_RETRY": "Riprova",
   "PLUGINS$PICKER_DONE": "Fatto",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} selezionati",
   "PLUGINS_MODAL$DESCRIPTION": "Plugin esplicitamente allegati all'avvio di questa conversazione.",

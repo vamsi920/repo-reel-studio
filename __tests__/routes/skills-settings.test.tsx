@@ -132,6 +132,27 @@ describe("SkillsSettingsScreen", () => {
     );
   });
 
+  it("announces the loading skeleton to assistive tech", async () => {
+    let resolveSkills: (skills: SkillInfo[]) => void = () => {};
+    vi.spyOn(SkillsService, "getSkills").mockReturnValue(
+      new Promise((resolve) => {
+        resolveSkills = resolve;
+      }),
+    );
+
+    renderSkillsSettingsScreen();
+
+    const loading = await screen.findByTestId("skills-loading");
+    expect(loading).toHaveAttribute("role", "status");
+    expect(loading).toHaveAttribute("aria-live", "polite");
+    expect(loading).toHaveTextContent("HOME$LOADING");
+
+    resolveSkills([]);
+    await waitFor(() =>
+      expect(screen.queryByTestId("skills-loading")).not.toBeInTheDocument(),
+    );
+  });
+
   it("shows an error state instead of a misleading empty list when skills fail to load", async () => {
     // Regression: SkillsService.getSkills() used to swallow every failure
     // (a real agent-server 500 included) as "fall back to the public

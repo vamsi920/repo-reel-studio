@@ -101,6 +101,27 @@ describe("SkillsPluginsScreen", () => {
     ).mockResolvedValue([]);
   });
 
+  it("announces the loading skeleton to assistive tech", async () => {
+    let resolveMarketplace: (plugins: MarketplacePlugin[]) => void = () => {};
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockReturnValue(
+      new Promise((resolve) => {
+        resolveMarketplace = resolve;
+      }),
+    );
+
+    renderPluginsScreen();
+
+    const loading = await screen.findByTestId("plugins-loading");
+    expect(loading).toHaveAttribute("role", "status");
+    expect(loading).toHaveAttribute("aria-live", "polite");
+    expect(loading).toHaveTextContent("HOME$LOADING");
+
+    resolveMarketplace([]);
+    await waitFor(() =>
+      expect(screen.queryByTestId("plugins-loading")).not.toBeInTheDocument(),
+    );
+  });
+
   it("renders an Install action for a catalog plugin that is not installed", async () => {
     vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
       buildCatalogPlugin(),

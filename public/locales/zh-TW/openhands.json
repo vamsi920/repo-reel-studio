@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "載入中...",
   "PLUGINS$PICKER_EMPTY": "沒有可用的外掛程式。",
   "PLUGINS$PICKER_ERROR": "無法載入外掛程式。",
+  "PLUGINS$PICKER_RETRY": "重試",
   "PLUGINS$PICKER_DONE": "完成",
   "PLUGINS$PICKER_SELECTED_COUNT": "已選擇 {{count}} 個",
   "PLUGINS_MODAL$DESCRIPTION": "此對話啟動時明確附加的外掛。",

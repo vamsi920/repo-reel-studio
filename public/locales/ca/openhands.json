@@ -2201,6 +2201,7 @@
   "PLUGINS$PICKER_LOADING": "Carregant...",
   "PLUGINS$PICKER_EMPTY": "No hi ha connectors disponibles.",
   "PLUGINS$PICKER_ERROR": "No s'han pogut carregar els connectors.",
+  "PLUGINS$PICKER_RETRY": "Torna-ho a provar",
   "PLUGINS$PICKER_DONE": "Fet",
   "PLUGINS$PICKER_SELECTED_COUNT": "{{count}} seleccionats",
   "PLUGINS_MODAL$DESCRIPTION": "Connectors adjuntats explícitament quan ha començat aquesta conversa.",
