@@ -1,8 +1,43 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentOpsPanel } from "#/components/features/agentops/agentops-panel";
 
+const isAgentOpsSupportedBackend = vi.hoisted(() => vi.fn(() => true));
+
+vi.mock(
+  "#/api/agentops-service/agentops-service.api",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("#/api/agentops-service/agentops-service.api")
+    >()),
+    isAgentOpsSupportedBackend: () => isAgentOpsSupportedBackend(),
+  }),
+);
+
 describe("AgentOpsPanel", () => {
+  beforeEach(() => {
+    isAgentOpsSupportedBackend.mockReturnValue(true);
+  });
+
+  it("shows the unsupported-backend card for a cloud backend before any query can error", () => {
+    // Every AgentOps query hook disables itself for a cloud backend
+    // (`enabled: isAgentOpsSupportedBackend()`), so a disabled query's `error`
+    // stays `null` forever — without this check every tab silently fell
+    // through to its own "nothing here" empty state instead of this card.
+    isAgentOpsSupportedBackend.mockReturnValue(false);
+
+    render(
+      <AgentOpsPanel isLoading={false} error={null}>
+        <div data-testid="child" />
+      </AgentOpsPanel>,
+    );
+
+    expect(
+      screen.getByTestId("agentops-collector-unavailable"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument();
+  });
+
   it("shows the collector card when a query fails with nothing to fall back on", () => {
     render(
       <AgentOpsPanel isLoading={false} error={new Error("collector down")}>

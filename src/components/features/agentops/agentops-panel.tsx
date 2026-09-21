@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Loader2, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
+import { isAgentOpsSupportedBackend } from "#/api/agentops-service/agentops-service.api";
 import { CollectorUnavailable } from "./collector-unavailable";
 
 interface AgentOpsPanelProps {
@@ -26,6 +27,13 @@ interface AgentOpsPanelProps {
  * collector is down, unreachable, or rejecting us. There is no partial or
  * placeholder rendering — the only exception is `hasData`, where what stays on
  * screen is the collector's own last answer, labelled as stale.
+ *
+ * A cloud backend is checked first and separately: every query hook disables
+ * itself for one (`enabled: isAgentOpsSupportedBackend()`), so `error` stays
+ * `null` forever and the branch below never fires — without this check every
+ * tab silently fell through to its own empty state ("no active runs", a blank
+ * run page) instead of {@link CollectorUnavailable}'s dedicated
+ * "not supported for cloud backends" explanation.
  */
 export function AgentOpsPanel({
   isLoading,
@@ -34,6 +42,9 @@ export function AgentOpsPanel({
   children,
 }: AgentOpsPanelProps) {
   const { t } = useTranslation("openhands");
+
+  if (!isAgentOpsSupportedBackend())
+    return <CollectorUnavailable error={null} />;
 
   if (error && !hasData) return <CollectorUnavailable error={error} />;
 

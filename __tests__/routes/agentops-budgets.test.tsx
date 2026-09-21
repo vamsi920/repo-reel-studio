@@ -11,11 +11,30 @@ import type {
 
 const budgetsQuery = vi.hoisted(() => vi.fn());
 const policiesQuery = vi.hoisted(() => vi.fn());
+const activeBackend = vi.hoisted(() =>
+  vi.fn(() => ({
+    backend: {
+      id: "backend-a",
+      name: "A",
+      host: "",
+      apiKey: "",
+      kind: "local",
+    },
+    orgId: null,
+  })),
+);
 
 vi.mock("#/hooks/query/use-agentops", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#/hooks/query/use-agentops")>()),
   useAgentOpsBudgets: () => budgetsQuery(),
   useAgentOpsPolicies: () => policiesQuery(),
+}));
+
+vi.mock("#/contexts/active-backend-context", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("#/contexts/active-backend-context")
+  >()),
+  useActiveBackend: () => activeBackend(),
 }));
 
 vi.mock("#/utils/custom-toast-handlers", () => ({
@@ -89,6 +108,16 @@ describe("AgentOpsBudgets", () => {
   beforeEach(() => {
     budgetsQuery.mockReturnValue(loaded(BUDGETS));
     policiesQuery.mockReturnValue(loaded(POLICIES));
+    activeBackend.mockReturnValue({
+      backend: {
+        id: "backend-a",
+        name: "A",
+        host: "",
+        apiKey: "",
+        kind: "local",
+      },
+      orgId: null,
+    });
   });
 
   it("keeps a half-typed edit through a collector outage and its recovery", async () => {
@@ -121,6 +150,35 @@ describe("AgentOpsBudgets", () => {
     ).not.toBeInTheDocument();
     expect(monthlyInput()).toHaveValue("12");
     expect(screen.getByTestId("agentops-save-policies")).toBeEnabled();
+  });
+
+  it("drops an unsaved edit when the active backend changes", async () => {
+    // `edits` inside BudgetsPanel is keyed only by workspace path. A second
+    // backend can register a workspace with the very same path (a locally
+    // named alternate pointing at the same real folder), so without
+    // resetting the form on a backend switch a value typed for backend A's
+    // workspace would silently apply to backend B's on the next Save.
+    const user = userEvent.setup();
+    const { rerender } = renderBudgets();
+
+    await user.clear(monthlyInput());
+    await user.type(monthlyInput(), "12");
+    expect(monthlyInput()).toHaveValue("12");
+
+    activeBackend.mockReturnValue({
+      backend: {
+        id: "backend-b",
+        name: "B",
+        host: "",
+        apiKey: "",
+        kind: "local",
+      },
+      orgId: null,
+    });
+    rerender();
+
+    expect(monthlyInput()).toHaveValue("20");
+    expect(screen.getByTestId("agentops-save-policies")).toBeDisabled();
   });
 
   it("still shows the collector card when the very first fetch fails", () => {
