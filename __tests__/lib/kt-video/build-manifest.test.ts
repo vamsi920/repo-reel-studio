@@ -208,4 +208,31 @@ describe("buildKtManifest", () => {
 
     expect(codeScene!.highlight_lines).toEqual([1, 1]);
   });
+
+  it("does not crown an empty stub class as the file's primary symbol over a real function", () => {
+    // An earlier class with only a docstring and `pass` has no real logic in
+    // it, so a later function that actually does something should be named
+    // "the heart of this file" instead — not whichever symbol appears first.
+    const fileContents = {
+      "src/report_builder.py":
+        'DEFAULT_TITLE = "Report"\n' +
+        "\n" +
+        "class ReportSection:\n" +
+        '    """A section placeholder."""\n' +
+        "    pass\n" +
+        "\n" +
+        "def build_final_report(rows, title=DEFAULT_TITLE):\n" +
+        '    return f"{title}: {len(rows)} rows"\n',
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain(
+      "The heart of this file is build_final_report",
+    );
+    expect(codeScene!.narration_text).not.toContain(
+      "The heart of this file is ReportSection",
+    );
+  });
 });

@@ -439,16 +439,58 @@ const joinHuman = (items: string[]): string => {
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 };
 
-function pickPrimary(symbols: FileSymbol[]): FileSymbol | null {
+/**
+ * A class whose body (by indentation, everything more indented than the
+ * `class` line itself) is nothing but a docstring/comment and a bare
+ * `pass`/`...`/`NotImplemented` stub has no real logic in it, so it should
+ * never outrank a symbol that actually does something just because it comes
+ * first in the file.
+ */
+function isTrivialClassBody(symbol: FileSymbol, lines: string[]): boolean {
+  if (symbol.kind !== "class") return false;
+  const declIdx = symbol.line - 1;
+  const declIndent = lines[declIdx]?.match(/^\s*/)?.[0].length ?? 0;
+  let sawMember = false;
+  let inDocstring = false;
+  let docQuote = "";
+  for (let i = declIdx + 1; i < lines.length; i += 1) {
+    const raw = lines[i];
+    const line = raw.trim();
+    if (!line) continue;
+    const lineIndent = raw.match(/^\s*/)?.[0].length ?? 0;
+    if (!inDocstring && lineIndent <= declIndent) break;
+    if (inDocstring) {
+      if (line.includes(docQuote)) inDocstring = false;
+      continue;
+    }
+    if (/^('''|""")/.test(line)) {
+      docQuote = line.slice(0, 3);
+      if (!line.slice(3).includes(docQuote)) inDocstring = true;
+      continue;
+    }
+    if (/^(#|\/\/|\*\/?|\/\*)/.test(line)) continue;
+    if (/^(pass|\.\.\.|NotImplemented)[,;]?$/.test(line)) continue;
+    if (/^[{}();]*$/.test(line)) continue;
+    sawMember = true;
+    break;
+  }
+  return !sawMember;
+}
+
+function pickPrimary(
+  symbols: FileSymbol[],
+  lines: string[],
+): FileSymbol | null {
   if (symbols.length === 0) return null;
   const def = symbols.find((s) => s.kind === "default");
   if (def) return def;
   const exported = symbols.filter((s) => s.exported);
   const pool = exported.length ? exported : symbols;
-  const meaty = pool.find((s) =>
+  const meaty = pool.filter((s) =>
     ["function", "component", "class", "default"].includes(s.kind),
   );
-  return meaty || pool[0];
+  const substantial = meaty.find((s) => !isTrivialClassBody(s, lines));
+  return substantial || meaty[0] || pool[0];
 }
 
 function buildCodeScene(id: number, path: string, content: string): KtScene {
@@ -459,7 +501,7 @@ function buildCodeScene(id: number, path: string, content: string): KtScene {
   const role = roleForPath(path);
   const symbols = extractSymbols(path, content);
   const imports = extractImports(content);
-  const primary = pickPrimary(symbols);
+  const primary = pickPrimary(symbols, lines);
 
   const refTo = (start: number, end: number, symbol?: string): KtSourceRef => ({
     file_path: path,
