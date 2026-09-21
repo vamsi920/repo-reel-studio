@@ -122,6 +122,8 @@ function CodePanel({
         </span>
       </div>
       <div
+        role="group"
+        aria-label={`Code from ${scene.file_path ?? scene.title}, lines ${firstLineNumber} to ${firstLineNumber + lines.length - 1}, highlighting lines ${highlightStart} to ${highlightEnd}`}
         style={{
           background: "#0b0e13",
           padding: "16px 0",

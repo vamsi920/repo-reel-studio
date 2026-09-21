@@ -65,4 +65,29 @@ describe("ConceptPanel", () => {
     // so opacity should be low, not the exit floor.
     expect(Number(panel.style.opacity)).toBeLessThan(0.4);
   });
+
+  it("announces the active hop through an accessible status region", () => {
+    // 750 / 4 = 187 (floored) frames per segment, so frame 400 falls in
+    // segment index 2 (the third hop).
+    const scene = conceptScene(750, 4);
+
+    render(<ConceptPanel scene={scene} relativeFrame={400} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Step 3 of 4: step2 in src/step-2.ts",
+    );
+  });
+
+  it("exposes the hop breadcrumb as a labelled list with the active step marked current", () => {
+    const scene = conceptScene(750, 4);
+
+    render(<ConceptPanel scene={scene} relativeFrame={400} />);
+
+    const list = screen.getByRole("list", { name: "Call-chain steps" });
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(4);
+    expect(list).toContainElement(items[2]);
+    expect(items[2]).toHaveAttribute("aria-current", "step");
+    expect(items[0]).not.toHaveAttribute("aria-current");
+  });
 });

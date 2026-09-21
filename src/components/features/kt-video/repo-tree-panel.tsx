@@ -35,7 +35,11 @@ export function RepoTreePanel({
     >
       <div
         role="list"
-        aria-label={`Repository files for ${scene.title}`}
+        aria-label={
+          overflow > 0
+            ? `Repository files for ${scene.title}, showing ${files.length} of ${files.length + overflow}`
+            : `Repository files for ${scene.title}`
+        }
         style={{
           padding: "16px 24px",
           fontFamily: "'IBM Plex Mono', Menlo, monospace",

@@ -46,10 +46,20 @@ export function ConceptPanel({
   const opacity = Math.min(enterSpring, exit);
 
   const lines = active.code.split("\n");
+  const activeLabel = active.symbol ?? baseName(active.file_path);
 
   return (
     <div style={{ width: "100%", maxWidth: 1100 }}>
+      {/* The breadcrumb + code below convey step progress only through
+       * position/color, same gap ProvisioningCard's status region closes
+       * for its own step list — mirrored here for this scene's chain. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {`Step ${activeIndex + 1} of ${segments.length}: ${activeLabel} in ${active.file_path}`}
+      </div>
       <div
+        role="list"
+        // eslint-disable-next-line i18next/no-literal-string -- Remotion frame chrome
+        aria-label="Call-chain steps"
         style={{
           display: "flex",
           alignItems: "center",
@@ -62,6 +72,8 @@ export function ConceptPanel({
         {segments.map((seg, i) => (
           <div
             key={`${seg.file_path}-${i}`}
+            role="listitem"
+            aria-current={i === activeIndex ? "step" : undefined}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             {i > 0 ? (

@@ -128,6 +128,23 @@ describe("KtVideoComposition", () => {
     expect(screen.getByText("Narration")).toBeInTheDocument();
   });
 
+  it("labels the code region for assistive tech with the real file and line range shown", () => {
+    const scene = baseScene({
+      type: "code",
+      file_path: "src/example.ts",
+      code: "line1\nline2\nline3",
+      highlight_lines: [2, 3],
+    });
+
+    render(<KtVideoComposition manifest={manifestOf(scene)} />);
+
+    expect(
+      screen.getByRole("group", {
+        name: "Code from src/example.ts, lines 1 to 3, highlighting lines 2 to 3",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("routes architecture/flow/diagram scenes to DiagramPanel", () => {
     const scene = baseScene({ type: "architecture" });
 

@@ -97,6 +97,27 @@ describe("RepoTreePanel", () => {
     expect(screen.getByText("+4 more files in scope")).toBeInTheDocument();
   });
 
+  it("names the real shown/total split in the list's accessible name when files overflow", () => {
+    render(
+      <RepoTreePanel
+        scene={treeScene({
+          title: "Auth Flow",
+          tree_files: ["src/index.ts"],
+          tree_overflow: 4,
+        })}
+        relativeFrame={20}
+      />,
+    );
+
+    // Without this, a screen-reader user only hears the one listed item —
+    // the "+4 more" line is sighted-only text outside the list's own name.
+    expect(
+      screen.getByRole("list", {
+        name: "Repository files for Auth Flow, showing 1 of 5",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("renders nothing but the frame when a scene has no tree files at all", () => {
     render(
       <RepoTreePanel
