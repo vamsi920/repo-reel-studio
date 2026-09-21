@@ -2378,6 +2378,7 @@
   "CODEGRAPH$UNKNOWN_FRESHNESS": "Could not confirm whether this graph matches the current commit.",
   "CODEGRAPH$REDUCED": "Reduced analysis — some files were not parsed.",
   "CODEGRAPH$FAILED": "Graph analysis failed",
+  "CODEGRAPH$LAYOUT_FAILED": "Could not lay out this view. Try a different level, or re-analyze the repository.",
   "CODEGRAPH$NO_KNOWLEDGE": "Generate Knowledge docs for this repository first — CodeGraph reuses them to name subsystems.",
   "SIDEBAR$SECURITY": "Security",
   "SECURITY$TITLE": "Security",

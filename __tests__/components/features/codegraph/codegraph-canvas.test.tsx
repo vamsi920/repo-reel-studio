@@ -6,10 +6,22 @@ import {
   CodeGraphCanvas,
   edgesForVisibleNodes,
 } from "#/components/features/codegraph/codegraph-canvas";
+import { applyElkLayout } from "../../../../vendor/understand-anything/dashboard/utils/elk-layout";
 import type {
   CodeGraphEdge,
   CodeGraphNode,
 } from "#/lib/codegraph/codegraph-types";
+
+vi.mock(
+  "../../../../vendor/understand-anything/dashboard/utils/elk-layout",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("../../../../vendor/understand-anything/dashboard/utils/elk-layout")
+      >();
+    return { ...actual, applyElkLayout: vi.fn(actual.applyElkLayout) };
+  },
+);
 
 // React Flow measures nodes and the viewport through browser APIs jsdom does
 // not ship. These are the stubs its own testing guide recommends.
@@ -108,6 +120,43 @@ describe("edgesForVisibleNodes", () => {
       { source: "a", target: "b", type: "imports", weight: 1 },
     ];
     expect(edgesForVisibleNodes(edges, new Set())).toEqual([]);
+  });
+});
+
+describe("CodeGraphCanvas layout failure", () => {
+  // ELK reports a fatal issue (rather than rejecting) when it cannot lay a
+  // graph out at all, returning empty positions. Left unhandled, every node
+  // would render stacked on top of each other at (0, 0) with no indication
+  // anything went wrong — this asserts a real error state is shown instead.
+  it("shows an error state instead of silently rendering overlapping nodes", async () => {
+    vi.mocked(applyElkLayout).mockResolvedValueOnce({
+      positioned: { id: "root", children: [], edges: [] },
+      issues: [
+        {
+          level: "fatal",
+          category: "elk-layout-failed",
+          message: "boom",
+        },
+      ],
+    });
+    render(
+      <div style={{ width: 800, height: 600 }}>
+        <CodeGraphCanvas
+          nodes={[FOLDER, LEAF]}
+          edges={EDGES}
+          selectedNodeId={null}
+          highlightedIds={new Set()}
+          onSelect={vi.fn()}
+          onDrillDown={vi.fn()}
+        />
+      </div>,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "CODEGRAPH$LAYOUT_FAILED",
+    );
+    expect(
+      screen.queryByTestId(`rf__node-${LEAF.id}`),
+    ).not.toBeInTheDocument();
   });
 });
 

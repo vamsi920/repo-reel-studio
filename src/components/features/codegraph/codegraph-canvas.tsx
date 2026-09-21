@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { AlertTriangle } from "lucide-react";
 import {
   Background,
   Controls,
@@ -27,6 +29,7 @@ import type {
   CodeGraphEdge,
   CodeGraphNode,
 } from "#/lib/codegraph/codegraph-types";
+import { I18nKey } from "#/i18n/declaration";
 
 /**
  * Above this many nodes a minimap earns its place; below it, it is chrome that
@@ -101,8 +104,10 @@ function CodeGraphCanvasInner({
   onSelect,
   onDrillDown,
 }: CodeGraphCanvasProps) {
+  const { t } = useTranslation("openhands");
   const [flowNodes, setFlowNodes] = React.useState<Node<CustomNodeData>[]>([]);
   const [laidOut, setLaidOut] = React.useState(false);
+  const [layoutFailed, setLayoutFailed] = React.useState(false);
   const { fitView } = useReactFlow();
 
   const { upstream, downstream } = React.useMemo(
@@ -131,6 +136,7 @@ function CodeGraphCanvasInner({
   React.useEffect(() => {
     let cancelled = false;
     setLaidOut(false);
+    setLayoutFailed(false);
 
     const input: ElkInput = {
       id: "root",
@@ -147,8 +153,17 @@ function CodeGraphCanvasInner({
       })),
     };
 
-    applyElkLayout(input).then(({ positioned }) => {
+    applyElkLayout(input).then(({ positioned, issues }) => {
       if (cancelled) return;
+      // A fatal issue means ELK couldn't lay the graph out at all — `positioned`
+      // comes back with empty children in that case, which would otherwise
+      // render every node stacked on top of each other at (0, 0) with no
+      // indication anything went wrong. Show a real error state instead.
+      if (issues.some((issue) => issue.level === "fatal")) {
+        setLayoutFailed(true);
+        setLaidOut(true);
+        return;
+      }
       const positions = new Map(
         (positioned.children ?? []).map((child) => [
           child.id,
@@ -172,7 +187,7 @@ function CodeGraphCanvasInner({
   }, [structureKey]);
 
   React.useEffect(() => {
-    if (laidOut) {
+    if (laidOut && !layoutFailed) {
       // Wait a frame so React Flow has measured the freshly positioned nodes.
       const handle = requestAnimationFrame(() =>
         fitView({ padding: 0.15, duration: 220 }),
@@ -180,7 +195,7 @@ function CodeGraphCanvasInner({
       return () => cancelAnimationFrame(handle);
     }
     return undefined;
-  }, [laidOut, fitView]);
+  }, [laidOut, layoutFailed, fitView]);
 
   const nodeById = React.useMemo(
     () => new Map(nodes.map((node) => [node.id, node])),
@@ -302,6 +317,20 @@ function CodeGraphCanvasInner({
       ),
     [edges, selectedNodeId, nodeById],
   );
+
+  if (layoutFailed) {
+    return (
+      <div
+        role="alert"
+        className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center"
+      >
+        <AlertTriangle className="size-7 text-[var(--error-500)]" aria-hidden />
+        <p className="text-sm font-medium text-[var(--oh-foreground)]">
+          {t(I18nKey.CODEGRAPH$LAYOUT_FAILED)}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <ReactFlow

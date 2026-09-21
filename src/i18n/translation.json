@@ -40442,6 +40442,23 @@
     "tr": "Graph analysis failed",
     "uk": "Graph analysis failed"
   },
+  "CODEGRAPH$LAYOUT_FAILED": {
+    "en": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "ja": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "zh-CN": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "zh-TW": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "ko-KR": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "no": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "ar": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "de": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "fr": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "it": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "pt": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "es": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "ca": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "tr": "Could not lay out this view. Try a different level, or re-analyze the repository.",
+    "uk": "Could not lay out this view. Try a different level, or re-analyze the repository."
+  },
   "CODEGRAPH$NO_KNOWLEDGE": {
     "en": "Generate Knowledge docs for this repository first — CodeGraph reuses them to name subsystems.",
     "ja": "Generate Knowledge docs for this repository first — CodeGraph reuses them to name subsystems.",
