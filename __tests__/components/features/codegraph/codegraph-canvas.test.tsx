@@ -2,7 +2,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import { CodeGraphCanvas } from "#/components/features/codegraph/codegraph-canvas";
+import {
+  CodeGraphCanvas,
+  edgesForVisibleNodes,
+} from "#/components/features/codegraph/codegraph-canvas";
 import type {
   CodeGraphEdge,
   CodeGraphNode,
@@ -83,6 +86,30 @@ async function renderCanvas(
   );
   return { onSelect, onDrillDown };
 }
+
+describe("edgesForVisibleNodes", () => {
+  // The type filter panel narrows the canvas's `nodes` prop without touching
+  // `edges` — a level's edge list still names every relationship, including
+  // ones to a now-hidden node type. Handing that stale edge to React Flow
+  // anyway leaves a dangling edge with no node to attach to.
+  it("keeps only edges whose source and target are both visible", () => {
+    const edges: CodeGraphEdge[] = [
+      { source: "a", target: "b", type: "imports", weight: 1 },
+      { source: "a", target: "hidden", type: "imports", weight: 1 },
+      { source: "hidden", target: "b", type: "calls", weight: 1 },
+    ];
+    expect(edgesForVisibleNodes(edges, new Set(["a", "b"]))).toEqual([
+      edges[0],
+    ]);
+  });
+
+  it("returns an empty list when nothing is visible", () => {
+    const edges: CodeGraphEdge[] = [
+      { source: "a", target: "b", type: "imports", weight: 1 },
+    ];
+    expect(edgesForVisibleNodes(edges, new Set())).toEqual([]);
+  });
+});
 
 describe("CodeGraphCanvas keyboard access", () => {
   it("labels each focusable node with its name", async () => {

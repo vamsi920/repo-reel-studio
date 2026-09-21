@@ -75,6 +75,24 @@ function neighboursOf(
   return { upstream, downstream };
 }
 
+/**
+ * Drops any edge whose source or target isn't in `visibleNodeIds`.
+ *
+ * `edges` describes the whole level, but the nodes actually on screen can be
+ * narrower — the type filter panel hides some. An edge naming a hidden node
+ * has no React Flow node to attach to; passing it through anyway leaves a
+ * dangling edge in the renderer's internal edge lookup for no visible gain.
+ */
+export function edgesForVisibleNodes(
+  edges: CodeGraphEdge[],
+  visibleNodeIds: ReadonlySet<string>,
+): CodeGraphEdge[] {
+  return edges.filter(
+    (edge) =>
+      visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target),
+  );
+}
+
 function CodeGraphCanvasInner({
   nodes,
   edges,
@@ -260,26 +278,29 @@ function CodeGraphCanvasInner({
 
   const flowEdges = React.useMemo<Edge[]>(
     () =>
-      edges.map((edge, index) => {
-        const touchesSelection =
-          selectedNodeId != null &&
-          (edge.source === selectedNodeId || edge.target === selectedNodeId);
-        return {
-          id: `e${index}`,
-          source: edge.source,
-          target: edge.target,
-          animated: touchesSelection,
-          label: edge.count && edge.count > 1 ? String(edge.count) : undefined,
-          style: {
-            stroke: touchesSelection
-              ? "var(--oh-color-primary)"
-              : "var(--oh-border)",
-            strokeWidth: touchesSelection ? 2 : 1,
-            opacity: selectedNodeId && !touchesSelection ? 0.25 : 1,
-          },
-        };
-      }),
-    [edges, selectedNodeId],
+      edgesForVisibleNodes(edges, new Set(nodeById.keys())).map(
+        (edge, index) => {
+          const touchesSelection =
+            selectedNodeId != null &&
+            (edge.source === selectedNodeId || edge.target === selectedNodeId);
+          return {
+            id: `e${index}`,
+            source: edge.source,
+            target: edge.target,
+            animated: touchesSelection,
+            label:
+              edge.count && edge.count > 1 ? String(edge.count) : undefined,
+            style: {
+              stroke: touchesSelection
+                ? "var(--oh-color-primary)"
+                : "var(--oh-border)",
+              strokeWidth: touchesSelection ? 2 : 1,
+              opacity: selectedNodeId && !touchesSelection ? 0.25 : 1,
+            },
+          };
+        },
+      ),
+    [edges, selectedNodeId, nodeById],
   );
 
   return (
