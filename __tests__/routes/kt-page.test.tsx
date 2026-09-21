@@ -20,8 +20,12 @@ vi.mock("react-router", async () => {
   };
 });
 
+const ktBreadcrumbPropsSpy = vi.fn();
 vi.mock("#/components/features/kt-video/kt-breadcrumb", () => ({
-  KtBreadcrumb: () => <div data-testid="kt-breadcrumb" />,
+  KtBreadcrumb: (props: Record<string, unknown>) => {
+    ktBreadcrumbPropsSpy(props);
+    return <div data-testid="kt-breadcrumb" />;
+  },
 }));
 
 vi.mock("#/components/features/markdown/markdown-renderer", () => ({
@@ -406,6 +410,27 @@ describe("KtPage", () => {
     expect(
       screen.queryByTestId("kt-page-quality-flags"),
     ).not.toBeInTheDocument();
+  });
+
+  it("passes the decoded repositoryId to KtBreadcrumb, not the raw URL-encoded route param", async () => {
+    // The store key (and every other caller of KtBreadcrumb, e.g.
+    // kt-repository.tsx) uses the real, decoded id -- KtBreadcrumb
+    // encodeURIComponent()s it exactly once itself when navigating back. If
+    // this component instead forwarded the raw route param (already
+    // encodeURIComponent()'d by every navigation into this route), that
+    // value would get encoded a second time, producing a broken "back to
+    // repository" link for any id containing "/" or "@" -- which, per
+    // connected-repositories.ts's `${owner}/${repo}@${branch}` shape, is
+    // every real repositoryId.
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+
+    render(<KtPage />);
+
+    await waitFor(() =>
+      expect(ktBreadcrumbPropsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ repositoryId: REPOSITORY_ID }),
+      ),
+    );
   });
 
   it("reflects the narration toggle's on/off state through aria-pressed", async () => {

@@ -263,7 +263,7 @@ function KtPage() {
       <div className="mx-auto max-w-4xl p-6">
         <KtBreadcrumb
           repositoryLabel={`${state.snapshot.owner}/${state.snapshot.repo}`}
-          repositoryId={repositoryId}
+          repositoryId={decodedRepositoryId}
           pageTitle={page.title}
         />
 
