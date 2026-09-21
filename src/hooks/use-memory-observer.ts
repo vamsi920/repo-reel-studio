@@ -38,8 +38,14 @@ export function useMemoryObserver(): void {
   const processedCount = useRef(0);
 
   useEffect(() => {
-    // A conversation switch resets the store, so reset the mark with it.
-    processedCount.current = 0;
+    // A conversation switch clears the store, which is then repopulated from
+    // its REST history preload (`conversation-websocket-context.tsx`'s
+    // `useLayoutEffect`s, which always commit before this passive effect).
+    // Seed the mark to whatever is already loaded -- instead of resetting to
+    // 0 -- so that preloaded history is never treated as "fresh": resetting
+    // to 0 here caused every reopen of a conversation with existing bash
+    // history to resubmit its entire history as new memory candidates.
+    processedCount.current = useEventStore.getState().events.length;
   }, [conversation?.id]);
 
   useEffect(() => {

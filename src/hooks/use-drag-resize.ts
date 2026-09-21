@@ -3,6 +3,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   TouchEvent as ReactTouchEvent,
 } from "react";
+import { useEffect, useRef } from "react";
 import { EPS } from "#/utils/constants";
 import { isMobileDevice } from "#/utils/utils";
 
@@ -55,6 +56,22 @@ export const useDragResize = ({
   onHeightChange,
   onReachedMinHeight,
 }: UseDragResizeOptions) => {
+  // Holds the teardown for whichever drag is currently in progress, if any.
+  // `startDrag` below attaches its listeners directly (not inside a
+  // useEffect), so a component that unmounts mid-drag — before mouseup/
+  // touchend ever fires — would otherwise leave them attached to `document`
+  // forever, running stale closures (including state setters) against a
+  // detached `elementRef`.
+  const activeDragCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(
+    () => () => {
+      activeDragCleanupRef.current?.();
+      activeDragCleanupRef.current = null;
+    },
+    [],
+  );
+
   const getClientY = (event: MouseEvent | TouchEvent): number => {
     if ("touches" in event && event.touches.length > 0) {
       return event.touches[0].clientY;
@@ -141,29 +158,34 @@ export const useDragResize = ({
       }
     };
 
+    const removeDragListeners = () => {
+      if (isMobile) {
+        const resizeGrip = document.getElementById("resize-grip");
+        // These were added with `{ capture: true }`; removeEventListener
+        // must be called with the same capture flag or the browser treats
+        // it as removing a different (non-capturing) listener and silently
+        // no-ops, leaving the real one attached.
+        resizeGrip?.removeEventListener("touchmove", handleDragMove, {
+          capture: true,
+        });
+        resizeGrip?.removeEventListener("touchend", handleDragEnd, {
+          capture: true,
+        });
+      } else {
+        document.removeEventListener("mousemove", handleDragMove);
+        document.removeEventListener("mouseup", handleDragEnd);
+      }
+      activeDragCleanupRef.current = null;
+    };
+
     const handleDragEnd = () => {
       if (dragCommitted) {
         onGripDragEnd?.();
       }
-
-      if (isMobile) {
-        const resizeGrip = document.getElementById("resize-grip");
-        if (!resizeGrip) {
-          return;
-        }
-
-        // Remove both mouse and touch event listeners
-        resizeGrip.removeEventListener("mousemove", handleDragMove);
-        resizeGrip.removeEventListener("mouseup", handleDragEnd);
-        resizeGrip.removeEventListener("touchmove", handleDragMove);
-        resizeGrip.removeEventListener("touchend", handleDragEnd);
-      } else {
-        document.removeEventListener("mousemove", handleDragMove);
-        document.removeEventListener("mouseup", handleDragEnd);
-        document.removeEventListener("touchmove", handleDragMove);
-        document.removeEventListener("touchend", handleDragEnd);
-      }
+      removeDragListeners();
     };
+
+    activeDragCleanupRef.current = removeDragListeners;
 
     // Setup event listeners based on device type
     if (isMobile) {

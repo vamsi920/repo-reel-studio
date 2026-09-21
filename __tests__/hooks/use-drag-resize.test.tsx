@@ -182,3 +182,91 @@ describe("useDragResize — disabled when not bottom-anchored", () => {
     expect(parseFloat(inputEl.style.height)).toBe(20);
   });
 });
+
+describe("useDragResize — listener cleanup", () => {
+  let inputEl: HTMLDivElement;
+  let wrapperEl: HTMLDivElement;
+  let gripEl: HTMLDivElement;
+
+  const bottomAnchoredRect = {
+    top: 668,
+    bottom: 768,
+    left: 0,
+    right: 0,
+    width: 800,
+    height: 100,
+    x: 0,
+    y: 668,
+    toJSON: () => ({}),
+  };
+
+  beforeEach(() => {
+    wrapperEl = document.createElement("div");
+    gripEl = document.createElement("div");
+    gripEl.id = "resize-grip";
+    const containerEl = document.createElement("div");
+    inputEl = document.createElement("div");
+    inputEl.style.height = "20px";
+    containerEl.appendChild(inputEl);
+    wrapperEl.appendChild(gripEl);
+    wrapperEl.appendChild(containerEl);
+    document.body.appendChild(wrapperEl);
+
+    Object.defineProperty(inputEl, "offsetHeight", {
+      get() {
+        return parseFloat(inputEl.style.height || "20");
+      },
+      configurable: true,
+    });
+
+    vi.spyOn(wrapperEl, "getBoundingClientRect").mockReturnValue(
+      bottomAnchoredRect,
+    );
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(768);
+  });
+
+  afterEach(() => {
+    wrapperEl.remove();
+    vi.restoreAllMocks();
+  });
+
+  it("removes the document mousemove/mouseup listeners on unmount mid-drag", () => {
+    const removeSpy = vi.spyOn(document, "removeEventListener");
+
+    const { result, unmount } = renderHook(() =>
+      useDragResize({
+        elementRef: { current: inputEl },
+        minHeight: 20,
+        maxHeight: 400,
+      }),
+    );
+
+    act(() => {
+      result.current.handleGripMouseDown(
+        new MouseEvent("mousedown", { clientY: 100 }) as unknown as React.MouseEvent,
+      );
+    });
+    // Commit the drag so listeners are definitely attached and in-flight.
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 90 }));
+    });
+
+    // Unmounting without a mouseup ever firing must not leak the
+    // document-level listeners registered by startDrag.
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalledWith(
+      "mousemove",
+      expect.any(Function),
+    );
+    expect(removeSpy).toHaveBeenCalledWith("mouseup", expect.any(Function));
+
+    // A stray mousemove after unmount must not touch the (now stale) element.
+    inputEl.style.height = "20px";
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 50 }));
+    });
+    expect(parseFloat(inputEl.style.height)).toBe(20);
+  });
+});
+
