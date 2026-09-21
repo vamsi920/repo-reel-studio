@@ -2,11 +2,12 @@ import { renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { renderWithProviders } from "test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import SecurityScreen, { useSecurityWorkspaceScope } from "#/routes/security";
 import { I18nKey } from "#/i18n/declaration";
 import routes from "#/routes";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
+import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 import {
   SECURITY_SEVERITIES,
   type SecurityFinding,
@@ -18,6 +19,19 @@ import {
   buildSecurityActivityEvent,
   type SecurityMilestoneKind,
 } from "#/lib/security/security-activity";
+
+const connected: RepoCandidate[] = [];
+
+vi.mock("#/lib/knowledge/connected-repositories", () => ({
+  useConnectedRepositories: () => ({
+    repositories: connected,
+    isLoading: false,
+  }),
+}));
+
+function setConnected(...candidates: RepoCandidate[]) {
+  connected.splice(0, connected.length, ...candidates);
+}
 
 function renderSecurity(initialPath = "/security") {
   return renderWithProviders(
@@ -65,6 +79,7 @@ function seedRepository(
 describe("Security route", () => {
   beforeEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
+    setConnected();
   });
 
   it("is registered at /security", () => {
@@ -250,6 +265,66 @@ describe("Security route", () => {
       expect(result.current.repositories).toEqual([
         { repositoryId: "acme/api@main", label: "acme/api", branch: "main" },
       ]);
+    });
+
+    it("scopes to an open conversation's repository even when nothing has ingested it into the knowledge store yet", () => {
+      // Regression: the knowledge store only gains an entry once some
+      // Knowledge/CodeGraph/KT-video route ingests a repository this
+      // session, so a user opening Security straight from the sidebar (its
+      // normal entry point) with a repository open right now, but never
+      // visited, previously saw "no workspace to scope to" -- reporting a
+      // connected repository as absent.
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      });
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api",
+      );
+      // No resolved commit yet -- the scope line must not invent one.
+      expect(
+        screen.getByTestId("security-workspace-scope"),
+      ).not.toHaveTextContent("@");
+    });
+
+    it("ignores an open conversation with no working directory yet -- there is no checkout to scope to", () => {
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv",
+        sessionApiKey: "key",
+        workingDir: null,
+      });
+      renderSecurity();
+
+      expect(screen.getByTestId("security-no-workspace")).toBeInTheDocument();
+    });
+
+    it("prefers a knowledge-store entry (a real, resolved commit) over a bare open conversation for the same repository", () => {
+      seedRepository();
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api-live",
+      });
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
     });
   });
 

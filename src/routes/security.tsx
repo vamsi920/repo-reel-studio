@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
-import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
+import { useConnectedRepositories } from "#/lib/knowledge/connected-repositories";
 import { I18nKey } from "#/i18n/declaration";
 import {
   SECURITY_SEVERITIES,
@@ -23,7 +23,12 @@ interface SecurityWorkspaceScope {
   workspaceId: string;
   repositoryId: string;
   label: string;
-  commitSha: string;
+  /** Only known once real Knowledge/CodeGraph work has resolved a commit for
+   * this repository (a knowledge-store entry). A repository that is only
+   * known from an open conversation has no resolved commit yet, and showing
+   * a fabricated one would be a lie -- see the "connected, not yet ingested"
+   * branch below. */
+  commitSha: string | null;
 }
 
 /**
@@ -51,18 +56,6 @@ export interface SecurityWorkspaceScopeState {
   repositories: SecurityRepositoryOption[];
 }
 
-function scopedTo(snapshot: RepositorySnapshot): SecurityWorkspaceScopeResult {
-  return {
-    state: "scoped",
-    scope: {
-      workspaceId: workspaceIdForSnapshot(snapshot),
-      repositoryId: snapshot.repositoryId,
-      label: `${snapshot.owner}/${snapshot.repo}`,
-      commitSha: snapshot.commitSha,
-    },
-  };
-}
-
 /**
  * Security is workspace-scoped, and a workspace here is the same thing it is
  * everywhere else in the app: the checkout a repository snapshot points at
@@ -70,6 +63,19 @@ function scopedTo(snapshot: RepositorySnapshot): SecurityWorkspaceScopeResult {
  * names a repository that is not connected the page says so, because silently
  * scoping to some other repository would report one repository's security
  * posture under another repository's name.
+ *
+ * The knowledge store alone is not the full picture: it only gains an entry
+ * once some Knowledge/CodeGraph/KT-video route has ingested a repository this
+ * session, so a user who opens Security straight from the sidebar (its normal
+ * entry point) without visiting one of those first saw "no workspace to scope
+ * to" even with a repository open right now. `useConnectedRepositories`
+ * (real, open conversations, the same source `/kt` lists from) fills that gap
+ * for any repository the store doesn't already know about; it has no resolved
+ * commit yet, so `commitSha` is left `null` rather than invented, and a
+ * candidate with no working directory yet (still provisioning) is left out —
+ * there is no checkout to scope to. A store entry, when one exists, always
+ * wins: it reflects a real generation or a resolved commit, strictly more
+ * than a bare open conversation does.
  *
  * With no `?repository=`, the connected repositories are ordered by id and the
  * first wins, so a reload cannot quietly re-scope the page just because the
@@ -79,26 +85,53 @@ export function useSecurityWorkspaceScope(
   repositoryIdParam: string | null,
 ): SecurityWorkspaceScopeState {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
+  const { repositories: connected } = useConnectedRepositories();
   return useMemo(() => {
-    const entries = [...Object.values(byRepositoryId)].sort((a, b) =>
-      a.snapshot.repositoryId.localeCompare(b.snapshot.repositoryId),
+    const byId = new Map<
+      string,
+      { scope: SecurityWorkspaceScope; branch: string }
+    >();
+    Object.values(byRepositoryId).forEach(({ snapshot }) => {
+      byId.set(snapshot.repositoryId, {
+        scope: {
+          workspaceId: workspaceIdForSnapshot(snapshot),
+          repositoryId: snapshot.repositoryId,
+          label: `${snapshot.owner}/${snapshot.repo}`,
+          commitSha: snapshot.commitSha,
+        },
+        branch: snapshot.branch,
+      });
+    });
+    connected.forEach((candidate) => {
+      if (byId.has(candidate.repositoryId) || !candidate.workingDir) return;
+      byId.set(candidate.repositoryId, {
+        scope: {
+          workspaceId: candidate.workingDir,
+          repositoryId: candidate.repositoryId,
+          label: `${candidate.owner}/${candidate.repo}`,
+          commitSha: null,
+        },
+        branch: candidate.branch,
+      });
+    });
+
+    const entries = [...byId.values()].sort((a, b) =>
+      a.scope.repositoryId.localeCompare(b.scope.repositoryId),
     );
-    const repositories = entries.map(({ snapshot }) => ({
-      repositoryId: snapshot.repositoryId,
-      label: `${snapshot.owner}/${snapshot.repo}`,
-      branch: snapshot.branch,
+    const repositories = entries.map(({ scope, branch }) => ({
+      repositoryId: scope.repositoryId,
+      label: scope.label,
+      branch,
     }));
     if (entries.length === 0) {
       return { scope: { state: "no-repositories" }, repositories };
     }
 
     if (repositoryIdParam) {
-      const requested = entries.find(
-        (e) => e.snapshot.repositoryId === repositoryIdParam,
-      );
+      const requested = byId.get(repositoryIdParam);
       return {
         scope: requested
-          ? scopedTo(requested.snapshot)
+          ? { state: "scoped", scope: requested.scope }
           : {
               state: "requested-not-connected",
               repositoryId: repositoryIdParam,
@@ -107,8 +140,11 @@ export function useSecurityWorkspaceScope(
       };
     }
 
-    return { scope: scopedTo(entries[0].snapshot), repositories };
-  }, [byRepositoryId, repositoryIdParam]);
+    return {
+      scope: { state: "scoped", scope: entries[0].scope },
+      repositories,
+    };
+  }, [byRepositoryId, connected, repositoryIdParam]);
 }
 
 const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
@@ -300,7 +336,9 @@ function SecurityScreen() {
             data-testid="security-workspace-scope"
             role="status"
           >
-            {scope.scope.label}@{scope.scope.commitSha.slice(0, 7)}
+            {scope.scope.commitSha
+              ? `${scope.scope.label}@${scope.scope.commitSha.slice(0, 7)}`
+              : scope.scope.label}
           </p>
         )}
         {scope.state === "requested-not-connected" && (
