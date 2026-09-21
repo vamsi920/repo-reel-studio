@@ -1,10 +1,11 @@
 import { render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import KtVideoTab, { useSelectedFileContents } from "#/routes/kt-video-tab";
 import type { GitChange } from "#/api/open-hands.types";
+import { useConversationStore } from "#/stores/conversation-store";
 
 const { fileResultsMock } = vi.hoisted(() => ({
   fileResultsMock: new Map<
@@ -176,6 +177,10 @@ function renderKtVideoTab(paths: string[]) {
 }
 
 describe("KtVideoTab file selection cap", () => {
+  afterEach(() => {
+    useConversationStore.setState({ ktVideoSelectedFiles: null });
+  });
+
   it("disables and titles an unselected checkbox once 8 files are already picked, and re-enables it when a slot frees up", async () => {
     const paths = Array.from({ length: 9 }, (_, i) => `file-${i}.ts`);
     const user = userEvent.setup();
@@ -204,5 +209,47 @@ describe("KtVideoTab file selection cap", () => {
     await user.click(firstCheckbox);
     expect(ninthCheckbox).not.toBeDisabled();
     expect(ninthLabel).not.toHaveAttribute("title");
+  });
+
+  it("keeps the user's manual file picks after the tab unmounts and remounts, like switching away and back", async () => {
+    // More than the cap, so the default selection (the first 8 changed
+    // files) differs from what we're about to manually pick.
+    const paths = Array.from({ length: 9 }, (_, i) => `file-${i}.ts`);
+    const user = userEvent.setup();
+    const { unmount } = renderKtVideoTab(paths);
+
+    // file-0.ts is checked by default; manually uncheck it, and check the
+    // otherwise-unreachable file-8.ts in the slot it frees up.
+    const firstLabel = screen.getByTitle("file-0.ts").closest("label")!;
+    const firstCheckbox = within(firstLabel).getByRole(
+      "checkbox",
+    ) as HTMLInputElement;
+    expect(firstCheckbox).toBeChecked();
+    await user.click(firstCheckbox);
+    expect(firstCheckbox).not.toBeChecked();
+
+    const ninthLabel = screen.getByTitle("file-8.ts").closest("label")!;
+    const ninthCheckbox = within(ninthLabel).getByRole(
+      "checkbox",
+    ) as HTMLInputElement;
+    await user.click(ninthCheckbox);
+    expect(ninthCheckbox).toBeChecked();
+
+    // Simulate ConversationTabContent unmounting this tab's subtree when the
+    // user switches to another tab, then remounting it on switching back.
+    unmount();
+    renderKtVideoTab(paths);
+
+    const remountedFirstLabel = screen.getByTitle("file-0.ts").closest(
+      "label",
+    )!;
+    expect(
+      within(remountedFirstLabel).getByRole("checkbox"),
+    ).not.toBeChecked();
+
+    const remountedNinthLabel = screen.getByTitle("file-8.ts").closest(
+      "label",
+    )!;
+    expect(within(remountedNinthLabel).getByRole("checkbox")).toBeChecked();
   });
 });

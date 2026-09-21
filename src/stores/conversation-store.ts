@@ -42,6 +42,11 @@ interface ConversationState {
   planContent: string | null;
   conversationMode: ConversationMode;
   subConversationTaskId: string | null; // Task ID for sub-conversation creation
+  /** KT Video tab's manually-picked file selection. `null` means "not yet
+   * overridden by the user" (falls back to changed-files). Lives here,
+   * rather than as local component state, so it survives the tab's
+   * unmount/remount when the user switches to another tab and back. */
+  ktVideoSelectedFiles: string[] | null;
 }
 
 interface ConversationActions {
@@ -73,6 +78,7 @@ interface ConversationActions {
   setConversationMode: (conversationMode: ConversationMode) => void;
   setSubConversationTaskId: (taskId: string | null) => void;
   setPlanContent: (planContent: string | null) => void;
+  setKtVideoSelectedFiles: (files: string[] | null) => void;
 }
 
 type ConversationStore = ConversationState & ConversationActions;
@@ -131,6 +137,7 @@ export const useConversationStore = create<ConversationStore>()(
       planContent: null,
       conversationMode: getInitialConversationMode(),
       subConversationTaskId: null,
+      ktVideoSelectedFiles: null,
 
       // Actions
       setIsRightPanelShown: (isRightPanelShown) =>
@@ -343,6 +350,7 @@ export const useConversationStore = create<ConversationStore>()(
             pastedImageNames: [],
             loadingFiles: [],
             loadingImages: [],
+            ktVideoSelectedFiles: null,
           },
           false,
           "resetConversationState",
@@ -364,6 +372,9 @@ export const useConversationStore = create<ConversationStore>()(
 
       setPlanContent: (planContent) =>
         set({ planContent }, false, "setPlanContent"),
+
+      setKtVideoSelectedFiles: (ktVideoSelectedFiles) =>
+        set({ ktVideoSelectedFiles }, false, "setKtVideoSelectedFiles"),
     }),
     {
       name: "conversation-store",

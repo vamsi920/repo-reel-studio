@@ -10,6 +10,7 @@ import { buildKtManifest } from "#/lib/kt-video/build-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
 import { I18nKey } from "#/i18n/declaration";
+import { useConversationStore } from "#/stores/conversation-store";
 
 const MAX_SELECTABLE_FILES = 8;
 
@@ -126,7 +127,14 @@ function KtVideoTab() {
   );
 
   const allPaths = workspaceFiles.data ?? [];
-  const [selected, setSelected] = useState<string[] | null>(null);
+  // Lives in the conversation store, not local state, so the user's picks
+  // (and the video derived from them) survive switching to another tab and
+  // back — this component fully unmounts on tab switch. The store resets it
+  // to null on conversation switch via resetConversationState.
+  const selected = useConversationStore((state) => state.ktVideoSelectedFiles);
+  const setSelected = useConversationStore(
+    (state) => state.setKtVideoSelectedFiles,
+  );
   const effectiveSelected =
     selected ?? changedPaths.slice(0, MAX_SELECTABLE_FILES);
 
@@ -147,12 +155,13 @@ function KtVideoTab() {
   );
 
   const toggleFile = (path: string) => {
-    setSelected((prev) => {
-      const base = prev ?? changedPaths.slice(0, MAX_SELECTABLE_FILES);
-      if (base.includes(path)) return base.filter((p) => p !== path);
-      if (base.length >= MAX_SELECTABLE_FILES) return base;
-      return [...base, path];
-    });
+    const base = selected ?? changedPaths.slice(0, MAX_SELECTABLE_FILES);
+    if (base.includes(path)) {
+      setSelected(base.filter((p) => p !== path));
+      return;
+    }
+    if (base.length >= MAX_SELECTABLE_FILES) return;
+    setSelected([...base, path]);
   };
 
   const durationInFrames = Math.max(1, manifest.totalFrames);
