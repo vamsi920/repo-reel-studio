@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "ChatGPT 구독이 연결되었습니다",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "ChatGPT 구독 연결이 해제되었습니다",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "로그인이 아직 완료되지 않았습니다. 브라우저 흐름을 완료한 뒤 다시 시도하세요.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "반복된 오류로 인해 자동 확인이 중지되었습니다. \"로그인 완료\"를 클릭하여 다시 확인하세요.",
   "STATUS$SAVING": "저장 중...",
   "THINKING$TITLE": "사고",
   "THINKING$EXPAND": "사고 펼치기",

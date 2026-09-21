@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "ChatGPT-Abonnement verbunden",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "ChatGPT-Abonnement getrennt",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "Die Anmeldung ist noch nicht abgeschlossen. Beende den Browserablauf und versuche es erneut.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "Die automatische Überprüfung wurde nach wiederholten Fehlern gestoppt. Klicke auf „Anmeldung abschließen“, um erneut zu prüfen.",
   "STATUS$SAVING": "Speichern...",
   "THINKING$TITLE": "Denken",
   "THINKING$EXPAND": "Denken erweitern",

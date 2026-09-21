@@ -345,6 +345,15 @@ export function LlmSettingsLocalView() {
           name: originalName,
           newName: trimmedName,
         });
+        // Reflect the rename locally right away. If the save below fails and
+        // the user retries, `originalName` must be the already-renamed name —
+        // otherwise the retry re-sends this same rename against a name that
+        // no longer exists server-side and the profile can never be saved.
+        setEditingProfile((prev) =>
+          prev
+            ? { ...prev, profile: { ...prev.profile, name: trimmedName } }
+            : prev,
+        );
       }
 
       await saveProfile.mutateAsync({

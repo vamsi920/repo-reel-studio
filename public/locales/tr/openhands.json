@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "ChatGPT aboneliği bağlandı",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "ChatGPT aboneliği bağlantısı kesildi",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "Oturum açma henüz tamamlanmadı. Tarayıcı akışını bitirin ve tekrar deneyin.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "Tekrarlanan hatalar nedeniyle otomatik kontrol durduruldu. Tekrar kontrol etmek için \"Oturum Açmayı Bitir\"e tıklayın.",
   "STATUS$SAVING": "Kaydediliyor...",
   "THINKING$TITLE": "Düşünme",
   "THINKING$EXPAND": "Düşünmeyi genişlet",

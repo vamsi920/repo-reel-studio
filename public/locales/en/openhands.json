@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "ChatGPT subscription connected",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "ChatGPT subscription disconnected",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "Sign-in is not complete yet. Finish the browser flow and try again.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "Automatic checking stopped after repeated errors. Click \"Finish Sign In\" to check again.",
   "STATUS$SAVING": "Saving...",
   "THINKING$TITLE": "Thinking",
   "THINKING$EXPAND": "Expand thinking",

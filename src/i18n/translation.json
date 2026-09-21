@@ -33336,6 +33336,23 @@
     "uk": "Вхід ще не завершено. Завершіть процес у браузері й повторіть спробу.",
     "ca": "L’inici de sessió encara no s’ha completat. Acaba el flux del navegador i torna-ho a provar."
   },
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": {
+    "en": "Automatic checking stopped after repeated errors. Click \"Finish Sign In\" to check again.",
+    "ja": "エラーが繰り返し発生したため、自動確認が停止しました。「サインインを完了」をクリックして再確認してください。",
+    "zh-CN": "由于多次出错,自动检查已停止。点击“完成登录”重新检查。",
+    "zh-TW": "由於多次發生錯誤,自動檢查已停止。點擊「完成登入」重新檢查。",
+    "ko-KR": "반복된 오류로 인해 자동 확인이 중지되었습니다. \"로그인 완료\"를 클릭하여 다시 확인하세요.",
+    "no": "Automatisk sjekk stoppet etter gjentatte feil. Klikk på «Fullfør pålogging» for å sjekke igjen.",
+    "it": "Il controllo automatico si è interrotto dopo errori ripetuti. Fai clic su \"Completa l'accesso\" per controllare di nuovo.",
+    "pt": "A verificação automática parou após erros repetidos. Clique em \"Concluir login\" para verificar novamente.",
+    "es": "La comprobación automática se detuvo después de errores repetidos. Haz clic en \"Finalizar inicio de sesión\" para volver a comprobar.",
+    "ar": "توقف الفحص التلقائي بعد أخطاء متكررة. انقر فوق \"إنهاء تسجيل الدخول\" للتحقق مرة أخرى.",
+    "fr": "La vérification automatique s'est arrêtée après des erreurs répétées. Cliquez sur « Terminer la connexion » pour vérifier à nouveau.",
+    "tr": "Tekrarlanan hatalar nedeniyle otomatik kontrol durduruldu. Tekrar kontrol etmek için \"Oturum Açmayı Bitir\"e tıklayın.",
+    "de": "Die automatische Überprüfung wurde nach wiederholten Fehlern gestoppt. Klicke auf „Anmeldung abschließen“, um erneut zu prüfen.",
+    "uk": "Автоматичну перевірку зупинено через повторні помилки. Натисніть «Завершити вхід», щоб перевірити ще раз.",
+    "ca": "La comprovació automàtica s'ha aturat després d'errors repetits. Fes clic a \"Finalitza l'inici de sessió\" per tornar a comprovar."
+  },
   "STATUS$SAVING": {
     "en": "Saving...",
     "ja": "保存中...",

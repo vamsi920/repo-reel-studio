@@ -710,6 +710,66 @@ describe("LlmSettingsLocalView", () => {
       // The rename API mock would fail if unexpectedly called since it's not set up.
       expect(true).toBe(true);
     });
+
+    it("does not re-send the rename on retry after the rename succeeded but the save failed", async () => {
+      const user = userEvent.setup();
+
+      vi.mocked(ProfilesService.getProfile).mockResolvedValue({
+        name: "gpt-4-profile",
+        api_key_set: true,
+        config: {
+          model: "openai/gpt-4",
+          api_key: "encrypted-key-123",
+          base_url: "https://api.openai.com/v1",
+        },
+      });
+
+      vi.mocked(ProfilesService.renameProfile).mockResolvedValue({
+        name: "my-renamed-profile",
+        message: "Profile renamed",
+      });
+
+      // First save attempt fails after the rename already went through; the
+      // retry must succeed without re-attempting the rename.
+      mockSaveMutateAsync
+        .mockRejectedValueOnce(new Error("network error"))
+        .mockResolvedValueOnce({ success: true });
+
+      renderWithProviders(<LlmSettingsLocalView />);
+
+      await user.click(screen.getAllByTestId("profile-menu-trigger")[0]);
+      await user.click(screen.getByTestId("profile-edit"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("profile-name-input")).toHaveValue(
+          "gpt-4-profile",
+        );
+      });
+
+      const nameInput = screen.getByTestId("profile-name-input");
+      await user.clear(nameInput);
+      await user.type(nameInput, "my-renamed-profile");
+
+      // First save: rename succeeds, save fails.
+      await user.click(screen.getByTestId("save-profile-btn"));
+      await waitFor(() => {
+        expect(mockSaveMutateAsync).toHaveBeenCalledTimes(1);
+      });
+      expect(mockRenameMutateAsync).toHaveBeenCalledTimes(1);
+
+      // Still in the edit view (save failure doesn't navigate away).
+      expect(screen.getByTestId("save-profile-btn")).toBeInTheDocument();
+
+      // Retry: must not call rename again against the now-stale old name.
+      await user.click(screen.getByTestId("save-profile-btn"));
+      await waitFor(() => {
+        expect(mockSaveMutateAsync).toHaveBeenCalledTimes(2);
+      });
+      expect(mockRenameMutateAsync).toHaveBeenCalledTimes(1);
+      expect(mockSaveMutateAsync).toHaveBeenLastCalledWith(
+        expect.objectContaining({ name: "my-renamed-profile" }),
+      );
+    });
   });
 
   describe("Basic tab save", () => {

@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "تم توصيل اشتراك ChatGPT",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "تم قطع اتصال اشتراك ChatGPT",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "لم يكتمل تسجيل الدخول بعد. أنهِ تدفق المتصفح وحاول مرة أخرى.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "توقف الفحص التلقائي بعد أخطاء متكررة. انقر فوق \"إنهاء تسجيل الدخول\" للتحقق مرة أخرى.",
   "STATUS$SAVING": "جارٍ الحفظ...",
   "THINKING$TITLE": "التفكير",
   "THINKING$EXPAND": "توسيع التفكير",

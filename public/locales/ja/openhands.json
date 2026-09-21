@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "ChatGPTサブスクリプションに接続しました",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "ChatGPTサブスクリプションを切断しました",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "サインインはまだ完了していません。ブラウザーのフローを完了してから再試行してください。",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "エラーが繰り返し発生したため、自動確認が停止しました。「サインインを完了」をクリックして再確認してください。",
   "STATUS$SAVING": "保存中...",
   "THINKING$TITLE": "思考中",
   "THINKING$EXPAND": "思考を展開",

@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "Abonnement ChatGPT connecté",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "Abonnement ChatGPT déconnecté",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "La connexion n’est pas encore terminée. Finissez le parcours dans le navigateur et réessayez.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "La vérification automatique s'est arrêtée après des erreurs répétées. Cliquez sur « Terminer la connexion » pour vérifier à nouveau.",
   "STATUS$SAVING": "Enregistrement...",
   "THINKING$TITLE": "Réflexion",
   "THINKING$EXPAND": "Développer la réflexion",

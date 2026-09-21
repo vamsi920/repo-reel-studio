@@ -230,6 +230,13 @@ export function AgentProfilesLocalView() {
           name: originalName,
           newName: trimmedName,
         });
+        // Reflect the rename locally right away. If the save below fails and
+        // the user retries, `originalName` must be the already-renamed name —
+        // otherwise the retry re-sends this same rename against a name that
+        // no longer exists server-side and the profile can never be saved.
+        setEditingProfile((prev) =>
+          prev ? { ...prev, name: trimmedName } : prev,
+        );
       }
 
       // Save is a whole-profile overwrite: spread the stored profile under

@@ -43,6 +43,7 @@ export function OpenAISubscriptionAuthCard({
     React.useState<LLMSubscriptionDeviceChallenge | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [isPendingLogin, setIsPendingLogin] = React.useState(false);
+  const [autoPollStopped, setAutoPollStopped] = React.useState(false);
   const pollTimeoutRef = React.useRef<number | null>(null);
   const pollFailureCountRef = React.useRef(0);
 
@@ -69,6 +70,8 @@ export function OpenAISubscriptionAuthCard({
 
   const pollDeviceLogin = React.useCallback(
     async (deviceCode: string) => {
+      // Any attempt (automatic or manual) supersedes a prior give-up signal.
+      setAutoPollStopped(false);
       try {
         const nextStatus = await pollMutateAsync(deviceCode);
         pollFailureCountRef.current = 0;
@@ -88,6 +91,10 @@ export function OpenAISubscriptionAuthCard({
           return false;
         }
         displayErrorToast(t(I18nKey.SETTINGS$SUBSCRIPTION_CONNECT_ERROR));
+        // The recursive setTimeout loop stops rescheduling once this returns
+        // true, so the pending-sign-in UI must say so -- otherwise it keeps
+        // showing "waiting for sign-in" as if retries were still happening.
+        setAutoPollStopped(true);
         return true;
       }
     },
@@ -162,6 +169,7 @@ export function OpenAISubscriptionAuthCard({
       pollFailureCountRef.current = 0;
       setChallenge(nextChallenge);
       setIsPendingLogin(true);
+      setAutoPollStopped(false);
       openVerificationUrl(nextChallenge);
     } catch {
       displayErrorToast(t(I18nKey.SETTINGS$SUBSCRIPTION_CONNECT_ERROR));
@@ -186,6 +194,7 @@ export function OpenAISubscriptionAuthCard({
       clearPollTimeout();
       setChallenge(null);
       setIsPendingLogin(false);
+      setAutoPollStopped(false);
       displaySuccessToast(t(I18nKey.SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST));
     } catch {
       displayErrorToast(t(I18nKey.ERROR$GENERIC));
@@ -197,6 +206,7 @@ export function OpenAISubscriptionAuthCard({
     pollFailureCountRef.current = 0;
     setChallenge(null);
     setIsPendingLogin(false);
+    setAutoPollStopped(false);
   };
 
   return (
@@ -276,7 +286,11 @@ export function OpenAISubscriptionAuthCard({
             {t(I18nKey.SETTINGS$SUBSCRIPTION_OPEN_LOGIN)}
             <ExternalLink size={14} aria-hidden />
           </a>
-          {isPendingLogin ? (
+          {autoPollStopped ? (
+            <span className="text-danger">
+              {t(I18nKey.SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED)}
+            </span>
+          ) : isPendingLogin ? (
             <span className="text-warning">
               {t(I18nKey.SETTINGS$SUBSCRIPTION_PENDING_TOAST)}
             </span>

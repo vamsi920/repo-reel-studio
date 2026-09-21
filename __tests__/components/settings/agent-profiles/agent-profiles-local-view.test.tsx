@@ -453,4 +453,64 @@ describe("AgentProfilesLocalView save mapping", () => {
     );
     expect(saveMutate).not.toHaveBeenCalled();
   });
+
+  it("does not re-send the rename on retry after the rename succeeded but the save failed", async () => {
+    vi.mocked(AgentProfilesService.getProfile).mockResolvedValue({
+      name: "default",
+      profile: {
+        schema_version: 1,
+        id: "p-1",
+        name: "default",
+        revision: 3,
+        agent_kind: "openhands",
+        llm_profile_ref: "default",
+        enable_sub_agents: false,
+      },
+    } as never);
+    emitControl = {
+      agentType: "openhands",
+      isValid: true,
+      buildAgentProfileFields: () => ({
+        agent_kind: "openhands",
+        enable_sub_agents: false,
+      }),
+      credentials: { isDirty: false, save: vi.fn(), reset: vi.fn() },
+    };
+    renameMutate.mockResolvedValue({
+      name: "renamed-default",
+      message: "ok",
+    });
+    saveMutate
+      .mockRejectedValueOnce(new Error("network error"))
+      .mockResolvedValueOnce({ name: "x", message: "ok" });
+
+    render(<AgentProfilesLocalView />);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("edit-agent-profile"));
+    await screen.findByTestId("mock-agent-settings");
+
+    const nameInput = screen.getByTestId("agent-profile-name-input");
+    await user.clear(nameInput);
+    await user.type(nameInput, "renamed-default");
+
+    // First save: rename succeeds, save fails.
+    await user.click(screen.getByTestId("save-agent-profile-btn"));
+    await waitFor(() => expect(saveMutate).toHaveBeenCalledTimes(1));
+    expect(renameMutate).toHaveBeenCalledTimes(1);
+    expect(renameMutate).toHaveBeenCalledWith({
+      name: "default",
+      newName: "renamed-default",
+    });
+
+    // Still in the edit view (save failure doesn't navigate away).
+    expect(screen.getByTestId("save-agent-profile-btn")).toBeInTheDocument();
+
+    // Retry must not re-send the rename against the now-stale old name.
+    await user.click(screen.getByTestId("save-agent-profile-btn"));
+    await waitFor(() => expect(saveMutate).toHaveBeenCalledTimes(2));
+    expect(renameMutate).toHaveBeenCalledTimes(1);
+    expect(saveMutate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ name: "renamed-default" }),
+    );
+  });
 });

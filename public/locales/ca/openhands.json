@@ -1960,6 +1960,7 @@
   "SETTINGS$SUBSCRIPTION_CONNECTED_TOAST": "Subscripció de ChatGPT connectada",
   "SETTINGS$SUBSCRIPTION_DISCONNECTED_TOAST": "Subscripció de ChatGPT desconnectada",
   "SETTINGS$SUBSCRIPTION_PENDING_TOAST": "L’inici de sessió encara no s’ha completat. Acaba el flux del navegador i torna-ho a provar.",
+  "SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED": "La comprovació automàtica s'ha aturat després d'errors repetits. Fes clic a \"Finalitza l'inici de sessió\" per tornar a comprovar.",
   "STATUS$SAVING": "Desant...",
   "THINKING$TITLE": "Pensament",
   "THINKING$EXPAND": "Expandir pensament",

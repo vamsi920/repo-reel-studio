@@ -153,6 +153,54 @@ describe("OpenAISubscriptionAuthCard", () => {
       // No further polls are scheduled once the flow has given up.
       await vi.advanceTimersByTimeAsync(intervalMs);
       expect(pollSpy).toHaveBeenCalledTimes(3);
+
+      // The card must say the automatic loop gave up -- not keep showing the
+      // "waiting for sign-in" pending state as if retries were still happening.
+      expect(
+        screen.getByText("SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("SETTINGS$SUBSCRIPTION_PENDING_TOAST"),
+      ).toBeNull();
+    });
+
+    it("clears the auto-poll-stopped indicator once a manual retry succeeds", async () => {
+      const user = userEvent.setup();
+      const pollSpy = vi
+        .spyOn(LLMSubscriptionService, "pollOpenAIDeviceLogin")
+        .mockRejectedValue(new Error("still down"));
+
+      await openDeviceChallenge(user);
+      const intervalMs = challenge.intervalSeconds * 1000;
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await vi.advanceTimersByTimeAsync(intervalMs);
+        // eslint-disable-next-line no-await-in-loop
+        await waitFor(() => expect(pollSpy).toHaveBeenCalledTimes(attempt));
+      }
+      await waitFor(() =>
+        expect(
+          screen.getByText("SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED"),
+        ).toBeInTheDocument(),
+      );
+
+      pollSpy.mockResolvedValueOnce({
+        vendor: "openai",
+        connected: false,
+        accountEmail: null,
+        expiresAt: null,
+      });
+      await user.click(screen.getByTestId("subscription-poll"));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText("SETTINGS$SUBSCRIPTION_AUTO_POLL_STOPPED"),
+        ).toBeNull(),
+      );
+      expect(
+        screen.getByText("SETTINGS$SUBSCRIPTION_PENDING_TOAST"),
+      ).toBeInTheDocument();
     });
 
     it("keeps auto-polling after a manual 'Finish Sign In' click comes back not-yet-connected", async () => {
