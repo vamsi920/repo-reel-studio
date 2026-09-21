@@ -2,13 +2,36 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import EnvironmentSetupScreen from "#/routes/environment-setup";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { resetOAuthReceiptGuardForTests } from "#/lib/environment/oauth-receipt-guard";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
+import {
+  __resetActiveStoreForTests,
+  setActiveSelection,
+  setRegisteredBackends,
+} from "#/api/backend-registry/active-store";
+import { ActiveBackendProvider } from "#/contexts/active-backend-context";
+import type { Backend } from "#/api/backend-registry/types";
+
+const localBackend: Backend = {
+  id: "local-1",
+  name: "Local 1",
+  host: "http://localhost:8000",
+  apiKey: "session-key",
+  kind: "local",
+};
+
+const cloudBackend: Backend = {
+  id: "cloud-1",
+  name: "Production",
+  host: "https://app.all-hands.dev",
+  apiKey: "bearer-key",
+  kind: "cloud",
+};
 
 const state = vi.hoisted(() => ({
   session: null as { conversationId: string } | null,
@@ -105,6 +128,13 @@ beforeEach(() => {
   vi.mocked(displayErrorToast).mockReset();
   resetOAuthReceiptGuardForTests();
   useOnboardingStudioStore.getState().reset();
+  __resetActiveStoreForTests();
+  setRegisteredBackends([localBackend, cloudBackend]);
+  setActiveSelection({ backendId: localBackend.id });
+});
+
+afterEach(() => {
+  __resetActiveStoreForTests();
 });
 
 describe("Environment setup OAuth receipt", () => {
@@ -259,6 +289,42 @@ describe("Environment setup seed forwarding", () => {
 
     await screen.findByTestId("environment-setup-start");
     expect(state.posted).toEqual([]);
+  });
+});
+
+describe("Environment setup backend-change guard", () => {
+  it("stops rendering the studio once the active backend changes mid-mount, with no accompanying navigation", async () => {
+    // Arrange — mounts under the local backend with an active session; the
+    // BackendSelector's own redirect (@spec BM-002) lands on the next tick,
+    // but `ManageBackendsModal` calls `setActive` directly with no
+    // navigation, same as the already-fixed `automation-detail.tsx` case.
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ActiveBackendProvider>
+          <MemoryRouter initialEntries={["/environment/setup"]}>
+            <EnvironmentSetupScreen />
+          </MemoryRouter>
+        </ActiveBackendProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByTestId("chat-stub")).toBeInTheDocument();
+
+    // Act — flip the active backend with no accompanying navigation.
+    setActiveSelection({ backendId: cloudBackend.id });
+
+    // Assert — the studio (still holding the previous backend's
+    // conversation id) is gone instead of continuing to post/render
+    // against the newly-active backend.
+    await waitFor(() => {
+      expect(screen.queryByTestId("environment-setup")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("chat-stub")).not.toBeInTheDocument();
   });
 });
 

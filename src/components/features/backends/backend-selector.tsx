@@ -159,6 +159,7 @@ export function BackendSelector({
   const settingsSubrouteMatch = useMatch("/settings/*");
   const conversationMatch = useMatch("/conversations/:conversationId");
   const automationDetailMatch = useMatch("/automations/:automationId");
+  const environmentSetupMatch = useMatch("/environment/setup");
   const [addBackendModalOpen, setAddBackendModalOpen] = React.useState(false);
   const [manageBackendsModalOpen, setManageBackendsModalOpen] =
     React.useState(false);
@@ -358,6 +359,7 @@ export function BackendSelector({
       // @spec BM-002 — Switching backends keeps the user on the same page
       if (conversationMatch) navigate("/conversations");
       else if (automationDetailMatch) navigate("/automations");
+      else if (environmentSetupMatch) navigate("/environment");
 
       setActive(target.id, orgId);
       onSelectOption?.();
@@ -367,6 +369,7 @@ export function BackendSelector({
       backends,
       conversationMatch,
       automationDetailMatch,
+      environmentSetupMatch,
       navigate,
       options,
       setActive,

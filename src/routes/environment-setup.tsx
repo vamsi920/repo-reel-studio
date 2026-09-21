@@ -11,6 +11,7 @@ import {
   type NavigationContextValue,
 } from "#/context/navigation-context";
 import { WebSocketProviderWrapper } from "#/contexts/websocket-provider-wrapper";
+import { useActiveBackend } from "#/contexts/active-backend-context";
 import { EventHandler } from "#/wrapper/event-handler";
 import { ChatInterface } from "#/components/features/chat/chat-interface";
 import { ResizeHandle } from "#/components/ui/resize-handle";
@@ -153,6 +154,22 @@ function EnvironmentSetupScreen() {
     (state) => state.setConversationId,
   );
 
+  // This screen mounts its own live conversation socket (see the doc comment
+  // below), keyed to whichever backend/org was active at mount. Switching
+  // backends via `BackendSelector` (`environmentSetupMatch`) redirects away on
+  // the next tick, but the conversationId in scope until then belongs to the
+  // *previous* backend/org -- any post/poll fired against it in the meantime
+  // resolves through the *new* active backend's client and either targets a
+  // conversation that doesn't exist there, or silently reaches the wrong
+  // backend under the new identity. Mirrors the same guard in
+  // `routes/conversation.tsx` and `routes/automation-detail.tsx`.
+  const active = useActiveBackend();
+  const mountedBackendId = React.useRef(active.backend.id);
+  const mountedOrgId = React.useRef(active.orgId);
+  const backendChanged =
+    mountedBackendId.current !== active.backend.id ||
+    mountedOrgId.current !== active.orgId;
+
   // `complete_setup` flips the session row to "completed" so a *later* visit
   // starts fresh (see `completeOnboardingSessionForConversation`), but that
   // update also invalidates `ENVIRONMENT_QUERY_KEYS.all` (via the summary
@@ -208,6 +225,11 @@ function EnvironmentSetupScreen() {
     // waiting for a tool result that never arrived.
     if (sessionLoading) return;
 
+    // The BackendSelector is in the middle of redirecting us away from this
+    // screen -- don't post the receipt to whatever conversation id happens
+    // to still be in scope on the newly-active backend.
+    if (backendChanged) return;
+
     // Strip the params first: a re-render must not replay this, and StrictMode
     // double-invokes effects in development.
     const next = new URLSearchParams(searchParams);
@@ -243,6 +265,7 @@ function EnvironmentSetupScreen() {
     queryClient,
     conversationId,
     sessionLoading,
+    backendChanged,
     t,
   ]);
 
@@ -283,12 +306,21 @@ function EnvironmentSetupScreen() {
   // drop it from the URL so a refresh or remount can't resend it.
   React.useEffect(() => {
     if (!conversationId || !seed || seedConsumedRef.current) return;
+    if (backendChanged) return;
     seedConsumedRef.current = true;
     createConversationResultPoster(conversationId)(seed);
     const next = new URLSearchParams(searchParams);
     next.delete("seed");
     setSearchParams(next, { replace: true });
-  }, [conversationId, seed, searchParams, setSearchParams]);
+  }, [conversationId, seed, searchParams, setSearchParams, backendChanged]);
+
+  // A backend switch is in flight (BackendSelector flips the active backend
+  // and redirects to /environment on the next tick). Unmount now, before the
+  // start/loading/needs-LLM screens below (or the live studio) render or post
+  // anything against a conversation id that belongs to the previous backend.
+  if (backendChanged) {
+    return null;
+  }
 
   if (!isSupabaseConfigured) {
     return (

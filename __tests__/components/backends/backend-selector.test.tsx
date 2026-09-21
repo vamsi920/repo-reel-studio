@@ -465,6 +465,13 @@ describe("BackendSelector", () => {
       expectRedirect: true,
     },
     {
+      name: "environment setup studio → environment overview",
+      startPath: "/environment/setup",
+      startRoute: "/environment/setup",
+      landingRoute: "/environment",
+      expectRedirect: true,
+    },
+    {
       name: "settings → stays on settings",
       startPath: "/settings",
       startRoute: "/settings",
