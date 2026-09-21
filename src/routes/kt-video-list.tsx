@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { ChevronLeft, Loader2, Video } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Loader2, Video } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
@@ -29,6 +29,14 @@ function KtVideoList() {
   // A deep link / reload lands here with an empty store even for a repo that
   // was generated earlier; this loads it the same way the Docs tab does.
   const rehydrationChecked = useKnowledgeRehydration(repositoryId || undefined);
+  const flagDetailsByPageId = new Map<string, string>();
+  for (const flag of state?.qualityFlags ?? []) {
+    const existing = flagDetailsByPageId.get(flag.pageId);
+    flagDetailsByPageId.set(
+      flag.pageId,
+      existing ? `${existing}\n${flag.detail}` : flag.detail,
+    );
+  }
 
   return (
     <main className="min-h-full" data-testid="kt-video-list">
@@ -72,6 +80,17 @@ function KtVideoList() {
                   aria-hidden
                 />
                 <span className="flex-1 truncate">{page.title}</span>
+                {flagDetailsByPageId.has(page.id) && (
+                  <span
+                    className="shrink-0"
+                    title={flagDetailsByPageId.get(page.id)}
+                  >
+                    <AlertTriangle
+                      className="size-3.5 text-[var(--warning-500)]"
+                      aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
+                    />
+                  </span>
+                )}
                 <span className="shrink-0 text-xs text-[var(--oh-muted)]">
                   {t(I18nKey.KT$WATCH_KT)}
                 </span>

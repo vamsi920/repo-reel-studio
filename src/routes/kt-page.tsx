@@ -323,7 +323,7 @@ function KtPage() {
           </div>
         </div>
 
-        {mode === "read" && pageQualityFlags.length > 0 && (
+        {pageQualityFlags.length > 0 && (
           <div
             data-testid="kt-page-quality-flags"
             className="mb-4 flex items-start gap-2 rounded-md border border-[var(--warning-500)] bg-[var(--warning-bg-subtle)] px-3 py-2 text-xs text-[var(--oh-foreground)]"

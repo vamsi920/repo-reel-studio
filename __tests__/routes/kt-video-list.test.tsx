@@ -6,6 +6,7 @@ import KtVideoList from "#/routes/kt-video-list";
 import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { KnowledgeRepository } from "#/lib/knowledge/knowledge-engine";
+import type { PageQualityFlag } from "#/lib/knowledge/quality-review";
 
 const rehydrationChecked = vi.fn((_repositoryId?: string) => true);
 vi.mock("#/lib/knowledge/use-knowledge-rehydration", () => ({
@@ -15,7 +16,10 @@ vi.mock("#/lib/knowledge/use-knowledge-rehydration", () => ({
 
 const REPOSITORY_ID = "acme/api@main";
 
-function seedKnowledge(pages: KnowledgeRepository["pages"]) {
+function seedKnowledge(
+  pages: KnowledgeRepository["pages"],
+  qualityFlags: PageQualityFlag[] = [],
+) {
   useKnowledgeStore.setState({
     byRepositoryId: {
       [REPOSITORY_ID]: {
@@ -42,7 +46,7 @@ function seedKnowledge(pages: KnowledgeRepository["pages"]) {
           generatedAt: new Date().toISOString(),
         },
         error: null,
-        qualityFlags: [],
+        qualityFlags,
         refreshCadence: "manual",
       },
     },
@@ -111,6 +115,54 @@ describe("KtVideoList", () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("Getting Started");
     expect(items[1]).toHaveTextContent("Architecture");
+  });
+
+  it("shows a quality-flag badge for a flagged page but not for an unflagged one", () => {
+    seedKnowledge(
+      [
+        {
+          id: "page-1",
+          title: "Getting Started",
+          description: "",
+          contentMarkdown: "",
+          importance: "high",
+          relevantFiles: [],
+          diagrams: [],
+          relatedPageIds: [],
+        },
+        {
+          id: "page-2",
+          title: "Architecture",
+          description: "",
+          contentMarkdown: "",
+          importance: "medium",
+          relevantFiles: [],
+          diagrams: [],
+          relatedPageIds: [],
+        },
+      ],
+      [
+        {
+          pageId: "page-1",
+          kind: "no-citations",
+          detail: "Page 1 cites no source files.",
+        },
+      ],
+    );
+
+    renderWithProviders(<KtVideoList />);
+
+    const items = screen.getAllByTestId("kt-video-list-item");
+    expect(
+      items[0].querySelector(
+        `[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      items[1].querySelector(
+        `[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`,
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("navigates to the watch view for the selected page", async () => {

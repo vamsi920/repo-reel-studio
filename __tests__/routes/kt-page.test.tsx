@@ -401,6 +401,45 @@ describe("KtPage", () => {
     ).toHaveTextContent("Page A cites no source files.");
   });
 
+  it("keeps showing the heads-up banner after switching to watch mode", async () => {
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: "http://localhost:3000/conversations/c1",
+          sessionApiKey: "key",
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: KNOWLEDGE,
+          error: null,
+          qualityFlags: [
+            {
+              pageId: "page-a",
+              kind: "no-citations",
+              detail: "Page A cites no source files.",
+            },
+          ],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    const user = userEvent.setup();
+
+    render(<KtPage />);
+    expect(await screen.findByTestId("kt-page-quality-flags")).toHaveTextContent(
+      "Page A cites no source files.",
+    );
+
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    await waitFor(() => expect(screen.getByTestId("kt-video-player")).toBeInTheDocument());
+
+    expect(screen.getByTestId("kt-page-quality-flags")).toHaveTextContent(
+      "Page A cites no source files.",
+    );
+  });
+
   it("does not show the banner for a page with no quality flags", async () => {
     mockUseParams.mockReturnValue(paramsFor("page-b"));
 
