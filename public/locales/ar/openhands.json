@@ -2364,6 +2364,7 @@
   "KT$VIDEO_TAB_SELECT_FILES": "Select files on the left to generate a KT video.",
   "KT$VIDEO_TAB_LOADING_CONTENT": "Loading file content…",
   "KT$VIDEO_TAB_FILE_UNAVAILABLE": "couldn't load",
+  "KT$VIDEO_TAB_FILE_LIMIT_REACHED": "Up to {{count}} files — remove one to add another",
   "KT$NARRATION_TOGGLE_LABEL": "Narration",
   "KT$NARRATION_TOOLTIP_ENABLED": "Read each scene's narration aloud as it plays",
   "KT$NARRATION_TOOLTIP_UNSUPPORTED": "Speech synthesis isn't available in this browser",

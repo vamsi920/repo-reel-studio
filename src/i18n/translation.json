@@ -40204,6 +40204,23 @@
     "tr": "couldn't load",
     "uk": "couldn't load"
   },
+  "KT$VIDEO_TAB_FILE_LIMIT_REACHED": {
+    "en": "Up to {{count}} files — remove one to add another",
+    "ja": "Up to {{count}} files — remove one to add another",
+    "zh-CN": "Up to {{count}} files — remove one to add another",
+    "zh-TW": "Up to {{count}} files — remove one to add another",
+    "ko-KR": "Up to {{count}} files — remove one to add another",
+    "no": "Up to {{count}} files — remove one to add another",
+    "ar": "Up to {{count}} files — remove one to add another",
+    "de": "Up to {{count}} files — remove one to add another",
+    "fr": "Up to {{count}} files — remove one to add another",
+    "it": "Up to {{count}} files — remove one to add another",
+    "pt": "Up to {{count}} files — remove one to add another",
+    "es": "Up to {{count}} files — remove one to add another",
+    "ca": "Up to {{count}} files — remove one to add another",
+    "tr": "Up to {{count}} files — remove one to add another",
+    "uk": "Up to {{count}} files — remove one to add another"
+  },
   "KT$NARRATION_TOGGLE_LABEL": {
     "en": "Narration",
     "ja": "Narration",

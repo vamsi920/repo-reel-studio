@@ -1,7 +1,10 @@
-import { renderHook } from "@testing-library/react";
+import { render, renderHook, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
-import { useSelectedFileContents } from "#/routes/kt-video-tab";
+import KtVideoTab, { useSelectedFileContents } from "#/routes/kt-video-tab";
+import type { GitChange } from "#/api/open-hands.types";
 
 const { fileResultsMock } = vi.hoisted(() => ({
   fileResultsMock: new Map<
@@ -15,6 +18,24 @@ vi.mock("#/hooks/query/use-workspace-file-content", () => ({
     if (!path) return { isLoading: false, data: undefined };
     return fileResultsMock.get(path) ?? { isLoading: false, data: undefined };
   },
+}));
+
+vi.mock("#/hooks/query/use-active-conversation", () => ({
+  useActiveConversation: () => ({ data: undefined }),
+}));
+
+const gitChangesMock = vi.fn();
+vi.mock("#/hooks/query/use-unified-get-git-changes", () => ({
+  useUnifiedGetGitChanges: () => gitChangesMock(),
+}));
+
+const workspaceFilesMock = vi.fn();
+vi.mock("#/hooks/query/use-workspace-files", () => ({
+  useWorkspaceFiles: () => workspaceFilesMock(),
+}));
+
+vi.mock("@remotion/player", () => ({
+  Player: () => null,
 }));
 
 describe("useSelectedFileContents", () => {
@@ -133,5 +154,55 @@ describe("useSelectedFileContents", () => {
     const { result } = renderHook(() => useSelectedFileContents(["a.ts"]));
 
     expect(result.current.unavailablePaths.has("a.ts")).toBe(false);
+  });
+});
+
+function renderKtVideoTab(paths: string[]) {
+  const gitChanges: GitChange[] = paths.map((path) => ({
+    status: "M",
+    path,
+  }));
+  gitChangesMock.mockReturnValue({ data: gitChanges, isFetching: false });
+  workspaceFilesMock.mockReturnValue({ data: [], isLoading: false });
+
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <KtVideoTab />
+    </QueryClientProvider>,
+  );
+}
+
+describe("KtVideoTab file selection cap", () => {
+  it("disables and titles an unselected checkbox once 8 files are already picked, and re-enables it when a slot frees up", async () => {
+    const paths = Array.from({ length: 9 }, (_, i) => `file-${i}.ts`);
+    const user = userEvent.setup();
+    renderKtVideoTab(paths);
+
+    // The first 8 changed files are pre-selected by default, leaving the
+    // 9th at the cap with no room to add it.
+    const ninthLabel = screen.getByTitle("file-8.ts").closest("label")!;
+    const ninthCheckbox = within(ninthLabel).getByRole(
+      "checkbox",
+    ) as HTMLInputElement;
+    expect(ninthCheckbox).toBeDisabled();
+    expect(ninthLabel).toHaveAttribute(
+      "title",
+      "KT$VIDEO_TAB_FILE_LIMIT_REACHED",
+    );
+
+    const firstLabel = screen.getByTitle("file-0.ts").closest("label")!;
+    const firstCheckbox = within(firstLabel).getByRole(
+      "checkbox",
+    ) as HTMLInputElement;
+    expect(firstCheckbox).not.toBeDisabled();
+    expect(firstCheckbox).toBeChecked();
+
+    // Freeing a slot re-enables the previously capped checkbox.
+    await user.click(firstCheckbox);
+    expect(ninthCheckbox).not.toBeDisabled();
+    expect(ninthLabel).not.toHaveAttribute("title");
   });
 });

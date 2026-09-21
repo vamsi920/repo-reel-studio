@@ -213,12 +213,23 @@ function KtVideoTab() {
                 .map((path) => {
                   const isChecked = effectiveSelected.includes(path);
                   const isUnavailable = isChecked && unavailablePaths.has(path);
+                  const isLimitReached =
+                    !isChecked &&
+                    effectiveSelected.length >= MAX_SELECTABLE_FILES;
+                  const limitReachedLabel = t(
+                    I18nKey.KT$VIDEO_TAB_FILE_LIMIT_REACHED,
+                    { count: MAX_SELECTABLE_FILES },
+                  );
                   return (
                     <li key={path}>
-                      <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]">
+                      <label
+                        className="flex items-center gap-2 rounded px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:not(:disabled)]:cursor-pointer"
+                        title={isLimitReached ? limitReachedLabel : undefined}
+                      >
                         <input
                           type="checkbox"
                           checked={isChecked}
+                          disabled={isLimitReached}
                           onChange={() => toggleFile(path)}
                         />
                         <span className="truncate" title={path}>
