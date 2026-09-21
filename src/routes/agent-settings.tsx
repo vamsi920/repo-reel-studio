@@ -321,6 +321,14 @@ export function AgentSettingsScreen({
   const lastInitializedSettingsRef = useRef<unknown>(null);
   const loadedAcpServerRef = useRef<string | null>(null);
   const loadedCommandTextRef = useRef<string>("");
+  // Guards the reload-sync effects below: once the user edits one of these
+  // fields, a background `settings` refetch (staleTime lapse, or an
+  // invalidation from an unrelated mutation touching the same settings query)
+  // must not silently overwrite their in-progress, unsaved change. Cleared
+  // after a successful save (the embedded/profile-switch case remounts this
+  // whole component via its `key` instead, so these refs start fresh there).
+  const subAgentsTouchedRef = useRef(false);
+  const toolConcurrencyTouchedRef = useRef(false);
 
   useEffect(() => {
     // Seed from the profile override (embedded) or the live global settings.
@@ -375,13 +383,17 @@ export function AgentSettingsScreen({
     setIsDirty(false);
   }, [settings, agentSettingsOverride]);
 
-  // Sync the sub-agents toggle when settings reload
+  // Sync the sub-agents toggle when settings reload, unless the user has
+  // already edited it this session (see `subAgentsTouchedRef` above).
   useEffect(() => {
+    if (subAgentsTouchedRef.current) return;
     setSubAgentsEnabled(initialSubAgentsEnabled);
   }, [initialSubAgentsEnabled]);
 
-  // Sync the parallel-tool-calls input when settings reload
+  // Sync the parallel-tool-calls input when settings reload, unless the user
+  // has already edited it this session (see `toolConcurrencyTouchedRef` above).
   useEffect(() => {
+    if (toolConcurrencyTouchedRef.current) return;
     setToolConcurrency(initialToolConcurrency);
   }, [initialToolConcurrency]);
 
@@ -577,6 +589,8 @@ export function AgentSettingsScreen({
           onSuccess: () => {
             displaySuccessToast(t(I18nKey.SETTINGS$SAVED));
             setIsDirty(false);
+            subAgentsTouchedRef.current = false;
+            toolConcurrencyTouchedRef.current = false;
           },
         },
       );
@@ -647,6 +661,7 @@ export function AgentSettingsScreen({
             testId="agent-settings-enable-sub-agents"
             isToggled={subAgentsEnabled}
             onToggle={(val) => {
+              subAgentsTouchedRef.current = true;
               setSubAgentsEnabled(val);
             }}
           >
@@ -670,7 +685,10 @@ export function AgentSettingsScreen({
           field={toolConcurrencyField}
           value={toolConcurrency}
           isDisabled={isSavingAny}
-          onChange={setToolConcurrency}
+          onChange={(val) => {
+            toolConcurrencyTouchedRef.current = true;
+            setToolConcurrency(val);
+          }}
         />
       ) : null}
 

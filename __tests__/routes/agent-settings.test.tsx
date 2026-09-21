@@ -187,6 +187,73 @@ describe("AgentSettingsScreen", () => {
     expect(call.agent_settings_diff?.tool_concurrency_limit).toBe(4);
   });
 
+  it("keeps an in-progress tool-concurrency edit across a background settings refetch", async () => {
+    const user = userEvent.setup();
+    let callCount = 0;
+    const getSettingsSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockImplementation(async () => {
+        callCount += 1;
+        return buildSettings({
+          agent_settings: {
+            ...MOCK_DEFAULT_USER_SETTINGS.agent_settings,
+            agent_kind: "openhands",
+            enable_sub_agents: false,
+            // The refetch reports a genuinely different server-side value
+            // (e.g. changed from another tab/session) than both the
+            // original (1) and the user's unsaved local edit (4) below --
+            // the only way the reload-sync effect's dependency actually
+            // changes and could clobber an in-progress edit.
+            tool_concurrency_limit: callCount === 1 ? 1 : 2,
+          },
+        });
+      });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(<AgentSettingsScreen />, {
+      wrapper: ({ children }) => (
+        <MemoryRouter>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        </MemoryRouter>
+      ),
+    });
+
+    await screen.findByTestId("agent-settings-screen");
+    await waitFor(() => expect(getSettingsSpy).toHaveBeenCalledTimes(1));
+
+    const input = screen.getByTestId("sdk-settings-tool_concurrency_limit");
+    await waitFor(() => expect(input).toHaveValue(1));
+    await user.clear(input);
+    await user.type(input, "4");
+    await waitFor(() => expect(input).toHaveValue(4));
+
+    // Simulate a background refetch landing mid-edit -- e.g. the settings
+    // query going stale, or some unrelated mutation elsewhere invalidating
+    // it -- unrelated to this page's own save flow.
+    await queryClient.refetchQueries();
+    await waitFor(() => expect(getSettingsSpy).toHaveBeenCalledTimes(2));
+
+    // The user's unsaved edit must survive the refetch, not silently get
+    // overwritten by the server's newly-fetched (unrelated) value of 2.
+    // `waitFor` (rather than a single synchronous assertion) matters here:
+    // a stomping resync effect wouldn't run until a render tick after the
+    // refetch resolves, so a bare assertion right after could pass on a
+    // stale snapshot even when the state later gets clobbered.
+    await waitFor(() => expect(input).toHaveValue(4));
+    // Give any (buggy) delayed resync effect a further chance to fire and
+    // stay failing rather than just catching the first render tick.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+    expect(input).toHaveValue(4);
+    expect(screen.getByTestId("agent-save-button")).not.toBeDisabled();
+  });
+
   it("hides sub-agents toggle when ACP is selected", async () => {
     const user = userEvent.setup();
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(

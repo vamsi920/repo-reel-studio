@@ -122,6 +122,17 @@ export function LlmSettingsLocalView() {
   // the most recently requested profile so a stale response is dropped.
   const editRequestRef = useRef<string | null>(null);
 
+  // The embedded form's `key` (below) identifies which profile is being
+  // edited so it remounts with fresh `initialValues` when the user opens a
+  // *different* profile. It must stay fixed for the lifetime of a single
+  // edit session even though `editingProfile.profile.name` itself is updated
+  // mid-`handleSave` to track a successful rename (see the comment there) —
+  // otherwise that update remounts the form with its stale, pre-edit initial
+  // values while `saveProfile.mutateAsync` is still in flight, silently
+  // discarding any other field the user had just edited if that save then
+  // fails and they retry.
+  const editFormKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     setHideSectionHeader(viewMode !== "list");
     return () => setHideSectionHeader(false);
@@ -209,6 +220,7 @@ export function LlmSettingsLocalView() {
             OPENAI_SUBSCRIPTION_VENDOR;
         }
 
+        editFormKeyRef.current = profile.name;
         setEditingProfile({ profile, initialValues, baseConfig: config });
         setProfileName(profile.name);
         setViewMode("edit");
@@ -448,9 +460,7 @@ export function LlmSettingsLocalView() {
       {/* Profile form - key ensures form remounts when switching profiles */}
       <LlmSettingsScreen
         key={
-          viewMode === "edit"
-            ? `edit-${editingProfile?.profile.name}`
-            : "new-profile"
+          viewMode === "edit" ? `edit-${editFormKeyRef.current}` : "new-profile"
         }
         embedded
         hideSaveButton

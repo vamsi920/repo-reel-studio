@@ -447,12 +447,12 @@ describe("LlmSettingsLocalView", () => {
     it("ignores a stale getProfile response when a later Edit click supersedes it", async () => {
       const user = userEvent.setup();
 
-      let resolveFirst: (value: Awaited<
-        ReturnType<typeof ProfilesService.getProfile>
-      >) => void = () => {};
-      let resolveSecond: (value: Awaited<
-        ReturnType<typeof ProfilesService.getProfile>
-      >) => void = () => {};
+      let resolveFirst: (
+        value: Awaited<ReturnType<typeof ProfilesService.getProfile>>,
+      ) => void = () => {};
+      let resolveSecond: (
+        value: Awaited<ReturnType<typeof ProfilesService.getProfile>>,
+      ) => void = () => {};
       const firstResponse = new Promise<
         Awaited<ReturnType<typeof ProfilesService.getProfile>>
       >((resolve) => {
@@ -768,6 +768,77 @@ describe("LlmSettingsLocalView", () => {
       expect(mockRenameMutateAsync).toHaveBeenCalledTimes(1);
       expect(mockSaveMutateAsync).toHaveBeenLastCalledWith(
         expect.objectContaining({ name: "my-renamed-profile" }),
+      );
+    });
+
+    it("keeps an unsaved field edit made alongside a rename when the save fails and is retried", async () => {
+      const user = userEvent.setup();
+
+      vi.mocked(ProfilesService.getProfile).mockResolvedValue({
+        name: "gpt-4-profile",
+        api_key_set: true,
+        config: {
+          model: "openai/gpt-4",
+          api_key: "encrypted-key-123",
+          base_url: "https://api.openai.com/v1",
+        },
+      });
+
+      vi.mocked(ProfilesService.renameProfile).mockResolvedValue({
+        name: "my-renamed-profile",
+        message: "Profile renamed",
+      });
+
+      // The rename succeeds but the subsequent save fails; the retry must
+      // succeed and must still carry the model change the user made in the
+      // same session, not the stale pre-edit value.
+      mockSaveMutateAsync
+        .mockRejectedValueOnce(new Error("network error"))
+        .mockResolvedValueOnce({ success: true });
+
+      renderWithProviders(<LlmSettingsLocalView />);
+
+      await user.click(screen.getAllByTestId("profile-menu-trigger")[0]);
+      await user.click(screen.getByTestId("profile-edit"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("profile-name-input")).toHaveValue(
+          "gpt-4-profile",
+        );
+      });
+
+      const nameInput = screen.getByTestId("profile-name-input");
+      await user.clear(nameInput);
+      await user.type(nameInput, "my-renamed-profile");
+
+      const modelInput = screen.getByTestId("mock-basic-model-input");
+      await user.clear(modelInput);
+      await user.type(modelInput, "openai/gpt-4o-new");
+
+      // First save: rename succeeds, save fails.
+      await user.click(screen.getByTestId("save-profile-btn"));
+      await waitFor(() => {
+        expect(mockSaveMutateAsync).toHaveBeenCalledTimes(1);
+      });
+
+      // The rename resolving must not remount the form and wipe the model
+      // edit back to the profile's original value.
+      expect(screen.getByTestId("mock-basic-model-input")).toHaveValue(
+        "openai/gpt-4o-new",
+      );
+
+      // Retry: the edited model must still be there.
+      await user.click(screen.getByTestId("save-profile-btn"));
+      await waitFor(() => {
+        expect(mockSaveMutateAsync).toHaveBeenCalledTimes(2);
+      });
+      expect(mockSaveMutateAsync).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          name: "my-renamed-profile",
+          request: expect.objectContaining({
+            llm: expect.objectContaining({ model: "openai/gpt-4o-new" }),
+          }),
+        }),
       );
     });
   });
