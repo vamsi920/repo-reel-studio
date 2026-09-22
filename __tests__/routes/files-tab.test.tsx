@@ -923,5 +923,50 @@ describe("FilesTab", () => {
         screen.queryByTestId("files-tab-content-mode-toggle"),
       ).not.toBeInTheDocument();
     });
+
+    it("does not carry the commits selection over to a different conversation switched to in-place", async () => {
+      // Arrange — mount on conversation A with the Commits option selected.
+      const user = userEvent.setup();
+      useHasAttachedSourceMock.mockReturnValue({
+        hasAttachedSource: true,
+        isLoading: false,
+      });
+      const { rerender } = renderTab("conv-a");
+
+      await user.click(
+        screen.getByTestId("files-tab-diff-toggle-option-commits"),
+      );
+      expect(screen.getByTestId("commits-tab-content")).toBeInTheDocument();
+
+      // Act — switch the mounted tab (no remount) to conversation B, whose
+      // agent server also supports the commits API.
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      rerender(
+        <MemoryRouter>
+          <NavigationProvider
+            value={{
+              currentPath: "/",
+              conversationId: "conv-b",
+              isNavigating: false,
+              navigate: () => {},
+            }}
+          >
+            <QueryClientProvider client={client}>
+              <FilesTab />
+            </QueryClientProvider>
+          </NavigationProvider>
+        </MemoryRouter>,
+      );
+
+      // Assert — conversation B lands on its own default view, not commits.
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("commits-tab-content"),
+        ).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId("changes-tab-content")).toBeInTheDocument();
+    });
   });
 });

@@ -85,6 +85,16 @@ function FilesTab() {
   let activeView: "on" | "off" | "commits" = diffViewEnabled ? "on" : "off";
   if (commitsViewSelected && showCommitsOption) activeView = "commits";
 
+  // Session-local per the comment above, so it must not leak into the next
+  // conversation: `FilesTab` isn't remounted on a conversation switch (see
+  // `selectedPath`'s own re-scoping a few lines down for why), so without
+  // this a commits-view selection made in one conversation would silently
+  // re-apply to the next one the moment its commits-API support resolves,
+  // overriding that conversation's actual diff/files default.
+  useEffect(() => {
+    setCommitsViewSelected(false);
+  }, [conversationId]);
+
   // Collapsed by default — the quick-access pill row at the top is usually
   // enough; the user can expand the tree on demand.
   const [isTreeVisible, setIsTreeVisible] = useState(false);
