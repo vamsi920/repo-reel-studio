@@ -137,6 +137,48 @@ describe("buildKtManifestFromKnowledgePage", () => {
     expect(tree?.tree_files).toHaveLength(4);
     expect(tree?.tree_overflow).toBeUndefined();
   });
+
+  it("adds a real diagram scene per page diagram, mapped to the right scene type, and skips the repo-tree scene when diagrams exist", () => {
+    // Regression coverage: this path (buildDiagramScene, and the DIAGRAM_SCENE_TYPE
+    // mapping + repo-tree-skip branch around it) had zero test coverage, even
+    // though it's the primary path for any DeepWiki page that actually has
+    // diagrams — a page with no diagrams is what the other repo-tree tests above
+    // cover instead.
+    const pageWithDiagrams = {
+      ...page,
+      diagrams: [
+        { id: "d1", type: "architecture" as const, mermaid: "graph TD; A-->B" },
+        { id: "d2", type: "dependency" as const, mermaid: "graph TD; C-->D" },
+        { id: "d3", type: "flow" as const, mermaid: "graph TD; E-->F" },
+        { id: "d4", type: "sequence" as const, mermaid: "sequenceDiagram" },
+        { id: "d5", type: "other" as const, mermaid: "graph TD; G-->H" },
+      ],
+    };
+    const repoFiles = ["src/util.ts", "src/entry.ts"];
+
+    const manifest = buildKtManifestFromKnowledgePage(
+      pageWithDiagrams,
+      { "src/util.ts": "export function helper() {\n  return 1;\n}\n" },
+      repoFiles,
+    );
+
+    const diagramScenes = manifest.scenes.filter((s) =>
+      ["architecture", "flow", "diagram"].includes(s.type),
+    );
+    expect(diagramScenes.map((s) => s.type)).toEqual([
+      "architecture", // architecture
+      "architecture", // dependency
+      "flow", // flow
+      "flow", // sequence
+      "diagram", // other
+    ]);
+    expect(diagramScenes.map((s) => s.mermaid)).toEqual(
+      pageWithDiagrams.diagrams.map((d) => d.mermaid),
+    );
+    // A page with real diagrams doesn't also need the generic repo-tree
+    // scene — the tree only fills in when there's nothing else to show.
+    expect(manifest.scenes.some((s) => s.type === "repo-tree")).toBe(false);
+  });
 });
 
 describe("buildKtManifest", () => {
@@ -234,5 +276,30 @@ describe("buildKtManifest", () => {
     expect(codeScene!.narration_text).not.toContain(
       "The heart of this file is ReportSection",
     );
+  });
+
+  it("recognizes Kotlin's `fun` keyword as a function symbol", () => {
+    // Regression test: the shared rs/java/cs/kt/swift/scala/rb/php/c/cc/cpp
+    // extractor only matched `fn`/`func`/`def`/`function`, so every Kotlin
+    // file's functions (declared with `fun`, not any of those) were
+    // invisible to pickPrimary — a Kotlin file's "heart of this file" line
+    // silently fell back to the no-symbols-found branch even when the file
+    // plainly had a real function.
+    const fileContents = {
+      "src/Greeter.kt":
+        "package com.example\n" +
+        "\n" +
+        'fun greet(name: String): String {\n' +
+        '    return "Hello, $name"\n' +
+        "}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain(
+      "The heart of this file is greet",
+    );
+    expect(codeScene!.focus_symbols).toContain("greet");
   });
 });

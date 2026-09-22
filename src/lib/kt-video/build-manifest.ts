@@ -350,7 +350,12 @@ function extractSymbols(path: string, content: string): FileSymbol[] {
     ) {
       if (
         (m = trimmed.match(
-          /(?:pub\s+|public\s+|private\s+)?(?:async\s+)?(?:fn|func|def|function)\s+([A-Za-z0-9_]+)/,
+          // Kotlin's function keyword is `fun`, not `fn`/`func` — without it
+          // here, every Kotlin file's functions were silently invisible to
+          // `pickPrimary`, so a Kotlin file's "heart of this file" narration
+          // fell back to the generic no-symbols case even when it plainly
+          // had one.
+          /(?:pub\s+|public\s+|private\s+)?(?:async\s+)?(?:fn|func|fun|def|function)\s+([A-Za-z0-9_]+)/,
         ))
       ) {
         push({ name: m[1], line: ln, kind: "function", exported: true });

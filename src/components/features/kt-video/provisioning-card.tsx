@@ -5,15 +5,17 @@ import {
   Circle,
   Loader2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ProvisioningStage } from "#/stores/knowledge-store";
 import type { DeepWikiTaskStatus } from "#/api/deepwiki-service/deepwiki-service.types";
+import { I18nKey } from "#/i18n/declaration";
 
-const STEP_LABELS = [
-  "Setting up workspace",
-  "Resolving repository",
-  "Indexing codebase",
-  "Understanding structure",
-  "Writing knowledge",
+const STEP_LABEL_KEYS = [
+  I18nKey.KT$PROVISIONING_STEP_WORKSPACE,
+  I18nKey.KT$PROVISIONING_STEP_REPOSITORY,
+  I18nKey.KT$PROVISIONING_STEP_INDEXING,
+  I18nKey.KT$PROVISIONING_STEP_STRUCTURE,
+  I18nKey.KT$PROVISIONING_STEP_WRITING,
 ] as const;
 
 /** Maps a real, non-terminal DeepWiki status onto its step index. */
@@ -91,6 +93,8 @@ export function ProvisioningCard({
   pagesTotal?: number;
   error: string | null;
 }) {
+  const { t } = useTranslation("openhands");
+  const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
   const activeIndex = resolveStepIndex(
     provisioningStage,
     deepWikiStatus,
@@ -98,16 +102,27 @@ export function ProvisioningCard({
   );
   const showPageCount =
     activeIndex === 4 && !!pagesTotal && pagesTotal > 0 && !error;
+  const pageCountText = showPageCount
+    ? ` ${t(I18nKey.KT$PROVISIONING_PAGE_COUNT, {
+        done: pagesDone ?? 0,
+        total: pagesTotal,
+      })}`
+    : "";
   // Every step's label renders unconditionally (only its icon/color changes
   // as `activeIndex` advances), so a screen reader gets no signal that
   // provisioning is progressing at all -- icons are `aria-hidden` and color
   // alone isn't perceivable. This mirrors that same progress as text in a
   // live region instead.
   const currentStepStatus = error
-    ? `${STEP_LABELS[activeIndex]} failed: ${error}`
-    : `Step ${activeIndex + 1} of ${STEP_LABELS.length}: ${STEP_LABELS[activeIndex]}${
-        showPageCount ? ` (${pagesDone ?? 0}/${pagesTotal})` : ""
-      }`;
+    ? t(I18nKey.KT$PROVISIONING_STEP_FAILED, {
+        label: stepLabels[activeIndex],
+        error,
+      })
+    : `${t(I18nKey.KT$PROVISIONING_STEP_STATUS, {
+        current: activeIndex + 1,
+        total: stepLabels.length,
+        label: stepLabels[activeIndex],
+      })}${pageCountText}`;
 
   return (
     <div
@@ -127,13 +142,16 @@ export function ProvisioningCard({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        {STEP_LABELS.map((label, index) => {
+        {stepLabels.map((label, index) => {
           const isDone = index < activeIndex;
           const isActive = index === activeIndex && !error;
           const isFailed = error !== null && index === activeIndex;
 
           return (
-            <div key={label} className="flex items-center gap-2 text-xs">
+            <div
+              key={STEP_LABEL_KEYS[index]}
+              className="flex items-center gap-2 text-xs"
+            >
               {isFailed ? (
                 <AlertCircle
                   className="size-3.5 shrink-0 text-[var(--error-500)]"
@@ -165,9 +183,7 @@ export function ProvisioningCard({
                 }
               >
                 {label}
-                {index === 4 && showPageCount
-                  ? ` (${pagesDone ?? 0}/${pagesTotal})`
-                  : ""}
+                {index === 4 ? pageCountText : ""}
               </span>
             </div>
           );

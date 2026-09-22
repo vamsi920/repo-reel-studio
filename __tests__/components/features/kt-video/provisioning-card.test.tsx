@@ -1,7 +1,30 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ProvisioningCard } from "#/components/features/kt-video/provisioning-card";
+
+// Every step label and the status/failed sentences are real translation
+// keys now (see provisioning-card.tsx) instead of hardcoded English, so the
+// global i18n mock's plain key passthrough would collapse every step's
+// status line to the same string regardless of which step/label/counts it
+// carries. Mirrors the interpolation-aware local mock other components with
+// parameterized strings use (e.g. file-list-truncated-notice.test.tsx):
+// echo the key plus its params so assertions can still tell steps apart.
+vi.mock("react-i18next", async () => {
+  const actual = await vi.importActual("react-i18next");
+  return {
+    ...(actual as object),
+    useTranslation: () => ({
+      t: (key: string, options?: Record<string, unknown>) =>
+        options
+          ? `${key}(${Object.entries(options)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(",")})`
+          : key,
+      i18n: { language: "en" },
+    }),
+  };
+});
 
 function stepIcons(container: HTMLElement) {
   return Array.from(
@@ -102,7 +125,7 @@ describe("ProvisioningCard", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Step 5 of 5: Writing knowledge (3/12)",
+      "KT$PROVISIONING_STEP_STATUS(current=5,total=5,label=KT$PROVISIONING_STEP_WRITING) KT$PROVISIONING_PAGE_COUNT(done=3,total=12)",
     );
   });
 
@@ -126,7 +149,7 @@ describe("ProvisioningCard", () => {
       );
 
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Step 1 of 5: Setting up workspace",
+        "KT$PROVISIONING_STEP_STATUS(current=1,total=5,label=KT$PROVISIONING_STEP_WORKSPACE)",
       );
       expect(iconIs(stepIcons(container)[0], "loader-circle")).toBe(true);
       unmount();
@@ -146,7 +169,7 @@ describe("ProvisioningCard", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Step 2 of 5: Resolving repository",
+      "KT$PROVISIONING_STEP_STATUS(current=2,total=5,label=KT$PROVISIONING_STEP_REPOSITORY)",
     );
     const icons = stepIcons(container);
     expect(iconIs(icons[0], "circle-check")).toBe(true);
@@ -166,7 +189,7 @@ describe("ProvisioningCard", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Step 4 of 5: Understanding structure",
+      "KT$PROVISIONING_STEP_STATUS(current=4,total=5,label=KT$PROVISIONING_STEP_STRUCTURE)",
     );
     const icons = stepIcons(container);
     expect(iconIs(icons[2], "circle-check")).toBe(true);
@@ -188,7 +211,7 @@ describe("ProvisioningCard", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Indexing codebase failed: Indexing crashed",
+      "KT$PROVISIONING_STEP_FAILED(label=KT$PROVISIONING_STEP_INDEXING,error=Indexing crashed)",
     );
   });
 });
