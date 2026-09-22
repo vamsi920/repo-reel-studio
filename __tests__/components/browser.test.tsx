@@ -131,6 +131,26 @@ describe("Browser", () => {
     );
   });
 
+  it("does not render a screenshot before the url is confirmed", () => {
+    // A screenshot-only observation (e.g. a click action) can commit before
+    // any get_state/navigate confirmation has set the url. The chrome bar's
+    // "no page loaded" state and the screenshot must never disagree.
+    useBrowserStore.setState({
+      url: "",
+      screenshotSrc: "data:image/png;base64,iVBORw0KGgo=",
+    });
+
+    render(<BrowserPanel />);
+
+    expect(
+      screen.queryByAltText("BROWSER$SCREENSHOT_ALT"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("BROWSER$NO_PAGE_LOADED")).toBeInTheDocument();
+    expect(screen.getByTestId("browser-chrome-url")).toHaveTextContent(
+      "BROWSER$URL_PLACEHOLDER",
+    );
+  });
+
   it("links out only for http(s) urls", () => {
     const screenshotSrc = "data:image/png;base64,iVBORw0KGgo=";
 

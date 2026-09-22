@@ -9,6 +9,8 @@ import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-
 import { useBrowserStore } from "#/stores/browser-store";
 import { useCommandStore } from "#/stores/command-store";
 import { useErrorMessageStore } from "#/stores/error-message-store";
+import { useConversationStateStore } from "#/stores/conversation-state-store";
+import { ExecutionStatus } from "#/types/agent-server/core/base/common";
 import { useUserConversation } from "#/hooks/query/use-user-conversation";
 import EventService from "#/api/event-service/event-service.api";
 import {
@@ -229,6 +231,7 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     useMetricsStore.getState().resetMetrics();
     useCommandStore.setState({ commands: [] });
     useErrorMessageStore.getState().removeErrorMessage();
+    useConversationStateStore.getState().reset();
 
     vi.mocked(useUserConversation).mockReturnValue({
       data: { conversation_url: "http://localhost/api", session_api_key: null },
@@ -897,6 +900,36 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     await waitFor(() => expect(useMetricsStore.getState().usage).toBeNull());
     expect(useMetricsStore.getState().cost).toBeNull();
     expect(useMetricsStore.getState().max_budget_per_task).toBeNull();
+  });
+
+  it("resets execution_status in the same layout effect that clears the other conversation-scoped stores", async () => {
+    // execution_status used to be reset by a passive effect in the route
+    // component, which runs after this provider's layout effects -- so one
+    // frame could paint with commands/browser already cleared for the new
+    // conversation but execution_status still holding the previous one's
+    // value. Asserting it is already cleared as soon as the render commits
+    // (before any `await`/`waitFor` lets passive effects run) pins the fix.
+    const { rerender } = renderProvider("conv-a");
+    await waitFor(() => expect(eventIds()).toEqual(["user-msg-conv-a"]));
+
+    useConversationStateStore.setState({
+      execution_status: ExecutionStatus.RUNNING,
+    });
+
+    act(() => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <ConversationWebSocketProvider
+            conversationId="conv-b"
+            conversationUrl={null}
+          >
+            <div />
+          </ConversationWebSocketProvider>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(useConversationStateStore.getState().execution_status).toBeNull();
   });
 
   it("keeps events that arrived after history when re-entering the same conversation", async () => {

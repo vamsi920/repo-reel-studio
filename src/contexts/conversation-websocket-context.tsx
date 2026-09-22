@@ -389,6 +389,12 @@ export function ConversationWebSocketProvider({
     // conversation's meter until fresh WS stats arrive — and a brand-new
     // conversation sends none, so the stale figure stuck indefinitely.
     useMetricsStore.getState().resetMetrics();
+    // execution_status must clear in this same layout effect, not the route's
+    // passive effect: React runs all layout effects for a commit before any
+    // passive effect, so a passive-effect reset would let one frame paint with
+    // command-store/browser-store already cleared for the new conversation but
+    // execution_status still holding the previous conversation's value.
+    useConversationStateStore.getState().reset();
   }, [conversationId, clearEventsForConversation, resetBrowserStore]);
 
   useLayoutEffect(() => {

@@ -217,6 +217,29 @@ describe("useTerminal", () => {
     expect(mockTerminal.writeln).toHaveBeenLastCalledWith("one");
   });
 
+  it("writes command input/output verbatim even when it contains the legacy interpreter marker string", () => {
+    // parseTerminalOutput used to be applied to every line and silently
+    // truncated anything containing "[Python Interpreter: ...]" -- a real
+    // command or its output can legitimately contain that substring.
+    const commands: Command[] = [
+      { content: 'echo "[Python Interpreter: test]" && echo done', type: "input" },
+      { content: "before [Python Interpreter: something] after", type: "output" },
+    ];
+
+    useCommandStore.setState({ commands });
+
+    renderWithProviders(<TestTerminalComponent />);
+
+    expect(mockTerminal.writeln).toHaveBeenNthCalledWith(
+      1,
+      'echo "[Python Interpreter: test]" && echo done',
+    );
+    expect(mockTerminal.writeln).toHaveBeenNthCalledWith(
+      2,
+      "before [Python Interpreter: something] after",
+    );
+  });
+
   it("should not call fit() when terminal.element is null", () => {
     // Temporarily set element to null to simulate terminal not being opened
     const originalElement = mockTerminal.element;

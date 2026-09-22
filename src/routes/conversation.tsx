@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useConversationId } from "#/hooks/use-conversation-id";
 import { useConversationStore } from "#/stores/conversation-store";
 import { useAgentStore } from "#/stores/agent-store";
-import { useConversationStateStore } from "#/stores/conversation-state-store";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import {
   clearLastConversationId,
@@ -74,9 +73,6 @@ function AppContent() {
   const { resetConversationState } = useConversationStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const resetConversationRuntimeState = useConversationStateStore(
-    (state) => state.reset,
-  );
   const setCurrentAgentState = useAgentStore(
     (state) => state.setCurrentAgentState,
   );
@@ -91,13 +87,11 @@ function AppContent() {
   // on a conversation switch.
   React.useEffect(() => {
     resetConversationState();
-    resetConversationRuntimeState();
     setCurrentAgentState(AgentState.LOADING);
     removeErrorMessage();
   }, [
     conversationId,
     resetConversationState,
-    resetConversationRuntimeState,
     setCurrentAgentState,
     removeErrorMessage,
   ]);

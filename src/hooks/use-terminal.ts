@@ -2,7 +2,6 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import React from "react";
 import { Command, useCommandStore } from "#/stores/command-store";
-import { parseTerminalOutput } from "#/utils/parse-terminal-output";
 
 /*
   NOTE: Tests for this hook are indirectly covered by the tests for the XTermTerminal component.
@@ -31,13 +30,13 @@ const renderCommand = (
     // ExecuteBashAction with an empty `command` (legitimately used to view
     // additional logs after a previous command). Skipping the newline here
     // leaves a dangling, unterminated "$ " that the next write lands on.
-    terminal.writeln(trimmedContent ? parseTerminalOutput(trimmedContent) : "");
+    terminal.writeln(trimmedContent);
     return;
   }
 
   // Only write if there's actual content to avoid empty newlines
   if (trimmedContent) {
-    terminal.writeln(parseTerminalOutput(trimmedContent));
+    terminal.writeln(trimmedContent);
   }
 };
 
