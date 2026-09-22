@@ -3,7 +3,7 @@ import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { encryptJson, fingerprint } from "../_shared/secrets.ts";
 import { OAUTH_STATE_TTL_MS } from "../_shared/oauth.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
-import { interpolatePath, resolveBaseUrl } from "../_shared/template.ts";
+import { assertHostAllowed, interpolatePath, resolveBaseUrl } from "../_shared/template.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
 import { mirrorToLegacy } from "../_shared/legacy-mirror.ts";
 
@@ -120,6 +120,18 @@ export async function completeConnectionsOAuth(
     tokenUrl = interpolatePath(oauth.tokenUrlTemplate, templateContext);
   } catch {
     return redirect(appOrigin, returnTo, { error: "missing_host_config" });
+  }
+
+  // Defense in depth: `connections-oauth-start` should already reject a
+  // blocked host before `config` is ever stored in `oauth_states`, but this
+  // is the call that actually sends the provider's client secret to
+  // `tokenUrl` -- it must never trust that upstream check alone (this is the
+  // same class of bug INC-5 fixed for the legacy GitHub-specific flow; this
+  // generic flow builds its own token URL and was not covered by that fix).
+  try {
+    assertHostAllowed(tokenUrl, manifest.id);
+  } catch {
+    return redirect(appOrigin, returnTo, { error: "blocked_host" });
   }
 
   const tokenResponse = await fetch(tokenUrl, {

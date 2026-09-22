@@ -4,6 +4,7 @@ import { getCallerOrgId } from "../_shared/org.ts";
 import { decryptJson, encryptJson } from "../_shared/secrets.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import {
+  assertHostAllowed,
   interpolateHeaders,
   interpolatePath,
   interpolateValue,
@@ -111,6 +112,17 @@ async function refreshIfNeeded(
       credentials: {},
       params: {},
     });
+
+    // Same host deny-list this file's own top comment promises for every
+    // outbound call: a connection whose stored `config` resolves to a
+    // blocked network must never reach a refresh POST carrying the client
+    // secret and a live refresh token, even though this path builds its URL
+    // directly instead of through `resolveBaseUrl`.
+    try {
+      assertHostAllowed(tokenUrl, manifest.id);
+    } catch {
+      return credentials;
+    }
 
     const response = await fetch(tokenUrl, {
       method: "POST",

@@ -4,6 +4,7 @@ import { getCallerOrgId } from "../_shared/org.ts";
 import { decryptJson } from "../_shared/secrets.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { runConnectorProbe, type ProbeResult } from "../_shared/probe-runner.ts";
+import { assertHostAllowed } from "../_shared/template.ts";
 
 /**
  * Environment checks that can be answered from the platform's own runtime.
@@ -40,6 +41,24 @@ async function probeEgress(hosts: string[]): Promise<ProbeResult> {
   const checks = await Promise.all(
     hosts.map(async (host) => {
       const target = host.startsWith("http") ? host : `https://${host}`;
+      // `hosts` is caller-supplied and unvalidated otherwise: without this,
+      // any signed-in session (an anonymous one gets its own personal org,
+      // see `ensurePersonalOrg`) could point this server-side fetch at
+      // 169.254.169.254 or an internal address and read back per-host
+      // reachability -- the exact SSRF/internal-scan `assertHostAllowed`
+      // exists to block for every other connector call in this deployment.
+      // The provider id is deliberately not a real connector's so none of
+      // `LOOPBACK_ALLOWED_PROVIDERS`' exceptions apply here.
+      try {
+        assertHostAllowed(target, "environment-probe-egress");
+      } catch {
+        return {
+          id: host,
+          ok: false,
+          labelKey: "PROBE$CHECK_REACHABLE",
+          detail: "blocked_host",
+        };
+      }
       try {
         const response = await fetchWithTimeout(target, {
           method: "GET",

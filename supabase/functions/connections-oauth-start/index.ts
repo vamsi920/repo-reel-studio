@@ -3,7 +3,7 @@ import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
 import { pkceChallengeFromVerifier, randomToken } from "../_shared/oauth.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
-import { interpolatePath } from "../_shared/template.ts";
+import { assertHostAllowed, interpolatePath } from "../_shared/template.ts";
 
 /**
  * Begins an OAuth authorization for any provider in the registry.
@@ -76,6 +76,27 @@ Deno.serve(async (req: Request) => {
   }
 
   const config = payload.config ?? {};
+
+  // Reject a blocked host (self-hosted-override field pointed at an internal
+  // address) before `config` is ever stored: `connections-oauth-complete.ts`
+  // re-checks this too before it sends the client secret, but that is
+  // defense in depth for the token exchange -- rejecting here also stops the
+  // blocked host from being persisted at all and from appearing in the
+  // authorize-URL redirect below.
+  let authorizeBase: string;
+  try {
+    // Templated because a self-hosted instance's authorize endpoint lives on
+    // the customer's own host, which arrives in `config`.
+    authorizeBase = interpolatePath(oauth.authorizeUrlTemplate, {
+      config,
+      credentials: {},
+      params: {},
+    });
+    assertHostAllowed(authorizeBase, manifest.id);
+  } catch {
+    return jsonResponse({ error: "missing_host_config" }, { status: 400 });
+  }
+
   const state = randomToken();
   const verifier = randomToken(64);
 
@@ -102,19 +123,6 @@ Deno.serve(async (req: Request) => {
   const redirectUri = `${supabaseUrl}/functions/v1/${
     oauth.callbackFunction ?? "connections-oauth-callback"
   }`;
-
-  let authorizeBase: string;
-  try {
-    // Templated because a self-hosted instance's authorize endpoint lives on
-    // the customer's own host, which arrives in `config`.
-    authorizeBase = interpolatePath(oauth.authorizeUrlTemplate, {
-      config,
-      credentials: {},
-      params: {},
-    });
-  } catch {
-    return jsonResponse({ error: "missing_host_config" }, { status: 400 });
-  }
 
   const url = new URL(authorizeBase);
   url.searchParams.set("client_id", clientId);
