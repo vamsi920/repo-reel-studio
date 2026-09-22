@@ -57,6 +57,7 @@ export function ProactivationFeatureCard({
   const { navigate } = useNavigation();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
+  const [isTogglingAll, setIsTogglingAll] = useState(false);
   const toggleMutation = useToggleAutomation();
   const dispatchMutation = useDispatchAutomation();
 
@@ -136,12 +137,21 @@ export function ProactivationFeatureCard({
   };
 
   const handlePauseResume = async () => {
+    // Unlike `handleRunAll`, this button had no pending guard at all, so a
+    // rapid double-click fired two full batches of `mutateAsync()` calls
+    // concurrently -- duplicate network calls, and if `anyActive` changed
+    // between the two clicks (one batch finishing mid-second-click), the
+    // two batches could compute different `willEnable` values from the
+    // same stale snapshot, leaving some automations toggled to an
+    // unintended state with only the second batch's toast shown.
+    if (isTogglingAll) return;
     const willEnable = !anyActive;
     // `toggleMutation` is one mutation shared across every automation here,
     // same pitfall as `handleRunAll` above: firing several `mutate()` calls
     // back to back drops the per-call callbacks (and therefore the error
     // toast) for every automation but the last one to settle. `mutateAsync`
     // plus `Promise.allSettled` sees every outcome instead.
+    setIsTogglingAll(true);
     const results = await Promise.allSettled(
       proactivationAutomations.map((automation) =>
         toggleMutation.mutateAsync({
@@ -150,6 +160,7 @@ export function ProactivationFeatureCard({
         }),
       ),
     );
+    setIsTogglingAll(false);
 
     const failures = results.filter(
       (r): r is PromiseRejectedResult => r.status === "rejected",
@@ -275,6 +286,7 @@ export function ProactivationFeatureCard({
           type="button"
           variant="secondary"
           onClick={handlePauseResume}
+          isDisabled={isTogglingAll}
         >
           {anyActive
             ? t(I18nKey.AUTOMATIONS$PROACTIVATION_PAUSE)

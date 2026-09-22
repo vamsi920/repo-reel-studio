@@ -182,31 +182,32 @@ export default function AutomationDetail() {
     }
   };
 
-  const handleDelete = () => {
-    deleteMutation.mutate(automation.id, {
-      onSuccess: () => {
-        navigate?.(automationListPath());
-      },
-      // A failed delete used to leave the confirmation modal sitting open with
-      // nothing to say. Close it and report why the automation is still here.
-      onError: (error) => {
-        setShowDeleteModal(false);
-        displayErrorToast(getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)));
-      },
-    });
+  const handleDelete = async () => {
+    try {
+      // Same drop-callback race as `handleToggle` above: a re-entrant click
+      // on the same mutation instance before the first settles must not
+      // silently swallow either call's outcome, so this awaits its own
+      // promise instead of relying on the shared per-call callbacks.
+      await deleteMutation.mutateAsync(automation.id);
+      navigate?.(automationListPath());
+    } catch (error) {
+      // A failed delete used to leave the confirmation modal sitting open
+      // with nothing to say. Close it and report why the automation is
+      // still here.
+      setShowDeleteModal(false);
+      displayErrorToast(getApiErrorMessage(error, t(I18nKey.ERROR$GENERIC)));
+    }
   };
 
-  const handleRunNow = () => {
-    dispatchMutation.mutate(automation.id, {
-      onSuccess: () => {
-        displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
-      },
-      onError: (error) => {
-        displayErrorToast(
-          getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
-        );
-      },
-    });
+  const handleRunNow = async () => {
+    try {
+      await dispatchMutation.mutateAsync(automation.id);
+      displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
+      );
+    }
   };
 
   // `downloadTarball` is async: returning its promise to the menu left a

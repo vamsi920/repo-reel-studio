@@ -189,6 +189,42 @@ describe("ProactivationFeatureCard pause/resume", () => {
     });
     expect(displayErrorToast).not.toHaveBeenCalled();
   });
+
+  it("disables the pause/resume button while a toggle batch is in flight, so a rapid double-click doesn't fire a second batch", async () => {
+    // Unguarded, this used to let a second click fire a second full
+    // Promise.allSettled batch of toggleAutomation calls before the first
+    // batch settled -- duplicate network calls that could race each other
+    // to a different final state.
+    let resolveFirstCall: (automation: Automation) => void = () => {};
+    vi.mocked(AutomationService.toggleAutomation).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstCall = resolve;
+        }),
+    );
+    vi.mocked(AutomationService.toggleAutomation).mockResolvedValue(
+      makeAutomation("two", false),
+    );
+
+    const user = userEvent.setup();
+    renderCard([makeAutomation("one", true), makeAutomation("two", true)]);
+
+    const pauseButton = screen.getByText("AUTOMATIONS$PROACTIVATION_PAUSE");
+    await user.click(pauseButton);
+
+    await waitFor(() => {
+      expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(2);
+    });
+    // Still in flight (only the first call has been given a resolver) --
+    // the button must already be disabled so a second click is a no-op.
+    await user.click(pauseButton);
+    expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(2);
+
+    resolveFirstCall(makeAutomation("one", false));
+    await waitFor(() => {
+      expect(pauseButton).not.toBeDisabled();
+    });
+  });
 });
 
 describe("ProactivationFeatureCard run all", () => {

@@ -59,21 +59,24 @@ export function useHomeAutomationActions(
     cancelMutation.variables?.runId === latestRun?.id;
   const canCancel = canManage && isInFlightAutomationRun(latestRun);
 
-  const runNow = useCallback(() => {
+  const runNow = useCallback(async () => {
     if (isDemo) {
       displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
       return;
     }
-    dispatchMutation.mutate(automation.id, {
-      onSuccess: () => {
-        displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
-      },
-      onError: (error) => {
-        displayErrorToast(
-          getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
-        );
-      },
-    });
+    try {
+      // `mutateAsync` returns this call's own promise, unlike `.mutate()`
+      // whose per-call onSuccess/onError get dropped by react-query's
+      // shared mutation observer when a second call fires before the first
+      // settles (see the same fix already applied to automation-detail.tsx
+      // and automations-list.tsx's sibling handlers).
+      await dispatchMutation.mutateAsync(automation.id);
+      displaySuccessToast(t(I18nKey.AUTOMATIONS$RUN_NOW_SUCCESS));
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$RUN_NOW_ERROR)),
+      );
+    }
   }, [automation.id, dispatchMutation, isDemo, t]);
 
   const viewDetails = useCallback(() => {
@@ -92,44 +95,39 @@ export function useHomeAutomationActions(
     setTurnOffConfirmOpen(true);
   }, []);
 
-  const confirmTurnOff = useCallback(() => {
+  const confirmTurnOff = useCallback(async () => {
     setTurnOffConfirmOpen(false);
     if (isDemo) return;
-    toggleMutation.mutate(
-      { id: automation.id, enabled: false },
-      {
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$TURN_OFF_ERROR)),
-          );
-        },
-      },
-    );
+    try {
+      await toggleMutation.mutateAsync({ id: automation.id, enabled: false });
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$TURN_OFF_ERROR)),
+      );
+    }
   }, [automation.id, isDemo, t, toggleMutation]);
 
   const cancelTurnOff = useCallback(() => {
     setTurnOffConfirmOpen(false);
   }, []);
 
-  const cancelRun = useCallback(() => {
+  const cancelRun = useCallback(async () => {
     if (!latestRun || !isInFlightAutomationRun(latestRun)) return;
     if (isDemo) {
       displaySuccessToast(t(I18nKey.AUTOMATIONS$CANCEL_RUN_SUCCESS));
       return;
     }
-    cancelMutation.mutate(
-      { automationId: automation.id, runId: latestRun.id },
-      {
-        onSuccess: () => {
-          displaySuccessToast(t(I18nKey.AUTOMATIONS$CANCEL_RUN_SUCCESS));
-        },
-        onError: (error) => {
-          displayErrorToast(
-            getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$CANCEL_RUN_ERROR)),
-          );
-        },
-      },
-    );
+    try {
+      await cancelMutation.mutateAsync({
+        automationId: automation.id,
+        runId: latestRun.id,
+      });
+      displaySuccessToast(t(I18nKey.AUTOMATIONS$CANCEL_RUN_SUCCESS));
+    } catch (error) {
+      displayErrorToast(
+        getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$CANCEL_RUN_ERROR)),
+      );
+    }
   }, [automation.id, cancelMutation, isDemo, latestRun, t]);
 
   return {
