@@ -76,15 +76,53 @@ describe("SettingsSwitch", () => {
     expect(screen.getByTestId("test-switch")).not.toBeChecked();
 
     rerender(
+      <SettingsSwitch testId="test-switch" onToggle={vi.fn()} defaultIsToggled>
+        Test Switch
+      </SettingsSwitch>,
+    );
+
+    expect(screen.getByTestId("test-switch")).toBeChecked();
+  });
+
+  it("should not clobber an in-progress unsaved toggle when defaultIsToggled changes under it (e.g. an unrelated settings refetch)", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
       <SettingsSwitch
         testId="test-switch"
         onToggle={vi.fn()}
-        defaultIsToggled
+        defaultIsToggled={false}
       >
         Test Switch
       </SettingsSwitch>,
     );
 
+    // User flips it on, but hasn't saved yet.
+    await user.click(screen.getByTestId("test-switch"));
+    expect(screen.getByTestId("test-switch")).toBeChecked();
+
+    // An unrelated settings refetch lands while the edit is still
+    // unsaved (e.g. `defaultIsToggled` momentarily agreeing with the
+    // user's own pick is not itself proof the guard works)...
+    rerender(
+      <SettingsSwitch testId="test-switch" onToggle={vi.fn()} defaultIsToggled>
+        Test Switch
+      </SettingsSwitch>,
+    );
+    expect(screen.getByTestId("test-switch")).toBeChecked();
+
+    // ...and then a further refetch reports the value is actually back to
+    // its original, unrelated state. Without a touched guard this would
+    // silently snap the switch back off, discarding the user's still-unsaved
+    // choice.
+    rerender(
+      <SettingsSwitch
+        testId="test-switch"
+        onToggle={vi.fn()}
+        defaultIsToggled={false}
+      >
+        Test Switch
+      </SettingsSwitch>,
+    );
     expect(screen.getByTestId("test-switch")).toBeChecked();
   });
 });

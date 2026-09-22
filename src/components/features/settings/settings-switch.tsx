@@ -29,17 +29,27 @@ export function SettingsSwitch({
 }: React.PropsWithChildren<SettingsSwitchProps>) {
   const { t } = useTranslation("openhands");
   const [isToggled, setIsToggled] = React.useState(defaultIsToggled ?? false);
+  // Guards the resync effect below: once the user has flipped this switch
+  // themselves, a `defaultIsToggled` prop change (a background settings
+  // refetch, an unrelated save elsewhere invalidating the same query, etc.)
+  // must not silently discard that in-progress, unsaved choice. Mirrors the
+  // `*TouchedRef` pattern used for the same class of bug elsewhere in
+  // Settings (e.g. `agent-settings.tsx`).
+  const touchedRef = React.useRef(false);
 
   // Resync when the server value changes under us (a background refetch, a
   // change made in another tab, etc.) — otherwise the uncontrolled switch
   // keeps showing whatever it last rendered even after `defaultIsToggled`
-  // moves on.
+  // moves on. Skipped once the user has touched the switch this session so
+  // that resync can't clobber their unsaved edit.
   React.useEffect(() => {
+    if (touchedRef.current) return;
     setIsToggled(defaultIsToggled ?? false);
   }, [defaultIsToggled]);
 
   const handleToggle = (value: boolean) => {
     if (isDisabled) return;
+    touchedRef.current = true;
     setIsToggled(value);
     onToggle?.(value);
   };
