@@ -241,11 +241,25 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
       })),
 
     failLevel: (key, parentId) =>
-      update(key, (state) => ({
-        ...state,
-        loadingParents: state.loadingParents.filter((id) => id !== parentId),
-        levelError: parentId,
-      })),
+      update(key, (state) => {
+        // Two drill-downs can be in flight at once (the canvas fires on both
+        // single and double click, and a user can click a second node before
+        // the first's shard resolves). If the other one already succeeded
+        // and navigated away, this failure is for a node that isn't part of
+        // the level now on screen -- surfacing it anyway would paint a
+        // "failed to load" banner (and a retry button) for the wrong node.
+        // When we don't even know the current level's contents yet (no
+        // `setReady` completed), there's nothing to compare against, so the
+        // failure is reported as usual.
+        const currentLevel = state.levels[levelKey(state.currentParentId)];
+        const stillReachable =
+          !currentLevel || currentLevel.nodes.some((n) => n.id === parentId);
+        return {
+          ...state,
+          loadingParents: state.loadingParents.filter((id) => id !== parentId),
+          levelError: stillReachable ? parentId : state.levelError,
+        };
+      }),
 
     navigateTo: (key, parentId) =>
       update(key, (state) => ({

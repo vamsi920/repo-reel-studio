@@ -170,6 +170,42 @@ describe("codegraph store", () => {
     expect(useCodeGraphStore.getState().byKey[key].levelError).toBeNull();
   });
 
+  it("ignores a stale failure for a level no longer reachable from the current view", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("a"), node("b")])));
+
+    // Both "a" and "b" are drilled into from the root view before either
+    // resolves (a real double click, or two quick single clicks).
+    useCodeGraphStore.getState().beginLoadLevel(key, "a");
+    useCodeGraphStore.getState().beginLoadLevel(key, "b");
+
+    // "a" resolves first and the view moves on to its children...
+    useCodeGraphStore.getState().setLevel(key, "a", level("a", [node("x")]));
+    useCodeGraphStore.getState().navigateTo(key, "a");
+
+    // ...then "b" fails. "b" isn't part of the level now on screen, so its
+    // failure must not paint a banner for a node the user isn't looking at.
+    useCodeGraphStore.getState().failLevel(key, "b");
+
+    const state = useCodeGraphStore.getState().byKey[key];
+    expect(state.levelError).toBeNull();
+    expect(state.loadingParents).toEqual([]);
+  });
+
+  it("still reports a failure for a level that is part of the current view", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("a"), node("b")])));
+
+    useCodeGraphStore.getState().beginLoadLevel(key, "b");
+    useCodeGraphStore.getState().failLevel(key, "b");
+
+    expect(useCodeGraphStore.getState().byKey[key].levelError).toBe("b");
+  });
+
   it("clears the failure when the user navigates elsewhere", () => {
     const key = start();
     useCodeGraphStore.getState().failLevel(key, "sub");
