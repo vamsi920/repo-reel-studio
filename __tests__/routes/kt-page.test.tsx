@@ -532,4 +532,33 @@ describe("KtPage deep link on a cold store", () => {
 
     expect(await screen.findByText(I18nKey.KT$PAGE_NOT_FOUND)).toBeInTheDocument();
   });
+
+  it("shows why generation failed instead of the generic 'Page not found' message", () => {
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "error",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: null,
+          error: "DeepWiki refused the request: rate limited.",
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+
+    render(<KtPage />);
+
+    expect(screen.getByTestId("kt-page-error")).toHaveTextContent(
+      "DeepWiki refused the request: rate limited.",
+    );
+    expect(
+      screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND),
+    ).not.toBeInTheDocument();
+  });
 });

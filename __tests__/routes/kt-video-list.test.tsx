@@ -85,6 +85,40 @@ describe("KtVideoList", () => {
     expect(screen.queryByText(I18nKey.KT$STARTING)).not.toBeInTheDocument();
   });
 
+  it("shows why generation failed instead of the generic 'not found' message", () => {
+    rehydrationChecked.mockReturnValue(true);
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: {
+            repositoryId: REPOSITORY_ID,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abcdef1234567890",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "error",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: null,
+          error: "DeepWiki refused the request: rate limited.",
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+
+    renderWithProviders(<KtVideoList />);
+
+    expect(screen.getByTestId("kt-video-list-error")).toHaveTextContent(
+      "DeepWiki refused the request: rate limited.",
+    );
+    expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
+  });
+
   it("lists every page that has generated knowledge", () => {
     seedKnowledge([
       {

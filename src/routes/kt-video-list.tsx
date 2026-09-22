@@ -29,6 +29,11 @@ function KtVideoList() {
   // A deep link / reload lands here with an empty store even for a repo that
   // was generated earlier; this loads it the same way the Docs tab does.
   const rehydrationChecked = useKnowledgeRehydration(repositoryId || undefined);
+  // A failed generation leaves a real entry with `knowledge: null` — the Docs
+  // tab (kt-repository.tsx) already shows this real reason instead of a
+  // generic "not found" for the exact same store entry; this tab read the
+  // same state and hid it.
+  const failureMessage = state?.status === "error" ? state.error : null;
   const flagDetailsByPageId = new Map<string, string>();
   for (const flag of state?.qualityFlags ?? []) {
     const existing = flagDetailsByPageId.get(flag.pageId);
@@ -52,7 +57,15 @@ function KtVideoList() {
 
         <KnowledgeTabs repositoryId={repositoryId} active="video" />
 
-        {!state?.knowledge && !rehydrationChecked ? (
+        {failureMessage ? (
+          <p
+            data-testid="kt-video-list-error"
+            role="alert"
+            className="pt-6 text-sm text-[var(--error-500)]"
+          >
+            {failureMessage}
+          </p>
+        ) : !state?.knowledge && !rehydrationChecked ? (
           <p className="flex items-center gap-2 pt-6 text-sm text-[var(--oh-muted)]">
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
             {t(I18nKey.KT$STARTING)}

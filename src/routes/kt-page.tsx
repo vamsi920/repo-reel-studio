@@ -239,11 +239,24 @@ function KtPage() {
   }, [wantsWatch, page, state]);
 
   if (!state?.knowledge || !page) {
+    // A failed generation leaves a real entry with `knowledge: null` — the
+    // Docs tab (kt-repository.tsx) already shows this real reason instead of
+    // a generic "not found" for the exact same store entry; this route read
+    // the same state and hid it.
+    const failureMessage = state?.status === "error" ? state.error : null;
     return (
       <main className="min-h-full" data-testid="kt-page">
         <div className="mx-auto max-w-4xl p-6">
           <KtBreadcrumb />
-          {rehydrationChecked ? (
+          {failureMessage ? (
+            <p
+              data-testid="kt-page-error"
+              role="alert"
+              className="text-sm text-[var(--error-500)]"
+            >
+              {failureMessage}
+            </p>
+          ) : rehydrationChecked ? (
             <p className="text-sm text-[var(--oh-muted)]">
               {t(I18nKey.KT$PAGE_NOT_FOUND)}
             </p>
