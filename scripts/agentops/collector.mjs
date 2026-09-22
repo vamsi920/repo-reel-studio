@@ -716,11 +716,22 @@ export class Collector {
     ]);
     const observedAt = this.now();
     const since = monthStart(observedAt);
-    const workspaceSpend = computeSpend(runs, {
+
+    // `runs` is a store read that raced this tick's own `#persist` (called
+    // after this method returns), so on a store that hands back freshly
+    // built rows from a real read (Supabase) it still carries this run's
+    // *previous* tick's cost — undercounting workspace/agent spend by this
+    // tick's delta and delaying a halt to the next poll. Swap in the
+    // in-memory run, which `applyStats` already brought current this tick.
+    const spendRuns = runs.some((r) => r.runId === run.runId)
+      ? runs.map((r) => (r.runId === run.runId ? run : r))
+      : [...runs, run];
+
+    const workspaceSpend = computeSpend(spendRuns, {
       workspaceId: run.workspaceId,
       since,
     }).usedUsd;
-    const agentSpend = computeSpend(runs, {
+    const agentSpend = computeSpend(spendRuns, {
       agentName: run.agentName,
       since,
     }).usedUsd;

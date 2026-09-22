@@ -833,6 +833,88 @@ describe("Collector budget enforcement on halted runs", () => {
   });
 });
 
+describe("Collector budget enforcement uses this tick's own live cost", () => {
+  it("halts on a workspace-budget breach caused by this tick's own cost delta, not just what the store had before it", async () => {
+    // Regression test: #enforceBudgets reads `store.listRuns()` *before*
+    // this tick's `#persist` writes the run's freshly-computed cost back to
+    // the store. A store that hands back a fresh read (Supabase, unlike the
+    // JSONL store's same-object-reference read) would still see this run's
+    // *previous* tick's cost there, undercounting workspace spend by
+    // exactly this tick's delta and delaying the halt to the next poll.
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: 50,
+        runBudgetUsd: null,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+      // Simulates a store whose listRuns() answers with a freshly-read row
+      // for this very run, still carrying last tick's cost (40 < the $50
+      // workspace budget) because this tick hasn't persisted yet.
+      listRuns: vi.fn().mockResolvedValue([
+        {
+          runId: "run-1",
+          workspaceId: "ws",
+          agentName: "agent",
+          costUsd: 40,
+          updatedAt: "2026-01-15T00:00:00.000Z",
+          tokens: {},
+        },
+      ]),
+    });
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "run-1",
+            title: "Fix the flaky test",
+            execution_status: "running",
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+            stats: {
+              usage_to_metrics: {
+                agent: {
+                  // This tick's real, freshly-reported cost: on its own it
+                  // already clears the $50 workspace budget.
+                  accumulated_cost: 65,
+                  accumulated_token_usage: {},
+                  costs: [],
+                  response_latencies: [],
+                  token_usages: [],
+                },
+              },
+            },
+          },
+        ],
+      }),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:06:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    const breach = store.appendedAudit.find(
+      (record) => record.action === "budget.exceeded",
+    );
+    expect(breach).toMatchObject({
+      metadata: {
+        breaches: [
+          expect.objectContaining({ scope: "workspace", usedUsd: 65 }),
+        ],
+      },
+    });
+  });
+});
+
 describe("Collector audit timestamps behind a blocked poll", () => {
   it("dates budget rows and the approval by when they are written, not by when the tick began", async () => {
     // A tick samples its clock, then sits behind the runtime's state lock for

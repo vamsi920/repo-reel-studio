@@ -151,7 +151,19 @@ async function request<T>(
   }
 
   const text = await response.text();
-  return (text ? JSON.parse(text) : null) as T;
+  if (!text) {
+    // Every real collector route sends a JSON body on success (see
+    // scripts/agentops-server.mjs's `sendJson` calls) — an empty 200 only
+    // happens if something between the browser and the collector (a
+    // misbehaving proxy, a stripped response) ate the body. Callers that
+    // destructure the result (`const { runs } = await request(...)`) would
+    // otherwise crash with an opaque "Cannot destructure property of null"
+    // instead of the collector-unavailable messaging callers already handle.
+    throw new AgentOpsUnavailableError(
+      `The AgentOps collector returned an empty response from ${path}.`,
+    );
+  }
+  return JSON.parse(text) as T;
 }
 
 class AgentOpsService {
