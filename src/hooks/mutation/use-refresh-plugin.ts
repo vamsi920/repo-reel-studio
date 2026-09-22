@@ -14,6 +14,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * Update an installed plugin from its source. Version / resolved coordinates may
  * change, so the installed list is invalidated on success, scoped to the
  * backend the mutation actually ran against.
+ *
+ * `meta.disableToast` keeps the global MutationCache handler from stacking a
+ * second identical toast on top of the one below (same pattern as
+ * `useInstallPlugin`).
  */
 export function useRefreshPlugin() {
   const queryClient = useQueryClient();
@@ -21,6 +25,7 @@ export function useRefreshPlugin() {
   const { backend } = useActiveBackend();
 
   return useMutation({
+    meta: { disableToast: true },
     mutationFn: (name: string) => PluginsManagementService.refreshPlugin(name),
     onSuccess: () => {
       queryClient.invalidateQueries({

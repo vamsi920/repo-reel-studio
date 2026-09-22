@@ -14,6 +14,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * Uninstall a plugin. The plugin returns to "available" in the catalog, so both
  * the installed list and the marketplace catalog are invalidated on success,
  * scoped to the backend the mutation actually ran against.
+ *
+ * `meta.disableToast` keeps the global MutationCache handler from stacking a
+ * second identical toast on top of the one below (same pattern as
+ * `useInstallPlugin`).
  */
 export function useUninstallPlugin() {
   const queryClient = useQueryClient();
@@ -21,6 +25,7 @@ export function useUninstallPlugin() {
   const { backend } = useActiveBackend();
 
   return useMutation({
+    meta: { disableToast: true },
     mutationFn: (name: string) =>
       PluginsManagementService.uninstallPlugin(name),
     onSuccess: () => {

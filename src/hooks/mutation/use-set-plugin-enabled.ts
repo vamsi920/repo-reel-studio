@@ -12,6 +12,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * into new conversations (via the SDK auto-load wiring), so the enabled flag is
  * the enforced source of truth — invalidate the installed list on success,
  * scoped to the backend the mutation actually ran against.
+ *
+ * `meta.disableToast` keeps the global MutationCache handler from stacking a
+ * second identical toast on top of the one below (same pattern as
+ * `useInstallPlugin`).
  */
 export function useSetPluginEnabled() {
   const queryClient = useQueryClient();
@@ -19,6 +23,7 @@ export function useSetPluginEnabled() {
   const { backend } = useActiveBackend();
 
   return useMutation({
+    meta: { disableToast: true },
     mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
       PluginsManagementService.setPluginEnabled(name, enabled),
     onSuccess: () => {
