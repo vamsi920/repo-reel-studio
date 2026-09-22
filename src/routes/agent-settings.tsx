@@ -329,6 +329,9 @@ export function AgentSettingsScreen({
   // whole component via its `key` instead, so these refs start fresh there).
   const subAgentsTouchedRef = useRef(false);
   const toolConcurrencyTouchedRef = useRef(false);
+  // Same guard for the ACP-path fields (agentType, commandText, acpModel,
+  // isCustomAcpModel) owned by the seeding effect below.
+  const acpTouchedRef = useRef(false);
 
   useEffect(() => {
     // Seed from the profile override (embedded) or the live global settings.
@@ -336,6 +339,11 @@ export function AgentSettingsScreen({
     if (!source && !settings) return;
     const initIdentity = agentSettingsOverride ?? settings;
     if (lastInitializedSettingsRef.current === initIdentity) return;
+    // Don't overwrite an in-progress, unsaved edit with a background
+    // refetch's value; `lastInitializedSettingsRef` is deliberately left
+    // untouched so seeding retries on the next settings change once the
+    // edit is saved (clearing this ref) or discarded.
+    if (acpTouchedRef.current) return;
 
     lastInitializedSettingsRef.current = initIdentity;
     const kind = source?.agent_kind;
@@ -548,6 +556,7 @@ export function AgentSettingsScreen({
           onSuccess: () => {
             displaySuccessToast(t(I18nKey.SETTINGS$SAVED));
             setIsDirty(false);
+            acpTouchedRef.current = false;
           },
         },
       );
@@ -591,6 +600,7 @@ export function AgentSettingsScreen({
             setIsDirty(false);
             subAgentsTouchedRef.current = false;
             toolConcurrencyTouchedRef.current = false;
+            acpTouchedRef.current = false;
           },
         },
       );
@@ -651,6 +661,7 @@ export function AgentSettingsScreen({
           } else if (newType === "openhands") {
             setIsCustomAcpModel(false);
           }
+          acpTouchedRef.current = true;
           setIsDirty(true);
         }}
       />
@@ -728,6 +739,7 @@ export function AgentSettingsScreen({
                 setAcpModel("");
                 setIsCustomAcpModel(true);
               }
+              acpTouchedRef.current = true;
               setIsDirty(true);
             }}
           />
@@ -760,6 +772,7 @@ export function AgentSettingsScreen({
                   setIsCustomAcpModel(false);
                 }
                 setCommandText(nextCommandText);
+                acpTouchedRef.current = true;
                 setIsDirty(true);
               }}
             />
@@ -795,6 +808,7 @@ export function AgentSettingsScreen({
                     setIsCustomAcpModel(false);
                     setAcpModel(modelKey);
                   }
+                  acpTouchedRef.current = true;
                   setIsDirty(true);
                 }}
               />
@@ -813,6 +827,7 @@ export function AgentSettingsScreen({
                 showOptionalTag
                 onChange={(value) => {
                   setAcpModel(value);
+                  acpTouchedRef.current = true;
                   setIsDirty(true);
                 }}
               />

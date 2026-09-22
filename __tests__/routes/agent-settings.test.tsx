@@ -254,6 +254,76 @@ describe("AgentSettingsScreen", () => {
     expect(screen.getByTestId("agent-save-button")).not.toBeDisabled();
   });
 
+  it("keeps an in-progress ACP command edit across a background settings refetch", async () => {
+    const user = userEvent.setup();
+    let callCount = 0;
+    const getSettingsSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockImplementation(async () => {
+        callCount += 1;
+        return buildSettings({
+          agent_settings: {
+            schema_version: 1,
+            agent_kind: "acp",
+            acp_server: "claude-code",
+            // The refetch reports a genuinely different server-side value
+            // than both the original and the user's unsaved local edit
+            // below -- the only way the reload-sync effect's dependency
+            // actually changes and could clobber an in-progress edit.
+            acp_command:
+              callCount === 1
+                ? []
+                : ["npx", "-y", "@agentclientprotocol/some-other-acp"],
+            acp_model: null,
+          },
+        });
+      });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(<AgentSettingsScreen />, {
+      wrapper: ({ children }) => (
+        <MemoryRouter>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        </MemoryRouter>
+      ),
+    });
+
+    const commandInput = (await screen.findByTestId(
+      "agent-command-input",
+    )) as HTMLTextAreaElement;
+    await waitFor(() => expect(getSettingsSpy).toHaveBeenCalledTimes(1));
+
+    await user.clear(commandInput);
+    await user.type(commandInput, "npx -y my-in-progress-command");
+    await waitFor(() =>
+      expect(commandInput.value).toBe("npx -y my-in-progress-command"),
+    );
+
+    // Simulate a background refetch landing mid-edit -- e.g. the settings
+    // query going stale, or some unrelated mutation elsewhere invalidating
+    // it -- unrelated to this page's own save flow.
+    await queryClient.refetchQueries();
+    await waitFor(() => expect(getSettingsSpy).toHaveBeenCalledTimes(2));
+
+    // The user's unsaved edit must survive the refetch, not silently get
+    // overwritten by the server's newly-fetched (unrelated) command.
+    await waitFor(() =>
+      expect(commandInput.value).toBe("npx -y my-in-progress-command"),
+    );
+    // Give any (buggy) delayed resync effect a further chance to fire and
+    // stay failing rather than just catching the first render tick.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+    expect(commandInput.value).toBe("npx -y my-in-progress-command");
+    expect(screen.getByTestId("agent-save-button")).not.toBeDisabled();
+  });
+
   it("hides sub-agents toggle when ACP is selected", async () => {
     const user = userEvent.setup();
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
