@@ -1,23 +1,24 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import type { ErrorClassification } from "@openhands/typescript-client";
 import ArrowDown from "#/icons/angle-down-solid.svg?react";
 import ArrowUp from "#/icons/angle-up-solid.svg?react";
-import i18n from "#/i18n";
+import { getAgentErrorHeaderKey } from "#/utils/agent-error-classification";
 import { MarkdownRenderer } from "../markdown/markdown-renderer";
 
 interface ErrorMessageProps {
-  errorId?: string;
+  classification?: ErrorClassification | null;
   defaultMessage: string;
 }
 
-export function ErrorMessage({ errorId, defaultMessage }: ErrorMessageProps) {
+export function ErrorMessage({
+  classification,
+  defaultMessage,
+}: ErrorMessageProps) {
   const { t } = useTranslation("openhands");
   const [showDetails, setShowDetails] = React.useState(false);
 
-  const hasValidTranslationId = !!errorId && i18n.exists(errorId);
-  const errorKey = hasValidTranslationId
-    ? errorId
-    : "CHAT_INTERFACE$AGENT_ERROR_MESSAGE";
+  const errorKey = getAgentErrorHeaderKey(classification);
 
   return (
     <div className="flex flex-col gap-2 my-2 py-2 text-sm w-full">

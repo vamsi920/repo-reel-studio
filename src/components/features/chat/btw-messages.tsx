@@ -22,7 +22,15 @@ export function BtwMessages({ conversationId }: BtwMessagesProps) {
         const isPending = entry.status === "pending";
         return (
           <GenericEventMessage
-            key={entry.id}
+            // `showDetails` is a one-time `useState(initiallyExpanded)` seed
+            // inside GenericEventMessage, never re-synced on prop change (see
+            // GoalStatusContent's doc comment for the same constraint). Since
+            // this entry keeps a single mounted instance across its
+            // pending -> resolved transition, keying on status alone forces a
+            // fresh mount right when initiallyExpanded flips from false to
+            // true, so the resolved answer starts expanded instead of
+            // staying collapsed until the user manually clicks the chevron.
+            key={`${entry.id}-${entry.status}`}
             title={
               <span className="flex items-center gap-2">
                 <span className="opacity-60">

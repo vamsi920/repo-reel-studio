@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { BtwMessages } from "#/components/features/chat/btw-messages";
@@ -57,6 +57,23 @@ describe("<BtwMessages />", () => {
     expect(
       screen.getByText(I18nKey.CHAT_INTERFACE$BTW_WAITING_FOR_ANSWER),
     ).toBeInTheDocument();
+  });
+
+  it("expands automatically once a pending question resolves while mounted", () => {
+    // GenericEventMessage's showDetails is a one-time useState(initiallyExpanded)
+    // seed with no effect re-syncing it, so the same mounted instance used to
+    // stay collapsed after its pending -> resolved transition (the answer was
+    // hidden until the user manually clicked the chevron). Resolving here
+    // without remounting the component reproduces exactly that transition.
+    const id = useBtwStore.getState().addPending(CONV, "why?");
+    render(<BtwMessages conversationId={CONV} />);
+    expect(screen.queryByText(/because/i)).toBeNull();
+
+    act(() => {
+      useBtwStore.getState().resolve(CONV, id, "because");
+    });
+
+    expect(screen.getByText(/because/i)).toBeInTheDocument();
   });
 
   it("does not render the pending-state translation key once the entry has resolved", () => {

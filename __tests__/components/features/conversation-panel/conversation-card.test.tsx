@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import {
   afterAll,
   afterEach,
@@ -12,6 +12,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
 import { formatTimeDelta } from "#/utils/format-time-delta";
+import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { ConversationCard } from "#/components/features/conversation-panel/conversation-card/conversation-card";
 import { clickOnEditButton } from "./utils";
 import { ConversationCardActions } from "#/components/features/conversation-panel/conversation-card/conversation-card-actions";
@@ -54,6 +55,7 @@ vi.mock("react-i18next", async () => {
 vi.mock("#/hooks/use-tracking", () => ({
   useTracking: () => ({
     trackDownloadVsCodeButtonClicked: vi.fn(),
+    trackDownloadTrajectoryButtonClicked: vi.fn(),
   }),
 }));
 
@@ -382,6 +384,47 @@ describe("ConversationCard", () => {
 
     expect(onDelete).toHaveBeenCalled();
     expect(onContextMenuToggle).toHaveBeenCalledWith(false);
+  });
+
+  it("calls onContextMenuToggle(false) instead of leaving the menu stuck open when downloading the conversation fails", async () => {
+    // handleDownloadConversation used to await mutateAsync directly with no
+    // try/catch; the mutation's own onError only shows a toast, it doesn't
+    // swallow the rejection, so a failed download threw before reaching
+    // onContextMenuToggle?.(false) at the end of the handler — an unhandled
+    // rejection, and the context menu left stuck open.
+    const user = userEvent.setup();
+    const onContextMenuToggle = vi.fn();
+    const downloadSpy = vi
+      .spyOn(AgentServerConversationService, "downloadConversation")
+      .mockRejectedValue(new Error("network error"));
+
+    renderWithProviders(
+      <ConversationCard
+        onDelete={onDelete}
+        onChangeTitle={onChangeTitle}
+        title="Conversation 1"
+        selectedRepository={null}
+        lastUpdatedAt="2021-10-01T12:00:00Z"
+        conversationId="conversation-1"
+        contextMenuOpen
+        onContextMenuToggle={onContextMenuToggle}
+      />,
+    );
+
+    const menu = screen.getByTestId("context-menu");
+    await user.click(within(menu).getByTestId("download-trajectory-button"));
+
+    await waitFor(
+      () => {
+        expect(onContextMenuToggle).toHaveBeenCalledWith(false);
+      },
+      // This suite's beforeAll stubs `window` to a bare object with no
+      // `document`, which breaks waitFor's default container lookup.
+      { container: document.body },
+    );
+    expect(downloadSpy).toHaveBeenCalledWith("conversation-1");
+
+    downloadSpy.mockRestore();
   });
 
   it("should call onArchive when the archive button is clicked", async () => {

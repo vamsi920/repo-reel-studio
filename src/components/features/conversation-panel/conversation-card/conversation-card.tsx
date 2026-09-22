@@ -172,10 +172,17 @@ export function ConversationCard({
     event.preventDefault();
     event.stopPropagation();
 
-    if (conversationId) {
-      await downloadConversation(conversationId);
+    try {
+      if (conversationId) {
+        await downloadConversation(conversationId);
+      }
+    } catch {
+      // mutateAsync still rejects even though the mutation's own onError
+      // already surfaced a toast — swallow here so a failed download
+      // doesn't also become an unhandled promise rejection.
+    } finally {
+      onContextMenuToggle?.(false);
     }
-    onContextMenuToggle?.(false);
   };
 
   const handleTogglePin = (event: React.MouseEvent<HTMLButtonElement>) => {

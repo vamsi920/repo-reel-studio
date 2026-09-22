@@ -12,5 +12,10 @@ export function ErrorEventMessage({ event }: ErrorEventMessageProps) {
     return null;
   }
 
-  return <ErrorMessage errorId={event.id} defaultMessage={event.error} />;
+  return (
+    <ErrorMessage
+      classification={event.classification}
+      defaultMessage={event.error}
+    />
+  );
 }
