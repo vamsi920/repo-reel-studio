@@ -21,11 +21,12 @@ import {
 } from "#/lib/security/security-activity";
 
 const connected: RepoCandidate[] = [];
+let connectedIsLoading = false;
 
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
   useConnectedRepositories: () => ({
     repositories: connected,
-    isLoading: false,
+    isLoading: connectedIsLoading,
   }),
 }));
 
@@ -80,6 +81,7 @@ describe("Security route", () => {
   beforeEach(() => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
     setConnected();
+    connectedIsLoading = false;
   });
 
   it("is registered at /security", () => {
@@ -189,6 +191,42 @@ describe("Security route", () => {
       expect(screen.getByTestId("security-no-workspace")).toBeInTheDocument();
       expect(
         screen.queryByTestId("security-workspace-scope"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("says it is still loading instead of claiming there is no workspace while the open-conversations query hasn't answered yet", () => {
+      // Regression: `useConnectedRepositories` starts with an empty
+      // `repositories` array on the very first render whether or not a live
+      // conversation exists, until its `isLoading` flag clears -- dropping
+      // that flag (as this hook used to) reported "no workspace to scope to"
+      // for a user with a real repository open, for the length of that
+      // query, before flipping to the correct scope once it resolved.
+      connectedIsLoading = true;
+      renderSecurity();
+
+      expect(
+        screen.getByTestId("security-loading-workspace"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-no-workspace"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-workspace-scope"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("prefers a real scope over the loading state once a knowledge-store entry already answers it", () => {
+      // A store entry is a real, resolved answer regardless of whether the
+      // open-conversations query (a different data source) has finished.
+      seedRepository();
+      connectedIsLoading = true;
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+      expect(
+        screen.queryByTestId("security-loading-workspace"),
       ).not.toBeInTheDocument();
     });
 

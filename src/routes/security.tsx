@@ -54,6 +54,12 @@ export interface SecurityWorkspaceScopeState {
   scope: SecurityWorkspaceScopeResult;
   /** Every connected repository, ordered by id — the same order the default pick uses. */
   repositories: SecurityRepositoryOption[];
+  /** True while `scope.state` is `"no-repositories"` for a reason that might
+   * still be "the open-conversations query hasn't answered yet", not "there
+   * really are none" — see the note on `useConnectedRepositories`. Always
+   * false once `repositories` is non-empty, since a real answer already
+   * exists by then. */
+  isLoading: boolean;
 }
 
 /**
@@ -80,12 +86,21 @@ export interface SecurityWorkspaceScopeState {
  * With no `?repository=`, the connected repositories are ordered by id and the
  * first wins, so a reload cannot quietly re-scope the page just because the
  * store rehydrated its keys in a different order.
+ *
+ * `useConnectedRepositories`'s own contract warns that its `repositories`
+ * starts empty on the very first render whether or not a live conversation
+ * exists, until its `isLoading` flag clears. Landing on Security straight
+ * from the sidebar (its normal entry point, with nothing in the knowledge
+ * store yet) hits exactly that window, so `isLoading` is threaded through
+ * rather than dropped, and the page below must not report "no workspace" off
+ * the strength of a query that hasn't answered yet.
  */
 export function useSecurityWorkspaceScope(
   repositoryIdParam: string | null,
 ): SecurityWorkspaceScopeState {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
-  const { repositories: connected } = useConnectedRepositories();
+  const { repositories: connected, isLoading: connectedLoading } =
+    useConnectedRepositories();
   return useMemo(() => {
     const byId = new Map<
       string,
@@ -124,7 +139,11 @@ export function useSecurityWorkspaceScope(
       branch,
     }));
     if (entries.length === 0) {
-      return { scope: { state: "no-repositories" }, repositories };
+      return {
+        scope: { state: "no-repositories" },
+        repositories,
+        isLoading: connectedLoading,
+      };
     }
 
     if (repositoryIdParam) {
@@ -137,14 +156,16 @@ export function useSecurityWorkspaceScope(
               repositoryId: repositoryIdParam,
             },
         repositories,
+        isLoading: false,
       };
     }
 
     return {
       scope: { state: "scoped", scope: entries[0].scope },
       repositories,
+      isLoading: false,
     };
-  }, [byRepositoryId, connected, repositoryIdParam]);
+  }, [byRepositoryId, connected, connectedLoading, repositoryIdParam]);
 }
 
 const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
@@ -290,7 +311,7 @@ function SeverityLegend() {
 function SecurityScreen() {
   const { t } = useTranslation("openhands");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { scope, repositories } = useSecurityWorkspaceScope(
+  const { scope, repositories, isLoading } = useSecurityWorkspaceScope(
     searchParams.get("repository"),
   );
   const selectRepository = useCallback(
@@ -352,7 +373,16 @@ function SecurityScreen() {
             })}
           </p>
         )}
-        {scope.state === "no-repositories" && (
+        {scope.state === "no-repositories" && isLoading && (
+          <p
+            className="mt-3 text-xs text-[var(--oh-muted)]"
+            data-testid="security-loading-workspace"
+            role="status"
+          >
+            {t(I18nKey.SECURITY$LOADING_WORKSPACE)}
+          </p>
+        )}
+        {scope.state === "no-repositories" && !isLoading && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-no-workspace"

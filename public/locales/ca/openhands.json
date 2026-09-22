@@ -2385,6 +2385,7 @@
   "SECURITY$BETA": "Beta",
   "SECURITY$SUBTITLE": "Understand and manage security risk across this Workspace.",
   "SECURITY$NO_WORKSPACE": "Connect a repository to scope Security to a Workspace.",
+  "SECURITY$LOADING_WORKSPACE": "Carregant repositoris connectats…",
   "SECURITY$SEVERITY_LEGEND_LABEL": "Nivells de gravetat",
   "SECURITY$REPOSITORY_NOT_CONNECTED": "«{{repository}}» no és un repositori connectat, de manera que Security no té cap Workspace al qual limitar-se.",
   "SECURITY$NOT_CONFIGURED": "Security scanning is not configured yet.",

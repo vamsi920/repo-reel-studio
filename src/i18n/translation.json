@@ -40561,6 +40561,23 @@
     "tr": "Connect a repository to scope Security to a Workspace.",
     "uk": "Connect a repository to scope Security to a Workspace."
   },
+  "SECURITY$LOADING_WORKSPACE": {
+    "en": "Loading connected repositories…",
+    "ja": "接続済みのリポジトリを読み込み中…",
+    "zh-CN": "正在加载已连接的仓库…",
+    "zh-TW": "正在載入已連線的儲存庫…",
+    "ko-KR": "연결된 리포지토리를 불러오는 중…",
+    "no": "Laster tilkoblede repositories…",
+    "ar": "جارٍ تحميل المستودعات المتصلة…",
+    "de": "Verbundene Repositories werden geladen …",
+    "fr": "Chargement des dépôts connectés…",
+    "it": "Caricamento dei repository collegati in corso…",
+    "pt": "Carregando repositórios conectados…",
+    "es": "Cargando repositorios conectados…",
+    "ca": "Carregant repositoris connectats…",
+    "tr": "Bağlı depolar yükleniyor…",
+    "uk": "Завантаження під'єднаних репозиторіїв…"
+  },
   "SECURITY$SEVERITY_LEGEND_LABEL": {
     "en": "Severity levels",
     "ja": "重要度レベル",
