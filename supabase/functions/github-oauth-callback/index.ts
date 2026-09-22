@@ -1,6 +1,11 @@
 import { completeConnectionsOAuth } from "../_shared/connections-oauth-complete.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
-import { githubApiBaseUrl, githubOAuthCredentials, githubTokenUrl } from "../_shared/github.ts";
+import {
+  assertEnterpriseHostAllowed,
+  githubApiBaseUrl,
+  githubOAuthCredentials,
+  githubTokenUrl,
+} from "../_shared/github.ts";
 
 const STATE_TTL_MS = 10 * 60 * 1000;
 
@@ -57,6 +62,16 @@ Deno.serve(async (req) => {
   }
 
   const enterpriseHost: string | null = stateRow.enterprise_host;
+
+  // Defense in depth: `github-oauth-start` already rejects a blocked host
+  // before it's ever stored, but this is the call that actually sends the
+  // enterprise client secret to `enterpriseHost` -- it must never trust that
+  // upstream check alone.
+  try {
+    assertEnterpriseHostAllowed(enterpriseHost);
+  } catch {
+    return redirectTo("/settings/connections?error=invalid_enterprise_host");
+  }
 
   let clientId: string;
   let clientSecret: string;

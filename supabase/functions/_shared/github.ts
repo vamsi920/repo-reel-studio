@@ -1,3 +1,23 @@
+import { assertHostAllowed } from "./template.ts";
+
+/**
+ * Rejects a client-supplied GitHub Enterprise host that resolves to internal
+ * infrastructure (loopback, link-local, cloud metadata, RFC1918, etc.).
+ * `enterpriseHost` is free text a user types into the Connections settings
+ * form (see `connections-settings.tsx`); without this check
+ * `github-oauth-callback` would POST this deployment's
+ * `GITHUB_ENTERPRISE_OAUTH_CLIENT_SECRET` to whatever host is named here --
+ * an attacker naming the cloud metadata address or another internal service
+ * would have the server hand that secret straight back out in the response
+ * body. Reuses the same blocklist the generic connector host-override flow
+ * enforces (`resolveBaseUrl`/`assertHostAllowed`) rather than a second copy.
+ * Throws `TemplateError` (code `blocked_host` or `invalid_url`) when rejected.
+ */
+export function assertEnterpriseHostAllowed(host: string | null): void {
+  if (!host) return;
+  assertHostAllowed(`https://${host}`, "github");
+}
+
 /** Resolves the OAuth authorize URL for github.com or a GHES host. */
 export function githubAuthorizeUrl(host: string | null): string {
   return host

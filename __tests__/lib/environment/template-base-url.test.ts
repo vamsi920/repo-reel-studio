@@ -13,7 +13,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * dynamic, non-literal specifier.
  */
 const TEMPLATE_PATH = ["..", "..", "..", "supabase", "functions", "_shared", "template.ts"].join("/");
-const { resolveBaseUrl, TemplateError } = await import(/* @vite-ignore */ TEMPLATE_PATH);
+const { resolveBaseUrl, assertHostAllowed, TemplateError } = await import(
+  /* @vite-ignore */ TEMPLATE_PATH
+);
 
 function manifest(overrides: Record<string, unknown> = {}) {
   return {
@@ -101,5 +103,33 @@ describe("resolveBaseUrl baseUrlEnv", () => {
       );
       expect(base).toBe("http://127.0.0.1:54321");
     }
+  });
+});
+
+describe("assertHostAllowed IPv6 bypasses", () => {
+  it("still blocks plain dotted-decimal loopback and link-local (no regression)", () => {
+    expect(() => assertHostAllowed("http://127.0.0.1/", "github")).toThrow(TemplateError);
+    expect(() => assertHostAllowed("http://169.254.169.254/", "github")).toThrow(TemplateError);
+  });
+
+  it("blocks an IPv4-mapped IPv6 loopback/metadata address", () => {
+    expect(() => assertHostAllowed("http://[::ffff:127.0.0.1]/", "github")).toThrow(TemplateError);
+    expect(() => assertHostAllowed("http://[::ffff:169.254.169.254]/", "github")).toThrow(
+      TemplateError,
+    );
+  });
+
+  it("blocks IPv6 loopback, unspecified, link-local and unique-local addresses", () => {
+    for (const host of ["http://[::1]/", "http://[::]/", "http://[fe80::1]/", "http://[fc00::1]/"]) {
+      expect(() => assertHostAllowed(host, "github")).toThrow(TemplateError);
+    }
+  });
+
+  it("still allows a normal public IPv6 host", () => {
+    expect(() => assertHostAllowed("http://[2606:4700:4700::1111]/", "github")).not.toThrow();
+  });
+
+  it("still allows an ordinary public hostname", () => {
+    expect(() => assertHostAllowed("https://github.example.com/", "github")).not.toThrow();
   });
 });

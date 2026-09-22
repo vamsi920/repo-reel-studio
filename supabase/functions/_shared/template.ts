@@ -107,6 +107,50 @@ const LOOPBACK_ALLOWED_PROVIDERS = new Set([
   "supabase-pgvector",
 ]);
 
+/**
+ * Expands a bracket-free IPv6 literal (as `URL.hostname` renders it, e.g.
+ * `::ffff:a9fe:a9fe` or `fe80::1`) into its 8 16-bit groups, or `null` if it
+ * isn't a well-formed IPv6 address.
+ */
+function expandIPv6(address: string): number[] | null {
+  const halves = address.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  if (halves.length === 1 && head.length !== 8) return null;
+  const missing = 8 - (head.length + tail.length);
+  if (missing < 0) return null;
+  const groups = [...head, ...Array<string>(halves.length === 2 ? missing : 0).fill("0"), ...tail];
+  if (groups.length !== 8) return null;
+  const nums = groups.map((group) => Number.parseInt(group, 16));
+  return nums.some((n) => Number.isNaN(n) || n < 0 || n > 0xffff) ? null : nums;
+}
+
+/**
+ * Same intent as `BLOCKED_HOST_PATTERNS`, for IPv6. `URL.hostname` gives us a
+ * canonical compressed hex form (`new URL("http://[::ffff:127.0.0.1]/").hostname
+ * === "[::ffff:7f00:1]"`), so this checks the numeric address rather than
+ * pattern-matching text -- an IPv4-mapped, link-local, unique-local or
+ * loopback address reaches the exact same internal network the IPv4 patterns
+ * above exist to block, just spelled differently.
+ */
+function isBlockedIPv6(hostname: string): boolean {
+  if (!hostname.startsWith("[") || !hostname.endsWith("]")) return false;
+  const groups = expandIPv6(hostname.slice(1, -1));
+  if (!groups) return false;
+  const [a, , , , , f, g, h] = groups;
+  if (groups.every((n) => n === 0)) return true; // ::
+  if (groups.slice(0, 7).every((n) => n === 0) && groups[7] === 1) return true; // ::1
+  if ((a & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((a & 0xfe00) === 0xfc00) return true; // fc00::/7 unique local
+  if (groups.slice(0, 5).every((n) => n === 0) && f === 0xffff) {
+    // ::ffff:0:0/96 IPv4-mapped -- recheck the embedded address as IPv4.
+    const ipv4 = `${(g >> 8) & 0xff}.${g & 0xff}.${(h >> 8) & 0xff}.${h & 0xff}`;
+    return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(ipv4));
+  }
+  return false;
+}
+
 export function assertHostAllowed(urlString: string, providerId: string): void {
   let url: URL;
   try {
@@ -116,7 +160,7 @@ export function assertHostAllowed(urlString: string, providerId: string): void {
   }
   if (LOOPBACK_ALLOWED_PROVIDERS.has(providerId)) return;
   const host = url.hostname.toLowerCase();
-  if (BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(host))) {
+  if (BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(host)) || isBlockedIPv6(host)) {
     throw new TemplateError("blocked_host", `refusing to call ${host}`);
   }
 }

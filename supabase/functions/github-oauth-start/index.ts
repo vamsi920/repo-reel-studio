@@ -1,11 +1,13 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import {
+  assertEnterpriseHostAllowed,
   githubAuthorizeUrl,
   githubOAuthCredentials,
   pkceChallengeFromVerifier,
   randomToken,
 } from "../_shared/github.ts";
+import { TemplateError } from "../_shared/template.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -25,6 +27,15 @@ Deno.serve(async (req) => {
     typeof body.enterpriseHost === "string" && body.enterpriseHost.trim()
       ? body.enterpriseHost.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "")
       : null;
+
+  try {
+    assertEnterpriseHostAllowed(enterpriseHost);
+  } catch (error) {
+    return jsonResponse(
+      { error: error instanceof TemplateError ? error.code : "invalid_enterprise_host" },
+      { status: 400 },
+    );
+  }
 
   let clientId: string;
   try {
