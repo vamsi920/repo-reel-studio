@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router";
 import LaunchRoute from "#/routes/launch";
+import { buildPluginLaunchPath } from "#/utils/plugin-launch-url";
 
 // Mock the hooks
 const mockMutateAsync = vi.fn();
@@ -150,6 +151,22 @@ describe("LaunchRoute", () => {
 
       expect(screen.getByTestId("launch-error")).toBeInTheDocument();
       expect(screen.getByText("LAUNCH$ERROR_NO_PLUGINS")).toBeInTheDocument();
+    });
+
+    it("should parse plugins whose coordinates contain non-Latin1 characters", () => {
+      // Regression test: the `plugins` param is base64 built through
+      // `TextEncoder`/`TextDecoder` on both ends specifically so a ref/repo_path
+      // with an emoji or non-Latin script round-trips instead of throwing or
+      // coming back as mojibake.
+      const path = buildPluginLaunchPath([
+        { source: "github:owner/repo", ref: "🚀-release", repo_path: "路径" },
+      ]);
+      const query = path.slice(path.indexOf("?"));
+
+      renderLaunchRoute(query);
+
+      expect(screen.getByTestId("plugin-launch-modal")).toBeInTheDocument();
+      expect(screen.getAllByText("owner/repo").length).toBeGreaterThan(0);
     });
   });
 

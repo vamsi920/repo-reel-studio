@@ -26,7 +26,14 @@ function parsePluginsFromUrl(searchParams: URLSearchParams): ParseResult {
   const pluginsParam = searchParams.get("plugins");
   if (pluginsParam) {
     try {
-      const decoded = atob(pluginsParam);
+      // `atob` only yields Latin1 bytes, so a `plugins` param built from
+      // non-Latin1 text (see `buildPluginLaunchPath`) is decoded through
+      // `TextDecoder` rather than read directly as the JSON string, or any
+      // encoded emoji/non-Latin script would come back as mojibake instead
+      // of the original characters.
+      const binary = atob(pluginsParam);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const decoded = new TextDecoder().decode(bytes);
       const parsed = JSON.parse(decoded);
 
       if (!Array.isArray(parsed)) {

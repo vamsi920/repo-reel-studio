@@ -22,4 +22,33 @@ describe("buildPluginLaunchPath", () => {
     expect(url.pathname).toBe("/launch");
     expect(decoded).toEqual(plugins);
   });
+
+  it("does not throw for coordinates containing non-Latin1 characters", () => {
+    // Arrange: `btoa` only accepts Latin1 (0-255) code points, so a plugin
+    // whose ref/source/repo_path carries an emoji or non-Latin script would
+    // throw `DOMException: Invalid character` if the JSON were passed to
+    // `btoa` directly instead of being routed through `TextEncoder` first.
+    const plugins: PluginSpec[] = [
+      {
+        source: "github:OpenHands/extensions",
+        ref: "🚀-release",
+        repo_path: "路径/skills",
+      },
+    ];
+
+    // Act
+    let path = "";
+    expect(() => {
+      path = buildPluginLaunchPath(plugins);
+    }).not.toThrow();
+
+    // Assert: decoding through the UTF-8-safe path (mirroring
+    // `parsePluginsFromUrl` in `src/routes/launch.tsx`) recovers the
+    // original, non-mangled characters.
+    const url = new URL(path, "http://localhost");
+    const binary = atob(url.searchParams.get("plugins") ?? "");
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const decoded = JSON.parse(new TextDecoder().decode(bytes));
+    expect(decoded).toEqual(plugins);
+  });
 });
