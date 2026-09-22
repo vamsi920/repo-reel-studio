@@ -1,7 +1,7 @@
 import { render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import KtVideoTab, { useSelectedFileContents } from "#/routes/kt-video-tab";
 import type { GitChange } from "#/api/open-hands.types";
@@ -251,5 +251,80 @@ describe("KtVideoTab file selection cap", () => {
       "label",
     )!;
     expect(within(remountedNinthLabel).getByRole("checkbox")).toBeChecked();
+  });
+});
+
+describe("KtVideoTab file availability", () => {
+  afterEach(() => {
+    useConversationStore.setState({ ktVideoSelectedFiles: null });
+  });
+
+  it("shows an unavailable badge next to a selected file that failed to load, and none for one that loaded fine", () => {
+    fileResultsMock.set("available.ts", {
+      isLoading: false,
+      data: { kind: "text", text: "export const a = 1;" },
+    });
+    fileResultsMock.set("broken.bin", {
+      isLoading: false,
+      data: { kind: "image", text: null },
+    });
+    renderKtVideoTab(["available.ts", "broken.bin"]);
+
+    const brokenLabel = screen.getByTitle("broken.bin").closest("label")!;
+    expect(
+      within(brokenLabel).getByText("KT$VIDEO_TAB_FILE_UNAVAILABLE"),
+    ).toBeInTheDocument();
+
+    const availableLabel = screen
+      .getByTitle("available.ts")
+      .closest("label")!;
+    expect(
+      within(availableLabel).queryByText("KT$VIDEO_TAB_FILE_UNAVAILABLE"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("KtVideoTab narration toggle", () => {
+  afterEach(() => {
+    useConversationStore.setState({ ktVideoSelectedFiles: null });
+    vi.unstubAllGlobals();
+  });
+
+  it("disables the narration toggle and explains why when speech synthesis isn't available", () => {
+    renderKtVideoTab(["a.ts"]);
+
+    const toggle = screen.getByTestId("kt-video-narration-toggle");
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute("title", "KT$NARRATION_TOOLTIP_UNSUPPORTED");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("reflects the narration toggle's on/off state through aria-pressed when speech synthesis is available", async () => {
+    // The toggle is disabled without this -- `speechSupported` is a plain
+    // `"speechSynthesis" in window` check in the component. Unlike
+    // kt-page.test.tsx, `useSceneNarration` isn't mocked here, so the stub
+    // needs the methods its real effects actually call (`cancel` fires as
+    // soon as `narrationEnabled` flips, even with no player attached yet).
+    vi.stubGlobal("speechSynthesis", {
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      speak: vi.fn(),
+      paused: false,
+      speaking: false,
+    });
+    const user = userEvent.setup();
+    renderKtVideoTab(["a.ts"]);
+
+    const toggle = screen.getByTestId("kt-video-narration-toggle");
+    expect(toggle).not.toBeDisabled();
+    expect(toggle).toHaveAttribute("title", "KT$NARRATION_TOOLTIP_ENABLED");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
 });

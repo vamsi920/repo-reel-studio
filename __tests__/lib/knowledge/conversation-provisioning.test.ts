@@ -107,4 +107,13 @@ describe("waitForWorkspaceReady", () => {
       settle(waitForWorkspaceReady("conversation-1", undefined)),
     ).rejects.toThrow("Timed out waiting for the workspace to provision.");
   });
+
+  it("times out waiting for the start task itself to resolve, distinctly from a provisioning timeout", async () => {
+    getStartTask.mockResolvedValue(startTask({ status: "WORKING" }));
+
+    await expect(
+      settle(waitForWorkspaceReady("task-abc", "task-abc")),
+    ).rejects.toThrow("Timed out waiting for the conversation to start.");
+    expect(batchGetAppConversations).not.toHaveBeenCalled();
+  });
 });
