@@ -575,7 +575,10 @@ describe("EditAutomationModal", () => {
     // mid-typing.
     const onClose = vi.fn();
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
@@ -611,6 +614,20 @@ describe("EditAutomationModal", () => {
 
     // Assert -- the user's in-progress edit survives.
     expect(nameInput.value).toBe("Mid-edit name");
+  });
+
+  it("closes on Escape while focus is inside the dialog", async () => {
+    // Arrange -- the modal used to build its own backdrop/close markup
+    // instead of the shared `ModalBackdrop`, with an Escape handler on a DOM
+    // sibling of the dialog content that a keydown bubbling up from a
+    // focused form control could never reach. Confirm the fix wires Escape
+    // through correctly.
+    const user = userEvent.setup();
+    const { onClose } = renderModal(dailyAutomation);
+
+    await user.keyboard("{Escape}");
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("omits the timeout from the payload when it is left unchanged", async () => {

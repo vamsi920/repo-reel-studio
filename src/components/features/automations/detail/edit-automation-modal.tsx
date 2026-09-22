@@ -7,6 +7,8 @@ import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
 import { BrandButton } from "#/components/features/settings/brand-button";
+import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
+import { ModalCloseButton } from "#/components/shared/modals/modal-close-button";
 import {
   displaySuccessToast,
   displayErrorToast,
@@ -36,7 +38,6 @@ import {
   formControlMultilineFieldClassName,
   formControlSettingsFieldClassName,
 } from "#/utils/form-control-classes";
-import XMarkIcon from "#/icons/x-mark.svg?react";
 
 interface EditAutomationModalProps {
   automation: Automation;
@@ -295,24 +296,9 @@ export function EditAutomationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-        role="presentation"
-      />
+    <ModalBackdrop onClose={onClose} aria-label={editTitle}>
       <div className="relative w-full max-w-md rounded-xl border border-[var(--oh-border)] bg-[var(--oh-surface)] p-6">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 text-muted hover:text-foreground"
-          aria-label={t(I18nKey.AUTOMATIONS$CANCEL)}
-        >
-          <XMarkIcon className="size-5" />
-        </button>
+        <ModalCloseButton onClose={onClose} testId="edit-automation-close" />
 
         <h2 className={modalTitleLgMediumClassName}>{editTitle}</h2>
 
@@ -540,6 +526,6 @@ export function EditAutomationModal({
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }
