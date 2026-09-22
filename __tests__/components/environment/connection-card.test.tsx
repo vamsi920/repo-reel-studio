@@ -225,6 +225,52 @@ describe("ConnectionCard", () => {
     ).toEqual(other);
   });
 
+  it("settles the dock's copy of the request even when setCredentials itself throws", async () => {
+    // The catch branch told the agent "error" and marked the card "failed",
+    // but never cleared the copilot store's pending request -- so the dock's
+    // live pip kept flagging a request that had already been answered.
+    vi.mocked(EnvironmentService.setCredentials).mockRejectedValue(
+      new Error("network error"),
+    );
+    useOnboardingCopilotStore.getState().requestCredentials({
+      requestId: "linear:default",
+      capability: "issue-tracker",
+      providerId: "linear",
+      instanceKey: "default",
+      fields: ["apiKey"],
+    });
+    const user = userEvent.setup();
+    const postResult = renderCard({
+      id: "form:linear:default",
+      kind: "form",
+      capability: "issue-tracker",
+      providerId: "linear",
+      instanceKey: "default",
+      fields: "all",
+      status: "open",
+    });
+
+    await user.type(
+      screen.getByTestId("connector-field-apiKey"),
+      "lin_api_abc123",
+    );
+    await user.click(screen.getByTestId("connection-submit-linear"));
+
+    await waitFor(() => expect(postResult).toHaveBeenCalled());
+    expect(lastReceipt(postResult)).toMatchObject({
+      status: "error",
+      provider: "linear",
+    });
+    expect(
+      useOnboardingCopilotStore.getState().pendingCredentialRequest,
+    ).toBeNull();
+    expect(
+      useOnboardingStudioStore
+        .getState()
+        .cards.find((card) => card.id === "form:linear:default"),
+    ).toMatchObject({ status: "failed" });
+  });
+
   it("tells the agent when the user declines instead of leaving it waiting", async () => {
     // Cancel used to remove the card and say nothing. The agent had been told
     // to wait for a receipt, so it sat on a turn that was never coming.

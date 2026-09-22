@@ -16,7 +16,10 @@ import {
 } from "#/stores/onboarding-studio-store";
 import { FEATURE_REQUIREMENTS } from "#/lib/environment/requirements/feature-requirements";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
-import { useSaveEnvironmentProfile } from "#/hooks/query/use-environment-profile";
+import {
+  useEnvironmentProfile,
+  useSaveEnvironmentProfile,
+} from "#/hooks/query/use-environment-profile";
 import type { PostResultFn } from "#/services/onboarding-control";
 import type { EnvironmentProfile } from "#/lib/environment/types/profile";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
@@ -106,6 +109,34 @@ export function ProbeCard({
 }
 
 /**
+ * Merges an agent-proposed patch onto the org's current profile.
+ *
+ * The agent sends an intentionally partial diff (e.g. `{ mode: "hybrid" }`),
+ * not a full profile -- see `propose_profile_change` in
+ * `src/services/onboarding-control.ts`. `EnvironmentProfileRepository.put()`
+ * does a full upsert with no merge of its own, so saving the patch verbatim
+ * would discard every field the patch didn't mention (providers, network,
+ * policy, ...). Nested known sections are merged one level deep so a
+ * single-field patch inside e.g. `network` doesn't wipe its siblings either.
+ */
+function mergeProfilePatch(
+  profile: EnvironmentProfile,
+  patch: Record<string, unknown>,
+): EnvironmentProfile {
+  const p = patch as Partial<EnvironmentProfile>;
+  return {
+    ...profile,
+    ...p,
+    orgId: profile.orgId,
+    providers: { ...profile.providers, ...(p.providers ?? {}) },
+    network: { ...profile.network, ...(p.network ?? {}) },
+    policy: { ...profile.policy, ...(p.policy ?? {}) },
+    runtime: { ...profile.runtime, ...(p.runtime ?? {}) },
+    meta: { ...profile.meta, ...(p.meta ?? {}) },
+  };
+}
+
+/**
  * A configuration change the agent worked out.
  *
  * Never auto-applied. The agent proposes; a human decides. Applying it
@@ -120,6 +151,7 @@ export function ProposalCard({
 }) {
   const { t } = useTranslation("openhands");
   const updateCard = useOnboardingStudioStore((state) => state.updateCard);
+  const { data: profile } = useEnvironmentProfile();
   const { mutate: saveProfile, isPending } = useSaveEnvironmentProfile();
 
   const decide = (accepted: boolean) => {
@@ -133,7 +165,8 @@ export function ProposalCard({
       );
       return;
     }
-    saveProfile(card.patch as unknown as EnvironmentProfile, {
+    if (!profile) return;
+    saveProfile(mergeProfilePatch(profile, card.patch), {
       onSuccess: () => {
         updateCard(card.id, { status: "applied" });
         postResult(
@@ -173,7 +206,7 @@ export function ProposalCard({
           <button
             type="button"
             data-testid="workbench-proposal-apply"
-            disabled={isPending}
+            disabled={isPending || !profile}
             onClick={() => decide(true)}
             className="ame-btn-primary ame-btn-sm"
           >

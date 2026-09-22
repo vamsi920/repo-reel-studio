@@ -143,6 +143,7 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
           ? error.message
           : t(I18nKey.ENVIRONMENT$ERROR_SAVE);
       updateCard(card.id, { status: "failed" });
+      settleDockRequest();
       displayErrorToast(message);
       postResult(
         `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
