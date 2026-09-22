@@ -130,6 +130,57 @@ describe("findConceptFlow", () => {
     expect(hops.map((h) => h.path)).toEqual(["src/entry.ts", "src/util.ts"]);
   });
 
+  it("drills into whichever aggregate overlaps the most files, not just the first one", async () => {
+    // Regression coverage for the candidate sort in findConceptFlow: with
+    // more than one aggregate node to choose from, it must drill into the
+    // one with the most files in common with the page, not whichever
+    // appears first in `matched`.
+    const weak = node({
+      id: "weak",
+      level: "subsystem",
+      childCount: 1,
+      filePaths: ["src/entry.ts"],
+    });
+    const strong = node({
+      id: "strong",
+      level: "subsystem",
+      childCount: 2,
+      filePaths: ["src/entry.ts", "src/util.ts"],
+    });
+    const root = level({ nodes: [weak, strong], edges: [] });
+
+    const a = node({
+      id: "a",
+      level: "symbol",
+      name: "start",
+      filePath: "src/entry.ts",
+      lineRange: [1, 5],
+    });
+    const b = node({
+      id: "b",
+      level: "symbol",
+      name: "helper",
+      filePath: "src/util.ts",
+      lineRange: [10, 20],
+    });
+    const child = level({
+      parentId: "strong",
+      nodes: [a, b],
+      edges: [{ source: "a", target: "b", type: "calls", weight: 1 }],
+    });
+
+    const loadLevel = vi.fn(async (id: string) =>
+      id === "strong" ? child : null,
+    );
+    const handle = handleFor(root, loadLevel);
+
+    const hops = await findConceptFlow(handle, ["src/entry.ts", "src/util.ts"]);
+
+    expect(loadLevel).toHaveBeenCalledWith("strong");
+    expect(loadLevel).not.toHaveBeenCalledWith("weak");
+    expect(hops.map((h) => h.path)).toEqual(["src/entry.ts", "src/util.ts"]);
+  });
+
   it("returns nothing when the overlapping nodes have no real edge between them", async () => {
     const a = node({
       id: "a",

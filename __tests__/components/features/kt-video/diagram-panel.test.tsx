@@ -96,4 +96,37 @@ describe("DiagramPanel", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(renderMock).toHaveBeenCalledTimes(1);
   });
+
+  it("removes mermaid's own stray error-banner nodes after a failed render", async () => {
+    // Regression coverage for the cleanup in useMermaidSvg's catch handler:
+    // mermaid's real error handler draws into a node it creates itself for
+    // the render (id `d<renderId>`, plus the bare `<renderId>` node) but
+    // never removes on a parse failure. Left alone, that stray banner lingers
+    // in the DOM outside this component after we've already shown our own
+    // error message.
+    let capturedRenderId = "";
+    renderMock.mockImplementation((renderId: string) => {
+      capturedRenderId = renderId;
+      const wrapper = document.createElement("div");
+      wrapper.id = `d${renderId}`;
+      document.body.appendChild(wrapper);
+      const bare = document.createElement("div");
+      bare.id = renderId;
+      document.body.appendChild(bare);
+      return Promise.reject(new Error("Parse error"));
+    });
+
+    render(
+      <DiagramPanel
+        scene={diagramScene("graph TD; stray-cleanup -->")}
+        relativeFrame={0}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+
+    expect(capturedRenderId).not.toBe("");
+    expect(document.getElementById(`d${capturedRenderId}`)).toBeNull();
+    expect(document.getElementById(capturedRenderId)).toBeNull();
+  });
 });

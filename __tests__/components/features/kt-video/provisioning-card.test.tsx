@@ -106,6 +106,74 @@ describe("ProvisioningCard", () => {
     );
   });
 
+  it("stays on the first step for the provisioning stages before DeepWiki has a task", () => {
+    // Regression coverage: resolveStepIndex's provisioningStage branch (the
+    // two stages that precede DeepWiki even having a task) had no test at
+    // all, even though it's the very first thing a user sees.
+    for (const stage of [
+      "creating_conversation",
+      "provisioning_workspace",
+    ] as const) {
+      const { container, unmount } = render(
+        <ProvisioningCard
+          owner="acme"
+          repo="widgets"
+          branch="main"
+          provisioningStage={stage}
+          deepWikiStatus={null}
+          error={null}
+        />,
+      );
+
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Step 1 of 5: Setting up workspace",
+      );
+      expect(iconIs(stepIcons(container)[0], "loader-circle")).toBe(true);
+      unmount();
+    }
+  });
+
+  it("advances to the resolving-commit step once the repository is being resolved", () => {
+    const { container } = render(
+      <ProvisioningCard
+        owner="acme"
+        repo="widgets"
+        branch="main"
+        provisioningStage="resolving_commit"
+        deepWikiStatus={null}
+        error={null}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Step 2 of 5: Resolving repository",
+    );
+    const icons = stepIcons(container);
+    expect(iconIs(icons[0], "circle-check")).toBe(true);
+    expect(iconIs(icons[1], "loader-circle")).toBe(true);
+  });
+
+  it("marks structure analysis active while DeepWiki is determining structure", () => {
+    const { container } = render(
+      <ProvisioningCard
+        owner="acme"
+        repo="widgets"
+        branch="main"
+        provisioningStage={null}
+        deepWikiStatus="determining_structure"
+        error={null}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Step 4 of 5: Understanding structure",
+    );
+    const icons = stepIcons(container);
+    expect(iconIs(icons[2], "circle-check")).toBe(true);
+    expect(iconIs(icons[3], "loader-circle")).toBe(true);
+    expect(iconIs(icons[4], "circle")).toBe(true);
+  });
+
   it("announces the failure and which step it happened on", () => {
     render(
       <ProvisioningCard
