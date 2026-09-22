@@ -107,6 +107,72 @@ describe("ProposalCard", () => {
     expect(savedProfile.network.tlsInterception).toBe("confirmed");
   });
 
+  it("merges a patch that itself sets network.mirrors instead of replacing the whole map", async () => {
+    // A patch adding one new mirror for e.g. npm used to wipe every other
+    // configured mirror (pip, docker, ...) because `network.mirrors` was
+    // only merged one level deep, at the `network` section, not within it.
+    const currentProfile = {
+      ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z"),
+      network: {
+        ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z").network,
+        mirrors: {
+          "pypi.org": "nexus.corp/pypi",
+          "registry-1.docker.io": "nexus.corp/docker",
+        },
+      },
+    };
+    vi.mocked(useEnvironmentProfile).mockReturnValue({
+      data: currentProfile,
+    } as unknown as ReturnType<typeof useEnvironmentProfile>);
+
+    const user = userEvent.setup();
+    renderProposal({
+      network: { mirrors: { "registry.npmjs.org": "nexus.corp/npm" } },
+    });
+
+    await user.click(screen.getByTestId("workbench-proposal-apply"));
+
+    const [savedProfile] = saveProfile.mock.calls[0];
+    expect(savedProfile.network.mirrors).toEqual({
+      "pypi.org": "nexus.corp/pypi",
+      "registry-1.docker.io": "nexus.corp/docker",
+      "registry.npmjs.org": "nexus.corp/npm",
+    });
+  });
+
+  it("merges a provider-selection patch's config without dropping providerId/instanceKey", async () => {
+    // A patch tweaking one config key on an already-selected provider used
+    // to replace the entire ProviderSelection, dropping providerId and
+    // instanceKey and corrupting the stored selection.
+    const currentProfile = {
+      ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z"),
+      providers: {
+        llm: {
+          providerId: "anthropic",
+          instanceKey: "default",
+          config: { region: "us-east-1" },
+        },
+      },
+    };
+    vi.mocked(useEnvironmentProfile).mockReturnValue({
+      data: currentProfile,
+    } as unknown as ReturnType<typeof useEnvironmentProfile>);
+
+    const user = userEvent.setup();
+    renderProposal({
+      providers: { llm: { config: { model: "gpt-4" } } },
+    });
+
+    await user.click(screen.getByTestId("workbench-proposal-apply"));
+
+    const [savedProfile] = saveProfile.mock.calls[0];
+    expect(savedProfile.providers.llm).toEqual({
+      providerId: "anthropic",
+      instanceKey: "default",
+      config: { region: "us-east-1", model: "gpt-4" },
+    });
+  });
+
   it("does not save while the current profile has not loaded yet", async () => {
     vi.mocked(useEnvironmentProfile).mockReturnValue({
       data: undefined,

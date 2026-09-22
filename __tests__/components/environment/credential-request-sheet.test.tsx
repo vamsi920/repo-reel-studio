@@ -1,12 +1,15 @@
+import type React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CredentialRequestSheet } from "#/components/features/environment/copilot/credential-request-sheet";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import type { PendingCredentialRequest } from "#/stores/onboarding-copilot-store";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { EnvironmentService } from "#/api/environment-service/environment-service.api";
 import type { ConnectionReceipt } from "#/lib/environment/types/probe";
+import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
 
 vi.mock("#/api/environment-service/environment-service.api", async () => {
   const actual = await vi.importActual<
@@ -22,6 +25,23 @@ vi.mock("#/utils/custom-toast-handlers", () => ({
   displayErrorToast: vi.fn(),
   displaySuccessToast: vi.fn(),
 }));
+
+let mockConnections: ConnectionRecord[] = [];
+
+vi.mock("#/hooks/query/use-connections", () => ({
+  useConnections: () => ({ data: mockConnections }),
+}));
+
+function renderSheet(props: React.ComponentProps<typeof CredentialRequestSheet>) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <CredentialRequestSheet {...props} />
+    </QueryClientProvider>,
+  );
+}
 
 const POSTHOG_REQUEST: PendingCredentialRequest = {
   requestId: "posthog:default",
@@ -79,6 +99,7 @@ function lastReceipt(onResult: ReturnType<typeof vi.fn>) {
 beforeEach(() => {
   vi.clearAllMocks();
   useOnboardingStudioStore.getState().reset();
+  mockConnections = [];
 });
 
 describe("CredentialRequestSheet", () => {
@@ -91,13 +112,11 @@ describe("CredentialRequestSheet", () => {
     );
     const user = userEvent.setup();
     const onResult = vi.fn();
-    render(
-      <CredentialRequestSheet
-        request={POSTHOG_REQUEST}
-        onDone={vi.fn()}
-        onResult={onResult}
-      />,
-    );
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone: vi.fn(),
+      onResult,
+    });
 
     expect(screen.getByTestId("connector-field-instanceHost")).toHaveValue(
       "us.i.posthog.com",
@@ -120,6 +139,66 @@ describe("CredentialRequestSheet", () => {
     });
   });
 
+  it("seeds non-secret fields from the connection's saved config, not the manifest default, when rotating a credential", async () => {
+    // request_credentials narrows this sheet to a secret rotation on an
+    // already-connected provider. Seeding the visible instanceHost field
+    // from the manifest default instead of the connection's real, saved
+    // host silently overwrote a custom self-hosted PostHog instance with
+    // "us.i.posthog.com" on submit.
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      receipt(true),
+    );
+    mockConnections = [
+      {
+        id: "conn-1",
+        orgId: "org-1",
+        capability: "observability",
+        providerId: "posthog",
+        instanceKey: "default",
+        displayName: null,
+        config: { instanceHost: "posthog.internal.example.com" },
+        redactedSummary: {},
+        requestedScopes: [],
+        grantedScopes: [],
+        status: "ok",
+        lastProbe: null,
+        lastProbeAt: null,
+        expiresAt: null,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ];
+    const user = userEvent.setup();
+    const onResult = vi.fn();
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone: vi.fn(),
+      onResult,
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("connector-field-instanceHost")).toHaveValue(
+        "posthog.internal.example.com",
+      ),
+    );
+    await user.type(
+      screen.getByTestId("connector-field-projectApiKey"),
+      "phc_secret",
+    );
+    await user.click(screen.getByTestId("credential-submit"));
+
+    await waitFor(() =>
+      expect(EnvironmentService.setCredentials).toHaveBeenCalledTimes(1),
+    );
+    expect(EnvironmentService.setCredentials).toHaveBeenCalledWith({
+      capability: "observability",
+      providerId: "posthog",
+      instanceKey: "default",
+      config: { instanceHost: "posthog.internal.example.com" },
+      credentials: { projectApiKey: "phc_secret" },
+    });
+  });
+
   it("settles the studio's copy of the request when the credential is saved here", async () => {
     // The same request is a card in the studio workbench. Answering it from
     // the dock left that card open, so going back to the studio presented an
@@ -131,13 +210,11 @@ describe("CredentialRequestSheet", () => {
     const user = userEvent.setup();
     const onDone = vi.fn();
     const onResult = vi.fn();
-    render(
-      <CredentialRequestSheet
-        request={POSTHOG_REQUEST}
-        onDone={onDone}
-        onResult={onResult}
-      />,
-    );
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone,
+      onResult,
+    });
 
     await user.type(
       screen.getByTestId("connector-field-projectApiKey"),
@@ -165,13 +242,11 @@ describe("CredentialRequestSheet", () => {
     const user = userEvent.setup();
     const onDone = vi.fn();
     const onResult = vi.fn();
-    render(
-      <CredentialRequestSheet
-        request={POSTHOG_REQUEST}
-        onDone={onDone}
-        onResult={onResult}
-      />,
-    );
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone,
+      onResult,
+    });
 
     await user.type(
       screen.getByTestId("connector-field-projectApiKey"),
@@ -197,13 +272,11 @@ describe("CredentialRequestSheet", () => {
     const user = userEvent.setup();
     const onDone = vi.fn();
     const onResult = vi.fn();
-    render(
-      <CredentialRequestSheet
-        request={POSTHOG_REQUEST}
-        onDone={onDone}
-        onResult={onResult}
-      />,
-    );
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone,
+      onResult,
+    });
 
     await user.click(screen.getByTestId("credential-cancel"));
 

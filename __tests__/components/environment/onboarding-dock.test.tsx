@@ -2,11 +2,16 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OnboardingDock } from "#/components/features/environment/copilot/onboarding-dock";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
   useOnboardingSession: () => ({ data: null }),
+}));
+
+vi.mock("#/hooks/query/use-connections", () => ({
+  useConnections: () => ({ data: [] }),
 }));
 
 vi.mock("#/api/environment-service/environment-service.api", async () => {
@@ -20,10 +25,15 @@ vi.mock("#/api/environment-service/environment-service.api", async () => {
 });
 
 function renderDock(path = "/") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <OnboardingDock />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[path]}>
+        <OnboardingDock />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

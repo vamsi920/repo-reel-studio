@@ -21,6 +21,7 @@ import {
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import type { PendingCredentialRequest } from "#/stores/onboarding-copilot-store";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
+import { useConnections } from "#/hooks/query/use-connections";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 /**
@@ -62,11 +63,44 @@ export function CredentialRequestSheet({
 }: CredentialRequestSheetProps) {
   const { t } = useTranslation("openhands");
   const manifest = getConnectorManifest(request.providerId);
+  const { data: connections } = useConnections();
+  const existingConnection = React.useMemo(
+    () =>
+      connections?.find(
+        (connection) =>
+          connection.capability === request.capability &&
+          connection.providerId === request.providerId &&
+          connection.instanceKey === request.instanceKey,
+      ) ?? null,
+    [connections, request.capability, request.providerId, request.instanceKey],
+  );
   // Seeded with the manifest's defaults, like the studio form: a region or
   // endpoint the manifest already knows should not have to be typed twice.
   const [values, setValues] = React.useState<ConnectorFormValues>(() =>
     manifest ? getInitialFormValues(manifest) : {},
   );
+  // `request_credentials` narrows this sheet to a secret rotation on an
+  // *already-connected* provider, but every non-secret field is still shown
+  // (and, on submit, still sent -- see `splitConnectorValues`). Seeding those
+  // fields from the manifest default rather than the connection's real,
+  // already-saved config silently overwrote a custom host/region/etc. the
+  // user never touched. This patches in the stored value once the
+  // connection record is available; it only runs once so it cannot stomp on
+  // something the user has already started typing.
+  const seededFromConnectionRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!existingConnection || seededFromConnectionRef.current) return;
+    seededFromConnectionRef.current = true;
+    setValues((prev) => ({
+      ...prev,
+      ...Object.fromEntries(
+        Object.entries(existingConnection.config).map(([name, value]) => [
+          name,
+          String(value),
+        ]),
+      ),
+    }));
+  }, [existingConnection]);
   const [errors, setErrors] = React.useState<ConnectorFieldErrors>({});
   const [submitting, setSubmitting] = React.useState(false);
 

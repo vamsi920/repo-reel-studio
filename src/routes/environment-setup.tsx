@@ -273,10 +273,16 @@ function EnvironmentSetupScreen() {
   // the conversation opens already knowing what the user wanted help with
   // rather than making them retype it.
   const seed = searchParams.get("seed");
-  const seedConsumedRef = React.useRef(false);
+  // Holds the exact seed string already acted on (as the conversation's
+  // initial query, or posted as a follow-up below), not just a one-shot
+  // flag -- a flag alone stayed true forever once the first seed was
+  // consumed, so a second, distinct `?seed=` arriving on this same mount
+  // (e.g. two different "Fix with agent" deep links opened in a row) was
+  // silently dropped instead of being posted.
+  const consumedSeedRef = React.useRef<string | null>(null);
 
   const handleStart = React.useCallback(() => {
-    seedConsumedRef.current = true;
+    consumedSeedRef.current = seed;
     createConversation(
       {
         query: seed || t(I18nKey.ENVIRONMENT$STUDIO_START_PROMPT),
@@ -305,9 +311,9 @@ function EnvironmentSetupScreen() {
   // as a follow-up message into the running conversation instead, once, and
   // drop it from the URL so a refresh or remount can't resend it.
   React.useEffect(() => {
-    if (!conversationId || !seed || seedConsumedRef.current) return;
+    if (!conversationId || !seed || consumedSeedRef.current === seed) return;
     if (backendChanged) return;
-    seedConsumedRef.current = true;
+    consumedSeedRef.current = seed;
     createConversationResultPoster(conversationId)(seed);
     const next = new URLSearchParams(searchParams);
     next.delete("seed");

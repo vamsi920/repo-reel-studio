@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, useNavigate } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -105,6 +105,26 @@ vi.mock(
     OnboardingWorkbench: () => <div data-testid="workbench-stub" />,
   }),
 );
+
+// Navigates within the same mounted `MemoryRouter`, so refs on
+// `EnvironmentSetupScreen` survive the URL change the way they would for a
+// real in-app navigation -- re-rendering with a brand new `MemoryRouter`
+// instance would instead re-initialize its history from `initialEntries` on
+// every render, which never simulates a second URL landing on one mount.
+function SeedNavigator({ seed }: { seed: string }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      data-testid="test-navigate-seed"
+      onClick={() =>
+        navigate(`/environment/setup?seed=${encodeURIComponent(seed)}`)
+      }
+    >
+      navigate
+    </button>
+  );
+}
 
 function renderScreen(entry: string) {
   const queryClient = new QueryClient({
@@ -289,6 +309,36 @@ describe("Environment setup seed forwarding", () => {
 
     await screen.findByTestId("environment-setup-start");
     expect(state.posted).toEqual([]);
+  });
+
+  it("still posts a second, distinct `?seed=` that arrives on the same already-mounted screen", async () => {
+    // A one-shot "already consumed a seed" flag stayed true forever after
+    // the first seed, so a second "Fix with agent" deep link opened while
+    // this screen was already mounted (e.g. via back/forward, or a second
+    // seeded link clicked while the studio tab was already open here) was
+    // silently dropped instead of being posted to the running conversation.
+    state.sessionLoading = false;
+    state.session = { conversationId: "conv-1" };
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/environment/setup?seed=fix+my+thing"]}>
+          <EnvironmentSetupScreen />
+          <SeedNavigator seed="fix a different thing" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(state.posted).toEqual(["fix my thing"]));
+
+    await user.click(screen.getByTestId("test-navigate-seed"));
+
+    await waitFor(() =>
+      expect(state.posted).toEqual(["fix my thing", "fix a different thing"]),
+    );
   });
 });
 

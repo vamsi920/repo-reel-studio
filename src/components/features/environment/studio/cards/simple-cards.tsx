@@ -118,18 +118,48 @@ export function ProbeCard({
  * would discard every field the patch didn't mention (providers, network,
  * policy, ...). Nested known sections are merged one level deep so a
  * single-field patch inside e.g. `network` doesn't wipe its siblings either.
+ *
+ * Two spots need a second level of merging, because a patch that touches
+ * them is still meant to be partial: `network.mirrors` (host -> mirror) and
+ * each `providers[capability]` selection (including its own nested
+ * `config`). Without this, a patch adding one new mirror wiped every other
+ * configured mirror, and a patch tweaking one `config` key on a provider
+ * dropped that provider's `providerId`/`instanceKey`, corrupting the stored
+ * selection.
  */
 function mergeProfilePatch(
   profile: EnvironmentProfile,
   patch: Record<string, unknown>,
 ): EnvironmentProfile {
   const p = patch as Partial<EnvironmentProfile>;
+
+  const providers = { ...profile.providers };
+  if (p.providers) {
+    for (const key of Object.keys(
+      p.providers,
+    ) as (keyof typeof p.providers)[]) {
+      const incoming = p.providers[key];
+      if (!incoming) continue;
+      const existing = providers[key];
+      providers[key] = {
+        ...existing,
+        ...incoming,
+        config: { ...existing?.config, ...incoming.config },
+      };
+    }
+  }
+
   return {
     ...profile,
     ...p,
     orgId: profile.orgId,
-    providers: { ...profile.providers, ...(p.providers ?? {}) },
-    network: { ...profile.network, ...(p.network ?? {}) },
+    providers,
+    network: {
+      ...profile.network,
+      ...(p.network ?? {}),
+      mirrors: { ...profile.network.mirrors, ...(p.network?.mirrors ?? {}) },
+      inbound: { ...profile.network.inbound, ...(p.network?.inbound ?? {}) },
+    },
     policy: { ...profile.policy, ...(p.policy ?? {}) },
     runtime: { ...profile.runtime, ...(p.runtime ?? {}) },
     meta: { ...profile.meta, ...(p.meta ?? {}) },
