@@ -171,6 +171,7 @@ export function useSecurityWorkspaceScope(
 const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
 const FUTURE_AREAS_HEADING_ID = "security-future-areas-heading";
 const EMPTY_STATE_HEADING_ID = "security-empty-state-heading";
+const REPOSITORY_NOT_CONNECTED_ID = "security-repository-not-connected-hint";
 
 const SEVERITY_KEY: Record<SecuritySeverity, I18nKey> = {
   critical: I18nKey.SECURITY$SEVERITY_CRITICAL,
@@ -229,6 +230,11 @@ interface RepositorySelectProps {
   /** The connected repository the page is scoped to, or `null` when `?repository=` named an unknown one. */
   selectedRepositoryId: string | null;
   onSelect: (repositoryId: string) => void;
+  /** Set when `?repository=` named a repository that is not connected, so
+   * assistive tech reaches the same explanation a sighted user reads in the
+   * status line above — the same `aria-describedby` pattern this file
+   * already uses for the disabled "Fix with Agent" button's hint. */
+  invalidSelectionHintId?: string;
 }
 
 /**
@@ -240,6 +246,7 @@ function RepositorySelect({
   repositories,
   selectedRepositoryId,
   onSelect,
+  invalidSelectionHintId,
 }: RepositorySelectProps) {
   const { t } = useTranslation("openhands");
   // Two connected snapshots of the same owner/repo on different branches
@@ -270,6 +277,8 @@ function RepositorySelect({
         data-testid="security-repository-select"
         value={selectedRepositoryId ?? ""}
         onChange={(event) => onSelect(event.target.value)}
+        aria-invalid={invalidSelectionHintId ? true : undefined}
+        aria-describedby={invalidSelectionHintId}
       >
         {selectedRepositoryId === null && (
           <option value="" disabled>
@@ -366,6 +375,7 @@ function SecurityScreen() {
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-repository-not-connected"
+            id={REPOSITORY_NOT_CONNECTED_ID}
             role="status"
           >
             {t(I18nKey.SECURITY$REPOSITORY_NOT_CONNECTED, {
@@ -398,6 +408,11 @@ function SecurityScreen() {
               scope.state === "scoped" ? scope.scope.repositoryId : null
             }
             onSelect={selectRepository}
+            invalidSelectionHintId={
+              scope.state === "requested-not-connected"
+                ? REPOSITORY_NOT_CONNECTED_ID
+                : undefined
+            }
           />
         )}
 

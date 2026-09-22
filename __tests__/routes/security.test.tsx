@@ -457,6 +457,88 @@ describe("Security route", () => {
         "acme/api@abcdef1",
       );
     });
+
+    it("links the picker to the not-connected explanation for assistive tech, and drops the link once a real choice is made", async () => {
+      // Regression: a screen-reader user landing on the select while
+      // `?repository=` names an unknown repository heard only "combo box,
+      // not selected" -- the explanation already on screen (the status line
+      // above) was never associated with the control itself, unlike this
+      // file's own `FIX_WITH_AGENT_HINT_ID` pattern for the disabled
+      // "Fix with Agent" button. Two repositories are seeded so the picker
+      // itself stays mounted (not the one-option-needs-no-picker case) once
+      // a real choice is made, so the cleared attributes can be observed on
+      // the same element rather than a detached node.
+      const user = userEvent.setup();
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity("/security?repository=acme%2Fghost%40main");
+
+      const select = screen.getByTestId("security-repository-select");
+      const hint = screen.getByTestId("security-repository-not-connected");
+      expect(select).toHaveAttribute("aria-invalid", "true");
+      expect(select).toHaveAttribute("aria-describedby", hint.id);
+
+      await user.selectOptions(select, "acme/api@main");
+
+      expect(select).not.toHaveAttribute("aria-invalid");
+      expect(select).not.toHaveAttribute("aria-describedby");
+    });
+
+    it("does not flag the picker as invalid for an ordinary multi-repository choice", () => {
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity();
+
+      expect(
+        screen.getByTestId("security-repository-select"),
+      ).not.toHaveAttribute("aria-invalid");
+    });
+
+    it("offers and honours the picker for repositories known only from open conversations, not just the knowledge store", async () => {
+      // Regression: every other picker test seeds the knowledge store
+      // (`seedRepository`); the merge logic that also folds in
+      // `useConnectedRepositories()` candidates (see the hook's own doc
+      // comment) had no picker-level coverage of its own -- a bug specific to
+      // that branch (e.g. a missing `workingDir` key) could slip past every
+      // other test in this file.
+      const user = userEvent.setup();
+      setConnected(
+        {
+          repositoryId: "acme/api@main",
+          owner: "acme",
+          repo: "api",
+          branch: "main",
+          conversationUrl: "https://example.com/conv-api",
+          sessionApiKey: "key",
+          workingDir: "/workspace/api",
+        },
+        {
+          repositoryId: "acme/web@main",
+          owner: "acme",
+          repo: "web",
+          branch: "main",
+          conversationUrl: "https://example.com/conv-web",
+          sessionApiKey: "key",
+          workingDir: "/workspace/web",
+        },
+      );
+      renderSecurity();
+
+      const select = screen.getByRole("combobox", {
+        name: I18nKey.SECURITY$REPOSITORY_SELECT_LABEL,
+      });
+      expect(
+        screen.getAllByRole("option").map((option) => option.textContent),
+      ).toEqual(["acme/api", "acme/web"]);
+
+      await user.selectOptions(select, "acme/web@main");
+
+      const scopeText = screen.getByTestId("security-workspace-scope");
+      // Neither candidate has a resolved commit -- the scope line must show
+      // the plain label, not invent a sha for either one.
+      expect(scopeText).toHaveTextContent("acme/web");
+      expect(scopeText).not.toHaveTextContent("@abcdef1");
+    });
   });
 });
 
