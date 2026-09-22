@@ -193,16 +193,20 @@ function relabelBucketsWithHints(
       .filter((path): path is string => path !== null);
     if (!bucketFiles.length) continue;
 
-    let best: { title: string; overlap: number } | null = null;
+    let best: { title: string; overlap: number; size: number } | null = null;
     for (const hint of hintFileSets) {
       const matched = bucketFiles.filter((path) => hint.files.has(path)).length;
       const overlap = matched / bucketFiles.length;
-      if (
-        overlap >= HINT_LABEL_OVERLAP_THRESHOLD &&
-        (!best || overlap > best.overlap)
-      ) {
-        best = { title: hint.title, overlap };
-      }
+      if (overlap < HINT_LABEL_OVERLAP_THRESHOLD) continue;
+      // On an exact overlap tie, the strictly-greater check below would just
+      // keep whichever hint happened to be processed first -- not
+      // necessarily the "most focused" one the module doc above promises.
+      // Comparing `hint.files.size` breaks the tie the way it's documented.
+      const better =
+        !best ||
+        overlap > best.overlap ||
+        (overlap === best.overlap && hint.files.size < best.size);
+      if (better) best = { title: hint.title, overlap, size: hint.files.size };
     }
     if (best) bucket.name = best.title;
   }
@@ -764,8 +768,18 @@ export function buildHierarchy(
     }
   }
 
-  capSubsystemBuckets(buckets);
+  // Order matters: relabeling must see each bucket's real, already-formed
+  // membership before `capSubsystemBuckets` merges the smallest overflow
+  // buckets into the synthetic "Other" catch-all. Relabeling *after* capping
+  // would let a hint whose cited files happen to overlap that arbitrary
+  // merge rename "Other" to a specific product name (e.g. "Payment
+  // Service") for a bucket that is actually an unrelated grab-bag of the
+  // smallest buckets — exactly the fabricated-looking label this module's
+  // naming rule exists to prevent. Doing it first means every bucket that
+  // ends up in "Other" was still real and whole when it was (or wasn't)
+  // relabeled, and the merge itself never earns a hint-derived name.
   relabelBucketsWithHints(buckets, hints);
+  capSubsystemBuckets(buckets);
 
   // --- Assemble the tree ---------------------------------------------------
   const ctx: TreeContext = {

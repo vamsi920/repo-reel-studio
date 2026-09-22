@@ -151,6 +151,53 @@ describe("buildHierarchy", () => {
     expect(units).toHaveLength(40);
   });
 
+  it("never lets a hint rename the synthetic Other catch-all created by capping", () => {
+    // 30 detected layers, one file each — same overflow shape as the test
+    // above, but this time a hint's cited files happen to be exactly the
+    // handful of smallest buckets that get merged into "Other". Relabeling
+    // must run before merging (on each bucket's real, already-formed
+    // membership), never after — otherwise a coincidental overlap with the
+    // arbitrary merge would rename the catch-all to a specific product name
+    // for a bucket that is actually an unrelated grab-bag, which is worse
+    // than the honest "Other" label it exists to provide.
+    const nodes: GraphNode[] = [];
+    const layers: KnowledgeGraph["layers"] = [];
+    for (let index = 0; index < 30; index += 1) {
+      const node = file(`layer${index}/one.ts`);
+      nodes.push(node);
+      layers.push({
+        id: `layer-${index}`,
+        name: `Layer ${index}`,
+        description: "",
+        nodeIds: [node.id],
+      });
+    }
+    const graph = graphOf(nodes);
+    graph.layers = layers;
+
+    // The smallest buckets (last in, all tied on size) are the ones
+    // `capSubsystemBuckets` folds into "Other" — see the sibling test above.
+    const overflowCount = 30 - (MAX_LEVEL_CHILDREN - 1);
+    const hints: SubsystemHint[] = [
+      {
+        id: "hint-overflow",
+        title: "Totally Unrelated Product Name",
+        filePaths: Array.from(
+          { length: overflowCount },
+          (_, index) => `layer${30 - overflowCount + index}/one.ts`,
+        ),
+      },
+    ];
+
+    const result = buildHierarchy(graph, hints);
+    const other = result.childrenByParent[""]
+      .map((id) => result.nodesById[id])
+      .find((node) => node.childCount === overflowCount);
+
+    expect(other).toBeDefined();
+    expect(other!.name).toBe("Other");
+  });
+
   it("never renders more than the level budget, even for one huge flat folder", () => {
     // 400 files directly inside one folder: there is no deeper path segment to
     // split on, so the alphabetical fallback has to take over.
@@ -280,6 +327,38 @@ describe("buildHierarchy", () => {
     // more (here, "Architecture Overview" claims both files; "Webhooks"
     // claims only one) — never a per-file split.
     expect(result.nodesById[stripeOwner!].name).toBe("Architecture Overview");
+  });
+
+  it("breaks an exact overlap tie toward the more focused hint, not whichever came first", () => {
+    // Both hints cover 100% of the bucket's two real files, so the naive
+    // "strictly greater overlap wins" comparison never updates past whichever
+    // hint is processed first. The module's own doc comment on
+    // `HINT_LABEL_OVERLAP_THRESHOLD` promises the tie breaks toward the
+    // *more focused* section (fewer files cited overall) instead — this pins
+    // that down by putting the sprawling hint first in the array, where a
+    // first-wins bug would otherwise hide.
+    const nodes = [file("src/pay/webhooks/stripe.ts"), file("src/pay/charge.ts")];
+    const hints: SubsystemHint[] = [
+      {
+        id: "overview",
+        title: "Full System Overview",
+        filePaths: [
+          "src/pay/webhooks/stripe.ts",
+          "src/pay/charge.ts",
+          ...Array.from({ length: 50 }, (_, index) => `src/other${index}.ts`),
+        ],
+      },
+      {
+        id: "payments",
+        title: "Payments",
+        filePaths: ["src/pay/webhooks/stripe.ts", "src/pay/charge.ts"],
+      },
+    ];
+
+    const result = buildHierarchy(graphOf(nodes), hints);
+    const subsystemId = result.childrenByParent[""][0];
+
+    expect(result.nodesById[subsystemId].name).toBe("Payments");
   });
 
   it("falls back to detected layers before folders", () => {
