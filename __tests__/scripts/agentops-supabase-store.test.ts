@@ -331,3 +331,50 @@ describe("run-scoped audit filter", () => {
     expect(calls.some(([name]) => name === "eq")).toBe(false);
   });
 });
+
+describe("getAgentBudget", () => {
+  function storeWithBudgetRow(data: { agent_budget_usd: unknown } | null) {
+    const builder = {
+      select() {
+        return builder;
+      },
+      eq() {
+        return builder;
+      },
+      maybeSingle() {
+        return Promise.resolve({ data, error: null });
+      },
+    };
+    const store = new SupabaseAgentOpsStore({
+      url: "http://localhost:54321",
+      serviceRoleKey: "test-service-role-key",
+    });
+    // Skip the org-bootstrap upsert; irrelevant to this method's own bug.
+    store.orgBootstrapped = true;
+    store.client = { from: () => builder } as never;
+    return store;
+  }
+
+  it("returns null, not NaN, when no per-agent budget row exists", async () => {
+    // `.maybeSingle()` resolves `data: null` for "no row" — the common case,
+    // since most agents have no override. `data?.agent_budget_usd` is then
+    // `undefined`, which must still map to `null`, not `Number(undefined)`.
+    const store = storeWithBudgetRow(null);
+    expect(await store.getAgentBudget("agent-1")).toBeNull();
+  });
+
+  it("returns null when the row exists but the column itself is null", async () => {
+    const store = storeWithBudgetRow({ agent_budget_usd: null });
+    expect(await store.getAgentBudget("agent-1")).toBeNull();
+  });
+
+  it("coerces a numeric-string column back to a JS number", async () => {
+    const store = storeWithBudgetRow({ agent_budget_usd: "25.500000" });
+    expect(await store.getAgentBudget("agent-1")).toBe(25.5);
+  });
+
+  it("passes through a real numeric column unchanged", async () => {
+    const store = storeWithBudgetRow({ agent_budget_usd: 10 });
+    expect(await store.getAgentBudget("agent-1")).toBe(10);
+  });
+});

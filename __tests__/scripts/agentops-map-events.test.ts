@@ -531,6 +531,47 @@ describe("RunAggregator — LLM spans from ConversationStats", () => {
     const [span] = aggregator.applyStats(noCost, OBSERVED_AT).spans;
     expect(span.attributes["gen_ai.usage.total_cost"]).toBeNull();
   });
+
+  it("picks run.model by completion timestamp, not by usage-id iteration order", () => {
+    // Regression: two usage ids (e.g. the main agent LLM and a condenser)
+    // both get newly-appended entries in one poll. `Object.entries()` visits
+    // them in insertion order, which is unrelated to which one actually
+    // completed most recently by wall-clock time — the condenser here is
+    // inserted *after* "agent" but its completion happened *earlier*.
+    const aggregator = new RunAggregator(newRun());
+    const multiUsage = {
+      usage_to_metrics: {
+        agent: {
+          model_name: "claude-opus-5",
+          accumulated_cost: 0.1,
+          costs: [{ model: "claude-opus-5", cost: 0.1, timestamp: 2000 }],
+          response_latencies: [],
+          token_usages: [
+            { model: "claude-opus-5", prompt_tokens: 10, response_id: "r-1" },
+          ],
+        },
+        condenser: {
+          model_name: "claude-haiku-4-5",
+          accumulated_cost: 0.01,
+          costs: [{ model: "claude-haiku-4-5", cost: 0.01, timestamp: 1000 }],
+          response_latencies: [],
+          token_usages: [
+            {
+              model: "claude-haiku-4-5",
+              prompt_tokens: 5,
+              response_id: "r-2",
+            },
+          ],
+        },
+      },
+    };
+
+    aggregator.applyStats(multiUsage, OBSERVED_AT);
+
+    // "agent" (timestamp 2000) is the true latest completion even though
+    // "condenser" is iterated after it.
+    expect(aggregator.run.model).toBe("claude-opus-5");
+  });
 });
 
 describe("RunAggregator — status transitions", () => {

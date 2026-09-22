@@ -643,6 +643,13 @@ export class RunAggregator {
       reasoning: 0,
     };
     let latestModel = this.run.model;
+    // Tracks the wall-clock timestamp (costs[index].timestamp, epoch seconds)
+    // of whichever entry last set `latestModel`, so entries are compared by
+    // when the completion actually happened — not by `Object.entries()`
+    // iteration order, which is insertion order across usage ids (e.g.
+    // "agent" vs "condenser") and not chronological. An entry with no
+    // timestamp only wins if nothing timestamped has been seen yet this call.
+    let latestModelAt = -Infinity;
 
     for (const [usageId, metrics] of Object.entries(usageToMetrics)) {
       if (!metrics || typeof metrics !== "object") continue;
@@ -687,13 +694,25 @@ export class RunAggregator {
         const usage = usages[index];
         if (!usage || typeof usage !== "object") continue;
         const model = usage.model ?? metrics.model_name ?? null;
-        if (model) latestModel = model;
+        const entryTimestamp =
+          typeof costs[index]?.timestamp === "number"
+            ? costs[index].timestamp
+            : null;
+        if (
+          model &&
+          (entryTimestamp === null
+            ? latestModelAt === -Infinity
+            : entryTimestamp >= latestModelAt)
+        ) {
+          latestModel = model;
+          if (entryTimestamp !== null) latestModelAt = entryTimestamp;
+        }
         const cost = costs[index]?.cost ?? null;
         const latencySeconds =
           latencyByResponseId.get(usage.response_id) ?? null;
         const startTime =
-          typeof costs[index]?.timestamp === "number"
-            ? new Date(costs[index].timestamp * 1000).toISOString()
+          entryTimestamp !== null
+            ? new Date(entryTimestamp * 1000).toISOString()
             : observedAt;
 
         spans.push({

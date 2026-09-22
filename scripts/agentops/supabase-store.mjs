@@ -496,12 +496,13 @@ export class SupabaseAgentOpsStore {
       .eq("agent_name", agentName)
       .maybeSingle();
     if (error) throw new Error(`getAgentBudget failed: ${error.message}`);
+    // `data` itself is `null` (not just the column) when no row matches — the
+    // common case, since most agents have no per-agent override — so this
+    // must check for that directly rather than only the column being `null`;
+    // `data?.agent_budget_usd` is `undefined` then, and `Number(undefined)`
+    // is `NaN`, not `null`.
     const value = data?.agent_budget_usd;
-    return typeof value === "number"
-      ? value
-      : value === null
-        ? null
-        : Number(value);
+    return value === null || value === undefined ? null : Number(value);
   }
 
   /**
