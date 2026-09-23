@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { KnowledgeRepository } from "#/lib/knowledge/knowledge-engine";
 
 interface QueryResult {
   data: unknown;
@@ -12,6 +13,14 @@ const state = vi.hoisted(() => ({
   // given column (e.g. `branch`) rather than just checking the final
   // (mock-controlled) result.
   eqCalls: [] as { table: string; column: string; value: unknown }[],
+  // Records every `.order(column, options)` call, tagged by table, so tests
+  // can assert a query is actually deterministically ordered rather than
+  // relying on whatever order the (mock-controlled) result happens to list.
+  orderCalls: [] as { table: string; column: string; options: unknown }[],
+  // Records every `.upsert(payload, options)` call, tagged by table.
+  upsertCalls: [] as { table: string; payload: unknown; options: unknown }[],
+  // Records every `.insert(rows)` call, tagged by table.
+  insertCalls: [] as { table: string; rows: unknown }[],
 }));
 
 function emptyResult(): QueryResult {
@@ -21,16 +30,29 @@ function emptyResult(): QueryResult {
 vi.mock("#/lib/data-platform/client", () => {
   function chain(result: QueryResult, table: string) {
     // Mimics postgrest-js's chainable, thenable query builder: every
-    // intermediate call (select/eq/order/limit/in) returns the same
+    // intermediate call (select/eq/order/limit/in/delete) returns the same
     // chainable object, and it can be awaited directly (reconstruct's
-    // per-table queries do this) or terminated with maybeSingle()/single()
-    // (getFullGeneration/getLatestGenerationForRepository do this).
+    // per-table queries and saveFullKnowledge's deletes/inserts do this) or
+    // terminated with maybeSingle()/single() (getFullGeneration/
+    // getLatestGenerationForRepository/saveFullKnowledge's upsert do this).
     const obj: Record<string, unknown> = {};
-    for (const method of ["select", "order", "limit", "in"]) {
+    for (const method of ["select", "limit", "in", "delete"]) {
       obj[method] = () => obj;
     }
     obj.eq = (column: string, value: unknown) => {
       state.eqCalls.push({ table, column, value });
+      return obj;
+    };
+    obj.order = (column: string, options: unknown) => {
+      state.orderCalls.push({ table, column, options });
+      return obj;
+    };
+    obj.upsert = (payload: unknown, options: unknown) => {
+      state.upsertCalls.push({ table, payload, options });
+      return obj;
+    };
+    obj.insert = (rows: unknown) => {
+      state.insertCalls.push({ table, rows });
       return obj;
     };
     obj.maybeSingle = async () => result;
@@ -55,6 +77,9 @@ const { knowledgePersistenceRepository } =
 
 beforeEach(() => {
   state.eqCalls = [];
+  state.orderCalls = [];
+  state.upsertCalls = [];
+  state.insertCalls = [];
 });
 
 const GENERATION_ROW = {
@@ -128,6 +153,31 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
       table: "knowledge_generations",
       column: "branch",
       value: "release",
+    });
+  });
+
+  // Regression: `knowledge_sections`/`knowledge_pages` have no ORDER BY,
+  // so a cold reconstruction could come back in a different order than the
+  // one DeepWiki originally emitted and the live session rendered (e.g. a
+  // repo's `unsectionedPages` list in kt-repository.tsx, which relies on
+  // `knowledge.pages` array order with no independent sort of its own).
+  it("orders sections and pages by their persisted position", async () => {
+    state.tables.knowledge_generations = { data: GENERATION_ROW, error: null };
+
+    await knowledgePersistenceRepository.getLatestGenerationForRepository(
+      "repo-1",
+      "main",
+    );
+
+    expect(state.orderCalls).toContainEqual({
+      table: "knowledge_sections",
+      column: "position",
+      options: { ascending: true },
+    });
+    expect(state.orderCalls).toContainEqual({
+      table: "knowledge_pages",
+      column: "position",
+      options: { ascending: true },
     });
   });
 
@@ -358,5 +408,100 @@ describe("knowledgePersistenceRepository.listGeneratedRepositories", () => {
       ],
       error: false,
     });
+  });
+});
+
+describe("knowledgePersistenceRepository.saveFullKnowledge", () => {
+  const KNOWLEDGE: KnowledgeRepository = {
+    repositoryId: "repo-1",
+    commitSha: "abc1234",
+    title: "Repo Wiki",
+    summary: "A summary",
+    sections: [
+      { id: "sec-b", title: "Second", pageIds: ["page-b"] },
+      { id: "sec-a", title: "First", pageIds: ["page-a"] },
+    ],
+    pages: [
+      {
+        id: "page-b",
+        title: "Page B",
+        description: "",
+        contentMarkdown: "# B",
+        importance: "medium",
+        relevantFiles: [],
+        diagrams: [],
+        relatedPageIds: [],
+      },
+      {
+        id: "page-a",
+        title: "Page A",
+        description: "",
+        contentMarkdown: "# A",
+        importance: "high",
+        relevantFiles: [],
+        diagrams: [],
+        relatedPageIds: [],
+      },
+    ],
+    generatedAt: "2026-09-23T00:00:00.000Z",
+  };
+
+  beforeEach(() => {
+    state.tables = {
+      knowledge_generations: { data: { id: "gen-1" }, error: null },
+      knowledge_sections: emptyResult(),
+      knowledge_pages: emptyResult(),
+      knowledge_diagrams: emptyResult(),
+    };
+  });
+
+  // Regression: two branches can share a commit sha (a branch just cut from
+  // another, or a fast-forward merge). The upsert used to target only
+  // (repository_id, commit_sha), so generating a second branch at the same
+  // commit collided with the first branch's row and silently overwrote its
+  // title/sections/pages/diagrams with the second branch's content, all
+  // still labeled with the first branch's own generation.
+  it("targets the branch-aware unique constraint on upsert conflict", async () => {
+    await knowledgePersistenceRepository.saveFullKnowledge(
+      "repo-1",
+      "workspace-1",
+      "main",
+      KNOWLEDGE,
+    );
+
+    expect(state.upsertCalls).toContainEqual(
+      expect.objectContaining({
+        table: "knowledge_generations",
+        options: { onConflict: "repository_id,branch,commit_sha" },
+      }),
+    );
+  });
+
+  // Regression: `knowledge_sections`/`knowledge_pages` rows carried no
+  // ordinal, so a cold reconstruction could come back in a different order
+  // than the one originally generated and rendered live.
+  it("stamps each section and page row with its array index as position", async () => {
+    await knowledgePersistenceRepository.saveFullKnowledge(
+      "repo-1",
+      "workspace-1",
+      "main",
+      KNOWLEDGE,
+    );
+
+    const sectionsInsert = state.insertCalls.find(
+      (call) => call.table === "knowledge_sections",
+    );
+    const pagesInsert = state.insertCalls.find(
+      (call) => call.table === "knowledge_pages",
+    );
+
+    expect(sectionsInsert?.rows).toEqual([
+      expect.objectContaining({ id: "sec-b", position: 0 }),
+      expect.objectContaining({ id: "sec-a", position: 1 }),
+    ]);
+    expect(pagesInsert?.rows).toEqual([
+      expect.objectContaining({ id: "page-b", position: 0 }),
+      expect.objectContaining({ id: "page-a", position: 1 }),
+    ]);
   });
 });

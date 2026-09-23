@@ -11,7 +11,9 @@ import type {
  * Full-content persistence for Knowledge (Docs), against
  * `knowledge_generations`/`knowledge_sections`/`knowledge_pages`/
  * `knowledge_diagrams` (supabase/migrations/20260819201308_knowledge_codegraph.sql
- * + the additive `page_id`/`branch` columns). Stores the whole normalized
+ * + the additive `branch`/`page_id`/`position` columns and update/delete RLS
+ * policies from 20260923190000_knowledge_branch_rls_and_order.sql). Stores
+ * the whole normalized
  * `KnowledgeRepository`, not just an existence marker -- DeepWiki's own cache
  * lives in a separate process that can be down, and Postgres is only ever
  * written right after a real generation completes, so duplicated-content
@@ -88,13 +90,15 @@ async function reconstruct(
     supabase
       .from("knowledge_sections")
       .select("id, title, description, page_ids")
-      .eq("generation_id", generation.id),
+      .eq("generation_id", generation.id)
+      .order("position", { ascending: true }),
     supabase
       .from("knowledge_pages")
       .select(
         "id, title, description, content_markdown, importance, relevant_files, related_page_ids, parent_section_id",
       )
-      .eq("generation_id", generation.id),
+      .eq("generation_id", generation.id)
+      .order("position", { ascending: true }),
     supabase
       .from("knowledge_diagrams")
       .select("id, page_id, type, mermaid")
@@ -177,7 +181,7 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
             branch,
             generated_at: knowledge.generatedAt,
           },
-          { onConflict: "repository_id,commit_sha" },
+          { onConflict: "repository_id,branch,commit_sha" },
         )
         .select("id")
         .single();
@@ -199,14 +203,15 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
           .eq("page_generation_id", generationId),
       ]);
 
-      const sectionRows = knowledge.sections.map((section) => ({
+      const sectionRows = knowledge.sections.map((section, index) => ({
         generation_id: generationId,
         id: section.id,
         title: section.title,
         description: section.description ?? null,
         page_ids: section.pageIds,
+        position: index,
       }));
-      const pageRows = knowledge.pages.map((page) => ({
+      const pageRows = knowledge.pages.map((page, index) => ({
         generation_id: generationId,
         id: page.id,
         title: page.title,
@@ -216,6 +221,7 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         relevant_files: page.relevantFiles,
         related_page_ids: page.relatedPageIds,
         parent_section_id: page.parentSectionId ?? null,
+        position: index,
       }));
       const diagramRows = knowledge.pages.flatMap((page) =>
         page.diagrams.map((diagram) => ({
