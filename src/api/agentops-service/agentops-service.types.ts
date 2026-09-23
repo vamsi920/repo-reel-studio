@@ -100,6 +100,12 @@ export interface AgentOpsBudgetBreach {
   limitUsd: number;
   usedUsd: number;
   message: string;
+  /**
+   * Set on a "run" scope breach once an operator approves it: the raised
+   * ceiling applies only to this one run (looked up by runId), never to
+   * shared workspace/agent policy.
+   */
+  raisedToUsd?: number;
 }
 
 export interface AgentOpsApproval {

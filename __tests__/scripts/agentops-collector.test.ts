@@ -1089,6 +1089,90 @@ describe("Collector budget enforcement after a rejected approval", () => {
   });
 });
 
+describe("Collector run-budget approval stays scoped to the approved run", () => {
+  it("does not silently raise the ceiling for a sibling run in the same workspace", async () => {
+    // Regression test: approving one run's budget breach used to overwrite
+    // the *workspace's* `runBudgetUsd`, so every other run sharing that
+    // workspace got to spend up to the raised limit too. An approved breach
+    // must only exempt the run it was raised for.
+    const store = makeStore({
+      getWorkspacePolicy: vi.fn().mockResolvedValue({
+        workspaceId: "ws",
+        monthlyBudgetUsd: null,
+        runBudgetUsd: 2,
+        agentBudgetUsd: null,
+        warnThresholdPct: [50, 80, 100],
+        allowedTools: null,
+        autonomyLevel: "assisted",
+        approvalThresholds: { securityRisk: "HIGH", costUsd: null },
+      }),
+      listRuns: vi.fn().mockResolvedValue([]),
+      // run-A has a prior approved breach raising its own ceiling to $3.50;
+      // run-B (or any other run) has no approval history at all.
+      listApprovals: vi.fn(async ({ state, runId } = {}) => {
+        if (state === "approved" && runId === "run-A") {
+          return [
+            {
+              runId: "run-A",
+              workspaceId: "ws",
+              state: "approved",
+              breaches: [
+                { scope: "run", usedUsd: 2.5, limitUsd: 2, raisedToUsd: 3.5 },
+              ],
+            },
+          ];
+        }
+        return [];
+      }),
+    });
+
+    function conversation(id: string, costUsd: number) {
+      return {
+        id,
+        title: `Task ${id}`,
+        execution_status: "running",
+        workspace: { working_dir: "ws" },
+        updated_at: "2026-01-15T00:05:00.000Z",
+        created_at: "2026-01-15T00:00:00.000Z",
+        stats: {
+          usage_to_metrics: {
+            agent: {
+              accumulated_cost: costUsd,
+              accumulated_token_usage: {},
+              costs: [],
+              response_latencies: [],
+              token_usages: [],
+            },
+          },
+        },
+      };
+    }
+
+    const client = makeClient({
+      searchConversations: vi.fn(async () => ({
+        // run-A has spent $3 — under its own approved $3.50 ceiling.
+        // run-B has spent $2.5 — over the plain workspace runBudgetUsd of $2,
+        // and has no override of its own.
+        items: [conversation("run-A", 3), conversation("run-B", 2.5)],
+      })),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:06:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(client.interruptConversation).toHaveBeenCalledTimes(1);
+    expect(client.interruptConversation).toHaveBeenCalledWith("run-B");
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+    expect(store.upsertApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "budget", runId: "run-B" }),
+    );
+  });
+});
+
 describe("Collector budget warning dedup", () => {
   it("warns again for the same threshold crossed in the same calendar month a year later", async () => {
     // Regression test: the dedup key used to be

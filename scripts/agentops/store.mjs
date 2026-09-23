@@ -235,10 +235,11 @@ export class AgentOpsStore {
     return this.approvals.get(id) ?? null;
   }
 
-  async listApprovals({ state = "pending" } = {}) {
+  async listApprovals({ state = "pending", runId } = {}) {
     const approvals = [...this.approvals.values()];
-    const filtered =
-      state === "all" ? approvals : approvals.filter((a) => a.state === state);
+    const filtered = (
+      state === "all" ? approvals : approvals.filter((a) => a.state === state)
+    ).filter((a) => !runId || a.runId === runId);
     return filtered.sort(
       (a, b) =>
         new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),

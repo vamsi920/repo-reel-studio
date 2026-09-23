@@ -156,6 +156,49 @@ describe("evaluateBudgets", () => {
     expect(breaches).toHaveLength(0);
     expect(warnings).toHaveLength(0);
   });
+
+  it("uses a run's own approved override instead of the workspace-wide run budget", () => {
+    // Regression test: an approved override must raise the ceiling for THIS
+    // run only, never silently widen `policy.runBudgetUsd` for every run in
+    // the workspace (see `applyBudgetApproval`'s doc comment).
+    const { breaches } = evaluateBudgets({
+      run: run({ costUsd: 2.5 }),
+      policy,
+      agentBudgetUsd: null,
+      workspaceSpend: 10,
+      agentSpend: 10,
+      runBudgetOverrideUsd: 3.5,
+    });
+    expect(breaches).toHaveLength(0);
+  });
+
+  it("still breaches the override once the run's cost passes it too", () => {
+    const { breaches } = evaluateBudgets({
+      run: run({ costUsd: 3.5 }),
+      policy,
+      agentBudgetUsd: null,
+      workspaceSpend: 10,
+      agentSpend: 10,
+      runBudgetOverrideUsd: 3.5,
+    });
+    expect(breaches).toHaveLength(1);
+    expect(breaches[0]).toMatchObject({ scope: "run", limitUsd: 3.5 });
+  });
+
+  it("a sibling run with no override of its own is unaffected by the workspace's plain runBudgetUsd", () => {
+    // Same workspace `policy` (runBudgetUsd: 2) as the override case above,
+    // no `runBudgetOverrideUsd` passed for this run: it still breaches at
+    // the original, un-raised limit.
+    const { breaches } = evaluateBudgets({
+      run: run({ runId: "run-2", costUsd: 2.5 }),
+      policy,
+      agentBudgetUsd: null,
+      workspaceSpend: 10,
+      agentSpend: 10,
+    });
+    expect(breaches).toHaveLength(1);
+    expect(breaches[0]).toMatchObject({ scope: "run", limitUsd: 2 });
+  });
 });
 
 describe("policy helpers", () => {
@@ -237,9 +280,11 @@ describe("summarize", () => {
 });
 
 describe("applyBudgetApproval", () => {
-  it("raises every scope that breached simultaneously, not just the first", () => {
+  it("raises every shared scope that breached simultaneously, not just the first", () => {
     const policies = {
-      workspaces: { "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 } },
+      workspaces: {
+        "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 },
+      },
       agents: { "OpenHands Agent": { agentBudgetUsd: 20 } },
     };
     const approval = {
@@ -254,16 +299,22 @@ describe("applyBudgetApproval", () => {
 
     const updated = applyBudgetApproval(policies, approval, 1);
 
-    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(3.5);
     expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
       101.5,
     );
     expect(updated.agents["OpenHands Agent"].agentBudgetUsd).toBe(21.5);
   });
 
-  it("raises only the breached scope, leaving the other limits untouched", () => {
+  it("never raises the workspace-wide runBudgetUsd for a 'run' scope breach", () => {
+    // Regression test: `runBudgetUsd` is one workspace-wide setting, so
+    // raising it to wave through a single over-budget run used to silently
+    // raise the ceiling for every other run in the same workspace too. The
+    // run-scope raise is applied elsewhere, scoped to just that run (see
+    // evaluateBudgets' `runBudgetOverrideUsd` and its regression tests).
     const policies = {
-      workspaces: { "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 } },
+      workspaces: {
+        "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 },
+      },
       agents: {},
     };
     const approval = {
@@ -272,28 +323,49 @@ describe("applyBudgetApproval", () => {
       breaches: [{ scope: "run", usedUsd: 2.5, limitUsd: 2 }],
     };
 
+    const updated = applyBudgetApproval(policies, approval, 1);
+
+    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(2);
+    expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(100);
+  });
+
+  it("raises only the breached shared scope, leaving the other limits untouched", () => {
+    const policies = {
+      workspaces: {
+        "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 },
+      },
+      agents: {},
+    };
+    const approval = {
+      workspaceId: "/workspace/project",
+      agentName: "OpenHands Agent",
+      breaches: [{ scope: "workspace", usedUsd: 100.5, limitUsd: 100 }],
+    };
+
     const updated = applyBudgetApproval(policies, approval, 0);
 
-    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(2.5);
+    expect(updated.workspaces["/workspace/project"].runBudgetUsd).toBe(2);
     expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
-      100,
+      100.5,
     );
   });
 
   it("does not mutate the policies object it was given", () => {
     const policies = {
-      workspaces: { "/workspace/project": { runBudgetUsd: 2 } },
+      workspaces: { "/workspace/project": { monthlyBudgetUsd: 100 } },
       agents: {},
     };
     applyBudgetApproval(
       policies,
       {
         workspaceId: "/workspace/project",
-        breaches: [{ scope: "run", usedUsd: 2.5 }],
+        breaches: [{ scope: "workspace", usedUsd: 100.5 }],
       },
       0,
     );
-    expect(policies.workspaces["/workspace/project"].runBudgetUsd).toBe(2);
+    expect(policies.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
+      100,
+    );
   });
 });
 

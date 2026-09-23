@@ -122,6 +122,14 @@ export function meetsRiskThreshold(risk, threshold) {
 /**
  * Evaluate every budget that applies to a run.
  *
+ * `runBudgetOverrideUsd`, when set, is this run's own approved run-budget
+ * ceiling (see `applyBudgetApproval`'s doc comment), used in place of
+ * `policy.runBudgetUsd` so an approval never raises the ceiling for every
+ * other run sharing the same workspace.
+ *
+ * @param {{ run: object, policy: object, agentBudgetUsd: number | null,
+ *   workspaceSpend: number, agentSpend: number, runBudgetOverrideUsd?: number
+ * }} args
  * @returns {{breaches: Array, warnings: Array}} `breaches` mean "stop this
  *   run"; `warnings` are threshold crossings that are only reported.
  */
@@ -131,21 +139,32 @@ export function evaluateBudgets({
   agentBudgetUsd,
   workspaceSpend,
   agentSpend,
+  runBudgetOverrideUsd,
 }) {
   const breaches = [];
   const warnings = [];
 
   const runCost = typeof run.costUsd === "number" ? run.costUsd : 0;
+  // `policy.runBudgetUsd` is one workspace-wide setting, so raising it to wave
+  // through a single over-budget run would silently raise the ceiling for
+  // every other run in the workspace too. `runBudgetOverrideUsd` is this
+  // run's own approved ceiling (see `applyBudgetApproval`'s doc comment) and
+  // takes priority when set, leaving the workspace setting untouched for
+  // everyone else.
+  const effectiveRunBudgetUsd =
+    typeof runBudgetOverrideUsd === "number"
+      ? runBudgetOverrideUsd
+      : policy.runBudgetUsd;
 
   if (
-    typeof policy.runBudgetUsd === "number" &&
-    runCost >= policy.runBudgetUsd
+    typeof effectiveRunBudgetUsd === "number" &&
+    runCost >= effectiveRunBudgetUsd
   ) {
     breaches.push({
       scope: "run",
-      limitUsd: policy.runBudgetUsd,
+      limitUsd: effectiveRunBudgetUsd,
       usedUsd: runCost,
-      message: `Run reached its $${policy.runBudgetUsd.toFixed(2)} budget (spent $${runCost.toFixed(4)}).`,
+      message: `Run reached its $${effectiveRunBudgetUsd.toFixed(2)} budget (spent $${runCost.toFixed(4)}).`,
     });
   }
 
@@ -208,12 +227,19 @@ export function requiresConfirmationMode(policy) {
 
 /**
  * Apply an approved budget-breach approval to policy, raising the limit of
- * every scope that breached simultaneously (run/agent/workspace can all
- * breach in the same tick) rather than only the first one recorded on the
- * approval. Raising just one left the others unaddressed, so the collector
- * halted the run again on its very next tick for a breach the operator had
- * just approved past. Returns a new policies object; does not mutate the
- * input.
+ * every *shared* scope that breached simultaneously (agent/workspace can
+ * breach alongside "run" in the same tick) rather than only the first one
+ * recorded on the approval. Raising just one left the others unaddressed, so
+ * the collector halted the run again on its very next tick for a breach the
+ * operator had just approved past. Returns a new policies object; does not
+ * mutate the input.
+ *
+ * A "run" scope breach is deliberately NOT applied here: `runBudgetUsd` is
+ * one workspace-wide setting, so writing to it would raise the ceiling for
+ * every run in the workspace, not just the one the operator approved. Its
+ * raised ceiling is instead stamped onto the approval's own breach entry
+ * (`raisedToUsd`, see the `/approvals/:id/approve` handler) and applied only
+ * to that run via `evaluateBudgets`'s `runBudgetOverrideUsd`.
  */
 export function applyBudgetApproval(policies, approval, additionalUsd = 0) {
   const workspaces = { ...(policies?.workspaces ?? {}) };
@@ -221,9 +247,7 @@ export function applyBudgetApproval(policies, approval, additionalUsd = 0) {
   const workspace = { ...(workspaces[approval.workspaceId] ?? {}) };
 
   for (const breach of approval.breaches ?? []) {
-    if (breach.scope === "run") {
-      workspace.runBudgetUsd = breach.usedUsd + additionalUsd;
-    } else if (breach.scope === "workspace") {
+    if (breach.scope === "workspace") {
       workspace.monthlyBudgetUsd = breach.usedUsd + additionalUsd;
     } else if (breach.scope === "agent") {
       agents[approval.agentName] = {

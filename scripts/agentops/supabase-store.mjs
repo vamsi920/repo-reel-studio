@@ -460,12 +460,13 @@ export class SupabaseAgentOpsStore {
     return data ? rowToApproval(data) : null;
   }
 
-  async listApprovals({ state = "pending" } = {}) {
+  async listApprovals({ state = "pending", runId } = {}) {
     let query = this.client
       .from("agentops_approvals")
       .select("*, workspaces(path, name)")
       .order("requested_at", { ascending: false });
     if (state !== "all") query = query.eq("state", state);
+    if (runId) query = query.eq("run_id", runId);
 
     const { data, error } = await query;
     if (error) throw new Error(`listApprovals failed: ${error.message}`);

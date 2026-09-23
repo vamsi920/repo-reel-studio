@@ -339,6 +339,8 @@ function createRouter({ store, client, collector, storeKind }) {
       const reason = typeof body?.reason === "string" ? body.reason : undefined;
       let resumeOutcome = null;
 
+      let approvedBreaches = approval.breaches;
+
       if (approval.kind === "confirmation") {
         // The runtime is genuinely blocked on this; answering it is what
         // unblocks the agent.
@@ -349,15 +351,26 @@ function createRouter({ store, client, collector, storeKind }) {
       } else if (approval.kind === "budget") {
         if (decision === "approve") {
           // Approving a budget breach raises the limit to cover the overspend
-          // plus the operator-supplied headroom, then resumes the run. Without
-          // a new limit the collector would halt it again on the next tick.
-          // A single tick can breach more than one scope at once (run, agent,
-          // workspace), so every breach on the approval gets raised, not just
-          // the first.
+          // plus the operator-supplied headroom, then resumes the run.
+          // Without a new limit the collector would halt it again on the
+          // next tick. A single tick can breach more than one scope at once
+          // (run, agent, workspace), so every breach on the approval gets
+          // raised, not just the first. A "run" scope breach is raised only
+          // for *this* run (stamped onto its own breach entry as
+          // `raisedToUsd`, read back by the collector via
+          // `runBudgetOverrideUsd`) rather than through shared policy —
+          // `runBudgetUsd` is one workspace-wide setting, so writing to it
+          // would silently raise the ceiling for every other run in the
+          // workspace too.
           const additionalUsd =
             typeof body?.additionalBudgetUsd === "number"
               ? body.additionalBudgetUsd
               : 0;
+          approvedBreaches = (approval.breaches ?? []).map((breach) =>
+            breach.scope === "run"
+              ? { ...breach, raisedToUsd: breach.usedUsd + additionalUsd }
+              : breach,
+          );
           const policies = await store.getPolicies();
           await store.setPolicies(
             applyBudgetApproval(policies, approval, additionalUsd),
@@ -374,6 +387,7 @@ function createRouter({ store, client, collector, storeKind }) {
 
       await store.upsertApproval({
         ...approval,
+        breaches: approvedBreaches,
         state: decision === "approve" ? "approved" : "rejected",
         decidedAt: now,
         decisionReason: reason ?? null,

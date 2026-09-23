@@ -736,12 +736,27 @@ export class Collector {
       since,
     }).usedUsd;
 
+    // A previously-approved "run" scope breach raises this run's own
+    // ceiling only (see `applyBudgetApproval`'s doc comment) — read back
+    // from the approval's stamped `raisedToUsd` rather than from policy,
+    // which stays workspace-wide and untouched by the approval.
+    const approvedForRun = await this.store.listApprovals({
+      state: "approved",
+      runId: run.runId,
+    });
+    const runBudgetOverrideUsd = approvedForRun
+      .flatMap((approval) => approval.breaches ?? [])
+      .filter((breach) => breach.scope === "run" && breach.raisedToUsd)
+      .reduce((max, breach) => Math.max(max, breach.raisedToUsd), -Infinity);
+
     const { breaches, warnings } = evaluateBudgets({
       run,
       policy,
       agentBudgetUsd,
       workspaceSpend,
       agentSpend,
+      runBudgetOverrideUsd:
+        runBudgetOverrideUsd === -Infinity ? undefined : runBudgetOverrideUsd,
     });
 
     const audit = [];
