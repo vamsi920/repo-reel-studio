@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
 import { LogOut, User } from "lucide-react";
+import { useNavigation } from "#/context/navigation-context";
 import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
 import { signOutAndRedirect } from "#/lib/data-platform/auth-flow";
 import { useClickOutsideElement } from "#/hooks/use-click-outside-element";
@@ -31,7 +31,7 @@ interface SidebarUserMenuProps {
  */
 export function SidebarUserMenu({ collapsed }: SidebarUserMenuProps) {
   const { t } = useTranslation("openhands");
-  const navigate = useNavigate();
+  const { navigate } = useNavigation();
   const { status, user } = useSupabaseSession();
   const [open, setOpen] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);

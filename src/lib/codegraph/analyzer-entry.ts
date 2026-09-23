@@ -35,6 +35,7 @@ import {
   buildHierarchy,
   type SubsystemHint,
 } from "./hierarchy";
+import { resolveCalleeFile } from "./call-resolution";
 import { shardName } from "./shard-name";
 import { selectFilesToAnalyze } from "./file-selection";
 import type { CodeGraphMeta } from "./codegraph-types";
@@ -266,7 +267,14 @@ async function main(): Promise<void> {
         builder.addImportEdge(file.path, target);
     }
     for (const call of file.calls) {
-      const calleeFile = functionOwner.get(call.callee);
+      // Prefer the calling file's own definition over the ambiguous
+      // cross-file map -- see call-resolution.ts.
+      const calleeFile = resolveCalleeFile(
+        file.path,
+        call.callee,
+        file.functions,
+        functionOwner,
+      );
       if (!calleeFile) continue;
       builder.addCallEdge(file.path, call.caller, calleeFile, call.callee);
     }

@@ -1,4 +1,3 @@
-import type { NavigateFunction } from "react-router";
 import { supabase, isSupabaseConfigured } from "./client";
 
 /**
@@ -199,9 +198,14 @@ export async function signUpWithPassword(
  * Shared by the Settings "Account" section and the sidebar user menu so
  * there is exactly one sign-out code path to keep in sync with future auth
  * changes (e.g. clearing other client-side caches on logout).
+ *
+ * Typed structurally (not react-router's `NavigateFunction`) so the sidebar
+ * -- a component, which per this repo's routing convention must not import
+ * react-router directly -- can pass the app's own `useNavigation().navigate`
+ * instead. A route's real `useNavigate()` result satisfies this shape too.
  */
 export async function signOutAndRedirect(
-  navigate: NavigateFunction,
+  navigate: (to: string, options?: { replace?: boolean }) => void,
 ): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     await supabase.auth.signOut();
