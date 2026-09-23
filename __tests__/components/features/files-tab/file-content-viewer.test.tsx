@@ -1,5 +1,11 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +13,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FileContentViewer } from "#/components/features/files-tab/file-content-viewer";
 import type { ViewMode } from "#/components/features/files-tab/view-mode";
 import { useWorkspaceMutationCounter } from "#/stores/use-workspace-mutation-counter";
+
+// Prism is the expensive part of the highlighted-source path; stub it the
+// same way highlighted-source-view.test.tsx does so the rich-mode source
+// code test below asserts *which* branch rendered without paying for a
+// real highlight.
+vi.mock("#/components/features/markdown/syntax-highlighter", () => ({
+  SyntaxHighlighter: ({ children }: { children: string }) => (
+    <code data-testid="prism-stub">{children}</code>
+  ),
+}));
 
 // Mock the *services* the file-content hook depends on — not the hook itself —
 // so the real classification (text decoded, then flipped to binary on a NUL
@@ -225,5 +241,83 @@ describe("FileContentViewer", () => {
     expect(
       await screen.findByTestId("file-content-viewer-binary-fallback"),
     ).toBeInTheDocument();
+  });
+
+  // The four branches below are the actual "happy path" of the Files tab —
+  // what a user sees most of the time — but had no direct coverage: every
+  // existing test here targets an error/binary/loading edge case instead.
+  describe("rich mode rendering", () => {
+    it("renders an HTML file in a sandboxed iframe pointed at the cache-busted static URL", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        arrayBuffer: () =>
+          Promise.resolve(
+            new TextEncoder().encode("<html><body>hi</body></html>").buffer,
+          ),
+      });
+
+      renderViewer("index.html", "rich");
+
+      const iframe = await screen.findByTestId("file-content-viewer-iframe");
+      expect(iframe).toHaveAttribute("sandbox", "allow-same-origin");
+      expect(iframe).toHaveAttribute(
+        "src",
+        `${BASE_URL}index.html?v=0`,
+      );
+    });
+
+    it("renders a PDF in a sandboxed iframe without fetching its bytes", async () => {
+      renderViewer("report.pdf", "rich");
+
+      const iframe = await screen.findByTestId("file-content-viewer-iframe");
+      expect(iframe).toHaveAttribute("sandbox", "allow-same-origin");
+      expect(iframe).toHaveAttribute("src", `${BASE_URL}report.pdf?v=0`);
+      // Image/PDF kinds render straight from staticUrl — no byte fetch.
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("rich-renders a markdown file's content instead of showing its raw source", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        arrayBuffer: () =>
+          Promise.resolve(
+            new TextEncoder().encode("# Hello\n\nworld").buffer,
+          ),
+      });
+
+      renderViewer("notes.md", "rich");
+
+      const markdown = await screen.findByTestId(
+        "file-content-viewer-markdown",
+      );
+      expect(
+        within(markdown).getByRole("heading", { name: "Hello" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("file-content-viewer-plain"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders source code (no other rich form) as highlighted source", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        arrayBuffer: () =>
+          Promise.resolve(
+            new TextEncoder().encode("const x = 1;").buffer,
+          ),
+      });
+
+      renderViewer("script.ts", "rich");
+
+      expect(
+        await screen.findByTestId("file-content-viewer-highlighted"),
+      ).toHaveAttribute("data-language", "typescript");
+      expect(screen.getByTestId("prism-stub")).toHaveTextContent(
+        "const x = 1;",
+      );
+    });
   });
 });
