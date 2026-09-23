@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth 범위",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "헤더 인증에는 헤더가 필요합니다",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer 인증에는 API 키가 필요합니다",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth 클라이언트 시크릿에는 클라이언트 ID가 필요합니다",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "런타임 시작을 기다리는 중...",

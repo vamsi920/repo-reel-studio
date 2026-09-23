@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth-scopes",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "Header-autentisering krever en header",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer-autentisering krever en API-nøkkel",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth-klienthemmelighet krever en klient-ID",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "Venter på at runtime skal starte...",

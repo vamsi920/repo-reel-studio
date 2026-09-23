@@ -186,6 +186,11 @@ export function MCPServerForm({
   };
 
   const validateRemoteAuth = (formData: FormData): string | null => {
+    if (authMode === "bearer") {
+      const apiKey = formData.get("api_key")?.toString().trim();
+      if (!apiKey) return t(I18nKey.SETTINGS$MCP_ERROR_API_KEY_REQUIRED);
+      return null;
+    }
     if (authMode === "header") {
       const headerString = formData.get("headers")?.toString() || "";
       if (!headerString.trim())

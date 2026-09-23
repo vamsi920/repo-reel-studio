@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "Portées OAuth",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "L'authentification par en-tête nécessite un en-tête",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "L'authentification Bearer nécessite une clé API",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "Le client secret OAuth nécessite un ID client",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "En attente du démarrage du runtime...",

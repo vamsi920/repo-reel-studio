@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth スコープ",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "ヘッダー認証にはヘッダーが必要です",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer認証にはAPIキーが必要です",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth クライアントシークレットにはクライアント ID が必要です",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "ランタイムの開始を待機中...",

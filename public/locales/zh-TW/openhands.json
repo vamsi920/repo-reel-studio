@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth 範圍",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "標頭驗證需要標頭",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer 驗證需要 API 金鑰",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth 用戶端密碼需要用戶端 ID",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "等待運行時啟動...",

@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth-Scopes",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "Header-Authentifizierung erfordert einen Header",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer-Authentifizierung erfordert einen API-Schlüssel",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth-Client-Secret erfordert eine Client-ID",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "Warten auf den Start der Laufzeit...",

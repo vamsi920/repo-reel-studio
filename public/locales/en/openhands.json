@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth scopes",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "Header authentication requires a header",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer authentication requires an API key",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth client secret requires a client ID",
   "SETTINGS": "Environment variables must follow KEY=value format",
   "MICROAGENT$STATUS_WAITING": "Waiting for runtime to start...",

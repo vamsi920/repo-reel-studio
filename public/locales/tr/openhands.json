@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "OAuth kapsamları",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "Üst bilgi kimlik doğrulaması bir üst bilgi gerektirir",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Bearer kimlik doğrulaması bir API anahtarı gerektirir",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "OAuth istemci gizli anahtarı bir istemci kimliği gerektirir",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "Çalışma zamanının başlaması bekleniyor...",

@@ -431,6 +431,70 @@ describe("MCPServerForm validation", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("rejects a blank API key when editing an existing bearer-authenticated server", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <MCPServerForm
+        mode="edit"
+        server={{
+          id: "shttp-0",
+          type: "shttp",
+          name: "datadog",
+          url: "https://api.example.com/mcp",
+          auth: { strategy: "bearer", value: "existing-secret" },
+        }}
+        existingServers={[]}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("api-key-input"), {
+      target: { value: "" },
+    });
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    // Blanking the key must block submission, not silently save the server
+    // with no authentication at all.
+    expect(
+      screen.getByText("SETTINGS$MCP_ERROR_API_KEY_REQUIRED"),
+    ).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("submits a non-blank bearer API key as a tagged auth credential", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <MCPServerForm
+        mode="edit"
+        server={{
+          id: "shttp-0",
+          type: "shttp",
+          name: "datadog",
+          url: "https://api.example.com/mcp",
+          auth: { strategy: "bearer", value: "old-secret" },
+        }}
+        existingServers={[]}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("api-key-input"), {
+      target: { value: "new-secret" },
+    });
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      auth: { strategy: "bearer", value: "new-secret" },
+    });
+  });
+
   it("rejects an sse/shttp name that collides with an existing sse/shttp server", () => {
     const onSubmit = vi.fn();
 

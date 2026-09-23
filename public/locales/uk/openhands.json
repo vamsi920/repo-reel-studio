@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "Області OAuth",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "Автентифікація заголовком потребує заголовка",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "Автентифікація Bearer потребує ключа API",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "Секрет клієнта OAuth потребує ID клієнта",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "Очікування запуску середовища виконання...",

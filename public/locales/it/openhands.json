@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "Scope OAuth",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "L'autenticazione tramite intestazione richiede un'intestazione",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "L'autenticazione Bearer richiede una chiave API",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "Il client secret OAuth richiede un ID client",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "In attesa dell'avvio del runtime...",

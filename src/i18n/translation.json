@@ -24734,6 +24734,23 @@
     "uk": "Автентифікація заголовком потребує заголовка",
     "ca": "L'autenticació per capçalera requereix una capçalera"
   },
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": {
+    "en": "Bearer authentication requires an API key",
+    "ja": "Bearer認証にはAPIキーが必要です",
+    "zh-CN": "Bearer 身份验证需要 API 密钥",
+    "zh-TW": "Bearer 驗證需要 API 金鑰",
+    "ko-KR": "Bearer 인증에는 API 키가 필요합니다",
+    "no": "Bearer-autentisering krever en API-nøkkel",
+    "it": "L'autenticazione Bearer richiede una chiave API",
+    "pt": "A autenticação Bearer requer uma chave de API",
+    "es": "La autenticación Bearer requiere una clave de API",
+    "ar": "تتطلب مصادقة Bearer مفتاح API",
+    "fr": "L'authentification Bearer nécessite une clé API",
+    "tr": "Bearer kimlik doğrulaması bir API anahtarı gerektirir",
+    "de": "Bearer-Authentifizierung erfordert einen API-Schlüssel",
+    "uk": "Автентифікація Bearer потребує ключа API",
+    "ca": "L'autenticació Bearer requereix una clau d'API"
+  },
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": {
     "en": "OAuth client secret requires a client ID",
     "ja": "OAuth クライアントシークレットにはクライアント ID が必要です",

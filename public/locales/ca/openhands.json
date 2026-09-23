@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "Àmbits OAuth",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "L'autenticació per capçalera requereix una capçalera",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "L'autenticació Bearer requereix una clau d'API",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "El client secret OAuth requereix un ID de client",
   "SETTINGS": "Les variables d'entorn han de seguir el format CLAU=valor",
   "MICROAGENT$STATUS_WAITING": "Esperant que l'entorn d'execució s'iniciï...",

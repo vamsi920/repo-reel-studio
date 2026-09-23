@@ -1454,6 +1454,7 @@
   "SETTINGS$MCP_OAUTH_SCOPES": "Ámbitos de OAuth",
   "SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER": "read write",
   "SETTINGS$MCP_ERROR_HEADER_REQUIRED": "La autenticación por encabezado requiere un encabezado",
+  "SETTINGS$MCP_ERROR_API_KEY_REQUIRED": "La autenticación Bearer requiere una clave de API",
   "SETTINGS$MCP_ERROR_OAUTH_SECRET_REQUIRES_ID": "El client secret de OAuth requiere un ID de cliente",
   "SETTINGS": "A server with this URL already exists for the selected type",
   "MICROAGENT$STATUS_WAITING": "Esperando que inicie el runtime...",
