@@ -40731,6 +40731,23 @@
     "tr": "Bağlı depolar yükleniyor…",
     "uk": "Завантаження під'єднаних репозиторіїв…"
   },
+  "SECURITY$CONNECTED_REPOSITORIES_ERROR": {
+    "en": "Couldn't load connected repositories.",
+    "ja": "接続済みのリポジトリを読み込めませんでした。",
+    "zh-CN": "无法加载已连接的仓库。",
+    "zh-TW": "無法載入已連線的儲存庫。",
+    "ko-KR": "연결된 리포지토리를 불러올 수 없습니다.",
+    "no": "Kunne ikke laste tilkoblede repositories.",
+    "ar": "تعذر تحميل المستودعات المتصلة.",
+    "de": "Die verbundenen Repositories konnten nicht geladen werden.",
+    "fr": "Impossible de charger les dépôts connectés.",
+    "it": "Impossibile caricare i repository collegati.",
+    "pt": "Não foi possível carregar os repositórios conectados.",
+    "es": "No se pudieron cargar los repositorios conectados.",
+    "ca": "No s'han pogut carregar els repositoris connectats.",
+    "tr": "Bağlı depolar yüklenemedi.",
+    "uk": "Не вдалося завантажити під'єднані репозиторії."
+  },
   "SECURITY$SEVERITY_LEGEND_LABEL": {
     "en": "Severity levels",
     "ja": "重要度レベル",

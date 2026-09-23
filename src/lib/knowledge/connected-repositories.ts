@@ -25,6 +25,11 @@ export interface ConnectedRepositories {
    * conversation" while this is true — the list starts empty on the very
    * first render whether or not one exists. */
   isLoading: boolean;
+  /** True when the conversation history query itself failed (e.g. the
+   * backend is unreachable). An empty `repositories` here means "we don't
+   * know", not "there really are none" — callers must not read it as the
+   * latter, the same way they must not while `isLoading` is true. */
+  isError: boolean;
 }
 
 /** One entry per distinct repository with a live conversation right now,
@@ -32,7 +37,7 @@ export interface ConnectedRepositories {
  * repos) and kt-repository.tsx (to upgrade a cold/Supabase-only Docs entry
  * to a real live one with a usable session, whenever one is available). */
 export function useConnectedRepositories(): ConnectedRepositories {
-  const { data, isLoading } = usePaginatedConversations(100);
+  const { data, isLoading, isError } = usePaginatedConversations(100);
   const repositories = useMemo(() => {
     const conversations = data?.pages.flatMap((page) => page.items) ?? [];
     const byRepo = new Map<string, RepoCandidate>();
@@ -56,7 +61,7 @@ export function useConnectedRepositories(): ConnectedRepositories {
     }
     return Array.from(byRepo.values());
   }, [data]);
-  return { repositories, isLoading };
+  return { repositories, isLoading, isError };
 }
 
 const COMMIT_POLL_INTERVAL_MS = 2000;

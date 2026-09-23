@@ -2395,6 +2395,7 @@
   "SECURITY$SUBTITLE": "Understand and manage security risk across this Workspace.",
   "SECURITY$NO_WORKSPACE": "Connect a repository to scope Security to a Workspace.",
   "SECURITY$LOADING_WORKSPACE": "Bağlı depolar yükleniyor…",
+  "SECURITY$CONNECTED_REPOSITORIES_ERROR": "Bağlı depolar yüklenemedi.",
   "SECURITY$SEVERITY_LEGEND_LABEL": "Önem düzeyleri",
   "SECURITY$REPOSITORY_NOT_CONNECTED": "\"{{repository}}\" bağlı bir depo değil, bu nedenle Security'nin kapsayacağı bir Workspace yok.",
   "SECURITY$NOT_CONFIGURED": "Security scanning is not configured yet.",

@@ -49,6 +49,19 @@ describe("useConnectedRepositories", () => {
     expect(result.current.repositories).toEqual([]);
   });
 
+  it("reports isError when the conversation history query itself failed", () => {
+    mockUsePaginatedConversations.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+
+    const { result } = renderHook(() => useConnectedRepositories());
+
+    expect(result.current.isError).toBe(true);
+    expect(result.current.repositories).toEqual([]);
+  });
+
   it("skips conversations with no selected repository", () => {
     mockUsePaginatedConversations.mockReturnValue({
       data: { pages: [{ items: [conversation({ selected_repository: null })] }] },

@@ -2395,6 +2395,7 @@
   "SECURITY$SUBTITLE": "Understand and manage security risk across this Workspace.",
   "SECURITY$NO_WORKSPACE": "Connect a repository to scope Security to a Workspace.",
   "SECURITY$LOADING_WORKSPACE": "接続済みのリポジトリを読み込み中…",
+  "SECURITY$CONNECTED_REPOSITORIES_ERROR": "接続済みのリポジトリを読み込めませんでした。",
   "SECURITY$SEVERITY_LEGEND_LABEL": "重要度レベル",
   "SECURITY$REPOSITORY_NOT_CONNECTED": "「{{repository}}」は接続されたリポジトリではないため、Security に絞り込む Workspace がありません。",
   "SECURITY$NOT_CONFIGURED": "Security scanning is not configured yet.",

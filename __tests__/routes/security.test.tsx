@@ -22,11 +22,13 @@ import {
 
 const connected: RepoCandidate[] = [];
 let connectedIsLoading = false;
+let connectedIsError = false;
 
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
   useConnectedRepositories: () => ({
     repositories: connected,
     isLoading: connectedIsLoading,
+    isError: connectedIsError,
   }),
 }));
 
@@ -82,6 +84,7 @@ describe("Security route", () => {
     useKnowledgeStore.setState({ byRepositoryId: {} });
     setConnected();
     connectedIsLoading = false;
+    connectedIsError = false;
   });
 
   it("is registered at /security", () => {
@@ -227,6 +230,42 @@ describe("Security route", () => {
       );
       expect(
         screen.queryByTestId("security-loading-workspace"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("says it couldn't load connected repositories when that query fails, instead of claiming there is no workspace", () => {
+      // Regression: `useConnectedRepositories` reports an empty
+      // `repositories` array both when there really are none and when the
+      // underlying conversation-history fetch itself failed -- dropping its
+      // `isError` flag (as this hook used to) reported "no workspace to
+      // scope to" for a real fetch failure, the same class of misleading
+      // empty-vs-error state already fixed for the loading case above.
+      connectedIsError = true;
+      renderSecurity();
+
+      expect(
+        screen.getByTestId("security-connected-repositories-error"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-no-workspace"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-loading-workspace"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("prefers a real scope over the error state once a knowledge-store entry already answers it", () => {
+      // A store entry is a real, resolved answer regardless of whether the
+      // open-conversations query (a different data source) failed.
+      seedRepository();
+      connectedIsError = true;
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+      expect(
+        screen.queryByTestId("security-connected-repositories-error"),
       ).not.toBeInTheDocument();
     });
 

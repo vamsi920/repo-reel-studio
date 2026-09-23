@@ -60,6 +60,13 @@ export interface SecurityWorkspaceScopeState {
    * false once `repositories` is non-empty, since a real answer already
    * exists by then. */
   isLoading: boolean;
+  /** True while `scope.state` is `"no-repositories"` for a reason that might
+   * actually be "the open-conversations query failed", not "there really are
+   * none" — an empty `repositories` from a failed fetch is indistinguishable
+   * from a genuinely empty one otherwise, and reporting it as "no workspace"
+   * would be a lie. Always false once `repositories` is non-empty, since a
+   * real answer already exists by then regardless of this query's outcome. */
+  isError: boolean;
 }
 
 /**
@@ -99,8 +106,11 @@ export function useSecurityWorkspaceScope(
   repositoryIdParam: string | null,
 ): SecurityWorkspaceScopeState {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
-  const { repositories: connected, isLoading: connectedLoading } =
-    useConnectedRepositories();
+  const {
+    repositories: connected,
+    isLoading: connectedLoading,
+    isError: connectedError,
+  } = useConnectedRepositories();
   return useMemo(() => {
     const byId = new Map<
       string,
@@ -143,6 +153,7 @@ export function useSecurityWorkspaceScope(
         scope: { state: "no-repositories" },
         repositories,
         isLoading: connectedLoading,
+        isError: connectedError,
       };
     }
 
@@ -157,6 +168,7 @@ export function useSecurityWorkspaceScope(
             },
         repositories,
         isLoading: false,
+        isError: false,
       };
     }
 
@@ -164,8 +176,15 @@ export function useSecurityWorkspaceScope(
       scope: { state: "scoped", scope: entries[0].scope },
       repositories,
       isLoading: false,
+      isError: false,
     };
-  }, [byRepositoryId, connected, connectedLoading, repositoryIdParam]);
+  }, [
+    byRepositoryId,
+    connected,
+    connectedLoading,
+    connectedError,
+    repositoryIdParam,
+  ]);
 }
 
 const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
@@ -320,7 +339,7 @@ function SeverityLegend() {
 function SecurityScreen() {
   const { t } = useTranslation("openhands");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { scope, repositories, isLoading } = useSecurityWorkspaceScope(
+  const { scope, repositories, isLoading, isError } = useSecurityWorkspaceScope(
     searchParams.get("repository"),
   );
   const selectRepository = useCallback(
@@ -383,7 +402,16 @@ function SecurityScreen() {
             })}
           </p>
         )}
-        {scope.state === "no-repositories" && isLoading && (
+        {scope.state === "no-repositories" && isError && (
+          <p
+            className="mt-3 text-xs text-[var(--oh-muted)]"
+            data-testid="security-connected-repositories-error"
+            role="status"
+          >
+            {t(I18nKey.SECURITY$CONNECTED_REPOSITORIES_ERROR)}
+          </p>
+        )}
+        {scope.state === "no-repositories" && !isError && isLoading && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-loading-workspace"
@@ -392,7 +420,7 @@ function SecurityScreen() {
             {t(I18nKey.SECURITY$LOADING_WORKSPACE)}
           </p>
         )}
-        {scope.state === "no-repositories" && !isLoading && (
+        {scope.state === "no-repositories" && !isError && !isLoading && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
             data-testid="security-no-workspace"
