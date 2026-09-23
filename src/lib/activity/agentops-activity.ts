@@ -20,6 +20,14 @@ const FEED_ACTIONS: Record<string, WorkspaceActivityStatus> = {
   "task.started": "running",
   "task.completed": "completed",
   "task.failed": "failed",
+  // The runtime's stuck-loop detector halts a run exactly like an error would
+  // (see policy.mjs's `summarize()`, which counts "stuck" as a failure
+  // alongside "error"); it fires once per run, the same as task.completed/
+  // task.failed, not per-tool-call like the excluded "task.error"/
+  // "task.message" — so it belongs in the feed for the same reason those two
+  // terminal outcomes do. Left out, a stuck run silently never reached the
+  // workspace activity feed at all.
+  "task.stuck": "failed",
   "approval.requested": "waiting",
   "approval.granted": "info",
   "approval.rejected": "info",

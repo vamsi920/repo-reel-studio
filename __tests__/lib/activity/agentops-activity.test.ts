@@ -57,4 +57,19 @@ describe("toWorkspaceActivityEvent", () => {
   it("drops a record whose action has no feed mapping", () => {
     expect(toWorkspaceActivityEvent(record({ action: "tool.called" }))).toBeNull();
   });
+
+  // Regression: map-events.mjs's applyStatus() emits "task.stuck" exactly
+  // once per run, the same as "task.completed"/"task.failed" it transitions
+  // alongside, when the runtime's loop detector halts the agent — and
+  // policy.mjs's summarize() counts "stuck" as a failure right next to
+  // "error". FEED_ACTIONS mapped "task.failed" but not "task.stuck", so a
+  // stuck run's halt silently never reached the workspace activity feed.
+  it("surfaces a stuck run as a failure, the same as an errored one", () => {
+    const stuck = toWorkspaceActivityEvent(record({ action: "task.stuck" }));
+    const failed = toWorkspaceActivityEvent(record({ action: "task.failed" }));
+
+    expect(stuck).not.toBeNull();
+    expect(stuck?.status).toBe("failed");
+    expect(stuck?.status).toBe(failed?.status);
+  });
 });
