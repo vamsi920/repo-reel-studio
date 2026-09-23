@@ -159,16 +159,27 @@ export function useSecurityWorkspaceScope(
 
     if (repositoryIdParam) {
       const requested = byId.get(repositoryIdParam);
+      if (requested) {
+        return {
+          scope: { state: "scoped", scope: requested.scope },
+          repositories,
+          isLoading: false,
+          isError: false,
+        };
+      }
+      // Not found in a store entry, but the open-conversations query (the
+      // other source `byId` is built from) may simply not have answered yet
+      // -- reporting "not connected" off that silence would be the same lie
+      // the "no-repositories" branch above already guards against; the
+      // requested repository may still turn up once it resolves.
       return {
-        scope: requested
-          ? { state: "scoped", scope: requested.scope }
-          : {
-              state: "requested-not-connected",
-              repositoryId: repositoryIdParam,
-            },
+        scope: {
+          state: "requested-not-connected",
+          repositoryId: repositoryIdParam,
+        },
         repositories,
-        isLoading: false,
-        isError: false,
+        isLoading: connectedLoading,
+        isError: connectedError,
       };
     }
 
@@ -390,18 +401,38 @@ function SecurityScreen() {
               : scope.scope.label}
           </p>
         )}
-        {scope.state === "requested-not-connected" && (
+        {scope.state === "requested-not-connected" && isError && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
-            data-testid="security-repository-not-connected"
-            id={REPOSITORY_NOT_CONNECTED_ID}
+            data-testid="security-connected-repositories-error"
             role="status"
           >
-            {t(I18nKey.SECURITY$REPOSITORY_NOT_CONNECTED, {
-              repository: scope.repositoryId,
-            })}
+            {t(I18nKey.SECURITY$CONNECTED_REPOSITORIES_ERROR)}
           </p>
         )}
+        {scope.state === "requested-not-connected" && !isError && isLoading && (
+          <p
+            className="mt-3 text-xs text-[var(--oh-muted)]"
+            data-testid="security-loading-workspace"
+            role="status"
+          >
+            {t(I18nKey.SECURITY$LOADING_WORKSPACE)}
+          </p>
+        )}
+        {scope.state === "requested-not-connected" &&
+          !isError &&
+          !isLoading && (
+            <p
+              className="mt-3 text-xs text-[var(--oh-muted)]"
+              data-testid="security-repository-not-connected"
+              id={REPOSITORY_NOT_CONNECTED_ID}
+              role="status"
+            >
+              {t(I18nKey.SECURITY$REPOSITORY_NOT_CONNECTED, {
+                repository: scope.repositoryId,
+              })}
+            </p>
+          )}
         {scope.state === "no-repositories" && isError && (
           <p
             className="mt-3 text-xs text-[var(--oh-muted)]"
@@ -437,7 +468,9 @@ function SecurityScreen() {
             }
             onSelect={selectRepository}
             invalidSelectionHintId={
-              scope.state === "requested-not-connected"
+              scope.state === "requested-not-connected" &&
+              !isLoading &&
+              !isError
                 ? REPOSITORY_NOT_CONNECTED_ID
                 : undefined
             }

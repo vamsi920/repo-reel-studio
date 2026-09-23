@@ -305,6 +305,53 @@ describe("Security route", () => {
       ).toBeInTheDocument();
     });
 
+    it("says it is still loading instead of claiming an unresolved ?repository= is not connected while the open-conversations query hasn't answered yet", () => {
+      // Regression: `byId` also folds in `useConnectedRepositories()`
+      // candidates (see the hook's doc comment), which starts empty and
+      // loading on first render. A `?repository=` naming one of those
+      // candidates previously read as "not connected" for the length of
+      // that query -- the same cold-start lie already fixed for the
+      // no-repositories case above, just missed on this branch.
+      seedRepository();
+      connectedIsLoading = true;
+      renderSecurity("/security?repository=acme%2Fweb%40main");
+
+      expect(
+        screen.getByTestId("security-loading-workspace"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-repository-not-connected"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("says it couldn't load connected repositories instead of claiming an unresolved ?repository= is not connected when that query fails", () => {
+      seedRepository();
+      connectedIsError = true;
+      renderSecurity("/security?repository=acme%2Fweb%40main");
+
+      expect(
+        screen.getByTestId("security-connected-repositories-error"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-repository-not-connected"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("does not describe the picker by the not-connected hint while that explanation isn't actually shown", () => {
+      // The hint element only exists once the page has settled on "really
+      // not connected" (see the two regressions above) -- describing the
+      // picker by an id that isn't on the page would leave assistive tech
+      // pointed at nothing.
+      seedRepository();
+      seedRepository({ repositoryId: "acme/api@develop", branch: "develop" });
+      connectedIsLoading = true;
+      renderSecurity("/security?repository=acme%2Fweb%40main");
+
+      const select = screen.getByTestId("security-repository-select");
+      expect(select).not.toHaveAttribute("aria-invalid");
+      expect(select).not.toHaveAttribute("aria-describedby");
+    });
+
     it("picks the same default repository regardless of store key order", () => {
       seedRepository({ repositoryId: "acme/web@main", repo: "web" });
       seedRepository();
