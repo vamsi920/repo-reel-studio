@@ -88,4 +88,44 @@ describe("extractSettings", () => {
     expect(llm?.model).toBe("sambanova/Meta-Llama-3.1-8B-Instruct");
     expect(llm?.model).not.toBe("custom-model-name");
   });
+
+  it("should not include api_key in the diff when the api key input is left blank", () => {
+    // The field always exists in the DOM (only its placeholder shows
+    // "<hidden>" for an already-set key), so FormData reports "" rather than
+    // omitting the entry entirely -- reproduces that exact shape.
+    const formData = new FormData();
+    formData.set("llm-provider-input", "openai");
+    formData.set("llm-model-input", "gpt-4o");
+    formData.set("llm-api-key-input", "");
+
+    const settings = extractSettings(formData);
+
+    const as = settings.agent_settings_diff as Record<string, unknown>;
+    const llm = as?.llm as Record<string, unknown>;
+    expect(llm).not.toHaveProperty("api_key");
+  });
+
+  it("should not include api_key in the diff when only whitespace is submitted", () => {
+    const formData = new FormData();
+    formData.set("llm-api-key-input", "   ");
+
+    const settings = extractSettings(formData);
+
+    const as = settings.agent_settings_diff as
+      | Record<string, unknown>
+      | undefined;
+    const llm = as?.llm as Record<string, unknown> | undefined;
+    expect(llm?.api_key).toBeUndefined();
+  });
+
+  it("should include a trimmed api_key in the diff when one is actually typed", () => {
+    const formData = new FormData();
+    formData.set("llm-api-key-input", "  sk-real-key  ");
+
+    const settings = extractSettings(formData);
+
+    const as = settings.agent_settings_diff as Record<string, unknown>;
+    const llm = as?.llm as Record<string, unknown>;
+    expect(llm?.api_key).toBe("sk-real-key");
+  });
 });

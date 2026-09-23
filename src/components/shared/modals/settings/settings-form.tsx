@@ -22,7 +22,8 @@ interface SettingsFormProps {
 
 export function SettingsForm({ settings, onClose }: SettingsFormProps) {
   const { trackSettingsSaved } = useTracking();
-  const { mutate: saveUserSettings } = useSaveSettings();
+  const { mutate: saveUserSettings, isPending: isSavingSettings } =
+    useSaveSettings();
   const { currentPath } = useNavigation();
   const { t } = useTranslation("openhands");
 
@@ -115,6 +116,8 @@ export function SettingsForm({ settings, onClose }: SettingsFormProps) {
             type="submit"
             variant="primary"
             className="w-full"
+            isDisabled={isSavingSettings}
+            aria-busy={isSavingSettings}
           >
             {t(I18nKey.BUTTON$SAVE)}
           </BrandButton>
@@ -130,6 +133,7 @@ export function SettingsForm({ settings, onClose }: SettingsFormProps) {
               danger: {
                 text: t(I18nKey.BUTTON$END_SESSION),
                 onClick: handleConfirmEndSession,
+                disabled: isSavingSettings,
               },
               cancel: {
                 text: t(I18nKey.BUTTON$CANCEL),

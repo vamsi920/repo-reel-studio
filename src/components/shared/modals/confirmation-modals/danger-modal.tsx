@@ -7,8 +7,8 @@ interface DangerModalProps {
   description: string;
 
   buttons: {
-    danger: { text: string; onClick: () => void };
-    cancel: { text: string; onClick: () => void };
+    danger: { text: string; onClick: () => void; disabled?: boolean };
+    cancel: { text: string; onClick: () => void; disabled?: boolean };
   };
 }
 
@@ -28,11 +28,13 @@ export function DangerModal({
           text: buttons.danger.text,
           onClick: buttons.danger.onClick,
           className: "bg-danger",
+          disabled: buttons.danger.disabled,
         },
         {
           text: buttons.cancel.text,
           onClick: buttons.cancel.onClick,
           className: "bg-[var(--oh-interactive-selected)]",
+          disabled: buttons.cancel.disabled,
         },
       ]}
     />

@@ -8,6 +8,7 @@ interface ButtonConfig {
   text: string;
   onClick: () => void;
   className: React.HTMLProps<HTMLButtonElement>["className"];
+  disabled?: boolean;
 }
 
 interface BaseModalTitleProps {
@@ -65,6 +66,7 @@ export function BaseModal({
             onClick={button.onClick}
             text={button.text}
             className={button.className}
+            disabled={button.disabled}
           />
         ))}
       </div>

@@ -118,6 +118,75 @@ describe("SettingsForm", () => {
     });
   });
 
+  it("should not overwrite an already-set API key when the input is left blank on save", async () => {
+    renderWithProviders(
+      <SettingsForm
+        settings={{ ...DEFAULT_SETTINGS, llm_api_key_set: true }}
+        onClose={onCloseMock}
+      />,
+      {
+        navigation: { currentPath: "/settings" },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("llm-model-input")).toHaveValue(
+        expectedModelName,
+      );
+    });
+
+    // The API key input is never pre-filled with the real value -- only a
+    // masked placeholder -- so submitting without retyping it must not send
+    // an api_key field at all (an empty string would silently clear the
+    // stored key).
+    fireEvent.submit(screen.getByTestId("settings-form"));
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalled();
+    });
+    const [savedSettings] = saveSettingsSpy.mock.calls[0];
+    const llm = (savedSettings as Record<string, unknown>)
+      .agent_settings_diff as Record<string, unknown> | undefined;
+    expect(
+      (llm?.llm as Record<string, unknown> | undefined)?.api_key,
+    ).toBeUndefined();
+  });
+
+  it("disables the save button while a save is in flight to prevent double submission", async () => {
+    let resolveSave: (value: boolean) => void = () => {};
+    saveSettingsSpy.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    renderWithProviders(
+      <SettingsForm settings={DEFAULT_SETTINGS} onClose={onCloseMock} />,
+      {
+        navigation: { currentPath: "/settings" },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("llm-model-input")).toHaveValue(
+        expectedModelName,
+      );
+    });
+
+    fireEvent.submit(screen.getByTestId("settings-form"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("save-settings-button")).toBeDisabled();
+    });
+    expect(saveSettingsSpy).toHaveBeenCalledTimes(1);
+
+    resolveSave(true);
+    await waitFor(() => {
+      expect(screen.getByTestId("save-settings-button")).not.toBeDisabled();
+    });
+  });
+
   it("calls trackSettingsSaved with LLM details when form is submitted", async () => {
     renderWithProviders(
       <SettingsForm settings={DEFAULT_SETTINGS} onClose={onCloseMock} />,

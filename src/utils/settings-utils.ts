@@ -9,7 +9,7 @@ const extractBasicFormData = (formData: FormData) => {
 
   return {
     llmModel: provider && model ? `${provider}/${model}` : undefined,
-    llmApiKey: formData.get("llm-api-key-input")?.toString(),
+    llmApiKey: formData.get("llm-api-key-input")?.toString().trim(),
     agent: formData.get("agent")?.toString(),
     language: formData.get("language")?.toString(),
   };
@@ -34,7 +34,12 @@ export const extractSettings = (
 
   const llm: Record<string, unknown> = {};
   if (llmModel) llm.model = llmModel;
-  if (llmApiKey !== undefined) llm.api_key = llmApiKey;
+  // An empty API key input means "no change" -- the field only ever shows a
+  // masked placeholder for an already-set key, never its real value, so a
+  // blank submission must not overwrite the stored key. Omitting it from the
+  // diff (rather than sending "") matches the same contract enforced in
+  // llm-settings-local-view.tsx's handleSave.
+  if (llmApiKey) llm.api_key = llmApiKey;
 
   const agentSettings: Record<string, SettingsValue> = {};
   if (Object.keys(llm).length > 0)
