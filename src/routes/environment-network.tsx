@@ -11,6 +11,8 @@ import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { useConnections } from "#/hooks/query/use-connections";
 import { useEnvironmentChecks } from "#/hooks/query/use-environment-checks";
 import { displaySuccessToast } from "#/utils/custom-toast-handlers";
+import { csvEscape } from "#/utils/csv";
+import type { EgressHost } from "#/lib/environment/types/capability";
 
 const VANTAGES: ProbeVantage[] = ["browser", "edge", "runtime"];
 
@@ -66,6 +68,37 @@ function CellLegend() {
   );
 }
 
+/**
+ * Builds the exported egress-allowlist CSV.
+ *
+ * `mirrors[host.host]` is not developer-controlled text like the other
+ * columns -- it comes from an agent-proposed `propose_profile_change` patch
+ * a human approved (see `ProposalCard`/`mergeProfilePatch`), so it must be
+ * escaped like any other untrusted export field: quoted if it contains a
+ * comma/quote/newline, and neutralized if it starts with a character a
+ * spreadsheet would auto-evaluate as a formula (see `csvEscape`). Exported
+ * as a pure function so this can be tested without joining the anchor-click
+ * download dance.
+ */
+export function buildEgressAllowlistCsv(
+  hosts: EgressHost[],
+  mirrors: Record<string, string>,
+  translate: (key: string) => string,
+): string {
+  return [
+    "host,port,purpose,mirrorable,mirror",
+    ...hosts.map((host) =>
+      [
+        csvEscape(host.host),
+        String(host.port),
+        csvEscape(translate(host.purposeKey)),
+        host.mirrorable ? "yes" : "no",
+        csvEscape(mirrors[host.host] ?? ""),
+      ].join(","),
+    ),
+  ].join("\n");
+}
+
 function EnvironmentNetworkScreen() {
   const { t } = useTranslation("openhands");
   const { data: profile } = useEnvironmentProfile();
@@ -101,18 +134,7 @@ function EnvironmentNetworkScreen() {
   const mirrors = profile?.network.mirrors ?? {};
 
   const handleExport = React.useCallback(() => {
-    const rows = [
-      "host,port,purpose,mirrorable,mirror",
-      ...hosts.map((host) =>
-        [
-          host.host,
-          String(host.port),
-          t(host.purposeKey).replace(/,/g, " "),
-          host.mirrorable ? "yes" : "no",
-          mirrors[host.host] ?? "",
-        ].join(","),
-      ),
-    ].join("\n");
+    const rows = buildEgressAllowlistCsv(hosts, mirrors, t);
     const blob = new Blob([rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");

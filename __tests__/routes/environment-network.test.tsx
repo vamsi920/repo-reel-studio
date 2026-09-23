@@ -1,8 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import EnvironmentNetworkScreen from "#/routes/environment-network";
+import EnvironmentNetworkScreen, {
+  buildEgressAllowlistCsv,
+} from "#/routes/environment-network";
 import { I18nKey } from "#/i18n/declaration";
+import type { EgressHost } from "#/lib/environment/types/capability";
 
 const state = vi.hoisted(() => ({
   checks: [] as Array<{
@@ -108,5 +111,57 @@ describe("Environment network egress matrix", () => {
         label?.endsWith(`: ${I18nKey.ENVIRONMENT$CELL_STATE_UNTESTED}`),
       ),
     ).toBe(true);
+  });
+});
+
+describe("buildEgressAllowlistCsv", () => {
+  const host: EgressHost = {
+    host: "api.github.com",
+    port: 443,
+    purposeKey: I18nKey.ENVIRONMENT$EGRESS_TITLE,
+    mirrorable: true,
+  };
+  const translate = (key: string) => key;
+
+  it("neutralizes a mirror value that starts with a formula-trigger character", () => {
+    // Arrange: `mirrors` is populated from an agent-proposed profile patch a
+    // human approved (see `ProposalCard`) -- it is not developer-controlled
+    // text and must be treated as untrusted export input.
+    const mirrors = { "api.github.com": '=HYPERLINK("http://evil.example")' };
+
+    // Act
+    const csv = buildEgressAllowlistCsv([host], mirrors, translate);
+    const dataLine = csv.split("\n")[1];
+
+    // Assert
+    expect(dataLine).not.toMatch(/,=/);
+    expect(dataLine).toContain("'=HYPERLINK");
+  });
+
+  it("quotes a mirror value containing a comma instead of corrupting the row", () => {
+    // Arrange
+    const mirrors = { "api.github.com": "mirror.internal, backup" };
+
+    // Act
+    const csv = buildEgressAllowlistCsv([host], mirrors, translate);
+    const dataLine = csv.split("\n")[1];
+
+    // Assert: the mirror column stays one quoted field, not two bare ones.
+    expect(dataLine).toBe(
+      `api.github.com,443,${I18nKey.ENVIRONMENT$EGRESS_TITLE},yes,"mirror.internal, backup"`,
+    );
+  });
+
+  it("renders a plain row unescaped when nothing is unusual", () => {
+    // Arrange
+    const mirrors = {};
+
+    // Act
+    const csv = buildEgressAllowlistCsv([host], mirrors, translate);
+
+    // Assert
+    expect(csv).toBe(
+      `host,port,purpose,mirrorable,mirror\napi.github.com,443,${I18nKey.ENVIRONMENT$EGRESS_TITLE},yes,`,
+    );
   });
 });
