@@ -240,16 +240,14 @@ describe("KtVideoTab file selection cap", () => {
     unmount();
     renderKtVideoTab(paths);
 
-    const remountedFirstLabel = screen.getByTitle("file-0.ts").closest(
-      "label",
-    )!;
-    expect(
-      within(remountedFirstLabel).getByRole("checkbox"),
-    ).not.toBeChecked();
+    const remountedFirstLabel = screen
+      .getByTitle("file-0.ts")
+      .closest("label")!;
+    expect(within(remountedFirstLabel).getByRole("checkbox")).not.toBeChecked();
 
-    const remountedNinthLabel = screen.getByTitle("file-8.ts").closest(
-      "label",
-    )!;
+    const remountedNinthLabel = screen
+      .getByTitle("file-8.ts")
+      .closest("label")!;
     expect(within(remountedNinthLabel).getByRole("checkbox")).toBeChecked();
   });
 });
@@ -275,11 +273,75 @@ describe("KtVideoTab file availability", () => {
       within(brokenLabel).getByText("KT$VIDEO_TAB_FILE_UNAVAILABLE"),
     ).toBeInTheDocument();
 
-    const availableLabel = screen
-      .getByTitle("available.ts")
-      .closest("label")!;
+    const availableLabel = screen.getByTitle("available.ts").closest("label")!;
     expect(
       within(availableLabel).queryByText("KT$VIDEO_TAB_FILE_UNAVAILABLE"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("KtVideoTab file listing empty/error states", () => {
+  afterEach(() => {
+    useConversationStore.setState({ ktVideoSelectedFiles: null });
+  });
+
+  function renderWithFileListing(opts: {
+    gitChanges?: Record<string, unknown>;
+    workspaceFiles?: Record<string, unknown>;
+  }) {
+    gitChangesMock.mockReturnValue({
+      data: [],
+      isFetching: false,
+      ...opts.gitChanges,
+    });
+    workspaceFilesMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+      ...opts.workspaceFiles,
+    });
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={client}>
+        <KtVideoTab />
+      </QueryClientProvider>,
+    );
+  }
+
+  it("shows a real empty-workspace message instead of a blank sidebar when there are genuinely no files", () => {
+    renderWithFileListing({});
+
+    expect(screen.getByText("KT$VIDEO_TAB_NO_FILES")).toBeInTheDocument();
+  });
+
+  it("shows an error with retry instead of an indistinguishable blank sidebar when the workspace listing failed", async () => {
+    const refetch = vi.fn();
+    const user = userEvent.setup();
+    renderWithFileListing({
+      workspaceFiles: { data: undefined, isError: true, refetch },
+    });
+
+    expect(screen.queryByText("KT$VIDEO_TAB_NO_FILES")).not.toBeInTheDocument();
+    const retryButton = screen.getByTestId("files-tab-list-retry");
+    expect(retryButton).toBeInTheDocument();
+
+    await user.click(retryButton);
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("still lists changed files even when the full workspace listing failed", () => {
+    renderWithFileListing({
+      gitChanges: { data: [{ status: "M", path: "changed.ts" }] },
+      workspaceFiles: { data: undefined, isError: true },
+    });
+
+    expect(screen.getByTitle("changed.ts")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("files-tab-list-retry"),
     ).not.toBeInTheDocument();
   });
 });

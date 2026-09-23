@@ -9,6 +9,7 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { buildKtManifest } from "#/lib/kt-video/build-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
+import { FileListErrorMessage } from "#/components/features/files-tab/file-list-error";
 import { I18nKey } from "#/i18n/declaration";
 import { useConversationStore } from "#/stores/conversation-store";
 
@@ -127,6 +128,15 @@ function KtVideoTab() {
   );
 
   const allPaths = workspaceFiles.data ?? [];
+  const displayedPaths = changedPaths.length ? changedPaths : allPaths;
+  // A failed workspace listing with nothing to fall back on (no changed
+  // files either) must not render as a silent, indistinguishable-from-empty
+  // sidebar — same real distinction the Files tab already draws between
+  // "broken listing" and "genuinely empty workspace" for this same hook.
+  const workspaceFilesFailed =
+    workspaceFiles.isError &&
+    changedPaths.length === 0 &&
+    allPaths.length === 0;
   // Lives in the conversation store, not local state, so the user's picks
   // (and the video derived from them) survive switching to another tab and
   // back — this component fully unmounts on tab switch. The store resets it
@@ -215,44 +225,48 @@ function KtVideoTab() {
             <p className="px-2 py-1 text-xs text-[var(--oh-muted)]">
               {t(I18nKey.KT$VIDEO_TAB_LOADING_FILES)}
             </p>
+          ) : workspaceFilesFailed ? (
+            <FileListErrorMessage onRetry={workspaceFiles.refetch} />
+          ) : displayedPaths.length === 0 ? (
+            <p className="px-2 py-1 text-xs text-[var(--oh-muted)]">
+              {t(I18nKey.KT$VIDEO_TAB_NO_FILES)}
+            </p>
           ) : (
             <ul className="flex flex-col gap-0.5">
-              {(changedPaths.length ? changedPaths : allPaths)
-                .slice(0, 200)
-                .map((path) => {
-                  const isChecked = effectiveSelected.includes(path);
-                  const isUnavailable = isChecked && unavailablePaths.has(path);
-                  const isLimitReached =
-                    !isChecked &&
-                    effectiveSelected.length >= MAX_SELECTABLE_FILES;
-                  const limitReachedLabel = t(
-                    I18nKey.KT$VIDEO_TAB_FILE_LIMIT_REACHED,
-                    { count: MAX_SELECTABLE_FILES },
-                  );
-                  return (
-                    <li key={path}>
-                      <label
-                        className="flex items-center gap-2 rounded px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:not(:disabled)]:cursor-pointer"
-                        title={isLimitReached ? limitReachedLabel : undefined}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          disabled={isLimitReached}
-                          onChange={() => toggleFile(path)}
-                        />
-                        <span className="truncate" title={path}>
-                          {path}
+              {displayedPaths.slice(0, 200).map((path) => {
+                const isChecked = effectiveSelected.includes(path);
+                const isUnavailable = isChecked && unavailablePaths.has(path);
+                const isLimitReached =
+                  !isChecked &&
+                  effectiveSelected.length >= MAX_SELECTABLE_FILES;
+                const limitReachedLabel = t(
+                  I18nKey.KT$VIDEO_TAB_FILE_LIMIT_REACHED,
+                  { count: MAX_SELECTABLE_FILES },
+                );
+                return (
+                  <li key={path}>
+                    <label
+                      className="flex items-center gap-2 rounded px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:not(:disabled)]:cursor-pointer"
+                      title={isLimitReached ? limitReachedLabel : undefined}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={isLimitReached}
+                        onChange={() => toggleFile(path)}
+                      />
+                      <span className="truncate" title={path}>
+                        {path}
+                      </span>
+                      {isUnavailable && (
+                        <span className="shrink-0 text-[var(--oh-danger)]">
+                          {t(I18nKey.KT$VIDEO_TAB_FILE_UNAVAILABLE)}
                         </span>
-                        {isUnavailable && (
-                          <span className="shrink-0 text-[var(--oh-danger)]">
-                            {t(I18nKey.KT$VIDEO_TAB_FILE_UNAVAILABLE)}
-                          </span>
-                        )}
-                      </label>
-                    </li>
-                  );
-                })}
+                      )}
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </aside>

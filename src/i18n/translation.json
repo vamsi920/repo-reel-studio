@@ -40170,6 +40170,23 @@
     "tr": "Loading files…",
     "uk": "Loading files…"
   },
+  "KT$VIDEO_TAB_NO_FILES": {
+    "en": "No files found in this workspace.",
+    "ja": "No files found in this workspace.",
+    "zh-CN": "No files found in this workspace.",
+    "zh-TW": "No files found in this workspace.",
+    "ko-KR": "No files found in this workspace.",
+    "no": "No files found in this workspace.",
+    "ar": "No files found in this workspace.",
+    "de": "No files found in this workspace.",
+    "fr": "No files found in this workspace.",
+    "it": "No files found in this workspace.",
+    "pt": "No files found in this workspace.",
+    "es": "No files found in this workspace.",
+    "ca": "No files found in this workspace.",
+    "tr": "No files found in this workspace.",
+    "uk": "No files found in this workspace."
+  },
   "KT$VIDEO_TAB_SELECT_FILES": {
     "en": "Select files on the left to generate a KT video.",
     "ja": "Select files on the left to generate a KT video.",
