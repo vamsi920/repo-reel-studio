@@ -142,11 +142,20 @@ class SupabaseJiraTriggersRepository implements JiraTriggersRepository {
     } = await getAuthUser();
     if (!user) return false;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("jira_webhook_registrations")
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle();
+    // Same fix as every other method in this file: a genuine query failure
+    // used to resolve identically to "not registered yet" here, with no
+    // console signal -- which sent handleAdd (connections-settings.tsx) down
+    // the create-webhook path on a transient error instead of surfacing it,
+    // and the automation-service rejects that second registration per org.
+    if (error) {
+      logFailure("hasWebhookRegistration", error);
+      return false;
+    }
     return !!data;
   }
 }

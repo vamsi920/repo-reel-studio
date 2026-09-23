@@ -8,36 +8,52 @@ const state = vi.hoisted(() => ({
   insertError: null as { message: string } | null,
   updateError: null as { message: string } | null,
   deleteError: null as { message: string } | null,
+  webhookData: null as Record<string, unknown> | null,
+  webhookError: null as { message: string } | null,
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
   isSupabaseConfigured: true,
   getAuthUser: async () => ({ data: { user: state.user } }),
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: async () => ({
-            data: state.listData,
-            error: state.listError,
+    from: (table: string) => {
+      if (table === "jira_webhook_registrations") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: state.webhookData,
+                error: state.webhookError,
+              }),
+            }),
           }),
-        }),
-      }),
-      insert: () => ({
+        };
+      }
+      return {
         select: () => ({
-          single: async () => ({
-            data: state.insertData,
-            error: state.insertError,
+          eq: () => ({
+            order: async () => ({
+              data: state.listData,
+              error: state.listError,
+            }),
           }),
         }),
-      }),
-      update: () => ({
-        eq: async () => ({ error: state.updateError }),
-      }),
-      delete: () => ({
-        eq: async () => ({ error: state.deleteError }),
-      }),
-    }),
+        insert: () => ({
+          select: () => ({
+            single: async () => ({
+              data: state.insertData,
+              error: state.insertError,
+            }),
+          }),
+        }),
+        update: () => ({
+          eq: async () => ({ error: state.updateError }),
+        }),
+        delete: () => ({
+          eq: async () => ({ error: state.deleteError }),
+        }),
+      };
+    },
   },
 }));
 
@@ -54,6 +70,8 @@ describe("jiraTriggersRepository", () => {
     state.insertError = null;
     state.updateError = null;
     state.deleteError = null;
+    state.webhookData = null;
+    state.webhookError = null;
   });
 
   afterEach(() => {
@@ -169,6 +187,41 @@ describe("jiraTriggersRepository", () => {
       expect(errorSpy).toHaveBeenCalledWith(
         "[jira-triggers-repository] deleteTrigger failed",
         state.deleteError,
+      );
+    });
+  });
+
+  describe("hasWebhookRegistration", () => {
+    it("returns false without logging when legitimately unregistered", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      await expect(
+        jiraTriggersRepository.hasWebhookRegistration(),
+      ).resolves.toBe(false);
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns true when a registration row exists", async () => {
+      state.webhookData = { user_id: "user-1" };
+      await expect(
+        jiraTriggersRepository.hasWebhookRegistration(),
+      ).resolves.toBe(true);
+    });
+
+    // Regression: this used to resolve to `false` on a genuine query error,
+    // identical to "not registered yet" -- which sent handleAdd
+    // (connections-settings.tsx) down the create-webhook path on a transient
+    // failure instead of surfacing it, and the automation-service rejects a
+    // second registration for the same source per org.
+    it("logs and returns false when the query errors", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      state.webhookError = { message: "permission denied" };
+
+      await expect(
+        jiraTriggersRepository.hasWebhookRegistration(),
+      ).resolves.toBe(false);
+      expect(errorSpy).toHaveBeenCalledWith(
+        "[jira-triggers-repository] hasWebhookRegistration failed",
+        state.webhookError,
       );
     });
   });
