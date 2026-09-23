@@ -36,6 +36,7 @@ import {
   type SubsystemHint,
 } from "./hierarchy";
 import { shardName } from "./shard-name";
+import { selectFilesToAnalyze } from "./file-selection";
 import type { CodeGraphMeta } from "./codegraph-types";
 
 interface Args {
@@ -138,8 +139,18 @@ async function main(): Promise<void> {
     ),
   );
 
-  const allFiles = walk(repoRoot, args.maxFiles);
-  const codeFiles = allFiles
+  // The raw walk needs a much larger cap than the analysis itself: it counts
+  // every file it sees, including the non-code ones (assets, lockfiles, build
+  // output) that `--max-files` was never meant to be spent on. Applying the
+  // real cap to the *walk* let a repo with plenty of non-code files hit it
+  // before reaching most of its actual source -- silently analysing an
+  // arbitrary, walk-order-dependent slice of the codebase while reporting a
+  // "complete" graph. The multiplier is just a safety valve against a
+  // pathological tree; the cap that matters for analysis quality is applied
+  // below, to the code files themselves, and is always reported when it binds.
+  const WALK_SAFETY_MULTIPLIER = 20;
+  const allFiles = walk(repoRoot, args.maxFiles * WALK_SAFETY_MULTIPLIER);
+  const allCodeFiles = allFiles
     .filter((file) => {
       const dot = file.lastIndexOf(".");
       return dot >= 0 && supported.has(file.slice(dot).toLowerCase());
@@ -149,6 +160,8 @@ async function main(): Promise<void> {
     // `functionOwner`'s "first definition wins" tie-break (below) — and the
     // graph itself — deterministic for the same commit.
     .sort();
+  const fileSelection = selectFilesToAnalyze(allCodeFiles, args.maxFiles);
+  const codeFiles = fileSelection.selected;
 
   const builder = new GraphBuilder(
     repoRoot.split("/").filter(Boolean).pop() ?? "repository",
@@ -298,6 +311,12 @@ async function main(): Promise<void> {
     symbolCount: hierarchy.symbolCount,
     languages: graph.project.languages,
     frameworks: graph.project.frameworks,
+    ...(fileSelection.reducedAnalysis
+      ? {
+          reducedAnalysis: true,
+          skippedFileCount: fileSelection.skippedFileCount,
+        }
+      : {}),
   };
 
   for (const level of hierarchy.levels) {
