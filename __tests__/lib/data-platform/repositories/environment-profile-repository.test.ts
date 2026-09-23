@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createEmptyProfile } from "#/lib/environment/types/profile";
 
 const state = vi.hoisted(() => ({
   data: null as Record<string, unknown> | null,
   error: null as { message: string } | null,
+  // put()-specific: what an `.update(...).eq(...).eq(...)` chain resolves
+  // to (null data = zero rows matched, i.e. a revision conflict) and what an
+  // `.insert(...)` resolves to.
+  updateResult: { data: null as Record<string, unknown> | null, error: null as { message: string; code?: string } | null },
+  insertResult: { error: null as { message: string; code?: string } | null },
+  updateCalls: [] as { orgId: string; revision: number }[],
+  insertCalls: [] as { orgId: string }[],
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -14,6 +22,22 @@ vi.mock("#/lib/data-platform/client", () => ({
           maybeSingle: async () => ({ data: state.data, error: state.error }),
         }),
       }),
+      update: (_payload: unknown) => ({
+        eq: (_col1: string, orgId: string) => ({
+          eq: (_col2: string, revision: number) => ({
+            select: () => ({
+              maybeSingle: async () => {
+                state.updateCalls.push({ orgId, revision });
+                return state.updateResult;
+              },
+            }),
+          }),
+        }),
+      }),
+      insert: async (row: { org_id: string }) => {
+        state.insertCalls.push({ orgId: row.org_id });
+        return state.insertResult;
+      },
       upsert: async () => ({ error: null }),
     }),
   },
@@ -85,6 +109,57 @@ describe("environmentProfileRepository.get", () => {
     expect(errorSpy).toHaveBeenCalledWith(
       "[environment-profile-repository] get failed",
       state.error,
+    );
+  });
+});
+
+describe("environmentProfileRepository.put", () => {
+  beforeEach(() => {
+    state.updateResult = { data: null, error: null };
+    state.insertResult = { error: null };
+    state.updateCalls = [];
+    state.insertCalls = [];
+  });
+
+  // Regression: a plain `upsert` here let a second admin's stale save
+  // silently overwrite a first admin's newer one, since the row-level
+  // revision trigger always accepts whatever `doc` it is given regardless of
+  // what the caller thought the current revision was.
+  it("updates by matching org_id AND the loaded revision, not org_id alone", async () => {
+    state.updateResult = { data: { doc: {} }, error: null };
+    const profile = { ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z"), meta: { createdAt: "x", updatedAt: "x", updatedBy: "", revision: 3 } };
+
+    await environmentProfileRepository.put("org-1", profile);
+
+    expect(state.updateCalls).toEqual([{ orgId: "org-1", revision: 3 }]);
+    expect(state.insertCalls).toHaveLength(0);
+  });
+
+  it("throws a conflict error when the revision no longer matches (someone else saved first)", async () => {
+    state.updateResult = { data: null, error: null };
+    const profile = { ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z"), meta: { createdAt: "x", updatedAt: "x", updatedBy: "", revision: 3 } };
+
+    await expect(environmentProfileRepository.put("org-1", profile)).rejects.toThrow(
+      /changed by someone else/,
+    );
+  });
+
+  it("inserts (not upsert) for a brand-new profile, at revision 0", async () => {
+    const profile = createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z");
+    expect(profile.meta.revision).toBe(0);
+
+    await environmentProfileRepository.put("org-1", profile);
+
+    expect(state.insertCalls).toEqual([{ orgId: "org-1" }]);
+    expect(state.updateCalls).toHaveLength(0);
+  });
+
+  it("throws a conflict error when two admins race to create the first profile", async () => {
+    state.insertResult = { error: { message: "duplicate key value violates unique constraint", code: "23505" } };
+    const profile = createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z");
+
+    await expect(environmentProfileRepository.put("org-1", profile)).rejects.toThrow(
+      /just created by someone else/,
     );
   });
 });

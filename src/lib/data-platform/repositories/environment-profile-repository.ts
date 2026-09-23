@@ -77,10 +77,50 @@ class SupabaseEnvironmentProfileRepository implements EnvironmentProfileReposito
       orgId,
       meta: { ...profile.meta, updatedAt: new Date().toISOString() },
     };
+
+    // Optimistic concurrency: a blind upsert here used to let two admins who
+    // both loaded revision N race, with whoever wrote second silently
+    // discarding the first's edits -- the row-level `record_environment_
+    // profile_revision` trigger still logs every write to
+    // `environment_profile_revisions`, so nothing is unrecoverable, but the
+    // live doc lost data with no error shown to either admin. The trigger
+    // always sets `revision` to `coalesce(old.revision, 0) + 1`, so an org
+    // that has never saved a profile reads back as revision 0 from `get()`
+    // and the first successful write becomes revision 1 -- `expectedRevision
+    // > 0` is exactly "a row already exists".
+    const expectedRevision = profile.meta.revision ?? 0;
+
+    if (expectedRevision > 0) {
+      const { data, error } = await supabase
+        .from("environment_profiles")
+        .update({ doc })
+        .eq("org_id", orgId)
+        .eq("revision", expectedRevision)
+        .select("doc")
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) {
+        throw new Error(
+          "This environment profile was changed by someone else since it was loaded. Reload and try again.",
+        );
+      }
+      return doc;
+    }
+
+    // No row yet: insert rather than upsert, so two admins racing to save
+    // the very first profile get a loud unique-violation on the loser
+    // instead of one silently overwriting the other.
     const { error } = await supabase
       .from("environment_profiles")
-      .upsert({ org_id: orgId, doc }, { onConflict: "org_id" });
-    if (error) throw new Error(error.message);
+      .insert({ org_id: orgId, doc });
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error(
+          "This environment profile was just created by someone else. Reload and try again.",
+        );
+      }
+      throw new Error(error.message);
+    }
     return doc;
   }
 }

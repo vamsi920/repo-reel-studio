@@ -73,6 +73,29 @@ export async function mirrorToLegacy(
       return { mirrored: null, reason: "identity_unavailable" };
     }
 
+    // `github_connections` has no `provider_id` column -- its primary key is
+    // `user_id` alone (one row per user, by design: see the migration's own
+    // comment). But `connections` (the generic table this mirrors from) lets
+    // one user hold both a "github" and a "github-enterprise" row at once.
+    // Blindly upserting here would let connecting the second variant silently
+    // clobber the first's token/host with no error anywhere -- the proxy and
+    // clone-credential paths would then just start using the wrong
+    // host/token for whichever variant lost the race, with "connected"
+    // still showing green in the UI. `enterprise_host` is the only signal
+    // this table has for which variant a row currently mirrors (null for
+    // github.com, set for github-enterprise), so use it to detect a
+    // conflicting variant and skip -- honestly, with a reason the redirect
+    // already surfaces -- rather than overwrite.
+    const isEnterprise = input.providerId === "github-enterprise";
+    const { data: existing } = await admin
+      .from("github_connections")
+      .select("enterprise_host")
+      .eq("user_id", input.userId)
+      .maybeSingle();
+    if (existing && Boolean(existing.enterprise_host) !== isEnterprise) {
+      return { mirrored: null, reason: "conflicts_with_other_github_variant" };
+    }
+
     const { error } = await admin.from("github_connections").upsert(
       {
         user_id: input.userId,
@@ -160,5 +183,23 @@ export async function unmirrorFromLegacy(
         ? "jira_connections"
         : null;
   if (!table) return;
+
+  if (table === "github_connections") {
+    // Same collision as `mirrorToLegacy`: `github_connections` cannot tell
+    // "github" and "github-enterprise" rows apart except by whether
+    // `enterprise_host` is set. Deleting unconditionally here means
+    // disconnecting either variant wipes out whichever row currently exists
+    // -- including one that actually belongs to the *other*, still-connected
+    // variant (e.g. it won a prior mirror conflict). Only delete when the
+    // stored row's variant actually matches the one being disconnected.
+    const isEnterprise = providerId === "github-enterprise";
+    const { data: existing } = await admin
+      .from(table)
+      .select("enterprise_host")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!existing || Boolean(existing.enterprise_host) !== isEnterprise) return;
+  }
+
   await admin.from(table).delete().eq("user_id", userId);
 }
