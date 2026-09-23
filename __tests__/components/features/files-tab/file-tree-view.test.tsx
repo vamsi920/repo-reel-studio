@@ -116,6 +116,46 @@ describe("FileTreeView", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
+  it("auto-expands ancestor directories when the selection changes after mount", () => {
+    // Arrange: nothing selected on first render, so both directories start
+    // collapsed — this is the case the component's own comment calls out:
+    // the initial `useState` only covers the first render, a *later*
+    // selection (e.g. the canvas_ui tool driving the store directly) relies
+    // on the effect instead.
+    const { rerender } = render(
+      <FileTreeView
+        paths={["src/features/widget.ts", "src/features/other.ts"]}
+        selectedPath={null}
+        onSelectFile={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("file-tree-dir-src")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
+    // Act: a selection arrives after mount, with no user click at all.
+    rerender(
+      <FileTreeView
+        paths={["src/features/widget.ts", "src/features/other.ts"]}
+        selectedPath="src/features/widget.ts"
+        onSelectFile={vi.fn()}
+      />,
+    );
+
+    // Assert: both ancestor directories opened on their own.
+    expect(screen.getByTestId("file-tree-dir-src")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.getByTestId("file-tree-dir-src/features"),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByTestId("file-tree-file-src/features/widget.ts"),
+    ).toHaveAttribute("aria-current", "true");
+  });
+
   it("does not force a directory back open after the user collapses it", async () => {
     // Arrange
     const user = userEvent.setup();
