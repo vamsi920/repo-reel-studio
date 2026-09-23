@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import SkillsSettingsScreen from "#/routes/skills-settings";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import SkillsService from "#/api/skills-service";
+import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import {
   ADD_SKILL_DOCS_URL,
   ADD_SKILL_EXAMPLE_COMMAND,
@@ -71,7 +72,12 @@ function buildSkill(overrides: Partial<SkillInfo> = {}): SkillInfo {
   };
 }
 
-function renderSkillsSettingsScreen(initialEntry = "/skills") {
+function renderSkillsSettingsScreen(
+  initialEntry = "/skills",
+  queryClient: QueryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  }),
+) {
   const router = createMemoryRouter(
     [
       {
@@ -88,13 +94,7 @@ function renderSkillsSettingsScreen(initialEntry = "/skills") {
 
   render(<RouterProvider router={router} />, {
     wrapper: ({ children }) => (
-      <QueryClientProvider
-        client={
-          new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-          })
-        }
-      >
+      <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
     ),
@@ -692,6 +692,83 @@ Full skill body.`,
     expect(
       within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
     ).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("keeps an in-flight toggle from being reverted by an unrelated settings save invalidating the shared settings query", async () => {
+    // Regression: the sync effect resynced `disabledSet` from `settings`
+    // whenever the query cache entry changed reference at all, not only
+    // when this page's own save had landed. `useSettings` is one shared
+    // query key across every settings page (LLM, git, telemetry consent,
+    // ...), so a completely unrelated save elsewhere invalidating it while
+    // this toggle's own save was still in flight refetched `disabled_skills`
+    // that predated this change and snapped the toggle back to enabled.
+    const user = userEvent.setup();
+    const skill = buildSkill({ name: "solo-skill" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skill]);
+    const getSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockResolvedValue(buildSettings({ disabled_skills: [] }));
+
+    let resolveOwnSave: (value: boolean) => void = () => {};
+    const ownSave = new Promise<boolean>((resolve) => {
+      resolveOwnSave = resolve;
+    });
+    vi.spyOn(SettingsService, "saveSettings").mockReturnValue(ownSave);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderSkillsSettingsScreen("/skills", queryClient);
+    const card = await screen.findByTestId(`skill-card-${skill.name}`);
+    const toggle = within(card).getByTestId(`skill-toggle-${skill.name}`);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(
+        within(card).getByTestId(`skill-toggle-${skill.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
+
+    // An unrelated settings save elsewhere (e.g. the git settings page)
+    // completes and invalidates the same shared query key while this page's
+    // own save above is still pending. The refetch it triggers reflects that
+    // unrelated field but not our still-in-flight `disabled_skills` change
+    // (React Query's structural sharing would otherwise reuse the exact same
+    // `settings` object/skip this effect entirely if nothing had changed).
+    getSpy.mockResolvedValue(
+      buildSettings({ disabled_skills: [], git_user_name: "changed-elsewhere" }),
+    );
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+      });
+    });
+    await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(2));
+    // The refetched query data reaching the component and the effect it
+    // triggers commit a render tick after the promise above resolves.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // The card must still show disabled -- it must not be snapped back to
+    // enabled by the unrelated refetch while our own save is still pending.
+    expect(
+      within(card).getByTestId(`skill-toggle-${skill.name}`),
+    ).toHaveAttribute("aria-checked", "false");
+
+    // Once this page's own save actually lands, it should of course still
+    // reflect the (now-consistent) server state.
+    getSpy.mockResolvedValue(buildSettings({ disabled_skills: [skill.name] }));
+    await act(async () => {
+      resolveOwnSave(true);
+      await ownSave;
+    });
+    await waitFor(() =>
+      expect(
+        within(card).getByTestId(`skill-toggle-${skill.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
   });
 
   it("applies both toggles when two different skills are switched before a re-render lands", async () => {

@@ -70,6 +70,13 @@ function SkillsSettingsScreen() {
   // state on) reverts to the current known-good state instead of whatever
   // `settings` this closure captured when the failing save was issued.
   const settingsRef = React.useRef(settings);
+  // Counts this page's own in-flight `saveSettings` calls. `useSettings`'s
+  // query key is shared by every settings page (LLM, git, general, telemetry
+  // consent, ...), so ANY of them succeeding invalidates and refetches it --
+  // including while a toggle issued here is still pending. That refetch's
+  // `disabled_skills` predates our own not-yet-landed change, so the sync
+  // effect below must not apply it until our own saves have all settled.
+  const pendingSaveCountRef = React.useRef(0);
   const [selectedSkillName, setSelectedSkillName] = React.useState<
     string | null
   >(null);
@@ -108,6 +115,14 @@ function SkillsSettingsScreen() {
   React.useEffect(() => {
     settingsRef.current = settings;
     if (settingsLoading || !settings) return;
+    // While one of THIS page's own saves is still in flight, an unrelated
+    // settings save elsewhere (e.g. LLM/git settings, telemetry consent)
+    // completing and invalidating the shared query would otherwise refetch
+    // here and snap the just-toggled card back, since that refetch's
+    // `disabled_skills` doesn't yet include our own pending change. The
+    // save's own `saveSettings(...).catch` already keeps `disabledSet`
+    // correct in the meantime, so skip resyncing until it settles.
+    if (pendingSaveCountRef.current > 0) return;
     const next = new Set(settings.disabled_skills ?? []);
     disabledSetRef.current = next;
     setDisabledSet(next);
@@ -182,22 +197,27 @@ function SkillsSettingsScreen() {
     // a second toggle's `mutate()` call (issued before this one settles)
     // would overwrite them, running the WRONG toggle's error handler (with
     // the wrong `skillName` closure) or none at all.
-    saveSettings({ disabled_skills: Array.from(next) }).catch((error) => {
-      const errorMessage = retrieveAxiosErrorMessage(error);
-      displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
-      // The toggle flipped optimistically; the server never took the
-      // change, so snap back to its last known state instead of leaving
-      // the card (and the State facet counts) claiming a save that never
-      // happened. The sync effect above only re-runs when the query data
-      // changes, which a failed save does not do, so revert here and
-      // refetch in case another save landed in the meantime.
-      const reverted = new Set(settingsRef.current?.disabled_skills ?? []);
-      disabledSetRef.current = reverted;
-      setDisabledSet(reverted);
-      queryClient.invalidateQueries({
-        queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+    pendingSaveCountRef.current += 1;
+    saveSettings({ disabled_skills: Array.from(next) })
+      .catch((error) => {
+        const errorMessage = retrieveAxiosErrorMessage(error);
+        displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
+        // The toggle flipped optimistically; the server never took the
+        // change, so snap back to its last known state instead of leaving
+        // the card (and the State facet counts) claiming a save that never
+        // happened. The sync effect above only re-runs when the query data
+        // changes, which a failed save does not do, so revert here and
+        // refetch in case another save landed in the meantime.
+        const reverted = new Set(settingsRef.current?.disabled_skills ?? []);
+        disabledSetRef.current = reverted;
+        setDisabledSet(reverted);
+        queryClient.invalidateQueries({
+          queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+        });
+      })
+      .finally(() => {
+        pendingSaveCountRef.current -= 1;
       });
-    });
   };
 
   return (
