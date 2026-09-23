@@ -36,6 +36,7 @@ const cloudBackend: Backend = {
 const {
   mockMutate,
   mockDisplaySuccessToast,
+  mockDisplayErrorToast,
   useActiveConversationMock,
   useConfigMock,
   useActiveBackendMock,
@@ -43,6 +44,7 @@ const {
 } = vi.hoisted(() => ({
   mockMutate: vi.fn(),
   mockDisplaySuccessToast: vi.fn(),
+  mockDisplayErrorToast: vi.fn(),
   useActiveConversationMock: vi.fn(() => ({
     data: {
       conversation_id: "test-conversation-id",
@@ -89,7 +91,16 @@ vi.mock("#/contexts/active-backend-context", () => ({
 
 vi.mock("#/utils/custom-toast-handlers", () => ({
   displaySuccessToast: mockDisplaySuccessToast,
-  displayErrorToast: vi.fn(),
+  displayErrorToast: mockDisplayErrorToast,
+}));
+
+// `copyTextToClipboard` (used by the share-link copy handler) imports the
+// real i18n singleton directly rather than going through `useTranslation`.
+// This suite's `beforeAll` below stubs `window` to a bare object with no
+// `navigator`, which crashes the real i18n instance's language detector on
+// its lazy init timer. Stub it out the same way `react-i18next` already is.
+vi.mock("#/i18n", () => ({
+  default: { t: (key: string) => key, changeLanguage: () => Promise.resolve() },
 }));
 
 // Mock react-i18next
@@ -896,5 +907,33 @@ describe("ConversationName public sharing", () => {
 
     await user.click(screen.getByTestId("copy-share-link-button"));
     expect(writeTextSpy).toHaveBeenCalledWith(expectedUrl);
+  });
+
+  it("does not show the copied toast when the clipboard write fails", async () => {
+    writeTextSpy.mockRejectedValueOnce(new Error("denied"));
+    useActiveConversationMock.mockReturnValue({
+      data: {
+        conversation_id: "test-conversation-id",
+        title: "Test Conversation",
+        status: "RUNNING",
+        public: true,
+      } as Conversation,
+    });
+    const user = userEvent.setup();
+    renderConversationNameWithRouter();
+
+    await user.click(screen.getByTestId("ellipsis-button"));
+    await user.click(screen.getByTestId("copy-share-link-button"));
+
+    expect(writeTextSpy).toHaveBeenCalled();
+    await waitFor(
+      () => {
+        expect(mockDisplayErrorToast).toHaveBeenCalled();
+      },
+      // This suite's beforeAll stubs `window` to a bare object with no
+      // `document`, which breaks waitFor's default container lookup.
+      { container: document.body },
+    );
+    expect(mockDisplaySuccessToast).not.toHaveBeenCalled();
   });
 });

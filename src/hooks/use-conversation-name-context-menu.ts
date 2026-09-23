@@ -10,6 +10,7 @@ import { useEventStore } from "#/stores/use-event-store";
 import { displaySuccessToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
 import { getStoredConversationMetadata } from "#/api/conversation-metadata-store";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 
 import { useDownloadConversation } from "./use-download-conversation";
 import {
@@ -184,7 +185,9 @@ export function useConversationNameContextMenu({
     return `${origin}/shared/conversations/${conversationId}`;
   }, [conversationId, backend.kind, backend.host]);
 
-  const handleCopyShareLink = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCopyShareLink = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -193,8 +196,9 @@ export function useConversationNameContextMenu({
       return;
     }
 
-    navigator.clipboard.writeText(shareUrl);
-    displaySuccessToast(t(I18nKey.CONVERSATION$LINK_COPIED));
+    if (await copyTextToClipboard(shareUrl)) {
+      displaySuccessToast(t(I18nKey.CONVERSATION$LINK_COPIED));
+    }
   };
 
   return {
