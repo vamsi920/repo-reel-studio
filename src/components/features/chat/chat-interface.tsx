@@ -336,7 +336,12 @@ export function ChatInterface() {
     const validation = validateFiles(allFiles);
 
     if (!validation.isValid) {
-      displayErrorToast(`Error: ${validation.errorMessage}`);
+      // `displayErrorToast` already renders an error icon + styling, and
+      // falls back to a translated generic message when passed a falsy
+      // value — the hardcoded "Error: " prefix here was untranslatable
+      // English baked outside any JSX subtree (invisible to the jsx-only
+      // i18next lint rule) and redundant with that styling.
+      displayErrorToast(validation.errorMessage);
       return; // Stop processing if validation fails
     }
 

@@ -2283,6 +2283,7 @@
   "CONVERSATION_PANEL$PREVIEW_WORKSPACE": "Espacio de trabajo",
   "CONVERSATION_PANEL$PREVIEW_APP_MODE": "Modo de la app",
   "CONVERSATION_PANEL$PREVIEW_WORK_TOOLS": "Herramientas de trabajo",
+  "CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE": "{{count}} conversation(s) could not be deleted.",
   "CONVERSATION_PANEL$PREVIEW_WORK_WSID": "ID del espacio de trabajo",
   "SETTINGS$VERSION_NPM_RECOMMENDED": "npm",
   "SETTINGS$VERSION_DOCKER": "Docker",

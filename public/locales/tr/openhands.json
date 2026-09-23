@@ -2283,6 +2283,7 @@
   "CONVERSATION_PANEL$PREVIEW_WORKSPACE": "Çalışma alanı",
   "CONVERSATION_PANEL$PREVIEW_APP_MODE": "Uygulama modu",
   "CONVERSATION_PANEL$PREVIEW_WORK_TOOLS": "Çalışma araçları",
+  "CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE": "{{count}} conversation(s) could not be deleted.",
   "CONVERSATION_PANEL$PREVIEW_WORK_WSID": "Çalışma alanı kimliği",
   "SETTINGS$VERSION_NPM_RECOMMENDED": "npm",
   "SETTINGS$VERSION_DOCKER": "Docker",

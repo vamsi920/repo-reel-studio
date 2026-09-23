@@ -24,6 +24,7 @@ import { createRoutesStub } from "react-router";
 import React from "react";
 import { renderWithProviders } from "test-utils";
 import { ConversationPanel } from "#/components/features/conversation-panel/conversation-panel";
+import { I18nKey } from "#/i18n/declaration";
 import { useConversationPanelPreferencesStore } from "#/stores/conversation-panel-preferences-store";
 import { useArchivedConversationsStore } from "#/stores/archived-conversations-store";
 import { usePinnedConversationsStore } from "#/stores/pinned-conversations-store";
@@ -1809,7 +1810,7 @@ describe("ConversationPanel", () => {
         expect(deleteSpy).toHaveBeenCalledTimes(3);
       });
       expect(displayErrorToast).toHaveBeenCalledWith(
-        "1 conversation could not be deleted.",
+        I18nKey.CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE,
       );
       expect(navigate).toHaveBeenCalledWith("/conversations");
     });
@@ -1864,7 +1865,7 @@ describe("ConversationPanel", () => {
         expect(deleteSpy).toHaveBeenCalledTimes(3);
       });
       expect(displayErrorToast).toHaveBeenCalledWith(
-        "1 conversation could not be deleted.",
+        I18nKey.CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE,
       );
       expect(navigate).not.toHaveBeenCalled();
     });

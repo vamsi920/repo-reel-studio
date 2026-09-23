@@ -813,8 +813,13 @@ export function ConversationPanel({
     }
 
     if (failedCount > 0) {
+      // Was a raw JS template literal — outside any JSX subtree, so the
+      // jsx-only i18next lint rule never caught it, and it rendered in
+      // English regardless of the user's locale.
       displayErrorToast(
-        `${failedCount} conversation${failedCount === 1 ? "" : "s"} could not be deleted.`,
+        t(I18nKey.CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE, {
+          count: failedCount,
+        }),
       );
     }
   };

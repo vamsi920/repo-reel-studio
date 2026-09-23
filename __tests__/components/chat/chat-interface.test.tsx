@@ -864,6 +864,28 @@ describe("ChatInterface - Pending message queue", () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
+  it("shows the raw validation message (no hardcoded 'Error:' prefix) for an oversized attachment", async () => {
+    renderInterface();
+
+    const oversizedFile = new File(["contents"], "huge.png", {
+      type: "image/png",
+    });
+    Object.defineProperty(oversizedFile, "size", { value: 4 * 1024 * 1024 });
+    act(() => {
+      useConversationStore.setState({ images: [oversizedFile] });
+    });
+
+    submitMessage("see attached");
+
+    await waitFor(() => {
+      expect(mockDisplayErrorToast).toHaveBeenCalledWith(
+        "Files exceeding 3MB are not allowed: huge.png",
+      );
+    });
+    expect(screen.queryByTestId("user-message")).not.toBeInTheDocument();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
   it("queues multiple submitted messages, each with its own pending entry", async () => {
     mockSend.mockResolvedValue({ queued: false });
 

@@ -2283,6 +2283,7 @@
   "CONVERSATION_PANEL$PREVIEW_WORKSPACE": "Робочий простір",
   "CONVERSATION_PANEL$PREVIEW_APP_MODE": "Режим застосунку",
   "CONVERSATION_PANEL$PREVIEW_WORK_TOOLS": "Робочі інструменти",
+  "CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE": "{{count}} conversation(s) could not be deleted.",
   "CONVERSATION_PANEL$PREVIEW_WORK_WSID": "ID робочого простору",
   "SETTINGS$VERSION_NPM_RECOMMENDED": "npm",
   "SETTINGS$VERSION_DOCKER": "Docker",

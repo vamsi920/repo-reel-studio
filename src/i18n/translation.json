@@ -38827,6 +38827,23 @@
     "tr": "Çalışma araçları",
     "uk": "Робочі інструменти"
   },
+  "CONVERSATION_PANEL$DELETE_ALL_PARTIAL_FAILURE": {
+    "en": "{{count}} conversation(s) could not be deleted.",
+    "ja": "{{count}} conversation(s) could not be deleted.",
+    "zh-CN": "{{count}} conversation(s) could not be deleted.",
+    "zh-TW": "{{count}} conversation(s) could not be deleted.",
+    "ko-KR": "{{count}} conversation(s) could not be deleted.",
+    "no": "{{count}} conversation(s) could not be deleted.",
+    "ar": "{{count}} conversation(s) could not be deleted.",
+    "de": "{{count}} conversation(s) could not be deleted.",
+    "fr": "{{count}} conversation(s) could not be deleted.",
+    "it": "{{count}} conversation(s) could not be deleted.",
+    "pt": "{{count}} conversation(s) could not be deleted.",
+    "es": "{{count}} conversation(s) could not be deleted.",
+    "ca": "{{count}} conversation(s) could not be deleted.",
+    "tr": "{{count}} conversation(s) could not be deleted.",
+    "uk": "{{count}} conversation(s) could not be deleted."
+  },
   "CONVERSATION_PANEL$PREVIEW_WORK_WSID": {
     "en": "Workspace ID",
     "ja": "ワークスペース ID",
