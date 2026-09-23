@@ -128,6 +128,23 @@ describe("automation-activity-log-export", () => {
     expect(csv).toContain('"{""type"":""cron"",""schedule"":""0 9 * * *""}"');
   });
 
+  it("neutralizes a leading formula character so spreadsheets don't auto-evaluate it", () => {
+    const rows: AutomationRunExportRow[] = [
+      sampleRow({
+        automation_name: '=HYPERLINK("http://evil.example","open")',
+        error: "+cmd|' /C calc'!A1",
+      }),
+    ];
+
+    const csv = serializeActivityLogRowsCsv(rows);
+    const dataLine = csv.split("\n")[1];
+
+    expect(dataLine).not.toMatch(/(^|,)=/);
+    expect(dataLine).not.toMatch(/(^|,)\+/);
+    expect(dataLine).toContain("'=HYPERLINK");
+    expect(dataLine).toContain("'+cmd");
+  });
+
   it("pages listAutomationRuns until complete", async () => {
     vi.mocked(AutomationService.listAutomationRuns)
       .mockResolvedValueOnce({

@@ -38,11 +38,20 @@ export function getActivityLogExportFilename(
   return `${slug || automation.id}.activity-log.${format}`;
 }
 
+// Spreadsheet apps (Excel, LibreOffice, Google Sheets) auto-evaluate a cell
+// that starts with one of these characters as a formula when a CSV is
+// imported/opened -- neutralize it before the normal quote-escaping so an
+// automation name or error string an attacker controls (e.g. an imported
+// automation's `spec.name`) can't smuggle a formula into someone's export.
+// See OWASP's CSV injection guidance.
+const FORMULA_PREFIX_PATTERN = /^[=+\-@\t\r]/;
+
 function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const neutralized = FORMULA_PREFIX_PATTERN.test(value) ? `'${value}` : value;
+  if (/[",\n\r]/.test(neutralized)) {
+    return `"${neutralized.replace(/"/g, '""')}"`;
   }
-  return value;
+  return neutralized;
 }
 
 export function serializeActivityLogRowsCsv(

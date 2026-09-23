@@ -21,6 +21,7 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { useCancelAutomationRun } from "#/hooks/query/use-automations";
 import { isInFlightAutomationRun } from "#/hooks/use-home-automation-actions";
 import { useHasPermission } from "#/hooks/use-has-permission";
+import { useDismissedProactivationRuns } from "#/hooks/use-dismissed-proactivation-runs";
 import { getApiErrorMessage } from "#/utils/api-error-message";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
@@ -151,7 +152,9 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
     run.status === AutomationRunStatus.FAILED;
   const showNoConversationLabel = !hasConversation && isTerminal;
   const [logsOpen, setLogsOpen] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const { isDismissed: isRunDismissed, dismiss: dismissRun } =
+    useDismissedProactivationRuns();
+  const isDismissed = isRunDismissed(run.id);
   const [isDismissModalOpen, setIsDismissModalOpen] = useState(false);
 
   const proactivationConfig = parseProactivationMarker(automation?.prompt);
@@ -243,7 +246,7 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
       });
     }
     setIsDismissModalOpen(false);
-    setIsDismissed(true);
+    dismissRun(run.id);
   };
   // The backend leaves started_at unset (epoch/zero) while a run is Pending
   // and only populates it once execution begins. Show the user's local time

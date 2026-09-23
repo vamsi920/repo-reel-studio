@@ -526,3 +526,67 @@ describe("ActivityLogItem — Proactivation dismiss reason draft", () => {
     ).toHaveValue("");
   });
 });
+
+describe("ActivityLogItem — Proactivation dismissal persistence", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    __resetActiveStoreForTests();
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    __resetActiveStoreForTests();
+    window.localStorage.clear();
+  });
+
+  it("keeps a dismissed run's Dismiss/Create PR actions hidden after a remount", async () => {
+    // Arrange: a completed Proactivation run with its actions visible.
+    const automation = makeAutomation({
+      prompt: buildProactivationPrompt({
+        watchAreas: ["dependency"],
+        autonomyLevel: "prepare-fix",
+        repository: "acme/repo",
+      }),
+    });
+    const run = makeRun({
+      status: AutomationRunStatus.COMPLETED,
+      conversation_id: "conv-1",
+    });
+    const user = userEvent.setup();
+    const { unmount } = renderItem(run, automation);
+
+    // Act: dismiss the suggestion through the full confirm flow.
+    await user.click(
+      screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS),
+    );
+    await user.type(
+      screen.getByPlaceholderText(
+        I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+      ),
+      "already handled manually",
+    );
+    await user.click(
+      screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_SUBMIT),
+    );
+
+    expect(
+      screen.queryByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISSED),
+    ).toBeInTheDocument();
+
+    // Simulate navigating away and back to the automation detail page: a
+    // fresh mount of the same run should not resurrect the actions.
+    unmount();
+    renderItem(run, automation);
+
+    expect(
+      screen.queryByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISSED),
+    ).toBeInTheDocument();
+  });
+});
