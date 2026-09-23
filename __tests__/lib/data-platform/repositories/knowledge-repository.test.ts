@@ -7,6 +7,11 @@ interface QueryResult {
 
 const state = vi.hoisted(() => ({
   tables: {} as Record<string, QueryResult>,
+  // Records every `.eq(column, value)` call, tagged with the table it was
+  // issued against, so tests can assert a query was actually scoped by a
+  // given column (e.g. `branch`) rather than just checking the final
+  // (mock-controlled) result.
+  eqCalls: [] as { table: string; column: string; value: unknown }[],
 }));
 
 function emptyResult(): QueryResult {
@@ -14,16 +19,20 @@ function emptyResult(): QueryResult {
 }
 
 vi.mock("#/lib/data-platform/client", () => {
-  function chain(result: QueryResult) {
+  function chain(result: QueryResult, table: string) {
     // Mimics postgrest-js's chainable, thenable query builder: every
     // intermediate call (select/eq/order/limit/in) returns the same
     // chainable object, and it can be awaited directly (reconstruct's
     // per-table queries do this) or terminated with maybeSingle()/single()
     // (getFullGeneration/getLatestGenerationForRepository do this).
     const obj: Record<string, unknown> = {};
-    for (const method of ["select", "eq", "order", "limit", "in"]) {
+    for (const method of ["select", "order", "limit", "in"]) {
       obj[method] = () => obj;
     }
+    obj.eq = (column: string, value: unknown) => {
+      state.eqCalls.push({ table, column, value });
+      return obj;
+    };
     obj.maybeSingle = async () => result;
     obj.single = async () => result;
     obj.then = (
@@ -36,13 +45,17 @@ vi.mock("#/lib/data-platform/client", () => {
   return {
     isSupabaseConfigured: true,
     supabase: {
-      from: (table: string) => chain(state.tables[table] ?? emptyResult()),
+      from: (table: string) => chain(state.tables[table] ?? emptyResult(), table),
     },
   };
 });
 
 const { knowledgePersistenceRepository } =
   await import("#/lib/data-platform/repositories/knowledge-repository");
+
+beforeEach(() => {
+  state.eqCalls = [];
+});
 
 const GENERATION_ROW = {
   id: "gen-1",
@@ -70,7 +83,7 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(
-      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1"),
+      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1", "main"),
     ).resolves.toBeNull();
     expect(errorSpy).not.toHaveBeenCalled();
   });
@@ -89,12 +102,33 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
     };
 
     await expect(
-      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1"),
+      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1", "main"),
     ).resolves.toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
       "[knowledge-repository] getLatestGenerationForRepository failed",
       state.tables.knowledge_generations.error,
     );
+  });
+
+  // Regression: `repositoryUuid` identifies the repo, not a branch -- a repo
+  // with generations for more than one branch used to return whichever
+  // branch was generated most recently repo-wide, regardless of which
+  // branch the caller actually asked for. Cold-loading `/kt/<repo>@main`
+  // could then silently render `release`'s title/sections/pages/commit sha
+  // labeled as `main`.
+  it("scopes the query to the requested branch, not just the repository", async () => {
+    state.tables.knowledge_generations = { data: GENERATION_ROW, error: null };
+
+    await knowledgePersistenceRepository.getLatestGenerationForRepository(
+      "repo-1",
+      "release",
+    );
+
+    expect(state.eqCalls).toContainEqual({
+      table: "knowledge_generations",
+      column: "branch",
+      value: "release",
+    });
   });
 
   it("returns the reconstructed knowledge when a generation exists", async () => {
@@ -119,6 +153,7 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
     const result =
       await knowledgePersistenceRepository.getLatestGenerationForRepository(
         "repo-1",
+        "main",
       );
     expect(result?.commitSha).toBe("abc1234");
     expect(result?.pages).toHaveLength(1);
@@ -138,7 +173,7 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
     };
 
     await expect(
-      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1"),
+      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1", "main"),
     ).resolves.toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
       "[knowledge-repository] reconstruct: knowledge_pages failed",
@@ -176,7 +211,7 @@ describe("knowledgePersistenceRepository.getLatestGenerationForRepository", () =
     };
 
     await expect(
-      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1"),
+      knowledgePersistenceRepository.getLatestGenerationForRepository("repo-1", "main"),
     ).resolves.toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
       "[knowledge-repository] reconstruct: knowledge_sections failed",
@@ -291,6 +326,36 @@ describe("knowledgePersistenceRepository.listGeneratedRepositories", () => {
       knowledgePersistenceRepository.listGeneratedRepositories(),
     ).resolves.toEqual({
       summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+  });
+
+  // Regression: generations were deduped down to one row per
+  // `repository_id`, keeping only whichever branch had been generated most
+  // recently across the whole repo. A repo generated on both `main` and
+  // `release` then surfaced only one of them here, so the /kt list page
+  // offered "Generate Knowledge" (a real, redundant DeepWiki run) for the
+  // other branch even though Supabase already had content for it.
+  it("returns one summary per generated branch, not just per repository", async () => {
+    state.tables.knowledge_generations = {
+      data: [
+        { repository_id: "repo-1", branch: "release" },
+        { repository_id: "repo-1", branch: "main" },
+      ],
+      error: null,
+    };
+    state.tables.repositories = {
+      data: [{ id: "repo-1", owner: "vamsi920", name: "layman" }],
+      error: null,
+    };
+
+    await expect(
+      knowledgePersistenceRepository.listGeneratedRepositories(),
+    ).resolves.toEqual({
+      summaries: [
+        { owner: "vamsi920", repo: "layman", branch: "release" },
+        { owner: "vamsi920", repo: "layman", branch: "main" },
+      ],
       error: false,
     });
   });

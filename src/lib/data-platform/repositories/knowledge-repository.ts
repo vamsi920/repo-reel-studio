@@ -45,6 +45,7 @@ export interface KnowledgePersistenceRepository {
   ): Promise<KnowledgeRepository | null>;
   getLatestGenerationForRepository(
     repositoryUuid: string,
+    branch: string,
   ): Promise<KnowledgeRepository | null>;
   /** Every repository this user has at least one generation for, RLS-scoped
    * automatically to workspaces they belong to. Used to populate the /kt
@@ -266,13 +267,22 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
 
   async getLatestGenerationForRepository(
     repositoryUuid: string,
+    branch: string,
   ): Promise<KnowledgeRepository | null> {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
+      // `repositoryUuid` identifies the repo, not the branch -- a repo with
+      // generations for more than one branch used to return whichever
+      // branch was generated most recently across the whole repo, so
+      // reloading `/kt/<owner>/<repo>@<branch>` could silently render a
+      // different branch's title/sections/pages/commit sha under this
+      // branch's URL and label. Filtering by `branch` here keeps this scoped
+      // to the branch the caller actually asked for.
       const { data: generation, error } = await supabase
         .from("knowledge_generations")
         .select("id, commit_sha, title, summary, generated_at")
         .eq("repository_id", repositoryUuid)
+        .eq("branch", branch)
         .order("generated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -304,15 +314,31 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         return { summaries: [], error: false };
       }
 
-      const repositoryIds = Array.from(
-        new Set(generations.map((row) => row.repository_id as string)),
-      );
-      const branchByRepo = new Map<string, string | null>();
+      // `generations` can hold several branches per repo. Deduping down to
+      // one row per `repository_id` (keeping only whichever branch was
+      // generated most recently repo-wide) used to make a repo with, say,
+      // both `main` and `release` generated show only one of them here --
+      // the /kt list page then offered "Generate Knowledge" for the other
+      // branch even though Supabase already had real content for it,
+      // letting the user kick off a redundant DeepWiki run. Dedupe by
+      // (repository_id, branch) instead so every generated branch surfaces;
+      // `generations` is already ordered by `generated_at` descending, so
+      // the first row seen per pair is that pair's latest generation.
+      const seenPairs = new Set<string>();
+      const repoBranchPairs: { repositoryId: string; branch: string | null }[] =
+        [];
       for (const row of generations) {
-        const id = row.repository_id as string;
-        if (!branchByRepo.has(id)) branchByRepo.set(id, row.branch ?? null);
+        const repositoryId = row.repository_id as string;
+        const branch = (row.branch as string | null) ?? null;
+        const pairKey = `${repositoryId}\0${branch ?? ""}`;
+        if (seenPairs.has(pairKey)) continue;
+        seenPairs.add(pairKey);
+        repoBranchPairs.push({ repositoryId, branch });
       }
 
+      const repositoryIds = Array.from(
+        new Set(repoBranchPairs.map((pair) => pair.repositoryId)),
+      );
       const { data: repos, error: reposError } = await supabase
         .from("repositories")
         .select("id, owner, name")
@@ -323,14 +349,19 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
       }
       if (!repos) return { summaries: [], error: false };
 
-      return {
-        summaries: repos.map((row) => ({
-          owner: row.owner as string,
-          repo: row.name as string,
-          branch: branchByRepo.get(row.id as string) ?? null,
-        })),
-        error: false,
-      };
+      const repoById = new Map(repos.map((row) => [row.id as string, row]));
+      const summaries: PersistedRepositorySummary[] = [];
+      for (const pair of repoBranchPairs) {
+        const repo = repoById.get(pair.repositoryId);
+        if (!repo) continue;
+        summaries.push({
+          owner: repo.owner as string,
+          repo: repo.name as string,
+          branch: pair.branch,
+        });
+      }
+
+      return { summaries, error: false };
     } catch (error) {
       logFailure("listGeneratedRepositories", error);
       return { summaries: [], error: true };

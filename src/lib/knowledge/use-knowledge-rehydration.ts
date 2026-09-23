@@ -61,6 +61,7 @@ async function tryColdRehydration(
   const knowledge =
     await knowledgePersistenceRepository.getLatestGenerationForRepository(
       repositoryUuid,
+      parsed.branch,
     );
   if (!knowledge) return false;
   hydrate(
