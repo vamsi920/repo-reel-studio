@@ -712,10 +712,41 @@ export function buildHierarchy(
     buckets.set(key, bucket);
   };
 
+  // `slug()` is lossy the same way it is for `buildModuleTree`'s module ids
+  // (see `dedupeId`'s own comment) -- two distinct top-level identities
+  // (layer ids, folder container ids, or plain folder names) can reduce to
+  // the same slug, e.g. "Foo-Bar" and "foo_bar" both slug to "foo-bar".
+  // Keying `buckets` directly on `${prefix}-${slug(identity)}` would then
+  // silently merge their units into one subsystem, exactly the corruption
+  // `dedupeId` already guards against one level down -- this resolver is
+  // that same guard for level-1 bucketing. `identity` must be the exact same
+  // string every time the same real bucket is meant, so repeat calls for one
+  // identity keep accumulating into the same key while a different identity
+  // that happens to collide gets a disambiguated one instead.
+  const bucketKeysByIdentity = new Map<string, string>();
+  const identityByBucketKey = new Map<string, string>();
+  function bucketKey(prefix: string, identity: string): string {
+    const cacheKey = `${prefix}\u0000${identity}`;
+    const cached = bucketKeysByIdentity.get(cacheKey);
+    if (cached) return cached;
+    let key = `${prefix}-${slug(identity)}`;
+    let suffix = 2;
+    while (
+      identityByBucketKey.has(key) &&
+      identityByBucketKey.get(key) !== identity
+    ) {
+      key = `${prefix}-${slug(identity)}-${suffix}`;
+      suffix += 1;
+    }
+    bucketKeysByIdentity.set(cacheKey, key);
+    identityByBucketKey.set(key, identity);
+    return key;
+  }
+
   const layerless: GraphNode[] = [];
   for (const unit of placedUnits) {
     const layer = layerOf.get(unit.id);
-    if (layer) push(`subsystem:layer-${slug(layer.id)}`, layer.name, unit);
+    if (layer) push(bucketKey("subsystem:layer", layer.id), layer.name, unit);
     else layerless.push(unit);
   }
 
@@ -747,7 +778,7 @@ export function buildHierarchy(
       for (const nodeId of container.nodeIds) {
         const unit = byId.get(nodeId);
         if (!unit) continue;
-        push(`subsystem:folder-${slug(container.id)}`, container.name, unit);
+        push(bucketKey("subsystem:folder", container.id), container.name, unit);
       }
     }
     // A node too small/disconnected to earn its own container — still real,
@@ -763,7 +794,7 @@ export function buildHierarchy(
       const segment = path.includes("/")
         ? path.slice(0, path.indexOf("/"))
         : "";
-      if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
+      if (segment) push(bucketKey("subsystem:folder", segment), segment, unit);
       else push("subsystem:other", "Other", unit);
     }
   }

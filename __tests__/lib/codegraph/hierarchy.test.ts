@@ -265,6 +265,33 @@ describe("buildHierarchy", () => {
     ).toEqual(["src/foo_bar/c.ts", "src/foo_bar/d.ts"]);
   });
 
+  it("does not merge two top-level subsystems whose names collide after slugging", () => {
+    // Same collision as the module-level test above ("Foo-Bar" and "foo_bar"
+    // both slug to "foo-bar"), but one level up: these are two distinct
+    // top-level folders with no shared layer, so they are grouped straight
+    // into level-1 subsystem buckets rather than via buildModuleTree. Kept
+    // under the DERIVE_CONTAINERS_MIN_NODES threshold so this exercises the
+    // plain first-segment bucketing path, not deriveContainers.
+    const nodes = [file("Foo-Bar/a.ts"), file("foo_bar/b.ts")];
+
+    const result = buildHierarchy(graphOf(nodes));
+    const subsystemIds = result.childrenByParent[""];
+    const subsystemNames = subsystemIds.map((id) => result.nodesById[id].name);
+
+    expect(new Set(subsystemIds).size).toBe(subsystemIds.length);
+    expect(subsystemNames).toContain("Foo-Bar");
+    expect(subsystemNames).toContain("foo_bar");
+
+    const fooBarId = subsystemIds[subsystemNames.indexOf("Foo-Bar")];
+    const fooBarUnderscoreId =
+      subsystemIds[subsystemNames.indexOf("foo_bar")];
+    expect(fooBarId).not.toBe(fooBarUnderscoreId);
+    expect(result.nodesById[fooBarId].filePaths).toEqual(["Foo-Bar/a.ts"]);
+    expect(result.nodesById[fooBarUnderscoreId].filePaths).toEqual([
+      "foo_bar/b.ts",
+    ]);
+  });
+
   it("names subsystems from DeepWiki sections rather than folder names", () => {
     const nodes = [
       file("src/pay/charge.ts"),
