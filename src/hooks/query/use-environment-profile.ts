@@ -38,13 +38,16 @@ export function useSaveEnvironmentProfile() {
       return environmentProfileRepository.put(orgId, profile);
     },
     onSuccess: (saved) => {
+      // Readiness is derived from this profile query's cache via a plain
+      // `useMemo` in `useEnvironmentReadiness`, not its own react-query
+      // entry -- nothing is ever registered under
+      // `ENVIRONMENT_QUERY_KEYS.readiness()`, so invalidating it here was a
+      // no-op that only happened to look right because `setQueryData` below
+      // is what actually drives the recompute.
       queryClient.setQueryData(
         ENVIRONMENT_QUERY_KEYS.profile(orgId ?? undefined),
         saved,
       );
-      queryClient.invalidateQueries({
-        queryKey: ENVIRONMENT_QUERY_KEYS.readiness(),
-      });
     },
   });
 }

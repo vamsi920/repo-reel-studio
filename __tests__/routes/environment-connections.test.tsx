@@ -13,8 +13,13 @@ vi.mock("#/lib/data-platform/client", () => ({
   supabase: null,
 }));
 
+const connectionsState = vi.hoisted(() => ({
+  data: [] as unknown[],
+  isPending: false,
+}));
+
 vi.mock("#/hooks/query/use-connections", () => ({
-  useConnections: () => ({ data: [] }),
+  useConnections: () => connectionsState,
 }));
 
 vi.mock("#/hooks/query/use-environment-profile", () => ({
@@ -52,6 +57,8 @@ beforeEach(() => {
   vi.restoreAllMocks();
   vi.mocked(invalidateConnectionCaches).mockClear();
   resetOAuthReceiptGuardForTests();
+  connectionsState.data = [];
+  connectionsState.isPending = false;
 });
 
 describe("Environment connections form panel", () => {
@@ -93,6 +100,22 @@ describe("Environment connections form panel", () => {
     expect(
       screen.queryByTestId("connection-form-panel"),
     ).not.toBeInTheDocument();
+  });
+
+  it("disables Connect while the connections list has not resolved its first answer, instead of offering a misleading action on an already-connected provider", async () => {
+    // Regression: `connectionFor` can't tell "confirmed disconnected" apart
+    // from "connections query hasn't fetched yet" while `data` is still
+    // undefined/empty for that reason, so every card briefly looked
+    // disconnected -- and clickably so -- on a fresh page load even for
+    // providers that are actually already connected.
+    connectionsState.isPending = true;
+
+    renderScreen();
+
+    const connectButton = await screen.findByTestId(
+      "connector-connect-ollama",
+    );
+    expect(connectButton).toBeDisabled();
   });
 });
 

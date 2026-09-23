@@ -47,12 +47,12 @@ export function useEnvironmentReadiness(profile: EnvironmentProfile | null) {
     const capabilities: Partial<Record<Capability, CapabilityStatus>> = {};
 
     const connectionStatus = (
-      isLoading: boolean,
+      isPending: boolean,
       connected: boolean,
       capability?: Capability,
     ): CapabilityStatus => {
       if (!isSupabaseConfigured) return "unknown";
-      if (isLoading) return "unknown";
+      if (isPending) return "unknown";
       if (!connected) return "missing";
       if (capability) {
         // An org can have more than one connection for the same capability
@@ -73,13 +73,19 @@ export function useEnvironmentReadiness(profile: EnvironmentProfile | null) {
       return "ok";
     };
 
+    // `isPending` (not `isLoading`) is what actually means "no answer yet":
+    // a disabled query -- these are all gated behind the auth/org bootstrap
+    // resolving -- reports `isLoading: false` the instant it mounts, even
+    // though it has never fetched, which previously let a fresh page load
+    // read as a confirmed "missing" connection for one render before the
+    // real query kicked in and corrected it.
     capabilities["source-control"] = connectionStatus(
-      github.isLoading || connections.isLoading,
+      github.isPending || connections.isPending,
       Boolean(github.data),
       "source-control",
     );
     capabilities["issue-tracker"] = connectionStatus(
-      jira.isLoading || connections.isLoading,
+      jira.isPending || connections.isPending,
       Boolean(jira.data),
       "issue-tracker",
     );
@@ -111,13 +117,13 @@ export function useEnvironmentReadiness(profile: EnvironmentProfile | null) {
     const evidence: ReadinessEvidence = { probes: {}, capabilities };
     return computeReadiness(evidence, profile, new Date().toISOString());
   }, [
-    github.isLoading,
+    github.isPending,
     github.data,
-    jira.isLoading,
+    jira.isPending,
     jira.data,
     settings.isLoading,
     settings.data?.llm_model,
-    connections.isLoading,
+    connections.isPending,
     connections.data,
     profile,
   ]);

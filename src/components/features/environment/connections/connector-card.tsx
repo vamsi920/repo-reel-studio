@@ -16,6 +16,15 @@ export interface ConnectorCardProps {
   connection?: ConnectionRecord;
   index: number;
   busy?: boolean;
+  /**
+   * True while the connections list has not resolved its first answer yet
+   * (e.g. still gated behind the auth/org bootstrap on a fresh page load).
+   * `connection` is indistinguishable from "confirmed disconnected" in that
+   * window, so the Connect button is held off rather than offering a
+   * redundant/misleading "Connect" action on a provider that may already be
+   * connected.
+   */
+  pending?: boolean;
   onConnect: (manifest: ConnectorManifest) => void;
   onDisconnect: (connection: ConnectionRecord) => void;
   onTest: (connection: ConnectionRecord) => void;
@@ -26,6 +35,7 @@ export function ConnectorCard({
   connection,
   index,
   busy = false,
+  pending = false,
   onConnect,
   onDisconnect,
   onTest,
@@ -136,9 +146,9 @@ export function ConnectorCard({
           <button
             type="button"
             data-testid={`connector-connect-${manifest.id}`}
-            disabled={busy}
+            disabled={busy || pending}
             onClick={() => onConnect(manifest)}
-            className="ame-btn-primary ame-btn-sm"
+            className={cn("ame-btn-primary ame-btn-sm", pending && "loading")}
           >
             {t(I18nKey.ENVIRONMENT$CONNECT)}
           </button>

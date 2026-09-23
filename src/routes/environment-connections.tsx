@@ -40,7 +40,7 @@ function EnvironmentConnectionsScreen() {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: connections } = useConnections();
+  const { data: connections, isPending: connectionsPending } = useConnections();
   const { data: profile } = useEnvironmentProfile();
 
   const [search, setSearch] = React.useState("");
@@ -321,6 +321,7 @@ function EnvironmentConnectionsScreen() {
                   index={index}
                   connection={connectionFor(manifest)}
                   busy={busyProvider === manifest.id}
+                  pending={connectionsPending}
                   onConnect={handleConnect}
                   onDisconnect={handleDisconnect}
                   onTest={handleTest}

@@ -5,10 +5,10 @@ import type { ConnectionRecord } from "#/lib/data-platform/repositories/connecti
 
 const state = vi.hoisted(() => ({
   supabaseConfigured: true,
-  github: { isLoading: false, data: null as unknown },
-  jira: { isLoading: false, data: null as unknown },
+  github: { isLoading: false, isPending: false, data: null as unknown },
+  jira: { isLoading: false, isPending: false, data: null as unknown },
   settings: { isLoading: false, data: undefined as { llm_model?: string } | undefined },
-  connections: { isLoading: false, data: [] as ConnectionRecord[] },
+  connections: { isLoading: false, isPending: false, data: [] as ConnectionRecord[] },
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -60,8 +60,8 @@ function githubConnectionRecord(
 
 describe("useEnvironmentReadiness", () => {
   it("reports source-control missing when there is no connection at all", () => {
-    state.github = { isLoading: false, data: null };
-    state.connections = { isLoading: false, data: [] };
+    state.github = { isLoading: false, isPending: false, data: null };
+    state.connections = { isLoading: false, isPending: false, data: [] };
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));
 
@@ -69,8 +69,8 @@ describe("useEnvironmentReadiness", () => {
   });
 
   it("reports source-control ok when a connection row exists and nothing has probed it as broken", () => {
-    state.github = { isLoading: false, data: { id: "row" } };
-    state.connections = { isLoading: false, data: [] };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
+    state.connections = { isLoading: false, isPending: false, data: [] };
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));
 
@@ -83,9 +83,10 @@ describe("useEnvironmentReadiness", () => {
   // on the Overview page. The probe's persisted status must be able to pull
   // the capability down from "ok".
   it("downgrades source-control to degraded when the persisted connection was probed and found scope-limited", () => {
-    state.github = { isLoading: false, data: { id: "row" } };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
     state.connections = {
       isLoading: false,
+      isPending: false,
       data: [githubConnectionRecord({ status: "degraded" })],
     };
 
@@ -95,9 +96,10 @@ describe("useEnvironmentReadiness", () => {
   });
 
   it("reports source-control missing when the persisted connection's last probe failed outright", () => {
-    state.github = { isLoading: false, data: { id: "row" } };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
     state.connections = {
       isLoading: false,
+      isPending: false,
       data: [githubConnectionRecord({ status: "error" })],
     };
 
@@ -107,8 +109,22 @@ describe("useEnvironmentReadiness", () => {
   });
 
   it("stays unknown while the connections list is still loading, even if the old connection row already resolved", () => {
-    state.github = { isLoading: false, data: { id: "row" } };
-    state.connections = { isLoading: true, data: [] };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
+    state.connections = { isLoading: true, isPending: true, data: [] };
+
+    const { result } = renderHook(() => useEnvironmentReadiness(null));
+
+    expect(result.current.byCapability["source-control"]).toBe("unknown");
+  });
+
+  it("stays unknown during cold start, when a disabled query reports isLoading:false but isPending:true (never fetched, not fetching yet)", () => {
+    // Regression: a disabled react-query v5 query (gated behind the
+    // auth/org bootstrap resolving) reports `isLoading: false` the instant
+    // it mounts, since `isLoading = isPending && isFetching` and a disabled
+    // query is never fetching. Only `isPending` distinguishes "confirmed no
+    // connection" from "haven't looked yet" in that window.
+    state.github = { isLoading: false, isPending: true, data: undefined };
+    state.connections = { isLoading: false, isPending: true, data: [] };
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));
 
@@ -120,9 +136,10 @@ describe("useEnvironmentReadiness", () => {
     // the same capability (e.g. a second GitHub Enterprise connection) could
     // downgrade -- or, as here, mask a real problem on -- the default
     // instance, depending on arbitrary array order from an unordered query.
-    state.github = { isLoading: false, data: { id: "row" } };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
     state.connections = {
       isLoading: false,
+      isPending: false,
       data: [
         githubConnectionRecord({
           instanceKey: "default",
@@ -142,9 +159,10 @@ describe("useEnvironmentReadiness", () => {
   });
 
   it("does not let an unrelated capability's connection record affect source-control", () => {
-    state.github = { isLoading: false, data: { id: "row" } };
+    state.github = { isLoading: false, isPending: false, data: { id: "row" } };
     state.connections = {
       isLoading: false,
+      isPending: false,
       data: [
         githubConnectionRecord({
           capability: "issue-tracker",
