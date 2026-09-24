@@ -44,13 +44,13 @@ function GithubConnectionCard() {
         body: showEnterpriseHost && enterpriseHost ? { enterpriseHost } : {},
       });
       if (error || !data?.authorizeUrl) {
-        displayErrorToast("Could not start GitHub connection.");
+        displayErrorToast(t(I18nKey.CONNECTIONS$GITHUB_CONNECT_ERROR));
         setIsConnecting(false);
         return;
       }
       window.location.assign(data.authorizeUrl);
     } catch {
-      displayErrorToast("Could not start GitHub connection.");
+      displayErrorToast(t(I18nKey.CONNECTIONS$GITHUB_CONNECT_ERROR));
       setIsConnecting(false);
     }
   };
@@ -63,13 +63,13 @@ function GithubConnectionCard() {
         body: {},
       });
       if (error) {
-        displayErrorToast("Could not disconnect GitHub.");
+        displayErrorToast(t(I18nKey.CONNECTIONS$GITHUB_DISCONNECT_ERROR));
         return;
       }
-      displaySuccessToast("GitHub disconnected.");
+      displaySuccessToast(t(I18nKey.CONNECTIONS$GITHUB_DISCONNECTED_TOAST));
       await invalidateConnectionCaches(queryClient);
     } catch {
-      displayErrorToast("Could not disconnect GitHub.");
+      displayErrorToast(t(I18nKey.CONNECTIONS$GITHUB_DISCONNECT_ERROR));
     } finally {
       setIsDisconnecting(false);
     }
@@ -142,13 +142,13 @@ function JiraConnectionCard() {
         authorizeUrl: string;
       }>("jira-oauth-start", { body: {} });
       if (error || !data?.authorizeUrl) {
-        displayErrorToast("Could not start Jira connection.");
+        displayErrorToast(t(I18nKey.CONNECTIONS$JIRA_CONNECT_ERROR));
         setIsConnecting(false);
         return;
       }
       window.location.assign(data.authorizeUrl);
     } catch {
-      displayErrorToast("Could not start Jira connection.");
+      displayErrorToast(t(I18nKey.CONNECTIONS$JIRA_CONNECT_ERROR));
       setIsConnecting(false);
     }
   };
@@ -161,13 +161,13 @@ function JiraConnectionCard() {
         body: {},
       });
       if (error) {
-        displayErrorToast("Could not disconnect Jira.");
+        displayErrorToast(t(I18nKey.CONNECTIONS$JIRA_DISCONNECT_ERROR));
         return;
       }
-      displaySuccessToast("Jira disconnected.");
+      displaySuccessToast(t(I18nKey.CONNECTIONS$JIRA_DISCONNECTED_TOAST));
       await invalidateConnectionCaches(queryClient);
     } catch {
-      displayErrorToast("Could not disconnect Jira.");
+      displayErrorToast(t(I18nKey.CONNECTIONS$JIRA_DISCONNECT_ERROR));
     } finally {
       setIsDisconnecting(false);
     }
@@ -481,13 +481,15 @@ export function ConnectionsSettingsScreen() {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
     if (connected === "github") {
-      displaySuccessToast("GitHub connected.");
+      displaySuccessToast(t(I18nKey.CONNECTIONS$GITHUB_CONNECTED_TOAST));
       void invalidateConnectionCaches(queryClient);
     } else if (connected === "jira") {
-      displaySuccessToast("Jira connected.");
+      displaySuccessToast(t(I18nKey.CONNECTIONS$JIRA_CONNECTED_TOAST));
       void invalidateConnectionCaches(queryClient);
     } else if (error) {
-      displayErrorToast(`Connection failed: ${error}`);
+      displayErrorToast(
+        t(I18nKey.CONNECTIONS$OAUTH_CONNECTION_FAILED, { error }),
+      );
     }
     if (connected || error) {
       const next = new URLSearchParams(searchParams);
