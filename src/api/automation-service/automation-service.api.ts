@@ -122,7 +122,16 @@ async function buildAutomationRequestHeaders(
  * When neither answers the registered host is kept, so a genuine outage still
  * surfaces as itself rather than as an error against a different URL.
  */
-let resolvedBaseUrlForHost: { host: string; baseUrl: string } | null = null;
+/**
+ * Keyed by host on purpose, mirroring `inFlightResolutions` below. A single
+ * shared slot meant that resolving backend B's base URL overwrote whatever
+ * had already been confirmed for backend A — so switching back to A (e.g. via
+ * the "Manage Backends" UI) found the cache pointing at B's host, treated A as
+ * never-resolved, and re-ran the full probe sequence (up to two sequential 5s
+ * HTTP GETs) on the next automation call, every single time, even though A
+ * had already been verified moments earlier.
+ */
+const resolvedBaseUrlForHost = new Map<string, string>();
 /**
  * Keyed by host on purpose. A single shared promise meant that a call made for
  * one host while another host's probe was still in flight received the *other*
@@ -152,8 +161,9 @@ async function servesAutomationMount(baseURL: string): Promise<boolean> {
 }
 
 async function resolveAutomationBaseUrl(host: string): Promise<string> {
-  if (resolvedBaseUrlForHost?.host === host) {
-    return resolvedBaseUrlForHost.baseUrl;
+  const cached = resolvedBaseUrlForHost.get(host);
+  if (cached !== undefined) {
+    return cached;
   }
   const pending = inFlightResolutions.get(host);
   if (pending) return pending;
@@ -179,7 +189,7 @@ async function resolveAutomationBaseUrl(host: string): Promise<string> {
     // callers to a dead host even after the real service finishes booting —
     // defeating `useAutomationHealth`'s poll-until-healthy retry.
     if (verified) {
-      resolvedBaseUrlForHost = { host, baseUrl };
+      resolvedBaseUrlForHost.set(host, baseUrl);
     }
     return baseUrl;
   })();
@@ -194,7 +204,7 @@ async function resolveAutomationBaseUrl(host: string): Promise<string> {
 
 /** Exposed for tests, which need each case to start from a clean resolution. */
 export function __resetAutomationBaseUrlForTests(): void {
-  resolvedBaseUrlForHost = null;
+  resolvedBaseUrlForHost.clear();
   inFlightResolutions.clear();
 }
 

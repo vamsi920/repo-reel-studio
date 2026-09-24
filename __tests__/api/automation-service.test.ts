@@ -78,7 +78,9 @@ vi.mock("#/services/telemetry", () => ({
 }));
 
 // Import after mocking
-import AutomationService from "#/api/automation-service/automation-service.api";
+import AutomationService, {
+  __resetAutomationBaseUrlForTests,
+} from "#/api/automation-service/automation-service.api";
 
 const localBackend: Backend = {
   id: "local-1",
@@ -157,6 +159,10 @@ describe("AutomationService", () => {
     mockGetEffectiveLocal.mockReturnValue(localBackend);
     mockGetTelemetryDistinctId.mockReset();
     mockGetTelemetryDistinctId.mockResolvedValue("ph-test-distinct-id");
+    // The base-URL resolution cache is module-level state that otherwise
+    // leaks between tests (and between hosts within a test) -- see the
+    // "caches base URLs independently per host" test below.
+    __resetAutomationBaseUrlForTests();
   });
 
   describe("listAutomations", () => {
@@ -648,6 +654,44 @@ describe("AutomationService", () => {
       await interceptor(config);
 
       expect(config.baseURL).toBe("http://already-set:8000");
+    });
+
+    it("caches base URLs independently per host, so resolving a second host does not force a previously-confirmed host to be re-probed", async () => {
+      const interceptor = capturedInterceptors[0];
+      expect(interceptor).toBeDefined();
+
+      const hostA = "http://host-a:8000";
+      const hostB = "http://host-b:9000";
+
+      // Both hosts directly serve the automation mount -- no origin
+      // fallback needed, so `mockGet` is only ever hit for the explicit
+      // per-host probe this test is asserting on.
+      mockGet.mockImplementation((_path: string, config?: { baseURL?: string }) =>
+        config?.baseURL === hostA || config?.baseURL === hostB
+          ? Promise.resolve({ data: { status: "ok" } })
+          : Promise.reject(new Error(`unexpected probe: ${config?.baseURL}`)),
+      );
+
+      mockGetEffectiveLocal.mockReturnValue({ ...localBackend, host: hostA });
+      const configA1 = makeAxiosConfig();
+      await interceptor(configA1);
+      expect(configA1.baseURL).toBe(hostA);
+      expect(mockGet).toHaveBeenCalledTimes(1);
+
+      mockGetEffectiveLocal.mockReturnValue({ ...localBackend, host: hostB });
+      const configB = makeAxiosConfig();
+      await interceptor(configB);
+      expect(configB.baseURL).toBe(hostB);
+      expect(mockGet).toHaveBeenCalledTimes(2);
+
+      // Switching back to the already-confirmed host A must be a cache
+      // hit -- no additional probe -- not a full re-resolution just
+      // because host B's resolution overwrote a single shared slot.
+      mockGetEffectiveLocal.mockReturnValue({ ...localBackend, host: hostA });
+      const configA2 = makeAxiosConfig();
+      await interceptor(configA2);
+      expect(configA2.baseURL).toBe(hostA);
+      expect(mockGet).toHaveBeenCalledTimes(2);
     });
   });
 });
