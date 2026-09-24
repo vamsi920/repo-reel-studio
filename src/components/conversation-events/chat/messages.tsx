@@ -3,6 +3,7 @@ import { OpenHandsEvent } from "#/types/agent-server/core";
 import { EventMessage } from "./event-message";
 import { usePlanPreviewEvents } from "./hooks/use-plan-preview-events";
 import { groupEvents } from "./group-events";
+import { buildActionsById } from "./event-thought-helpers";
 import { EventGroup } from "./event-message-components/event-group";
 import { ThoughtEventMessage } from "./event-message-components/thought-event-message";
 import { useModelStore } from "#/stores/model-store";
@@ -68,6 +69,14 @@ export const Messages: React.FC<MessagesProps> = React.memo(
       [messages, allEvents],
     );
 
+    // Shared once across every EventGroup below so each group's "what action
+    // produced the latest observation" lookup is a Map.get instead of a full
+    // re-scan of the (unbounded, live-growing) conversation history.
+    const actionsById = React.useMemo(
+      () => buildActionsById(allEvents),
+      [allEvents],
+    );
+
     const renderEventMessage = (
       event: OpenHandsEvent,
       index: number,
@@ -118,7 +127,7 @@ export const Messages: React.FC<MessagesProps> = React.memo(
             <React.Fragment key={`group-${groupKey}`}>
               <EventGroup
                 events={item.events}
-                allEvents={allEvents}
+                actionsById={actionsById}
                 isFinalized={isFinalized}
               >
                 {item.events.map((event, offset) =>

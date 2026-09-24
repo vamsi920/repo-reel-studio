@@ -11,17 +11,21 @@ import {
 import { I18nKey } from "#/i18n/declaration";
 import { getEventContent } from "../event-content-helpers/get-event-content";
 import { IsInEventGroupContext } from "../../../features/chat/is-in-event-group-context";
+import { buildActionsById } from "../event-thought-helpers";
 
 interface EventGroupProps {
   /** The events represented by this group. Used to compute the summary. */
   events: OpenHandsEvent[];
   /**
-   * Full event history. Used to resolve the action that produced the latest
-   * observation in the group so the summary title matches what the individual
-   * card would show (e.g. "Editing path/to/file"). Falls back to `events` when
-   * omitted.
+   * id -> ActionEvent lookup for the full event history, used to resolve the
+   * action that produced the latest observation in the group so the summary
+   * title matches what the individual card would show (e.g. "Editing
+   * path/to/file"). Callers rendering many groups from the same event history
+   * should build this once (see `buildActionsById`) and share it, rather than
+   * letting each group rebuild it. Falls back to a map built from `events`
+   * when omitted.
    */
-  allEvents?: OpenHandsEvent[];
+  actionsById?: Map<string, ActionEvent>;
   /**
    * `true` once an event outside this group has been emitted after it, so the
    * group is no longer the "live" tail of the chat. While `false` (the
@@ -57,7 +61,7 @@ interface EventGroupProps {
  */
 export function EventGroup({
   events,
-  allEvents,
+  actionsById,
   isFinalized = false,
   children,
 }: EventGroupProps) {
@@ -88,11 +92,8 @@ export function EventGroup({
     if (isActionEvent(latestEvent)) {
       latestTitle = getEventContent(latestEvent).title;
     } else if (isObservationEvent(latestEvent)) {
-      const lookupSource = allEvents ?? events;
-      const correspondingAction = lookupSource.find(
-        (e): e is ActionEvent =>
-          isActionEvent(e) && e.id === latestEvent.action_id,
-      );
+      const lookup = actionsById ?? buildActionsById(events);
+      const correspondingAction = lookup.get(latestEvent.action_id);
       latestTitle = getEventContent(latestEvent, correspondingAction).title;
     }
   }

@@ -5,7 +5,10 @@ import {
   isPlanningFileEditorObservationEvent,
 } from "#/types/agent-server/type-guards";
 import { isMarkdownFileEditorEvent } from "#/components/features/chat/tool-visualizers/primitives/markdown-file-preview";
-import { getThoughtSourceAction } from "./event-thought-helpers";
+import {
+  buildActionsById,
+  getThoughtSourceAction,
+} from "./event-thought-helpers";
 
 /** Minimum run-length before consecutive actions get folded into a single
  *  collapsible group. Even pairs are folded so the chat scroll stays compact
@@ -83,6 +86,11 @@ export const groupEvents = (
     throw new Error("minSize must be at least 1");
   }
 
+  // Built once up front (O(n)) so the per-event lookups below don't each
+  // re-scan the full event history (that scan-per-event pattern made this
+  // function O(n^2) on `allEvents`, which is the unbounded, live-growing
+  // full conversation history during an active agent run).
+  const actionsById = buildActionsById(allEvents);
   const items: RenderedItem[] = [];
   const emittedThoughtActionIds = new Set<string>();
   let run: { events: OpenHandsEvent[]; startIndex: number } | null = null;
@@ -105,13 +113,10 @@ export const groupEvents = (
 
   events.forEach((event, index) => {
     const correspondingAction = isObservationEvent(event)
-      ? allEvents.find(
-          (candidate): candidate is ActionEvent =>
-            isActionEvent(candidate) && candidate.id === event.action_id,
-        )
+      ? actionsById.get(event.action_id)
       : undefined;
     if (isGroupableEvent(event, correspondingAction)) {
-      const thoughtAction = getThoughtSourceAction(event, allEvents);
+      const thoughtAction = getThoughtSourceAction(event, actionsById);
       if (thoughtAction && !emittedThoughtActionIds.has(thoughtAction.id)) {
         flushRun();
         emittedThoughtActionIds.add(thoughtAction.id);

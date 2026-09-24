@@ -44,6 +44,24 @@ export const hasNonEmptyThought = (action: ActionEvent): boolean =>
   getActionThoughtText(action).trim().length > 0;
 
 /**
+ * Builds an id -> ActionEvent lookup map in a single O(n) pass, so repeated
+ * "find the action that produced this observation" lookups (one per event
+ * while grouping/rendering a conversation) don't each re-scan the full event
+ * history.
+ */
+export const buildActionsById = (
+  events: OpenHandsEvent[],
+): Map<string, ActionEvent> => {
+  const map = new Map<string, ActionEvent>();
+  for (const event of events) {
+    if (isActionEvent(event)) {
+      map.set(event.id, event);
+    }
+  }
+  return map;
+};
+
+/**
  * Splits a leading `<think>…</think>` reasoning block out of assistant content
  * so it renders in the collapsible thinking section, not the message bubble.
  * Some models stream reasoning inline instead of via `reasoning_content`.
@@ -85,14 +103,15 @@ export const splitInlineThink = (
 /**
  * Find the `ActionEvent` whose thought should be rendered alongside the
  * given UI event. For an `ActionEvent` the thought belongs to itself; for
- * an `ObservationEvent` we look up the matching action in `allEvents`.
+ * an `ObservationEvent` we look up the matching action via `actionsById`
+ * (see `buildActionsById`).
  *
  * `ThinkAction` is intentionally excluded because its thought IS the
  * action body and is rendered through a separate codepath.
  */
 export const getThoughtSourceAction = (
   event: OpenHandsEvent,
-  allEvents: OpenHandsEvent[],
+  actionsById: Map<string, ActionEvent>,
 ): ActionEvent | null => {
   if (isActionEvent(event)) {
     if (event.action.kind === "ThinkAction") return null;
@@ -100,9 +119,7 @@ export const getThoughtSourceAction = (
   }
 
   if (isObservationEvent(event)) {
-    const action = allEvents.find(
-      (e): e is ActionEvent => isActionEvent(e) && e.id === event.action_id,
-    );
+    const action = actionsById.get(event.action_id);
     if (!action) return null;
     if (action.action.kind === "ThinkAction") return null;
     return hasNonEmptyThought(action) ? action : null;
