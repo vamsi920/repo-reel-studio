@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { readCloudConversationFile } from "#/api/cloud/conversation-service.api";
 import { getActiveBackend } from "#/api/backend-registry/active-store";
+import { isSdkHttpError } from "#/api/agent-server-compatibility";
 import { getGitPath } from "#/utils/get-git-path";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useRuntimeIsReady } from "#/hooks/use-runtime-is-ready";
@@ -214,10 +215,28 @@ export function useWorkspaceFileContent(relativePath: string | null) {
         // removed /api/cloud-proxy hop. The endpoint returns file content as
         // a string; binary files are detected via NUL-byte sniff on the
         // decoded result and served as base64 data URIs.
-        const content = await readCloudConversationFile(
-          conversationId!,
-          absoluteFilePath!,
-        );
+        let content: string;
+        try {
+          content = await readCloudConversationFile(
+            conversationId!,
+            absoluteFilePath!,
+          );
+        } catch (error) {
+          // Normalize the SDK's HttpError into the same WorkspaceFileReadError
+          // the local backend throws below. Both the error-status display in
+          // FileContentViewer and the "the agent deleted the open file, fall
+          // back to another one" reconciliation in files-tab.tsx key off this
+          // one type — without normalizing here, a cloud-backend 404 (the
+          // agent `rm`'d the selected file) never triggered that fallback and
+          // the tab was stuck showing a dead file's error forever.
+          if (isSdkHttpError(error)) {
+            throw new WorkspaceFileReadError(
+              relativePath,
+              (error as { status: number }).status,
+            );
+          }
+          throw error;
+        }
 
         if (kind === "text") {
           // NUL-byte sniff on the decoded text to catch binary files that

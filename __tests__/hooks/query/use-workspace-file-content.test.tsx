@@ -542,5 +542,44 @@ describe("useWorkspaceFileContent", () => {
         mimeType: "image/svg+xml",
       });
     });
+
+    it("normalizes a cloud 404 into a WorkspaceFileReadError so the files-tab 'file was deleted' fallback can key off it", async () => {
+      // Same shape @openhands/typescript-client's HttpError has: an Error
+      // subclass named "HttpError" carrying a numeric `status`.
+      const httpError = new Error("Not Found");
+      httpError.name = "HttpError";
+      (httpError as unknown as { status: number }).status = 404;
+      readCloudConversationFileMock.mockRejectedValue(httpError);
+
+      const { result } = renderHook(
+        () => useWorkspaceFileContent("docs/deleted.md"),
+        { wrapper: makeWrapper() },
+      );
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+
+      expect(result.current.error).toBeInstanceOf(WorkspaceFileReadError);
+      expect(result.current.error).toEqual(
+        expect.objectContaining({
+          status: 404,
+          path: "docs/deleted.md",
+        }),
+      );
+    });
+
+    it("passes through a non-HTTP cloud failure unchanged", async () => {
+      const networkError = new Error("network down");
+      readCloudConversationFileMock.mockRejectedValue(networkError);
+
+      const { result } = renderHook(
+        () => useWorkspaceFileContent("docs/x.md"),
+        { wrapper: makeWrapper() },
+      );
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+
+      expect(result.current.error).toBe(networkError);
+      expect(result.current.error).not.toBeInstanceOf(WorkspaceFileReadError);
+    });
   });
 });
