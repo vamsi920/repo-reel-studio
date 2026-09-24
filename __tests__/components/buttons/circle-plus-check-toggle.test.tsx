@@ -99,6 +99,46 @@ describe("CirclePlusCheckToggle", () => {
     expect(toggle).toHaveAttribute("data-showing-remove", "false");
   });
 
+  it("keeps focus on the button after a keyboard-driven toggle", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    render(
+      <CirclePlusCheckToggle
+        testId="skill-toggle"
+        isSelected={false}
+        onToggle={onToggle}
+      />,
+    );
+
+    const toggle = screen.getByTestId("skill-toggle");
+    await user.tab();
+    expect(toggle).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(onToggle).toHaveBeenCalledWith(true);
+    expect(toggle).toHaveFocus();
+  });
+
+  it("blurs the button after a real pointer click", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    render(
+      <CirclePlusCheckToggle
+        testId="skill-toggle"
+        isSelected={false}
+        onToggle={onToggle}
+      />,
+    );
+
+    const toggle = screen.getByTestId("skill-toggle");
+    await user.click(toggle);
+
+    expect(onToggle).toHaveBeenCalledWith(true);
+    expect(toggle).not.toHaveFocus();
+  });
+
   it("stops click propagation for nested card handlers", async () => {
     const user = userEvent.setup();
     const onCardClick = vi.fn();

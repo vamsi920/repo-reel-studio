@@ -68,7 +68,12 @@ export function CirclePlusCheckToggle({
       return;
     }
     onToggle(!isSelected);
-    event.currentTarget.blur();
+    // A native <button> synthesizes a click with `detail: 0` when activated
+    // via Enter/Space; only blur on a genuine pointer click (`detail >= 1`)
+    // so keyboard users don't lose their place in the tab order.
+    if (event.detail !== 0) {
+      event.currentTarget.blur();
+    }
   };
 
   const showRemoveIcon = isSelected && isPointerOver;
