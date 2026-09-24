@@ -64,7 +64,17 @@ export async function generateKnowledge(
   options: GenerateKnowledgeOptions = {},
   backendId: string | null = null,
 ) {
-  store.startGenerating(snapshot, conversationUrl, sessionApiKey);
+  // Two independent flows (a RepoCard's "Generate", a second "Add
+  // Repository" pass for the same owner/repo/branch, the refresh-cadence
+  // "Regenerate" button) can all target the same repositoryId. `attempt` is
+  // this call's own token — every store write below carries it so a newer
+  // attempt's result can never be clobbered by an older attempt settling
+  // later (see the guard in knowledge-store.ts).
+  const attempt = store.startGenerating(
+    snapshot,
+    conversationUrl,
+    sessionApiKey,
+  );
   try {
     // Best-effort: real code-structure evidence from the same analyzer
     // CodeGraph uses, so structure determination isn't guessing from file
@@ -80,7 +90,8 @@ export async function generateKnowledge(
       // (gemini-2.5-flash) — pro gives noticeably better grounding on the
       // per-page generation this pipeline depends on.
       model: "gemini-2.5-pro",
-      onProgress: (status) => store.setProgress(snapshot.repositoryId, status),
+      onProgress: (status) =>
+        store.setProgress(snapshot.repositoryId, status, attempt),
     });
     const rawKnowledge = await engine.generate(snapshot, {
       force: options.force,
@@ -95,7 +106,7 @@ export async function generateKnowledge(
       () => rawKnowledge,
     );
     const qualityFlags = reviewKnowledgeQuality(knowledge, evidence?.handle);
-    store.setReady(snapshot.repositoryId, knowledge, qualityFlags);
+    store.setReady(snapshot.repositoryId, knowledge, qualityFlags, attempt);
     navigate(`/kt/${encodeURIComponent(snapshot.repositoryId)}`);
     queueKnowledgePersistence(snapshot, backendId, knowledge);
     if (evidence) {
@@ -111,7 +122,7 @@ export async function generateKnowledge(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    store.setError(snapshot.repositoryId, message);
+    store.setError(snapshot.repositoryId, message, attempt);
     displayErrorToast(message);
   }
 }

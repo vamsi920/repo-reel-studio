@@ -202,6 +202,44 @@ describe("KtList", () => {
     expect(screen.queryByText("KT$EMPTY")).toBeNull();
   });
 
+  // Regression: a repository generating via its own RepoCard's "Generate"
+  // button (an already-connected repo with no Knowledge yet) was ALSO
+  // rendered as a second, duplicate ProvisioningCard the moment its
+  // conversation showed up in the connected-repositories list — the same
+  // progress/error shown twice for one repository.
+  it("does not render a duplicate provisioning card for a repository already shown as a RepoCard", async () => {
+    setConnected(UNPROVISIONED);
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [UNPROVISIONED.repositoryId]: {
+          status: "generating",
+          snapshot: {
+            repositoryId: UNPROVISIONED.repositoryId,
+            owner: UNPROVISIONED.owner,
+            repo: UNPROVISIONED.repo,
+            branch: UNPROVISIONED.branch,
+            commitSha: "abc123",
+            localPath: "/workspace",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: null,
+          qualityFlags: [],
+          error: null,
+          refreshCadence: "manual",
+        },
+      },
+      provisioningByRepositoryId: {},
+    });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-repo-card")).toBeInTheDocument();
+    expect(screen.queryAllByTestId("kt-provisioning-card")).toHaveLength(0);
+  });
+
   // Regression: a search query matching zero repositories rendered a
   // completely empty grid with no feedback, indistinguishable from a
   // loading or broken state.

@@ -504,4 +504,31 @@ describe("knowledgePersistenceRepository.saveFullKnowledge", () => {
       expect.objectContaining({ id: "page-a", position: 1 }),
     ]);
   });
+
+  // Regression: supabase-js resolves `{data, error}` rather than throwing, so
+  // a delete failing (RLS timing/network blip) went completely unnoticed --
+  // the code proceeded straight to inserting the fresh rows regardless,
+  // leaving old rows from the previous generation (e.g. stale diagrams)
+  // sitting alongside the new ones with nothing to catch or log it.
+  it("logs and aborts the write when a delete step fails, without inserting anything", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    state.tables.knowledge_diagrams = {
+      data: null,
+      error: new Error("delete denied"),
+    };
+
+    await knowledgePersistenceRepository.saveFullKnowledge(
+      "repo-1",
+      "workspace-1",
+      "main",
+      KNOWLEDGE,
+    );
+
+    expect(state.insertCalls).toEqual([]);
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("delete knowledge_diagrams"),
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
 });

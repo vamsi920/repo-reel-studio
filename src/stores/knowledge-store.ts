@@ -61,16 +61,30 @@ export interface KnowledgeRepositoryState {
 
 interface KnowledgeStore {
   byRepositoryId: Record<string, KnowledgeRepositoryState>;
+  /** Returns an opaque attempt token identifying this call, for
+   * `setProgress`/`setReady`/`setError` to prove they belong to the
+   * generation attempt still in flight (see the module-level attempt
+   * tracking below). */
   startGenerating: (
     snapshot: RepositorySnapshot,
     conversationUrl: string | null,
     sessionApiKey: string | null,
+  ) => number;
+  /** `attempt`, when passed, must match the token `startGenerating` returned
+   * for this repositoryId's *current* attempt, or the call is dropped. Every
+   * production caller goes through `generateKnowledge()`, which always
+   * passes its own token; omitting it (as some tests do) always applies the
+   * write, matching the old unconditional behavior. */
+  setProgress: (
+    repositoryId: string,
+    progress: DeepWikiWikiTaskStatus,
+    attempt?: number,
   ) => void;
-  setProgress: (repositoryId: string, progress: DeepWikiWikiTaskStatus) => void;
   setReady: (
     repositoryId: string,
     knowledge: KnowledgeRepository,
     qualityFlags?: PageQualityFlag[],
+    attempt?: number,
   ) => void;
   /** Seeds a full `ready` entry directly, for cold rehydration from
    * persisted (Supabase) data where no live conversation/session exists yet
@@ -82,7 +96,7 @@ interface KnowledgeStore {
     knowledge: KnowledgeRepository,
     qualityFlags: PageQualityFlag[],
   ) => void;
-  setError: (repositoryId: string, error: string) => void;
+  setError: (repositoryId: string, error: string, attempt?: number) => void;
   setRefreshCadence: (repositoryId: string, cadence: RefreshCadence) => void;
 
   /** Tracks the pre-generation phase (creating a conversation, waiting for
@@ -115,6 +129,28 @@ interface KnowledgeStore {
   reset: () => void;
 }
 
+// Two independent flows can target the very same repositoryId concurrently
+// -- e.g. clicking "Generate" on a connected repo's RepoCard while a second
+// "Add Repository" pass for the identical owner/repo/branch is still
+// resolving its commit, or clicking Regenerate while an older attempt is
+// still polling DeepWiki. Nothing in `byRepositoryId` distinguished an old
+// attempt's writes from a newer one's, so whichever attempt's async work
+// happened to settle *last* silently won, even if it was the older,
+// now-irrelevant one -- overwriting a newer (possibly already-`ready`)
+// result with stale progress/content. `startGenerating` mints a fresh token
+// per attempt for a given repositoryId; `setProgress`/`setReady`/`setError`
+// drop a write whose token no longer matches that repositoryId's current
+// attempt. Kept outside the Zustand `set` state (a plain module map, not
+// itself reactive state) since it's a write-ordering guard, not anything a
+// component should ever read or re-render on.
+let nextAttempt = 0;
+const activeAttemptByRepositoryId = new Map<string, number>();
+
+function isStaleAttempt(repositoryId: string, attempt: number | undefined) {
+  if (attempt === undefined) return false;
+  return activeAttemptByRepositoryId.get(repositoryId) !== attempt;
+}
+
 /**
  * The store itself is in-memory-only, but `hydrate` lets a cold page load
  * seed a full entry from Supabase (src/lib/data-platform/repositories/
@@ -124,7 +160,10 @@ interface KnowledgeStore {
 export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
   byRepositoryId: {},
 
-  startGenerating: (snapshot, conversationUrl, sessionApiKey) =>
+  startGenerating: (snapshot, conversationUrl, sessionApiKey) => {
+    nextAttempt += 1;
+    const attempt = nextAttempt;
+    activeAttemptByRepositoryId.set(snapshot.repositoryId, attempt);
     set((state) => {
       const existing = state.byRepositoryId[snapshot.repositoryId];
       return {
@@ -150,10 +189,13 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
           },
         },
       };
-    }),
+    });
+    return attempt;
+  },
 
-  setProgress: (repositoryId, progress) =>
+  setProgress: (repositoryId, progress, attempt) =>
     set((state) => {
+      if (isStaleAttempt(repositoryId, attempt)) return state;
       const existing = state.byRepositoryId[repositoryId];
       if (!existing) return state;
       const isTerminal =
@@ -169,8 +211,9 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       };
     }),
 
-  setReady: (repositoryId, knowledge, qualityFlags = []) =>
+  setReady: (repositoryId, knowledge, qualityFlags = [], attempt) =>
     set((state) => {
+      if (isStaleAttempt(repositoryId, attempt)) return state;
       const existing = state.byRepositoryId[repositoryId];
       if (!existing) return state;
       return {
@@ -207,8 +250,9 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       },
     })),
 
-  setError: (repositoryId, error) =>
+  setError: (repositoryId, error, attempt) =>
     set((state) => {
+      if (isStaleAttempt(repositoryId, attempt)) return state;
       const existing = state.byRepositoryId[repositoryId];
       if (!existing) return state;
       return {
@@ -277,5 +321,8 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       return { provisioningByRepositoryId: rest };
     }),
 
-  reset: () => set({ byRepositoryId: {}, provisioningByRepositoryId: {} }),
+  reset: () => {
+    activeAttemptByRepositoryId.clear();
+    set({ byRepositoryId: {}, provisioningByRepositoryId: {} });
+  },
 }));

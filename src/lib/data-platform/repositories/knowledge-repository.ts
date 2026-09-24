@@ -168,8 +168,9 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
     knowledge: KnowledgeRepository,
   ): Promise<void> {
     if (!isSupabaseConfigured || !supabase) return;
+    const client = supabase;
     try {
-      const { data: generation, error: generationError } = await supabase
+      const { data: generation, error: generationError } = await client
         .from("knowledge_generations")
         .upsert(
           {
@@ -188,20 +189,44 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
       if (generationError || !generation) return;
       const generationId = generation.id as string;
 
-      await Promise.all([
-        supabase
+      const [sectionsDelete, pagesDelete, diagramsDelete] = await Promise.all([
+        client
           .from("knowledge_sections")
           .delete()
           .eq("generation_id", generationId),
-        supabase
+        client
           .from("knowledge_pages")
           .delete()
           .eq("generation_id", generationId),
-        supabase
+        client
           .from("knowledge_diagrams")
           .delete()
           .eq("page_generation_id", generationId),
       ]);
+      if (sectionsDelete.error)
+        logFailure(
+          "saveFullKnowledge: delete knowledge_sections",
+          sectionsDelete.error,
+        );
+      if (pagesDelete.error)
+        logFailure(
+          "saveFullKnowledge: delete knowledge_pages",
+          pagesDelete.error,
+        );
+      if (diagramsDelete.error)
+        logFailure(
+          "saveFullKnowledge: delete knowledge_diagrams",
+          diagramsDelete.error,
+        );
+      // supabase-js resolves `{data, error}` rather than throwing, so the
+      // outer `catch` below never saw a partial delete failure. Proceeding to
+      // insert anyway would leave stale rows from the previous generation
+      // mixed in with the fresh ones (e.g. old diagrams never removed sitting
+      // alongside the new set, with no constraint to stop it) -- abort the
+      // rest of this write instead of persisting a generation that's part
+      // old, part new.
+      if (sectionsDelete.error || pagesDelete.error || diagramsDelete.error)
+        return;
 
       const sectionRows = knowledge.sections.map((section, index) => ({
         generation_id: generationId,
@@ -233,17 +258,37 @@ class SupabaseKnowledgePersistenceRepository implements KnowledgePersistenceRepo
         })),
       );
 
-      await Promise.all([
+      const [sectionsInsert, pagesInsert, diagramsInsert] = await Promise.all([
         sectionRows.length
-          ? supabase.from("knowledge_sections").insert(sectionRows)
-          : Promise.resolve(),
+          ? client.from("knowledge_sections").insert(sectionRows)
+          : null,
         pageRows.length
-          ? supabase.from("knowledge_pages").insert(pageRows)
-          : Promise.resolve(),
+          ? client.from("knowledge_pages").insert(pageRows)
+          : null,
         diagramRows.length
-          ? supabase.from("knowledge_diagrams").insert(diagramRows)
-          : Promise.resolve(),
+          ? client.from("knowledge_diagrams").insert(diagramRows)
+          : null,
       ]);
+      // Same rationale as the delete errors above -- supabase-js resolves
+      // rather than throws, so a partial insert failure (RLS timing/network
+      // blip on one of the three tables) used to vanish silently, leaving a
+      // generation whose sections/pages/diagrams don't actually agree with
+      // each other and no signal anywhere pointing at why.
+      if (sectionsInsert?.error)
+        logFailure(
+          "saveFullKnowledge: insert knowledge_sections",
+          sectionsInsert.error,
+        );
+      if (pagesInsert?.error)
+        logFailure(
+          "saveFullKnowledge: insert knowledge_pages",
+          pagesInsert.error,
+        );
+      if (diagramsInsert?.error)
+        logFailure(
+          "saveFullKnowledge: insert knowledge_diagrams",
+          diagramsInsert.error,
+        );
     } catch {
       // Best-effort -- Docs already rendered from the in-memory store; a
       // failed persistence write only affects cold rehydration later.

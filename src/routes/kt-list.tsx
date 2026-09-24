@@ -299,8 +299,22 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
  * selection, before a conversation/workspace/commit even exists yet, and
  * stays visible through DeepWiki generation. This is the persistent
  * "trigger" the user watches; it's driven entirely by the knowledge store,
- * so it survives navigating away from /kt and back. */
-function ProvisioningCards() {
+ * so it survives navigating away from /kt and back.
+ *
+ * `knownRepositoryIds` excludes any repositoryId that already has its own
+ * `RepoCard` below (every entry in `KtList`'s `repositories` list) — without
+ * it, a repo generating via a `RepoCard`'s own "Generate" button (an
+ * already-connected repo with no Knowledge yet) rendered a second,
+ * duplicate progress card here the moment its conversation appeared in
+ * `useConnectedRepositories()`, and the same happened for the Add Repository
+ * flow itself once its freshly-created conversation was picked up by that
+ * same polled list — two cards showing (and, on failure, duplicating) the
+ * exact same progress/error for one repository. */
+function ProvisioningCards({
+  knownRepositoryIds,
+}: {
+  knownRepositoryIds: Set<string>;
+}) {
   const provisioning = useKnowledgeStore((s) => s.provisioningByRepositoryId);
   const generating = useKnowledgeStore((s) => s.byRepositoryId);
 
@@ -309,7 +323,8 @@ function ProvisioningCards() {
     (id) =>
       (generating[id].status === "generating" ||
         generating[id].status === "error") &&
-      !(id in provisioning),
+      !(id in provisioning) &&
+      !knownRepositoryIds.has(id),
   );
 
   if (provisioningIds.length === 0 && generatingIds.length === 0) return null;
@@ -467,6 +482,10 @@ function KtList() {
     useConnectedRepositories(),
   );
   const [search, setSearch] = useState("");
+  const knownRepositoryIds = useMemo(
+    () => new Set(repositories.map((candidate) => candidate.repositoryId)),
+    [repositories],
+  );
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -495,7 +514,7 @@ function KtList() {
           {t(I18nKey.KT$SUBTITLE)}
         </p>
 
-        <ProvisioningCards />
+        <ProvisioningCards knownRepositoryIds={knownRepositoryIds} />
 
         {repositories.length === 0 && isLoading ? (
           // Neither source has answered yet: a neutral placeholder, never
