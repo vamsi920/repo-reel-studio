@@ -13,6 +13,7 @@ import { PluginPickerCard } from "./plugin-picker-card";
 import {
   isPluginSelected,
   matchesPluginPickerSearch,
+  pluginSpecKey,
   togglePluginSelection,
 } from "./plugin-spec-identity";
 
@@ -96,7 +97,7 @@ export function PluginPicker({
         <div className={extensionModuleCardGridClassName}>
           {visible.map((plugin) => (
             <PluginPickerCard
-              key={`${plugin.source} ${plugin.ref ?? ""} ${plugin.repo_path ?? ""} ${plugin.name}`}
+              key={pluginSpecKey(plugin)}
               plugin={plugin}
               isSelected={isPluginSelected(selected, plugin)}
               isDisabled={disabled}

@@ -127,6 +127,45 @@ describe("PluginPicker", () => {
     expect(getPluginsMarketplace).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps a stable, unique key per catalog entry even when the old space-joined coordinates would have collided", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    // Space-joining "source ref repo_path name" made these two collide
+    // ("foo" + " " + "bar baz" + " " + "" + " " + "dup" === "foo bar" + " " +
+    // "baz" + " " + "" + " " + "dup"), even though their coordinates differ.
+    const collisionA: MarketplacePlugin = {
+      name: "dup",
+      description: "a",
+      source: "foo",
+      ref: "bar baz",
+      repo_path: null,
+      installed: false,
+    };
+    const collisionB: MarketplacePlugin = {
+      name: "dup",
+      description: "b",
+      source: "foo bar",
+      ref: "baz",
+      repo_path: null,
+      installed: false,
+    };
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
+      collisionA,
+      collisionB,
+    ]);
+
+    renderPicker();
+
+    expect(await screen.findAllByTestId("plugin-picker-card-dup")).toHaveLength(
+      2,
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("same key"),
+      expect.anything(),
+    );
+  });
+
   it("filters the catalog by the search query", async () => {
     vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
       alpha,
