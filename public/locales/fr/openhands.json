@@ -3250,6 +3250,7 @@
   "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Nouveau mot de passe",
   "NEODEVEX_AUTH$RESET_SUBMIT": "Mettre à jour le mot de passe",
   "NEODEVEX_AUTH$RESET_SUBMITTING": "Mise à jour en cours...",
+  "NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN": "Votre mot de passe a été modifié. Connectez-vous avec votre nouveau mot de passe.",
   "ENVIRONMENT$STUDIO_TITLE": "Set up NeoDevEx",
   "ENVIRONMENT$STUDIO_SUBTITLE": "Tell the agent how your company works. It will connect the pieces as you go.",
   "ENVIRONMENT$STUDIO_START": "Start the setup conversation",

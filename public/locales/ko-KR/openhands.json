@@ -3250,6 +3250,7 @@
   "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "새 비밀번호",
   "NEODEVEX_AUTH$RESET_SUBMIT": "비밀번호 업데이트",
   "NEODEVEX_AUTH$RESET_SUBMITTING": "업데이트 중...",
+  "NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN": "비밀번호가 변경되었습니다. 새 비밀번호로 로그인하세요.",
   "ENVIRONMENT$STUDIO_TITLE": "Set up NeoDevEx",
   "ENVIRONMENT$STUDIO_SUBTITLE": "Tell the agent how your company works. It will connect the pieces as you go.",
   "ENVIRONMENT$STUDIO_START": "Start the setup conversation",

@@ -3250,6 +3250,7 @@
   "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Nueva contraseña",
   "NEODEVEX_AUTH$RESET_SUBMIT": "Actualizar contraseña",
   "NEODEVEX_AUTH$RESET_SUBMITTING": "Actualizando...",
+  "NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN": "Tu contraseña se cambió. Inicia sesión con tu nueva contraseña.",
   "ENVIRONMENT$STUDIO_TITLE": "Set up NeoDevEx",
   "ENVIRONMENT$STUDIO_SUBTITLE": "Tell the agent how your company works. It will connect the pieces as you go.",
   "ENVIRONMENT$STUDIO_START": "Start the setup conversation",

@@ -38,6 +38,8 @@ export function PasswordAuthForm() {
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [alreadyExists, setAlreadyExists] = React.useState(false);
+  const [passwordChangedNotice, setPasswordChangedNotice] =
+    React.useState(false);
   // Empty until loaded, which means "no restriction" -- the same default the
   // server-side trigger applies, so a deployment that has not narrowed its
   // allowlist never blocks its own login form.
@@ -62,6 +64,7 @@ export function PasswordAuthForm() {
     setPasswordError(null);
     setErrorMessage(null);
     setAlreadyExists(false);
+    setPasswordChangedNotice(false);
   };
 
   const switchMode = (nextMode: Mode) => {
@@ -119,9 +122,12 @@ export function PasswordAuthForm() {
         }
         // Password did change server-side even though this particular
         // sign-in attempt failed -- send them to a normal sign-in rather
-        // than implying the change itself didn't work.
+        // than implying the change itself didn't work. switchMode clears
+        // every outcome-driven message via clearFieldErrors, so the notice
+        // is set after it runs, not before.
         switchMode("sign-in");
         setEmail(trimmedEmail);
+        setPasswordChangedNotice(true);
         return;
       }
       setSubmitState("idle");
@@ -273,6 +279,16 @@ export function PasswordAuthForm() {
           <p role="alert" className="-mt-2 text-xs text-red-400">
             {passwordError}
           </p>
+        ) : null}
+
+        {passwordChangedNotice ? (
+          <div
+            role="status"
+            data-testid="auth-password-changed-notice"
+            className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200"
+          >
+            {t(I18nKey.NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN)}
+          </div>
         ) : null}
 
         {alreadyExists ? (

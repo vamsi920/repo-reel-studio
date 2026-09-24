@@ -179,6 +179,44 @@ describe("PasswordAuthForm", () => {
     expect(screen.queryByTestId("auth-error")).toBeNull();
   });
 
+  it("tells the user their password changed when the follow-up sign-in fails", async () => {
+    flow.directPasswordReset.mockResolvedValue({ kind: "changed" });
+    flow.signInWithPassword.mockResolvedValue({
+      kind: "error",
+      message: "boom",
+    });
+    render(<PasswordAuthForm />);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("auth-forgot-link"));
+    await user.type(screen.getByTestId("auth-email"), "me@neodevex.com");
+    await user.type(screen.getByTestId("auth-password"), "new-pass-1");
+    await user.type(screen.getByTestId("auth-confirm-password"), "new-pass-1");
+    await user.click(screen.getByTestId("auth-submit"));
+
+    expect(
+      await screen.findByTestId("auth-password-changed-notice"),
+    ).toHaveTextContent("NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN");
+    // Landed back on the plain sign-in form, not still on "forgot".
+    expect(screen.getByText("NEODEVEX_AUTH$SIGN_IN_TITLE")).toBeInTheDocument();
+    expect(screen.queryByTestId("auth-error")).toBeNull();
+  });
+
+  it("clears the password-changed notice once the user edits a field again", async () => {
+    flow.directPasswordReset.mockResolvedValue({ kind: "changed" });
+    flow.signInWithPassword.mockResolvedValue({ kind: "error" });
+    render(<PasswordAuthForm />);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("auth-forgot-link"));
+    await user.type(screen.getByTestId("auth-email"), "me@neodevex.com");
+    await user.type(screen.getByTestId("auth-password"), "new-pass-1");
+    await user.type(screen.getByTestId("auth-confirm-password"), "new-pass-1");
+    await user.click(screen.getByTestId("auth-submit"));
+    await screen.findByTestId("auth-password-changed-notice");
+
+    await user.type(screen.getByTestId("auth-email"), "x");
+    expect(screen.queryByTestId("auth-password-changed-notice")).toBeNull();
+  });
+
   it("falls back to the generic copy when the reset fails without a message", async () => {
     flow.directPasswordReset.mockResolvedValue({ kind: "error" });
     render(<PasswordAuthForm />);

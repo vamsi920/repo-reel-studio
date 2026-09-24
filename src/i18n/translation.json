@@ -55266,6 +55266,23 @@
     "zh-CN": "正在更新…",
     "zh-TW": "正在更新…"
   },
+  "NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN": {
+    "ar": "تم تغيير كلمة المرور الخاصة بك. سجّل الدخول بكلمة المرور الجديدة.",
+    "ca": "S'ha canviat la teva contrasenya. Inicia sessió amb la contrasenya nova.",
+    "de": "Ihr Passwort wurde geändert. Melden Sie sich mit Ihrem neuen Passwort an.",
+    "en": "Your password was changed. Sign in with your new password.",
+    "es": "Tu contraseña se cambió. Inicia sesión con tu nueva contraseña.",
+    "fr": "Votre mot de passe a été modifié. Connectez-vous avec votre nouveau mot de passe.",
+    "it": "La tua password è stata cambiata. Accedi con la nuova password.",
+    "ja": "パスワードが変更されました。新しいパスワードでサインインしてください。",
+    "ko-KR": "비밀번호가 변경되었습니다. 새 비밀번호로 로그인하세요.",
+    "no": "Passordet ditt ble endret. Logg inn med det nye passordet.",
+    "pt": "Sua senha foi alterada. Faça login com sua nova senha.",
+    "tr": "Şifreniz değiştirildi. Yeni şifrenizle giriş yapın.",
+    "uk": "Ваш пароль було змінено. Увійдіть за допомогою нового пароля.",
+    "zh-CN": "您的密码已更改。请使用新密码登录。",
+    "zh-TW": "您的密碼已變更。請使用新密碼登入。"
+  },
   "ENVIRONMENT$STUDIO_TITLE": {
     "en": "Set up NeoDevEx",
     "ja": "Set up NeoDevEx",

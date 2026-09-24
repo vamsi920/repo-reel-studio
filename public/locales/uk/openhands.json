@@ -3250,6 +3250,7 @@
   "NEODEVEX_AUTH$RESET_NEW_PASSWORD_LABEL": "Новий пароль",
   "NEODEVEX_AUTH$RESET_SUBMIT": "Оновити пароль",
   "NEODEVEX_AUTH$RESET_SUBMITTING": "Оновлення...",
+  "NEODEVEX_AUTH$PASSWORD_CHANGED_SIGN_IN": "Ваш пароль було змінено. Увійдіть за допомогою нового пароля.",
   "ENVIRONMENT$STUDIO_TITLE": "Set up NeoDevEx",
   "ENVIRONMENT$STUDIO_SUBTITLE": "Tell the agent how your company works. It will connect the pieces as you go.",
   "ENVIRONMENT$STUDIO_START": "Start the setup conversation",
