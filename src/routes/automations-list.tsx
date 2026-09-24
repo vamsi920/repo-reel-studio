@@ -174,6 +174,10 @@ export default function AutomationsList() {
   );
   const inactive = useMemo(() => visible.filter((a) => !a.enabled), [visible]);
 
+  const [pendingToggleIds, setPendingToggleIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
   const handleToggle = async (id: string, currentEnabled: boolean) => {
     const willEnable = !currentEnabled;
     if (willEnable) {
@@ -183,6 +187,11 @@ export default function AutomationsList() {
         automationName: automation?.name ?? id,
       });
     }
+    // Mirrors `pendingRunIds` below: without this, a rapid double-click on
+    // the same automation's toggle before the first PATCH settles reads the
+    // same (not-yet-updated) `currentEnabled` value twice and fires a second,
+    // redundant request instead of actually toggling twice.
+    setPendingToggleIds((prev) => new Set(prev).add(id));
     try {
       // `toggleMutation` is one mutation instance shared by every row, so a
       // second `.mutate()` call before the first settles drops the first
@@ -203,6 +212,13 @@ export default function AutomationsList() {
           ),
         ),
       );
+    } finally {
+      setPendingToggleIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -531,6 +547,7 @@ export default function AutomationsList() {
                 automations={activeAutomations}
                 view={viewMode}
                 onToggle={handleToggle}
+                pendingToggleIds={pendingToggleIds}
                 onRunNow={handleRunNow}
                 pendingRunIds={pendingRunIds}
                 onDelete={handleDeleteRequest}
@@ -544,6 +561,7 @@ export default function AutomationsList() {
                 automations={inactive}
                 view={viewMode}
                 onToggle={handleToggle}
+                pendingToggleIds={pendingToggleIds}
                 onRunNow={handleRunNow}
                 pendingRunIds={pendingRunIds}
                 onDelete={handleDeleteRequest}

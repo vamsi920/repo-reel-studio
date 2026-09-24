@@ -35,4 +35,25 @@ describe("ToggleSwitch", () => {
 
     expect(parentClick).not.toHaveBeenCalled();
   });
+
+  it("does not call onToggle when disabled, e.g. while a toggle request is in flight", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ToggleSwitch
+        enabled={false}
+        label="Toggle test"
+        onToggle={onToggle}
+        disabled
+      />,
+    );
+
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute("aria-busy", "true");
+
+    await user.click(toggle);
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
 });

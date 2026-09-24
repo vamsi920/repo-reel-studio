@@ -17,6 +17,7 @@ interface BuildAutomationMenuItemsOptions {
   onExport: (automation: Automation) => void;
   onEdit?: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
+  isTogglePending?: boolean;
   onDelete: (id: string) => void;
 }
 
@@ -30,6 +31,7 @@ export function buildAutomationMenuItems({
   onExport,
   onEdit,
   onToggle,
+  isTogglePending = false,
   onDelete,
 }: BuildAutomationMenuItemsOptions): KebabMenuItem[] {
   return [
@@ -70,6 +72,7 @@ export function buildAutomationMenuItems({
               : t(I18nKey.AUTOMATIONS$TURN_ON),
             icon: <PowerIcon className="size-4" />,
             onClick: () => onToggle(automation.id, automation.enabled),
+            disabled: isTogglePending,
           },
           {
             label: t(I18nKey.AUTOMATIONS$DELETE),

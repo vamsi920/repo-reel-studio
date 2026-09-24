@@ -32,6 +32,7 @@ import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 interface AutomationListRowProps {
   automation: Automation;
   onToggle: (id: string, enabled: boolean) => void;
+  isTogglePending?: boolean;
   onRunNow: (id: string) => void;
   isRunPending?: boolean;
   onDelete: (id: string) => void;
@@ -43,6 +44,7 @@ interface AutomationListRowProps {
 export function AutomationListRow({
   automation,
   onToggle,
+  isTogglePending = false,
   onRunNow,
   isRunPending = false,
   onDelete,
@@ -75,6 +77,7 @@ export function AutomationListRow({
     onExport,
     onEdit,
     onToggle,
+    isTogglePending,
     onDelete,
   });
 

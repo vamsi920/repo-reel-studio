@@ -36,6 +36,7 @@ export interface AutomationInsightsProps {
 interface AutomationCardProps {
   automation: Automation;
   onToggle: (id: string, enabled: boolean) => void;
+  isTogglePending?: boolean;
   onRunNow: (id: string) => void;
   isRunPending?: boolean;
   onDelete: (id: string) => void;
@@ -47,6 +48,7 @@ interface AutomationCardProps {
 export function AutomationCard({
   automation,
   onToggle,
+  isTogglePending = false,
   onRunNow,
   isRunPending = false,
   onDelete,
@@ -79,6 +81,7 @@ export function AutomationCard({
     onExport,
     onEdit,
     onToggle,
+    isTogglePending,
     onDelete,
   });
 

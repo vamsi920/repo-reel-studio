@@ -15,6 +15,7 @@ import type { RunSummaryState } from "#/manifests/automation-insights";
 import type { InterfaceListInsights } from "#/manifests/types";
 
 const EMPTY_PENDING_RUN_IDS: ReadonlySet<string> = new Set();
+const EMPTY_PENDING_TOGGLE_IDS: ReadonlySet<string> = new Set();
 
 /** Present when the manifest declares the dashboard surface. */
 interface AutomationGroupInsights {
@@ -28,6 +29,7 @@ interface AutomationGroupProps {
   automations: Automation[];
   view: AutomationViewMode;
   onToggle: (id: string, enabled: boolean) => void;
+  pendingToggleIds?: ReadonlySet<string>;
   onRunNow: (id: string) => void;
   pendingRunIds?: ReadonlySet<string>;
   onDelete: (id: string) => void;
@@ -42,6 +44,7 @@ export function AutomationGroup({
   automations,
   view,
   onToggle,
+  pendingToggleIds = EMPTY_PENDING_TOGGLE_IDS,
   onRunNow,
   pendingRunIds = EMPTY_PENDING_RUN_IDS,
   onDelete,
@@ -65,6 +68,7 @@ export function AutomationGroup({
                 key={automation.id}
                 automation={automation}
                 onToggle={onToggle}
+                isTogglePending={pendingToggleIds.has(automation.id)}
                 onRunNow={onRunNow}
                 isRunPending={pendingRunIds.has(automation.id)}
                 onDelete={onDelete}
@@ -100,6 +104,7 @@ export function AutomationGroup({
                   key={automation.id}
                   automation={automation}
                   onToggle={onToggle}
+                  isTogglePending={pendingToggleIds.has(automation.id)}
                   onRunNow={onRunNow}
                   isRunPending={pendingRunIds.has(automation.id)}
                   onDelete={onDelete}

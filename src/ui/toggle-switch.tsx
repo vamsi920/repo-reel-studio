@@ -39,6 +39,13 @@ interface ToggleSwitchProps {
   enabled: boolean;
   label: string;
   onToggle: () => void;
+  /**
+   * True while a toggle request for this switch is in flight. `enabled`
+   * doesn't change until the request settles and the underlying data
+   * refetches, so without this a rapid double-click fires a second,
+   * redundant request computed from the same stale `enabled` value.
+   */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -46,6 +53,7 @@ export function ToggleSwitch({
   enabled,
   label,
   onToggle,
+  disabled = false,
   className,
 }: ToggleSwitchProps) {
   return (
@@ -54,11 +62,16 @@ export function ToggleSwitch({
       role="switch"
       aria-checked={enabled}
       aria-label={label}
+      aria-busy={disabled}
+      disabled={disabled}
       onClick={(e) => {
         e.stopPropagation();
         onToggle();
       }}
-      className={cn("cursor-pointer", className)}
+      className={cn(
+        "cursor-pointer disabled:cursor-not-allowed disabled:opacity-60",
+        className,
+      )}
     >
       <ToggleSwitchVisual enabled={enabled} />
     </button>

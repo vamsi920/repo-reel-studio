@@ -3,7 +3,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router";
 import { HttpError } from "@openhands/typescript-client";
 
 import { I18nKey } from "#/i18n/declaration";
@@ -65,6 +65,12 @@ const automation: Automation = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const automationB: Automation = {
+  ...automation,
+  id: "auto-2",
+  name: "Second Automation",
+};
+
 const emptyRuns: AutomationRunsResponse = { runs: [], total: 0 };
 
 function renderDetail() {
@@ -81,6 +87,44 @@ function renderDetail() {
               element={<AutomationDetail />}
             />
           </Routes>
+        </MemoryRouter>
+      </ActiveBackendProvider>
+    </QueryClientProvider>,
+  );
+}
+
+// Same route tree as `renderDetail`, but exposes a way to navigate between
+// two `/automations/:automationId` URLs without unmounting `AutomationDetail`
+// -- React Router does not remount the element when only the param changes,
+// which is exactly the scenario local-state-in-a-child-modal bugs need.
+function renderDetailWithNavigation() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  function Harness() {
+    const navigate = useNavigate();
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => navigate("/automations/auto-2")}
+        >
+          go-to-auto-2
+        </button>
+        <Routes>
+          <Route
+            path="/automations/:automationId"
+            element={<AutomationDetail />}
+          />
+        </Routes>
+      </>
+    );
+  }
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ActiveBackendProvider>
+        <MemoryRouter initialEntries={["/automations/auto-1"]}>
+          <Harness />
         </MemoryRouter>
       </ActiveBackendProvider>
     </QueryClientProvider>,
@@ -264,6 +308,46 @@ describe("AutomationDetail — backend-change guard", () => {
   });
 });
 
+describe("AutomationDetail — edit modal state on automation change", () => {
+  it("resets the edit form instead of saving stale data when the route's automationId changes while the modal is open", async () => {
+    // Arrange -- two distinct automations under the same local backend.
+    vi.mocked(AutomationService.getAutomation).mockImplementation(
+      async (id: string) => (id === "auto-2" ? automationB : automation),
+    );
+    const user = userEvent.setup();
+    renderDetailWithNavigation();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledWith("auto-1");
+    });
+
+    // Act -- open the Edit modal for automation A; its form seeds from A.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$EDIT }),
+    );
+    expect(await screen.findByTestId("edit-automation-name")).toHaveValue(
+      "Test Automation",
+    );
+
+    // Act -- navigate to automation B's URL. `AutomationDetail` stays
+    // mounted (same route shape, only the param changed) and the modal's
+    // `isOpen` prop never toggles false -> true, so a `key`-less modal would
+    // keep rendering automation A's stale form values here.
+    await user.click(screen.getByText("go-to-auto-2"));
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledWith("auto-2");
+    });
+
+    // Assert -- the form now reflects automation B, not leftover A data that
+    // a Save click would otherwise silently write onto B.
+    await waitFor(() => {
+      expect(screen.getByTestId("edit-automation-name")).toHaveValue(
+        "Second Automation",
+      );
+    });
+  });
+});
+
 describe("AutomationDetail — failed actions are reported", () => {
   beforeEach(async () => {
     const { displaySuccessToast, displayErrorToast } =
@@ -328,6 +412,40 @@ describe("AutomationDetail — failed actions are reported", () => {
     // Assert
     await waitFor(() => {
       expect(displayErrorToast).toHaveBeenCalledWith("scheduler offline");
+    });
+  });
+
+  it("disables the toggle switch while a toggle request is in flight, so a second click can't fire a redundant request", async () => {
+    // Arrange — hold the toggle request open so we can observe the pending
+    // (disabled) state before it settles.
+    let resolveToggle: (() => void) | undefined;
+    vi.mocked(AutomationService.toggleAutomation).mockReturnValue(
+      new Promise((resolve) => {
+        resolveToggle = () => resolve({ ...automation, enabled: false });
+      }),
+    );
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+    });
+
+    // Act — click the switch once; the request never settles until we say so.
+    const toggle = screen.getByRole("switch", {
+      name: I18nKey.AUTOMATIONS$TURN_OFF,
+    });
+    await user.click(toggle);
+
+    // Assert — the switch is disabled while pending, so a second click
+    // (userEvent honors `disabled`) cannot fire a second request.
+    expect(toggle).toBeDisabled();
+    await user.click(toggle);
+    expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(1);
+
+    // Cleanup — let the pending request settle.
+    resolveToggle?.();
+    await waitFor(() => {
+      expect(toggle).not.toBeDisabled();
     });
   });
 

@@ -253,6 +253,7 @@ export default function AutomationDetail() {
             onDownloadTarball={handleDownloadTarball}
             onRunNow={handleRunNow}
             isRunningNow={dispatchMutation.isPending}
+            isTogglePending={toggleMutation.isPending}
           />
           {automation.prompt && <PromptSection prompt={automation.prompt} />}
           <ConfigurationSection automation={automation} />
@@ -281,6 +282,14 @@ export default function AutomationDetail() {
           />
           {canEdit && (
             <EditAutomationModal
+              // Force a remount on automation change: the route doesn't
+              // change shape when only `:automationId` changes, so without a
+              // key the modal's local `form` state (seeded from the
+              // automation prop only on the closed->open transition) would
+              // carry over from the previous automation instead of
+              // resetting, letting a save silently overwrite the new
+              // automation with the old one's field values.
+              key={automation.id}
               automation={automation}
               isOpen={showEditModal}
               onClose={() => setShowEditModal(false)}

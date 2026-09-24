@@ -26,6 +26,7 @@ interface DetailHeaderProps {
   onDownloadTarball: () => void;
   onRunNow?: () => void;
   isRunningNow?: boolean;
+  isTogglePending?: boolean;
 }
 
 export function DetailHeader({
@@ -37,6 +38,7 @@ export function DetailHeader({
   onDownloadTarball,
   onRunNow,
   isRunningNow = false,
+  isTogglePending = false,
 }: DetailHeaderProps) {
   const { t } = useTranslation("openhands");
   const canManage = useHasPermission("manage_automations");
@@ -57,6 +59,7 @@ export function DetailHeader({
         : t(I18nKey.AUTOMATIONS$TURN_ON),
       icon: <PowerIcon className="size-4" />,
       onClick: onToggle,
+      disabled: isTogglePending,
     },
     {
       label: t(I18nKey.AUTOMATIONS$EXPORT),
@@ -110,6 +113,7 @@ export function DetailHeader({
                   : t(I18nKey.AUTOMATIONS$TURN_ON)
               }
               onToggle={onToggle}
+              disabled={isTogglePending}
             />
           )}
           {canManage && <KebabMenu items={kebabItems} />}
