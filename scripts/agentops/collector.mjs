@@ -840,25 +840,36 @@ export class Collector {
    * `waiting_for_confirmation` and will not proceed until
    * `/events/respond_to_confirmation` answers. The queue entry is a view onto
    * that, not a second gate of our own.
+   *
+   * The dedup key is the specific tool call being waited on, not just the
+   * run: an operator can answer a confirmation out-of-band (the inline chat
+   * buttons call `respond_to_confirmation` directly, bypassing this queue
+   * entirely), which never flips that approval row out of "pending". Keying
+   * only on `runId` meant that stale row silently swallowed every later,
+   * genuinely-blocking confirmation for the rest of the run's life. Keying
+   * the approval's own id on the tool call id instead makes it idempotent
+   * across polls for the *same* wait (repeated ticks upsert the same row)
+   * while still raising a fresh approval the moment the runtime moves on to
+   * a different wait.
    */
   async #raiseConfirmationApproval(aggregator) {
     const run = aggregator.run;
-    const pendingApprovals = await this.store.listApprovals({
-      state: "pending",
-    });
-    const existing = pendingApprovals.find(
-      (a) => a.kind === "confirmation" && a.runId === run.runId,
-    );
-    if (existing) return [];
-
     // The open tool span is exactly the action the runtime is waiting on.
     const [pending] = [...aggregator.openToolSpans.values()].slice(-1);
+    const toolCallId = pending?.attributes?.[ToolAttributes.TOOL_ID] ?? null;
+    const id = toolCallId
+      ? `confirmation:${run.runId}:${toolCallId}`
+      : `confirmation:${run.runId}`;
+
+    const existing = await this.store.getApproval(id);
+    if (existing) return [];
+
     const policy = await this.store.getWorkspacePolicy(run.workspaceId);
     // Stamped when the approval is created (see #enforceBudgets).
     const observedAt = this.now();
 
     await this.store.upsertApproval({
-      id: `confirmation:${run.runId}:${observedAt}`,
+      id,
       kind: "confirmation",
       state: "pending",
       runId: run.runId,

@@ -39,6 +39,7 @@ function makeStore(overrides: Record<string, unknown> = {}) {
       },
     ]),
     listApprovals: vi.fn().mockResolvedValue([]),
+    getApproval: vi.fn().mockResolvedValue(null),
     upsertApproval: vi.fn().mockResolvedValue(undefined),
     listSpans: vi.fn().mockResolvedValue([]),
     ...overrides,
@@ -1086,6 +1087,135 @@ describe("Collector budget enforcement after a rejected approval", () => {
     expect(client.interruptConversation).toHaveBeenCalledTimes(2);
     expect(store.upsertApproval).toHaveBeenCalledTimes(2);
     expect(budgetAudit()).toHaveLength(4);
+  });
+});
+
+describe("Collector confirmation approvals stay keyed to the specific wait", () => {
+  it("raises a new confirmation approval for a second wait even though the first was answered out-of-band", async () => {
+    // Regression test: the runtime's own inline chat confirmation buttons
+    // answer `waiting_for_confirmation` directly against the agent-server,
+    // bypassing this collector's approve/reject route entirely, so the
+    // approval row it raised for the first wait never leaves "pending".
+    // Dedup keyed only on runId then silently swallowed every later,
+    // genuinely-blocking confirmation on the same run for the rest of its
+    // life. The fix keys the approval's id on the specific tool call being
+    // waited on, so a second, distinct wait always gets its own row.
+    const approvals = new Map<string, Record<string, unknown>>();
+    const store = makeStore({
+      getApproval: vi.fn(async (id: string) => approvals.get(id) ?? null),
+      upsertApproval: vi.fn(async (approval: Record<string, unknown>) => {
+        approvals.set(approval.id as string, approval);
+      }),
+    });
+    store.getRun.mockResolvedValue({
+      runId: "run-1",
+      workspaceId: "ws",
+      agentName: "agent",
+      task: "Clean up temp files",
+      status: "running",
+      model: null,
+      phase: "planning",
+      startedAt: "2026-01-15T00:00:00.000Z",
+      endedAt: null,
+      updatedAt: "2026-01-15T00:04:00.000Z",
+      costUsd: 0,
+      maxBudgetPerTask: null,
+      tokens: {
+        prompt: 0,
+        completion: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        reasoning: 0,
+        total: 0,
+      },
+      toolCallCount: 0,
+      llmCallCount: 0,
+      errorCount: 0,
+      artifacts: [],
+      lastEventId: null,
+      lastEventTimestamp: null,
+      lastEventIds: [],
+    });
+
+    // Both ticks report `waiting_for_confirmation`: the first for call-1,
+    // then (after call-1 is answered out-of-band and closes) the second for
+    // an unrelated call-2 -- the runtime never leaves the confirmation state.
+    const events: Array<Record<string, unknown>> = [
+      {
+        id: "evt-action-1",
+        timestamp: "2026-01-15T00:04:50.000Z",
+        source: "agent",
+        tool_name: "terminal",
+        tool_call_id: "call-1",
+        action: { kind: "TerminalAction", command: "rm -rf /tmp/x" },
+      },
+    ];
+    const client = makeClient({
+      searchConversations: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "run-1",
+            title: "Clean up temp files",
+            execution_status: "waiting_for_confirmation",
+            workspace: { working_dir: "ws" },
+            updated_at: "2026-01-15T00:05:00.000Z",
+            created_at: "2026-01-15T00:00:00.000Z",
+          },
+        ],
+      }),
+      searchEvents: vi.fn(async () => ({ items: events })),
+    });
+    const collector = new Collector({
+      client,
+      store,
+      now: () => "2026-01-15T00:05:00.000Z",
+    });
+
+    // Tick 1: call-1's confirmation is raised.
+    await collector.tick();
+    expect(store.upsertApproval).toHaveBeenCalledTimes(1);
+    expect(approvals.get("confirmation:run-1:call-1")).toMatchObject({
+      kind: "confirmation",
+      state: "pending",
+      toolName: "terminal",
+    });
+
+    // The operator answers call-1 via the inline chat buttons, not this
+    // queue -- its approval row is left "pending" forever, exactly as it
+    // would be for real. The agent then hits a second, distinct wait.
+    events.push(
+      {
+        id: "evt-observation-1",
+        timestamp: "2026-01-15T00:05:05.000Z",
+        source: "environment",
+        action_id: "evt-action-1",
+        tool_call_id: "call-1",
+        observation: { output: "" },
+      },
+      {
+        id: "evt-action-2",
+        timestamp: "2026-01-15T00:05:10.000Z",
+        source: "agent",
+        tool_name: "terminal",
+        tool_call_id: "call-2",
+        action: { kind: "TerminalAction", command: "rm -rf /tmp/y" },
+      },
+    );
+
+    await collector.tick();
+
+    // A fresh approval for call-2 was raised -- the stale call-1 row did not
+    // suppress it.
+    expect(store.upsertApproval).toHaveBeenCalledTimes(2);
+    expect(approvals.get("confirmation:run-1:call-2")).toMatchObject({
+      kind: "confirmation",
+      state: "pending",
+      toolName: "terminal",
+    });
+    // The stale row is untouched, not overwritten in place.
+    expect(approvals.get("confirmation:run-1:call-1")).toMatchObject({
+      state: "pending",
+    });
   });
 });
 
