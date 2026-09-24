@@ -600,6 +600,22 @@ describe("RunAggregator — status transitions", () => {
     expect(aggregator.run.endedAt).toBe(OBSERVED_AT);
   });
 
+  it("audits a resume from an errored run the same way as a resume from paused", () => {
+    // The runtime (and the Control Tower's own Resume button) restarts an
+    // "error" run exactly like a "paused" one — e.g. the operator sends a
+    // follow-up message in chat rather than clicking Resume. Only the
+    // "paused" transition used to be audited, silently dropping the recovery
+    // from the trail whenever it happened outside the Control Tower.
+    const aggregator = new RunAggregator(newRun());
+    aggregator.applyStatus("running", OBSERVED_AT);
+    aggregator.applyStatus("error", OBSERVED_AT);
+
+    const resumed = aggregator.applyStatus("running", OBSERVED_AT);
+    expect(resumed.audit).toEqual([
+      expect.objectContaining({ action: "run.resumed" }),
+    ]);
+  });
+
   it("classifies active and terminal statuses", () => {
     expect(isActiveStatus("running")).toBe(true);
     expect(isActiveStatus("waiting_for_confirmation")).toBe(true);

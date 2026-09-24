@@ -824,7 +824,19 @@ export class RunAggregator {
         at: observedAt,
         actor: "system",
       });
-    } else if (previous === "paused" && status === "running") {
+    } else if (
+      // Both "paused" and "error" are runs the Control Tower's Resume button
+      // (and `run()` in software-agent-sdk) can explicitly restart — unlike
+      // "idle" (every run's ordinary first turn) or "finished" (an ordinary
+      // follow-up message), which would make "run.resumed" fire on nearly
+      // every run and drown the audit log. Without "error" here, a run the
+      // operator resumed after a failure by sending a new message directly in
+      // chat (rather than clicking Resume, whose own audit row in
+      // run-control.mjs only covers Control-Tower-initiated resumes) left no
+      // trace of the recovery at all.
+      (previous === "paused" || previous === "error") &&
+      status === "running"
+    ) {
       audit.push({
         action: "run.resumed",
         summary: "Run resumed",
