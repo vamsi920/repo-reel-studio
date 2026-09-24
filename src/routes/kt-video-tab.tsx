@@ -86,8 +86,16 @@ export function useSelectedFileContents(paths: string[]): {
     const out = new Set<string>();
     slots.forEach((path, i) => {
       const result = results[i];
-      const isText = result.data?.kind === "text" && result.data.text != null;
-      if (path && !result.isLoading && !isText) out.add(path);
+      // Mirrors build-manifest.ts's own `c.trim().length > 0` scene-eligibility
+      // filter: an empty/whitespace-only file resolves as "text" but is
+      // silently dropped when the manifest is built, so it must be flagged
+      // here too — otherwise the sidebar shows it as a normal selected file
+      // while the video ends up with no scene for it (or none at all).
+      const hasUsableText =
+        result.data?.kind === "text" &&
+        result.data.text != null &&
+        result.data.text.trim().length > 0;
+      if (path && !result.isLoading && !hasUsableText) out.add(path);
     });
     return out;
   }, [

@@ -146,6 +146,19 @@ describe("useSelectedFileContents", () => {
     expect(result.current.contents).toEqual({});
   });
 
+  it("reports a selected file that loaded as empty/whitespace-only text as unavailable rather than silently dropping it", () => {
+    fileResultsMock.set("empty.ts", {
+      isLoading: false,
+      data: { kind: "text", text: "   \n  " },
+    });
+
+    const { result } = renderHook(() =>
+      useSelectedFileContents(["empty.ts"]),
+    );
+
+    expect(result.current.unavailablePaths.has("empty.ts")).toBe(true);
+  });
+
   it("does not report a successfully loaded text file as unavailable", () => {
     fileResultsMock.set("a.ts", {
       isLoading: false,
