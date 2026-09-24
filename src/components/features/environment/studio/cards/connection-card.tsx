@@ -86,10 +86,26 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
       window.location.href = authorizeUrl;
     } catch (error) {
       setSubmitting(false);
-      displayErrorToast(
+      const message =
         error instanceof EnvironmentServiceError
           ? error.message
-          : t(I18nKey.ENVIRONMENT$ERROR_SAVE),
+          : t(I18nKey.ENVIRONMENT$ERROR_SAVE);
+      // Every other failure path in this component (handleSubmit's catch,
+      // handleCancel) settles the card and posts a receipt so the agent's
+      // tool call resolves. This one only toasted and reset `submitting`,
+      // leaving the card stuck on its "Connect" button with no signal to the
+      // agent that the OAuth start itself failed (e.g. an unreachable
+      // self-hosted host) -- that turn hung until the user noticed and acted
+      // some other way.
+      updateCard(card.id, { status: "failed" });
+      settleDockRequest();
+      displayErrorToast(message);
+      postResult(
+        `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
+          status: "error",
+          provider: card.providerId,
+          reason: message,
+        })}`,
       );
     }
   };

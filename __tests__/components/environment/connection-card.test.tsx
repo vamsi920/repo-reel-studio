@@ -134,6 +134,53 @@ describe("ConnectionCard", () => {
     );
   });
 
+  it("reports a receipt to the agent when starting OAuth itself fails", async () => {
+    // Every other failure path in this card (a rejected credential save, a
+    // decline) settles the card and posts a receipt. The OAuth-start catch
+    // block used to only toast and reset `submitting`, leaving the agent's
+    // tool call hanging with no idea the attempt failed.
+    vi.mocked(EnvironmentService.startOAuth).mockRejectedValue(
+      new Error("could not reach host"),
+    );
+    useOnboardingCopilotStore.getState().requestCredentials({
+      requestId: "github-enterprise:default",
+      capability: "source-control",
+      providerId: "github-enterprise",
+      instanceKey: "default",
+      fields: [],
+    });
+    const user = userEvent.setup();
+    const postResult = renderCard({
+      id: "form:github-enterprise:default",
+      kind: "form",
+      capability: "source-control",
+      providerId: "github-enterprise",
+      instanceKey: "default",
+      fields: "all",
+      status: "open",
+    });
+
+    await user.type(
+      screen.getByTestId("connector-field-enterpriseHost"),
+      "ghe.example.com",
+    );
+    await user.click(screen.getByTestId("connection-submit-github-enterprise"));
+
+    await waitFor(() => expect(postResult).toHaveBeenCalledTimes(1));
+    expect(lastReceipt(postResult)).toMatchObject({
+      status: "error",
+      provider: "github-enterprise",
+    });
+    expect(
+      useOnboardingStudioStore
+        .getState()
+        .cards.find((card) => card.id === "form:github-enterprise:default"),
+    ).toMatchObject({ status: "failed" });
+    expect(
+      useOnboardingCopilotStore.getState().pendingCredentialRequest,
+    ).toBeNull();
+  });
+
   it("settles the dock's copy of the request once the credential is saved", async () => {
     // The agent raises the same request on the dock so it is visible from any
     // screen. Answering it in the studio left that copy pending, so the dock

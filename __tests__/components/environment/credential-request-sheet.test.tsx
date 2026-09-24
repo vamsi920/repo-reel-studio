@@ -1,5 +1,5 @@
 import type React from "react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -17,7 +17,7 @@ vi.mock("#/api/environment-service/environment-service.api", async () => {
   >("#/api/environment-service/environment-service.api");
   return {
     ...actual,
-    EnvironmentService: { setCredentials: vi.fn() },
+    EnvironmentService: { setCredentials: vi.fn(), startOAuth: vi.fn() },
   };
 });
 
@@ -50,6 +50,19 @@ const POSTHOG_REQUEST: PendingCredentialRequest = {
   instanceKey: "default",
   fields: ["projectApiKey"],
 };
+
+// `github`'s manifest has `oauth` set and zero credential fields -- the
+// shape that used to render this sheet with nothing to fill in and no way
+// to actually connect.
+const GITHUB_REQUEST: PendingCredentialRequest = {
+  requestId: "github:default",
+  capability: "source-control",
+  providerId: "github",
+  instanceKey: "default",
+  fields: [],
+};
+
+const ORIGINAL_LOCATION = window.location;
 
 function receipt(ok: boolean): ConnectionReceipt {
   return {
@@ -100,6 +113,22 @@ beforeEach(() => {
   vi.clearAllMocks();
   useOnboardingStudioStore.getState().reset();
   mockConnections = [];
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: {
+      ...ORIGINAL_LOCATION,
+      href: "http://localhost/kt-list?repo=1",
+      pathname: "/kt-list",
+      search: "?repo=1",
+    },
+  });
+});
+
+afterEach(() => {
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: ORIGINAL_LOCATION,
+  });
 });
 
 describe("CredentialRequestSheet", () => {
@@ -288,5 +317,79 @@ describe("CredentialRequestSheet", () => {
     expect(studioCard()).toBeUndefined();
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(EnvironmentService.setCredentials).not.toHaveBeenCalled();
+  });
+
+  it("starts the OAuth redirect instead of posting an empty credential for an OAuth-only provider", async () => {
+    // `open_connection_form` raises this sheet the same way for every
+    // provider, OAuth or not. Before this fix, an OAuth provider with no
+    // credential fields (github, jira-cloud) rendered here with nothing to
+    // fill in, and clicking Submit posted an empty credential straight to
+    // the Edge Function -- which then recorded a spurious failed connection
+    // instead of ever starting the OAuth redirect.
+    vi.mocked(EnvironmentService.startOAuth).mockResolvedValue({
+      authorizeUrl: "https://github.com/login/oauth/authorize?x=1",
+    });
+    const user = userEvent.setup();
+    const onResult = vi.fn();
+    renderSheet({
+      request: GITHUB_REQUEST,
+      onDone: vi.fn(),
+      onResult,
+    });
+
+    expect(screen.queryByTestId(/connector-field-/)).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("credential-submit"));
+
+    await waitFor(() =>
+      expect(EnvironmentService.startOAuth).toHaveBeenCalledTimes(1),
+    );
+    expect(EnvironmentService.startOAuth).toHaveBeenCalledWith({
+      capability: "source-control",
+      providerId: "github",
+      instanceKey: "default",
+      config: {},
+      returnTo: "/kt-list?repo=1",
+    });
+    expect(EnvironmentService.setCredentials).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(
+      "https://github.com/login/oauth/authorize?x=1",
+    );
+  });
+
+  it("reports a receipt to the agent when starting OAuth itself fails", async () => {
+    // Mirrors the same guarantee `setCredentials` failures already had: the
+    // agent's tool call must resolve one way or another, never hang.
+    vi.mocked(EnvironmentService.startOAuth).mockRejectedValue(
+      new Error("could not reach github.com"),
+    );
+    useOnboardingStudioStore.getState().pushCard({
+      id: "form:github:default",
+      kind: "form",
+      capability: "source-control",
+      providerId: "github",
+      instanceKey: "default",
+      fields: "all",
+      status: "open",
+    });
+    const user = userEvent.setup();
+    const onResult = vi.fn();
+    renderSheet({
+      request: GITHUB_REQUEST,
+      onDone: vi.fn(),
+      onResult,
+    });
+
+    await user.click(screen.getByTestId("credential-submit"));
+
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(lastReceipt(onResult)).toMatchObject({
+      status: "error",
+      provider: "github",
+    });
+    expect(
+      useOnboardingStudioStore
+        .getState()
+        .cards.find((card) => card.id === "form:github:default"),
+    ).toMatchObject({ status: "failed" });
   });
 });

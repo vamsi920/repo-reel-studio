@@ -106,27 +106,61 @@ export function CredentialRequestSheet({
 
   if (!manifest) return null;
 
+  // A provider whose manifest declares `oauth` (GitHub, Jira Cloud, ...) has
+  // no credential fields to type here at all -- `open_connection_form`
+  // raises this sheet the same way for every provider, OAuth or not, so
+  // without this branch the sheet rendered empty (zero fields) and
+  // submitting posted an empty credential straight to the Edge Function,
+  // which then recorded a spurious failed connection instead of starting the
+  // OAuth redirect. `ConnectionCard` (the studio's own version of this same
+  // request) already handles this; this sheet has to match it.
+  const isOAuth = Boolean(manifest.oauth);
+
   const fields = manifest.fields.filter(
     (field) => request.fields.includes(field.name) || !field.secret,
   );
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // Only the fields on screen can be corrected here. A secret the agent
-    // did not ask for stays out of both the form and its validation --
-    // otherwise a "required" error on an invisible field blocks submit with
-    // nothing to fix.
-    const shown = new Set(fields.map((field) => field.name));
-    const validation = Object.fromEntries(
-      Object.entries(validateConnectorValues(manifest, values)).filter(
-        ([name]) => shown.has(name),
-      ),
+  const reportFailure = (message: string) => {
+    displayErrorToast(message);
+    useOnboardingStudioStore
+      .getState()
+      .updateCard(studioCardIdFor(request), { status: "failed" });
+    onResult(
+      `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
+        status: "error",
+        provider: request.providerId,
+        reason: message,
+      })}`,
     );
-    if (hasFieldErrors(validation)) {
-      setErrors(validation);
-      return;
-    }
+  };
 
+  const handleOAuth = async () => {
+    setSubmitting(true);
+    try {
+      const { authorizeUrl } = await EnvironmentService.startOAuth({
+        capability: request.capability,
+        providerId: request.providerId,
+        instanceKey: request.instanceKey,
+        // A self-hosted OAuth provider (GitHub Enterprise) collects its host
+        // first; the authorize URL cannot be built without it.
+        config: splitConnectorValues(manifest, values).config,
+        // The dock can be open on any route, unlike the studio's own form,
+        // which always lives at `/environment/setup` -- send the user back
+        // to wherever they actually were.
+        returnTo: `${window.location.pathname}${window.location.search}`,
+      });
+      window.location.href = authorizeUrl;
+    } catch (error) {
+      setSubmitting(false);
+      reportFailure(
+        error instanceof EnvironmentServiceError
+          ? error.message
+          : t(I18nKey.ENVIRONMENT$ERROR_SAVE),
+      );
+    }
+  };
+
+  const submitCredentials = async () => {
     setSubmitting(true);
     try {
       const { config, credentials } = splitConnectorValues(manifest, values);
@@ -161,23 +195,37 @@ export function CredentialRequestSheet({
       );
       onDone();
     } catch (error) {
-      const message =
+      reportFailure(
         error instanceof EnvironmentServiceError
           ? error.message
-          : t(I18nKey.ENVIRONMENT$ERROR_SAVE);
-      displayErrorToast(message);
-      useOnboardingStudioStore
-        .getState()
-        .updateCard(studioCardIdFor(request), { status: "failed" });
-      onResult(
-        `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
-          status: "error",
-          provider: request.providerId,
-          reason: message,
-        })}`,
+          : t(I18nKey.ENVIRONMENT$ERROR_SAVE),
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // Only the fields on screen can be corrected here. A secret the agent
+    // did not ask for stays out of both the form and its validation --
+    // otherwise a "required" error on an invisible field blocks submit with
+    // nothing to fix.
+    const shown = new Set(fields.map((field) => field.name));
+    const validation = Object.fromEntries(
+      Object.entries(validateConnectorValues(manifest, values)).filter(
+        ([name]) => shown.has(name),
+      ),
+    );
+    if (hasFieldErrors(validation)) {
+      setErrors(validation);
+      return;
+    }
+
+    if (isOAuth) {
+      await handleOAuth();
+    } else {
+      await submitCredentials();
     }
   };
 
@@ -222,19 +270,23 @@ export function CredentialRequestSheet({
         {t(I18nKey.ENVIRONMENT$CREDENTIAL_NOTE)}
       </p>
 
-      {fields.map((field) => (
-        <ConnectorFieldInput
-          key={field.name}
-          field={field}
-          value={values[field.name] ?? ""}
-          formValues={values}
-          error={errors[field.name]}
-          disabled={submitting}
-          onChange={(value) =>
-            setValues((prev) => ({ ...prev, [field.name]: value }))
-          }
-        />
-      ))}
+      {isOAuth && manifest.fields.length === 0 ? null : (
+        <>
+          {fields.map((field) => (
+            <ConnectorFieldInput
+              key={field.name}
+              field={field}
+              value={values[field.name] ?? ""}
+              formValues={values}
+              error={errors[field.name]}
+              disabled={submitting}
+              onChange={(value) =>
+                setValues((prev) => ({ ...prev, [field.name]: value }))
+              }
+            />
+          ))}
+        </>
+      )}
 
       <div className="flex items-center gap-2">
         <BrandButton
@@ -243,9 +295,13 @@ export function CredentialRequestSheet({
           isDisabled={submitting}
           testId="credential-submit"
         >
-          {submitting
-            ? t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMITTING)
-            : t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMIT)}
+          {isOAuth && manifest.fields.length === 0
+            ? submitting
+              ? t(I18nKey.ENVIRONMENT$CONNECTING)
+              : t(I18nKey.ENVIRONMENT$CONNECT)
+            : submitting
+              ? t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMITTING)
+              : t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMIT)}
         </BrandButton>
         <BrandButton
           type="button"
