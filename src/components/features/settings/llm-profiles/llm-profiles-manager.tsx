@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { RenameProfileModal } from "./rename-profile-modal";
@@ -40,6 +40,13 @@ export function LlmProfilesManager({
   const [profileToDelete, setProfileToDelete] = useState<ProfileInfo | null>(
     null,
   );
+  // Names of source profiles with a duplicate currently being saved. Guards
+  // against two overlapping "Duplicate" clicks on the same profile (open
+  // menu -> Duplicate -> reopen menu -> Duplicate again before the first
+  // save resolves and refetches), which would otherwise compute the same
+  // "-copy" name twice from the same stale `profiles` snapshot and silently
+  // collapse into a single saved profile behind two "duplicated" toasts.
+  const duplicatingProfilesRef = useRef<Set<string>>(new Set());
 
   const profiles = data?.profiles ?? [];
   const active = data?.active_profile ?? null;
@@ -59,6 +66,10 @@ export function LlmProfilesManager({
   };
 
   const handleDuplicate = async (profile: ProfileInfo) => {
+    if (duplicatingProfilesRef.current.has(profile.name)) {
+      return;
+    }
+    duplicatingProfilesRef.current.add(profile.name);
     try {
       // Fetch the full config with encrypted secrets so the API key is
       // preserved on the duplicate (same approach as the edit flow).
@@ -90,6 +101,8 @@ export function LlmProfilesManager({
     } catch (err) {
       console.error("Failed to duplicate profile:", err);
       displayErrorToast(t(I18nKey.ERROR$GENERIC));
+    } finally {
+      duplicatingProfilesRef.current.delete(profile.name);
     }
   };
 

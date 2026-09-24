@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LlmProfilesManager } from "#/components/features/settings/llm-profiles/llm-profiles-manager";
 import ProfilesService, {
+  type ProfileDetailResponse,
   ProfileInfo,
 } from "#/api/profiles-service/profiles-service.api";
 
@@ -35,6 +36,10 @@ vi.mock("react-i18next", () => ({
         "BUTTON$RENAME": "Rename",
         "BUTTON$DELETE": "Delete",
         "BUTTON$CANCEL": "Cancel",
+        "BUTTON$DUPLICATE": "Duplicate",
+        "SETTINGS$PROFILE_DUPLICATED": params?.name
+          ? `Profile "${params.name}" duplicated`
+          : "Profile duplicated",
         "ERROR$GENERIC": "An error occurred",
       };
       return translations[key] || key;
@@ -288,5 +293,53 @@ describe("LlmProfilesManager", () => {
     expect(
       screen.queryByText('Are you sure you want to delete "claude-profile"?'),
     ).not.toBeInTheDocument();
+  });
+
+  it("ignores a second Duplicate click on the same profile while the first is still saving", async () => {
+    const user = userEvent.setup();
+    vi.mocked(ProfilesService.listProfiles).mockResolvedValue({
+      profiles: mockProfiles,
+      active_profile: "gpt-4-profile",
+    });
+    let resolveGetProfile: (value: ProfileDetailResponse) => void = () => {};
+    vi.mocked(ProfilesService.getProfile).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveGetProfile = resolve;
+        }),
+    );
+    vi.mocked(ProfilesService.saveProfile).mockResolvedValue(
+      undefined as never,
+    );
+
+    renderManager();
+
+    await screen.findByText("gpt-4-profile");
+    const menuTriggers = screen.getAllByTestId("profile-menu-trigger");
+
+    // First Duplicate click starts the (still-pending) getProfile fetch.
+    await user.click(menuTriggers[0]);
+    await user.click(screen.getByText("Duplicate"));
+
+    // Reopen the menu and click Duplicate again before the first call
+    // resolves — this used to compute the same "-copy" name twice and
+    // silently collapse into one saved profile behind two success toasts.
+    await user.click(menuTriggers[0]);
+    await user.click(screen.getByText("Duplicate"));
+
+    resolveGetProfile({
+      name: "gpt-4-profile",
+      api_key_set: true,
+      config: { model: "openai/gpt-4" },
+    } as ProfileDetailResponse);
+
+    await waitFor(() => {
+      expect(ProfilesService.saveProfile).toHaveBeenCalledTimes(1);
+    });
+    expect(ProfilesService.getProfile).toHaveBeenCalledTimes(1);
+    expect(ProfilesService.saveProfile).toHaveBeenCalledWith(
+      "gpt-4-profile-copy",
+      expect.objectContaining({ include_secrets: true }),
+    );
   });
 });

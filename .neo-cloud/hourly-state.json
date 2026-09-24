@@ -1,6 +1,6 @@
 {
   "repo": "https://github.com/vamsi920/repo-reel-studio",
-  "lastSection": "security",
+  "lastSection": "settings",
   "sections": {
     "knowledge-kt": { "lastRun": "2026-09-23T18:42:00Z", "runCount": 14 },
     "kt-video": { "lastRun": "2026-09-24T00:13:00Z", "runCount": 14 },
@@ -8,12 +8,11 @@
     "agentops": { "lastRun": "2026-09-23T19:31:14Z", "runCount": 14 },
     "automations": { "lastRun": "2026-09-23T20:40:00Z", "runCount": 15 },
     "environment-onboarding": { "lastRun": "2026-09-23T21:10:00Z", "runCount": 14 },
-    "security": { "lastRun": "2026-09-23T16:33:00Z", "runCount": 13 },
+    "security": { "lastRun": "2026-09-24T05:38:00Z", "runCount": 14 },
     "auth-data-platform": { "lastRun": "2026-09-24T04:41:00Z", "runCount": 14 },
-    "settings": { "lastRun": "2026-09-23T17:34:00Z", "runCount": 15 },
+    "settings": { "lastRun": "2026-09-24T06:11:00Z", "runCount": 16 },
     "conversation-chat": { "lastRun": "2026-09-24T01:50:00Z", "runCount": 14 },
     "skills-plugins-mcp": { "lastRun": "2026-09-24T02:34:00Z", "runCount": 14 },
-    "files-terminal-browser": { "lastRun": "2026-09-24T03:48:00Z", "runCount": 14 },
-    "security": { "lastRun": "2026-09-24T05:38:00Z", "runCount": 14 }
+    "files-terminal-browser": { "lastRun": "2026-09-24T03:48:00Z", "runCount": 14 }
   }
 }
