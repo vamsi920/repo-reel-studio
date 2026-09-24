@@ -227,6 +227,7 @@ export function CredentialRequestSheet({
           key={field.name}
           field={field}
           value={values[field.name] ?? ""}
+          formValues={values}
           error={errors[field.name]}
           disabled={submitting}
           onChange={(value) =>

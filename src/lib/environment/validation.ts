@@ -56,7 +56,7 @@ export function isBlockedHost(host: string, providerId?: string): boolean {
   return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(bare));
 }
 
-function isFieldRequired(
+export function isFieldRequired(
   field: ConnectorField,
   values: ConnectorFormValues,
 ): boolean {

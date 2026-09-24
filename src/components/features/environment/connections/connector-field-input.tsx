@@ -2,6 +2,10 @@ import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
+import {
+  isFieldRequired,
+  type ConnectorFormValues,
+} from "#/lib/environment/validation";
 import type {
   ConnectorField,
   ConnectorFieldError,
@@ -43,6 +47,8 @@ export function useFieldErrorMessage(): (
 export interface ConnectorFieldInputProps {
   field: ConnectorField;
   value: string;
+  /** All current form values, so a conditionally-required field (`whenFieldEquals`) can be evaluated. */
+  formValues: ConnectorFormValues;
   error?: ConnectorFieldError;
   disabled?: boolean;
   onChange: (value: string) => void;
@@ -52,6 +58,7 @@ export interface ConnectorFieldInputProps {
 export function ConnectorFieldInput({
   field,
   value,
+  formValues,
   error,
   disabled,
   onChange,
@@ -60,7 +67,7 @@ export function ConnectorFieldInput({
   const { t } = useTranslation("openhands");
   const messageFor = useFieldErrorMessage();
   const label = t(field.labelKey);
-  const isRequired = field.required === true;
+  const isRequired = isFieldRequired(field, formValues);
 
   if (field.kind === "select" && field.options) {
     return (

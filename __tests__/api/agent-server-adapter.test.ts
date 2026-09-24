@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CANVAS_UI_CLIENT_TOOL_NAME } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
+import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
 
 import {
   ACP_SERVER_TAG_KEY,
@@ -27,6 +28,7 @@ const {
   mockGetAgentServerWorkingDir,
   mockIsAgentServerToolAvailable,
   mockGetEffectiveLocalBackend,
+  mockGetActiveBackend,
   mockGetCachedAgentServerInfo,
   mockGetServerInfo,
 } = vi.hoisted(() => ({
@@ -38,6 +40,16 @@ const {
     host: "http://127.0.0.1:8000",
     apiKey: "session-key",
     kind: "local" as const,
+  })),
+  mockGetActiveBackend: vi.fn(() => ({
+    backend: {
+      id: "default-local",
+      name: "Local backend",
+      host: "http://127.0.0.1:8000",
+      apiKey: "session-key",
+      kind: "local" as const,
+    },
+    orgId: null,
   })),
   mockGetCachedAgentServerInfo: vi.fn<() => unknown>(() => null),
   mockGetServerInfo: vi.fn(),
@@ -66,6 +78,7 @@ vi.mock("#/api/agent-server-compatibility", () => ({
 
 vi.mock("#/api/backend-registry/active-store", () => ({
   getEffectiveLocalBackend: mockGetEffectiveLocalBackend,
+  getActiveBackend: mockGetActiveBackend,
 }));
 
 beforeEach(() => {
@@ -78,6 +91,16 @@ beforeEach(() => {
     host: "http://127.0.0.1:8000",
     apiKey: "session-key",
     kind: "local",
+  });
+  mockGetActiveBackend.mockReturnValue({
+    backend: {
+      id: "default-local",
+      name: "Local backend",
+      host: "http://127.0.0.1:8000",
+      apiKey: "session-key",
+      kind: "local",
+    },
+    orgId: null,
   });
 });
 
@@ -762,6 +785,7 @@ describe("buildStartConversationRequest", () => {
       expect(payload.client_tools.map((tool) => tool.name)).toEqual([
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
+        ONBOARDING_CONTROL_TOOL_NAME,
       ]);
     });
 
@@ -775,6 +799,7 @@ describe("buildStartConversationRequest", () => {
       expect(payload.client_tools.map((tool) => tool.name)).toEqual([
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
+        ONBOARDING_CONTROL_TOOL_NAME,
       ]);
     });
 

@@ -474,7 +474,10 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: "jsdom",
       setupFiles: ["vitest.setup.ts"],
-      exclude: [...configDefaults.exclude, "tests"],
+      // `legacy/` is a separate, accidentally-committed project (its own
+      // package.json/lockfile) with no relation to this codebase; without
+      // this it fails wholesale as part of `npm test`.
+      exclude: [...configDefaults.exclude, "tests", "legacy"],
       // The full suite runs many DOM-heavy tests in parallel, which can
       // push individual `userEvent`-driven tests past Vitest's 5000ms
       // default on busy machines (the skills-settings and i18n
