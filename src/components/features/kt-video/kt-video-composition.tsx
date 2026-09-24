@@ -6,12 +6,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { useTranslation } from "react-i18next";
 import type { KtManifest, KtScene } from "#/lib/kt-video/build-manifest";
+import { I18nKey } from "#/i18n/declaration";
 import { DiagramPanel } from "./diagram-panel";
 import { RepoTreePanel } from "./repo-tree-panel";
 import { ConceptPanel } from "./concept-panel";
-
-/* eslint-disable i18next/no-literal-string -- Remotion composition chrome */
 
 export function getActiveLines(
   scene: KtScene,
@@ -297,6 +297,7 @@ function SceneBadge({
 /** Self-contained Remotion composition rendering a deterministic KT manifest. */
 export function KtVideoComposition({ manifest }: { manifest: KtManifest }) {
   const frame = useCurrentFrame();
+  const { t } = useTranslation("openhands");
 
   if (!manifest.scenes.length) {
     return (
@@ -310,7 +311,7 @@ export function KtVideoComposition({ manifest }: { manifest: KtManifest }) {
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        Select files to generate a KT video
+        {t(I18nKey.KT$VIDEO_NO_ELIGIBLE_SCENES)}
       </AbsoluteFill>
     );
   }

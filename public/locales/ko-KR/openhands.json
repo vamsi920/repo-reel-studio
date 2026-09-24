@@ -2364,6 +2364,7 @@
   "KT$VIDEO_TAB_DESCRIPTION": "Deterministic walkthrough, rendered from real files — pick up to {{count}}",
   "KT$VIDEO_TAB_LOADING_FILES": "Loading files…",
   "KT$VIDEO_TAB_NO_FILES": "No files found in this workspace.",
+  "KT$VIDEO_NO_ELIGIBLE_SCENES": "선택한 파일 중 동영상 장면으로 변환할 수 있는 파일이 없습니다. 소스 코드 파일을 선택해 보세요.",
   "KT$VIDEO_TAB_SELECT_FILES": "Select files on the left to generate a KT video.",
   "KT$VIDEO_TAB_LOADING_CONTENT": "Loading file content…",
   "KT$VIDEO_TAB_FILE_UNAVAILABLE": "couldn't load",

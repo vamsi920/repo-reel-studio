@@ -2364,6 +2364,7 @@
   "KT$VIDEO_TAB_DESCRIPTION": "Deterministic walkthrough, rendered from real files — pick up to {{count}}",
   "KT$VIDEO_TAB_LOADING_FILES": "Loading files…",
   "KT$VIDEO_TAB_NO_FILES": "No files found in this workspace.",
+  "KT$VIDEO_NO_ELIGIBLE_SCENES": "Жоден із вибраних файлів не вдалося перетворити на відеосцени. Спробуйте натомість вибрати файл із вихідним кодом.",
   "KT$VIDEO_TAB_SELECT_FILES": "Select files on the left to generate a KT video.",
   "KT$VIDEO_TAB_LOADING_CONTENT": "Loading file content…",
   "KT$VIDEO_TAB_FILE_UNAVAILABLE": "couldn't load",

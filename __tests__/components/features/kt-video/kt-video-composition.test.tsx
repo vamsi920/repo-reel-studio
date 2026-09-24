@@ -111,11 +111,11 @@ describe("getActiveLines", () => {
 });
 
 describe("KtVideoComposition", () => {
-  it("shows a placeholder when no scenes exist yet", () => {
+  it("shows a translated placeholder when no scenes exist yet", () => {
     render(<KtVideoComposition manifest={manifestOf()} />);
 
     expect(
-      screen.getByText("Select files to generate a KT video"),
+      screen.getByText("KT$VIDEO_NO_ELIGIBLE_SCENES"),
     ).toBeInTheDocument();
   });
 

@@ -40204,6 +40204,23 @@
     "tr": "No files found in this workspace.",
     "uk": "No files found in this workspace."
   },
+  "KT$VIDEO_NO_ELIGIBLE_SCENES": {
+    "en": "None of the selected files could be turned into video scenes. Try selecting a source code file instead.",
+    "ja": "選択したファイルはどれも動画シーンに変換できませんでした。ソースコードファイルを選択してみてください。",
+    "zh-CN": "所选文件均无法转换为视频场景。请尝试选择源代码文件。",
+    "zh-TW": "所選檔案皆無法轉換為影片場景。請嘗試選擇原始碼檔案。",
+    "ko-KR": "선택한 파일 중 동영상 장면으로 변환할 수 있는 파일이 없습니다. 소스 코드 파일을 선택해 보세요.",
+    "no": "Ingen av de valgte filene kunne gjøres om til videoscener. Prøv å velge en kildekodefil i stedet.",
+    "ar": "تعذّر تحويل أيٍّ من الملفات المحددة إلى مشاهد فيديو. حاول تحديد ملف كود مصدري بدلاً من ذلك.",
+    "de": "Keine der ausgewählten Dateien konnte in Videoszenen umgewandelt werden. Wählen Sie stattdessen eine Quellcodedatei aus.",
+    "fr": "Aucun des fichiers sélectionnés n'a pu être transformé en scènes vidéo. Essayez de sélectionner un fichier de code source à la place.",
+    "it": "Nessuno dei file selezionati ha potuto essere trasformato in scene video. Prova invece a selezionare un file di codice sorgente.",
+    "pt": "Nenhum dos arquivos selecionados pôde ser transformado em cenas de vídeo. Tente selecionar um arquivo de código-fonte.",
+    "es": "Ninguno de los archivos seleccionados pudo convertirse en escenas de vídeo. Prueba a seleccionar un archivo de código fuente.",
+    "ca": "Cap dels fitxers seleccionats s'ha pogut convertir en escenes de vídeo. Prova de seleccionar un fitxer de codi font.",
+    "tr": "Seçilen dosyaların hiçbiri video sahnelerine dönüştürülemedi. Bunun yerine bir kaynak kodu dosyası seçmeyi deneyin.",
+    "uk": "Жоден із вибраних файлів не вдалося перетворити на відеосцени. Спробуйте натомість вибрати файл із вихідним кодом."
+  },
   "KT$VIDEO_TAB_SELECT_FILES": {
     "en": "Select files on the left to generate a KT video.",
     "ja": "Select files on the left to generate a KT video.",
