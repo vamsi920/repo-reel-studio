@@ -111,8 +111,7 @@ describe("optimistic-user-message-store", () => {
     const consumed = store.consumeMatchingPendingMessage(CONVO, "second");
 
     expect(consumed?.id).toBe(secondId);
-    const remaining =
-      useOptimisticUserMessageStore.getState().pendingMessages;
+    const remaining = useOptimisticUserMessageStore.getState().pendingMessages;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(firstId);
   });
@@ -153,8 +152,7 @@ describe("optimistic-user-message-store", () => {
     const consumed = store.consumeMatchingPendingMessage(CONVO, "second");
 
     expect(consumed?.id).toBe(secondId);
-    const remaining =
-      useOptimisticUserMessageStore.getState().pendingMessages;
+    const remaining = useOptimisticUserMessageStore.getState().pendingMessages;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(firstId);
     expect(remaining[0].status).toBe("error");
@@ -192,8 +190,7 @@ describe("optimistic-user-message-store", () => {
     const consumed = store.consumeMatchingPendingMessage("conv-b", "shared");
 
     expect(consumed?.id).toBe(bId);
-    const remaining =
-      useOptimisticUserMessageStore.getState().pendingMessages;
+    const remaining = useOptimisticUserMessageStore.getState().pendingMessages;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(aId);
   });
@@ -281,8 +278,7 @@ describe("optimistic-user-message-store", () => {
 
     store.removePendingMessage(firstId);
 
-    const remaining =
-      useOptimisticUserMessageStore.getState().pendingMessages;
+    const remaining = useOptimisticUserMessageStore.getState().pendingMessages;
     expect(remaining.map((m) => m.text)).toEqual(["second"]);
   });
 
@@ -296,6 +292,40 @@ describe("optimistic-user-message-store", () => {
     expect(
       useOptimisticUserMessageStore.getState().pendingMessages,
     ).toHaveLength(0);
+  });
+
+  it("removePendingMessage cancels the entry's watchdog timer instead of leaking it", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    const id = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "first",
+    });
+    expect(vi.getTimerCount()).toBe(1);
+
+    store.removePendingMessage(id);
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("consumeMatchingPendingMessage cancels the consumed entry's watchdog timer", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    store.enqueuePendingMessage({ conversationId: CONVO, text: "fast" });
+    expect(vi.getTimerCount()).toBe(1);
+
+    store.consumeMatchingPendingMessage(CONVO, "fast");
+
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("clearPendingMessages cancels every queued entry's watchdog timer", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    store.enqueuePendingMessage({ conversationId: CONVO, text: "first" });
+    store.enqueuePendingMessage({ conversationId: CONVO, text: "second" });
+    expect(vi.getTimerCount()).toBe(2);
+
+    store.clearPendingMessages();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("reassignPendingMessages moves entries from a task id to the real conversation id", () => {

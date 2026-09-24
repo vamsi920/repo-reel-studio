@@ -18,6 +18,7 @@ import {
 } from "#/utils/conversation-local-storage";
 import { resetPendingTaskMessageLinkState } from "#/utils/pending-task-message-link";
 import { getStoredConversationMetadata } from "#/api/conversation-metadata-store";
+import { flushPendingTaskAttachments } from "#/utils/flush-pending-task-attachments";
 
 vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
@@ -29,6 +30,9 @@ vi.mock(
 );
 vi.mock("#/services/cloud-funnel-analytics", () => ({
   trackCloudConversationReady: vi.fn(),
+}));
+vi.mock("#/utils/flush-pending-task-attachments", () => ({
+  flushPendingTaskAttachments: vi.fn().mockResolvedValue(undefined),
 }));
 
 const readyTask: AppConversationStartTask = {
@@ -72,6 +76,7 @@ describe("useTaskPolling", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(flushPendingTaskAttachments).mockResolvedValue(undefined);
     localStorage.clear();
     resetPendingTaskMessageLinkState();
     useOptimisticUserMessageStore.setState({ pendingMessages: [] });
@@ -224,5 +229,22 @@ describe("useTaskPolling", () => {
       "123",
       "conversation-1",
     );
+  });
+
+  it("still navigates to the real conversation when flushing pending attachments fails", async () => {
+    vi.mocked(AgentServerConversationService.getStartTask).mockResolvedValue(
+      readyTask,
+    );
+    vi.mocked(flushPendingTaskAttachments).mockRejectedValue(
+      new Error("upload failed"),
+    );
+
+    renderHook(() => useTaskPollingController(), { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith("/conversations/conversation-1", {
+        replace: true,
+      });
+    });
   });
 });

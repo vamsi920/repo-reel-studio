@@ -155,7 +155,15 @@ export const useTaskPollingController = () => {
     storeTaskPlugins(task, appConversationId);
 
     void (async () => {
-      await flushPendingTaskAttachments(taskId, appConversationId);
+      try {
+        await flushPendingTaskAttachments(taskId, appConversationId);
+      } catch {
+        // flushPendingTaskAttachments already surfaced an error toast for
+        // the failed send. `handledReadyTaskIdRef` above is already set for
+        // this taskId, so this is the only chance to navigate off the
+        // task-polling screen — don't let a transient attachment-send
+        // failure strand the user there forever.
+      }
 
       const taskConversationId = `task-${taskId}`;
       linkPendingTaskMessages(appConversationId, taskConversationId);

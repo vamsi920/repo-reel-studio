@@ -132,6 +132,18 @@ const armWatchdog = (id: string) => {
   );
 };
 
+// Cancel and forget a pending message's watchdog once it no longer needs
+// one (removed, matched by an echo, or its conversation was cleared) so the
+// timer doesn't keep running in the background until it fires as a no-op.
+const clearWatchdog = (id: string | undefined) => {
+  if (id === undefined) return;
+  const timer = watchdogTimers.get(id);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    watchdogTimers.delete(id);
+  }
+};
+
 export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
   (set) => ({
     ...initialState,
@@ -180,12 +192,14 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
       armWatchdog(id);
     },
 
-    removePendingMessage: (id) =>
+    removePendingMessage: (id) => {
+      clearWatchdog(id);
       set((state) => ({
         pendingMessages: state.pendingMessages.filter(
           (message) => message.id !== id,
         ),
-      })),
+      }));
+    },
 
     consumeMatchingPendingMessage: (conversationId, content) => {
       // Single atomic `set` so the find + filter can't observe an interleaved
@@ -196,7 +210,12 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
       // oldest "sending" entry in this conversation so the user doesn't end
       // up with a permanently-stuck bubble in the happy-path single-message
       // case.
-      let consumed: PendingUserMessage | null = null;
+      // Widen via cast (not just an annotation): TS's control-flow analysis
+      // narrows a `let null` initializer to the literal `null` type for every
+      // read in this outer scope, since it never traces the reassignment
+      // inside the nested `set` callback below — without the cast, reading
+      // `consumed` afterward incorrectly type-errors as `never`.
+      let consumed = null as PendingUserMessage | null;
       set((state) => {
         const sending = state.pendingMessages
           .map((m, i) => ({ m, i }))
@@ -215,10 +234,15 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
           ],
         };
       });
+      clearWatchdog(consumed?.id);
       return consumed;
     },
 
-    clearPendingMessages: () => set(() => ({ ...initialState })),
+    clearPendingMessages: () =>
+      set((state) => {
+        state.pendingMessages.forEach((message) => clearWatchdog(message.id));
+        return { ...initialState };
+      }),
 
     reassignPendingMessages: (fromConversationId, toConversationId) =>
       set((state) => ({
