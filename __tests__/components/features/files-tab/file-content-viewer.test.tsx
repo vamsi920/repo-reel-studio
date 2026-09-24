@@ -217,9 +217,11 @@ describe("FileContentViewer", () => {
 
     renderViewer("big.json", "plain");
 
-    expect(
-      screen.getByText("FILES$LOADING_FILES"),
-    ).toBeInTheDocument();
+    // `role="status"` lets a screen reader announce this state instead of
+    // leaving the pane silently blank while the runtime finishes resolving.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "FILES$LOADING_FILES",
+    );
     expect(
       screen.queryByTestId("file-content-viewer-error"),
     ).not.toBeInTheDocument();

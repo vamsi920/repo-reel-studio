@@ -136,7 +136,10 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
   // branch below instead of showing "loading".
   if (query.isPending) {
     return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]">
+      <div
+        role="status"
+        className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]"
+      >
         {t(I18nKey.FILES$LOADING_FILES)}
       </div>
     );
@@ -200,7 +203,10 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
     if (kind === "image" || kind === "pdf") {
       if (textSniff.isLoading) {
         return (
-          <div className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]">
+          <div
+            role="status"
+            className="flex h-full w-full items-center justify-center text-sm text-[var(--oh-muted)]"
+          >
             {t(I18nKey.FILES$LOADING_FILES)}
           </div>
         );

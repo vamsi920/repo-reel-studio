@@ -306,7 +306,10 @@ function FilesTab() {
       {activeView === "off" && (
         <div className="flex flex-1 flex-col min-h-0">
           {filesQuery.isLoading && (
-            <div className="flex flex-1 items-center justify-center text-sm text-[var(--oh-muted)]">
+            <div
+              role="status"
+              className="flex flex-1 items-center justify-center text-sm text-[var(--oh-muted)]"
+            >
               {t(I18nKey.FILES$LOADING_FILES)}
             </div>
           )}

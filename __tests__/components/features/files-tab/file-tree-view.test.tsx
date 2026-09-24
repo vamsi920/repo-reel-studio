@@ -116,6 +116,39 @@ describe("FileTreeView", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
+  it("does not treat a sibling directory whose name is a prefix as an ancestor of the selection", () => {
+    // Arrange + Act: `src-legacy/b.ts` is selected. A naive containment
+    // check (`selectedPath.startsWith(node.path)` with no separator) would
+    // treat "src" as an ancestor of "src-legacy/b.ts" too, since the string
+    // "src-legacy/b.ts" does start with "src". That would wrongly
+    // auto-expand the unrelated `src` directory and could even render its
+    // own child as selected if it shared a path.
+    render(
+      <FileTreeView
+        paths={["src/a.ts", "src-legacy/b.ts"]}
+        selectedPath="src-legacy/b.ts"
+        onSelectFile={vi.fn()}
+      />,
+    );
+
+    // Assert: only the real ancestor (`src-legacy`) auto-expands and shows
+    // the selected file; the unrelated `src` directory stays collapsed.
+    expect(screen.getByTestId("file-tree-dir-src-legacy")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.getByTestId("file-tree-file-src-legacy/b.ts"),
+    ).toHaveAttribute("aria-current", "true");
+    expect(screen.getByTestId("file-tree-dir-src")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(
+      screen.queryByTestId("file-tree-file-src/a.ts"),
+    ).not.toBeInTheDocument();
+  });
+
   it("auto-expands ancestor directories when the selection changes after mount", () => {
     // Arrange: nothing selected on first render, so both directories start
     // collapsed — this is the case the component's own comment calls out:

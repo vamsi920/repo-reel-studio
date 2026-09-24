@@ -492,6 +492,31 @@ describe("FilesTab", () => {
     expect(highlighted.getAttribute("data-language")).toBe("typescript");
   });
 
+  it("announces the workspace listing as loading via role=status while it resolves", () => {
+    useHasAttachedSourceMock.mockReturnValue({
+      hasAttachedSource: false,
+      isLoading: false,
+    });
+    useWorkspaceFilesMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      refetch: refetchFilesMock,
+    });
+
+    renderTab();
+
+    // `role="status"` lets a screen reader announce this state instead of
+    // leaving the pane silently blank while the listing is still in flight.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "FILES$LOADING_FILES",
+    );
+    expect(screen.queryByTestId("files-tab-list-error")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("files-tab-content"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the refresh button inside the files-tab toolbar and triggers a refetch", async () => {
     useHasAttachedSourceMock.mockReturnValue({
       hasAttachedSource: false,
