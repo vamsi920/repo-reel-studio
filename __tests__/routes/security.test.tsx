@@ -450,6 +450,29 @@ describe("Security route", () => {
         "acme/api@abcdef1",
       );
     });
+
+    it("drops the scope live when the knowledge store is reset out from under it, the same way a real backend/org switch does", async () => {
+      // Regression: every other scoping test only ever asserts a single,
+      // static render. `useKnowledgeStore`'s own `reset()` doc comment says
+      // it is called on every real backend/org switch while any route,
+      // including this one, may still be mounted -- a stale memoised scope
+      // that didn't react to that change would keep reporting a workspace
+      // that no longer has any backing store entry.
+      seedRepository();
+      renderSecurity();
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+
+      useKnowledgeStore.setState({ byRepositoryId: {} });
+
+      expect(
+        await screen.findByTestId("security-no-workspace"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-workspace-scope"),
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe("repository picker", () => {
@@ -578,6 +601,65 @@ describe("Security route", () => {
       expect(
         screen.getByTestId("security-repository-select"),
       ).not.toHaveAttribute("aria-invalid");
+    });
+
+    it("excludes an open conversation with no working directory from the picker, alongside a real candidate", () => {
+      // Regression: "ignores an open conversation with no working directory
+      // yet" above only ever seeds a single connected candidate, so it can't
+      // tell the difference between "excluded from the merge" and "excluded
+      // because it was the only candidate anyway". With a second, valid
+      // candidate present, a missing `!candidate.workingDir` guard would
+      // surface the workspace-less repository as a real, selectable option.
+      setConnected(
+        {
+          repositoryId: "acme/api@main",
+          owner: "acme",
+          repo: "api",
+          branch: "main",
+          conversationUrl: "https://example.com/conv-api",
+          sessionApiKey: "key",
+          workingDir: null,
+        },
+        {
+          repositoryId: "acme/web@main",
+          owner: "acme",
+          repo: "web",
+          branch: "main",
+          conversationUrl: "https://example.com/conv-web",
+          sessionApiKey: "key",
+          workingDir: "/workspace/web",
+        },
+      );
+      renderSecurity();
+
+      // Only the candidate with a real checkout is a choice -- one option
+      // means no picker, and the page scopes straight to it.
+      expect(
+        screen.queryByTestId("security-repository-select"),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/web",
+      );
+    });
+
+    it("disambiguates by branch only the repositories that actually collide, leaving a uniquely-named one plain", () => {
+      // Regression: every existing disambiguation test seeds either two
+      // colliding repositories or two non-colliding ones -- never a mix. The
+      // per-label counting in `RepositorySelect` could plausibly disambiguate
+      // (or fail to) uniformly across every option instead of per label.
+      seedRepository({ branch: "main" });
+      seedRepository({ repositoryId: "acme/api@develop", branch: "develop" });
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity();
+
+      const optionText = screen
+        .getAllByRole("option")
+        .map((option) => option.textContent);
+      expect(optionText).toEqual([
+        "acme/api (develop)",
+        "acme/api (main)",
+        "acme/web",
+      ]);
     });
 
     it("offers and honours the picker for repositories known only from open conversations, not just the knowledge store", async () => {
