@@ -4,11 +4,11 @@ import { createEmptyProfile } from "#/lib/environment/types/profile";
 const state = vi.hoisted(() => ({
   data: null as Record<string, unknown> | null,
   error: null as { message: string } | null,
-  // put()-specific: what an `.update(...).eq(...).eq(...)` chain resolves
-  // to (null data = zero rows matched, i.e. a revision conflict) and what an
-  // `.insert(...)` resolves to.
+  // put()-specific: what an `.update(...).eq(...).eq(...).select(...)` chain
+  // resolves to (null data = zero rows matched, i.e. a revision conflict)
+  // and what an `.insert(...).select(...)` chain resolves to.
   updateResult: { data: null as Record<string, unknown> | null, error: null as { message: string; code?: string } | null },
-  insertResult: { error: null as { message: string; code?: string } | null },
+  insertResult: { data: null as Record<string, unknown> | null, error: null as { message: string; code?: string } | null },
   updateCalls: [] as { orgId: string; revision: number }[],
   insertCalls: [] as { orgId: string }[],
 }));
@@ -34,10 +34,14 @@ vi.mock("#/lib/data-platform/client", () => ({
           }),
         }),
       }),
-      insert: async (row: { org_id: string }) => {
-        state.insertCalls.push({ orgId: row.org_id });
-        return state.insertResult;
-      },
+      insert: (row: { org_id: string }) => ({
+        select: () => ({
+          maybeSingle: async () => {
+            state.insertCalls.push({ orgId: row.org_id });
+            return state.insertResult;
+          },
+        }),
+      }),
       upsert: async () => ({ error: null }),
     }),
   },
@@ -116,7 +120,7 @@ describe("environmentProfileRepository.get", () => {
 describe("environmentProfileRepository.put", () => {
   beforeEach(() => {
     state.updateResult = { data: null, error: null };
-    state.insertResult = { error: null };
+    state.insertResult = { data: null, error: null };
     state.updateCalls = [];
     state.insertCalls = [];
   });
@@ -126,13 +130,27 @@ describe("environmentProfileRepository.put", () => {
   // revision trigger always accepts whatever `doc` it is given regardless of
   // what the caller thought the current revision was.
   it("updates by matching org_id AND the loaded revision, not org_id alone", async () => {
-    state.updateResult = { data: { doc: {} }, error: null };
+    state.updateResult = {
+      data: { revision: 4, updated_at: "2026-09-02T00:00:00.000Z", updated_by: "user-2" },
+      error: null,
+    };
     const profile = { ...createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z"), meta: { createdAt: "x", updatedAt: "x", updatedBy: "", revision: 3 } };
 
-    await environmentProfileRepository.put("org-1", profile);
+    const result = await environmentProfileRepository.put("org-1", profile);
 
     expect(state.updateCalls).toEqual([{ orgId: "org-1", revision: 3 }]);
     expect(state.insertCalls).toHaveLength(0);
+    // Regression: put() used to echo back the caller's stale pre-write
+    // revision (3) instead of the trigger-assigned one (4) -- the very next
+    // save would then compute expectedRevision from 3, match zero rows
+    // against the DB's real revision 4, and misreport a solo save as
+    // "changed by someone else".
+    expect(result.meta).toEqual({
+      createdAt: "x",
+      revision: 4,
+      updatedAt: "2026-09-02T00:00:00.000Z",
+      updatedBy: "user-2",
+    });
   });
 
   it("throws a conflict error when the revision no longer matches (someone else saved first)", async () => {
@@ -145,17 +163,26 @@ describe("environmentProfileRepository.put", () => {
   });
 
   it("inserts (not upsert) for a brand-new profile, at revision 0", async () => {
+    state.insertResult = {
+      data: { revision: 1, updated_at: "2026-09-01T00:00:00.000Z", updated_by: "user-1" },
+      error: null,
+    };
     const profile = createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z");
     expect(profile.meta.revision).toBe(0);
 
-    await environmentProfileRepository.put("org-1", profile);
+    const result = await environmentProfileRepository.put("org-1", profile);
 
     expect(state.insertCalls).toEqual([{ orgId: "org-1" }]);
     expect(state.updateCalls).toHaveLength(0);
+    // Regression: without re-reading the trigger-assigned revision, the
+    // returned profile stayed at revision 0 after its first-ever save,
+    // so a second save immediately after would take the insert branch
+    // again against a row that now exists and fail with a unique violation.
+    expect(result.meta.revision).toBe(1);
   });
 
   it("throws a conflict error when two admins race to create the first profile", async () => {
-    state.insertResult = { error: { message: "duplicate key value violates unique constraint", code: "23505" } };
+    state.insertResult = { data: null, error: { message: "duplicate key value violates unique constraint", code: "23505" } };
     const profile = createEmptyProfile("org-1", "2026-09-01T00:00:00.000Z");
 
     await expect(environmentProfileRepository.put("org-1", profile)).rejects.toThrow(

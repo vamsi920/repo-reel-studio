@@ -1,8 +1,9 @@
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import {
-  JIRA_TOKEN_URL,
+  decryptJiraToken,
   hmacSha256Hex,
   jiraOAuthCredentials,
+  refreshJiraAccessToken,
   verifyAtlassianWebhookJwt,
 } from "../_shared/jira.ts";
 
@@ -15,81 +16,6 @@ interface RegistrationRow {
 interface JiraConnectionRow {
   encrypted_access_token: string;
   encrypted_refresh_token: string | null;
-}
-
-async function decrypt(
-  admin: ReturnType<typeof createAdminClient>,
-  ciphertext: string,
-  encryptionKey: string,
-): Promise<string | null> {
-  const { data } = await admin.rpc("decrypt_github_token", {
-    ciphertext,
-    encryption_key: encryptionKey,
-  });
-  return data ?? null;
-}
-
-async function encrypt(
-  admin: ReturnType<typeof createAdminClient>,
-  token: string,
-  encryptionKey: string,
-): Promise<string | null> {
-  const { data } = await admin.rpc("encrypt_github_token", {
-    token,
-    encryption_key: encryptionKey,
-  });
-  return data ?? null;
-}
-
-/** Always refreshes -- a webhook can fire at any point in the ~1hr access
- * token lifetime, so there's no cheaper correct check than just refreshing.
- * Falls back to the existing (possibly stale) access token if the refresh
- * itself fails, so a transient Atlassian hiccup doesn't drop the run. */
-async function refreshAccessToken(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-  refreshToken: string,
-  fallbackAccessToken: string,
-  encryptionKey: string,
-): Promise<string> {
-  try {
-    const { clientId, clientSecret } = jiraOAuthCredentials();
-    const response = await fetch(JIRA_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        grant_type: "refresh_token",
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-      }),
-    });
-    if (!response.ok) return fallbackAccessToken;
-    const json = await response.json();
-    const accessToken: string | undefined = json.access_token;
-    const newRefreshToken: string | undefined = json.refresh_token;
-    if (!accessToken) return fallbackAccessToken;
-
-    const encryptedAccessToken = await encrypt(admin, accessToken, encryptionKey);
-    const encryptedRefreshToken = newRefreshToken
-      ? await encrypt(admin, newRefreshToken, encryptionKey)
-      : null;
-    if (encryptedAccessToken) {
-      await admin
-        .from("jira_connections")
-        .update({
-          encrypted_access_token: encryptedAccessToken,
-          ...(encryptedRefreshToken
-            ? { encrypted_refresh_token: encryptedRefreshToken }
-            : {}),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
-    }
-    return accessToken;
-  } catch {
-    return fallbackAccessToken;
-  }
 }
 
 /** Pushes the fresh access token into the agent-server's own secret store
@@ -171,17 +97,17 @@ Deno.serve(async (req) => {
     .eq("user_id", registrationId)
     .maybeSingle<JiraConnectionRow>();
   if (connection) {
-    const accessToken = await decrypt(
+    const accessToken = await decryptJiraToken(
       admin,
       connection.encrypted_access_token,
       encryptionKey,
     );
     const refreshToken = connection.encrypted_refresh_token
-      ? await decrypt(admin, connection.encrypted_refresh_token, encryptionKey)
+      ? await decryptJiraToken(admin, connection.encrypted_refresh_token, encryptionKey)
       : null;
     if (accessToken) {
       const freshToken = refreshToken
-        ? await refreshAccessToken(
+        ? await refreshJiraAccessToken(
             admin,
             registrationId,
             refreshToken,
@@ -193,7 +119,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const webhookSecret = await decrypt(
+  const webhookSecret = await decryptJiraToken(
     admin,
     registration.encrypted_webhook_secret,
     encryptionKey,

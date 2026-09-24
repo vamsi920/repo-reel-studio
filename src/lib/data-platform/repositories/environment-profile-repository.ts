@@ -91,12 +91,19 @@ class SupabaseEnvironmentProfileRepository implements EnvironmentProfileReposito
     const expectedRevision = profile.meta.revision ?? 0;
 
     if (expectedRevision > 0) {
+      // Re-read the trigger-assigned revision/updated_at/updated_by rather
+      // than echoing back the caller's pre-write `doc` -- the trigger always
+      // bumps `revision` server-side, so returning the stale client value
+      // here left the next `put()` call computing `expectedRevision` from a
+      // revision the DB had already moved past, matching zero rows on its
+      // very next `.eq("revision", expectedRevision)` and misreporting a
+      // real, solo save as "changed by someone else".
       const { data, error } = await supabase
         .from("environment_profiles")
         .update({ doc })
         .eq("org_id", orgId)
         .eq("revision", expectedRevision)
-        .select("doc")
+        .select("revision, updated_at, updated_by")
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!data) {
@@ -104,15 +111,25 @@ class SupabaseEnvironmentProfileRepository implements EnvironmentProfileReposito
           "This environment profile was changed by someone else since it was loaded. Reload and try again.",
         );
       }
-      return doc;
+      return {
+        ...doc,
+        meta: {
+          ...doc.meta,
+          revision: (data.revision as number) ?? doc.meta.revision,
+          updatedAt: (data.updated_at as string) ?? doc.meta.updatedAt,
+          updatedBy: (data.updated_by as string | null) ?? doc.meta.updatedBy,
+        },
+      };
     }
 
     // No row yet: insert rather than upsert, so two admins racing to save
     // the very first profile get a loud unique-violation on the loser
     // instead of one silently overwriting the other.
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("environment_profiles")
-      .insert({ org_id: orgId, doc });
+      .insert({ org_id: orgId, doc })
+      .select("revision, updated_at, updated_by")
+      .maybeSingle();
     if (error) {
       if (error.code === "23505") {
         throw new Error(
@@ -121,7 +138,15 @@ class SupabaseEnvironmentProfileRepository implements EnvironmentProfileReposito
       }
       throw new Error(error.message);
     }
-    return doc;
+    return {
+      ...doc,
+      meta: {
+        ...doc.meta,
+        revision: (data?.revision as number) ?? doc.meta.revision,
+        updatedAt: (data?.updated_at as string) ?? doc.meta.updatedAt,
+        updatedBy: (data?.updated_by as string | null) ?? doc.meta.updatedBy,
+      },
+    };
   }
 }
 

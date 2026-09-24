@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
  * supabase/functions is excluded from this project's tsconfig (it's a
@@ -10,7 +10,9 @@ import { describe, expect, it } from "vitest";
  * for the same pattern.
  */
 const JIRA_SHARED_PATH = ["..", "..", "..", "supabase", "functions", "_shared", "jira.ts"].join("/");
-const { verifyAtlassianWebhookJwt } = await import(/* @vite-ignore */ JIRA_SHARED_PATH);
+const { verifyAtlassianWebhookJwt, refreshJiraAccessToken } = await import(
+  /* @vite-ignore */ JIRA_SHARED_PATH
+);
 
 const CLIENT_SECRET = "test-client-secret";
 
@@ -98,5 +100,107 @@ describe("verifyAtlassianWebhookJwt", () => {
     const result = await verifyAtlassianWebhookJwt("not-a-jwt", CLIENT_SECRET);
 
     expect(result).toBeNull();
+  });
+});
+
+function makeFakeAdmin() {
+  const updateCalls: { table: string; row: unknown; userId: string }[] = [];
+  const admin = {
+    from(table: string) {
+      return {
+        update(row: unknown) {
+          return {
+            eq: async (_column: string, userId: string) => {
+              updateCalls.push({ table, row, userId });
+              return { error: null };
+            },
+          };
+        },
+      };
+    },
+    rpc: async (_fn: string, args: { token: string }) => ({
+      data: `encrypted(${args.token})`,
+      error: null,
+    }),
+  };
+  return { admin, updateCalls };
+}
+
+describe("refreshJiraAccessToken", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("persists and returns the new access and refresh tokens on success", async () => {
+    vi.stubGlobal("Deno", {
+      env: { get: () => "test-oauth-value" },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          access_token: "new-access-token",
+          refresh_token: "new-refresh-token",
+        }),
+      }),
+    );
+    const { admin, updateCalls } = makeFakeAdmin();
+
+    const result = await refreshJiraAccessToken(
+      admin,
+      "user-1",
+      "old-refresh-token",
+      "old-access-token",
+      "encryption-key",
+    );
+
+    expect(result).toBe("new-access-token");
+    expect(updateCalls).toEqual([
+      {
+        table: "jira_connections",
+        row: expect.objectContaining({
+          encrypted_access_token: "encrypted(new-access-token)",
+          encrypted_refresh_token: "encrypted(new-refresh-token)",
+        }),
+        userId: "user-1",
+      },
+    ]);
+  });
+
+  it("falls back to the existing access token without persisting when the token endpoint rejects the refresh", async () => {
+    vi.stubGlobal("Deno", { env: { get: () => "test-oauth-value" } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    const { admin, updateCalls } = makeFakeAdmin();
+
+    const result = await refreshJiraAccessToken(
+      admin,
+      "user-1",
+      "old-refresh-token",
+      "old-access-token",
+      "encryption-key",
+    );
+
+    expect(result).toBe("old-access-token");
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("falls back to the existing access token when Jira OAuth is not configured for this deployment", async () => {
+    vi.stubGlobal("Deno", { env: { get: () => undefined } });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { admin, updateCalls } = makeFakeAdmin();
+
+    const result = await refreshJiraAccessToken(
+      admin,
+      "user-1",
+      "old-refresh-token",
+      "old-access-token",
+      "encryption-key",
+    );
+
+    expect(result).toBe("old-access-token");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(updateCalls).toHaveLength(0);
   });
 });

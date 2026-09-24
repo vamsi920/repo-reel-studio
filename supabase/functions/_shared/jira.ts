@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+
 export const JIRA_AUTHORIZE_URL = "https://auth.atlassian.com/authorize";
 export const JIRA_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
 export const JIRA_ACCESSIBLE_RESOURCES_URL =
@@ -164,3 +166,87 @@ export const JIRA_WEBHOOK_REGISTER_URL_TEMPLATE =
   "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook";
 export const JIRA_WEBHOOK_REFRESH_URL_TEMPLATE =
   "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook/refresh";
+
+export async function decryptJiraToken(
+  admin: SupabaseClient,
+  ciphertext: string,
+  encryptionKey: string,
+): Promise<string | null> {
+  const { data } = await admin.rpc("decrypt_github_token", {
+    ciphertext,
+    encryption_key: encryptionKey,
+  });
+  return data ?? null;
+}
+
+async function encryptJiraToken(
+  admin: SupabaseClient,
+  token: string,
+  encryptionKey: string,
+): Promise<string | null> {
+  const { data } = await admin.rpc("encrypt_github_token", {
+    token,
+    encryption_key: encryptionKey,
+  });
+  return data ?? null;
+}
+
+/**
+ * Refreshes a Jira access token and persists the result, unconditionally --
+ * callers that fire on an unpredictable schedule relative to the ~1hr
+ * Atlassian access-token lifetime (a webhook that can arrive at any point in
+ * that hour, or a once-daily cron almost certainly past it) have no cheaper
+ * correct check than just refreshing every time. Falls back to the existing
+ * (possibly stale) access token if the refresh itself fails, so a transient
+ * Atlassian hiccup doesn't drop the caller's run entirely.
+ */
+export async function refreshJiraAccessToken(
+  admin: SupabaseClient,
+  userId: string,
+  refreshToken: string,
+  fallbackAccessToken: string,
+  encryptionKey: string,
+): Promise<string> {
+  try {
+    const { clientId, clientSecret } = jiraOAuthCredentials();
+    const response = await fetch(JIRA_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      }),
+    });
+    if (!response.ok) return fallbackAccessToken;
+    const json = await response.json();
+    const accessToken: string | undefined = json.access_token;
+    const newRefreshToken: string | undefined = json.refresh_token;
+    if (!accessToken) return fallbackAccessToken;
+
+    const encryptedAccessToken = await encryptJiraToken(
+      admin,
+      accessToken,
+      encryptionKey,
+    );
+    const encryptedRefreshToken = newRefreshToken
+      ? await encryptJiraToken(admin, newRefreshToken, encryptionKey)
+      : null;
+    if (encryptedAccessToken) {
+      await admin
+        .from("jira_connections")
+        .update({
+          encrypted_access_token: encryptedAccessToken,
+          ...(encryptedRefreshToken
+            ? { encrypted_refresh_token: encryptedRefreshToken }
+            : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+    }
+    return accessToken;
+  } catch {
+    return fallbackAccessToken;
+  }
+}

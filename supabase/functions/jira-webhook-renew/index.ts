@@ -1,6 +1,10 @@
 import { jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
-import { JIRA_WEBHOOK_REFRESH_URL_TEMPLATE } from "../_shared/jira.ts";
+import {
+  JIRA_WEBHOOK_REFRESH_URL_TEMPLATE,
+  decryptJiraToken,
+  refreshJiraAccessToken,
+} from "../_shared/jira.ts";
 
 interface RegistrationRow {
   user_id: string;
@@ -10,6 +14,7 @@ interface RegistrationRow {
 
 interface JiraConnectionRow {
   encrypted_access_token: string;
+  encrypted_refresh_token: string | null;
 }
 
 /**
@@ -46,21 +51,38 @@ Deno.serve(async (req) => {
     try {
       const { data: connection } = await admin
         .from("jira_connections")
-        .select("encrypted_access_token")
+        .select("encrypted_access_token, encrypted_refresh_token")
         .eq("user_id", registration.user_id)
         .maybeSingle<JiraConnectionRow>();
       if (!connection) {
         results.push({ userId: registration.user_id, ok: false });
         continue;
       }
-      const { data: accessToken } = await admin.rpc("decrypt_github_token", {
-        ciphertext: connection.encrypted_access_token,
-        encryption_key: encryptionKey,
-      });
-      if (!accessToken) {
+      const staleAccessToken = await decryptJiraToken(
+        admin,
+        connection.encrypted_access_token,
+        encryptionKey,
+      );
+      if (!staleAccessToken) {
         results.push({ userId: registration.user_id, ok: false });
         continue;
       }
+      const refreshToken = connection.encrypted_refresh_token
+        ? await decryptJiraToken(
+            admin,
+            connection.encrypted_refresh_token,
+            encryptionKey,
+          )
+        : null;
+      const accessToken = refreshToken
+        ? await refreshJiraAccessToken(
+            admin,
+            registration.user_id,
+            refreshToken,
+            staleAccessToken,
+            encryptionKey,
+          )
+        : staleAccessToken;
 
       const url = JIRA_WEBHOOK_REFRESH_URL_TEMPLATE.replace(
         "{cloudId}",
