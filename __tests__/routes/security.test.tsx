@@ -362,6 +362,35 @@ describe("Security route", () => {
       );
     });
 
+    it("merges and sorts repositories from the knowledge store and open conversations together, not just within one source", () => {
+      // Regression: every other merge test either seeds both sources for the
+      // *same* repository (store-wins precedence) or uses only one source at
+      // a time. Neither proves the combined `repositories` list -- built from
+      // two different Maps folded together -- stays correctly sorted by
+      // `repositoryId` across sources rather than, say, listing every store
+      // entry before every connected-only entry regardless of id order.
+      seedRepository({ repositoryId: "acme/zzz@main", repo: "zzz" });
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv-api",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      });
+      renderSecurity();
+
+      expect(
+        screen.getAllByRole("option").map((option) => option.textContent),
+      ).toEqual(["acme/api", "acme/zzz"]);
+      // The lexicographically-first repositoryId wins the default scope,
+      // regardless of which source it came from.
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api",
+      );
+    });
+
     it("says there is no workspace when ?repository= is stale and nothing is connected, rather than claiming it is unconnected", () => {
       // Regression: with zero connected repositories, "no-repositories" must
       // win over "requested-not-connected" — reporting a specific repository
@@ -836,6 +865,33 @@ describe("Security activity contract", () => {
       metadata: { commitSha: "abcdef1234567890" },
       message: "scanner exited with code 2",
     });
+  });
+
+  it("builds the same id for the same inputs, twice", () => {
+    // The id is deliberately deterministic (repository + kind + timestamp),
+    // not a per-call sequence number -- unlike CodeGraph's `nextId()`, so a
+    // retried publish of the same milestone is idempotent instead of
+    // minting a second row. Nothing else in this file pins that down, so a
+    // well-meaning refactor toward a monotonic counter (the sibling
+    // module's pattern) could silently drop that guarantee.
+    const context = {
+      workspaceId: "/workspace/api",
+      repositoryId: "acme/api@main",
+      commitSha: "abcdef1234567890",
+    };
+
+    const first = buildSecurityActivityEvent(
+      context,
+      "scan.started",
+      "2026-08-19T00:00:00.000Z",
+    );
+    const second = buildSecurityActivityEvent(
+      context,
+      "scan.started",
+      "2026-08-19T00:00:00.000Z",
+    );
+
+    expect(second.id).toBe(first.id);
   });
 
   it("omits the message field entirely when there is none", () => {

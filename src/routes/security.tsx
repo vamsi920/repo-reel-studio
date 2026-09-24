@@ -283,13 +283,13 @@ function RepositorySelect({
   // share the same `label` ("owner/repo") — without the branch, their
   // options would render as identical, indistinguishable text and a user
   // could not tell which one they were picking.
-  const labelCounts = new Map<string, number>();
-  repositories.forEach((repository) => {
-    labelCounts.set(
-      repository.label,
-      (labelCounts.get(repository.label) ?? 0) + 1,
-    );
-  });
+  const labelCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    repositories.forEach((repository) => {
+      counts.set(repository.label, (counts.get(repository.label) ?? 0) + 1);
+    });
+    return counts;
+  }, [repositories]);
   return (
     <div className="mt-3 flex flex-col gap-1">
       {/* A visible label, not just `aria-label`: a sighted mouse user needs
