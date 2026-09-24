@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtGraph from "#/routes/kt-graph";
 import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
-import { useCodeGraphStore } from "#/stores/codegraph-store";
+import { pinKey, useCodeGraphStore } from "#/stores/codegraph-store";
 import {
   resolveOrgId,
   findRepositoryUuid,
@@ -135,7 +135,7 @@ describe("KtGraph search", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
   });
 
@@ -144,7 +144,7 @@ describe("KtGraph search", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
     vi.clearAllMocks();
   });
@@ -369,6 +369,44 @@ describe("KtGraph search", () => {
     ).toBe(COMMIT);
   });
 
+  it("does not apply another workspace's pin to a repository checked out somewhere else", () => {
+    // Simulates a stale-banner rebuild that already happened under one
+    // workspace's checkout of this repository (WORKSPACE_ID), which left a
+    // pin from COMMIT -> HEAD for that workspace only.
+    const HEAD = "fedcba0987654321";
+    useCodeGraphStore
+      .getState()
+      .pinCommit(WORKSPACE_ID, REPOSITORY_ID, { from: COMMIT, to: HEAD });
+
+    // A different workspace (e.g. a second conversation against the same
+    // repository) whose own Docs snapshot happens to carry the exact same
+    // commit must not be redirected by the first workspace's pin -- it was
+    // never analyzed under that workspace's checkout.
+    const OTHER_WORKSPACE_ID = "/workspace/api-2";
+    act(() => {
+      useKnowledgeStore.setState((current) => ({
+        byRepositoryId: {
+          [REPOSITORY_ID]: {
+            ...current.byRepositoryId[REPOSITORY_ID],
+            snapshot: {
+              ...current.byRepositoryId[REPOSITORY_ID].snapshot,
+              localPath: OTHER_WORKSPACE_ID,
+            },
+          },
+        },
+      }));
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      screen.getByText(`acme/api@${COMMIT.slice(0, 7)}`, { exact: false }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(`acme/api@${HEAD.slice(0, 7)}`, { exact: false }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the existing graph on screen when a forced rebuild to a new HEAD commit fails", async () => {
     const HEAD = "fedcba0987654321";
     useKnowledgeStore.setState((current) => ({
@@ -443,7 +481,9 @@ describe("KtGraph search", () => {
     const newKey = codeGraphKey(WORKSPACE_ID, REPOSITORY_ID, HEAD);
     expect(useCodeGraphStore.getState().byKey[newKey]).toBeUndefined();
     expect(
-      useCodeGraphStore.getState().pinnedCommitByRepositoryId[REPOSITORY_ID],
+      useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+        pinKey(WORKSPACE_ID, REPOSITORY_ID)
+      ],
     ).toBeUndefined();
   });
 
@@ -741,7 +781,7 @@ describe("KtGraph cold rehydration", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
   });
 
@@ -750,7 +790,7 @@ describe("KtGraph cold rehydration", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
     vi.clearAllMocks();
   });
@@ -924,7 +964,7 @@ describe("KtGraph deep link on a cold store", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
   });
 
@@ -933,7 +973,7 @@ describe("KtGraph deep link on a cold store", () => {
     useCodeGraphStore.setState({
       byKey: {},
       handles: {},
-      pinnedCommitByRepositoryId: {},
+      pinnedCommitByWorkspaceRepo: {},
     });
     vi.clearAllMocks();
   });

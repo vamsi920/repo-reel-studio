@@ -68,10 +68,14 @@ interface CodeGraphStore {
   byKey: Record<string, CodeGraphState>;
   /** Handles hold a live workspace client, so they stay out of rendered state. */
   handles: Record<string, AnalysisHandle>;
-  /** Per repository: the HEAD commit a stale-banner rebuild moved the graph
-   * to. The Docs snapshot keeps its own commit (docs really were generated
-   * there); only the graph route re-keys itself through this. */
-  pinnedCommitByRepositoryId: Record<string, PinnedGraphCommit>;
+  /** Per workspace+repository: the HEAD commit a stale-banner rebuild moved
+   * the graph to. The Docs snapshot keeps its own commit (docs really were
+   * generated there); only the graph route re-keys itself through this.
+   * Keyed by `pinKey(workspaceId, repositoryId)`, not `repositoryId` alone --
+   * the same repository can be checked out in more than one workspace (e.g.
+   * two conversations against the same repo), and a rebuild in one must
+   * never redirect another workspace's still-untouched view of that repo. */
+  pinnedCommitByWorkspaceRepo: Record<string, PinnedGraphCommit>;
 
   start: (params: {
     workspaceId: string;
@@ -84,7 +88,11 @@ interface CodeGraphStore {
   setFreshness: (key: string, freshness: FreshnessResult) => void;
   beginRebuild: (key: string) => void;
   endRebuild: (key: string) => void;
-  pinCommit: (repositoryId: string, pin: PinnedGraphCommit) => void;
+  pinCommit: (
+    workspaceId: string,
+    repositoryId: string,
+    pin: PinnedGraphCommit,
+  ) => void;
 
   beginLoadLevel: (key: string, parentId: string) => void;
   setLevel: (
@@ -154,7 +162,7 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
   return {
     byKey: {},
     handles: {},
-    pinnedCommitByRepositoryId: {},
+    pinnedCommitByWorkspaceRepo: {},
 
     start: ({ workspaceId, repositoryId, commitSha }) => {
       const key = codeGraphKey(workspaceId, repositoryId, commitSha);
@@ -210,11 +218,11 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
     endRebuild: (key) =>
       update(key, (state) => ({ ...state, rebuilding: false })),
 
-    pinCommit: (repositoryId, pin) =>
+    pinCommit: (workspaceId, repositoryId, pin) =>
       set((store) => ({
-        pinnedCommitByRepositoryId: {
-          ...store.pinnedCommitByRepositoryId,
-          [repositoryId]: pin,
+        pinnedCommitByWorkspaceRepo: {
+          ...store.pinnedCommitByWorkspaceRepo,
+          [pinKey(workspaceId, repositoryId)]: pin,
         },
       })),
 
@@ -303,6 +311,13 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
       }),
   };
 });
+
+/** Key for `pinnedCommitByWorkspaceRepo` -- a workspace's view of one
+ * repository, deliberately excluding `commitSha` (a pin is what decides
+ * which commit that view resolves to, so it can't be part of its own key). */
+export function pinKey(workspaceId: string, repositoryId: string): string {
+  return `${workspaceId}::${repositoryId}`;
+}
 
 /** Key used for the root level inside `levels`. */
 export const CODEGRAPH_ROOT_LEVEL = LEVEL_ROOT;

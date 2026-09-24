@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  pinKey,
   selectCurrentLevel,
   selectHiddenTypes,
   selectVisibleNodes,
@@ -75,7 +76,11 @@ function start(): string {
 
 describe("codegraph store", () => {
   beforeEach(() => {
-    useCodeGraphStore.setState({ byKey: {}, handles: {} });
+    useCodeGraphStore.setState({
+      byKey: {},
+      handles: {},
+      pinnedCommitByWorkspaceRepo: {},
+    });
   });
 
   it("keys state by workspace, repository and commit together", () => {
@@ -385,5 +390,65 @@ describe("codegraph store", () => {
     expect(selectVisibleNodes(undefined)).toEqual([]);
     expect(selectHiddenTypes(undefined)).toEqual([]);
     expect(selectCurrentLevel(undefined)).toBeUndefined();
+  });
+
+  describe("pinCommit", () => {
+    const OTHER_WORKSPACE = "/workspace/acme-2";
+
+    it("records a pin under the workspace+repository it was made for", () => {
+      useCodeGraphStore
+        .getState()
+        .pinCommit(WORKSPACE, REPOSITORY, { from: "old", to: "new" });
+
+      expect(
+        useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+          pinKey(WORKSPACE, REPOSITORY)
+        ],
+      ).toEqual({ from: "old", to: "new" });
+    });
+
+    // Two workspaces can hold their own checkout of the very same
+    // repository (e.g. two conversations against "acme/app"). A stale-banner
+    // rebuild in one must never redirect the other's still-untouched view of
+    // that repository to a commit it never analyzed.
+    it("keeps pins for the same repository isolated per workspace", () => {
+      useCodeGraphStore
+        .getState()
+        .pinCommit(WORKSPACE, REPOSITORY, { from: "old", to: "new" });
+
+      expect(
+        useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+          pinKey(OTHER_WORKSPACE, REPOSITORY)
+        ],
+      ).toBeUndefined();
+      expect(
+        useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+          pinKey(WORKSPACE, REPOSITORY)
+        ],
+      ).toEqual({ from: "old", to: "new" });
+    });
+
+    it("replaces an existing pin for the same workspace+repository without disturbing other workspaces", () => {
+      useCodeGraphStore
+        .getState()
+        .pinCommit(WORKSPACE, REPOSITORY, { from: "old", to: "new" });
+      useCodeGraphStore
+        .getState()
+        .pinCommit(OTHER_WORKSPACE, REPOSITORY, { from: "old2", to: "new2" });
+      useCodeGraphStore
+        .getState()
+        .pinCommit(WORKSPACE, REPOSITORY, { from: "old", to: "newer" });
+
+      expect(
+        useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+          pinKey(WORKSPACE, REPOSITORY)
+        ],
+      ).toEqual({ from: "old", to: "newer" });
+      expect(
+        useCodeGraphStore.getState().pinnedCommitByWorkspaceRepo[
+          pinKey(OTHER_WORKSPACE, REPOSITORY)
+        ],
+      ).toEqual({ from: "old2", to: "new2" });
+    });
   });
 });

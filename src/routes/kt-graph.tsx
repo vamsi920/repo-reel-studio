@@ -6,6 +6,7 @@ import Fuse from "fuse.js";
 
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import {
+  pinKey,
   selectCurrentLevel,
   selectHiddenTypes,
   selectVisibleNodes,
@@ -71,8 +72,16 @@ function KtGraph() {
   // so the key, the header, the analyzer output dir, the Storage mirror and
   // the freshness check all describe the graph actually on screen.
   const docsSnapshot = knowledgeState?.snapshot;
-  const pinnedCommit = useCodeGraphStore(
-    (s) => s.pinnedCommitByRepositoryId[repositoryId],
+  // The pin is scoped to this workspace's own checkout of the repository --
+  // `workspaceIdForSnapshot` only reads `localPath`, which stays stable
+  // whether or not the graph itself has since been retargeted to HEAD. Two
+  // conversations checked out against the same repository (and, at that
+  // moment, the same Docs commit) must never share one workspace's pin.
+  const workspaceId = docsSnapshot ? workspaceIdForSnapshot(docsSnapshot) : "";
+  const pinnedCommit = useCodeGraphStore((s) =>
+    workspaceId
+      ? s.pinnedCommitByWorkspaceRepo[pinKey(workspaceId, repositoryId)]
+      : undefined,
   );
   const snapshot = React.useMemo(() => {
     if (!docsSnapshot) return undefined;
@@ -176,10 +185,12 @@ function KtGraph() {
       // chaining off it.
       const pin = () => {
         if (!retargeted) return;
-        useCodeGraphStore.getState().pinCommit(snapshot.repositoryId, {
-          from: docsSnapshot.commitSha,
-          to: target.commitSha,
-        });
+        useCodeGraphStore
+          .getState()
+          .pinCommit(workspaceId, snapshot.repositoryId, {
+            from: docsSnapshot.commitSha,
+            to: target.commitSha,
+          });
       };
       if (!keepOnScreen) pin();
       // Progress goes to whichever key is on screen while the run lasts: the
