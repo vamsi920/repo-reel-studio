@@ -240,6 +240,34 @@ describe("KtList", () => {
     expect(screen.queryAllByTestId("kt-provisioning-card")).toHaveLength(0);
   });
 
+  // Regression: re-running "Add Repository" for a repo/branch that already
+  // has its own RepoCard (already connected or previously generated) left
+  // its provisioning entry unfiltered, so the ProvisioningCard rendered
+  // alongside the RepoCard for the same repository during the
+  // creating/provisioning/resolving-commit phase, before the entry moved
+  // into `byRepositoryId` (which the generating-duplicate filter above
+  // already covers).
+  it("does not render a duplicate provisioning card for a repository already shown as a RepoCard", async () => {
+    setConnected(UNPROVISIONED);
+    useKnowledgeStore.setState({
+      byRepositoryId: {},
+      provisioningByRepositoryId: {
+        [UNPROVISIONED.repositoryId]: {
+          owner: UNPROVISIONED.owner,
+          repo: UNPROVISIONED.repo,
+          branch: UNPROVISIONED.branch,
+          stage: "provisioning_workspace",
+          error: null,
+        },
+      },
+    });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-repo-card")).toBeInTheDocument();
+    expect(screen.queryAllByTestId("kt-provisioning-card")).toHaveLength(0);
+  });
+
   // Regression: a search query matching zero repositories rendered a
   // completely empty grid with no feedback, indistinguishable from a
   // loading or broken state.

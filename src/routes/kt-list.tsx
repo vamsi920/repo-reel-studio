@@ -318,7 +318,16 @@ function ProvisioningCards({
   const provisioning = useKnowledgeStore((s) => s.provisioningByRepositoryId);
   const generating = useKnowledgeStore((s) => s.byRepositoryId);
 
-  const provisioningIds = Object.keys(provisioning);
+  // A provisioning entry can name the same repositoryId as an already-known
+  // repository (e.g. re-running "Add Repository" for a repo/branch that's
+  // already connected or previously generated, which already has its own
+  // `RepoCard` below) -- without this filter, the two rendered side by side
+  // for the same repository, exactly the duplicate-card problem the
+  // `generatingIds` filter below already guards against for the
+  // provisioning-is-done/generating-or-error phase.
+  const provisioningIds = Object.keys(provisioning).filter(
+    (id) => !knownRepositoryIds.has(id),
+  );
   const generatingIds = Object.keys(generating).filter(
     (id) =>
       (generating[id].status === "generating" ||
