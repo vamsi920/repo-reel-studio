@@ -39,6 +39,21 @@ export function useCompactContextAction(perTurnToken: number = 0) {
   const isDisabled = !conversation?.id || isAgentBusy || isCompacting;
   const description = t(I18nKey.CONVERSATION$COMPACT_CONTEXT_DESCRIPTION);
 
+  const conversationId = conversation?.id;
+  React.useEffect(
+    () => () => {
+      // Neither the Usage tab nor the composer's context-window popover
+      // remount when the active conversation changes, so any in-flight
+      // compaction watch from the previous conversation must be torn down
+      // explicitly here — otherwise it keeps watching the (now re-scoped)
+      // event/metrics stores and can fire a stale "compacted"/"failed" toast
+      // for the new conversation, or leave the button stuck disabled.
+      setBeforeToken(null);
+      baselineEventIdsRef.current = null;
+    },
+    [conversationId],
+  );
+
   const handleCompactionComplete = React.useEffectEvent(
     (result: ContextCompactionResult) => {
       setBeforeToken(null);

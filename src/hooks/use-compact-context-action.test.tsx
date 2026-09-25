@@ -11,10 +11,11 @@ const mutateMock = vi.fn();
 vi.mock("#/hooks/mutation/use-condense-conversation", () => ({
   useCondenseConversation: () => ({ mutate: mutateMock, isPending: false }),
 }));
+const activeConversation = {
+  current: { id: "c1", conversation_url: null, session_api_key: null },
+};
 vi.mock("#/hooks/query/use-active-conversation", () => ({
-  useActiveConversation: () => ({
-    data: { id: "c1", conversation_url: null, session_api_key: null },
-  }),
+  useActiveConversation: () => ({ data: activeConversation.current }),
 }));
 vi.mock("#/hooks/use-agent-state", () => ({
   useAgentState: () => ({ curAgentState: "FINISHED" }),
@@ -73,6 +74,11 @@ describe("useCompactContextAction (integration)", () => {
   afterEach(() => {
     vi.useRealTimers();
     useEventStore.getState().clearEvents();
+    activeConversation.current = {
+      id: "c1",
+      conversation_url: null,
+      session_api_key: null,
+    };
   });
 
   it("toasts counts when condensation lands and metrics drop", () => {
@@ -113,5 +119,43 @@ describe("useCompactContextAction (integration)", () => {
     expect(errorToast).toHaveBeenCalledWith(
       I18nKey.CONVERSATION$COMPACT_CONTEXT_FAILED,
     );
+  });
+
+  it("cancels an in-flight compaction watch instead of resolving it against the next conversation", () => {
+    const { result, rerender } = renderHook(() => useCompactContextAction(), {
+      wrapper,
+    });
+
+    act(() => result.current.handleCompact());
+    expect(result.current.isCompacting).toBe(true);
+    successToast.mockClear();
+
+    // Switch to a different conversation without unmounting (the Usage tab
+    // and composer popover both survive a conversation switch).
+    act(() => {
+      activeConversation.current = {
+        id: "c2",
+        conversation_url: null,
+        session_api_key: null,
+      };
+    });
+    rerender();
+
+    expect(result.current.isCompacting).toBe(false);
+
+    // Events/metrics that arrive for the new conversation must not be
+    // mistaken for a result of the old conversation's compaction.
+    act(() => {
+      useEventStore.getState().addEvent(condensationEvent("cond-c2"));
+      useMetricsStore.getState().setMetrics({
+        cost: null,
+        max_budget_per_task: null,
+        usage: usage(10_000),
+      });
+      vi.advanceTimersByTime(90_000);
+    });
+
+    expect(successToast).not.toHaveBeenCalled();
+    expect(errorToast).not.toHaveBeenCalled();
   });
 });
