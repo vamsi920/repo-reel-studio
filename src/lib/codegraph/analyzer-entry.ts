@@ -14,20 +14,13 @@
  * downloads the ~20-node system view first and fetches a subtree only when the
  * user actually drills into it.
  */
-import {
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
-import { join, relative, resolve as resolvePath } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { relative, resolve as resolvePath, join } from "node:path";
 
 import { GraphBuilder } from "../../../vendor/understand-anything/core/analyzer/graph-builder";
 import { detectLayers } from "../../../vendor/understand-anything/core/analyzer/layer-detector";
 import { TreeSitterPlugin } from "../../../vendor/understand-anything/core/plugins/tree-sitter-plugin";
 import { builtinLanguageConfigs } from "../../../vendor/understand-anything/core/languages/configs/index";
-import { DEFAULT_IGNORE_PATTERNS } from "../../../vendor/understand-anything/core/ignore-filter";
 import type { KnowledgeGraph } from "../../../vendor/understand-anything/core/types";
 
 import {
@@ -38,6 +31,7 @@ import {
 import { resolveCalleeFile } from "./call-resolution";
 import { shardName } from "./shard-name";
 import { selectFilesToAnalyze } from "./file-selection";
+import { walk } from "./repo-walk";
 import type { CodeGraphMeta } from "./codegraph-types";
 
 interface Args {
@@ -78,44 +72,6 @@ function progress(phase: string, detail: Record<string, unknown> = {}): void {
   process.stdout.write(
     `${JSON.stringify({ __codegraph: phase, ...detail })}\n`,
   );
-}
-
-const IGNORED_DIRS = new Set(
-  DEFAULT_IGNORE_PATTERNS.filter((p) => p.endsWith("/")).map((p) =>
-    p.replace(/\/$/, ""),
-  ),
-);
-
-function walk(root: string, limit: number): string[] {
-  const files: string[] = [];
-  const stack = [root];
-  while (stack.length > 0 && files.length < limit) {
-    const dir = stack.pop()!;
-    let entries: string[];
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.startsWith(".") && entry !== ".github") continue;
-      if (IGNORED_DIRS.has(entry)) continue;
-      const full = join(dir, entry);
-      let stats;
-      try {
-        stats = statSync(full);
-      } catch {
-        continue;
-      }
-      if (stats.isDirectory()) {
-        stack.push(full);
-      } else if (stats.isFile()) {
-        files.push(full);
-        if (files.length >= limit) break;
-      }
-    }
-  }
-  return files;
 }
 
 async function main(): Promise<void> {

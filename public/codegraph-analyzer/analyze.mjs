@@ -40,464 +40,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/ignore/index.js
-var require_ignore = __commonJS({
-  "node_modules/ignore/index.js"(exports, module) {
-    function makeArray(subject) {
-      return Array.isArray(subject) ? subject : [subject];
-    }
-    var UNDEFINED = void 0;
-    var EMPTY = "";
-    var SPACE = " ";
-    var ESCAPE = "\\";
-    var REGEX_TEST_BLANK_LINE = /^\s+$/;
-    var REGEX_INVALID_TRAILING_BACKSLASH = /(?:[^\\]|^)\\$/;
-    var REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION = /^\\!/;
-    var REGEX_REPLACE_LEADING_EXCAPED_HASH = /^\\#/;
-    var REGEX_SPLITALL_CRLF = /\r?\n/g;
-    var REGEX_TEST_INVALID_PATH = /^\.{0,2}\/|^\.{1,2}$/;
-    var REGEX_TEST_TRAILING_SLASH = /\/$/;
-    var SLASH = "/";
-    var TMP_KEY_IGNORE = "node-ignore";
-    if (typeof Symbol !== "undefined") {
-      TMP_KEY_IGNORE = /* @__PURE__ */ Symbol.for("node-ignore");
-    }
-    var KEY_IGNORE = TMP_KEY_IGNORE;
-    var define = (object2, key, value) => {
-      Object.defineProperty(object2, key, { value });
-      return value;
-    };
-    var REGEX_REGEXP_RANGE = /([0-z])-([0-z])/g;
-    var RETURN_FALSE = () => false;
-    var sanitizeRange = (range) => range.replace(
-      REGEX_REGEXP_RANGE,
-      (match, from, to) => from.charCodeAt(0) <= to.charCodeAt(0) ? match : EMPTY
-    );
-    var negateRange = (range) => range.startsWith("!") || range.startsWith("\\^") ? `^${range.slice(range[0] === "!" ? 1 : 2)}` : range;
-    var cleanRangeBackSlash = (slashes) => {
-      const { length } = slashes;
-      return slashes.slice(0, length - length % 2);
-    };
-    var REPLACERS = [
-      [
-        // Remove BOM
-        // TODO:
-        // Other similar zero-width characters?
-        /^\uFEFF/,
-        () => EMPTY
-      ],
-      // > Trailing spaces are ignored unless they are quoted with backslash ("\")
-      [
-        // (a\ ) -> (a )
-        // (a  ) -> (a)
-        // (a ) -> (a)
-        // (a \ ) -> (a  )
-        /((?:\\\\)*?)(\\?\s+)$/,
-        (_, m1, m2) => m1 + (m2.indexOf("\\") === 0 ? SPACE : EMPTY)
-      ],
-      // Replace (\ ) with ' '
-      // (\ ) -> ' '
-      // (\\ ) -> '\\ '
-      // (\\\ ) -> '\\ '
-      [
-        /(\\+?)\s/g,
-        (_, m1) => {
-          const { length } = m1;
-          return m1.slice(0, length - length % 2) + SPACE;
-        }
-      ],
-      // Escape metacharacters
-      // which is written down by users but means special for regular expressions.
-      // > There are 12 characters with special meanings:
-      // > - the backslash \,
-      // > - the caret ^,
-      // > - the dollar sign $,
-      // > - the period or dot .,
-      // > - the vertical bar or pipe symbol |,
-      // > - the question mark ?,
-      // > - the asterisk or star *,
-      // > - the plus sign +,
-      // > - the opening parenthesis (,
-      // > - the closing parenthesis ),
-      // > - and the opening square bracket [,
-      // > - the opening curly brace {,
-      // > These special characters are often called "metacharacters".
-      [
-        /[\\$.|*+(){^]/g,
-        (match) => `\\${match}`
-      ],
-      [
-        // > a question mark (?) matches a single character
-        /(?!\\)\?/g,
-        () => "[^/]"
-      ],
-      // leading slash
-      [
-        // > A leading slash matches the beginning of the pathname.
-        // > For example, "/*.c" matches "cat-file.c" but not "mozilla-sha1/sha1.c".
-        // A leading slash matches the beginning of the pathname
-        /^\//,
-        () => "^"
-      ],
-      // replace special metacharacter slash after the leading slash
-      [
-        /\//g,
-        () => "\\/"
-      ],
-      [
-        // > A leading "**" followed by a slash means match in all directories.
-        // > For example, "**/foo" matches file or directory "foo" anywhere,
-        // > the same as pattern "foo".
-        // > "**/foo/bar" matches file or directory "bar" anywhere that is directly
-        // >   under directory "foo".
-        // Notice that the '*'s have been replaced as '\\*'
-        /^\^*(?:\\\*\\\*\\\/)+/,
-        // '**/foo' <-> 'foo'
-        () => "^(?:.*\\/)?"
-      ],
-      // starting
-      [
-        // there will be no leading '/'
-        //   (which has been replaced by section "leading slash")
-        // If starts with '**', adding a '^' to the regular expression also works
-        /^(?=[^^])/,
-        function startingReplacer() {
-          return !/\/(?!$)/.test(this) ? "(?:^|\\/)" : "^";
-        }
-      ],
-      // two globstars
-      [
-        // Use lookahead assertions so that we could match more than one `'/**'`
-        /\\\/\\\*\\\*(?=\\\/|$)/g,
-        // Zero, one or several directories
-        // should not use '*', or it will be replaced by the next replacer
-        // Check if it is not the last `'/**'`
-        (_, index, str) => index + 6 < str.length ? "(?:\\/[^\\/]+)*" : "\\/.+"
-      ],
-      // normal intermediate wildcards
-      [
-        // Never replace escaped '*'
-        // ignore rule '\*' will match the path '*'
-        // 'abc.*/' -> go
-        // 'abc.*'  -> skip this rule,
-        //    coz trailing single wildcard will be handed by [trailing wildcard]
-        /(^|[^\\]+)(\\\*)+(?=.+)/g,
-        // '*.js' matches '.js'
-        // '*.js' doesn't match 'abc'
-        (_, p1, p2) => {
-          const unescaped = p2.replace(/\\\*/g, "[^\\/]*");
-          return p1 + unescaped;
-        }
-      ],
-      [
-        // unescape, revert step 3 except for back slash
-        // For example, if a user escape a '\\*',
-        // after step 3, the result will be '\\\\\\*'
-        /\\\\\\(?=[$.|*+(){^])/g,
-        () => ESCAPE
-      ],
-      [
-        // '\\\\' -> '\\'
-        /\\\\/g,
-        () => ESCAPE
-      ],
-      [
-        // > The range notation, e.g. [a-zA-Z],
-        // > can be used to match one of the characters in a range.
-        // `\` is escaped by step 3
-        /(\\)?\[([^\]/]*?)(\\*)($|\])/g,
-        (match, leadEscape, range, endEscape, close) => leadEscape === ESCAPE ? `\\[${range}${cleanRangeBackSlash(endEscape)}${close}` : close === "]" ? endEscape.length % 2 === 0 ? `[${negateRange(sanitizeRange(range))}${endEscape}]` : "[]" : "[]"
-      ],
-      // ending
-      [
-        // 'js' will not match 'js.'
-        // 'ab' will not match 'abc'
-        /(?:[^*])$/,
-        // WTF!
-        // https://git-scm.com/docs/gitignore
-        // changes in [2.22.1](https://git-scm.com/docs/gitignore/2.22.1)
-        // which re-fixes #24, #38
-        // > If there is a separator at the end of the pattern then the pattern
-        // > will only match directories, otherwise the pattern can match both
-        // > files and directories.
-        // 'js*' will not match 'a.js'
-        // 'js/' will not match 'a.js'
-        // 'js' will match 'a.js' and 'a.js/'
-        (match) => /\/$/.test(match) ? `${match}$` : `${match}(?=$|\\/$)`
-      ]
-    ];
-    var REGEX_REPLACE_TRAILING_WILDCARD = /(^|\\\/)?\\\*$/;
-    var MODE_IGNORE = "regex";
-    var MODE_CHECK_IGNORE = "checkRegex";
-    var UNDERSCORE = "_";
-    var TRAILING_WILD_CARD_REPLACERS = {
-      [MODE_IGNORE](_, p1) {
-        const prefix = p1 ? `${p1}[^/]+` : "[^/]*";
-        return `${prefix}(?=$|\\/$)`;
-      },
-      [MODE_CHECK_IGNORE](_, p1) {
-        const prefix = p1 ? `${p1}[^/]*` : "[^/]*";
-        return `${prefix}(?=$|\\/$)`;
-      }
-    };
-    var makeRegexPrefix = (pattern) => REPLACERS.reduce(
-      (prev, [matcher, replacer]) => prev.replace(matcher, replacer.bind(pattern)),
-      pattern
-    );
-    var isString = (subject) => typeof subject === "string";
-    var checkPattern = (pattern) => pattern && isString(pattern) && !REGEX_TEST_BLANK_LINE.test(pattern) && !REGEX_INVALID_TRAILING_BACKSLASH.test(pattern) && pattern.indexOf("#") !== 0;
-    var splitPattern = (pattern) => pattern.split(REGEX_SPLITALL_CRLF).filter(Boolean);
-    var IgnoreRule = class {
-      constructor(pattern, mark, body, ignoreCase, negative, prefix) {
-        this.pattern = pattern;
-        this.mark = mark;
-        this.negative = negative;
-        define(this, "body", body);
-        define(this, "ignoreCase", ignoreCase);
-        define(this, "regexPrefix", prefix);
-      }
-      get regex() {
-        const key = UNDERSCORE + MODE_IGNORE;
-        if (this[key]) {
-          return this[key];
-        }
-        return this._make(MODE_IGNORE, key);
-      }
-      get checkRegex() {
-        const key = UNDERSCORE + MODE_CHECK_IGNORE;
-        if (this[key]) {
-          return this[key];
-        }
-        return this._make(MODE_CHECK_IGNORE, key);
-      }
-      _make(mode, key) {
-        const str = this.regexPrefix.replace(
-          REGEX_REPLACE_TRAILING_WILDCARD,
-          // It does not need to bind pattern
-          TRAILING_WILD_CARD_REPLACERS[mode]
-        );
-        const regex = this.ignoreCase ? new RegExp(str, "i") : new RegExp(str);
-        return define(this, key, regex);
-      }
-    };
-    var createRule = ({
-      pattern,
-      mark
-    }, ignoreCase) => {
-      let negative = false;
-      let body = pattern;
-      if (body.indexOf("!") === 0) {
-        negative = true;
-        body = body.substr(1);
-      }
-      body = body.replace(REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION, "!").replace(REGEX_REPLACE_LEADING_EXCAPED_HASH, "#");
-      const regexPrefix = makeRegexPrefix(body);
-      return new IgnoreRule(
-        pattern,
-        mark,
-        body,
-        ignoreCase,
-        negative,
-        regexPrefix
-      );
-    };
-    var RuleManager = class {
-      constructor(ignoreCase) {
-        this._ignoreCase = ignoreCase;
-        this._rules = [];
-      }
-      _add(pattern) {
-        if (pattern && pattern[KEY_IGNORE]) {
-          this._rules = this._rules.concat(pattern._rules._rules);
-          this._added = true;
-          return;
-        }
-        if (isString(pattern)) {
-          pattern = {
-            pattern
-          };
-        }
-        if (checkPattern(pattern.pattern)) {
-          const rule = createRule(pattern, this._ignoreCase);
-          this._added = true;
-          this._rules.push(rule);
-        }
-      }
-      // @param {Array<string> | string | Ignore} pattern
-      add(pattern) {
-        this._added = false;
-        makeArray(
-          isString(pattern) ? splitPattern(pattern) : pattern
-        ).forEach(this._add, this);
-        return this._added;
-      }
-      // Test one single path without recursively checking parent directories
-      //
-      // - checkUnignored `boolean` whether should check if the path is unignored,
-      //   setting `checkUnignored` to `false` could reduce additional
-      //   path matching.
-      // - check `string` either `MODE_IGNORE` or `MODE_CHECK_IGNORE`
-      // @returns {TestResult} true if a file is ignored
-      test(path, checkUnignored, mode) {
-        let ignored = false;
-        let unignored = false;
-        let matchedRule;
-        this._rules.forEach((rule) => {
-          const { negative } = rule;
-          if (unignored === negative && ignored !== unignored || negative && !ignored && !unignored && !checkUnignored) {
-            return;
-          }
-          const matched = rule[mode].test(path);
-          if (!matched) {
-            return;
-          }
-          ignored = !negative;
-          unignored = negative;
-          matchedRule = negative ? UNDEFINED : rule;
-        });
-        const ret = {
-          ignored,
-          unignored
-        };
-        if (matchedRule) {
-          ret.rule = matchedRule;
-        }
-        return ret;
-      }
-    };
-    var throwError = (message, Ctor) => {
-      throw new Ctor(message);
-    };
-    var checkPath = (path, originalPath, doThrow) => {
-      if (!isString(path)) {
-        return doThrow(
-          `path must be a string, but got \`${originalPath}\``,
-          TypeError
-        );
-      }
-      if (!path) {
-        return doThrow(`path must not be empty`, TypeError);
-      }
-      if (checkPath.isNotRelative(path)) {
-        const r = "`path.relative()`d";
-        return doThrow(
-          `path should be a ${r} string, but got "${originalPath}"`,
-          RangeError
-        );
-      }
-      return true;
-    };
-    var isNotRelative = (path) => REGEX_TEST_INVALID_PATH.test(path);
-    checkPath.isNotRelative = isNotRelative;
-    checkPath.convert = (p) => p;
-    var Ignore = class {
-      constructor({
-        ignorecase = true,
-        ignoreCase = ignorecase,
-        allowRelativePaths = false
-      } = {}) {
-        define(this, KEY_IGNORE, true);
-        this._rules = new RuleManager(ignoreCase);
-        this._strictPathCheck = !allowRelativePaths;
-        this._initCache();
-      }
-      _initCache() {
-        this._ignoreCache = /* @__PURE__ */ Object.create(null);
-        this._testCache = /* @__PURE__ */ Object.create(null);
-      }
-      add(pattern) {
-        if (this._rules.add(pattern)) {
-          this._initCache();
-        }
-        return this;
-      }
-      // legacy
-      addPattern(pattern) {
-        return this.add(pattern);
-      }
-      // @returns {TestResult}
-      _test(originalPath, cache, checkUnignored, slices) {
-        const path = originalPath && checkPath.convert(originalPath);
-        checkPath(
-          path,
-          originalPath,
-          this._strictPathCheck ? throwError : RETURN_FALSE
-        );
-        return this._t(path, cache, checkUnignored, slices);
-      }
-      checkIgnore(path) {
-        if (!REGEX_TEST_TRAILING_SLASH.test(path)) {
-          return this.test(path);
-        }
-        const slices = path.split(SLASH).filter(Boolean);
-        slices.pop();
-        if (slices.length) {
-          const parent = this._t(
-            slices.join(SLASH) + SLASH,
-            this._testCache,
-            true,
-            slices
-          );
-          if (parent.ignored) {
-            return parent;
-          }
-        }
-        return this._rules.test(path, false, MODE_CHECK_IGNORE);
-      }
-      _t(path, cache, checkUnignored, slices) {
-        if (path in cache) {
-          return cache[path];
-        }
-        if (!slices) {
-          slices = path.split(SLASH).filter(Boolean);
-        }
-        slices.pop();
-        if (!slices.length) {
-          return cache[path] = this._rules.test(path, checkUnignored, MODE_IGNORE);
-        }
-        const parent = this._t(
-          slices.join(SLASH) + SLASH,
-          cache,
-          checkUnignored,
-          slices
-        );
-        return cache[path] = parent.ignored ? parent : this._rules.test(path, checkUnignored, MODE_IGNORE);
-      }
-      ignores(path) {
-        return this._test(path, this._ignoreCache, false).ignored;
-      }
-      createFilter() {
-        return (path) => !this.ignores(path);
-      }
-      filter(paths) {
-        return makeArray(paths).filter(this.createFilter());
-      }
-      // @returns {TestResult}
-      test(path) {
-        return this._test(path, this._testCache, true);
-      }
-    };
-    var factory = (options) => new Ignore(options);
-    var isPathValid = (path) => checkPath(path && checkPath.convert(path), path, RETURN_FALSE);
-    var setupWindows = () => {
-      const makePosix = (str) => /^\\\\\?\\/.test(str) || /["<>|\u0000-\u001F]+/u.test(str) ? str : str.replace(/\\/g, "/");
-      checkPath.convert = makePosix;
-      const REGEX_TEST_WINDOWS_PATH_ABSOLUTE = /^[a-z]:\//i;
-      checkPath.isNotRelative = (path) => REGEX_TEST_WINDOWS_PATH_ABSOLUTE.test(path) || isNotRelative(path);
-    };
-    if (
-      // Detect `process` so that it can run in browsers.
-      typeof process !== "undefined" && process.platform === "win32"
-    ) {
-      setupWindows();
-    }
-    module.exports = factory;
-    factory.default = factory;
-    module.exports.isPathValid = isPathValid;
-    define(module.exports, /* @__PURE__ */ Symbol.for("setupWindows"), setupWindows);
-  }
-});
-
 // node_modules/obliterator/iterator.js
 var require_iterator = __commonJS({
   "node_modules/obliterator/iterator.js"(exports, module) {
@@ -5018,15 +4560,467 @@ var require_graphology_communities_louvain = __commonJS({
   }
 });
 
+// node_modules/ignore/index.js
+var require_ignore = __commonJS({
+  "node_modules/ignore/index.js"(exports, module) {
+    function makeArray(subject) {
+      return Array.isArray(subject) ? subject : [subject];
+    }
+    var UNDEFINED = void 0;
+    var EMPTY = "";
+    var SPACE = " ";
+    var ESCAPE = "\\";
+    var REGEX_TEST_BLANK_LINE = /^\s+$/;
+    var REGEX_INVALID_TRAILING_BACKSLASH = /(?:[^\\]|^)\\$/;
+    var REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION = /^\\!/;
+    var REGEX_REPLACE_LEADING_EXCAPED_HASH = /^\\#/;
+    var REGEX_SPLITALL_CRLF = /\r?\n/g;
+    var REGEX_TEST_INVALID_PATH = /^\.{0,2}\/|^\.{1,2}$/;
+    var REGEX_TEST_TRAILING_SLASH = /\/$/;
+    var SLASH = "/";
+    var TMP_KEY_IGNORE = "node-ignore";
+    if (typeof Symbol !== "undefined") {
+      TMP_KEY_IGNORE = /* @__PURE__ */ Symbol.for("node-ignore");
+    }
+    var KEY_IGNORE = TMP_KEY_IGNORE;
+    var define = (object2, key, value) => {
+      Object.defineProperty(object2, key, { value });
+      return value;
+    };
+    var REGEX_REGEXP_RANGE = /([0-z])-([0-z])/g;
+    var RETURN_FALSE = () => false;
+    var sanitizeRange = (range) => range.replace(
+      REGEX_REGEXP_RANGE,
+      (match, from, to) => from.charCodeAt(0) <= to.charCodeAt(0) ? match : EMPTY
+    );
+    var negateRange = (range) => range.startsWith("!") || range.startsWith("\\^") ? `^${range.slice(range[0] === "!" ? 1 : 2)}` : range;
+    var cleanRangeBackSlash = (slashes) => {
+      const { length } = slashes;
+      return slashes.slice(0, length - length % 2);
+    };
+    var REPLACERS = [
+      [
+        // Remove BOM
+        // TODO:
+        // Other similar zero-width characters?
+        /^\uFEFF/,
+        () => EMPTY
+      ],
+      // > Trailing spaces are ignored unless they are quoted with backslash ("\")
+      [
+        // (a\ ) -> (a )
+        // (a  ) -> (a)
+        // (a ) -> (a)
+        // (a \ ) -> (a  )
+        /((?:\\\\)*?)(\\?\s+)$/,
+        (_, m1, m2) => m1 + (m2.indexOf("\\") === 0 ? SPACE : EMPTY)
+      ],
+      // Replace (\ ) with ' '
+      // (\ ) -> ' '
+      // (\\ ) -> '\\ '
+      // (\\\ ) -> '\\ '
+      [
+        /(\\+?)\s/g,
+        (_, m1) => {
+          const { length } = m1;
+          return m1.slice(0, length - length % 2) + SPACE;
+        }
+      ],
+      // Escape metacharacters
+      // which is written down by users but means special for regular expressions.
+      // > There are 12 characters with special meanings:
+      // > - the backslash \,
+      // > - the caret ^,
+      // > - the dollar sign $,
+      // > - the period or dot .,
+      // > - the vertical bar or pipe symbol |,
+      // > - the question mark ?,
+      // > - the asterisk or star *,
+      // > - the plus sign +,
+      // > - the opening parenthesis (,
+      // > - the closing parenthesis ),
+      // > - and the opening square bracket [,
+      // > - the opening curly brace {,
+      // > These special characters are often called "metacharacters".
+      [
+        /[\\$.|*+(){^]/g,
+        (match) => `\\${match}`
+      ],
+      [
+        // > a question mark (?) matches a single character
+        /(?!\\)\?/g,
+        () => "[^/]"
+      ],
+      // leading slash
+      [
+        // > A leading slash matches the beginning of the pathname.
+        // > For example, "/*.c" matches "cat-file.c" but not "mozilla-sha1/sha1.c".
+        // A leading slash matches the beginning of the pathname
+        /^\//,
+        () => "^"
+      ],
+      // replace special metacharacter slash after the leading slash
+      [
+        /\//g,
+        () => "\\/"
+      ],
+      [
+        // > A leading "**" followed by a slash means match in all directories.
+        // > For example, "**/foo" matches file or directory "foo" anywhere,
+        // > the same as pattern "foo".
+        // > "**/foo/bar" matches file or directory "bar" anywhere that is directly
+        // >   under directory "foo".
+        // Notice that the '*'s have been replaced as '\\*'
+        /^\^*(?:\\\*\\\*\\\/)+/,
+        // '**/foo' <-> 'foo'
+        () => "^(?:.*\\/)?"
+      ],
+      // starting
+      [
+        // there will be no leading '/'
+        //   (which has been replaced by section "leading slash")
+        // If starts with '**', adding a '^' to the regular expression also works
+        /^(?=[^^])/,
+        function startingReplacer() {
+          return !/\/(?!$)/.test(this) ? "(?:^|\\/)" : "^";
+        }
+      ],
+      // two globstars
+      [
+        // Use lookahead assertions so that we could match more than one `'/**'`
+        /\\\/\\\*\\\*(?=\\\/|$)/g,
+        // Zero, one or several directories
+        // should not use '*', or it will be replaced by the next replacer
+        // Check if it is not the last `'/**'`
+        (_, index, str) => index + 6 < str.length ? "(?:\\/[^\\/]+)*" : "\\/.+"
+      ],
+      // normal intermediate wildcards
+      [
+        // Never replace escaped '*'
+        // ignore rule '\*' will match the path '*'
+        // 'abc.*/' -> go
+        // 'abc.*'  -> skip this rule,
+        //    coz trailing single wildcard will be handed by [trailing wildcard]
+        /(^|[^\\]+)(\\\*)+(?=.+)/g,
+        // '*.js' matches '.js'
+        // '*.js' doesn't match 'abc'
+        (_, p1, p2) => {
+          const unescaped = p2.replace(/\\\*/g, "[^\\/]*");
+          return p1 + unescaped;
+        }
+      ],
+      [
+        // unescape, revert step 3 except for back slash
+        // For example, if a user escape a '\\*',
+        // after step 3, the result will be '\\\\\\*'
+        /\\\\\\(?=[$.|*+(){^])/g,
+        () => ESCAPE
+      ],
+      [
+        // '\\\\' -> '\\'
+        /\\\\/g,
+        () => ESCAPE
+      ],
+      [
+        // > The range notation, e.g. [a-zA-Z],
+        // > can be used to match one of the characters in a range.
+        // `\` is escaped by step 3
+        /(\\)?\[([^\]/]*?)(\\*)($|\])/g,
+        (match, leadEscape, range, endEscape, close) => leadEscape === ESCAPE ? `\\[${range}${cleanRangeBackSlash(endEscape)}${close}` : close === "]" ? endEscape.length % 2 === 0 ? `[${negateRange(sanitizeRange(range))}${endEscape}]` : "[]" : "[]"
+      ],
+      // ending
+      [
+        // 'js' will not match 'js.'
+        // 'ab' will not match 'abc'
+        /(?:[^*])$/,
+        // WTF!
+        // https://git-scm.com/docs/gitignore
+        // changes in [2.22.1](https://git-scm.com/docs/gitignore/2.22.1)
+        // which re-fixes #24, #38
+        // > If there is a separator at the end of the pattern then the pattern
+        // > will only match directories, otherwise the pattern can match both
+        // > files and directories.
+        // 'js*' will not match 'a.js'
+        // 'js/' will not match 'a.js'
+        // 'js' will match 'a.js' and 'a.js/'
+        (match) => /\/$/.test(match) ? `${match}$` : `${match}(?=$|\\/$)`
+      ]
+    ];
+    var REGEX_REPLACE_TRAILING_WILDCARD = /(^|\\\/)?\\\*$/;
+    var MODE_IGNORE = "regex";
+    var MODE_CHECK_IGNORE = "checkRegex";
+    var UNDERSCORE = "_";
+    var TRAILING_WILD_CARD_REPLACERS = {
+      [MODE_IGNORE](_, p1) {
+        const prefix = p1 ? `${p1}[^/]+` : "[^/]*";
+        return `${prefix}(?=$|\\/$)`;
+      },
+      [MODE_CHECK_IGNORE](_, p1) {
+        const prefix = p1 ? `${p1}[^/]*` : "[^/]*";
+        return `${prefix}(?=$|\\/$)`;
+      }
+    };
+    var makeRegexPrefix = (pattern) => REPLACERS.reduce(
+      (prev, [matcher, replacer]) => prev.replace(matcher, replacer.bind(pattern)),
+      pattern
+    );
+    var isString = (subject) => typeof subject === "string";
+    var checkPattern = (pattern) => pattern && isString(pattern) && !REGEX_TEST_BLANK_LINE.test(pattern) && !REGEX_INVALID_TRAILING_BACKSLASH.test(pattern) && pattern.indexOf("#") !== 0;
+    var splitPattern = (pattern) => pattern.split(REGEX_SPLITALL_CRLF).filter(Boolean);
+    var IgnoreRule = class {
+      constructor(pattern, mark, body, ignoreCase, negative, prefix) {
+        this.pattern = pattern;
+        this.mark = mark;
+        this.negative = negative;
+        define(this, "body", body);
+        define(this, "ignoreCase", ignoreCase);
+        define(this, "regexPrefix", prefix);
+      }
+      get regex() {
+        const key = UNDERSCORE + MODE_IGNORE;
+        if (this[key]) {
+          return this[key];
+        }
+        return this._make(MODE_IGNORE, key);
+      }
+      get checkRegex() {
+        const key = UNDERSCORE + MODE_CHECK_IGNORE;
+        if (this[key]) {
+          return this[key];
+        }
+        return this._make(MODE_CHECK_IGNORE, key);
+      }
+      _make(mode, key) {
+        const str = this.regexPrefix.replace(
+          REGEX_REPLACE_TRAILING_WILDCARD,
+          // It does not need to bind pattern
+          TRAILING_WILD_CARD_REPLACERS[mode]
+        );
+        const regex = this.ignoreCase ? new RegExp(str, "i") : new RegExp(str);
+        return define(this, key, regex);
+      }
+    };
+    var createRule = ({
+      pattern,
+      mark
+    }, ignoreCase) => {
+      let negative = false;
+      let body = pattern;
+      if (body.indexOf("!") === 0) {
+        negative = true;
+        body = body.substr(1);
+      }
+      body = body.replace(REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION, "!").replace(REGEX_REPLACE_LEADING_EXCAPED_HASH, "#");
+      const regexPrefix = makeRegexPrefix(body);
+      return new IgnoreRule(
+        pattern,
+        mark,
+        body,
+        ignoreCase,
+        negative,
+        regexPrefix
+      );
+    };
+    var RuleManager = class {
+      constructor(ignoreCase) {
+        this._ignoreCase = ignoreCase;
+        this._rules = [];
+      }
+      _add(pattern) {
+        if (pattern && pattern[KEY_IGNORE]) {
+          this._rules = this._rules.concat(pattern._rules._rules);
+          this._added = true;
+          return;
+        }
+        if (isString(pattern)) {
+          pattern = {
+            pattern
+          };
+        }
+        if (checkPattern(pattern.pattern)) {
+          const rule = createRule(pattern, this._ignoreCase);
+          this._added = true;
+          this._rules.push(rule);
+        }
+      }
+      // @param {Array<string> | string | Ignore} pattern
+      add(pattern) {
+        this._added = false;
+        makeArray(
+          isString(pattern) ? splitPattern(pattern) : pattern
+        ).forEach(this._add, this);
+        return this._added;
+      }
+      // Test one single path without recursively checking parent directories
+      //
+      // - checkUnignored `boolean` whether should check if the path is unignored,
+      //   setting `checkUnignored` to `false` could reduce additional
+      //   path matching.
+      // - check `string` either `MODE_IGNORE` or `MODE_CHECK_IGNORE`
+      // @returns {TestResult} true if a file is ignored
+      test(path, checkUnignored, mode) {
+        let ignored = false;
+        let unignored = false;
+        let matchedRule;
+        this._rules.forEach((rule) => {
+          const { negative } = rule;
+          if (unignored === negative && ignored !== unignored || negative && !ignored && !unignored && !checkUnignored) {
+            return;
+          }
+          const matched = rule[mode].test(path);
+          if (!matched) {
+            return;
+          }
+          ignored = !negative;
+          unignored = negative;
+          matchedRule = negative ? UNDEFINED : rule;
+        });
+        const ret = {
+          ignored,
+          unignored
+        };
+        if (matchedRule) {
+          ret.rule = matchedRule;
+        }
+        return ret;
+      }
+    };
+    var throwError = (message, Ctor) => {
+      throw new Ctor(message);
+    };
+    var checkPath = (path, originalPath, doThrow) => {
+      if (!isString(path)) {
+        return doThrow(
+          `path must be a string, but got \`${originalPath}\``,
+          TypeError
+        );
+      }
+      if (!path) {
+        return doThrow(`path must not be empty`, TypeError);
+      }
+      if (checkPath.isNotRelative(path)) {
+        const r = "`path.relative()`d";
+        return doThrow(
+          `path should be a ${r} string, but got "${originalPath}"`,
+          RangeError
+        );
+      }
+      return true;
+    };
+    var isNotRelative = (path) => REGEX_TEST_INVALID_PATH.test(path);
+    checkPath.isNotRelative = isNotRelative;
+    checkPath.convert = (p) => p;
+    var Ignore = class {
+      constructor({
+        ignorecase = true,
+        ignoreCase = ignorecase,
+        allowRelativePaths = false
+      } = {}) {
+        define(this, KEY_IGNORE, true);
+        this._rules = new RuleManager(ignoreCase);
+        this._strictPathCheck = !allowRelativePaths;
+        this._initCache();
+      }
+      _initCache() {
+        this._ignoreCache = /* @__PURE__ */ Object.create(null);
+        this._testCache = /* @__PURE__ */ Object.create(null);
+      }
+      add(pattern) {
+        if (this._rules.add(pattern)) {
+          this._initCache();
+        }
+        return this;
+      }
+      // legacy
+      addPattern(pattern) {
+        return this.add(pattern);
+      }
+      // @returns {TestResult}
+      _test(originalPath, cache, checkUnignored, slices) {
+        const path = originalPath && checkPath.convert(originalPath);
+        checkPath(
+          path,
+          originalPath,
+          this._strictPathCheck ? throwError : RETURN_FALSE
+        );
+        return this._t(path, cache, checkUnignored, slices);
+      }
+      checkIgnore(path) {
+        if (!REGEX_TEST_TRAILING_SLASH.test(path)) {
+          return this.test(path);
+        }
+        const slices = path.split(SLASH).filter(Boolean);
+        slices.pop();
+        if (slices.length) {
+          const parent = this._t(
+            slices.join(SLASH) + SLASH,
+            this._testCache,
+            true,
+            slices
+          );
+          if (parent.ignored) {
+            return parent;
+          }
+        }
+        return this._rules.test(path, false, MODE_CHECK_IGNORE);
+      }
+      _t(path, cache, checkUnignored, slices) {
+        if (path in cache) {
+          return cache[path];
+        }
+        if (!slices) {
+          slices = path.split(SLASH).filter(Boolean);
+        }
+        slices.pop();
+        if (!slices.length) {
+          return cache[path] = this._rules.test(path, checkUnignored, MODE_IGNORE);
+        }
+        const parent = this._t(
+          slices.join(SLASH) + SLASH,
+          cache,
+          checkUnignored,
+          slices
+        );
+        return cache[path] = parent.ignored ? parent : this._rules.test(path, checkUnignored, MODE_IGNORE);
+      }
+      ignores(path) {
+        return this._test(path, this._ignoreCache, false).ignored;
+      }
+      createFilter() {
+        return (path) => !this.ignores(path);
+      }
+      filter(paths) {
+        return makeArray(paths).filter(this.createFilter());
+      }
+      // @returns {TestResult}
+      test(path) {
+        return this._test(path, this._testCache, true);
+      }
+    };
+    var factory = (options) => new Ignore(options);
+    var isPathValid = (path) => checkPath(path && checkPath.convert(path), path, RETURN_FALSE);
+    var setupWindows = () => {
+      const makePosix = (str) => /^\\\\\?\\/.test(str) || /["<>|\u0000-\u001F]+/u.test(str) ? str : str.replace(/\\/g, "/");
+      checkPath.convert = makePosix;
+      const REGEX_TEST_WINDOWS_PATH_ABSOLUTE = /^[a-z]:\//i;
+      checkPath.isNotRelative = (path) => REGEX_TEST_WINDOWS_PATH_ABSOLUTE.test(path) || isNotRelative(path);
+    };
+    if (
+      // Detect `process` so that it can run in browsers.
+      typeof process !== "undefined" && process.platform === "win32"
+    ) {
+      setupWindows();
+    }
+    module.exports = factory;
+    factory.default = factory;
+    module.exports.isPathValid = isPathValid;
+    define(module.exports, /* @__PURE__ */ Symbol.for("setupWindows"), setupWindows);
+  }
+});
+
 // src/lib/codegraph/analyzer-entry.ts
-import {
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  readdirSync,
-  statSync
-} from "node:fs";
-import { join, relative, resolve as resolvePath } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { relative, resolve as resolvePath, join as join2 } from "node:path";
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -24653,223 +24647,6 @@ var TreeSitterPlugin = class _TreeSitterPlugin {
   }
 };
 
-// vendor/understand-anything/core/ignore-filter.ts
-var import_ignore = __toESM(require_ignore(), 1);
-
-// vendor/understand-anything/core/schema.ts
-var EdgeTypeSchema = external_exports.enum([
-  "imports",
-  "exports",
-  "contains",
-  "inherits",
-  "implements",
-  // Structural
-  "calls",
-  "subscribes",
-  "publishes",
-  "middleware",
-  // Behavioral
-  "reads_from",
-  "writes_to",
-  "transforms",
-  "validates",
-  // Data flow
-  "depends_on",
-  "tested_by",
-  "configures",
-  // Dependencies
-  "related",
-  "similar_to",
-  // Semantic
-  "deploys",
-  "serves",
-  "provisions",
-  "triggers",
-  // Infrastructure
-  "migrates",
-  "documents",
-  "routes",
-  "defines_schema",
-  // Schema/Data
-  "contains_flow",
-  "flow_step",
-  "cross_domain",
-  // Domain
-  "cites",
-  "contradicts",
-  "builds_on",
-  "exemplifies",
-  "categorized_under",
-  "authored_by",
-  // Knowledge
-  "instance_of",
-  "variant_of",
-  "uses_token"
-  // Design
-]);
-var DomainMetaSchema = external_exports.object({
-  entities: external_exports.array(external_exports.string()).optional(),
-  businessRules: external_exports.array(external_exports.string()).optional(),
-  crossDomainInteractions: external_exports.array(external_exports.string()).optional(),
-  entryPoint: external_exports.string().optional(),
-  entryType: external_exports.enum(["http", "cli", "event", "cron", "manual"]).optional()
-}).passthrough();
-var KnowledgeMetaSchema = external_exports.object({
-  wikilinks: external_exports.array(external_exports.string()).optional(),
-  backlinks: external_exports.array(external_exports.string()).optional(),
-  category: external_exports.string().optional(),
-  content: external_exports.string().optional()
-}).passthrough();
-var FigmaMetaSchema = external_exports.object({
-  fileKey: external_exports.string().optional(),
-  nodeId: external_exports.string().optional(),
-  figmaType: external_exports.string().optional(),
-  thumbnailUrl: external_exports.string().optional(),
-  dimensions: external_exports.object({ width: external_exports.number(), height: external_exports.number() }).optional(),
-  tokenKind: external_exports.enum(["color", "type", "spacing", "effect", "grid"]).optional(),
-  tokenValue: external_exports.string().optional(),
-  prototypeTargets: external_exports.array(external_exports.string()).optional(),
-  componentKey: external_exports.string().optional()
-}).passthrough();
-var GraphNodeSchema = external_exports.object({
-  id: external_exports.string(),
-  type: external_exports.enum([
-    "file",
-    "function",
-    "class",
-    "module",
-    "concept",
-    "config",
-    "document",
-    "service",
-    "table",
-    "endpoint",
-    "pipeline",
-    "schema",
-    "resource",
-    "domain",
-    "flow",
-    "step",
-    "article",
-    "entity",
-    "topic",
-    "claim",
-    "source",
-    "page",
-    "screen",
-    "component",
-    "componentSet",
-    "instance",
-    "token"
-  ]),
-  name: external_exports.string(),
-  filePath: external_exports.string().optional(),
-  lineRange: external_exports.tuple([external_exports.number(), external_exports.number()]).optional(),
-  summary: external_exports.string(),
-  tags: external_exports.array(external_exports.string()),
-  complexity: external_exports.enum(["simple", "moderate", "complex"]),
-  languageNotes: external_exports.string().optional(),
-  domainMeta: DomainMetaSchema.optional(),
-  knowledgeMeta: KnowledgeMetaSchema.optional(),
-  figmaMeta: FigmaMetaSchema.optional()
-}).passthrough();
-var GraphEdgeSchema = external_exports.object({
-  source: external_exports.string(),
-  target: external_exports.string(),
-  type: EdgeTypeSchema,
-  direction: external_exports.enum(["forward", "backward", "bidirectional"]),
-  description: external_exports.string().optional(),
-  weight: external_exports.number().min(0).max(1)
-});
-var LayerSchema = external_exports.object({
-  id: external_exports.string(),
-  name: external_exports.string(),
-  description: external_exports.string(),
-  nodeIds: external_exports.array(external_exports.string())
-});
-var TourStepSchema = external_exports.object({
-  order: external_exports.number(),
-  title: external_exports.string(),
-  description: external_exports.string(),
-  nodeIds: external_exports.array(external_exports.string()),
-  languageLesson: external_exports.string().optional()
-});
-var ProjectMetaSchema = external_exports.object({
-  name: external_exports.string(),
-  languages: external_exports.array(external_exports.string()),
-  frameworks: external_exports.array(external_exports.string()),
-  description: external_exports.string(),
-  analyzedAt: external_exports.string(),
-  gitCommitHash: external_exports.string()
-});
-var KnowledgeGraphSchema = external_exports.object({
-  version: external_exports.string(),
-  kind: external_exports.enum(["codebase", "knowledge", "design"]).optional(),
-  project: ProjectMetaSchema,
-  nodes: external_exports.array(GraphNodeSchema),
-  edges: external_exports.array(GraphEdgeSchema),
-  layers: external_exports.array(LayerSchema),
-  tour: external_exports.array(TourStepSchema)
-});
-
-// vendor/understand-anything/core/ignore-filter.ts
-var DEFAULT_IGNORE_PATTERNS = [
-  // Dependency directories
-  "node_modules/",
-  ".git/",
-  "vendor/",
-  "venv/",
-  ".venv/",
-  "__pycache__/",
-  // Build output
-  "dist/",
-  "build/",
-  "out/",
-  "coverage/",
-  ".next/",
-  ".cache/",
-  ".turbo/",
-  "target/",
-  "obj/",
-  // Lock files
-  "*.lock",
-  "package-lock.json",
-  "yarn.lock",
-  "pnpm-lock.yaml",
-  // Binary/asset files
-  "*.png",
-  "*.jpg",
-  "*.jpeg",
-  "*.gif",
-  "*.svg",
-  "*.ico",
-  "*.woff",
-  "*.woff2",
-  "*.ttf",
-  "*.eot",
-  "*.mp3",
-  "*.mp4",
-  "*.pdf",
-  "*.zip",
-  "*.tar",
-  "*.gz",
-  // Generated files
-  "*.min.js",
-  "*.min.css",
-  "*.map",
-  "*.generated.*",
-  // IDE/editor
-  ".idea/",
-  ".vscode/",
-  // Misc
-  "LICENSE",
-  ".gitignore",
-  ".editorconfig",
-  ".prettierrc",
-  ".eslintrc*",
-  "*.log"
-];
-
 // vendor/understand-anything/dashboard/utils/louvain.ts
 var import_graphology = __toESM(require_graphology_cjs(), 1);
 var import_graphology_communities_louvain = __toESM(require_graphology_communities_louvain(), 1);
@@ -25402,10 +25179,26 @@ function buildHierarchy(graph, hints = []) {
     bucket.nodes.push(node);
     buckets.set(key, bucket);
   };
+  const bucketKeysByIdentity = /* @__PURE__ */ new Map();
+  const identityByBucketKey = /* @__PURE__ */ new Map();
+  function bucketKey(prefix, identity) {
+    const cacheKey = `${prefix}\0${identity}`;
+    const cached2 = bucketKeysByIdentity.get(cacheKey);
+    if (cached2) return cached2;
+    let key = `${prefix}-${slug(identity)}`;
+    let suffix = 2;
+    while (identityByBucketKey.has(key) && identityByBucketKey.get(key) !== identity) {
+      key = `${prefix}-${slug(identity)}-${suffix}`;
+      suffix += 1;
+    }
+    bucketKeysByIdentity.set(cacheKey, key);
+    identityByBucketKey.set(key, identity);
+    return key;
+  }
   const layerless = [];
   for (const unit of placedUnits) {
     const layer = layerOf.get(unit.id);
-    if (layer) push(`subsystem:layer-${slug(layer.id)}`, layer.name, unit);
+    if (layer) push(bucketKey("subsystem:layer", layer.id), layer.name, unit);
     else layerless.push(unit);
   }
   const layerlessWithPath = layerless.filter((unit) => unit.filePath);
@@ -25423,7 +25216,7 @@ function buildHierarchy(graph, hints = []) {
       for (const nodeId of container.nodeIds) {
         const unit = byId.get(nodeId);
         if (!unit) continue;
-        push(`subsystem:folder-${slug(container.id)}`, container.name, unit);
+        push(bucketKey("subsystem:folder", container.id), container.name, unit);
       }
     }
     for (const nodeId of ungrouped) {
@@ -25434,7 +25227,7 @@ function buildHierarchy(graph, hints = []) {
     for (const unit of layerlessWithPath) {
       const path = normalizePath(unit.filePath);
       const segment = path.includes("/") ? path.slice(0, path.indexOf("/")) : "";
-      if (segment) push(`subsystem:folder-${slug(segment)}`, segment, unit);
+      if (segment) push(bucketKey("subsystem:folder", segment), segment, unit);
       else push("subsystem:other", "Other", unit);
     }
   }
@@ -25511,6 +25304,12 @@ function breadcrumbsFor(nodeId, nodesById, parentById) {
   return [{ id: null, name: "System" }, ...trail];
 }
 
+// src/lib/codegraph/call-resolution.ts
+function resolveCalleeFile(callerPath, calleeName, localFunctionNames, functionOwner) {
+  if (localFunctionNames.includes(calleeName)) return callerPath;
+  return functionOwner.get(calleeName) ?? null;
+}
+
 // src/lib/codegraph/shard-name.ts
 function base64url3(value) {
   const bytes = new TextEncoder().encode(value);
@@ -25534,6 +25333,282 @@ function shardName(parentId) {
   const encoded = base64url3(parentId);
   if (encoded.length <= MAX_ENCODED_LENGTH) return encoded;
   return `${encoded.slice(0, MAX_ENCODED_LENGTH)}-${shortHash(parentId)}`;
+}
+
+// src/lib/codegraph/file-selection.ts
+function selectFilesToAnalyze(codeFiles, maxFiles) {
+  if (codeFiles.length <= maxFiles) {
+    return {
+      selected: [...codeFiles],
+      reducedAnalysis: false,
+      skippedFileCount: 0
+    };
+  }
+  return {
+    selected: codeFiles.slice(0, maxFiles),
+    reducedAnalysis: true,
+    skippedFileCount: codeFiles.length - maxFiles
+  };
+}
+
+// src/lib/codegraph/repo-walk.ts
+import { readdirSync, lstatSync } from "node:fs";
+import { join } from "node:path";
+
+// vendor/understand-anything/core/ignore-filter.ts
+var import_ignore = __toESM(require_ignore(), 1);
+
+// vendor/understand-anything/core/schema.ts
+var EdgeTypeSchema = external_exports.enum([
+  "imports",
+  "exports",
+  "contains",
+  "inherits",
+  "implements",
+  // Structural
+  "calls",
+  "subscribes",
+  "publishes",
+  "middleware",
+  // Behavioral
+  "reads_from",
+  "writes_to",
+  "transforms",
+  "validates",
+  // Data flow
+  "depends_on",
+  "tested_by",
+  "configures",
+  // Dependencies
+  "related",
+  "similar_to",
+  // Semantic
+  "deploys",
+  "serves",
+  "provisions",
+  "triggers",
+  // Infrastructure
+  "migrates",
+  "documents",
+  "routes",
+  "defines_schema",
+  // Schema/Data
+  "contains_flow",
+  "flow_step",
+  "cross_domain",
+  // Domain
+  "cites",
+  "contradicts",
+  "builds_on",
+  "exemplifies",
+  "categorized_under",
+  "authored_by",
+  // Knowledge
+  "instance_of",
+  "variant_of",
+  "uses_token"
+  // Design
+]);
+var DomainMetaSchema = external_exports.object({
+  entities: external_exports.array(external_exports.string()).optional(),
+  businessRules: external_exports.array(external_exports.string()).optional(),
+  crossDomainInteractions: external_exports.array(external_exports.string()).optional(),
+  entryPoint: external_exports.string().optional(),
+  entryType: external_exports.enum(["http", "cli", "event", "cron", "manual"]).optional()
+}).passthrough();
+var KnowledgeMetaSchema = external_exports.object({
+  wikilinks: external_exports.array(external_exports.string()).optional(),
+  backlinks: external_exports.array(external_exports.string()).optional(),
+  category: external_exports.string().optional(),
+  content: external_exports.string().optional()
+}).passthrough();
+var FigmaMetaSchema = external_exports.object({
+  fileKey: external_exports.string().optional(),
+  nodeId: external_exports.string().optional(),
+  figmaType: external_exports.string().optional(),
+  thumbnailUrl: external_exports.string().optional(),
+  dimensions: external_exports.object({ width: external_exports.number(), height: external_exports.number() }).optional(),
+  tokenKind: external_exports.enum(["color", "type", "spacing", "effect", "grid"]).optional(),
+  tokenValue: external_exports.string().optional(),
+  prototypeTargets: external_exports.array(external_exports.string()).optional(),
+  componentKey: external_exports.string().optional()
+}).passthrough();
+var GraphNodeSchema = external_exports.object({
+  id: external_exports.string(),
+  type: external_exports.enum([
+    "file",
+    "function",
+    "class",
+    "module",
+    "concept",
+    "config",
+    "document",
+    "service",
+    "table",
+    "endpoint",
+    "pipeline",
+    "schema",
+    "resource",
+    "domain",
+    "flow",
+    "step",
+    "article",
+    "entity",
+    "topic",
+    "claim",
+    "source",
+    "page",
+    "screen",
+    "component",
+    "componentSet",
+    "instance",
+    "token"
+  ]),
+  name: external_exports.string(),
+  filePath: external_exports.string().optional(),
+  lineRange: external_exports.tuple([external_exports.number(), external_exports.number()]).optional(),
+  summary: external_exports.string(),
+  tags: external_exports.array(external_exports.string()),
+  complexity: external_exports.enum(["simple", "moderate", "complex"]),
+  languageNotes: external_exports.string().optional(),
+  domainMeta: DomainMetaSchema.optional(),
+  knowledgeMeta: KnowledgeMetaSchema.optional(),
+  figmaMeta: FigmaMetaSchema.optional()
+}).passthrough();
+var GraphEdgeSchema = external_exports.object({
+  source: external_exports.string(),
+  target: external_exports.string(),
+  type: EdgeTypeSchema,
+  direction: external_exports.enum(["forward", "backward", "bidirectional"]),
+  description: external_exports.string().optional(),
+  weight: external_exports.number().min(0).max(1)
+});
+var LayerSchema = external_exports.object({
+  id: external_exports.string(),
+  name: external_exports.string(),
+  description: external_exports.string(),
+  nodeIds: external_exports.array(external_exports.string())
+});
+var TourStepSchema = external_exports.object({
+  order: external_exports.number(),
+  title: external_exports.string(),
+  description: external_exports.string(),
+  nodeIds: external_exports.array(external_exports.string()),
+  languageLesson: external_exports.string().optional()
+});
+var ProjectMetaSchema = external_exports.object({
+  name: external_exports.string(),
+  languages: external_exports.array(external_exports.string()),
+  frameworks: external_exports.array(external_exports.string()),
+  description: external_exports.string(),
+  analyzedAt: external_exports.string(),
+  gitCommitHash: external_exports.string()
+});
+var KnowledgeGraphSchema = external_exports.object({
+  version: external_exports.string(),
+  kind: external_exports.enum(["codebase", "knowledge", "design"]).optional(),
+  project: ProjectMetaSchema,
+  nodes: external_exports.array(GraphNodeSchema),
+  edges: external_exports.array(GraphEdgeSchema),
+  layers: external_exports.array(LayerSchema),
+  tour: external_exports.array(TourStepSchema)
+});
+
+// vendor/understand-anything/core/ignore-filter.ts
+var DEFAULT_IGNORE_PATTERNS = [
+  // Dependency directories
+  "node_modules/",
+  ".git/",
+  "vendor/",
+  "venv/",
+  ".venv/",
+  "__pycache__/",
+  // Build output
+  "dist/",
+  "build/",
+  "out/",
+  "coverage/",
+  ".next/",
+  ".cache/",
+  ".turbo/",
+  "target/",
+  "obj/",
+  // Lock files
+  "*.lock",
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  // Binary/asset files
+  "*.png",
+  "*.jpg",
+  "*.jpeg",
+  "*.gif",
+  "*.svg",
+  "*.ico",
+  "*.woff",
+  "*.woff2",
+  "*.ttf",
+  "*.eot",
+  "*.mp3",
+  "*.mp4",
+  "*.pdf",
+  "*.zip",
+  "*.tar",
+  "*.gz",
+  // Generated files
+  "*.min.js",
+  "*.min.css",
+  "*.map",
+  "*.generated.*",
+  // IDE/editor
+  ".idea/",
+  ".vscode/",
+  // Misc
+  "LICENSE",
+  ".gitignore",
+  ".editorconfig",
+  ".prettierrc",
+  ".eslintrc*",
+  "*.log"
+];
+
+// src/lib/codegraph/repo-walk.ts
+var IGNORED_DIRS = new Set(
+  DEFAULT_IGNORE_PATTERNS.filter((p) => p.endsWith("/")).map(
+    (p) => p.replace(/\/$/, "")
+  )
+);
+function walk(root, limit) {
+  const files = [];
+  const stack = [root];
+  while (stack.length > 0 && files.length < limit) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.startsWith(".") && entry !== ".github") continue;
+      if (IGNORED_DIRS.has(entry)) continue;
+      const full = join(dir, entry);
+      let stats;
+      try {
+        stats = lstatSync(full);
+      } catch {
+        continue;
+      }
+      if (stats.isSymbolicLink()) continue;
+      if (stats.isDirectory()) {
+        stack.push(full);
+      } else if (stats.isFile()) {
+        files.push(full);
+        if (files.length >= limit) break;
+      }
+    }
+  }
+  return files;
 }
 
 // src/lib/codegraph/analyzer-entry.ts
@@ -25564,42 +25639,6 @@ function progress(phase, detail = {}) {
 `
   );
 }
-var IGNORED_DIRS = new Set(
-  DEFAULT_IGNORE_PATTERNS.filter((p) => p.endsWith("/")).map(
-    (p) => p.replace(/\/$/, "")
-  )
-);
-function walk(root, limit) {
-  const files = [];
-  const stack = [root];
-  while (stack.length > 0 && files.length < limit) {
-    const dir = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(dir);
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.startsWith(".") && entry !== ".github") continue;
-      if (IGNORED_DIRS.has(entry)) continue;
-      const full = join(dir, entry);
-      let stats;
-      try {
-        stats = statSync(full);
-      } catch {
-        continue;
-      }
-      if (stats.isDirectory()) {
-        stack.push(full);
-      } else if (stats.isFile()) {
-        files.push(full);
-        if (files.length >= limit) break;
-      }
-    }
-  }
-  return files;
-}
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repoRoot = resolvePath(args.repo);
@@ -25608,7 +25647,7 @@ async function main() {
   const plugin = new TreeSitterPlugin(
     builtinLanguageConfigs,
     void 0,
-    (_wasmPackage, wasmFile) => join(grammarDir, wasmFile)
+    (_wasmPackage, wasmFile) => join2(grammarDir, wasmFile)
   );
   await plugin.init();
   const supported = new Set(
@@ -25616,11 +25655,14 @@ async function main() {
       (config2) => config2.extensions.map((ext) => ext.startsWith(".") ? ext : `.${ext}`)
     )
   );
-  const allFiles = walk(repoRoot, args.maxFiles);
-  const codeFiles = allFiles.filter((file2) => {
+  const WALK_SAFETY_MULTIPLIER = 20;
+  const allFiles = walk(repoRoot, args.maxFiles * WALK_SAFETY_MULTIPLIER);
+  const allCodeFiles = allFiles.filter((file2) => {
     const dot = file2.lastIndexOf(".");
     return dot >= 0 && supported.has(file2.slice(dot).toLowerCase());
   }).sort();
+  const fileSelection = selectFilesToAnalyze(allCodeFiles, args.maxFiles);
+  const codeFiles = fileSelection.selected;
   const builder = new GraphBuilder(
     repoRoot.split("/").filter(Boolean).pop() ?? "repository",
     args.commitSha
@@ -25692,7 +25734,12 @@ async function main() {
         builder.addImportEdge(file2.path, target);
     }
     for (const call of file2.calls) {
-      const calleeFile = functionOwner.get(call.callee);
+      const calleeFile = resolveCalleeFile(
+        file2.path,
+        call.callee,
+        file2.functions,
+        functionOwner
+      );
       if (!calleeFile) continue;
       builder.addCallEdge(file2.path, call.caller, calleeFile, call.callee);
     }
@@ -25713,7 +25760,7 @@ async function main() {
     symbolCount: hierarchy.symbolCount
   });
   const outDir = resolvePath(args.out);
-  mkdirSync(join(outDir, "levels"), { recursive: true });
+  mkdirSync(join2(outDir, "levels"), { recursive: true });
   const meta3 = {
     workspaceId: args.workspaceId,
     repositoryId: args.repositoryId,
@@ -25722,11 +25769,15 @@ async function main() {
     fileCount: hierarchy.fileCount,
     symbolCount: hierarchy.symbolCount,
     languages: graph.project.languages,
-    frameworks: graph.project.frameworks
+    frameworks: graph.project.frameworks,
+    ...fileSelection.reducedAnalysis ? {
+      reducedAnalysis: true,
+      skippedFileCount: fileSelection.skippedFileCount
+    } : {}
   };
   for (const level of hierarchy.levels) {
     writeFileSync(
-      join(outDir, "levels", `${shardName(level.parentId)}.json`),
+      join2(outDir, "levels", `${shardName(level.parentId)}.json`),
       JSON.stringify({
         ...level,
         // Breadcrumbs travel with the shard so navigating straight to a deep
@@ -25747,8 +25798,8 @@ async function main() {
     hierarchy.parentById[node.id] ?? "",
     node.level
   ]);
-  writeFileSync(join(outDir, "search.json"), JSON.stringify(searchIndex));
-  writeFileSync(join(outDir, "meta.json"), JSON.stringify(meta3));
+  writeFileSync(join2(outDir, "search.json"), JSON.stringify(searchIndex));
+  writeFileSync(join2(outDir, "meta.json"), JSON.stringify(meta3));
   progress("ready", {
     subsystemCount: hierarchy.childrenByParent[""]?.length ?? 0
   });
