@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import EnvironmentConnectionsScreen from "#/routes/environment-connections";
 import { resetOAuthReceiptGuardForTests } from "#/lib/environment/oauth-receipt-guard";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
+import { EnvironmentService } from "#/api/environment-service/environment-service.api";
+import type { ConnectionReceipt } from "#/lib/environment/types/probe";
 
 vi.mock("#/lib/data-platform/client", () => ({
   isSupabaseConfigured: true,
@@ -40,6 +42,35 @@ vi.mock("#/api/environment-service/environment-service.api", () => ({
   EnvironmentServiceError: class EnvironmentServiceError extends Error {},
 }));
 
+const displayErrorToast = vi.hoisted(() => vi.fn());
+const displaySuccessToast = vi.hoisted(() => vi.fn());
+
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast,
+  displaySuccessToast,
+}));
+
+function ollamaReceipt(probeOk: boolean): ConnectionReceipt {
+  return {
+    connectionId: "conn-1",
+    capability: "llm",
+    providerId: "ollama",
+    instanceKey: "default",
+    status: probeOk ? "ok" : "error",
+    fingerprint: "sha256:abcd",
+    redacted: {},
+    grantedScopes: [],
+    missingScopes: [],
+    probe: {
+      ok: probeOk,
+      vantage: "edge",
+      latencyMs: 12,
+      checks: [],
+      probedAt: "2026-09-25T00:00:00.000Z",
+    },
+  };
+}
+
 function renderScreen(entry = "/environment/connections") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -56,10 +87,22 @@ function renderScreen(entry = "/environment/connections") {
 beforeEach(() => {
   vi.restoreAllMocks();
   vi.mocked(invalidateConnectionCaches).mockClear();
+  displayErrorToast.mockClear();
+  displaySuccessToast.mockClear();
   resetOAuthReceiptGuardForTests();
   connectionsState.data = [];
   connectionsState.isPending = false;
 });
+
+async function submitOllamaForm() {
+  const user = userEvent.setup();
+  renderScreen();
+
+  await user.click(await screen.findByTestId("connector-connect-ollama"));
+  await user.type(screen.getByTestId("connector-field-model"), "llama3");
+  await user.click(screen.getByTestId("connection-submit-ollama"));
+  return user;
+}
 
 describe("Environment connections form panel", () => {
   it("scrolls the credential form into view and focuses it when a card is clicked", async () => {
@@ -151,5 +194,42 @@ describe("Environment connections OAuth receipt", () => {
     await waitFor(() =>
       expect(invalidateConnectionCaches).toHaveBeenCalledTimes(2),
     );
+  });
+});
+
+describe("Environment connections credential submit", () => {
+  // Regression: the Edge Function always saves the record and always runs a
+  // verification probe, but a saved record is not a working one -- the probe
+  // fails whenever the credential itself is rejected. Submitting used to
+  // ignore that and unconditionally announce "Connection verified" while
+  // closing the form, so a bad credential was reported as a success with the
+  // real failure visible only in the probe panel underneath.
+  it("keeps the form open and reports the failure when the verification probe fails", async () => {
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      ollamaReceipt(false),
+    );
+
+    await submitOllamaForm();
+
+    await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(displaySuccessToast).not.toHaveBeenCalled();
+    expect(screen.getByTestId("connection-form-panel")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(invalidateConnectionCaches).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("closes the form and reports success once the verification probe passes", async () => {
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      ollamaReceipt(true),
+    );
+
+    await submitOllamaForm();
+
+    await waitFor(() => expect(displaySuccessToast).toHaveBeenCalledTimes(1));
+    expect(displayErrorToast).not.toHaveBeenCalled();
+    expect(
+      screen.queryByTestId("connection-form-panel"),
+    ).not.toBeInTheDocument();
   });
 });

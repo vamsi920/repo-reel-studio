@@ -176,8 +176,21 @@ function EnvironmentConnectionsScreen() {
           credentials,
         });
         setLastProbe(receipt.probe ?? null);
-        setActiveManifest(null);
-        displaySuccessToast(t(I18nKey.ENVIRONMENT$RECEIPT_TITLE));
+        // The Edge Function always saves the record and always runs the
+        // verification probe, but a saved record is not the same thing as a
+        // working one: `receipt.probe.ok` is false whenever the credential
+        // itself was rejected (bad key, unreachable host, ...). Closing the
+        // form and announcing "Connection verified" regardless of that told
+        // the user their bad credential worked, with the actual failure
+        // detail visible only in the probe panel they had no reason left to
+        // look at. Only declare success, and only clear the form, once the
+        // probe agrees.
+        if (receipt.probe?.ok) {
+          setActiveManifest(null);
+          displaySuccessToast(t(I18nKey.ENVIRONMENT$RECEIPT_TITLE));
+        } else {
+          displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_PROBE));
+        }
         await invalidateConnectionCaches(queryClient);
       } catch (error) {
         displayErrorToast(
