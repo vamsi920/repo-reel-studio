@@ -18,7 +18,7 @@ vi.mock("#/hooks/query/use-active-conversation", () => ({
 
 const useRuntimeIsReadyMock = vi.fn();
 vi.mock("#/hooks/use-runtime-is-ready", () => ({
-  useRuntimeIsReady: () => useRuntimeIsReadyMock(),
+  useRuntimeIsReady: (...args: unknown[]) => useRuntimeIsReadyMock(...args),
 }));
 
 const executeCommandSpy = vi.spyOn(AgentServerRuntimeService, "executeCommand");
@@ -113,5 +113,24 @@ describe("useHasGitCommits", () => {
       10,
     );
     expect(result.current.hasCommits).toBe(true);
+  });
+
+  it("passes allowAgentError so an LLM/agent error doesn't disable the probe", () => {
+    // Arrange: `useRuntimeIsReady` is mocked, so this asserts the *call*
+    // rather than the runtime-readiness computation it wraps. Without
+    // `allowAgentError: true`, an AgentState.ERROR conversation would be
+    // treated as "runtime not ready" even though the sandbox (and the
+    // `git rev-parse` this hook runs) is still alive — see
+    // `useWorkspaceFiles` / `useWorkspaceFileContent` / `useWorkspaceSession`,
+    // which already pass this for the same reason.
+    useActiveBackendMock.mockReturnValue(makeBackend("local"));
+
+    // Act
+    renderHook(() => useHasGitCommits(), { wrapper: makeWrapper() });
+
+    // Assert
+    expect(useRuntimeIsReadyMock).toHaveBeenCalledWith({
+      allowAgentError: true,
+    });
   });
 });

@@ -29,7 +29,15 @@ export function useHasGitCommits(options?: { enabled?: boolean }): {
   isLoading: boolean;
 } {
   const { data: conversation } = useActiveConversation();
-  const runtimeIsReady = useRuntimeIsReady();
+  // This probe only reads the workspace (a `git rev-parse`, no agent
+  // action) — the same category of caller `useWorkspaceFiles` /
+  // `useWorkspaceFileContent` / `useWorkspaceSession` already pass this
+  // for. Without it, an LLM/agent error (AgentState.ERROR) disables the
+  // query even though the sandbox itself is still alive and the command
+  // would succeed, leaving `hasCommits` stuck at `null` and the Files tab
+  // defaulting to the (possibly wrong) optimistic diff view for as long as
+  // the agent stays errored.
+  const runtimeIsReady = useRuntimeIsReady({ allowAgentError: true });
   const { backend } = useActiveBackend();
   const isLocalBackend = backend.kind === "local";
 
