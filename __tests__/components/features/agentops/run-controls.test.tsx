@@ -1,11 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RunControls } from "#/components/features/agentops/run-controls";
+import AgentOpsService, {
+  AgentOpsRequestError,
+} from "#/api/agentops-service/agentops-service.api";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type {
   AgentOpsRun,
   AgentOpsRunStatus,
 } from "#/api/agentops-service/agentops-service.types";
+
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displayErrorToast: vi.fn(),
+}));
 
 function run(status: AgentOpsRunStatus): AgentOpsRun {
   return {
@@ -51,6 +60,79 @@ function renderControls(status: AgentOpsRunStatus) {
 }
 
 describe("RunControls", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(displayErrorToast).mockClear();
+  });
+
+  it("calls pause directly, with no confirmation step", async () => {
+    const controlRun = vi
+      .spyOn(AgentOpsService, "controlRun")
+      .mockResolvedValue(undefined);
+    renderControls("running");
+
+    await userEvent.click(screen.getByTestId("agentops-run-pause"));
+
+    await waitFor(() =>
+      expect(controlRun).toHaveBeenCalledWith("run-1", "pause"),
+    );
+    expect(screen.queryByTestId("agentops-stop-confirmation")).toBeNull();
+  });
+
+  it("asks for confirmation before Stop, and only calls cancel once confirmed", async () => {
+    const controlRun = vi
+      .spyOn(AgentOpsService, "controlRun")
+      .mockResolvedValue(undefined);
+    renderControls("running");
+
+    await userEvent.click(screen.getByTestId("agentops-run-stop"));
+    expect(
+      screen.getByTestId("agentops-stop-confirmation"),
+    ).toBeInTheDocument();
+    // Nothing is sent to the runtime until the operator actually confirms.
+    expect(controlRun).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByText("BUTTON$CANCEL"));
+    expect(screen.queryByTestId("agentops-stop-confirmation")).toBeNull();
+    expect(controlRun).not.toHaveBeenCalled();
+  });
+
+  it("sends cancel once Stop is confirmed, and closes the dialog", async () => {
+    const controlRun = vi
+      .spyOn(AgentOpsService, "controlRun")
+      .mockResolvedValue(undefined);
+    renderControls("running");
+
+    await userEvent.click(screen.getByTestId("agentops-run-stop"));
+    await userEvent.click(
+      screen.getByText("AGENTOPS$CONTROL_STOP_CONFIRM_ACTION"),
+    );
+
+    await waitFor(() =>
+      expect(controlRun).toHaveBeenCalledWith("run-1", "cancel"),
+    );
+    expect(screen.queryByTestId("agentops-stop-confirmation")).toBeNull();
+  });
+
+  it("shows the collector's own refusal reason when a control is rejected", async () => {
+    vi.spyOn(AgentOpsService, "controlRun").mockRejectedValue(
+      new AgentOpsRequestError(
+        "/runs/run-1/pause",
+        409,
+        JSON.stringify({ error: "This run is already paused." }),
+      ),
+    );
+    renderControls("running");
+
+    await userEvent.click(screen.getByTestId("agentops-run-pause"));
+
+    await waitFor(() =>
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        "This run is already paused.",
+      ),
+    );
+  });
+
   it("offers Pause and Stop on a running run", () => {
     renderControls("running");
     expect(screen.getByTestId("agentops-run-pause")).toBeInTheDocument();

@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Collector } from "../../scripts/agentops/collector.mjs";
+import {
+  Collector,
+  deriveAgentName,
+  deriveModel,
+  deriveWorkspaceId,
+} from "../../scripts/agentops/collector.mjs";
 
 /**
  * Collector talks to two injected dependencies (`client`, `store`) with the
@@ -2130,5 +2135,82 @@ describe("Collector orphaned-run close-out", () => {
 
     expect(store.upsertRun).not.toHaveBeenCalled();
     expect(await store.getRun("run-1")).toMatchObject({ status: "paused" });
+  });
+});
+
+// Every call site in the tests above sets `workspace.working_dir` and never
+// exercises `launched_agent_profile` / `agent.acp_server` / the model
+// fallback chain, so these pure exports' own fallback behavior — the exact
+// thing they exist to encode — had no direct coverage.
+describe("deriveAgentName", () => {
+  it("prefers the launched agent profile id", () => {
+    expect(
+      deriveAgentName({
+        launched_agent_profile: { agent_profile_id: "code-reviewer" },
+        agent: { acp_server: "claude-code" },
+      }),
+    ).toBe("code-reviewer");
+  });
+
+  it("falls back to the ACP server identity when there is no profile", () => {
+    expect(deriveAgentName({ agent: { acp_server: "claude-code" } })).toBe(
+      "claude-code",
+    );
+  });
+
+  it("falls back to a generic label when neither is set", () => {
+    expect(deriveAgentName({})).toBe("OpenHands Agent");
+    expect(deriveAgentName(null)).toBe("OpenHands Agent");
+  });
+
+  it("ignores an empty-string profile id and falls through", () => {
+    expect(
+      deriveAgentName({
+        launched_agent_profile: { agent_profile_id: "" },
+        agent: { acp_server: "claude-code" },
+      }),
+    ).toBe("claude-code");
+  });
+});
+
+describe("deriveModel", () => {
+  it("prefers the conversation's current_model_name", () => {
+    expect(
+      deriveModel({
+        current_model_name: "claude-sonnet-5",
+        agent: { llm: { model: "gpt-5" }, acp_model: "gemini" },
+      }),
+    ).toBe("claude-sonnet-5");
+  });
+
+  it("falls back to agent.llm.model when current_model_name is absent", () => {
+    expect(
+      deriveModel({ agent: { llm: { model: "gpt-5" }, acp_model: "gemini" } }),
+    ).toBe("gpt-5");
+  });
+
+  it("falls back to agent.acp_model when neither of the above is set", () => {
+    expect(deriveModel({ agent: { acp_model: "gemini" } })).toBe("gemini");
+  });
+
+  it("is null when the conversation reports no model at all", () => {
+    expect(deriveModel({})).toBeNull();
+    expect(deriveModel(null)).toBeNull();
+  });
+});
+
+describe("deriveWorkspaceId", () => {
+  it("reads the conversation's working directory", () => {
+    expect(
+      deriveWorkspaceId({ workspace: { working_dir: "/repo/project" } }),
+    ).toBe("/repo/project");
+  });
+
+  it('falls back to "unknown" when working_dir is missing or empty', () => {
+    expect(deriveWorkspaceId({})).toBe("unknown");
+    expect(deriveWorkspaceId({ workspace: { working_dir: "" } })).toBe(
+      "unknown",
+    );
+    expect(deriveWorkspaceId(null)).toBe("unknown");
   });
 });
