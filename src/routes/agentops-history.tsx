@@ -20,9 +20,15 @@ function AgentOpsHistory() {
     // The audit log has its own query; gating only on `runs` rendered the
     // "no audit records yet" empty state while it was still loading, and
     // swallowed an audit-side failure entirely.
+    //
+    // `hasData` avoids swapping the already-loaded table/log for the
+    // full-page "collector unavailable" card on a single failed background
+    // poll — the same ~30s-per-deploy collector blip documented on the
+    // Overview/Live Runs/Approvals/Budgets tabs (AGENTS.md INC-3).
     <AgentOpsPanel
       isLoading={runs.isLoading || audit.isLoading}
       error={runs.error ?? audit.error}
+      hasData={Boolean(runs.data && audit.data)}
     >
       <div className="flex flex-col gap-6">
         <section className="flex flex-col gap-2">

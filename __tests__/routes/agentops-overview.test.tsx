@@ -35,11 +35,22 @@ const SUMMARY: AgentOpsSummary = {
 
 const loaded = (data: unknown) => ({ data, isLoading: false, error: null });
 const loading = { data: undefined, isLoading: true, error: null };
+const failedRefetch = (data: unknown) => ({
+  data,
+  isLoading: false,
+  error: new Error("Failed to fetch"),
+});
 
 function renderOverview() {
-  return render(<AgentOpsOverview />, {
-    wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
-  });
+  // A fresh element each render call: React bails out of re-rendering a
+  // subtree when it is handed the very same element object again.
+  const ui = () => (
+    <MemoryRouter>
+      <AgentOpsOverview />
+    </MemoryRouter>
+  );
+  const view = render(ui());
+  return { ...view, rerender: () => view.rerender(ui()) };
 }
 
 describe("AgentOpsOverview", () => {
@@ -104,5 +115,37 @@ describe("AgentOpsOverview", () => {
     expect(
       screen.getByTestId("agentops-local-store-banner"),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the last-loaded stat tiles and tables on screen when a poll fails after data has already loaded", () => {
+    // Every Fly deploy restarts the collector for ~30s (AGENTS.md INC-3),
+    // and this tab polls every 3s — a single failed background poll after a
+    // real answer must not tear down the whole page.
+    summary.mockReturnValue(loaded(SUMMARY));
+    runs.mockReturnValue(loaded([]));
+    audit.mockReturnValue(loaded([]));
+    const { rerender } = renderOverview();
+
+    expect(screen.getByTestId("agentops-stat-tiles")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("agentops-collector-unavailable"),
+    ).not.toBeInTheDocument();
+
+    audit.mockReturnValue(failedRefetch([]));
+    rerender();
+
+    expect(screen.getByTestId("agentops-collector-stale")).toBeInTheDocument();
+    expect(screen.getByTestId("agentops-stat-tiles")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("agentops-collector-unavailable"),
+    ).not.toBeInTheDocument();
+
+    audit.mockReturnValue(loaded([]));
+    rerender();
+
+    expect(
+      screen.queryByTestId("agentops-collector-stale"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("agentops-stat-tiles")).toBeInTheDocument();
   });
 });

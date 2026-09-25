@@ -31,9 +31,17 @@ function AgentOpsOverview() {
     // *empty* state — "no active runs" while runs were still loading — and an
     // audit failure showed as "no audit records" rather than the collector
     // being unreachable.
+    //
+    // `hasData` matters just as much here as it does on Approvals/Budgets:
+    // this tab polls every 3s and every Fly deploy restarts the collector for
+    // ~30s (see AGENTS.md INC-3), so without it a single failed background
+    // poll swapped the whole Overview — stat tiles, live runs, recent
+    // activity, all still showing the collector's own last real answer — for
+    // the full-page "collector unavailable" card, on every deploy.
     <AgentOpsPanel
       isLoading={summary.isLoading || activeRuns.isLoading || audit.isLoading}
       error={summary.error ?? activeRuns.error ?? audit.error}
+      hasData={Boolean(summary.data && activeRuns.data && audit.data)}
     >
       <div className="flex flex-col gap-6">
         {summary.data?.store === "jsonl" ? <LocalStoreBanner /> : null}

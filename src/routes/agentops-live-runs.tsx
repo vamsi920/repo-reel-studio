@@ -17,7 +17,12 @@ function AgentOpsLiveRuns() {
   useLiveElapsedTick(true);
 
   return (
-    <AgentOpsPanel isLoading={isLoading} error={error}>
+    // This is the tab someone has open while watching an agent work, polling
+    // every 3s — exactly the surface a ~30s collector restart on every Fly
+    // deploy (AGENTS.md INC-3) would otherwise flip to the full-page
+    // "collector unavailable" card on top of an agent that is still running.
+    // `hasData` keeps the table mounted with a stale banner instead.
+    <AgentOpsPanel isLoading={isLoading} error={error} hasData={Boolean(data)}>
       <LiveRunsTable
         runs={data ?? []}
         emptyMessage={t(I18nKey.AGENTOPS$EMPTY_START_A_TASK)}
