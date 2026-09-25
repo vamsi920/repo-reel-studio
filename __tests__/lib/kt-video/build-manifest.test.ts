@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildKtManifest,
   buildKtManifestFromKnowledgePage,
+  isFileSceneEligible,
 } from "#/lib/kt-video/build-manifest";
 
 const page = {
@@ -289,7 +290,7 @@ describe("buildKtManifest", () => {
       "src/Greeter.kt":
         "package com.example\n" +
         "\n" +
-        'fun greet(name: String): String {\n' +
+        "fun greet(name: String): String {\n" +
         '    return "Hello, $name"\n' +
         "}\n",
     };
@@ -301,5 +302,38 @@ describe("buildKtManifest", () => {
       "The heart of this file is greet",
     );
     expect(codeScene!.focus_symbols).toContain("greet");
+  });
+});
+
+describe("isFileSceneEligible", () => {
+  // The KT Video sidebar flags a selected file as "unavailable" using this
+  // same function, so it must exactly match buildKtManifest's own filter or
+  // a file can look normally selected while silently getting no scene.
+  const longEnough = "export function fn() {\n  return 1;\n}\n".repeat(2);
+
+  it("accepts a real source file with enough content", () => {
+    expect(isFileSceneEligible("src/mod.ts", longEnough)).toBe(true);
+  });
+
+  it("rejects content under the 40-character minimum", () => {
+    expect(isFileSceneEligible("src/mod.ts", "const x = 1;")).toBe(false);
+  });
+
+  it("rejects an ignored path even with enough content", () => {
+    expect(isFileSceneEligible("node_modules/pkg/index.ts", longEnough)).toBe(
+      false,
+    );
+  });
+
+  it("rejects a noise file (lockfile) even with enough content", () => {
+    expect(isFileSceneEligible("package-lock.json", longEnough)).toBe(false);
+  });
+
+  it("rejects a non-source extension that isn't a README", () => {
+    expect(isFileSceneEligible("config/app.yaml", longEnough)).toBe(false);
+  });
+
+  it("accepts a README even though .md isn't a source extension", () => {
+    expect(isFileSceneEligible("README.md", longEnough)).toBe(true);
   });
 });

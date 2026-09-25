@@ -224,19 +224,28 @@ function computeInDegree(
   return inDegree;
 }
 
+/**
+ * A file passes this exact filter iff `rankFiles` can turn it into a code
+ * scene. Callers that let a user hand-pick files (rather than going through
+ * `rankFiles`) must run selected paths through this too, or a file that
+ * looks selected can silently get no scene in the built video.
+ */
+export const isFileSceneEligible = (path: string, content: string): boolean => {
+  const n = normalize(path);
+  if (IGNORE_PATH.test(n) || NOISE_FILE.test(n)) return false;
+  if (!isSourceFile(n)) return false;
+  return content.trim().length >= 40;
+};
+
 function rankFiles(
   fileContents: Record<string, string>,
   limit: number,
 ): string[] {
   const inDegree = computeInDegree(fileContents);
 
-  const candidates = Object.keys(fileContents).filter((p) => {
-    const n = normalize(p);
-    if (IGNORE_PATH.test(n) || NOISE_FILE.test(n)) return false;
-    if (!isSourceFile(n)) return false;
-    const content = fileContents[p] || "";
-    return content.trim().length >= 40;
-  });
+  const candidates = Object.keys(fileContents).filter((p) =>
+    isFileSceneEligible(p, fileContents[p] || ""),
+  );
 
   const score = (path: string): number => {
     const n = normalize(path);

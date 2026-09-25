@@ -152,9 +152,7 @@ describe("useSelectedFileContents", () => {
       data: { kind: "text", text: "   \n  " },
     });
 
-    const { result } = renderHook(() =>
-      useSelectedFileContents(["empty.ts"]),
-    );
+    const { result } = renderHook(() => useSelectedFileContents(["empty.ts"]));
 
     expect(result.current.unavailablePaths.has("empty.ts")).toBe(true);
   });
@@ -162,12 +160,29 @@ describe("useSelectedFileContents", () => {
   it("does not report a successfully loaded text file as unavailable", () => {
     fileResultsMock.set("a.ts", {
       isLoading: false,
-      data: { kind: "text", text: "export const a = 1;" },
+      data: { kind: "text", text: "export const a = 1;\n".repeat(3) },
     });
 
     const { result } = renderHook(() => useSelectedFileContents(["a.ts"]));
 
     expect(result.current.unavailablePaths.has("a.ts")).toBe(false);
+  });
+
+  it("reports a selected file as unavailable when it isn't scene-eligible even though it loaded as non-empty text", () => {
+    // Mirrors build-manifest.ts's own scene-eligibility filter: a lockfile
+    // (and, separately, content under the minimum length) loads fine as
+    // "text" but buildKtManifest silently drops it from the manifest, so the
+    // sidebar must flag it too rather than showing it as a normal selection.
+    fileResultsMock.set("package-lock.json", {
+      isLoading: false,
+      data: { kind: "text", text: '{ "lockfileVersion": 3 }\n'.repeat(3) },
+    });
+
+    const { result } = renderHook(() =>
+      useSelectedFileContents(["package-lock.json"]),
+    );
+
+    expect(result.current.unavailablePaths.has("package-lock.json")).toBe(true);
   });
 });
 
@@ -273,7 +288,7 @@ describe("KtVideoTab file availability", () => {
   it("shows an unavailable badge next to a selected file that failed to load, and none for one that loaded fine", () => {
     fileResultsMock.set("available.ts", {
       isLoading: false,
-      data: { kind: "text", text: "export const a = 1;" },
+      data: { kind: "text", text: "export const a = 1;\n".repeat(3) },
     });
     fileResultsMock.set("broken.bin", {
       isLoading: false,

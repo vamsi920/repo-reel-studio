@@ -6,7 +6,10 @@ import { useWorkspaceFiles } from "#/hooks/query/use-workspace-files";
 import { useUnifiedGetGitChanges } from "#/hooks/query/use-unified-get-git-changes";
 import { useWorkspaceFileContent } from "#/hooks/query/use-workspace-file-content";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
-import { buildKtManifest } from "#/lib/kt-video/build-manifest";
+import {
+  buildKtManifest,
+  isFileSceneEligible,
+} from "#/lib/kt-video/build-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
 import { FileListErrorMessage } from "#/components/features/files-tab/file-list-error";
@@ -86,15 +89,17 @@ export function useSelectedFileContents(paths: string[]): {
     const out = new Set<string>();
     slots.forEach((path, i) => {
       const result = results[i];
-      // Mirrors build-manifest.ts's own `c.trim().length > 0` scene-eligibility
-      // filter: an empty/whitespace-only file resolves as "text" but is
-      // silently dropped when the manifest is built, so it must be flagged
-      // here too — otherwise the sidebar shows it as a normal selected file
-      // while the video ends up with no scene for it (or none at all).
+      // Mirrors build-manifest.ts's own `isFileSceneEligible` scene-eligibility
+      // filter exactly (ignored/noise paths, non-source extensions, content
+      // under the minimum length) — a file that passes a looser check here
+      // but fails that one resolves as "text" yet is silently dropped when
+      // the manifest is built, so it must be flagged here too, otherwise the
+      // sidebar shows it as a normal selected file while the video ends up
+      // with no scene for it.
       const hasUsableText =
         result.data?.kind === "text" &&
         result.data.text != null &&
-        result.data.text.trim().length > 0;
+        isFileSceneEligible(path, result.data.text);
       if (path && !result.isLoading && !hasUsableText) out.add(path);
     });
     return out;
