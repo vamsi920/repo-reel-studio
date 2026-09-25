@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { I18nKey } from "#/i18n/declaration";
@@ -175,6 +175,14 @@ export function ProactivationSetupWizard({
   const [frequency, setFrequency] = useState<SchedulePresetKind>("daily");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Repos already created+enabled by a previous `handleEnable` attempt in
+  // this same open session. `selectedRepos` is intentionally left untouched
+  // after a partial failure so the user can see/edit their full selection,
+  // but that means naively retrying re-runs the create+enable calls for
+  // repos that already succeeded, producing a duplicate automation for each.
+  // This ref (not state -- it must be visible to the very next `handleEnable`
+  // call without waiting on a re-render) tracks which repos to skip on retry.
+  const createdRepoKeysRef = useRef<Set<string>>(new Set());
 
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
@@ -196,6 +204,7 @@ export function ProactivationSetupWizard({
     setAutonomyLevel("recommend");
     setFrequency("daily");
     setSubmitError(null);
+    createdRepoKeysRef.current = new Set();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -258,6 +267,13 @@ export function ProactivationSetupWizard({
       weekday: frequency === "weekly" ? 1 : undefined,
     });
     const sortedWatchAreas = WATCH_AREAS.filter((a) => watchAreas.has(a));
+    // Skip repos a previous attempt already created+enabled -- otherwise
+    // retrying after a partial failure re-creates a duplicate automation for
+    // every repo that succeeded before the failing one (see
+    // `createdRepoKeysRef` above).
+    const reposToCreate = selectedRepos.filter(
+      (repo) => !createdRepoKeysRef.current.has(repoKey(repo)),
+    );
 
     try {
       // A locally-connected GitHub credential only ever gets minted into a
@@ -269,7 +285,7 @@ export function ProactivationSetupWizard({
       // has a live session, at least covers runs while the credential
       // remains valid. No-op for non-GitHub providers or Cloud backends.
       const providersToPrime = new Set(
-        selectedRepos.map((repo) => repo.git_provider),
+        reposToCreate.map((repo) => repo.git_provider),
       );
       await Promise.all(
         Array.from(providersToPrime).map((provider) =>
@@ -281,7 +297,7 @@ export function ProactivationSetupWizard({
       // (create-preset then PATCH the real trigger) against the same
       // automation service, and failures should stop cleanly rather than
       // leave a partial fan-out of half-created automations.
-      for (const repo of selectedRepos) {
+      for (const repo of reposToCreate) {
         const spec: AutomationSpec = {
           name: `${PROACTIVATION_NAME_PREFIX} — ${repo.full_name}`,
           prompt: buildProactivationPrompt({
@@ -303,10 +319,12 @@ export function ProactivationSetupWizard({
         const created = await AutomationService.createAutomation(spec);
 
         await AutomationService.toggleAutomation(created.id, true);
+        createdRepoKeysRef.current.add(repoKey(repo));
       }
 
       await queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       displaySuccessToast(t(I18nKey.AUTOMATIONS$PROACTIVATION_ENABLE_SUCCESS));
+      createdRepoKeysRef.current = new Set();
       onEnabled();
     } catch (error) {
       // The create loop is sequential and stops at the first failure (see

@@ -93,17 +93,33 @@ beforeEach(() => {
 
 async function completeWizardThroughReview(
   user: ReturnType<typeof userEvent.setup>,
+  repos: string[] = ["acme/widgets"],
 ) {
   await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
   const manualRepoInput = await screen.findByTestId(
     "proactivation-manual-repo",
   );
-  await user.type(manualRepoInput, "acme/widgets");
-  await user.click(screen.getByTestId("proactivation-manual-repo-add"));
+  for (const repo of repos) {
+    await user.type(manualRepoInput, repo);
+    await user.click(screen.getByTestId("proactivation-manual-repo-add"));
+  }
   await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
   await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
   await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
   await user.click(screen.getByText("AUTOMATIONS$PROACTIVATION_NEXT"));
+}
+
+function makeAutomation(id: string, repository: string) {
+  return {
+    id,
+    name: `Proactive Engineering — ${repository}`,
+    prompt: "p",
+    trigger: { type: "cron" as const, schedule: "0 9 * * *" },
+    enabled: true,
+    repository,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
 }
 
 describe("ProactivationSetupWizard partial creation failure", () => {
@@ -169,5 +185,70 @@ describe("ProactivationSetupWizard partial creation failure", () => {
     await waitFor(() => {
       expect(screen.getByTestId("automations-count")).toHaveTextContent("1");
     });
+  });
+
+  it("does not recreate an automation for a repo that already succeeded when the user retries after a partial failure", async () => {
+    vi.mocked(AutomationService.getAutomations).mockResolvedValue({
+      automations: [],
+      total: 0,
+    });
+
+    let apiCreateAttempts = 0;
+    vi.mocked(AutomationService.createAutomation).mockImplementation(
+      async (spec) => {
+        if (spec.repository === "acme/widgets") {
+          return makeAutomation("auto-widgets", "acme/widgets");
+        }
+        apiCreateAttempts += 1;
+        if (apiCreateAttempts === 1) {
+          throw new Error("automation backend unreachable");
+        }
+        return makeAutomation("auto-api", "acme/api");
+      },
+    );
+    vi.mocked(AutomationService.toggleAutomation).mockImplementation(
+      async (id) => makeAutomation(id, id === "auto-widgets" ? "acme/widgets" : "acme/api"),
+    );
+
+    const user = userEvent.setup();
+    render(<Wizard />);
+
+    await completeWizardThroughReview(user, ["acme/widgets", "acme/api"]);
+    await user.click(
+      screen.getByText("AUTOMATIONS$PROACTIVATION_ENABLE_SUBMIT"),
+    );
+
+    // First attempt: widgets is created+enabled, api's create fails and
+    // stops the loop there.
+    await waitFor(() => {
+      expect(AutomationService.createAutomation).toHaveBeenCalledTimes(2);
+    });
+    expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(1);
+    expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
+      "auto-widgets",
+      true,
+    );
+
+    // Retry: without the fix this re-creates "acme/widgets" too, producing a
+    // duplicate automation for the repo that already succeeded.
+    await user.click(
+      screen.getByText("AUTOMATIONS$PROACTIVATION_ENABLE_SUBMIT"),
+    );
+
+    await waitFor(() => {
+      expect(AutomationService.toggleAutomation).toHaveBeenCalledTimes(2);
+    });
+    // 2 calls from the first attempt (widgets, api) + 1 retry call (api
+    // only) = 3 total, not 4.
+    expect(AutomationService.createAutomation).toHaveBeenCalledTimes(3);
+    expect(
+      vi
+        .mocked(AutomationService.createAutomation)
+        .mock.calls.filter((call) => call[0].repository === "acme/widgets"),
+    ).toHaveLength(1);
+    expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
+      "auto-api",
+      true,
+    );
   });
 });
