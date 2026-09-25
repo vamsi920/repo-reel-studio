@@ -166,8 +166,12 @@ export function CodeGraphNodeDetails({
   }, [source, node.lineRange]);
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the canvas and the search box both dismiss on Escape (see codegraph-canvas.tsx / codegraph-toolbar.tsx), but those handlers live on sibling elements this panel isn't nested inside; a keyboard user who tabs onto one of the panel's own focusable children (e.g. the close button) would otherwise have no way to dismiss it without a mouse.
     <aside
       data-testid="codegraph-node-details"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onClose();
+      }}
       className="flex h-full w-[340px] shrink-0 flex-col overflow-y-auto border-l border-[var(--oh-border)] bg-[var(--oh-surface)] p-4 custom-scrollbar"
     >
       <div className="mb-3 flex items-start gap-2">

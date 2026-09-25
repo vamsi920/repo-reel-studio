@@ -319,9 +319,6 @@ export function pinKey(workspaceId: string, repositoryId: string): string {
   return `${workspaceId}::${repositoryId}`;
 }
 
-/** Key used for the root level inside `levels`. */
-export const CODEGRAPH_ROOT_LEVEL = LEVEL_ROOT;
-
 /** The level currently on screen, or `undefined` while it is still loading. */
 export function selectCurrentLevel(
   state: CodeGraphState | undefined,

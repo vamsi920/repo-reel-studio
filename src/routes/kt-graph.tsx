@@ -657,7 +657,7 @@ function KtGraph() {
       ) : null}
 
       {state?.status === "analyzing" ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div role="status" className="flex flex-1 items-center justify-center">
           <p className="flex items-center gap-2 text-sm text-[var(--oh-muted)]">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             {state.progress?.phase === "relationships" ||
@@ -669,7 +669,10 @@ function KtGraph() {
       ) : null}
 
       {state?.status === "error" ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6">
+        <div
+          role="alert"
+          className="flex flex-1 flex-col items-center justify-center gap-3 px-6"
+        >
           <AlertTriangle
             className="size-7 text-[var(--error-500)]"
             aria-hidden

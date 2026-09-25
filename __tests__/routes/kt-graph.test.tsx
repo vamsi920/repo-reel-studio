@@ -931,6 +931,31 @@ describe("KtGraph search", () => {
     expect(container.querySelector('[class*="--error-500"]')).not.toBeNull();
     expect(container.querySelector('[class*="--danger-500"]')).toBeNull();
   });
+
+  it("announces the analyzing and failed states to screen readers", async () => {
+    // Neither status region had a live-region role, unlike the toolbar's own
+    // level-loading indicator (`role="status"`) and the canvas's own layout
+    // failure (`role="alert"`) — a screen reader user got no announcement
+    // when analysis started or failed.
+    useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "CODEGRAPH$ANALYZING",
+    );
+
+    const key = codeGraphKey(WORKSPACE_ID, REPOSITORY_ID, COMMIT);
+    useCodeGraphStore.getState().setError(key, "analysis: boom");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "CODEGRAPH$FAILED",
+    );
+  });
 });
 
 describe("KtGraph cold rehydration", () => {

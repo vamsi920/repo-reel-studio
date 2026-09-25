@@ -296,4 +296,18 @@ describe("CodeGraphNodeDetails", () => {
 
     expect(props.onSelect).toHaveBeenCalledWith("file:src/pay/gateway.ts");
   });
+
+  it("closes on Escape even when focus is on an element inside the panel", async () => {
+    // The canvas and the search box both dismiss on Escape, but the panel is
+    // a sibling of the canvas, not nested inside it — a keyboard user who
+    // tabs into the panel (e.g. onto the close button) needs its own Escape
+    // handler, or they'd have no way to dismiss it without a mouse.
+    const user = userEvent.setup();
+    const props = renderPanel();
+
+    screen.getByLabelText("CODEGRAPH$CLOSE_DETAILS").focus();
+    await user.keyboard("{Escape}");
+
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+  });
 });
