@@ -10,6 +10,7 @@ import {
   batchGetCloudConversations,
   createCloudAppConversation,
   pickCloudBackendForLaunch,
+  searchCloudAppConversationStartTasks,
   searchCloudConversations,
 } from "#/api/cloud/conversation-service.api";
 import { AGENT_CANVAS_CLIENT_HEADERS } from "#/api/client-source";
@@ -314,5 +315,47 @@ describe("cloud conversation-service overlay", () => {
     expect(page.items[0].selected_branch).toBe("main");
     expect(page.items[0].git_provider).toBe("github");
     expect(page.items[1].selected_repository).toBeNull();
+  });
+
+  describe("searchCloudAppConversationStartTasks", () => {
+    it("requests the start-tasks endpoint with a limit and returns the tasks", async () => {
+      mockCallCloudProxy.mockResolvedValueOnce([
+        { id: "task-1", status: "WORKING" },
+        { id: "task-2", status: "READY" },
+      ]);
+
+      const tasks = await searchCloudAppConversationStartTasks(10);
+
+      expect(mockCallCloudProxy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          backend: cloudBackend,
+          method: "GET",
+          path: "/api/v1/app-conversations/start-tasks?limit=10",
+        }),
+      );
+      expect(tasks).toEqual([
+        { id: "task-1", status: "WORKING" },
+        { id: "task-2", status: "READY" },
+      ]);
+    });
+
+    it("filters out null entries returned by the backend", async () => {
+      mockCallCloudProxy.mockResolvedValueOnce([
+        null,
+        { id: "task-1", status: "WORKING" },
+      ]);
+
+      const tasks = await searchCloudAppConversationStartTasks(10);
+
+      expect(tasks).toEqual([{ id: "task-1", status: "WORKING" }]);
+    });
+
+    it("returns an empty array when the backend responds with no data", async () => {
+      mockCallCloudProxy.mockResolvedValueOnce(undefined);
+
+      const tasks = await searchCloudAppConversationStartTasks(10);
+
+      expect(tasks).toEqual([]);
+    });
   });
 });

@@ -38,6 +38,7 @@ import {
   downloadCloudConversation,
   getCloudAppConversationStartTask,
   readCloudConversationFile,
+  searchCloudAppConversationStartTasks,
   searchCloudConversations,
   updateCloudConversationPublicFlag,
 } from "../cloud/conversation-service.api";
@@ -564,6 +565,17 @@ class AgentServerConversationService {
     // local "task" is already READY when createConversation returns, so
     // there's nothing to poll for.
     return null;
+  }
+
+  static async searchStartTasks(
+    limit: number = 10,
+  ): Promise<AppConversationStartTask[]> {
+    if (getActiveBackend().backend.kind === "cloud") {
+      return searchCloudAppConversationStartTasks(limit);
+    }
+    // Local agent-server creates conversations synchronously — there are
+    // never any in-progress start tasks to show.
+    return [];
   }
 
   static async getVSCodeUrl(

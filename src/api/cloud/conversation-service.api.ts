@@ -293,3 +293,29 @@ export async function getCloudAppConversationStartTask(
   });
   return data?.[0] ?? null;
 }
+
+/**
+ * List the most recent v1 app-conversation start tasks (provisioning
+ * sandboxes, cloning repos, etc.) for the sidebar's "in progress" cards.
+ * Uses the same `/api/v1/app-conversations/start-tasks` batch endpoint as
+ * `getCloudAppConversationStartTask`, but with `limit` instead of `ids` — it
+ * returns the same flat array shape (no `items`/`next_page_id` wrapper).
+ * The backend doesn't support filtering by status, so callers filter out
+ * READY/ERROR tasks client-side.
+ */
+export async function searchCloudAppConversationStartTasks(
+  limit: number = 10,
+  backendOverride?: Backend,
+): Promise<AppConversationStartTask[]> {
+  const backend = backendOverride ?? getActiveCloudBackend();
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  const data = await callCloudProxy<(AppConversationStartTask | null)[]>({
+    backend,
+    method: "GET",
+    path: `/api/v1/app-conversations/start-tasks?${params.toString()}`,
+  });
+  return (data ?? []).filter(
+    (task): task is AppConversationStartTask => task !== null,
+  );
+}

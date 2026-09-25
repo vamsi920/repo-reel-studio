@@ -319,6 +319,50 @@ describe("OpenRepositoryModal", () => {
     expect(launchButton).toBeDisabled();
   });
 
+  it("clears the draft selection when the parent force-closes it (isOpen -> false) without Cancel/Launch", async () => {
+    // Regression test: GitControlBar force-closes this modal directly
+    // (setIsOpenRepoModalOpen(false)) on a conversation switch, bypassing
+    // handleClose/handleLaunch. Since the modal stays mounted across that
+    // toggle, its draft selection used to survive and pre-fill the next
+    // conversation's "Open Repository" flow with the previous one's repo.
+    const user = userEvent.setup();
+
+    const { rerender } = render(
+      <OpenRepositoryModal
+        isOpen
+        onClose={mockOnClose}
+        onLaunch={mockOnLaunch}
+      />,
+    );
+
+    // Select repository and branch, as if for a prior conversation.
+    await user.click(screen.getByTestId("git-repo-dropdown"));
+    await user.click(screen.getByTestId("git-branch-dropdown"));
+    let launchButton = screen.getByText("BUTTON$LAUNCH").closest("button");
+    expect(launchButton).not.toBeDisabled();
+
+    // Parent force-closes without going through handleClose/handleLaunch.
+    rerender(
+      <OpenRepositoryModal
+        isOpen={false}
+        onClose={mockOnClose}
+        onLaunch={mockOnLaunch}
+      />,
+    );
+
+    // Reopen for what is conceptually a different conversation.
+    rerender(
+      <OpenRepositoryModal
+        isOpen
+        onClose={mockOnClose}
+        onLaunch={mockOnLaunch}
+      />,
+    );
+
+    launchButton = screen.getByText("BUTTON$LAUNCH").closest("button");
+    expect(launchButton).toBeDisabled();
+  });
+
   describe("provider switching", () => {
     it("should not show provider dropdown when only one provider exists", () => {
       mockProviders.current = ["github"];

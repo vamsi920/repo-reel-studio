@@ -47,6 +47,21 @@ export function OpenRepositoryModal({
     }
   }, [providers, selectedProvider, defaultProvider]);
 
+  // This modal is always mounted (its parent toggles `isOpen`, not whether
+  // it renders at all), so its draft selection otherwise survives a close.
+  // A parent can also force-close it directly (bypassing handleClose/
+  // handleLaunch below) — e.g. GitControlBar does this on a conversation
+  // switch to stop a leftover-open modal from launching against the wrong
+  // conversation. Without this, the stale repo/branch picked for the old
+  // conversation stays pre-selected the next time the modal opens.
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedProvider(null);
+      setSelectedRepository(null);
+      setSelectedBranch(null);
+    }
+  }, [isOpen]);
+
   const handleProviderChange = useCallback(
     (provider: Provider | null) => {
       if (provider === selectedProvider) return;
