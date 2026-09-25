@@ -94,6 +94,15 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
 
   return (
     <div className="flex shrink-0 items-center gap-2">
+      {/* isRegenerating only ever changes the button's icon spin/disabled
+       * state and the spinner's `animate-spin` class — none of which is
+       * perceivable to a screen reader, the same visual-only-state gap
+       * ProvisioningCard's status region exists to close for its step list.
+       * Mirrored here so a regenerate that's actually in flight is announced,
+       * not just shown. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {isRegenerating ? t(I18nKey.KT$REGENERATING_STATUS) : ""}
+      </div>
       <span className="text-xs text-[var(--oh-muted)]">
         {t(I18nKey.KT$LAST_GENERATED, {
           time: formatRelativeTime(

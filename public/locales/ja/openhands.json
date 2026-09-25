@@ -2350,6 +2350,7 @@
   "KT$QUALITY_FLAG_BANNER_TITLE": "This page may be weakly grounded in the actual source code",
   "KT$ADD_REPOSITORY": "Add Repository",
   "KT$AUTO_REFRESH": "Auto-refresh",
+  "KT$REGENERATING_STATUS": "Regenerating knowledge…",
   "KT$REFRESH_MANUAL": "Manual",
   "KT$REFRESH_DAILY": "Daily",
   "KT$REFRESH_WEEKLY": "Weekly",

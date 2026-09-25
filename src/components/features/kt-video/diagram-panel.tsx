@@ -25,6 +25,20 @@ type MermaidResult = string | null;
 const svgCache = new Map<string, MermaidResult>();
 let renderCounter = 0;
 
+// A session can page through many repositories/knowledge pages, each with
+// its own unique diagram sources — with no eviction, this module-level cache
+// would grow for as long as the tab stays open. `Map` preserves insertion
+// order, so the oldest entry is always the first key; drop it before adding
+// a new one past the cap instead of tracking recency explicitly.
+const MAX_SVG_CACHE_ENTRIES = 30;
+function cacheSvg(source: string, result: MermaidResult) {
+  if (!svgCache.has(source) && svgCache.size >= MAX_SVG_CACHE_ENTRIES) {
+    const oldest = svgCache.keys().next().value;
+    if (oldest !== undefined) svgCache.delete(oldest);
+  }
+  svgCache.set(source, result);
+}
+
 /** `undefined` while rendering (or when there's no source to render at all),
  * `null` once mermaid has actually rejected the source. Conflating "never
  * attempted" with "attempted and failed" would show the parse-error banner
@@ -52,11 +66,11 @@ function useMermaidSvg(source: string | undefined): MermaidResult | undefined {
     mermaid
       .render(renderId, source)
       .then(({ svg: rendered }) => {
-        svgCache.set(source, rendered);
+        cacheSvg(source, rendered);
         if (!cancelled) setSvg(rendered);
       })
       .catch(() => {
-        svgCache.set(source, null);
+        cacheSvg(source, null);
         if (!cancelled) setSvg(null);
         // Mermaid's own error handler draws into a temporary node it
         // creates for the render (id `d<renderId>`) but never removes on a

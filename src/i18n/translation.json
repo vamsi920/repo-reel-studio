@@ -39966,6 +39966,23 @@
     "tr": "Auto-refresh",
     "uk": "Auto-refresh"
   },
+  "KT$REGENERATING_STATUS": {
+    "en": "Regenerating knowledge…",
+    "ja": "Regenerating knowledge…",
+    "zh-CN": "Regenerating knowledge…",
+    "zh-TW": "Regenerating knowledge…",
+    "ko-KR": "Regenerating knowledge…",
+    "no": "Regenerating knowledge…",
+    "ar": "Regenerating knowledge…",
+    "de": "Regenerating knowledge…",
+    "fr": "Regenerating knowledge…",
+    "it": "Regenerating knowledge…",
+    "pt": "Regenerating knowledge…",
+    "es": "Regenerating knowledge…",
+    "ca": "Regenerating knowledge…",
+    "tr": "Regenerating knowledge…",
+    "uk": "Regenerating knowledge…"
+  },
   "KT$REFRESH_MANUAL": {
     "en": "Manual",
     "ja": "Manual",

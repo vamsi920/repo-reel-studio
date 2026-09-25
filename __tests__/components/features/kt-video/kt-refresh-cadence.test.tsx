@@ -77,6 +77,31 @@ describe("KtRefreshCadence handleRegenerate", () => {
   });
 });
 
+describe("KtRefreshCadence regenerating status", () => {
+  beforeEach(() => {
+    useKnowledgeStore.getState().reset();
+  });
+
+  it("announces regeneration in a live region while it's in flight, and clears it once idle", () => {
+    seedReadyEntry();
+    useKnowledgeStore.getState().startGenerating(
+      snapshot,
+      "https://example.test",
+      "session-key",
+    );
+    const { rerender } = render(
+      <KtRefreshCadence repositoryId={snapshot.repositoryId} />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("KT$REGENERATING_STATUS");
+
+    useKnowledgeStore.getState().setReady(snapshot.repositoryId, knowledge);
+    rerender(<KtRefreshCadence repositoryId={snapshot.repositoryId} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+});
+
 describe("KtRefreshCadence isDue", () => {
   beforeEach(() => {
     useKnowledgeStore.getState().reset();

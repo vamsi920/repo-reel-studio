@@ -97,6 +97,45 @@ describe("DiagramPanel", () => {
     expect(renderMock).toHaveBeenCalledTimes(1);
   });
 
+  it("evicts the oldest cached diagram once the cache is full, instead of growing forever", async () => {
+    // The cache is a module-level Map with no eviction otherwise — a long
+    // session that pages through many repositories/knowledge pages would
+    // hold every unique diagram source it ever rendered for as long as the
+    // tab stays open. Cap it and re-render the oldest source to prove it was
+    // actually evicted (mermaid gets called again for it), not just that new
+    // sources keep working.
+    renderMock.mockImplementation((_renderId: string, source: string) =>
+      Promise.resolve({ svg: `<svg data-testid="rendered">${source}</svg>` }),
+    );
+
+    const first = render(
+      <DiagramPanel scene={diagramScene("graph TD; first")} relativeFrame={0} />,
+    );
+    await waitFor(() => expect(screen.getByTestId("rendered")).toBeInTheDocument());
+    first.unmount();
+
+    for (let i = 0; i < 30; i += 1) {
+      const filler = render(
+        <DiagramPanel
+          scene={diagramScene(`graph TD; filler-${i}`)}
+          relativeFrame={0}
+        />,
+      );
+      // eslint-disable-next-line no-await-in-loop -- each render must settle before the next fills the cache
+      await waitFor(() =>
+        expect(screen.getByTestId("rendered")).toBeInTheDocument(),
+      );
+      filler.unmount();
+    }
+
+    renderMock.mockClear();
+    render(
+      <DiagramPanel scene={diagramScene("graph TD; first")} relativeFrame={0} />,
+    );
+
+    await waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));
+  });
+
   it("removes mermaid's own stray error-banner nodes after a failed render", async () => {
     // Regression coverage for the cleanup in useMermaidSvg's catch handler:
     // mermaid's real error handler draws into a node it creates itself for

@@ -227,6 +227,29 @@ describe("narrateManifest", () => {
     await expect(narrateManifest(original, snapshot)).resolves.toBe(original);
   });
 
+  it("returns the deterministic manifest untouched when the response isn't parseable JSON", async () => {
+    // A prompt-injected or otherwise malformed completion (no JSON array, or
+    // an array whose entries don't parse into {id, narration}) must fall
+    // back exactly like a network error — never throw out of narrateManifest
+    // and never partially apply a broken response.
+    chatCompletion.mockResolvedValue("Sorry, I can't help with that.");
+    const original = manifestOf([scene({ id: 0 })]);
+
+    const result = await narrateManifest(original, snapshot);
+
+    expect(result).toBe(original);
+    expect(result.scenes[0].narration_text).toBe("Template narration.");
+  });
+
+  it("returns the deterministic manifest untouched when the response is a JSON array of the wrong shape", async () => {
+    chatCompletion.mockResolvedValue(JSON.stringify(["not", "an", "object"]));
+    const original = manifestOf([scene({ id: 0 })]);
+
+    const result = await narrateManifest(original, snapshot);
+
+    expect(result.scenes[0].narration_text).toBe("Template narration.");
+  });
+
   it("narrates by cloning the GitHub URL with a scoped token, not the sandbox-local path, when a GitHub connection is available", async () => {
     // Regression coverage: DeepWiki runs on its own Fly machine in
     // production, with no filesystem shared with the sandbox that checked
