@@ -34,7 +34,13 @@ export async function loadSignupDomainAllowlist(): Promise<string[]> {
     return cachedAllowlist;
   }
 
-  inFlightAllowlist = (async () => {
+  // The in-flight promise must stay set until the result is cached: clearing
+  // it inside the query's own `finally` (before this `.then()` below runs)
+  // leaves a one-microtask window where both `cachedAllowlist` and
+  // `inFlightAllowlist` read as empty, letting a caller landing there start a
+  // redundant duplicate query. Clearing it in a `.finally()` chained after
+  // the caching `.then()` guarantees the cache is already populated first.
+  const request = (async (): Promise<string[] | null> => {
     try {
       const { data, error } = await supabase!
         .from("signup_domain_allowlist")
@@ -46,15 +52,18 @@ export async function loadSignupDomainAllowlist(): Promise<string[]> {
         .filter(Boolean);
     } catch {
       return null;
-    } finally {
-      inFlightAllowlist = null;
     }
-  })().then((domains) => {
-    if (domains !== null) cachedAllowlist = domains;
-    return domains ?? [];
-  });
+  })()
+    .then((domains) => {
+      if (domains !== null) cachedAllowlist = domains;
+      return domains ?? [];
+    })
+    .finally(() => {
+      inFlightAllowlist = null;
+    });
 
-  return inFlightAllowlist;
+  inFlightAllowlist = request;
+  return request;
 }
 
 /** Test seam -- forces the next `loadSignupDomainAllowlist` to re-query. */

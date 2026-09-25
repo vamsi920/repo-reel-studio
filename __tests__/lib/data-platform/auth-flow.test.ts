@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   allowlistRows: [] as { domain: string }[],
   allowlistError: null as { message: string } | null,
+  allowlistSelectCallCount: 0,
   session: null as { user: { is_anonymous: boolean } } | null,
   updateUser: vi.fn(),
   signUp: vi.fn(),
@@ -14,10 +15,13 @@ vi.mock("#/lib/data-platform/client", () => ({
   isSupabaseConfigured: true,
   supabase: {
     from: () => ({
-      select: async () => ({
-        data: state.allowlistError ? null : state.allowlistRows,
-        error: state.allowlistError,
-      }),
+      select: async () => {
+        state.allowlistSelectCallCount += 1;
+        return {
+          data: state.allowlistError ? null : state.allowlistRows,
+          error: state.allowlistError,
+        };
+      },
     }),
     auth: {
       getSession: async () => ({ data: { session: state.session } }),
@@ -52,6 +56,7 @@ describe("auth-flow", () => {
     resetSignupDomainAllowlistCache();
     state.allowlistRows = [];
     state.allowlistError = null;
+    state.allowlistSelectCallCount = 0;
     state.session = null;
     state.updateUser.mockReset();
     state.signUp.mockReset();
@@ -86,6 +91,24 @@ describe("auth-flow", () => {
       await expect(loadSignupDomainAllowlist()).resolves.toEqual([
         "neodevex.com",
       ]);
+    });
+
+    it("does not start a duplicate query for a caller landing anywhere in the window between the in-flight request settling and the result being cached", async () => {
+      state.allowlistRows = [{ domain: "neodevex.com" }];
+
+      const first = loadSignupDomainAllowlist();
+      const followups: Promise<string[]>[] = [];
+      // Fire a fresh call on every microtask tick after the first one starts.
+      // The single-flight promise must stay "in flight" until the result is
+      // actually cached, so none of these should trigger a second query no
+      // matter which tick they land on.
+      for (let tick = 0; tick < 8; tick += 1) {
+        await Promise.resolve();
+        followups.push(loadSignupDomainAllowlist());
+      }
+
+      await Promise.all([first, ...followups]);
+      expect(state.allowlistSelectCallCount).toBe(1);
     });
   });
 

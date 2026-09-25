@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { getCallerOrgId } from "../_shared/org.ts";
 import { decryptJson, encryptJson } from "../_shared/secrets.ts";
+import { holdsAdvisoryLock } from "../_shared/advisory-lock.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import {
   assertHostAllowed,
@@ -92,12 +93,17 @@ async function refreshIfNeeded(
   if (expiresAt && new Date(expiresAt).getTime() > soon) return credentials;
 
   const lockKey = connection.id as string;
-  const { data: gotLock } = await admin.rpc("environment_try_advisory_lock", {
-    lock_key: lockKey,
-  });
-  if (gotLock === false) {
-    // Another request is refreshing right now. Using the current token is
-    // correct: it is still valid for at least the next minute.
+  const { data: gotLock, error: lockError } = await admin.rpc(
+    "environment_try_advisory_lock",
+    { lock_key: lockKey },
+  );
+  if (!holdsAdvisoryLock(gotLock, lockError)) {
+    // Either another request is refreshing right now (gotLock === false), or
+    // the lock RPC itself failed (lockError set, gotLock undefined) -- in
+    // both cases we cannot confirm exclusive ownership of the critical
+    // section, so we must not proceed to refresh unserialised. Using the
+    // current token is correct: it is still valid for at least the next
+    // minute either way.
     return credentials;
   }
 
