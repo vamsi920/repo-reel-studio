@@ -21,7 +21,7 @@ export function useSettingsNavItems(): SettingsNavRenderedItem[] {
     (item) => !isSettingsPageHidden(item.to, featureFlags),
   ).map((item) => {
     const renamedItem =
-      item.to === "/settings"
+      item.to === "/settings/llm"
         ? {
             ...item,
             text:

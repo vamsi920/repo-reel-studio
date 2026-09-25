@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OSS_NAV_ITEMS } from "#/constants/settings-nav";
 import { useSettingsNavItems } from "#/hooks/use-settings-nav-items";
 import { WebClientConfig } from "#/api/option-service/option.types";
+import { I18nKey } from "#/i18n/declaration";
 
 const useConfigMock = vi.fn();
 const useSettingsMock = vi.fn();
@@ -63,7 +64,7 @@ describe("useSettingsNavItems", () => {
     useActiveAgentProfileMock.mockReturnValue({ activeProfile: null });
   });
 
-  it("returns the LLM settings item unchanged on local backends", () => {
+  it("renames the LLM settings item to LLM Profiles on local backends", () => {
     useConfigMock.mockReturnValue({ data: createConfig() });
 
     const { result } = renderHook(() => useSettingsNavItems());
@@ -74,7 +75,11 @@ describe("useSettingsNavItems", () => {
     const baseLlm = OSS_NAV_ITEMS.find((item) => item.to === "/settings/llm")!;
     expect(llmItem).toEqual({
       type: "item",
-      item: baseLlm,
+      item: {
+        ...baseLlm,
+        text: I18nKey.SETTINGS$LLM_PROFILES,
+        subtitle: I18nKey.SETTINGS$PAGE_LLM_PROFILES_SUBLINE,
+      },
     });
   });
 
@@ -164,16 +169,25 @@ describe("useSettingsNavItems", () => {
         ),
     );
 
-    for (const path of [
-      "/settings/llm",
-      "/settings/condenser",
-      "/settings/verification",
-    ]) {
+    for (const path of ["/settings/condenser", "/settings/verification"]) {
       const renderedItem = byPath.get(path);
       expect(renderedItem).toEqual({
         type: "item",
         item: OSS_NAV_ITEMS.find((item) => item.to === path),
       });
     }
+
+    // The local-backend LLM Profiles rename applies regardless of ACP status
+    // (see use-acp-model-context.ts's backend-only equivalent).
+    const llmItem = byPath.get("/settings/llm");
+    const baseLlm = OSS_NAV_ITEMS.find((item) => item.to === "/settings/llm")!;
+    expect(llmItem).toEqual({
+      type: "item",
+      item: {
+        ...baseLlm,
+        text: I18nKey.SETTINGS$LLM_PROFILES,
+        subtitle: I18nKey.SETTINGS$PAGE_LLM_PROFILES_SUBLINE,
+      },
+    });
   });
 });
