@@ -1,4 +1,4 @@
-import { renderHook, screen } from "@testing-library/react";
+import { renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { renderWithProviders } from "test-utils";
@@ -13,6 +13,7 @@ import {
   type SecurityFinding,
   type SecurityScan,
   type SecuritySeverity,
+  type SecuritySummary,
 } from "#/lib/security/security-types";
 import {
   SECURITY_MILESTONE_COPY,
@@ -184,6 +185,40 @@ describe("Security route", () => {
       expect(
         screen.getByTestId(`security-area-${category}`),
       ).toBeInTheDocument();
+    });
+  });
+
+  it("gives each future area its own level-3 heading, so a screen reader can jump straight to it", () => {
+    // Regression: area titles used to be a plain `<span>`, invisible to
+    // heading-based screen reader navigation despite the page already
+    // threading heading ids (`FUTURE_AREAS_HEADING_ID`, etc.) carefully
+    // everywhere else -- a user could not jump directly to e.g. "Secrets"
+    // the way they can to any other named section of this page.
+    renderSecurity();
+
+    [
+      { category: "repository", titleKey: I18nKey.SECURITY$AREA_REPOSITORY },
+      {
+        category: "dependencies",
+        titleKey: I18nKey.SECURITY$AREA_DEPENDENCIES,
+      },
+      { category: "secrets", titleKey: I18nKey.SECURITY$AREA_SECRETS },
+      {
+        category: "misconfiguration",
+        titleKey: I18nKey.SECURITY$AREA_MISCONFIGURATION,
+      },
+      { category: "risk", titleKey: I18nKey.SECURITY$AREA_RISK },
+      {
+        category: "remediation",
+        titleKey: I18nKey.SECURITY$AREA_REMEDIATION,
+      },
+    ].forEach(({ category, titleKey }) => {
+      const card = screen.getByTestId(`security-area-${category}`);
+      const heading = within(card).getByRole("heading", {
+        level: 3,
+        name: titleKey,
+      });
+      expect(heading).toBeInTheDocument();
     });
   });
 
@@ -788,6 +823,21 @@ describe("Security types", () => {
 
     expect(scan.findingIds).toBeUndefined();
   });
+
+  it("carries no counts for a summary that has never been scanned, rather than a fabricated all-zero breakdown", () => {
+    // Mirrors the `SecurityScan` case above for `SecuritySummary`: the type's
+    // own doc comment says `counts` is "Absent (not zeroed) when no scan has
+    // ever run" -- an all-zero `SecuritySeverityCounts` would misreport a
+    // never-scanned workspace as a scanned-and-clean one. Nothing exercised
+    // that contract before this test.
+    const summary: SecuritySummary = {
+      workspaceId: "/workspace/api",
+      status: "not_configured",
+    };
+
+    expect(summary.counts).toBeUndefined();
+    expect(summary.overallRiskScore).toBeUndefined();
+  });
 });
 
 describe("Security activity contract", () => {
@@ -803,13 +853,25 @@ describe("Security activity contract", () => {
     );
   });
 
-  it.each(Object.keys(SECURITY_MILESTONE_COPY) as SecurityMilestoneKind[])(
-    "builds %s from its exact SECURITY_MILESTONE_COPY entry",
-    (kind) => {
-      // Regression: only 3 of the 5 milestone kinds ("scan.started",
-      // "scan.failed", "findings.ready") had a built-event assertion; a typo
-      // in the other two entries' `status`/`title` (e.g.
-      // "dependencies.analyzed", "remediation.verified") would ship unnoticed.
+  it.each([
+    ["scan.started", "running", "Security: scan started"],
+    [
+      "dependencies.analyzed",
+      "running",
+      "Security: dependency analysis complete",
+    ],
+    ["findings.ready", "completed", "Security: findings ready"],
+    ["remediation.verified", "completed", "Security: remediation verified"],
+    ["scan.failed", "failed", "Security: scan failed"],
+  ] as [SecurityMilestoneKind, string, string][])(
+    "builds %s with its documented status and title",
+    (kind, status, title) => {
+      // Regression: this used to read its "expected" status/title back out of
+      // `SECURITY_MILESTONE_COPY[kind]` -- the same object the function under
+      // test also reads from -- so any two entries' copy could be swapped, or
+      // either string could be typo'd, and the assertion would still pass
+      // trivially. The expectations here are independent literals so a real
+      // copy regression actually fails the test.
       const event = buildSecurityActivityEvent(
         {
           workspaceId: "/workspace/api",
@@ -820,11 +882,7 @@ describe("Security activity contract", () => {
         "2026-08-19T00:00:00.000Z",
       );
 
-      expect(event).toMatchObject({
-        kind,
-        status: SECURITY_MILESTONE_COPY[kind].status,
-        title: SECURITY_MILESTONE_COPY[kind].title,
-      });
+      expect(event).toMatchObject({ kind, status, title });
     },
   );
 

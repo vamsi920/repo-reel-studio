@@ -537,9 +537,9 @@ function SecurityScreen() {
               >
                 <div className="flex items-center gap-2">
                   <Icon className="size-4 text-[var(--oh-muted)]" aria-hidden />
-                  <span className="text-sm font-medium text-[var(--oh-foreground)]">
+                  <h3 className="text-sm font-medium text-[var(--oh-foreground)]">
                     {t(area.titleKey)}
-                  </span>
+                  </h3>
                 </div>
                 <p className="text-xs text-[var(--oh-muted)]">
                   {t(area.detailKey)}
