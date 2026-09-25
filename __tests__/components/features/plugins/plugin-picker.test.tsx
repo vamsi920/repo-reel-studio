@@ -103,9 +103,27 @@ describe("PluginPicker", () => {
 
     renderPicker();
 
-    expect(
-      await screen.findByTestId("plugin-picker-error"),
-    ).toBeInTheDocument();
+    const error = await screen.findByTestId("plugin-picker-error");
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveAttribute("role", "alert");
+  });
+
+  it("announces the loading state to assistive tech", async () => {
+    let resolveMarketplace: (plugins: MarketplacePlugin[]) => void = () => {};
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockReturnValue(
+      new Promise((resolve) => {
+        resolveMarketplace = resolve;
+      }),
+    );
+
+    renderPicker();
+
+    const loading = await screen.findByTestId("plugin-picker-loading");
+    expect(loading).toHaveAttribute("role", "status");
+    expect(loading).toHaveAttribute("aria-live", "polite");
+
+    resolveMarketplace([]);
+    await screen.findByTestId("plugin-picker-empty");
   });
 
   it("refetches the catalog when the error state's retry button is clicked", async () => {

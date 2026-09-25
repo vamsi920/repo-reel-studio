@@ -167,7 +167,29 @@ describe("SkillsSettingsScreen", () => {
     expect(await screen.findByTestId("skills-error")).toHaveTextContent(
       "SETTINGS$SKILLS_LOAD_ERROR",
     );
+    expect(screen.getByTestId("skills-error")).toHaveAttribute(
+      "role",
+      "alert",
+    );
     expect(screen.queryByTestId("skills-empty")).not.toBeInTheDocument();
+  });
+
+  it("refetches skills when the error state's retry button is clicked", async () => {
+    const user = userEvent.setup();
+    const getSkills = vi
+      .spyOn(SkillsService, "getSkills")
+      .mockRejectedValueOnce(new Error("agent-server 500"))
+      .mockResolvedValueOnce([buildSkill({ name: "recovered-skill" })]);
+
+    renderSkillsSettingsScreen();
+    await screen.findByTestId("skills-error");
+
+    await user.click(screen.getByTestId("skills-error-retry"));
+
+    expect(
+      await screen.findByTestId("skill-card-recovered-skill"),
+    ).toBeInTheDocument();
+    expect(getSkills).toHaveBeenCalledTimes(2);
   });
 
   it("shows card subtitle text from skill content when description is omitted", async () => {

@@ -55,6 +55,8 @@ export function PluginPicker({
     if (isLoading) {
       return (
         <p
+          role="status"
+          aria-live="polite"
           data-testid="plugin-picker-loading"
           className="py-8 text-center text-sm text-tertiary-light"
         >
@@ -65,6 +67,7 @@ export function PluginPicker({
     if (isError) {
       return (
         <div
+          role="alert"
           data-testid="plugin-picker-error"
           className="flex flex-col items-center gap-2 py-8 text-center"
         >

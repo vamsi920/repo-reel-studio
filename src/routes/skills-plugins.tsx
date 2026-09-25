@@ -51,16 +51,19 @@ export default function SkillsPluginsScreen() {
     data: marketplace,
     isLoading: marketplaceLoading,
     isError: marketplaceFailed,
+    refetch: refetchMarketplace,
   } = usePluginsMarketplace();
   const {
     data: installed,
     isLoading: installedLoading,
     isError: installedFailed,
+    refetch: refetchInstalled,
   } = usePlugins();
   const {
     data: local,
     isLoading: localLoading,
     isError: localFailed,
+    refetch: refetchLocal,
   } = useLocalPlugins();
 
   const installPlugin = useInstallPlugin();
@@ -133,6 +136,12 @@ export default function SkillsPluginsScreen() {
   // Any failed source means the list below is incomplete. Saying "no plugins"
   // then would report a fetch failure as an empty catalog.
   const hasFailedSource = marketplaceFailed || installedFailed || localFailed;
+
+  const handleRetryFailedSources = () => {
+    if (marketplaceFailed) void refetchMarketplace();
+    if (installedFailed) void refetchInstalled();
+    if (localFailed) void refetchLocal();
+  };
 
   const isPluginBusy = (plugin: PluginViewModel): boolean =>
     pendingBusyNames.has(plugin.name);
@@ -246,12 +255,21 @@ export default function SkillsPluginsScreen() {
 
           {!isLoading && hasFailedSource && (
             <div
+              role="alert"
               data-testid="plugins-error"
               className={extensionModuleEmptyStateClassName}
             >
               <p className="text-sm text-tertiary-light">
                 {t(I18nKey.PLUGINS$PICKER_ERROR)}
               </p>
+              <button
+                type="button"
+                data-testid="plugins-error-retry"
+                onClick={handleRetryFailedSources}
+                className="mt-3 cursor-pointer text-sm text-tertiary-alt underline hover:text-white"
+              >
+                {t(I18nKey.FILES$RETRY)}
+              </button>
             </div>
           )}
 

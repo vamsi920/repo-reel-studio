@@ -50,6 +50,7 @@ function SkillsSettingsScreen() {
     data: skills,
     isLoading: skillsLoading,
     isError: skillsFailed,
+    refetch: refetchSkills,
   } = useSkills();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -274,12 +275,21 @@ function SkillsSettingsScreen() {
 
           {!isLoading && skillsFailed ? (
             <div
+              role="alert"
               data-testid="skills-error"
               className={extensionModuleEmptyStateClassName}
             >
               <p className="text-sm text-tertiary-light">
                 {t(I18nKey.SETTINGS$SKILLS_LOAD_ERROR)}
               </p>
+              <button
+                type="button"
+                data-testid="skills-error-retry"
+                onClick={() => void refetchSkills()}
+                className="mt-3 cursor-pointer text-sm text-tertiary-alt underline hover:text-white"
+              >
+                {t(I18nKey.FILES$RETRY)}
+              </button>
             </div>
           ) : null}
 

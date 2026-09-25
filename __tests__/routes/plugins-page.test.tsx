@@ -546,8 +546,28 @@ describe("SkillsPluginsScreen", () => {
 
     renderPluginsScreen();
 
-    expect(await screen.findByTestId("plugins-error")).toBeInTheDocument();
+    const error = await screen.findByTestId("plugins-error");
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveAttribute("role", "alert");
     expect(screen.queryByTestId("plugins-empty")).not.toBeInTheDocument();
+  });
+
+  it("refetches the failed source when the error state's retry button is clicked", async () => {
+    const user = userEvent.setup();
+    const getPluginsMarketplace = vi
+      .spyOn(PluginsService, "getPluginsMarketplace")
+      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockResolvedValueOnce([buildCatalogPlugin()]);
+
+    renderPluginsScreen();
+    await screen.findByTestId("plugins-error");
+
+    await user.click(screen.getByTestId("plugins-error-retry"));
+
+    expect(
+      await screen.findByTestId("plugin-card-demo-plugin"),
+    ).toBeInTheDocument();
+    expect(getPluginsMarketplace).toHaveBeenCalledTimes(2);
   });
 
   it("still lists the plugins it could load when another source fails", async () => {
