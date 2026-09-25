@@ -1,11 +1,12 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
-import { encryptJson, fingerprint } from "../_shared/secrets.ts";
+import { decryptJson, encryptJson, fingerprint } from "../_shared/secrets.ts";
 import {
   getConnectorManifest,
   secretFieldNames,
 } from "../_shared/connector-registry/index.ts";
+import { mergeConnectionCredentials } from "../_shared/connection-credentials.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
 
 /**
@@ -88,7 +89,9 @@ Deno.serve(async (req: Request) => {
     manifest.fields.filter((field) => !field.secret).map((field) => field.name),
   );
 
-  const credentials: Record<string, string> = {};
+  const instanceKey = payload.instanceKey || "default";
+
+  const submittedCredentials: Record<string, string> = {};
   for (const [name, value] of Object.entries(payload.credentials ?? {})) {
     // Reject anything the manifest does not declare rather than storing it.
     // Without this a caller could smuggle arbitrary blobs into the encrypted
@@ -99,8 +102,41 @@ Deno.serve(async (req: Request) => {
     if (typeof value !== "string") {
       return jsonResponse({ error: "invalid_field", field: name }, { status: 400 });
     }
-    credentials[name] = value;
+    submittedCredentials[name] = value;
   }
+
+  // `credential-request-sheet.tsx`'s secret-rotation form only submits the
+  // field(s) the agent asked to rotate -- every other secret field on a
+  // multi-secret-field connector (AWS Bedrock's optional `sessionToken`,
+  // Datadog's optional `appKey`) is absent from `submittedCredentials`
+  // entirely. Merge in whatever is already stored so this upsert rotates
+  // the requested field(s) without deleting the rest.
+  let existingCredentials: Record<string, string> = {};
+  const { data: existingRow } = await admin
+    .from("connections")
+    .select("encrypted_credentials")
+    .eq("org_id", orgId)
+    .eq("capability", manifest.capability)
+    .eq("provider_id", manifest.id)
+    .eq("instance_key", instanceKey)
+    .maybeSingle();
+  if (existingRow?.encrypted_credentials) {
+    try {
+      existingCredentials = await decryptJson(
+        admin,
+        existingRow.encrypted_credentials as string,
+      );
+    } catch {
+      // A corrupt/undecryptable existing blob must not block a fresh
+      // credential submission -- treat it as if nothing were stored.
+      existingCredentials = {};
+    }
+  }
+  const credentials = mergeConnectionCredentials(
+    allowedSecrets,
+    existingCredentials,
+    submittedCredentials,
+  );
 
   const config: Record<string, string> = {};
   for (const [name, value] of Object.entries(payload.config ?? {})) {
@@ -160,7 +196,6 @@ Deno.serve(async (req: Request) => {
 
   const status = !probe.ok ? "error" : missingScopes.length > 0 ? "degraded" : "ok";
 
-  const instanceKey = payload.instanceKey || "default";
   const { data, error } = await admin
     .from("connections")
     .upsert(
