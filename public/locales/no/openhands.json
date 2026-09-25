@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "Hemmelig verdi (la stå tom for å beholde eksisterende verdi)",
   "SECRETS$ADD_SECRET": "Legg til hemmelighet",
   "SECRETS$EDIT_SECRET": "Rediger hemmelighet",
+  "SECRETS$EDIT_SECRET_ARIA": "Rediger {{name}}",
+  "SECRETS$DELETE_SECRET_ARIA": "Slett {{name}}",
   "SECRETS$ADD_NEW_SECRET": "Legg til en ny hemmelighet",
   "SECRETS$ADD_A_SECRET": "Legg til en hemmelighet",
   "SECRETS$EDIT_A_SECRET": "Rediger hemmelighet",

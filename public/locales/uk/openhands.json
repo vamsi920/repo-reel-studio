@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "Значення секрету (залиште порожнім, щоб зберегти наявне значення)",
   "SECRETS$ADD_SECRET": "Додати секрет",
   "SECRETS$EDIT_SECRET": "Редагувати секрет",
+  "SECRETS$EDIT_SECRET_ARIA": "Редагувати {{name}}",
+  "SECRETS$DELETE_SECRET_ARIA": "Видалити {{name}}",
   "SECRETS$ADD_NEW_SECRET": "Додати новий секрет",
   "SECRETS$ADD_A_SECRET": "Додати секрет",
   "SECRETS$EDIT_A_SECRET": "Редагувати секрет",

@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "Secret Value (leave blank to preserve the existing value)",
   "SECRETS$ADD_SECRET": "Add secret",
   "SECRETS$EDIT_SECRET": "Edit secret",
+  "SECRETS$EDIT_SECRET_ARIA": "Edit {{name}}",
+  "SECRETS$DELETE_SECRET_ARIA": "Delete {{name}}",
   "SECRETS$ADD_NEW_SECRET": "Add a new secret",
   "SECRETS$ADD_A_SECRET": "Add a Secret",
   "SECRETS$EDIT_A_SECRET": "Edit a Secret",

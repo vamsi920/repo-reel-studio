@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "비밀 값 (비워 두면 기존 값이 유지됩니다)",
   "SECRETS$ADD_SECRET": "비밀 추가",
   "SECRETS$EDIT_SECRET": "비밀 편집",
+  "SECRETS$EDIT_SECRET_ARIA": "{{name}} 편집",
+  "SECRETS$DELETE_SECRET_ARIA": "{{name}} 삭제",
   "SECRETS$ADD_NEW_SECRET": "새 비밀 추가",
   "SECRETS$ADD_A_SECRET": "비밀 추가",
   "SECRETS$EDIT_A_SECRET": "비밀 편집",

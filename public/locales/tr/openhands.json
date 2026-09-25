@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "Gizli Değer (mevcut değeri korumak için boş bırakın)",
   "SECRETS$ADD_SECRET": "Gizli ekle",
   "SECRETS$EDIT_SECRET": "Gizliyi düzenle",
+  "SECRETS$EDIT_SECRET_ARIA": "{{name}} öğesini düzenle",
+  "SECRETS$DELETE_SECRET_ARIA": "{{name}} öğesini sil",
   "SECRETS$ADD_NEW_SECRET": "Yeni bir gizli ekle",
   "SECRETS$ADD_A_SECRET": "Gizli ekle",
   "SECRETS$EDIT_A_SECRET": "Gizli düzenle",

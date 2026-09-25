@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "密钥值（留空以保留现有值）",
   "SECRETS$ADD_SECRET": "添加密钥",
   "SECRETS$EDIT_SECRET": "编辑密钥",
+  "SECRETS$EDIT_SECRET_ARIA": "编辑 {{name}}",
+  "SECRETS$DELETE_SECRET_ARIA": "删除 {{name}}",
   "SECRETS$ADD_NEW_SECRET": "添加新密钥",
   "SECRETS$ADD_A_SECRET": "添加密钥",
   "SECRETS$EDIT_A_SECRET": "编辑密钥",

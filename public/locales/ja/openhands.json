@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "シークレット値（空欄のままにすると既存の値が保持されます）",
   "SECRETS$ADD_SECRET": "シークレットを追加",
   "SECRETS$EDIT_SECRET": "シークレットを編集",
+  "SECRETS$EDIT_SECRET_ARIA": "{{name}} を編集",
+  "SECRETS$DELETE_SECRET_ARIA": "{{name}} を削除",
   "SECRETS$ADD_NEW_SECRET": "新しいシークレットを追加",
   "SECRETS$ADD_A_SECRET": "シークレットを追加",
   "SECRETS$EDIT_A_SECRET": "シークレットを編集",

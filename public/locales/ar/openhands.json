@@ -78,6 +78,8 @@
   "SECRETS$SECRET_VALUE_LEAVE_BLANK": "قيمة السر (اتركه فارغًا للإبقاء على القيمة الحالية)",
   "SECRETS$ADD_SECRET": "إضافة سر",
   "SECRETS$EDIT_SECRET": "تعديل السر",
+  "SECRETS$EDIT_SECRET_ARIA": "تعديل {{name}}",
+  "SECRETS$DELETE_SECRET_ARIA": "حذف {{name}}",
   "SECRETS$ADD_NEW_SECRET": "إضافة سر جديد",
   "SECRETS$ADD_A_SECRET": "إضافة سر",
   "SECRETS$EDIT_A_SECRET": "تحرير سر",
