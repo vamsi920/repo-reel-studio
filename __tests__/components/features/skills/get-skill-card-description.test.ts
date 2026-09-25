@@ -35,6 +35,57 @@ Body paragraph that should not be used first.
     );
   });
 
+  it("reads a single-quoted description from YAML frontmatter", () => {
+    const content = `---
+description: 'SSH helper for remote hosts'
+name: SSH Microagent
+---
+# SSH Microagent
+
+Body paragraph that should not be used first.
+`;
+
+    expect(getSkillCardDescription(buildSkill({ content }))).toBe(
+      "SSH helper for remote hosts",
+    );
+  });
+
+  it("reads a YAML block-literal (|) description from frontmatter", () => {
+    const content = `---
+description: |
+  SSH helper for remote hosts.
+  Second line of the description.
+name: SSH Microagent
+---
+# SSH Microagent
+
+Body paragraph that should not be used first.
+`;
+
+    expect(getSkillCardDescription(buildSkill({ content }))).toBe(
+      "SSH helper for remote hosts.\nSecond line of the description.",
+    );
+  });
+
+  it("falls back to the body preview when a block-literal description has no indented block", () => {
+    // Malformed frontmatter: `description: |` with no indented continuation
+    // line is invalid YAML — the block/quoted matchers both fail to parse a
+    // value, and the bare `|` marker itself must not be treated as the
+    // description text.
+    const content = `---
+description: |
+name: SSH Microagent
+---
+# SSH Microagent
+
+First paragraph for the card.
+`;
+
+    expect(getSkillCardDescription(buildSkill({ content }))).toBe(
+      "First paragraph for the card.",
+    );
+  });
+
   it("falls back to the first body paragraph when no description exists", () => {
     const content = `# My Skill
 

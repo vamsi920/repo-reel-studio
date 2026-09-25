@@ -20,18 +20,30 @@ export interface SkillCardPill {
   label?: string;
 }
 
-function computeVisiblePillCount(
+export function computeVisiblePillCount(
   widths: number[],
   containerWidth: number,
 ): number {
   if (widths.length === 0 || containerWidth <= 0) return 0;
 
+  const totalWidth = widths.reduce(
+    (sum, width, i) => sum + width + (i > 0 ? PILL_GAP_PX : 0),
+    0,
+  );
+  // Every pill fits with no overflow badge needed at all — the most common
+  // case, and one the reservation loop below must never shrink further.
+  if (totalWidth <= containerWidth) return widths.length;
+
+  // From here an overflow badge is unavoidable, so its width is reserved for
+  // every remaining pill (including the last one), not just "pills after
+  // this one" — reserving conditionally on `remaining > 0` previously let the
+  // second-to-last pill skip the reservation even though the badge still had
+  // to be rendered, hiding pills that would otherwise have fit.
+  const reserve = OVERFLOW_PILL_WIDTH_PX + PILL_GAP_PX;
   let used = 0;
   for (let i = 0; i < widths.length; i += 1) {
     const width = widths[i]!;
     const gap = i > 0 ? PILL_GAP_PX : 0;
-    const remaining = widths.length - i - 1;
-    const reserve = remaining > 0 ? OVERFLOW_PILL_WIDTH_PX + PILL_GAP_PX : 0;
     if (used + gap + width + reserve > containerWidth) {
       return Math.max(1, i);
     }

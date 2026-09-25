@@ -17,7 +17,12 @@ function parseDescriptionFromFrontmatter(frontmatter: string): string | null {
 
   const inlineMatch = frontmatter.match(/^description:\s*(.+)\s*$/m);
   if (inlineMatch) {
-    return inlineMatch[1]!.trim();
+    const value = inlineMatch[1]!.trim();
+    // A bare YAML block-scalar indicator (`|`, `>`, `|-`, `>+2`, etc.) with no
+    // matching indented block means the block/quoted matches above failed to
+    // parse a malformed frontmatter value — not a real one-line description.
+    if (/^[|>][+-]?\d*$/.test(value)) return null;
+    return value;
   }
 
   return null;
