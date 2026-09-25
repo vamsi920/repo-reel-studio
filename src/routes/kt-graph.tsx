@@ -429,28 +429,48 @@ function KtGraph() {
     // itself depends on `snapshot`/`knowledgeState`, already covered here.
   }, [snapshot, key, state, knowledgeState, backend.id]);
 
+  // Returns whether the view actually ended up on `nodeId` -- callers that
+  // chain further state off a successful drill (like search, below) need to
+  // know it didn't silently no-op or land somewhere else.
   const drillDown = React.useCallback(
-    async (nodeId: string) => {
-      if (!key || !handle) return;
+    async (nodeId: string): Promise<boolean> => {
+      if (!key || !handle) return false;
       const current = useCodeGraphStore.getState().byKey[key];
       if (current?.levels[nodeId]) {
         useCodeGraphStore.getState().navigateTo(key, nodeId);
-        return;
+        return true;
       }
       // The canvas drills on single AND double click, so one real double
       // click reaches here three times while the first shard fetch is still
       // in flight — it navigates when that fetch lands.
-      if (current?.loadingParents.includes(nodeId)) return;
+      if (current?.loadingParents.includes(nodeId)) return false;
+      // Captured before the fetch, so the check below can tell whether the
+      // user is still where they started this drill-down once it resolves.
+      const parentAtRequestTime = current?.currentParentId ?? null;
       useCodeGraphStore.getState().beginLoadLevel(key, nodeId);
       const level = await handle.loadLevel(nodeId);
       if (!level) {
         // `loadLevel` swallows the underlying fetch/storage error and returns
         // null; without this the click would look dead.
         useCodeGraphStore.getState().failLevel(key, nodeId);
-        return;
+        return false;
       }
       useCodeGraphStore.getState().setLevel(key, nodeId, level);
+      // The user may have navigated elsewhere while this fetch was in flight
+      // -- to an already-cached sibling level via the fast path above, via a
+      // breadcrumb, or via another concurrent drill-down that resolved
+      // first. Completing this stale navigation anyway would silently snap
+      // the screen back to `nodeId`, discarding whatever the user did in the
+      // meantime. Mirrors the reachability guard `failLevel` already applies
+      // on its own error path, just for the success path.
+      if (
+        useCodeGraphStore.getState().byKey[key]?.currentParentId !==
+        parentAtRequestTime
+      ) {
+        return false;
+      }
       useCodeGraphStore.getState().navigateTo(key, nodeId);
+      return true;
     },
     [key, handle],
   );
@@ -501,7 +521,12 @@ function KtGraph() {
       // level would select a node the open level doesn't contain, and the
       // details panel would silently fail to appear.
       if (entry.parentId) {
-        await drillDown(entry.parentId);
+        // A failed or stale drill (see `drillDown`'s own doc comment) means
+        // the level actually on screen doesn't contain `entry.id` -- select
+        // it anyway and the details panel would silently fail to open, and
+        // the search box would already be cleared with no easy way to retry.
+        const reachedLevel = await drillDown(entry.parentId);
+        if (!reachedLevel) return;
       } else {
         useCodeGraphStore.getState().navigateTo(key, null);
       }

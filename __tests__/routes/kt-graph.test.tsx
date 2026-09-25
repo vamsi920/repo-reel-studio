@@ -631,6 +631,195 @@ describe("KtGraph search", () => {
     });
   });
 
+  it("does not snap back to a stale drill-down once the user has already navigated elsewhere", async () => {
+    // Regression: `drillDown`'s success path used to call `navigateTo`
+    // unconditionally once its fetch resolved, with no check for whether the
+    // user was still where they started. Reproduces the race by drilling
+    // into "sub1" (a slow fetch this test controls) and then, while that
+    // fetch is still in flight, drilling into the sibling "sub2" (a fast
+    // fetch) instead -- the same shape as the sibling's own guard on
+    // `failLevel` already exists for the error path.
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [
+        node("sub1", { name: "Payments", childCount: 1 }),
+        node("sub2", { name: "Billing", childCount: 1 }),
+      ],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const sub1Level: CodeGraphLevelPayload = {
+      parentId: "sub1",
+      nodes: [node("leaf1", { level: "unit", type: "function" })],
+      edges: [],
+      crumbs: [
+        { id: null, name: "System" },
+        { id: "sub1", name: "Payments" },
+      ],
+    };
+    const sub2Level: CodeGraphLevelPayload = {
+      parentId: "sub2",
+      nodes: [node("leaf2", { level: "unit", type: "function" })],
+      edges: [],
+      crumbs: [
+        { id: null, name: "System" },
+        { id: "sub2", name: "Billing" },
+      ],
+    };
+    let sub1Promise: Promise<CodeGraphLevelPayload | null> = Promise.resolve(
+      null,
+    );
+    let releaseSub1: (level: CodeGraphLevelPayload | null) => void = () => {};
+    const loadLevel = vi.fn((parentId: string) => {
+      if (parentId === "sub1") {
+        sub1Promise = new Promise((resolve) => {
+          releaseSub1 = resolve;
+        });
+        return sub1Promise;
+      }
+      if (parentId === "sub2") return Promise.resolve(sub2Level);
+      return Promise.resolve(null);
+    });
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+    useCodeGraphStore.getState().selectNode(key, "sub1");
+
+    renderWithProviders(<KtGraph />);
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("codegraph-drill-down"));
+    expect(loadLevel).toHaveBeenCalledWith("sub1");
+
+    // Still on the system view -- "sub1"'s fetch hasn't resolved yet -- so
+    // sub2 is still selectable. This is the same kind of interleaving a
+    // second real click, or a search result, could trigger.
+    await act(async () => {
+      useCodeGraphStore.getState().selectNode(key, "sub2");
+    });
+    await user.click(await screen.findByTestId("codegraph-drill-down"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+        "Billing",
+      );
+    });
+
+    // The stale "sub1" fetch finally resolves. It must not yank the view
+    // back to "Payments" out from under the user.
+    releaseSub1(sub1Level);
+    await act(async () => {
+      await sub1Promise;
+    });
+
+    expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
+      "Billing",
+    );
+    expect(screen.getByTestId("codegraph-breadcrumbs")).not.toHaveTextContent(
+      "Payments",
+    );
+    expect(useCodeGraphStore.getState().byKey[key]?.currentParentId).toBe(
+      "sub2",
+    );
+    // The stale fetch's result is still cached, just not navigated to.
+    expect(useCodeGraphStore.getState().byKey[key]?.levels.sub1).toEqual(
+      sub1Level,
+    );
+  });
+
+  it("leaves the search box and selection untouched when a search result's level fails to load", async () => {
+    // Regression: `selectSearchResult` used to call `selectNode` and clear
+    // the search query unconditionally after awaiting `drillDown`, even when
+    // that drill failed (a real fetch/storage error) and never navigated
+    // anywhere -- silently pointing `selectedNodeId` at a node the open level
+    // doesn't contain (so no details panel opens) while also clearing the
+    // query text, leaving the user with no visible feedback and no easy way
+    // to retry the same search.
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1", { childCount: 1 })],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const searchIndex: SearchEntry[] = [
+      {
+        id: "leaf1",
+        name: "leaf1",
+        type: "function",
+        filePath: "",
+        parentId: "sub1",
+        level: "unit",
+      },
+    ];
+    const handle: AnalysisHandle = {
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => searchIndex,
+      readSource: async () => null,
+    };
+
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    useCodeGraphStore.getState().setReady(key, handle);
+
+    renderWithProviders(<KtGraph />);
+
+    const user = userEvent.setup();
+    const search = await screen.findByTestId("codegraph-search");
+    await user.type(search, "leaf1");
+
+    const results = await screen.findByTestId("codegraph-search-results");
+    await user.click(within(results).getByText("leaf1"));
+
+    expect(
+      await screen.findByTestId("codegraph-level-error"),
+    ).toBeInTheDocument();
+    // Nothing was selected -- the drill never reached "sub1" -- so no
+    // details panel opens for an id the open (root) level doesn't contain.
+    expect(
+      screen.queryByTestId("codegraph-node-details"),
+    ).not.toBeInTheDocument();
+    // The query is still there, so the user can see what they searched for
+    // and retry once the underlying failure clears, instead of the box
+    // silently going blank.
+    expect(search).toHaveValue("leaf1");
+  });
+
   it("does not carry a type filter from one level onto another", async () => {
     const meta: CodeGraphMeta = {
       workspaceId: WORKSPACE_ID,
