@@ -40527,6 +40527,23 @@
     "tr": "({{done}}/{{total}})",
     "uk": "({{done}}/{{total}})"
   },
+  "KT$PROVISIONING_DISMISS": {
+    "en": "Dismiss",
+    "ja": "Dismiss",
+    "zh-CN": "Dismiss",
+    "zh-TW": "Dismiss",
+    "ko-KR": "Dismiss",
+    "no": "Dismiss",
+    "ar": "Dismiss",
+    "de": "Dismiss",
+    "fr": "Dismiss",
+    "it": "Dismiss",
+    "pt": "Dismiss",
+    "es": "Dismiss",
+    "ca": "Dismiss",
+    "tr": "Dismiss",
+    "uk": "Dismiss"
+  },
   "CODEGRAPH$TITLE": {
     "en": "CodeGraph",
     "ja": "CodeGraph",

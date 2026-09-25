@@ -268,6 +268,42 @@ describe("KtList", () => {
     expect(screen.queryAllByTestId("kt-provisioning-card")).toHaveLength(0);
   });
 
+  // Regression: a provisioning failure that happens before any conversation
+  // is ever created (e.g. createConversation itself rejects) never becomes
+  // "known" via useConnectedRepositories, so nothing ever filtered this card
+  // out — it sat on the page forever with no way for the user to clear it
+  // short of a full page reload. The card's own dismiss control must clear
+  // the store entry so the ghost card actually goes away.
+  it("clears a stuck, failed provisioning card when its dismiss control is clicked", async () => {
+    const user = userEvent.setup();
+    useKnowledgeStore.setState({
+      byRepositoryId: {},
+      provisioningByRepositoryId: {
+        [UNPROVISIONED.repositoryId]: {
+          owner: UNPROVISIONED.owner,
+          repo: UNPROVISIONED.repo,
+          branch: UNPROVISIONED.branch,
+          stage: "creating_conversation",
+          error: "Failed to start a conversation",
+        },
+      },
+    });
+
+    renderWithProviders(<KtList />);
+
+    const card = await screen.findByTestId("kt-provisioning-card");
+    expect(card).toHaveTextContent("Failed to start a conversation");
+
+    await user.click(screen.getByTestId("kt-provisioning-dismiss"));
+
+    expect(screen.queryByTestId("kt-provisioning-card")).toBeNull();
+    expect(
+      useKnowledgeStore.getState().provisioningByRepositoryId[
+        UNPROVISIONED.repositoryId
+      ],
+    ).toBeUndefined();
+  });
+
   // Regression: a search query matching zero repositories rendered a
   // completely empty grid with no feedback, indistinguishable from a
   // loading or broken state.

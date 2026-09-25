@@ -2383,6 +2383,7 @@
   "KT$PROVISIONING_STEP_STATUS": "Step {{current}} of {{total}}: {{label}}",
   "KT$PROVISIONING_STEP_FAILED": "{{label}} failed: {{error}}",
   "KT$PROVISIONING_PAGE_COUNT": "({{done}}/{{total}})",
+  "KT$PROVISIONING_DISMISS": "Dismiss",
   "CODEGRAPH$TITLE": "CodeGraph",
   "CODEGRAPH$ANALYZING": "Analyzing repository…",
   "CODEGRAPH$BUILDING": "Building relationships…",

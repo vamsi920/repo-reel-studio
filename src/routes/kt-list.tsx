@@ -317,6 +317,7 @@ function ProvisioningCards({
 }) {
   const provisioning = useKnowledgeStore((s) => s.provisioningByRepositoryId);
   const generating = useKnowledgeStore((s) => s.byRepositoryId);
+  const clearProvisioning = useKnowledgeStore((s) => s.clearProvisioning);
 
   // A provisioning entry can name the same repositoryId as an already-known
   // repository (e.g. re-running "Add Repository" for a repo/branch that's
@@ -351,6 +352,7 @@ function ProvisioningCards({
             provisioningStage={p.stage}
             deepWikiStatus={null}
             error={p.error}
+            onDismiss={() => clearProvisioning(id)}
           />
         );
       })}

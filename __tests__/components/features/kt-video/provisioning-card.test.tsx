@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ProvisioningCard } from "#/components/features/kt-video/provisioning-card";
@@ -213,5 +214,67 @@ describe("ProvisioningCard", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "KT$PROVISIONING_STEP_FAILED(label=KT$PROVISIONING_STEP_INDEXING,error=Indexing crashed)",
     );
+  });
+
+  it("renders a dismiss control once failed, and calls onDismiss when clicked", async () => {
+    // Regression test: a provisioning failure that happens before any
+    // conversation is ever created (e.g. createConversation itself rejects)
+    // has no other path back to "known" that would otherwise make the card
+    // disappear -- without this control it sat on the page forever with no
+    // way for the user to clear it short of a full page reload.
+    const user = userEvent.setup();
+    const onDismiss = vi.fn();
+    render(
+      <ProvisioningCard
+        owner="acme"
+        repo="widgets"
+        branch="main"
+        provisioningStage="creating_conversation"
+        deepWikiStatus={null}
+        error="Failed to start a conversation"
+        onDismiss={onDismiss}
+      />,
+    );
+
+    const dismissButton = screen.getByTestId("kt-provisioning-dismiss");
+    expect(dismissButton).toHaveTextContent("KT$PROVISIONING_DISMISS");
+    await user.click(dismissButton);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("never renders a dismiss control while there is no error to clear", () => {
+    render(
+      <ProvisioningCard
+        owner="acme"
+        repo="widgets"
+        branch="main"
+        provisioningStage="creating_conversation"
+        deepWikiStatus={null}
+        error={null}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("kt-provisioning-dismiss"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("never renders a dismiss control when the caller doesn't supply onDismiss, even on failure", () => {
+    render(
+      <ProvisioningCard
+        owner="acme"
+        repo="widgets"
+        branch="main"
+        provisioningStage={null}
+        deepWikiStatus="failed"
+        lastNonTerminalStatus="indexing"
+        error="Indexing crashed"
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("kt-provisioning-dismiss"),
+    ).not.toBeInTheDocument();
   });
 });

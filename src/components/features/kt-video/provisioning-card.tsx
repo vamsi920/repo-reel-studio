@@ -76,6 +76,7 @@ export function ProvisioningCard({
   pagesDone,
   pagesTotal,
   error,
+  onDismiss,
 }: {
   owner: string;
   repo: string;
@@ -92,6 +93,15 @@ export function ProvisioningCard({
   pagesDone?: number;
   pagesTotal?: number;
   error: string | null;
+  /** Clears this card's entry from the store. Only rendered when `error` is
+   * set — a provisioning failure that happens before any conversation is
+   * ever created (e.g. `createConversation` itself rejects) has no other
+   * path back to "known" that would otherwise make this card disappear, so
+   * without an explicit action it sat on the page forever with no way for
+   * the user to clear it short of a full page reload. Omit to render the
+   * card with no dismiss control (e.g. call sites without a clearable
+   * entry). */
+  onDismiss?: () => void;
 }) {
   const { t } = useTranslation("openhands");
   const stepLabels = STEP_LABEL_KEYS.map((key) => t(key));
@@ -191,6 +201,16 @@ export function ProvisioningCard({
       </div>
 
       {error && <p className="text-xs text-[var(--error-500)]">{error}</p>}
+      {error && onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          data-testid="kt-provisioning-dismiss"
+          className="ame-btn-secondary ame-btn-sm self-start"
+        >
+          {t(I18nKey.KT$PROVISIONING_DISMISS)}
+        </button>
+      )}
     </div>
   );
 }
