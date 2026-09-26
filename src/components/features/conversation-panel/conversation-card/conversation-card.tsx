@@ -292,9 +292,7 @@ export function ConversationCard({
               )}
             >
               {onTogglePin ? renderPinButton() : null}
-              {showPersistentPinIcon &&
-              (createdAt ?? lastUpdatedAt) &&
-              hasContextMenu ? (
+              {showPersistentPinIcon && hasContextMenu ? (
                 <div className="relative shrink-0">
                   <div className={hoverRevealActionClassName(contextMenuOpen)}>
                     <ConversationCardActions
@@ -312,15 +310,22 @@ export function ConversationCard({
                       showOptions={showOptions}
                     />
                   </div>
-                  <p
-                    className={cn(
-                      "pointer-events-none absolute inset-0 items-center justify-end",
-                      "text-xs text-[var(--oh-muted)] whitespace-nowrap -translate-x-1.5",
-                      hoverRevealPinnedTimestampClassName(contextMenuOpen),
-                    )}
-                  >
-                    <time>{formatTimeDelta(lastUpdatedAt ?? createdAt)}</time>
-                  </p>
+                  {/* The pinned-timestamp overlay is a display nicety for the
+                      persistent-pin layout; it must never gate whether the
+                      actions menu itself renders (createdAt/lastUpdatedAt can
+                      both be empty), or the delete/archive/stop/rename menu
+                      becomes permanently unreachable for that card. */}
+                  {(createdAt ?? lastUpdatedAt) && (
+                    <p
+                      className={cn(
+                        "pointer-events-none absolute inset-0 items-center justify-end",
+                        "text-xs text-[var(--oh-muted)] whitespace-nowrap -translate-x-1.5",
+                        hoverRevealPinnedTimestampClassName(contextMenuOpen),
+                      )}
+                    >
+                      <time>{formatTimeDelta(lastUpdatedAt ?? createdAt)}</time>
+                    </p>
+                  )}
                 </div>
               ) : null}
               {!showPersistentPinIcon && hasContextMenu ? (

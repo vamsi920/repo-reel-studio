@@ -1207,4 +1207,22 @@ describe("ConversationCard", () => {
     ).toBeVisible();
     expect(screen.getByRole("time")).toBeInTheDocument();
   });
+
+  it("still renders the actions menu on a persistently-pinned card with no createdAt or lastUpdatedAt", () => {
+    renderWithProviders(
+      <ConversationCard
+        title="Conversation 1"
+        selectedRepository={null}
+        lastUpdatedAt=""
+        conversationId="conversation-1"
+        onDelete={vi.fn()}
+        onTogglePin={vi.fn()}
+        isPinned
+        alwaysShowPinIcon
+      />,
+    );
+
+    expect(screen.getByTestId("ellipsis-button")).toBeInTheDocument();
+    expect(screen.queryByRole("time")).not.toBeInTheDocument();
+  });
 });
