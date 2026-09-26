@@ -44,12 +44,6 @@ export function AppSettingsScreen() {
 
   const [languageInputHasChanged, setLanguageInputHasChanged] =
     React.useState(false);
-  const [analyticsSwitchHasChanged, setAnalyticsSwitchHasChanged] =
-    React.useState(false);
-  const [
-    soundNotificationsSwitchHasChanged,
-    setSoundNotificationsSwitchHasChanged,
-  ] = React.useState(false);
   const [gitUserNameHasChanged, setGitUserNameHasChanged] =
     React.useState(false);
   const [gitUserEmailHasChanged, setGitUserEmailHasChanged] =
@@ -57,6 +51,37 @@ export function AppSettingsScreen() {
   const [titleLlmProfileInput, setTitleLlmProfileInput] = React.useState<
     string | null | undefined
   >(undefined);
+
+  // Treat null as true since analytics is opt-in by default.
+  const initialAnalyticsEnabled = isCloudBackend
+    ? true
+    : (settings?.user_consents_to_analytics ?? true);
+  const [analyticsEnabled, setAnalyticsEnabled] = React.useState(
+    initialAnalyticsEnabled,
+  );
+  // Guards the resync effect below the same way `subAgentsTouchedRef` does in
+  // agent-settings.tsx: an unrelated settings refetch must not clobber an
+  // unsaved edit, but a *successful save* of this switch must clear it —
+  // otherwise the switch stays permanently desynced from the server the
+  // moment the settings query is invalidated by anything else (another tab,
+  // the telemetry-consent sync flow).
+  const analyticsTouchedRef = React.useRef(false);
+
+  const initialSoundNotificationsEnabled =
+    !!settings?.enable_sound_notifications;
+  const [soundNotificationsEnabled, setSoundNotificationsEnabled] =
+    React.useState(initialSoundNotificationsEnabled);
+  const soundNotificationsTouchedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (analyticsTouchedRef.current) return;
+    setAnalyticsEnabled(initialAnalyticsEnabled);
+  }, [initialAnalyticsEnabled]);
+
+  React.useEffect(() => {
+    if (soundNotificationsTouchedRef.current) return;
+    setSoundNotificationsEnabled(initialSoundNotificationsEnabled);
+  }, [initialSoundNotificationsEnabled]);
 
   const storedTitleLlmProfile = React.useMemo(() => {
     const preference = settings?.title_llm_profile ?? null;
@@ -95,11 +120,8 @@ export function AppSettingsScreen() {
     )?.value;
     const language = languageValue || DEFAULT_SETTINGS.language;
 
-    const enableAnalytics = isCloudBackend
-      ? true
-      : formData.get("enable-analytics-switch")?.toString() === "on";
-    const enableSoundNotifications =
-      formData.get("enable-sound-notifications-switch")?.toString() === "on";
+    const enableAnalytics = isCloudBackend ? true : analyticsEnabled;
+    const enableSoundNotifications = soundNotificationsEnabled;
 
     const gitUserName =
       formData.get("git-user-name-input")?.toString() ||
@@ -119,6 +141,8 @@ export function AppSettingsScreen() {
       },
       {
         onSuccess: () => {
+          analyticsTouchedRef.current = false;
+          soundNotificationsTouchedRef.current = false;
           void setTelemetryConsent(enableAnalytics ? "granted" : "denied");
           displaySuccessToast(t(I18nKey.SETTINGS$SAVED));
         },
@@ -128,8 +152,6 @@ export function AppSettingsScreen() {
         },
         onSettled: () => {
           setLanguageInputHasChanged(false);
-          setAnalyticsSwitchHasChanged(false);
-          setSoundNotificationsSwitchHasChanged(false);
           setGitUserNameHasChanged(false);
           setGitUserEmailHasChanged(false);
           setTitleLlmProfileInput(undefined);
@@ -149,17 +171,14 @@ export function AppSettingsScreen() {
     setLanguageInputHasChanged(selectedLanguage !== currentLanguage);
   };
 
-  const checkIfAnalyticsSwitchHasChanged = (checked: boolean) => {
-    // Treat null as true since analytics is opt-in by default
-    const currentAnalytics = settings?.user_consents_to_analytics ?? true;
-    setAnalyticsSwitchHasChanged(checked !== currentAnalytics);
+  const handleAnalyticsToggle = (checked: boolean) => {
+    analyticsTouchedRef.current = true;
+    setAnalyticsEnabled(checked);
   };
 
-  const checkIfSoundNotificationsSwitchHasChanged = (checked: boolean) => {
-    const currentSoundNotifications = !!settings?.enable_sound_notifications;
-    setSoundNotificationsSwitchHasChanged(
-      checked !== currentSoundNotifications,
-    );
+  const handleSoundNotificationsToggle = (checked: boolean) => {
+    soundNotificationsTouchedRef.current = true;
+    setSoundNotificationsEnabled(checked);
   };
 
   const checkIfGitUserNameHasChanged = (value: string) => {
@@ -176,8 +195,8 @@ export function AppSettingsScreen() {
 
   const formIsClean =
     !languageInputHasChanged &&
-    !analyticsSwitchHasChanged &&
-    !soundNotificationsSwitchHasChanged &&
+    analyticsEnabled === initialAnalyticsEnabled &&
+    soundNotificationsEnabled === initialSoundNotificationsEnabled &&
     selectedTitleLlmProfile === storedTitleLlmProfile &&
     !gitUserNameHasChanged &&
     !gitUserEmailHasChanged;
@@ -205,16 +224,9 @@ export function AppSettingsScreen() {
           <SettingsSwitch
             testId="enable-analytics-switch"
             name={isCloudBackend ? undefined : "enable-analytics-switch"}
-            defaultIsToggled={
-              isCloudBackend
-                ? true
-                : (settings.user_consents_to_analytics ?? true)
-            }
-            isToggled={isCloudBackend ? true : undefined}
+            isToggled={isCloudBackend ? true : analyticsEnabled}
             isDisabled={isCloudBackend}
-            onToggle={
-              isCloudBackend ? undefined : checkIfAnalyticsSwitchHasChanged
-            }
+            onToggle={isCloudBackend ? undefined : handleAnalyticsToggle}
           >
             {t(I18nKey.ANALYTICS$SEND_ANONYMOUS_DATA)}
           </SettingsSwitch>
@@ -222,8 +234,8 @@ export function AppSettingsScreen() {
           <SettingsSwitch
             testId="enable-sound-notifications-switch"
             name="enable-sound-notifications-switch"
-            defaultIsToggled={!!settings.enable_sound_notifications}
-            onToggle={checkIfSoundNotificationsSwitchHasChanged}
+            isToggled={soundNotificationsEnabled}
+            onToggle={handleSoundNotificationsToggle}
           >
             {t(I18nKey.SETTINGS$SOUND_NOTIFICATIONS)}
           </SettingsSwitch>

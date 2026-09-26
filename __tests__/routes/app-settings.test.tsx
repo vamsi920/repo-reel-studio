@@ -8,6 +8,7 @@ import SettingsService from "#/api/settings-service/settings-service.api";
 import { MOCK_DEFAULT_USER_SETTINGS } from "#/mocks/handlers";
 import { Settings } from "#/types/settings";
 import ProfilesService from "#/api/profiles-service/profiles-service.api";
+import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 
 const activeBackendState = vi.hoisted(() => ({
   kind: "local" as "local" | "cloud",
@@ -43,20 +44,20 @@ function renderAppSettingsScreen() {
     [{ path: "/settings/app", Component: AppSettingsScreen }],
     { initialEntries: ["/settings/app"] },
   );
-
-  return render(<RouterProvider router={router} />, {
-    wrapper: ({ children }) => (
-      <QueryClientProvider
-        client={
-          new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-          })
-        }
-      >
-        {children}
-      </QueryClientProvider>
-    ),
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+
+  return {
+    queryClient,
+    ...render(<RouterProvider router={router} />, {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      ),
+    }),
+  };
 }
 
 describe("AppSettingsScreen", () => {
@@ -137,6 +138,61 @@ describe("AppSettingsScreen", () => {
           user_consents_to_analytics: expect.anything(),
         }),
       );
+    });
+  });
+
+  it("resyncs the sound-notifications switch to a later settings change once its own save has succeeded", async () => {
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+    const getSettingsSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockResolvedValue(buildSettings({ enable_sound_notifications: false }));
+
+    const { queryClient } = renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    const soundSwitch = await screen.findByTestId(
+      "enable-sound-notifications-switch",
+    );
+    expect(soundSwitch).not.toBeChecked();
+
+    // User flips it on. The refetch triggered by this save's own query
+    // invalidation reports back exactly what was saved.
+    await user.click(soundSwitch);
+    expect(soundSwitch).toBeChecked();
+    getSettingsSpy.mockResolvedValue(
+      buildSettings({ enable_sound_notifications: true }),
+    );
+    await user.click(screen.getByTestId("submit-button"));
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ enable_sound_notifications: true }),
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("enable-sound-notifications-switch"),
+      ).toBeChecked();
+    });
+
+    // Some time later (another tab, a background refetch) the settings
+    // query is invalidated and now reports the value is actually off again.
+    // With the save already having succeeded, the switch's "touched" guard
+    // must have been released so this later, unrelated change is honored
+    // instead of leaving the switch stuck on the user's last click forever.
+    getSettingsSpy.mockResolvedValue(
+      buildSettings({ enable_sound_notifications: false }),
+    );
+    await queryClient.invalidateQueries({
+      queryKey: SETTINGS_QUERY_KEYS.byScope("personal"),
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("enable-sound-notifications-switch"),
+      ).not.toBeChecked();
     });
   });
 
