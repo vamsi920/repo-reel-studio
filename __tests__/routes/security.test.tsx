@@ -11,6 +11,7 @@ import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 import {
   SECURITY_SEVERITIES,
   type SecurityFinding,
+  type SecurityProvider,
   type SecurityScan,
   type SecuritySeverity,
   type SecuritySummary,
@@ -209,6 +210,34 @@ describe("Security route", () => {
       expect(
         screen.getByTestId(`security-area-${category}`),
       ).toBeInTheDocument();
+    });
+  });
+
+  it("hides decorative icons from screen readers instead of announcing them alongside their adjacent text", () => {
+    // Regression: the empty-state header icon and every future-area icon are
+    // purely decorative -- the heading text right next to each one already
+    // says what it is. Nothing asserted `aria-hidden` on them before, so a
+    // future edit dropping it (e.g. while swapping icon libraries) would slip
+    // past every other test in this file, which only checks the visible text.
+    renderSecurity();
+
+    const emptyStateIcon = screen
+      .getByTestId("security-empty-state")
+      .querySelector("svg");
+    expect(emptyStateIcon).toHaveAttribute("aria-hidden");
+
+    [
+      "repository",
+      "dependencies",
+      "secrets",
+      "misconfiguration",
+      "risk",
+      "remediation",
+    ].forEach((category) => {
+      const icon = screen
+        .getByTestId(`security-area-${category}`)
+        .querySelector("svg");
+      expect(icon).toHaveAttribute("aria-hidden");
     });
   });
 
@@ -477,6 +506,28 @@ describe("Security route", () => {
       expect(result.current.repositories).toEqual([
         { repositoryId: "acme/api@main", label: "acme/api", branch: "main" },
       ]);
+    });
+
+    it("keeps the same result reference across a re-render when nothing relevant changed", () => {
+      // Regression: the hook wraps its computation in `useMemo`, but nothing
+      // asserted that the memoization actually holds. A future edit that
+      // drops a dependency from the array (a no-op today, since nothing
+      // above ever exercises it) or rebuilds an intermediate array/object
+      // unconditionally would silently turn every re-render into a fresh
+      // scope + repositories list -- a real cost for downstream consumers
+      // that rely on referential stability (e.g. to skip their own re-render
+      // or memoized effect), with no test catching the regression.
+      seedRepository();
+      const { result, rerender } = renderHook(
+        ({ repositoryId }: { repositoryId: string | null }) =>
+          useSecurityWorkspaceScope(repositoryId),
+        { initialProps: { repositoryId: null } },
+      );
+      const first = result.current;
+
+      rerender({ repositoryId: null });
+
+      expect(result.current).toBe(first);
     });
 
     it("scopes to an open conversation's repository even when nothing has ingested it into the knowledge store yet", () => {
@@ -1126,5 +1177,35 @@ describe("Security integration seams", () => {
     });
 
     expect(result).toEqual({ conversationId: "conv1" });
+  });
+
+  it("types the future engine's own read surface (getSummary/listFindings/listScans)", async () => {
+    // Regression: every neighbouring-system seam above (AgentOps, Workspace
+    // Memory, Proactive Engineering, CodeGraph, the agent runtime) has this
+    // exact compile-level contract test, but `SecurityProvider` -- the
+    // page's own future data source, documented in security-types.ts as "the
+    // read surface the future engine will implement" -- had none. A future
+    // edit that loosened or narrowed one of its three methods while wiring up
+    // the real engine would have no test here to catch it, unlike every
+    // other seam in this module.
+    const provider: SecurityProvider = {
+      getSummary: async (workspaceId) => ({
+        workspaceId,
+        status: "not_configured",
+      }),
+      listFindings: async () => [],
+      listScans: async () => [],
+    };
+
+    const summary = await provider.getSummary("/workspace/api");
+    const findings = await provider.listFindings("/workspace/api");
+    const scans = await provider.listScans("/workspace/api");
+
+    expect(summary).toEqual({
+      workspaceId: "/workspace/api",
+      status: "not_configured",
+    });
+    expect(findings).toEqual([]);
+    expect(scans).toEqual([]);
   });
 });
