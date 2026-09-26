@@ -8,12 +8,14 @@ import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 
 const connected: RepoCandidate[] = [];
 let connectedLoading = false;
+let connectedError = false;
 const listGeneratedRepositories = vi.fn();
 
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
   useConnectedRepositories: () => ({
     repositories: connected,
     isLoading: connectedLoading,
+    isError: connectedError,
   }),
   resolveCommitSha: vi.fn(),
 }));
@@ -66,6 +68,7 @@ describe("KtList", () => {
   beforeEach(() => {
     setConnected();
     connectedLoading = false;
+    connectedError = false;
     useKnowledgeStore.setState({
       byRepositoryId: {},
       provisioningByRepositoryId: {},
@@ -183,6 +186,40 @@ describe("KtList", () => {
     renderWithProviders(<KtList />);
 
     expect(await screen.findByTestId("kt-repo-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-list-error")).toBeNull();
+  });
+
+  // Regression: the same misleading-empty-state bug fixed above for the
+  // persisted Supabase lookup (INC-2) also applied to the OTHER data source
+  // this page reads -- a real conversation-history fetch failure (backend
+  // unreachable, auth error) resolved to the same empty `connected` array as
+  // "no live conversations", so with nothing persisted either the page showed
+  // the plain "nothing generated yet" empty state instead of an error.
+  it("shows a load-error state, not the generic empty state, when the connected-repositories lookup errors", async () => {
+    connectedError = true;
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: false });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-list-error")).toHaveTextContent(
+      "KT$LOAD_ERROR",
+    );
+    expect(screen.queryByTestId("kt-list-loading")).toBeNull();
+    expect(screen.queryByText("KT$EMPTY")).toBeNull();
+  });
+
+  it("still lists persisted repositories when the connected-repositories lookup errors", async () => {
+    connectedError = true;
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-repo-card")).toHaveTextContent(
+      "vamsi920/layman",
+    );
     expect(screen.queryByTestId("kt-list-error")).toBeNull();
   });
 

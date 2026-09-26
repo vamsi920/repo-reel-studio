@@ -85,16 +85,23 @@ interface AllRepositories {
   /** True while either source (conversation history or the Supabase
    * generated-repositories lookup) has not answered yet. */
   isLoading: boolean;
-  /** True when the Supabase generated-repositories lookup failed outright
-   * (see `PersistedRepositories.error`). Connected repositories are sourced
-   * from local conversation history, not Supabase, so this only ever
-   * reflects the persisted half of the list. */
+  /** True when either source failed outright -- the Supabase
+   * generated-repositories lookup (see `PersistedRepositories.error`) OR the
+   * conversation-history query `useConnectedRepositories` reads from. Without
+   * folding the connected half in here too, a real conversation-history fetch
+   * failure (backend unreachable, auth error) resolved to the same empty
+   * `connected` array as "no live conversations", which combined with no
+   * persisted Supabase generations either read as the plain "nothing
+   * generated yet" empty state below -- exactly the misleading-empty-state
+   * bug already fixed for the persisted half alone (see the regression test
+   * for INC-2), just on the other data source. */
   error: boolean;
 }
 
 function useAllRepositories({
   repositories: connected,
   isLoading: connectedLoading,
+  isError: connectedError,
 }: ConnectedRepositories): AllRepositories {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
   const {
@@ -160,7 +167,7 @@ function useAllRepositories({
   return {
     repositories,
     isLoading: connectedLoading || !persistedLoaded,
-    error: persistedError,
+    error: persistedError || connectedError,
   };
 }
 
