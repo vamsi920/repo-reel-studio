@@ -88,9 +88,15 @@ async function refreshIfNeeded(
     | undefined;
   if (!oauth?.refreshable || !credentials.refreshToken) return credentials;
 
+  // An unknown expiry (the provider omitted `expires_in` on the original
+  // exchange, or a manually-set credential) is not the same as "expiring
+  // soon": treating it as the latter forced a refresh -- and an advisory
+  // lock acquisition -- on every single proxied call for that connection,
+  // even when the current access token was still perfectly valid.
   const expiresAt = connection.expires_at as string | null;
+  if (!expiresAt) return credentials;
   const soon = Date.now() + 60_000;
-  if (expiresAt && new Date(expiresAt).getTime() > soon) return credentials;
+  if (new Date(expiresAt).getTime() > soon) return credentials;
 
   const lockKey = connection.id as string;
   const { data: gotLock, error: lockError } = await admin.rpc(

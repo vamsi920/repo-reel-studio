@@ -1,6 +1,10 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
-import { JIRA_TOKEN_URL, jiraApiBaseUrl, jiraOAuthCredentials } from "../_shared/jira.ts";
+import {
+  decryptJiraToken,
+  jiraApiBaseUrl,
+  refreshJiraAccessTokenLocked,
+} from "../_shared/jira.ts";
 
 const DEFAULT_JQL = "assignee = currentUser() ORDER BY updated DESC";
 
@@ -8,82 +12,6 @@ interface JiraConnectionRow {
   cloud_id: string;
   encrypted_access_token: string;
   encrypted_refresh_token: string | null;
-}
-
-async function decryptToken(
-  admin: ReturnType<typeof createAdminClient>,
-  ciphertext: string,
-  encryptionKey: string,
-): Promise<string | null> {
-  const { data } = await admin.rpc("decrypt_github_token", {
-    ciphertext,
-    encryption_key: encryptionKey,
-  });
-  return data ?? null;
-}
-
-/**
- * Atlassian access tokens are short-lived (~1hr), unlike GitHub's -- rather
- * than tracking an expiry timestamp, just try the request and refresh once
- * on a 401. Keeps the proxy stateless about token lifetime.
- */
-async function refreshAccessToken(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-  refreshToken: string,
-  encryptionKey: string,
-): Promise<string | null> {
-  let clientId: string;
-  let clientSecret: string;
-  try {
-    ({ clientId, clientSecret } = jiraOAuthCredentials());
-  } catch {
-    return null;
-  }
-
-  const response = await fetch(JIRA_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      grant_type: "refresh_token",
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-    }),
-  });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const accessToken: string | undefined = json.access_token;
-  const newRefreshToken: string | undefined = json.refresh_token;
-  if (!accessToken) return null;
-
-  const { data: encryptedAccessToken } = await admin.rpc(
-    "encrypt_github_token",
-    { token: accessToken, encryption_key: encryptionKey },
-  );
-  if (!encryptedAccessToken) return null;
-
-  let encryptedRefreshToken: string | null = null;
-  if (newRefreshToken) {
-    const { data } = await admin.rpc("encrypt_github_token", {
-      token: newRefreshToken,
-      encryption_key: encryptionKey,
-    });
-    encryptedRefreshToken = data ?? null;
-  }
-
-  await admin
-    .from("jira_connections")
-    .update({
-      encrypted_access_token: encryptedAccessToken,
-      ...(encryptedRefreshToken
-        ? { encrypted_refresh_token: encryptedRefreshToken }
-        : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
-
-  return accessToken;
 }
 
 function jiraHeaders(token: string): HeadersInit {
@@ -131,7 +59,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "encryption_not_configured" }, { status: 500 });
   }
 
-  let accessToken = await decryptToken(
+  let accessToken = await decryptJiraToken(
     admin,
     connection.encrypted_access_token,
     encryptionKey,
@@ -150,13 +78,13 @@ Deno.serve(async (req) => {
   try {
     let response = await searchIssues(connection.cloud_id, accessToken, jql);
     if (response.status === 401 && connection.encrypted_refresh_token) {
-      const refreshToken = await decryptToken(
+      const refreshToken = await decryptJiraToken(
         admin,
         connection.encrypted_refresh_token,
         encryptionKey,
       );
       if (refreshToken) {
-        const refreshed = await refreshAccessToken(
+        const refreshed = await refreshJiraAccessTokenLocked(
           admin,
           userId,
           refreshToken,

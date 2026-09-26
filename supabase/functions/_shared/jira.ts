@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { holdsAdvisoryLock } from "./advisory-lock.ts";
 
 export const JIRA_AUTHORIZE_URL = "https://auth.atlassian.com/authorize";
 export const JIRA_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
@@ -189,6 +190,90 @@ async function encryptJiraToken(
     encryption_key: encryptionKey,
   });
   return data ?? null;
+}
+
+/**
+ * Refreshes a Jira access token when the caller already knows the current
+ * one is dead (e.g. a proxy that just got a 401 from the Jira API), unlike
+ * `refreshJiraAccessToken` above which refreshes unconditionally on a fixed
+ * schedule. Serialised through the same Postgres advisory lock
+ * `connections-proxy` uses for the identical reason: Atlassian rotates the
+ * refresh token on every use, so two concurrent 401s for the same connection
+ * (two tabs, or a refetch racing a mount) both reading the same
+ * not-yet-rotated refresh token race to redeem it -- the loser's grant is
+ * rejected outright, or worse, its stale write clobbers the winner's
+ * freshly-issued pair. A caller that loses the race reuses whatever the
+ * winner lands on instead of racing a second grant. Returns `null` (rather
+ * than falling back to the token already known to be dead) so the caller can
+ * tell "no usable token" apart from "here's one worth retrying with".
+ */
+export async function refreshJiraAccessTokenLocked(
+  admin: SupabaseClient,
+  userId: string,
+  refreshToken: string,
+  encryptionKey: string,
+): Promise<string | null> {
+  let clientId: string;
+  let clientSecret: string;
+  try {
+    ({ clientId, clientSecret } = jiraOAuthCredentials());
+  } catch {
+    return null;
+  }
+
+  const lockKey = `jira:${userId}`;
+  const { data: gotLock, error: lockError } = await admin.rpc(
+    "environment_try_advisory_lock",
+    { lock_key: lockKey },
+  );
+  if (!holdsAdvisoryLock(gotLock, lockError)) {
+    const { data: current } = await admin
+      .from("jira_connections")
+      .select("encrypted_access_token")
+      .eq("user_id", userId)
+      .maybeSingle<{ encrypted_access_token: string }>();
+    if (!current) return null;
+    return decryptJiraToken(admin, current.encrypted_access_token, encryptionKey);
+  }
+
+  try {
+    const response = await fetch(JIRA_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      }),
+    });
+    if (!response.ok) return null;
+    const json = await response.json();
+    const accessToken: string | undefined = json.access_token;
+    const newRefreshToken: string | undefined = json.refresh_token;
+    if (!accessToken) return null;
+
+    const encryptedAccessToken = await encryptJiraToken(admin, accessToken, encryptionKey);
+    if (!encryptedAccessToken) return null;
+    const encryptedRefreshToken = newRefreshToken
+      ? await encryptJiraToken(admin, newRefreshToken, encryptionKey)
+      : null;
+
+    await admin
+      .from("jira_connections")
+      .update({
+        encrypted_access_token: encryptedAccessToken,
+        ...(encryptedRefreshToken
+          ? { encrypted_refresh_token: encryptedRefreshToken }
+          : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+
+    return accessToken;
+  } finally {
+    await admin.rpc("environment_advisory_unlock", { lock_key: lockKey });
+  }
 }
 
 /**
