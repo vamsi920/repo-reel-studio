@@ -716,6 +716,69 @@ Full skill body.`,
     ).toHaveAttribute("aria-checked", "false");
   });
 
+  it("does not revert an unrelated skill's still-pending toggle when a different skill's save fails", async () => {
+    // Regression: onError's revert overwrote the WHOLE disabledSet with a
+    // snapshot of `settings` from before either toggle landed, so a second
+    // skill's own toggle -- still pending, not yet failed or succeeded --
+    // got silently wiped back to its pre-toggle state by a completely
+    // unrelated save's failure. The revert must only undo the failing
+    // save's own skill.
+    const user = userEvent.setup();
+    const skillA = buildSkill({ name: "skill-a" });
+    const skillB = buildSkill({ name: "skill-b" });
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([skillA, skillB]);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ disabled_skills: [] }),
+    );
+
+    let rejectA: (error: Error) => void = () => {};
+    const pendingA = new Promise<boolean>((_resolve, reject) => {
+      rejectA = reject;
+    });
+    // skill-b's save never settles during this test -- it must not be
+    // touched by skill-a's failure.
+    const pendingB = new Promise<boolean>(() => {});
+
+    vi.spyOn(SettingsService, "saveSettings").mockImplementation(
+      async (settings: { disabled_skills?: string[] }) => {
+        if ((settings.disabled_skills ?? []).includes(skillB.name)) {
+          return pendingB;
+        }
+        return pendingA;
+      },
+    );
+    vi.spyOn(ToastHandlers, "displayErrorToast").mockImplementation(() => {});
+
+    renderSkillsSettingsScreen();
+    const cardA = await screen.findByTestId(`skill-card-${skillA.name}`);
+    const cardB = screen.getByTestId(`skill-card-${skillB.name}`);
+
+    await user.click(within(cardA).getByTestId(`skill-toggle-${skillA.name}`));
+    await user.click(within(cardB).getByTestId(`skill-toggle-${skillB.name}`));
+    await waitFor(() =>
+      expect(
+        within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
+      ).toHaveAttribute("aria-checked", "false"),
+    );
+
+    // skill-a's own (unrelated, still separately in flight) save fails.
+    rejectA(new Error("Request failed: Failed to fetch"));
+    await waitFor(() =>
+      expect(ToastHandlers.displayErrorToast).toHaveBeenCalled(),
+    );
+    await waitFor(() =>
+      expect(
+        within(cardA).getByTestId(`skill-toggle-${skillA.name}`),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+
+    // skill-b's toggle must still show disabled -- its own save is still
+    // pending, so skill-a's failure must not have reverted it.
+    expect(
+      within(cardB).getByTestId(`skill-toggle-${skillB.name}`),
+    ).toHaveAttribute("aria-checked", "false");
+  });
+
   it("keeps an in-flight toggle from being reverted by an unrelated settings save invalidating the shared settings query", async () => {
     // Regression: the sync effect resynced `disabledSet` from `settings`
     // whenever the query cache entry changed reference at all, not only

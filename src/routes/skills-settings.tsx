@@ -66,11 +66,6 @@ function SkillsSettingsScreen() {
   // second toggle dispatched before that render lands would otherwise still
   // read a stale set here).
   const disabledSetRef = React.useRef(disabledSet);
-  // Mirrors the latest `settings` query data so a save's `onError` (which can
-  // fire well after a later, already-succeeded save has moved the server
-  // state on) reverts to the current known-good state instead of whatever
-  // `settings` this closure captured when the failing save was issued.
-  const settingsRef = React.useRef(settings);
   // Counts this page's own in-flight `saveSettings` calls. `useSettings`'s
   // query key is shared by every settings page (LLM, git, general, telemetry
   // consent, ...), so ANY of them succeeding invalidates and refetches it --
@@ -114,7 +109,6 @@ function SkillsSettingsScreen() {
 
   // Sync local state with server settings when data first arrives
   React.useEffect(() => {
-    settingsRef.current = settings;
     if (settingsLoading || !settings) return;
     // While one of THIS page's own saves is still in flight, an unrelated
     // settings save elsewhere (e.g. LLM/git settings, telemetry consent)
@@ -204,12 +198,21 @@ function SkillsSettingsScreen() {
         const errorMessage = retrieveAxiosErrorMessage(error);
         displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
         // The toggle flipped optimistically; the server never took the
-        // change, so snap back to its last known state instead of leaving
-        // the card (and the State facet counts) claiming a save that never
-        // happened. The sync effect above only re-runs when the query data
-        // changes, which a failed save does not do, so revert here and
-        // refetch in case another save landed in the meantime.
-        const reverted = new Set(settingsRef.current?.disabled_skills ?? []);
+        // change, so undo just THIS skill's change, applied on top of the
+        // CURRENT live set (disabledSetRef.current) rather than a snapshot
+        // of `settings` from before any toggle landed. A snapshot revert
+        // would clobber an unrelated skill's still-in-flight (or already
+        // succeeded) toggle with pre-toggle server state, since neither
+        // save had landed server-side when this one was issued. The sync
+        // effect above only re-runs when the query data changes, which a
+        // failed save does not do, so revert here and refetch in case
+        // another save landed in the meantime.
+        const reverted = new Set(disabledSetRef.current);
+        if (enabled) {
+          reverted.add(skillName);
+        } else {
+          reverted.delete(skillName);
+        }
         disabledSetRef.current = reverted;
         setDisabledSet(reverted);
         queryClient.invalidateQueries({
