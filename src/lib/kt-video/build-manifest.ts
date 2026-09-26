@@ -461,8 +461,19 @@ const joinHuman = (items: string[]): string => {
  * first in the file.
  */
 function isTrivialClassBody(symbol: FileSymbol, lines: string[]): boolean {
-  if (symbol.kind !== "class") return false;
   const declIdx = symbol.line - 1;
+  // `extractSymbols` collapses both `export default class Foo {}` and
+  // `export default function foo() {}` into `kind: "default"`, discarding
+  // which one it actually was. Without re-checking the declaration line
+  // itself here, a trivial default-exported class body (a marker class, a DI
+  // token, an empty stub) would never be recognized as a class at all, let
+  // alone a trivial one, and would always win `pickPrimary` over a real
+  // default-exported function it happened to precede.
+  const isClassDecl =
+    symbol.kind === "class" ||
+    (symbol.kind === "default" &&
+      /\bclass\s+[A-Za-z0-9_]+/.test(lines[declIdx] ?? ""));
+  if (!isClassDecl) return false;
   const declIndent = lines[declIdx]?.match(/^\s*/)?.[0].length ?? 0;
   let sawMember = false;
   let inDocstring = false;
@@ -497,7 +508,7 @@ function pickPrimary(
 ): FileSymbol | null {
   if (symbols.length === 0) return null;
   const def = symbols.find((s) => s.kind === "default");
-  if (def) return def;
+  if (def && !isTrivialClassBody(def, lines)) return def;
   const exported = symbols.filter((s) => s.exported);
   const pool = exported.length ? exported : symbols;
   const meaty = pool.filter((s) =>
@@ -505,6 +516,59 @@ function pickPrimary(
   );
   const substantial = meaty.find((s) => !isTrivialClassBody(s, lines));
   return substantial || meaty[0] || pool[0];
+}
+
+/**
+ * `nameNoExt` discards the directory entirely, so two ranked files that
+ * share a basename (very common in real repos — index.ts, types.ts,
+ * utils.ts recur across almost every directory) ended up with the exact
+ * same `scene.title`. That corrupted the on-screen file badge (both scenes
+ * showed the same label) and the recap narration ("...core files: index and
+ * index."), with no way to tell the files apart. Give a colliding group just
+ * enough parent-directory context to be unique, falling back to the real
+ * filename (with extension) for the rare case where even that doesn't
+ * distinguish them (same directory, same name, different extension).
+ */
+function disambiguateSceneTitles(scenes: KtScene[]): void {
+  const groups = new Map<string, KtScene[]>();
+  for (const scene of scenes) {
+    if (!scene.file_path) continue;
+    const group = groups.get(scene.title);
+    if (group) group.push(scene);
+    else groups.set(scene.title, [scene]);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue;
+    const dirsOf = (s: KtScene) =>
+      normalize(s.file_path as string)
+        .split("/")
+        .filter(Boolean)
+        .slice(0, -1);
+    const maxDepth = Math.max(...group.map((s) => dirsOf(s).length));
+
+    const labelAt = (take: number) =>
+      group.map((s) => [...dirsOf(s).slice(-take), s.title].join("/"));
+
+    let take = 1;
+    let labels = labelAt(take);
+    while (take <= maxDepth && new Set(labels).size < labels.length) {
+      take += 1;
+      labels = labelAt(take);
+    }
+
+    const labelCounts = new Map<string, number>();
+    labels.forEach((label) =>
+      labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1),
+    );
+    for (let i = 0; i < group.length; i += 1) {
+      const target = group[i];
+      target.title =
+        (labelCounts.get(labels[i]) ?? 0) > 1
+          ? baseName(target.file_path as string)
+          : labels[i];
+    }
+  }
 }
 
 function buildCodeScene(id: number, path: string, content: string): KtScene {
@@ -785,6 +849,7 @@ export function buildKtManifest(
     codeScenes.push(scene);
     id += 1;
   }
+  disambiguateSceneTitles(codeScenes);
 
   if (includeSummary) {
     const summary = buildSummaryScene(id, repoName, codeScenes);
@@ -1107,6 +1172,7 @@ export function buildKtManifestFromKnowledgePage(
     codeScenes.push(scene);
     id += 1;
   }
+  disambiguateSceneTitles(codeScenes);
 
   const summary = buildSummaryScene(id, page.title, codeScenes);
   if (summary) {

@@ -54,11 +54,22 @@ export function useSceneNarration(
       speak(scene);
     };
 
+    // Dedup is keyed on scene id so a multi-scene loop naturally re-narrates
+    // (the wrap from the last scene back to the first is a real id change).
+    // A single-scene manifest has no such change: every loop pass lands back
+    // on the exact same id, so without this the video narrates once and then
+    // loops silently forever. Detect the wrap directly — the frame counter
+    // drops instead of advancing — and clear the dedup key so the one scene
+    // is free to speak again.
+    let lastFrameSeen = -1;
     const handleFrameUpdate = (event: { detail: { frame: number } }) => {
       // Scrubbing a paused player fires frameupdate too; the voice stays
       // quiet until play, which then narrates wherever the scrub landed.
       if (!player.isPlaying()) return;
-      speakFrame(event.detail.frame);
+      const { frame } = event.detail;
+      if (frame < lastFrameSeen) lastSpokenSceneId.current = null;
+      lastFrameSeen = frame;
+      speakFrame(frame);
     };
 
     const handlePlay = () => {

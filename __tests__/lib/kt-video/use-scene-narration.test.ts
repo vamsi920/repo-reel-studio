@@ -205,6 +205,30 @@ describe("useSceneNarration", () => {
     ]);
   });
 
+  it("re-narrates a single-scene manifest on every loop pass, not just the first", () => {
+    // Dedup is keyed on scene id, which correctly re-triggers narration when
+    // a multi-scene loop wraps back to scene 0 (a real id change). A
+    // single-scene manifest (e.g. an intro-only fallback video) has no such
+    // change: every loop pass lands back on the exact same id, so without
+    // detecting the frame wrap directly, narration fired once and then the
+    // video looped in silence forever.
+    const p = makePlayer();
+    const manifest = manifestOf(scene(0, 0, 100));
+    renderHook(() => useSceneNarration(manifest, p.ref, true));
+
+    p.play();
+    p.seek(10);
+    // Loop wraps back to the start without a pause/play event, same as
+    // Remotion's <Player loop /> restarting the frame counter mid-play.
+    p.seek(0);
+    p.seek(10);
+
+    expect(synthState.spoken).toEqual([
+      "Narration for scene 0",
+      "Narration for scene 0",
+    ]);
+  });
+
   it("stops speaking and detaches from the player when narration is turned off", () => {
     const p = makePlayer();
     const manifest = manifestOf(scene(0, 0, 100));

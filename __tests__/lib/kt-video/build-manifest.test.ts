@@ -217,6 +217,47 @@ describe("buildKtManifest", () => {
     expect(manifest.scenes.filter((s) => s.type === "code")).toHaveLength(3);
   });
 
+  it("disambiguates scene titles for same-named files in different directories", () => {
+    // scene.title drops the directory (nameNoExt(path)), so two ranked files
+    // that share a basename — extremely common (index.ts, utils.ts, ...) —
+    // used to collide on the exact same title, making the on-screen badges
+    // indistinguishable and the recap narration nonsensical ("...core files:
+    // index and index.").
+    const fileContents = {
+      "src/components/index.ts":
+        "export function renderComponents() {\n  return 1;\n}\n".repeat(3),
+      "src/utils/index.ts":
+        "export function computeUtils() {\n  return 2;\n}\n".repeat(3),
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 2);
+    const codeScenes = manifest.scenes.filter((s) => s.type === "code");
+    const titles = codeScenes.map((s) => s.title);
+
+    expect(new Set(titles).size).toBe(titles.length);
+    expect(titles.sort()).toEqual(["components/index", "utils/index"]);
+
+    const recap = manifest.scenes.find((s) => s.type === "recap");
+    expect(recap!.narration_text).not.toContain("index and index");
+  });
+
+  it("leaves a unique title untouched when no other scene collides", () => {
+    const fileContents = {
+      "src/components/index.ts":
+        "export function renderComponents() {\n  return 1;\n}\n".repeat(3),
+      "src/only-one.ts":
+        "export function computeUtils() {\n  return 2;\n}\n".repeat(3),
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 2);
+    const codeScenes = manifest.scenes.filter((s) => s.type === "code");
+
+    expect(codeScenes.map((s) => s.title).sort()).toEqual([
+      "index",
+      "only-one",
+    ]);
+  });
+
   it("never highlights a line past the 22-line window CodePanel actually renders", () => {
     // CodePanel shows a fixed 22-line window starting 3 lines above the
     // highlight's first line, so a highlight end more than 18 lines past its
@@ -276,6 +317,34 @@ describe("buildKtManifest", () => {
     );
     expect(codeScene!.narration_text).not.toContain(
       "The heart of this file is ReportSection",
+    );
+  });
+
+  it("does not crown an empty default-exported class stub over a real named export", () => {
+    // `export default class` and `export default function` both collapse to
+    // `kind: "default"` in extractSymbols, and pickPrimary used to return
+    // whichever `default` symbol it found without ever checking whether its
+    // body was trivial — so an empty default-exported marker class always
+    // outranked a real function declared later in the same file.
+    const fileContents = {
+      "src/marker.ts":
+        "export default class EmptyStub {\n" +
+        "  // just a marker, no real logic\n" +
+        "}\n" +
+        "\n" +
+        "export function computeTotal(items: number[]) {\n" +
+        "  return items.reduce((sum, item) => sum + item, 0);\n" +
+        "}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain(
+      "The heart of this file is computeTotal",
+    );
+    expect(codeScene!.narration_text).not.toContain(
+      "The heart of this file is EmptyStub",
     );
   });
 
