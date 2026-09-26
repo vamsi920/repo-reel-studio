@@ -418,6 +418,89 @@ interface TreeContext {
   allEdges: GraphEdge[];
 }
 
+/**
+ * Splits `items` (which must carry a display `.name`) into alphabetical
+ * buckets, each capped to a browsable size, the same way `bucketAlphabetically`
+ * already does for a folder's worth of loose files. Pulled out as a standalone
+ * step (rather than inline in `bucketAlphabetically`) so `attachUnit` can reuse
+ * the exact same splitting math for a unit's owned symbols -- see its own
+ * comment for why that reuse is necessary.
+ */
+function alphabeticalBuckets<T extends { name: string }>(
+  items: readonly T[],
+): { label: string; members: T[] }[] {
+  const sorted = [...items].sort((a, b) => a.name.localeCompare(b.name));
+  const bucketCount = Math.min(
+    MAX_LEVEL_CHILDREN,
+    Math.ceil(sorted.length / MAX_LEVEL_CHILDREN),
+  );
+  const perBucket = Math.ceil(sorted.length / bucketCount);
+
+  const buckets: { label: string; members: T[] }[] = [];
+  for (let i = 0; i < sorted.length; i += perBucket) {
+    const members = sorted.slice(i, i + perBucket);
+    const label = `${members[0].name.charAt(0).toUpperCase()}–${members[members.length - 1].name.charAt(0).toUpperCase()}`;
+    buckets.push({ label, members });
+  }
+  return buckets;
+}
+
+function attachSymbolLeaf(
+  ctx: TreeContext,
+  symbol: GraphNode,
+  parentId: string,
+  chain: string[],
+): CodeGraphNode {
+  const symbolNode = toCodeGraphNode(
+    symbol,
+    "symbol",
+    0,
+    ctx.layerOf.get(symbol.id),
+  );
+  ctx.nodesById[symbol.id] = symbolNode;
+  ctx.parentById[symbol.id] = parentId;
+  (ctx.childrenByParent[parentId] ??= []).push(symbol.id);
+  ctx.ancestry.set(symbol.id, [...chain, symbol.id]);
+  return symbolNode;
+}
+
+/**
+ * Attaches a unit's owned symbols beneath it, capped at `MAX_LEVEL_CHILDREN`
+ * per the same budget every other level in this module enforces. A file or
+ * class can define far more than that many functions/methods; without this,
+ * `attachUnit` used to dump every one of them straight onto one level with no
+ * split at all -- exactly the "wall of nodes" this module's whole design
+ * exists to prevent, just one level deeper than the folder/module splitting
+ * already guards against. Symbols all share their owning unit's single file,
+ * so there is no folder segment left to split on the way `buildModuleTree`
+ * does for units -- alphabetical bucketing (recursing on any bucket that is
+ * itself still oversized) is the only signal left.
+ */
+function attachSymbols(
+  ctx: TreeContext,
+  owned: readonly GraphNode[],
+  parentId: string,
+  chain: string[],
+): CodeGraphNode[] {
+  if (owned.length <= MAX_LEVEL_CHILDREN) {
+    return owned.map((symbol) =>
+      attachSymbolLeaf(ctx, symbol, parentId, chain),
+    );
+  }
+  const created: CodeGraphNode[] = [];
+  for (const { label, members } of alphabeticalBuckets(owned)) {
+    const groupId = dedupeId(
+      ctx,
+      `${parentId}/symbols:${slug(label)}-${created.length}`,
+    );
+    const children = attachSymbols(ctx, members, groupId, [...chain, groupId]);
+    created.push(
+      registerAggregate(ctx, groupId, label, "module", parentId, children),
+    );
+  }
+  return created;
+}
+
 function attachUnit(
   ctx: TreeContext,
   unit: GraphNode,
@@ -438,18 +521,7 @@ function attachUnit(
   ctx.ancestry.set(unit.id, [...chain, unit.id]);
 
   ctx.childrenByParent[unit.id] ??= [];
-  for (const symbol of owned) {
-    const symbolNode = toCodeGraphNode(
-      symbol,
-      "symbol",
-      0,
-      ctx.layerOf.get(symbol.id),
-    );
-    ctx.nodesById[symbol.id] = symbolNode;
-    ctx.parentById[symbol.id] = unit.id;
-    ctx.childrenByParent[unit.id].push(symbol.id);
-    ctx.ancestry.set(symbol.id, [...chain, unit.id, symbol.id]);
-  }
+  attachSymbols(ctx, owned, unit.id, [...chain, unit.id]);
 
   return unitNode;
 }
@@ -597,18 +669,9 @@ function bucketAlphabetically(
   chain: string[],
   depth: number,
 ): CodeGraphNode[] {
-  const sorted = [...units].sort((a, b) => a.name.localeCompare(b.name));
-  const bucketCount = Math.min(
-    MAX_LEVEL_CHILDREN,
-    Math.ceil(sorted.length / MAX_LEVEL_CHILDREN),
-  );
-  const perBucket = Math.ceil(sorted.length / bucketCount);
-
   const created: CodeGraphNode[] = [];
-  for (let i = 0; i < sorted.length; i += perBucket) {
-    const members = sorted.slice(i, i + perBucket);
-    const label = `${members[0].name.charAt(0).toUpperCase()}–${members[members.length - 1].name.charAt(0).toUpperCase()}`;
-    const moduleId = `${parentId}/range:${slug(label)}-${i}`;
+  for (const { label, members } of alphabeticalBuckets(units)) {
+    const moduleId = `${parentId}/range:${slug(label)}-${created.length}`;
     const children = buildModuleTree(
       ctx,
       members,

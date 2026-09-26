@@ -429,6 +429,43 @@ describe("buildHierarchy", () => {
     expect(result.parentById[one.id]).toBe(target.id);
   });
 
+  it("splits a unit's symbols into alphabetical groups once there are more than the level budget", () => {
+    // A file with more functions than MAX_LEVEL_CHILDREN used to attach every
+    // one of them directly under the file, rendering a wall of nodes on one
+    // level -- exactly what this module's folder/module splitting elsewhere
+    // exists to prevent, just missed one level deeper.
+    const target = file("src/a/big.ts");
+    const fns = Array.from({ length: 40 }, (_, i) =>
+      fn("src/a/big.ts", `fn${String(i).padStart(2, "0")}`),
+    );
+
+    const result = buildHierarchy(
+      graphOf(
+        [target, ...fns],
+        fns.map((f) => contains(target.id, f.id)),
+      ),
+    );
+
+    // The file itself still reports the true total...
+    expect(result.nodesById[target.id].childCount).toBe(40);
+    // ...but no single level under it exceeds the budget.
+    const directChildren = result.childrenByParent[target.id];
+    expect(directChildren.length).toBeLessThanOrEqual(MAX_LEVEL_CHILDREN);
+    for (const groupId of directChildren) {
+      expect(result.nodesById[groupId].level).toBe("module");
+      expect(result.childrenByParent[groupId].length).toBeLessThanOrEqual(
+        MAX_LEVEL_CHILDREN,
+      );
+    }
+    // Every function is still reachable, just nested one level deeper.
+    for (const f of fns) {
+      expect(result.nodesById[f.id]).toBeDefined();
+      expect(result.nodesById[f.id].level).toBe("symbol");
+      const groupId = result.parentById[f.id]!;
+      expect(directChildren).toContain(groupId);
+    }
+  });
+
   it("nests a method under its class, not the file, even though the analyzer only ever emits a file->method `contains` edge", () => {
     // Mirrors vendor/understand-anything's graph-builder.ts: every function
     // (including class methods, for the extractors that surface them, e.g.

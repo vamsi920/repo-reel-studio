@@ -24973,6 +24973,53 @@ function mapSymbolsToUnits(symbols, units, edges) {
   }
   return result;
 }
+function alphabeticalBuckets(items) {
+  const sorted = [...items].sort((a, b) => a.name.localeCompare(b.name));
+  const bucketCount = Math.min(
+    MAX_LEVEL_CHILDREN,
+    Math.ceil(sorted.length / MAX_LEVEL_CHILDREN)
+  );
+  const perBucket = Math.ceil(sorted.length / bucketCount);
+  const buckets = [];
+  for (let i = 0; i < sorted.length; i += perBucket) {
+    const members = sorted.slice(i, i + perBucket);
+    const label = `${members[0].name.charAt(0).toUpperCase()}\u2013${members[members.length - 1].name.charAt(0).toUpperCase()}`;
+    buckets.push({ label, members });
+  }
+  return buckets;
+}
+function attachSymbolLeaf(ctx, symbol2, parentId, chain) {
+  const symbolNode = toCodeGraphNode(
+    symbol2,
+    "symbol",
+    0,
+    ctx.layerOf.get(symbol2.id)
+  );
+  ctx.nodesById[symbol2.id] = symbolNode;
+  ctx.parentById[symbol2.id] = parentId;
+  (ctx.childrenByParent[parentId] ??= []).push(symbol2.id);
+  ctx.ancestry.set(symbol2.id, [...chain, symbol2.id]);
+  return symbolNode;
+}
+function attachSymbols(ctx, owned, parentId, chain) {
+  if (owned.length <= MAX_LEVEL_CHILDREN) {
+    return owned.map(
+      (symbol2) => attachSymbolLeaf(ctx, symbol2, parentId, chain)
+    );
+  }
+  const created = [];
+  for (const { label, members } of alphabeticalBuckets(owned)) {
+    const groupId = dedupeId(
+      ctx,
+      `${parentId}/symbols:${slug(label)}-${created.length}`
+    );
+    const children = attachSymbols(ctx, members, groupId, [...chain, groupId]);
+    created.push(
+      registerAggregate(ctx, groupId, label, "module", parentId, children)
+    );
+  }
+  return created;
+}
 function attachUnit(ctx, unit, parentId, chain) {
   const owned = ctx.symbolsByUnit.get(unit.id) ?? [];
   const unitNode = toCodeGraphNode(
@@ -24986,18 +25033,7 @@ function attachUnit(ctx, unit, parentId, chain) {
   (ctx.childrenByParent[parentId] ??= []).push(unit.id);
   ctx.ancestry.set(unit.id, [...chain, unit.id]);
   ctx.childrenByParent[unit.id] ??= [];
-  for (const symbol2 of owned) {
-    const symbolNode = toCodeGraphNode(
-      symbol2,
-      "symbol",
-      0,
-      ctx.layerOf.get(symbol2.id)
-    );
-    ctx.nodesById[symbol2.id] = symbolNode;
-    ctx.parentById[symbol2.id] = unit.id;
-    ctx.childrenByParent[unit.id].push(symbol2.id);
-    ctx.ancestry.set(symbol2.id, [...chain, unit.id, symbol2.id]);
-  }
+  attachSymbols(ctx, owned, unit.id, [...chain, unit.id]);
   return unitNode;
 }
 function buildModuleTree(ctx, units, parentId, chain, depth) {
@@ -25102,17 +25138,9 @@ function buildModuleTree(ctx, units, parentId, chain, depth) {
   return created;
 }
 function bucketAlphabetically(ctx, units, parentId, chain, depth) {
-  const sorted = [...units].sort((a, b) => a.name.localeCompare(b.name));
-  const bucketCount = Math.min(
-    MAX_LEVEL_CHILDREN,
-    Math.ceil(sorted.length / MAX_LEVEL_CHILDREN)
-  );
-  const perBucket = Math.ceil(sorted.length / bucketCount);
   const created = [];
-  for (let i = 0; i < sorted.length; i += perBucket) {
-    const members = sorted.slice(i, i + perBucket);
-    const label = `${members[0].name.charAt(0).toUpperCase()}\u2013${members[members.length - 1].name.charAt(0).toUpperCase()}`;
-    const moduleId = `${parentId}/range:${slug(label)}-${i}`;
+  for (const { label, members } of alphabeticalBuckets(units)) {
+    const moduleId = `${parentId}/range:${slug(label)}-${created.length}`;
     const children = buildModuleTree(
       ctx,
       members,
