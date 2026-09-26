@@ -29,16 +29,23 @@ export const isSupabaseConfigured =
 // slow/unreachable network never hangs a caller -- every data-platform call
 // in this app is either best-effort (writes) or must degrade to a cached/
 // local value (reads), never block the UI indefinitely.
-function timedFetch(
+//
+// If a caller (or the Supabase SDK itself, e.g. via `.abortSignal()`)
+// supplies its own signal, it must be combined with -- not replace -- the
+// timeout signal via `AbortSignal.any`. Swapping one in for the other would
+// silently drop the hard timeout for that call the moment any caller passes
+// a signal: the 8s timer would still fire, but `controller.abort()` would
+// have no effect because the fetch was never given that controller's signal.
+export function timedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
-  return fetch(input, {
-    ...init,
-    signal: init?.signal ?? controller.signal,
-  }).finally(() => clearTimeout(timer));
+  const signal = init?.signal
+    ? AbortSignal.any([init.signal, controller.signal])
+    : controller.signal;
+  return fetch(input, { ...init, signal }).finally(() => clearTimeout(timer));
 }
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
