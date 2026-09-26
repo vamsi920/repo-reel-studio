@@ -26,12 +26,21 @@ export const handleActionEventCacheInvalidation = (
   if (
     action.kind === "StrReplaceEditorAction" ||
     action.kind === "FileEditorAction" ||
-    action.kind === "ExecuteBashAction"
+    action.kind === "ExecuteBashAction" ||
+    action.kind === "TerminalAction"
   ) {
     queryClient.invalidateQueries(
       {
         queryKey: ["file_changes", conversationId],
       },
+      { cancelRefetch: false },
+    );
+    // Also invalidate the raw file list/tree: without this, a file
+    // created/deleted/edited while the Files tab isn't mounted (the only
+    // other place this cache is invalidated) stays stale for up to its 30s
+    // staleTime the next time the tab is opened.
+    queryClient.invalidateQueries(
+      { queryKey: ["workspace-files"] },
       { cancelRefetch: false },
     );
   }
