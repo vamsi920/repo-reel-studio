@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OnboardingWorkbench } from "#/components/features/environment/studio/onboarding-workbench";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
+import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 
 vi.mock("#/hooks/query/use-environment-profile", () => ({
   useEnvironmentProfile: () => ({ data: null }),
@@ -21,17 +23,18 @@ vi.mock("#/hooks/query/use-environment-readiness", () => ({
   }),
 }));
 
-function renderWorkbench() {
+function renderWorkbench(postResult = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <OnboardingWorkbench postResult={vi.fn()} />
+        <OnboardingWorkbench postResult={postResult} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return postResult;
 }
 
 beforeEach(() => {
@@ -134,5 +137,81 @@ describe("OnboardingWorkbench", () => {
     // or needs to.
     expect(screen.getByTestId("connector-field-apiKey")).toBeInTheDocument();
     expect(screen.getByTestId("connector-field-indexHost")).toBeInTheDocument();
+  });
+
+  it("tells the agent which provider was picked instead of navigating anywhere", async () => {
+    // Choosing does not connect anything -- it tells the agent, which opens
+    // the right form next. Nothing here ever calls `navigate()`.
+    useOnboardingStudioStore.getState().pushCard({
+      id: "picker-1",
+      kind: "picker",
+      capability: "vector-store",
+      providerIds: ["pinecone", "qdrant"],
+    });
+    const user = userEvent.setup();
+    const postResult = renderWorkbench();
+
+    await user.click(screen.getByTestId("workbench-pick-pinecone"));
+
+    expect(postResult).toHaveBeenCalledTimes(1);
+    const message = postResult.mock.calls[0][0] as string;
+    expect(message.startsWith(ONBOARDING_RESULT_PREFIX)).toBe(true);
+    expect(JSON.parse(message.slice(ONBOARDING_RESULT_PREFIX.length))).toEqual(
+      {
+        status: "provider_chosen",
+        capability: "vector-store",
+        provider: "pinecone",
+      },
+    );
+  });
+
+  it("scopes a checklist card to only the features the agent named", () => {
+    useOnboardingStudioStore.getState().pushCard({
+      id: "checklist-1",
+      kind: "checklist",
+      featureIds: ["conversation.start"],
+    });
+    renderWorkbench();
+
+    const checklist = screen.getByTestId("workbench-checklist-card");
+    // The requirement graph names dozens of features; only the one the agent
+    // actually asked about should render here.
+    expect(checklist.querySelectorAll("li")).toHaveLength(1);
+  });
+
+  it("renders every feature when the agent asks for the full checklist", () => {
+    useOnboardingStudioStore.getState().pushCard({
+      id: "checklist-1",
+      kind: "checklist",
+      featureIds: [],
+    });
+    renderWorkbench();
+
+    const checklist = screen.getByTestId("workbench-checklist-card");
+    expect(checklist.querySelectorAll("li").length).toBeGreaterThan(1);
+  });
+
+  it("renders a probe card with the result the agent's probe produced", () => {
+    useOnboardingStudioStore.getState().pushCard({
+      id: "probe-1",
+      kind: "probe",
+      label: "egress",
+      result: {
+        ok: false,
+        vantage: "edge",
+        latencyMs: 12,
+        checks: [],
+        probedAt: "2026-08-31T00:00:00.000Z",
+      },
+    });
+    renderWorkbench();
+
+    expect(screen.getByTestId("workbench-probe-card")).toHaveTextContent(
+      "egress",
+    );
+    expect(screen.getByTestId("probe-result")).toHaveAttribute(
+      "data-ok",
+      "false",
+    );
   });
 });
