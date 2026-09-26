@@ -16,13 +16,22 @@ export function DrawerVSCodeLink() {
   const handleClick = async () => {
     let vscodeUrl = data?.url;
 
-    if (!vscodeUrl) {
-      const result = await refetch();
-      vscodeUrl = result.data?.url ?? null;
-    }
-
     if (vscodeUrl) {
       window.open(vscodeUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Open the tab synchronously, within the click gesture, so browsers
+    // don't treat it as an unsolicited popup once the URL resolves after
+    // the `await` below.
+    const pendingTab = window.open("about:blank", "_blank");
+    const result = await refetch();
+    vscodeUrl = result.data?.url ?? null;
+
+    if (vscodeUrl && pendingTab) {
+      pendingTab.location.href = vscodeUrl;
+    } else {
+      pendingTab?.close();
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import type { ChatAttachmentUploadOptions } from "#/hooks/chat/use-chat-attachment-upload";
+import { clearFileInput } from "#/components/features/chat/utils/chat-input.utils";
 
 interface UseFileHandlingReturn {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -63,6 +64,11 @@ export const useFileHandling = (
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       addFiles(files);
+      // Reset the input value so selecting the same file again (e.g. after
+      // removing it from the attachment list without submitting) still
+      // fires a change event — browsers only fire `change` when the
+      // input's value actually changes.
+      clearFileInput(e.target);
     },
     [addFiles],
   );
