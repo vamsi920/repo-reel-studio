@@ -86,12 +86,22 @@ export function PluginPicker({
       );
     }
     if (visible.length === 0) {
+      // A non-empty search that matched nothing is a different situation
+      // from an empty catalog: the former just needs the user to adjust
+      // their query, the latter means there is nothing to search yet.
+      const isSearchMiss = search.trim().length > 0;
       return (
         <p
-          data-testid="plugin-picker-empty"
+          data-testid={
+            isSearchMiss ? "plugin-picker-no-results" : "plugin-picker-empty"
+          }
           className="py-8 text-center text-sm text-tertiary-light"
         >
-          {t(I18nKey.PLUGINS$PICKER_EMPTY)}
+          {t(
+            isSearchMiss
+              ? I18nKey.COMMON$NO_RESULTS
+              : I18nKey.PLUGINS$PICKER_EMPTY,
+          )}
         </p>
       );
     }

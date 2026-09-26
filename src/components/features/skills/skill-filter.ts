@@ -19,7 +19,7 @@ const CATEGORY_PARAM = "category";
 const TYPE_PARAM = "type";
 const STATE_PARAM = "state";
 
-export type SkillEnabledState = "enabled" | "disabled";
+type SkillEnabledState = "enabled" | "disabled";
 export type SkillFacetGroupId = "state" | "source" | "category" | "type";
 
 const SKILL_ENABLED_STATE_ORDER: readonly SkillEnabledState[] = [
@@ -40,7 +40,7 @@ export interface SkillFilterState {
   states: Set<SkillEnabledState>;
 }
 
-export interface SkillFacetRowModel {
+interface SkillFacetRowModel {
   value: string;
   labelKey: I18nKey;
   count: number;

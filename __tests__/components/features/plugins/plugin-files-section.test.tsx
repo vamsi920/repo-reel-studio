@@ -80,6 +80,34 @@ describe("PluginFilesSection", () => {
     renderFilesSection();
     await user.click(screen.getByTestId("file-tree-file-README.md"));
 
-    expect(await screen.findByText("FILES$LOAD_ERROR")).toBeInTheDocument();
+    const error = await screen.findByText("FILES$LOAD_ERROR");
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveAttribute("role", "alert");
+  });
+
+  it("announces the file-content loading state to assistive tech", async () => {
+    const user = userEvent.setup();
+    let resolveContent: (value: {
+      kind: "text";
+      text: string;
+    }) => void = () => {};
+    vi.spyOn(PluginsService, "getPluginFileContent").mockReturnValue(
+      new Promise((resolve) => {
+        resolveContent = resolve;
+      }),
+    );
+
+    renderFilesSection();
+    await user.click(screen.getByTestId("file-tree-file-README.md"));
+
+    const loading = await screen.findByRole("status");
+    expect(loading).toHaveAttribute("aria-label", "FILES$LOADING_FILES");
+
+    resolveContent({ kind: "text", text: "# Demo readme" });
+    await waitFor(() =>
+      expect(screen.getByTestId("plugin-file-content")).toHaveTextContent(
+        "Demo readme",
+      ),
+    );
   });
 });

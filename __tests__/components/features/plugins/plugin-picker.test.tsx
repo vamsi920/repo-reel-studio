@@ -96,6 +96,27 @@ describe("PluginPicker", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a no-results message, not the empty-catalog message, when a search matches nothing", async () => {
+    vi.spyOn(PluginsService, "getPluginsMarketplace").mockResolvedValue([
+      alpha,
+      beta,
+    ]);
+
+    renderPicker();
+    await screen.findByTestId("plugin-picker-card-alpha");
+    await userEvent.type(
+      screen.getByTestId("plugin-picker-search-input"),
+      "nonexistent-plugin",
+    );
+
+    expect(
+      await screen.findByTestId("plugin-picker-no-results"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("plugin-picker-empty"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the error state when the catalog fails to load", async () => {
     vi.spyOn(PluginsService, "getPluginsMarketplace").mockRejectedValue(
       new Error("unreachable"),

@@ -67,11 +67,18 @@ export function PluginFilesSection({
             </p>
             <div className="min-h-0 flex-1">
               {isLoading ? (
-                <div className="flex h-full items-center justify-center">
+                <div
+                  role="status"
+                  aria-label={t(I18nKey.FILES$LOADING_FILES)}
+                  className="flex h-full items-center justify-center"
+                >
                   <LoadingSpinner size="small" />
                 </div>
               ) : isError ? (
-                <p className="px-3 py-2 text-xs text-tertiary-light">
+                <p
+                  role="alert"
+                  className="px-3 py-2 text-xs text-tertiary-light"
+                >
                   {t(I18nKey.FILES$LOAD_ERROR)}
                 </p>
               ) : content?.kind === "binary" ? (
