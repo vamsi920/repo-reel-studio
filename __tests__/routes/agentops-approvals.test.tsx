@@ -83,6 +83,28 @@ describe("AgentOpsApprovals", () => {
     expect(reasonInput()).toHaveValue("looks safe");
   });
 
+  it("marks the active state filter for assistive tech via aria-pressed", async () => {
+    approvalsQuery.mockReturnValue(loaded([APPROVAL]));
+    const user = userEvent.setup();
+    renderApprovals();
+
+    // `useTranslation` is mocked (see vitest.setup.ts) to return the key
+    // itself, so the buttons' accessible names are the raw i18n keys.
+    const pendingFilter = screen.getByRole("button", {
+      name: "AGENTOPS$FILTER_PENDING",
+    });
+    const allFilter = screen.getByRole("button", {
+      name: "AGENTOPS$FILTER_ALL",
+    });
+    expect(pendingFilter).toHaveAttribute("aria-pressed", "true");
+    expect(allFilter).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(allFilter);
+
+    expect(pendingFilter).toHaveAttribute("aria-pressed", "false");
+    expect(allFilter).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("still shows the collector card when the very first fetch fails", () => {
     approvalsQuery.mockReturnValue({
       data: undefined,

@@ -30,6 +30,7 @@ function AgentOpsApprovals() {
             <button
               key={filter.value}
               type="button"
+              aria-pressed={state === filter.value}
               onClick={() => setState(filter.value)}
               className={cn(
                 "rounded-full px-3 py-1 text-xs transition-colors",
