@@ -20,6 +20,13 @@ import {
   buildSecurityActivityEvent,
   type SecurityMilestoneKind,
 } from "#/lib/security/security-activity";
+import type {
+  SecurityAgentOpsIntegration,
+  SecurityAgentRuntimeIntegration,
+  SecurityCodeGraphIntegration,
+  SecurityMemoryIntegration,
+  SecurityProactiveIntegration,
+} from "#/lib/security/security-integrations";
 
 const connected: RepoCandidate[] = [];
 let connectedIsLoading = false;
@@ -134,6 +141,23 @@ describe("Security route", () => {
     const hint = screen.getByTestId("security-fix-with-agent-hint");
     expect(hint).toHaveTextContent(I18nKey.SECURITY$FIX_WITH_AGENT_DISABLED);
     expect(button).toHaveAttribute("aria-describedby", hint.id);
+  });
+
+  it("does nothing when Fix with Agent is clicked", async () => {
+    // Regression tripwire: `aria-disabled` (unlike the native `disabled`
+    // attribute) does not stop a click handler from firing. There is no
+    // `onClick` on this button today, so a click is a no-op -- this test
+    // exists so that whoever eventually wires "Fix with Agent" up behind a
+    // feature flag is forced to notice if they forget to gate the handler
+    // on the same condition that sets `aria-disabled`.
+    const user = userEvent.setup();
+    renderSecurity();
+
+    const button = screen.getByTestId("security-fix-with-agent");
+    await user.click(button);
+
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByTestId("security-empty-state")).toBeInTheDocument();
   });
 
   it("names the severity legend, the empty state and the future-areas list", () => {
@@ -967,5 +991,140 @@ describe("Security activity contract", () => {
     // spread the event into a store row must not pick up a phantom column.
     expect("message" in event).toBe(false);
     expect(event.status).toBe("completed");
+  });
+
+  it("keeps an explicit empty-string message instead of dropping it like undefined", () => {
+    // Regression: a truthy check (`message ? {...} : {}`) would silently
+    // swallow a legitimate empty-string message the same way it drops a
+    // missing one -- e.g. a future scan.failed event whose underlying error
+    // happened to stringify to "". Only "no message was passed at all"
+    // should omit the field.
+    const event = buildSecurityActivityEvent(
+      {
+        workspaceId: "/workspace/api",
+        repositoryId: "acme/api@main",
+        commitSha: "abcdef1234567890",
+      },
+      "scan.failed",
+      "2026-08-19T00:00:00.000Z",
+      "",
+    );
+
+    expect("message" in event).toBe(true);
+    expect(event.message).toBe("");
+  });
+});
+
+describe("Security integration seams", () => {
+  // These interfaces have no implementation yet -- nothing calls them. This
+  // is a compile-level contract test: a mock satisfying the minimal shape of
+  // each interface should keep type-checking. If a future edit loosens or
+  // narrows a method's signature while wiring up the real integration, this
+  // is the point that catches the drift, instead of a caller discovering it
+  // later.
+  it("types an AgentOps integration that requests a scan", async () => {
+    const integration: SecurityAgentOpsIntegration = {
+      requestScan: async (workspaceId, repositoryId) => ({
+        id: "s1",
+        workspaceId,
+        repositoryId,
+        commitSha: "abcdef1234567890",
+        status: "queued",
+        scanners: [],
+      }),
+    };
+
+    const scan = await integration.requestScan("/workspace/api", "acme/api@main");
+    expect(scan.status).toBe("queued");
+  });
+
+  it("types a Workspace Memory integration that records a summary", async () => {
+    const integration: SecurityMemoryIntegration = {
+      recordSummary: async () => undefined,
+    };
+
+    await expect(
+      integration.recordSummary({
+        workspaceId: "/workspace/api",
+        status: "not_configured",
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("types a Proactive Engineering integration that proposes remediation", async () => {
+    const integration: SecurityProactiveIntegration = {
+      proposeRemediation: async () => ({ taskId: "t1" }),
+    };
+
+    const result = await integration.proposeRemediation({
+      id: "f1",
+      workspaceId: "/workspace/api",
+      repositoryId: "acme/api@main",
+      commitSha: "abcdef1234567890",
+      scanner: "example",
+      category: "dependencies",
+      severity: "high",
+      title: "Example",
+      description: "Example",
+      evidence: [],
+      riskScore: 70,
+      status: "open",
+      verificationStatus: "unverified",
+      createdAt: "2026-08-19T00:00:00.000Z",
+    });
+
+    expect(result).toEqual({ taskId: "t1" });
+  });
+
+  it("types a Knowledge CodeGraph integration that resolves affected components", async () => {
+    const integration: SecurityCodeGraphIntegration = {
+      resolveAffectedComponents: async () => [
+        { componentId: "c1", label: "Example component" },
+      ],
+    };
+
+    const components = await integration.resolveAffectedComponents({
+      id: "f1",
+      workspaceId: "/workspace/api",
+      repositoryId: "acme/api@main",
+      commitSha: "abcdef1234567890",
+      scanner: "example",
+      category: "dependencies",
+      severity: "high",
+      title: "Example",
+      description: "Example",
+      evidence: [],
+      riskScore: 70,
+      status: "open",
+      verificationStatus: "unverified",
+      createdAt: "2026-08-19T00:00:00.000Z",
+    });
+
+    expect(components).toEqual([{ componentId: "c1", label: "Example component" }]);
+  });
+
+  it("types a Neo agent runtime integration that starts a fix conversation", async () => {
+    const integration: SecurityAgentRuntimeIntegration = {
+      startFixConversation: async () => ({ conversationId: "conv1" }),
+    };
+
+    const result = await integration.startFixConversation({
+      id: "f1",
+      workspaceId: "/workspace/api",
+      repositoryId: "acme/api@main",
+      commitSha: "abcdef1234567890",
+      scanner: "example",
+      category: "dependencies",
+      severity: "high",
+      title: "Example",
+      description: "Example",
+      evidence: [],
+      riskScore: 70,
+      status: "open",
+      verificationStatus: "unverified",
+      createdAt: "2026-08-19T00:00:00.000Z",
+    });
+
+    expect(result).toEqual({ conversationId: "conv1" });
   });
 });

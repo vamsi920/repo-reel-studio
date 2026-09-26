@@ -62,7 +62,7 @@ export function buildSecurityActivityEvent(
     kind,
     status,
     title,
-    ...(message ? { message } : {}),
+    ...(message !== undefined ? { message } : {}),
     entityType: "repository",
     entityId: context.repositoryId,
     metadata: { commitSha: context.commitSha },
