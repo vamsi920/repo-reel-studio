@@ -29,6 +29,7 @@ import {
   type SubsystemHint,
 } from "./hierarchy";
 import { resolveCalleeFile } from "./call-resolution";
+import { resolveImportPath } from "./import-resolution";
 import { shardName } from "./shard-name";
 import { selectFilesToAnalyze } from "./file-selection";
 import { walk } from "./repo-walk";
@@ -201,24 +202,11 @@ async function main(): Promise<void> {
     }
   }
 
-  const resolveImport = (fromPath: string, source: string): string | null => {
-    if (!source.startsWith(".")) return null;
-    const fromDir = fromPath.includes("/")
-      ? fromPath.slice(0, fromPath.lastIndexOf("/"))
-      : "";
-    const joined = resolvePath("/", fromDir, source).slice(1);
-    const candidates = [
-      joined,
-      ...[".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java"].flatMap(
-        (ext) => [`${joined}${ext}`, `${joined}/index${ext}`],
-      ),
-    ];
-    return candidates.find((candidate) => byPath.has(candidate)) ?? null;
-  };
-
   for (const file of analysed) {
     for (const imp of file.imports) {
-      const target = resolveImport(file.path, imp.source);
+      const target = resolveImportPath(file.path, imp.source, (candidate) =>
+        byPath.has(candidate),
+      );
       if (target && target !== file.path)
         builder.addImportEdge(file.path, target);
     }

@@ -5020,7 +5020,7 @@ var require_ignore = __commonJS({
 
 // src/lib/codegraph/analyzer-entry.ts
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { relative, resolve as resolvePath, join as join2 } from "node:path";
+import { relative, resolve as resolvePath2, join as join2 } from "node:path";
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -25338,6 +25338,48 @@ function resolveCalleeFile(callerPath, calleeName, localFunctionNames, functionO
   return functionOwner.get(calleeName) ?? null;
 }
 
+// src/lib/codegraph/import-resolution.ts
+import { resolve as resolvePath } from "node:path";
+var CANDIDATE_EXTENSIONS = [
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".py",
+  ".go",
+  ".rs",
+  ".java"
+];
+var EXTENSIONS_A_SPECIFIER_MAY_ALREADY_CARRY = [
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs"
+];
+function withoutCompiledExtension(path) {
+  for (const ext of EXTENSIONS_A_SPECIFIER_MAY_ALREADY_CARRY) {
+    if (path.endsWith(ext)) return path.slice(0, -ext.length);
+  }
+  return null;
+}
+function resolveImportPath(fromPath, source, hasFile) {
+  if (!source.startsWith(".")) return null;
+  const fromDir = fromPath.includes("/") ? fromPath.slice(0, fromPath.lastIndexOf("/")) : "";
+  const joined = resolvePath("/", fromDir, source).slice(1);
+  const candidates = [
+    joined,
+    ...CANDIDATE_EXTENSIONS.flatMap((ext) => [
+      `${joined}${ext}`,
+      `${joined}/index${ext}`
+    ])
+  ];
+  const stripped = withoutCompiledExtension(joined);
+  if (stripped !== null) {
+    candidates.push(...CANDIDATE_EXTENSIONS.map((ext) => `${stripped}${ext}`));
+  }
+  return candidates.find(hasFile) ?? null;
+}
+
 // src/lib/codegraph/shard-name.ts
 function base64url3(value) {
   const bytes = new TextEncoder().encode(value);
@@ -25669,8 +25711,8 @@ function progress(phase, detail = {}) {
 }
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const repoRoot = resolvePath(args.repo);
-  const grammarDir = resolvePath(args.grammars);
+  const repoRoot = resolvePath2(args.repo);
+  const grammarDir = resolvePath2(args.grammars);
   progress("analyzing");
   const plugin = new TreeSitterPlugin(
     builtinLanguageConfigs,
@@ -25743,21 +25785,13 @@ async function main() {
       if (!functionOwner.has(name)) functionOwner.set(name, file2.path);
     }
   }
-  const resolveImport = (fromPath, source) => {
-    if (!source.startsWith(".")) return null;
-    const fromDir = fromPath.includes("/") ? fromPath.slice(0, fromPath.lastIndexOf("/")) : "";
-    const joined = resolvePath("/", fromDir, source).slice(1);
-    const candidates = [
-      joined,
-      ...[".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java"].flatMap(
-        (ext) => [`${joined}${ext}`, `${joined}/index${ext}`]
-      )
-    ];
-    return candidates.find((candidate) => byPath.has(candidate)) ?? null;
-  };
   for (const file2 of analysed) {
     for (const imp of file2.imports) {
-      const target = resolveImport(file2.path, imp.source);
+      const target = resolveImportPath(
+        file2.path,
+        imp.source,
+        (candidate) => byPath.has(candidate)
+      );
       if (target && target !== file2.path)
         builder.addImportEdge(file2.path, target);
     }
@@ -25787,7 +25821,7 @@ async function main() {
     fileCount: hierarchy.fileCount,
     symbolCount: hierarchy.symbolCount
   });
-  const outDir = resolvePath(args.out);
+  const outDir = resolvePath2(args.out);
   mkdirSync(join2(outDir, "levels"), { recursive: true });
   const meta3 = {
     workspaceId: args.workspaceId,
