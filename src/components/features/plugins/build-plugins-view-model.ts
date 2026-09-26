@@ -80,7 +80,7 @@ export function buildPluginsViewModel(
     const hasContents = entry.skills != null || entry.files != null;
     byName.set(entry.name, {
       name: entry.name,
-      description: existing?.description ?? entry.description ?? null,
+      description: entry.description ?? existing?.description ?? null,
       source: entry.source ?? existing?.source ?? null,
       ref: entry.resolved_ref ?? existing?.ref ?? null,
       repoPath: entry.repo_path ?? existing?.repoPath ?? null,

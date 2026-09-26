@@ -44,6 +44,20 @@ describe("buildPluginsViewModel", () => {
       inCatalog: true,
       enabled: false,
       version: "2.0.0",
+      description: "Installed description",
+    });
+  });
+
+  it("falls back to the catalog description when the installed entry has none", () => {
+    const result = buildPluginsViewModel(
+      [catalogPlugin],
+      [{ ...installedPlugin, description: null }],
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      name: "demo-plugin",
+      description: "Catalog description",
     });
   });
 

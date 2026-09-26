@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +11,9 @@ import {
   setActiveSelection,
   setRegisteredBackends,
 } from "#/api/backend-registry/active-store";
+import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backend";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
+import { SKILLS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import type {
   CmdOutputMetadata,
   ExecuteBashObservation,
@@ -104,6 +107,29 @@ describe("SkillInstallRestartBanner", () => {
     expect(
       await screen.findByTestId("skill-install-restart-banner"),
     ).toBeInTheDocument();
+  });
+
+  it("invalidates the cached skills catalog when a new install is detected", async () => {
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    renderBanner();
+
+    addInstallEvent("evt-1");
+    await screen.findByTestId("skill-install-restart-banner");
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: SKILLS_QUERY_KEYS.all(SEEDED_DEFAULT_BACKEND_ID),
+      }),
+    );
+
+    invalidateSpy.mockClear();
+
+    // Re-rendering with the same install (e.g. a state update elsewhere)
+    // must not invalidate again — only a genuinely new install id should.
+    addInstallEvent("evt-1");
+    await waitFor(() => {
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    });
   });
 
   it("hides the banner when dismissed", async () => {
