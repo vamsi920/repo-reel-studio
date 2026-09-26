@@ -24,6 +24,7 @@ import {
 } from "#/lib/environment/validation";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { PostResultFn } from "#/services/onboarding-control";
+import { useConnections } from "#/hooks/query/use-connections";
 
 export interface ConnectionCardProps {
   card: Extract<WorkbenchCard, { kind: "form" }>;
@@ -48,6 +49,22 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
   const queryClient = useQueryClient();
   const updateCard = useOnboardingStudioStore((state) => state.updateCard);
   const [submitting, setSubmitting] = React.useState(false);
+  const { data: connections } = useConnections();
+  // `open_connection_form`/`request_credentials` raise this same card for a
+  // provider that may already be connected (a rotation, or fixing a failed
+  // probe) -- see `ConnectionForm`'s seeding effect for why the existing
+  // record has to be passed through rather than left to the manifest's
+  // defaults.
+  const existingConnection = React.useMemo(
+    () =>
+      connections?.find(
+        (connection) =>
+          connection.capability === card.capability &&
+          connection.providerId === card.providerId &&
+          connection.instanceKey === card.instanceKey,
+      ) ?? null,
+    [connections, card.capability, card.providerId, card.instanceKey],
+  );
 
   const manifest = getConnectorManifest(card.providerId);
   if (!manifest) return null;
@@ -224,6 +241,8 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
       ) : (
         <ConnectionForm
           manifest={manifest}
+          existingConnection={existingConnection}
+          visibleFields={card.fields}
           submitting={submitting}
           submitLabel={t(I18nKey.ENVIRONMENT$CREDENTIAL_SUBMIT)}
           onSubmit={isOAuth ? handleOAuth : handleSubmit}

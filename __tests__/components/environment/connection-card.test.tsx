@@ -8,6 +8,13 @@ import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { EnvironmentService } from "#/api/environment-service/environment-service.api";
 import type { ConnectionReceipt } from "#/lib/environment/types/probe";
+import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
+
+let mockConnections: ConnectionRecord[] = [];
+
+vi.mock("#/hooks/query/use-connections", () => ({
+  useConnections: () => ({ data: mockConnections }),
+}));
 
 vi.mock("#/api/environment-service/environment-service.api", async () => {
   const actual = await vi.importActual<
@@ -79,6 +86,7 @@ function lastReceipt(postResult: ReturnType<typeof vi.fn>) {
 beforeEach(() => {
   vi.clearAllMocks();
   useOnboardingStudioStore.getState().reset();
+  mockConnections = [];
   Object.defineProperty(window, "location", {
     configurable: true,
     value: { ...ORIGINAL_LOCATION, href: "http://localhost/environment/setup" },
@@ -316,6 +324,127 @@ describe("ConnectionCard", () => {
         .getState()
         .cards.find((card) => card.id === "form:linear:default"),
     ).toMatchObject({ status: "failed" });
+  });
+
+  it("seeds non-secret fields from the connection's saved config, not the manifest default, when reopened on an already-connected provider", async () => {
+    // `open_connection_form`/`request_credentials` raise this same card for a
+    // provider the user already connected (e.g. fixing a failed probe or
+    // rotating a secret). The form used to seed every non-secret field from
+    // the manifest's default instead of the connection's real, saved value,
+    // so submitting -- even just to rotate the secret -- silently overwrote
+    // a custom self-hosted host with the manifest default.
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      receiptFor("posthog"),
+    );
+    mockConnections = [
+      {
+        id: "conn-1",
+        orgId: "org-1",
+        capability: "observability",
+        providerId: "posthog",
+        instanceKey: "default",
+        displayName: null,
+        config: { instanceHost: "posthog.internal.example.com" },
+        redactedSummary: {},
+        requestedScopes: [],
+        grantedScopes: [],
+        status: "ok",
+        lastProbe: null,
+        lastProbeAt: null,
+        expiresAt: null,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ];
+    const user = userEvent.setup();
+    const postResult = renderCard({
+      id: "form:posthog:default",
+      kind: "form",
+      capability: "observability",
+      providerId: "posthog",
+      instanceKey: "default",
+      fields: "all",
+      status: "open",
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("connector-field-instanceHost")).toHaveValue(
+        "posthog.internal.example.com",
+      ),
+    );
+    await user.type(
+      screen.getByTestId("connector-field-projectApiKey"),
+      "phc_secret",
+    );
+    await user.click(screen.getByTestId("connection-submit-posthog"));
+
+    await waitFor(() =>
+      expect(EnvironmentService.setCredentials).toHaveBeenCalledTimes(1),
+    );
+    expect(EnvironmentService.setCredentials).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: "posthog",
+        config: { instanceHost: "posthog.internal.example.com" },
+        credentials: { projectApiKey: "phc_secret" },
+      }),
+    );
+    expect(postResult).toHaveBeenCalled();
+  });
+
+  it("hides a secret field the request didn't ask for, but keeps every non-secret field visible", async () => {
+    // `card.fields` narrows a `request_credentials` card to the one secret
+    // being rotated (documented on `WorkbenchCard["fields"]`), but the form
+    // ignored it and always rendered every manifest field -- so a request to
+    // rotate just `secretAccessKey` still showed the unrelated
+    // `sessionToken` field too.
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      receiptFor("aws-bedrock"),
+    );
+    const user = userEvent.setup();
+    const postResult = renderCard({
+      id: "form:aws-bedrock:default",
+      kind: "form",
+      capability: "llm",
+      providerId: "aws-bedrock",
+      instanceKey: "default",
+      fields: ["secretAccessKey"],
+      status: "open",
+    });
+
+    // Non-secret fields stay visible so a required value can still be
+    // corrected; the secret that wasn't requested does not.
+    expect(screen.getByTestId("connector-field-region")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("connector-field-accessKeyId"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("connector-field-secretAccessKey"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("connector-field-sessionToken"),
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByTestId("connector-field-accessKeyId"),
+      "AKIAEXAMPLE",
+    );
+    await user.type(
+      screen.getByTestId("connector-field-secretAccessKey"),
+      "secret-value",
+    );
+    await user.click(screen.getByTestId("connection-submit-aws-bedrock"));
+
+    await waitFor(() =>
+      expect(EnvironmentService.setCredentials).toHaveBeenCalledTimes(1),
+    );
+    expect(EnvironmentService.setCredentials).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: "aws-bedrock",
+        config: { region: "us-east-1", accessKeyId: "AKIAEXAMPLE" },
+        credentials: { secretAccessKey: "secret-value" },
+      }),
+    );
+    expect(postResult).toHaveBeenCalled();
   });
 
   it("tells the agent when the user declines instead of leaving it waiting", async () => {
