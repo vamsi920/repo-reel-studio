@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useTerminal } from "#/hooks/use-terminal";
 import "@xterm/xterm/css/xterm.css";
 import { RUNTIME_STARTING_STATES } from "#/types/agent-state";
@@ -6,8 +7,10 @@ import { WaitingForRuntimeMessage } from "../chat/waiting-for-runtime-message";
 import { useAgentState } from "#/hooks/use-agent-state";
 import { useCommandStore } from "#/stores/command-store";
 import { EmptyTerminalMessage } from "./empty-terminal-message";
+import { I18nKey } from "#/i18n/declaration";
 
 function Terminal() {
+  const { t } = useTranslation("openhands");
   const { curAgentState } = useAgentState();
   const commands = useCommandStore((state) => state.commands);
 
@@ -28,6 +31,8 @@ function Terminal() {
       {!isRuntimeInactive && !hasOutput && <EmptyTerminalMessage />}
 
       <div
+        role="group"
+        aria-label={t(I18nKey.TERMINAL$OUTPUT_LABEL)}
         className={cn(
           "flex-1 min-h-0 p-4",
           hideTerminalSurface &&

@@ -6765,40 +6765,6 @@
     "uk": "App",
     "ca": "Aplicació"
   },
-  "BROWSER$TITLE": {
-    "en": "Browser",
-    "ja": "ブラウザ",
-    "zh-CN": "浏览器",
-    "zh-TW": "瀏覽器",
-    "ko-KR": "브라우저",
-    "no": "Nettleser",
-    "it": "Browser",
-    "pt": "Navegador",
-    "es": "Navegador",
-    "ar": "المتصفح",
-    "fr": "Navigateur",
-    "tr": "Tarayıcı",
-    "de": "Browser",
-    "uk": "Браузер",
-    "ca": "Navegador"
-  },
-  "BROWSER$EMPTY_MESSAGE": {
-    "en": "If you tell Neo to start a web server, the app will appear here.",
-    "ja": "NeoにWebサーバーの起動を指示すると、ここにアプリが表示されます。",
-    "zh-CN": "如果您告诉Neo启动Web服务器，应用将在此处显示。",
-    "zh-TW": "如果您要求 Neo 啟動網頁伺服器，應用程式將會顯示在此處。",
-    "ko-KR": "Neo에게 웹 서버를 시작하도록 지시하면 여기에 앱이 표시됩니다.",
-    "no": "Hvis du ber Neo om å starte en webserver, vil appen vises her.",
-    "it": "Se chiedi a Neo di avviare un server web, l'app apparirà qui.",
-    "pt": "Se você disser ao Neo para iniciar um servidor web, o aplicativo aparecerá aqui.",
-    "es": "Si le dices a Neo que inicie un servidor web, la aplicación aparecerá aquí.",
-    "ar": "إذا طلبت من Neo بدء خادم ويب، سيظهر التطبيق هنا.",
-    "fr": "Si vous demandez à Neo de démarrer un serveur web, l'application apparaîtra ici.",
-    "tr": "Neo'e bir web sunucusu başlatmasını söylerseniz, uygulama burada görünecektir.",
-    "de": "Wenn Sie Neo anweisen, einen Webserver zu starten, erscheint die App hier.",
-    "uk": "Якщо ви накажете Neo запустити вебсервер, програма з'явиться тут.",
-    "ca": "Si li dieu a Neo que iniciï un servidor web, l'aplicació apareixerà aquí."
-  },
   "SETTINGS$TITLE": {
     "en": "Settings",
     "ja": "設定",
@@ -6968,23 +6934,6 @@
     "ja": "ワークスペース",
     "uk": "Робочий простір",
     "ca": "Espai de treball"
-  },
-  "TERMINAL$WAITING_FOR_CLIENT": {
-    "en": "Waiting for client to become ready...",
-    "ja": "クライアントの準備を待機中...",
-    "zh-CN": "等待客户端准备就绪...",
-    "zh-TW": "正在等待用戶端就緒...",
-    "ko-KR": "클라이언트 준비를 기다리는 중...",
-    "de": "Warte auf Bereitschaft des Clients...",
-    "no": "Venter på at klienten skal bli klar...",
-    "it": "In attesa che il client sia pronto...",
-    "pt": "Aguardando o cliente ficar pronto...",
-    "es": "Esperando a que el cliente esté listo...",
-    "ar": "في انتظار جاهزية العميل...",
-    "fr": "En attente de la disponibilité du client...",
-    "tr": "İstemcinin hazır olması bekleniyor...",
-    "uk": "Чекаємо на готовність клієнта...",
-    "ca": "Esperant que el client estigui preparat..."
   },
   "CODE_EDITOR$FILE_SAVED_SUCCESSFULLY": {
     "en": "File saved successfully",
@@ -23204,23 +23153,6 @@
     "uk": "Необов'язково",
     "ca": "Opcional"
   },
-  "BROWSER$SERVER_MESSAGE": {
-    "en": "No web app running. Ask Neo to start your project's dev server (for example: npm run dev) to see your web application here.",
-    "ja": "Webアプリケーションが実行されていません。Neo にプロジェクトの開発サーバーを起動するよう指示してください（例: npm run dev）。そうすれば、ここでWebアプリケーションを確認できます。",
-    "zh-CN": "未运行任何网页应用。请让 Neo 启动您项目的开发服务器（例如：npm run dev），即可在此处查看您的网页应用。",
-    "zh-TW": "未執行任何網頁應用程式。請指示 Neo 啟動專案的開發伺服器（例如：npm run dev），即可在此處檢視您的網頁應用程式。",
-    "ko-KR": "웹 애플리케이션이 실행 중이 아닙니다. Neo에 프로젝트의 개발 서버를 시작하도록 요청하세요(예: npm run dev). 그러면 여기에서 웹 애플리케이션을 볼 수 있습니다.",
-    "no": "Ingen webapp kjører. Be Neo om å starte prosjektets utviklingsserver (for eksempel: npm run dev) for å se webapplikasjonen din her.",
-    "it": "Nessuna applicazione web in esecuzione. Chiedi a Neo di avviare il server di sviluppo del tuo progetto (ad esempio: npm run dev) per visualizzare qui la tua applicazione web.",
-    "pt": "Nenhum aplicativo web em execução. Peça ao Neo para iniciar o servidor de desenvolvimento do seu projeto (por exemplo: npm run dev) para ver o seu aplicativo web aqui.",
-    "es": "No hay ninguna aplicación web en ejecución. Pide a Neo que inicie el servidor de desarrollo de tu proyecto (por ejemplo: npm run dev) para ver tu aplicación web aquí.",
-    "ar": "لا يوجد تطبيق ويب قيد التشغيل. اطلب من Neo بدء تشغيل خادم التطوير الخاص بمشروعك (على سبيل المثال: npm run dev) لعرض تطبيق الويب الخاص بك هنا.",
-    "fr": "Aucune application web n'est en cours d'exécution. Demandez à Neo de démarrer le serveur de développement de votre projet (par exemple : npm run dev) pour voir votre application web ici.",
-    "tr": "Çalışan web uygulaması yok. Web uygulamanızı burada görmek için Neo'ten projenizin geliştirme sunucusunu başlatmasını isteyin (örneğin: npm run dev).",
-    "de": "Keine Web-App läuft. Bitten Sie Neo, den Entwicklungsserver Ihres Projekts zu starten (zum Beispiel: npm run dev), um Ihre Web-Anwendung hier anzuzeigen.",
-    "uk": "Веб-додаток не працює. Попросіть Neo запустити сервер розробки вашого проєкту (наприклад: npm run dev), щоб побачити ваш веб-додаток тут.",
-    "ca": "No hi ha cap aplicació web en execució. Demaneu a Neo que iniciï el servidor de desenvolupament del vostre projecte (per exemple: npm run dev) per veure la vostra aplicació web aquí."
-  },
   "API$NO_KEY_AVAILABLE": {
     "en": "No API key available",
     "ja": "APIキーが利用できません",
@@ -25601,23 +25533,6 @@
     "uk": "Показано перші {{shown}} з {{total}} файлів — попросіть Neo відкрити файл, якого немає в списку.",
     "ca": "Es mostren els primers {{shown}} de {{total}} fitxers; demana a Neo que obri un fitxer que no aparegui a la llista."
   },
-  "FILES$MORE_FILES": {
-    "en": "More files",
-    "ja": "他のファイル",
-    "zh-CN": "更多文件",
-    "zh-TW": "更多檔案",
-    "ko-KR": "다른 파일",
-    "no": "Flere filer",
-    "it": "Altri file",
-    "pt": "Mais arquivos",
-    "es": "Más archivos",
-    "ar": "مزيد من الملفات",
-    "fr": "Plus de fichiers",
-    "tr": "Daha fazla dosya",
-    "de": "Weitere Dateien",
-    "uk": "Більше файлів",
-    "ca": "Més fitxers"
-  },
   "FILES$SHOW_FILE_TREE": {
     "en": "Show file tree",
     "ja": "ファイルツリーを表示",
@@ -26723,23 +26638,6 @@
     "uk": "Виберіть або вставте URL",
     "ca": "Seleccioneu o inseriu una URL"
   },
-  "TERMINAL$CONSOLE": {
-    "en": "Console",
-    "ja": "コンソール",
-    "zh-CN": "控制台",
-    "zh-TW": "控制台",
-    "ko-KR": "콘솔",
-    "no": "Konsoll",
-    "it": "Console",
-    "pt": "Console",
-    "es": "Consola",
-    "ar": "وحدة التحكم",
-    "fr": "Console",
-    "tr": "Konsol",
-    "de": "Konsole",
-    "uk": "Консоль",
-    "ca": "Consola"
-  },
   "TERMINAL$NO_OUTPUT": {
     "en": "No terminal output yet. Commands run by the agent will appear here.",
     "ja": "ターミナル出力はまだありません。エージェントが実行したコマンドがここに表示されます。",
@@ -26756,6 +26654,23 @@
     "tr": "Henüz terminal çıktısı yok. Ajanın çalıştırdığı komutlar burada görünecek.",
     "uk": "Виводу термінала ще немає. Команди, які виконує агент, з’являться тут.",
     "ca": "Encara no hi ha sortida de terminal. Les ordres executades per l'agent apareixeran aquí."
+  },
+  "TERMINAL$OUTPUT_LABEL": {
+    "en": "Terminal output",
+    "ja": "ターミナル出力",
+    "zh-CN": "终端输出",
+    "zh-TW": "終端機輸出",
+    "ko-KR": "터미널 출력",
+    "no": "Terminalutdata",
+    "it": "Output del terminale",
+    "pt": "Saída do terminal",
+    "es": "Salida de la terminal",
+    "ar": "إخراج الطرفية",
+    "fr": "Sortie du terminal",
+    "tr": "Terminal çıktısı",
+    "de": "Terminalausgabe",
+    "uk": "Вивід термінала",
+    "ca": "Sortida del terminal"
   },
   "MICROAGENT$DEFINITION": {
     "en": "Microagents are specialized prompts that enhance Neo with domain-specific knowledge. They provide expert guidance, automate common tasks, and ensure consistent practices across projects.",

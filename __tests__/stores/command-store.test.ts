@@ -48,6 +48,57 @@ const bashObservation = (
     },
   }) as unknown as OpenHandsEvent;
 
+// The current SDK's terminal tool emits `TerminalAction`/`TerminalObservation`
+// instead of the legacy `ExecuteBashAction`/`ExecuteBashObservation` pair —
+// `isExecuteBashActionEvent`/`isExecuteBashObservationEvent` treat both kinds
+// identically (see `type-guards.ts`), so `commandFromEvent` must map this
+// current-SDK shape to a terminal line too, not just the legacy one.
+const terminalAction = (command: string): OpenHandsEvent =>
+  ({
+    id: "terminal-1",
+    timestamp: "2026-09-10T00:00:02.000Z",
+    source: "agent",
+    thought: [],
+    thinking_blocks: [],
+    action: {
+      kind: "TerminalAction",
+      command,
+      is_input: false,
+      timeout: null,
+      reset: false,
+    },
+    tool_name: "terminal",
+    tool_call_id: "call-2",
+    tool_call: {
+      id: "call-2",
+      type: "function",
+      function: { name: "terminal", arguments: "{}" },
+    },
+    llm_response_id: "resp-2",
+    security_risk: "UNKNOWN",
+  }) as unknown as OpenHandsEvent;
+
+const terminalObservation = (
+  content: Array<{ type: string; text?: string }>,
+): OpenHandsEvent =>
+  ({
+    id: "terminal-obs-1",
+    timestamp: "2026-09-10T00:00:03.000Z",
+    source: "environment",
+    action_id: "terminal-1",
+    tool_name: "terminal",
+    tool_call_id: "call-2",
+    observation: {
+      kind: "TerminalObservation",
+      content,
+      command: "run",
+      exit_code: 0,
+      error: false,
+      timeout: false,
+      metadata: {},
+    },
+  }) as unknown as OpenHandsEvent;
+
 describe("commandFromEvent", () => {
   it("maps a bash action to a terminal input line", () => {
     expect(commandFromEvent(bashAction("ls -la"))).toEqual({
@@ -66,6 +117,25 @@ describe("commandFromEvent", () => {
         ]),
       ),
     ).toEqual({ content: "a.txt\nb.txt", type: "output" });
+  });
+
+  it("maps a current-SDK terminal action to a terminal input line", () => {
+    expect(commandFromEvent(terminalAction("git status"))).toEqual({
+      content: "git status",
+      type: "input",
+    });
+  });
+
+  it("joins the text parts of a current-SDK terminal observation into one output line", () => {
+    expect(
+      commandFromEvent(
+        terminalObservation([
+          { type: "text", text: "On branch main" },
+          { type: "image", text: "ignored" },
+          { type: "text", text: "nothing to commit" },
+        ]),
+      ),
+    ).toEqual({ content: "On branch main\nnothing to commit", type: "output" });
   });
 
   it("ignores events that are not bash actions or observations", () => {
