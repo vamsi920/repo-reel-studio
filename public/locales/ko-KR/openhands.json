@@ -2351,6 +2351,7 @@
   "KT$REFRESH_WEEKLY": "Weekly",
   "KT$REFRESH_MONTHLY": "Monthly",
   "KT$LAST_GENERATED": "Last generated {{time}}",
+  "KT$REFRESH_NEEDS_CONVERSATION": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",

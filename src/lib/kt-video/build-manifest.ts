@@ -701,7 +701,12 @@ function buildIntroScene(
   const content = fileContents[openerPath] || "";
   const lineCount = content.split("\n").length || 1;
   const tech = detectTech(fileContents);
-  const totalFiles = Object.keys(fileContents).length;
+  // `fileContents` is every non-empty file handed to `buildKtManifest`, but
+  // only `rankedFiles` actually gets a code scene (capped at `maxCodeScenes`,
+  // default 8) — counting the former overstates what the walkthrough shows
+  // on any repo with more source files than the cap, which is the common
+  // case.
+  const totalFiles = rankedFiles.length;
 
   const ref: KtSourceRef = {
     file_path: openerPath,

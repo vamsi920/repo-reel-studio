@@ -217,6 +217,27 @@ describe("buildKtManifest", () => {
     expect(manifest.scenes.filter((s) => s.type === "code")).toHaveLength(3);
   });
 
+  it("counts the intro's 'this walkthrough covers N files' against the files actually shown, not every file it was given", () => {
+    // The intro scene's file count used to come from `Object.keys(fileContents)`
+    // (every non-empty file handed to buildKtManifest) instead of the ranked/
+    // capped list that actually gets a code scene, so a repo with more source
+    // files than the cap overstated what the walkthrough covers.
+    const fileContents = Object.fromEntries(
+      Array.from({ length: 6 }, (_, i) => [
+        `src/mod${i}.ts`,
+        `export function fn${i}() {\n  return ${i};\n}\n`.repeat(3),
+      ]),
+    );
+
+    const manifest = buildKtManifest("repo", fileContents, 3);
+    const codeScenes = manifest.scenes.filter((s) => s.type === "code");
+    const intro = manifest.scenes.find((s) => s.type === "intro");
+
+    expect(codeScenes).toHaveLength(3);
+    expect(intro!.narration_text).toContain("covers 3 files");
+    expect(intro!.narration_text).not.toContain("covers 6 files");
+  });
+
   it("disambiguates scene titles for same-named files in different directories", () => {
     // scene.title drops the directory (nameNoExt(path)), so two ranked files
     // that share a basename — extremely common (index.ts, utils.ts, ...) —

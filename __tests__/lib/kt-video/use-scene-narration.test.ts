@@ -229,6 +229,27 @@ describe("useSceneNarration", () => {
     ]);
   });
 
+  it("does not restart a scene's narration when play resumes a paused rewind within the same scene", () => {
+    // `lastFrameSeen` only advances on playing `frameupdate` ticks, so a
+    // pause -> rewind-while-paused -> play sequence used to leave it stuck
+    // at the pre-pause frame. The next real playing tick after resuming then
+    // read as a frame *decrease* relative to that stale value, was
+    // misdiagnosed as a loop wrap, and cancelled + restarted the same
+    // scene's narration mid-playback even though nothing actually looped.
+    const p = makePlayer();
+    const manifest = manifestOf(scene(0, 0, 600));
+    renderHook(() => useSceneNarration(manifest, p.ref, true));
+
+    p.play();
+    p.seek(400);
+    p.pause();
+    p.seek(100); // rewind while paused, ignored until play resumes
+    p.play(); // resumes the same scene from frame 100
+    p.seek(101); // first real tick after resuming
+
+    expect(synthState.spoken).toEqual(["Narration for scene 0"]);
+  });
+
   it("stops speaking and detaches from the player when narration is turned off", () => {
     const p = makePlayer();
     const manifest = manifestOf(scene(0, 0, 100));

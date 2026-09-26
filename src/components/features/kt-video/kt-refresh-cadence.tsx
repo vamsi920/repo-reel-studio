@@ -73,9 +73,7 @@ export function KtRefreshCadence({ repositoryId }: { repositoryId: string }) {
       // garbage. Same real scope boundary Watch KT already enforces
       // (see kt-page.tsx's generateWatchManifest): open/reopen the
       // conversation first.
-      displayErrorToast(
-        "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
-      );
+      displayErrorToast(t(I18nKey.KT$REFRESH_NEEDS_CONVERSATION));
       return;
     }
     void generateKnowledge(

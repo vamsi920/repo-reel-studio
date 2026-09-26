@@ -73,7 +73,16 @@ export function useSceneNarration(
     };
 
     const handlePlay = () => {
-      const scene = sceneAt(player.getCurrentFrame());
+      const frame = player.getCurrentFrame();
+      // `lastFrameSeen` only tracks frames while playing, so a pause,
+      // rewind-while-paused, then play sequence left it stuck at the
+      // pre-pause frame. Without resyncing it here, the next real playing
+      // `frameupdate` tick would read as smaller than that stale value, get
+      // misread as a loop wrap, and cancel/restart the current scene's
+      // narration mid-sentence even though playback only resumed a rewind
+      // within the same scene.
+      lastFrameSeen = frame;
+      const scene = sceneAt(frame);
       if (scene && scene.id !== lastSpokenSceneId.current) {
         speak(scene);
         return;

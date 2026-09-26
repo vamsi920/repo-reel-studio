@@ -39983,6 +39983,23 @@
     "tr": "Last generated {{time}}",
     "uk": "Last generated {{time}}"
   },
+  "KT$REFRESH_NEEDS_CONVERSATION": {
+    "en": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "ja": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "zh-CN": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "zh-TW": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "ko-KR": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "no": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "ar": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "de": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "fr": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "it": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "pt": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "es": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "ca": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "tr": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+    "uk": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session."
+  },
   "KT$REFRESH_DUE": {
     "en": "Update available",
     "ja": "Update available",
