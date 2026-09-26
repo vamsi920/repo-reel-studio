@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useParams, useSearchParams } from "react-router";
 import { Player, type PlayerRef } from "@remotion/player";
 import {
+  AlertCircle,
   AlertTriangle,
   FileText,
   Loader2,
@@ -335,6 +336,29 @@ function KtPage() {
             ) : null}
           </div>
         </div>
+
+        {state.status === "error" && state.error && (
+          // Same regeneration-failure case handled in kt-repository.tsx: a
+          // failed regenerate leaves `knowledge` (and this page) intact, so
+          // the early-return branch above never sees it and the one-shot
+          // toast has already faded by the time this route is revisited.
+          <div
+            data-testid="kt-page-regeneration-error"
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[var(--error-500)] bg-[var(--error-bg-subtle)] px-3 py-2 text-sm text-[var(--oh-foreground)]"
+          >
+            <AlertCircle
+              className="size-4 shrink-0 text-[var(--error-500)]"
+              aria-hidden
+            />
+            <div className="flex-1">
+              <p className="font-semibold text-[var(--error-500)]">
+                {t(I18nKey.KT$REGENERATION_FAILED_BANNER_TITLE)}
+              </p>
+              <p className="mt-0.5 text-[var(--oh-muted)]">{state.error}</p>
+            </div>
+          </div>
+        )}
 
         {pageQualityFlags.length > 0 && (
           <div

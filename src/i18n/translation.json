@@ -40476,6 +40476,23 @@
     "tr": "Dismiss",
     "uk": "Dismiss"
   },
+  "KT$REGENERATION_FAILED_BANNER_TITLE": {
+    "en": "The last regeneration attempt failed — showing the previous version below.",
+    "ja": "前回の再生成は失敗しました — 以下に前のバージョンを表示しています。",
+    "zh-CN": "上次重新生成失败 — 下方显示的是之前的版本。",
+    "zh-TW": "上次重新產生失敗 — 下方顯示的是先前的版本。",
+    "ko-KR": "마지막 재생성 시도가 실패했습니다 — 아래에 이전 버전을 표시합니다.",
+    "no": "Siste forsøk på regenerering mislyktes — viser forrige versjon nedenfor.",
+    "ar": "فشلت آخر محاولة لإعادة الإنشاء — يتم عرض الإصدار السابق أدناه.",
+    "de": "Der letzte Regenerierungsversuch ist fehlgeschlagen — die vorherige Version wird unten angezeigt.",
+    "fr": "La dernière tentative de régénération a échoué — la version précédente est affichée ci-dessous.",
+    "it": "L'ultimo tentativo di rigenerazione non è riuscito — di seguito viene mostrata la versione precedente.",
+    "pt": "A última tentativa de regeneração falhou — a versão anterior é exibida abaixo.",
+    "es": "El último intento de regeneración falló — se muestra la versión anterior a continuación.",
+    "ca": "L'últim intent de regeneració ha fallat — es mostra la versió anterior a continuació.",
+    "tr": "Son yeniden oluşturma denemesi başarısız oldu — önceki sürüm aşağıda gösteriliyor.",
+    "uk": "Остання спроба регенерації не вдалася — нижче показано попередню версію."
+  },
   "CODEGRAPH$TITLE": {
     "en": "CodeGraph",
     "ja": "CodeGraph",

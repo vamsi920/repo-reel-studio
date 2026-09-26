@@ -290,6 +290,64 @@ describe("KtRepository", () => {
     ).toBeInTheDocument();
   });
 
+  it("surfaces a failed regeneration instead of silently keeping the stale docs with no indication", async () => {
+    // `startGenerating` deliberately preserves the previous `knowledge`
+    // across a regeneration attempt (see knowledge-store.ts), so a *failed*
+    // regenerate settles here with real content still present -- the
+    // early-return branch this file's other error test exercises (gated on
+    // `!state?.knowledge`) never sees this case.
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: {
+            repositoryId: REPOSITORY_ID,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abcdef1234567890",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "error",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: {
+            repositoryId: REPOSITORY_ID,
+            commitSha: "abcdef1234567890",
+            title: "API",
+            summary: "",
+            sections: [{ id: "s1", title: "Overview", pageIds: ["page-a"] }],
+            pages: [
+              {
+                id: "page-a",
+                title: "Page A",
+                description: "",
+                contentMarkdown: "# Page A",
+                importance: "medium",
+                relevantFiles: [],
+                diagrams: [],
+                relatedPageIds: [],
+              },
+            ],
+            generatedAt: new Date().toISOString(),
+          },
+          error: "DeepWiki rate limited.",
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+
+    renderWithProviders(<KtRepository />);
+
+    expect(
+      await screen.findByTestId("kt-repository-regeneration-error"),
+    ).toHaveTextContent("DeepWiki rate limited.");
+    // The stale-but-real content must still render underneath the banner.
+    expect(screen.getByText("Page A")).toBeInTheDocument();
+  });
+
   it("falls back to persisted Supabase content when a live generation attempt fails", async () => {
     // A live conversation is open for this repo *and* a real generation was
     // already persisted for it in an earlier session -- the live attempt

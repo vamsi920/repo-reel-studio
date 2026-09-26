@@ -15,7 +15,14 @@ import { resolvePersistenceIds } from "#/lib/data-platform/repositories/reposito
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 
 /** Fire-and-forget, mirrors src/api/workspace-memory/workspace-memory-supabase-sync.ts's
- * queueSupabaseMemorySync pattern — never blocks or fails generation. */
+ * queueSupabaseMemorySync pattern — never blocks or fails generation. Both
+ * steps are chained under one `.catch()` (not just the first, as an earlier
+ * version of this function had) so an unreachable/unconfigured Supabase, an
+ * RLS denial, or any other rejection from either `resolvePersistenceIds` or
+ * `saveFullKnowledge` is swallowed here instead of surfacing as an unhandled
+ * promise rejection — this pipeline has already succeeded and shown the user
+ * real generated Knowledge; losing the background Supabase mirror is a
+ * silent, best-effort loss, not a user-facing one. */
 function queueKnowledgePersistence(
   snapshot: RepositorySnapshot,
   backendId: string | null,
@@ -28,15 +35,17 @@ function queueKnowledgePersistence(
     branch: snapshot.branch,
     localPath: snapshot.localPath,
     backendId,
-  }).then((ids) => {
-    if (!ids) return;
-    void knowledgePersistenceRepository.saveFullKnowledge(
-      ids.repositoryUuid,
-      ids.workspaceId,
-      snapshot.branch,
-      knowledge,
-    );
-  });
+  })
+    .then((ids) => {
+      if (!ids) return undefined;
+      return knowledgePersistenceRepository.saveFullKnowledge(
+        ids.repositoryUuid,
+        ids.workspaceId,
+        snapshot.branch,
+        knowledge,
+      );
+    })
+    .catch(() => {});
 }
 
 export type GenerateKnowledgeStore = Pick<

@@ -401,6 +401,36 @@ describe("KtPage", () => {
     ).toHaveTextContent("Page A cites no source files.");
   });
 
+  it("surfaces a failed regeneration instead of silently keeping the stale page with no indication", async () => {
+    // `startGenerating` deliberately preserves the previous `knowledge`
+    // across a regeneration attempt (see knowledge-store.ts), so a *failed*
+    // regenerate settles here with real content still present -- this must
+    // not look identical to a fully healthy page.
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: "http://localhost:3000/conversations/c1",
+          sessionApiKey: "key",
+          status: "error",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: KNOWLEDGE,
+          error: "DeepWiki rate limited.",
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+
+    render(<KtPage />);
+
+    expect(
+      await screen.findByTestId("kt-page-regeneration-error"),
+    ).toHaveTextContent("DeepWiki rate limited.");
+  });
+
   it("keeps showing the heads-up banner after switching to watch mode", async () => {
     useKnowledgeStore.setState({
       byRepositoryId: {

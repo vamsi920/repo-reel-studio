@@ -255,4 +255,75 @@ describe("generateKnowledge", () => {
       raw,
     );
   });
+
+  it("swallows a resolvePersistenceIds rejection instead of leaving an unhandled promise rejection", async () => {
+    const raw = knowledge();
+    engineGenerate.mockResolvedValue(raw);
+    repairInvalidDiagrams.mockResolvedValue(raw);
+    resolvePersistenceIds.mockRejectedValue(new Error("Supabase unreachable"));
+    const store = stubStore();
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+
+    await generateKnowledge(
+      snapshot,
+      null,
+      null,
+      store,
+      vi.fn(),
+      {},
+      "backend-1",
+    );
+    // queueKnowledgePersistence is fire-and-forget; flush its microtask chain.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    // The generation itself must still have succeeded — persistence is
+    // best-effort and must never fail the visible generation result.
+    expect(store.setReady).toHaveBeenCalledWith(
+      snapshot.repositoryId,
+      raw,
+      [],
+      1,
+    );
+  });
+
+  it("swallows a saveFullKnowledge rejection instead of leaving an unhandled promise rejection", async () => {
+    const raw = knowledge();
+    engineGenerate.mockResolvedValue(raw);
+    repairInvalidDiagrams.mockResolvedValue(raw);
+    resolvePersistenceIds.mockResolvedValue({
+      repositoryUuid: "repo-uuid",
+      workspaceId: "workspace-uuid",
+    });
+    saveFullKnowledge.mockRejectedValue(new Error("RLS denied"));
+    const store = stubStore();
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+
+    await generateKnowledge(
+      snapshot,
+      null,
+      null,
+      store,
+      vi.fn(),
+      {},
+      "backend-1",
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    expect(store.setReady).toHaveBeenCalledWith(
+      snapshot.repositoryId,
+      raw,
+      [],
+      1,
+    );
+  });
 });

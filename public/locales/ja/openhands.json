@@ -2380,6 +2380,7 @@
   "KT$PROVISIONING_STEP_FAILED": "{{label}} failed: {{error}}",
   "KT$PROVISIONING_PAGE_COUNT": "({{done}}/{{total}})",
   "KT$PROVISIONING_DISMISS": "Dismiss",
+  "KT$REGENERATION_FAILED_BANNER_TITLE": "前回の再生成は失敗しました — 以下に前のバージョンを表示しています。",
   "CODEGRAPH$TITLE": "CodeGraph",
   "CODEGRAPH$ANALYZING": "Analyzing repository…",
   "CODEGRAPH$BUILDING": "Building relationships…",

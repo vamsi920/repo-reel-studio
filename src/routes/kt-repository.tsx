@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { AlertTriangle, FileText, Loader2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, FileText, Loader2 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
 import { useNavigation } from "#/context/navigation-context";
@@ -104,6 +104,34 @@ function KtRepository() {
           repositoryId={state.snapshot.repositoryId}
           active="docs"
         />
+
+        {state.status === "error" && state.error && (
+          // `startGenerating` deliberately keeps the previous `knowledge`
+          // visible while a regeneration runs (see knowledge-store.ts), so a
+          // *failed* regeneration lands here with real content still present
+          // -- the early-return branch above (gated on `!state?.knowledge`)
+          // never sees this case, and the one-shot toast from
+          // generateKnowledge's catch block has already faded by the time
+          // anyone revisits this page. Without this, a failed regeneration
+          // is invisible: the page just keeps showing the stale content with
+          // no indication the last refresh attempt didn't land.
+          <div
+            data-testid="kt-repository-regeneration-error"
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-md border border-[var(--error-500)] bg-[var(--error-bg-subtle)] px-3 py-2 text-sm text-[var(--oh-foreground)]"
+          >
+            <AlertCircle
+              className="size-4 shrink-0 text-[var(--error-500)]"
+              aria-hidden
+            />
+            <div className="flex-1">
+              <p className="font-semibold text-[var(--error-500)]">
+                {t(I18nKey.KT$REGENERATION_FAILED_BANNER_TITLE)}
+              </p>
+              <p className="mt-0.5 text-[var(--oh-muted)]">{state.error}</p>
+            </div>
+          </div>
+        )}
 
         <p className="mt-4 mb-6 font-mono text-xs text-[var(--oh-muted)]">
           {state.snapshot.owner}/{state.snapshot.repo}@
