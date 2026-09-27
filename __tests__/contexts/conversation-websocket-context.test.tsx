@@ -384,6 +384,71 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     );
   });
 
+  it("does not mirror the planning sub-conversation's bash activity into the main Terminal tab", async () => {
+    const planningConversation: AppConversation = {
+      id: "planning-bash",
+      created_by_user_id: null,
+      selected_repository: null,
+      selected_branch: null,
+      git_provider: null,
+      title: "Planner",
+      trigger: null,
+      pr_number: [],
+      llm_model: null,
+      metrics: null,
+      created_at: "2026-07-28T00:00:00Z",
+      updated_at: "2026-07-28T00:00:00Z",
+      execution_status: null,
+      conversation_url:
+        "http://planner.example/api/conversations/planning-bash",
+      session_api_key: null,
+      sandbox_id: null,
+      sub_conversation_ids: [],
+    };
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ConversationWebSocketProvider
+          conversationId="conv-with-planner"
+          conversationUrl="http://main.example/api/conversations/conv-with-planner"
+          subConversationIds={[planningConversation.id]}
+          subConversations={[planningConversation]}
+        >
+          <div />
+        </ConversationWebSocketProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(
+        wsCapture.calls.some(({ url }) =>
+          url.endsWith("/sockets/events/planning-bash"),
+        ),
+      ).toBe(true),
+    );
+    const planningOnMessage = wsCapture.calls.find(({ url }) =>
+      url.endsWith("/sockets/events/planning-bash"),
+    )?.options?.onMessage;
+
+    // The planning agent explores the repo with the same bash tool the main
+    // agent uses, on its own sub-conversation's socket.
+    act(() => {
+      planningOnMessage!({
+        data: JSON.stringify(makeBashAction("plan-bash-1", "ls -la")),
+      });
+      planningOnMessage!({
+        data: JSON.stringify(
+          makeBashObservation("plan-bash-obs-1", "plan-bash-1", "file.txt\n"),
+        ),
+      });
+    });
+
+    // It must not appear in the Terminal tab's command store: that store is
+    // shared/global and the Terminal is understood by the user as showing
+    // *their* conversation, not a background planning agent's.
+    expect(useCommandStore.getState().commands).toEqual([]);
+  });
+
   it("preserves the conversation's attached plugins across an agent-triggered model switch", async () => {
     // Arrange: the conversation's metadata already carries an attached plugin.
     setStoredConversationMetadata("conv-switch", {

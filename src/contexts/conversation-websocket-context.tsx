@@ -983,20 +983,15 @@ export function ConversationWebSocketProvider({
             }
           }
 
-          // Handle ExecuteBashAction events - add command as input to terminal
-          if (isExecuteBashActionEvent(event)) {
-            appendInput(event.action.command);
-          }
-
-          // Handle ExecuteBashObservation events - add output to terminal
-          if (isExecuteBashObservationEvent(event)) {
-            // Extract text content from the observation content array
-            const textContent = event.observation.content
-              .filter((c) => c.type === "text")
-              .map((c) => c.text)
-              .join("\n");
-            appendOutput(textContent);
-          }
+          // Deliberately NOT mirroring ExecuteBashAction/ExecuteBashObservation
+          // into the Terminal tab here (unlike the main handler): the Terminal
+          // is scoped to the conversation the user is looking at, and this
+          // handler serves the separate planning sub-conversation's socket.
+          // The planning agent's own bash activity is already visible inline
+          // in chat via its `isFromPlanningAgent`-tagged action/observation
+          // events; writing it into the shared, non-conversation-scoped
+          // `useCommandStore` too would silently mix a background agent's
+          // commands into what looks like the main conversation's terminal.
 
           // Handle PlanningFileEditorObservation - only update plan for Plan.md
           if (isPlanningFileEditorObservationEvent(event)) {
@@ -1048,8 +1043,6 @@ export function ConversationWebSocketProvider({
       subConversations,
       conversationId,
       setExecutionStatus,
-      appendInput,
-      appendOutput,
       readConversationFile,
       setPlanContent,
       updateMetricsFromStats,
