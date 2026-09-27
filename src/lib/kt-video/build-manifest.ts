@@ -448,7 +448,15 @@ function roleForPath(path: string): string {
   if (/(^|\/)(pages|views|screens|routes)(\/|$)|page\.|route\./.test(l))
     return "a page that users actually land on";
   if (/context/.test(l)) return "state shared across the app via context";
-  if (/(^|\/)hooks?(\/|$)|\buse[A-Z]/.test(baseName(path)))
+  // The directory half of this check must run against the full path (`l`) —
+  // `baseName` strips every directory, so `(^|\/)hooks?(\/|$)` could only
+  // ever match a file literally named "hooks"/"hook" with no extension, and
+  // a real `src/hooks/*.ts` file always fell through to "core module". The
+  // filename half stays on `baseName` but also needs to catch this repo's
+  // actual kebab-case hook convention (`use-conversation-history.ts`), not
+  // just camelCase `useFoo` — `\buse[A-Z]` alone never matches a name where
+  // "use" is followed by a hyphen.
+  if (/(^|\/)hooks?(\/|$)/.test(l) || /^use[A-Z-]/.test(baseName(path)))
     return "a reusable hook";
   if (/component/.test(l) || extOf(l) === "tsx" || extOf(l) === "jsx")
     return "a UI component";

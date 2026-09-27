@@ -457,6 +457,50 @@ describe("buildKtManifest", () => {
 
     expect(codeScene!.focus_symbols).toContain("add_numbers");
   });
+
+  it("describes a real hooks-directory file (this repo's own kebab-case convention) as a reusable hook", () => {
+    // Regression test: `roleForPath`'s hooks check tested the directory
+    // pattern (`(^|\/)hooks?(\/|$)`) against `baseName(path)`, which strips
+    // every directory — so it could only ever match a file literally named
+    // "hooks"/"hook" with no extension, never a real `src/hooks/*.ts` file.
+    // The filename half only matched camelCase `useFoo`, not this repo's own
+    // kebab-case hook naming (`use-conversation-history.ts`, per AGENTS.md),
+    // so a real hook fell all the way through to the generic "core module"
+    // fallback instead of being named as a hook.
+    const fileContents = {
+      "src/hooks/use-conversation-history.ts":
+        "export function useConversationHistory() {\n  return [];\n}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain("a reusable hook");
+  });
+
+  it("describes a camelCase useFoo file outside a hooks/ directory as a reusable hook", () => {
+    const fileContents = {
+      "src/composables/useToggle.ts":
+        "export function useToggle() {\n  return [];\n}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain("a reusable hook");
+  });
+
+  it("does not mistake an ordinary file merely containing 'use' for a hook", () => {
+    const fileContents = {
+      "src/models/user-service.ts":
+        "export function fetchUser() {\n  return null;\n}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).not.toContain("a reusable hook");
+  });
 });
 
 describe("isFileSceneEligible", () => {
