@@ -375,12 +375,14 @@ describe("useTracking", () => {
       getTracking().trackMcpConfigUpdated({
         sseServersCount: 2,
         stdioServersCount: 1,
+        httpServersCount: 3,
       });
 
       expect(captureMock).toHaveBeenCalledWith("mcp_config_updated", {
         has_mcp_config: true,
         sse_servers_count: 2,
         stdio_servers_count: 1,
+        http_servers_count: 3,
         ...COMMON,
       });
     });

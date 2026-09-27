@@ -234,14 +234,17 @@ export const useTracking = () => {
   const trackMcpConfigUpdated = ({
     sseServersCount,
     stdioServersCount,
+    httpServersCount,
   }: {
     sseServersCount: number;
     stdioServersCount: number;
+    httpServersCount: number;
   }) => {
     track("mcp_config_updated", {
       has_mcp_config: true,
       sse_servers_count: sseServersCount,
       stdio_servers_count: stdioServersCount,
+      http_servers_count: httpServersCount,
     });
   };
 

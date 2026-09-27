@@ -945,6 +945,104 @@ describe("SdkSectionPage", () => {
     });
   });
 
+  it("resolves a field key declared by multiple sources to the FIRST source's value, matching edit routing", async () => {
+    // Regression: `fieldKeyToSource` routes an edit for a shared field key to
+    // the first source that declares it, so the merged `values` a consumer
+    // reads (via onSaveControlChange) must resolve that same key to that
+    // same source -- not silently prefer whichever source happens to be
+    // last in `resolvedSources`. This mirrors the real
+    // `conversation_settings`/`agent_settings` back-compat duplication of
+    // `confirmation_mode`.
+    const conversationSchema: NonNullable<
+      Settings["conversation_settings_schema"]
+    > = {
+      model_name: "ConversationSettings",
+      sections: [
+        {
+          key: "verification",
+          label: "Verification",
+          fields: [
+            {
+              key: "confirmation_mode",
+              label: "Confirmation mode",
+              section: "verification",
+              section_label: "Verification",
+              value_type: "boolean",
+              default: false,
+              choices: [],
+              depends_on: [],
+              prominence: "critical",
+              secret: false,
+              required: false,
+            },
+          ],
+        },
+      ],
+    };
+    const agentSchema: NonNullable<Settings["agent_settings_schema"]> = {
+      model_name: "AgentSettings",
+      sections: [
+        {
+          key: "verification",
+          label: "Verification",
+          fields: [
+            {
+              key: "confirmation_mode",
+              label: "Confirmation mode (deprecated copy)",
+              section: "verification",
+              section_label: "Verification",
+              value_type: "boolean",
+              default: false,
+              choices: [],
+              depends_on: [],
+              prominence: "critical",
+              secret: false,
+              required: false,
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({
+        agent_settings_schema: agentSchema,
+        conversation_settings_schema: conversationSchema,
+        // The deprecated agent_settings copy diverges from the live
+        // conversation_settings value -- exactly the back-compat drift the
+        // real backend can produce.
+        agent_settings: {
+          confirmation_mode: false,
+        },
+        conversation_settings: {
+          confirmation_mode: true,
+        },
+      }),
+    );
+
+    let latestControl: SdkSectionSaveControl | null = null;
+
+    renderSdkSectionPage({
+      settingsSources: [
+        {
+          settingsSource: "conversation_settings",
+          sectionKeys: ["verification"],
+        },
+        {
+          settingsSource: "agent_settings",
+          sectionKeys: ["verification"],
+        },
+      ],
+      onSaveControlChange: (control) => {
+        latestControl = control;
+      },
+    });
+
+    await waitFor(() => {
+      expect(latestControl?.values.confirmation_mode).toBe(true);
+    });
+  });
+
   it("shows an error toast when saving settings fails", async () => {
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
       buildSavableSettings(),

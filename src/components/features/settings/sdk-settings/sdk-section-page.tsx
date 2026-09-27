@@ -506,10 +506,19 @@ export function SdkSectionPage({
     return map;
   }, [resolvedSources]);
 
+  // A field key can be declared by more than one source (e.g. a
+  // back-compat-duplicated field). `fieldKeyToSource` above routes edits to
+  // the FIRST source that declares a key, so reads must resolve the same key
+  // to that same source's value -- otherwise a later source's stale/unedited
+  // copy can silently override the one the user is actually editing.
   const flatValues = React.useMemo<SettingsFormValues>(() => {
     const merged: SettingsFormValues = {};
     for (const src of resolvedSources) {
-      Object.assign(merged, valuesBySource[src.settingsSource] ?? {});
+      for (const [key, value] of Object.entries(
+        valuesBySource[src.settingsSource] ?? {},
+      )) {
+        if (!(key in merged)) merged[key] = value;
+      }
     }
     return merged;
   }, [resolvedSources, valuesBySource]);
@@ -517,7 +526,11 @@ export function SdkSectionPage({
   const flatDirty = React.useMemo<SettingsDirtyState>(() => {
     const merged: SettingsDirtyState = {};
     for (const src of resolvedSources) {
-      Object.assign(merged, dirtyBySource[src.settingsSource] ?? {});
+      for (const [key, value] of Object.entries(
+        dirtyBySource[src.settingsSource] ?? {},
+      )) {
+        if (!(key in merged)) merged[key] = value;
+      }
     }
     return merged;
   }, [resolvedSources, dirtyBySource]);

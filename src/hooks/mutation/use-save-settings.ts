@@ -75,7 +75,10 @@ export const useSaveSettings = (
         | MCPConfig
         | undefined;
 
-      if (nextMcpConfig && currentMcpConfig !== nextMcpConfig) {
+      if (
+        nextMcpConfig &&
+        JSON.stringify(currentMcpConfig) !== JSON.stringify(nextMcpConfig)
+      ) {
         const servers = Object.values(nextMcpConfig);
         trackMcpConfigUpdated({
           sseServersCount: servers.filter(
@@ -83,6 +86,11 @@ export const useSaveSettings = (
           ).length,
           stdioServersCount: servers.filter(
             (server) => server.transport === "stdio",
+          ).length,
+          httpServersCount: servers.filter(
+            (server) =>
+              server.transport === "http" ||
+              server.transport === "streamable-http",
           ).length,
         });
       }

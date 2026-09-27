@@ -44,6 +44,8 @@ describe("useSaveSettings - MCP tracking", () => {
         sse1: { transport: "sse", url: "http://sse1" },
         sse2: { transport: "sse", url: "http://sse2" },
         stdio1: { transport: "stdio", command: "cmd", args: [] },
+        http1: { transport: "http", url: "http://http1" },
+        streamable1: { transport: "streamable-http", url: "http://streamable1" },
       },
     });
 
@@ -51,6 +53,7 @@ describe("useSaveSettings - MCP tracking", () => {
       expect(trackMcpConfigUpdatedMock).toHaveBeenCalledWith({
         sseServersCount: 2,
         stdioServersCount: 1,
+        httpServersCount: 2,
       });
     });
   });
@@ -81,6 +84,27 @@ describe("useSaveSettings - MCP tracking", () => {
     expect(trackMcpConfigUpdatedMock).not.toHaveBeenCalled();
   });
 
+  it("does not call trackMcpConfigUpdated when mcp_config content is unchanged but the object is a fresh reference", async () => {
+    // Regression: a caller that spreads/rebuilds the current mcp_config into
+    // a new object (same content, different reference) must not spuriously
+    // fire analytics -- only a real content change should.
+    useSettingsMock.mockReturnValue({
+      data: {
+        mcp_config: { stdio1: { transport: "stdio", command: "cmd", args: [] } },
+      },
+    });
+
+    const { result } = renderHook(() => useSaveSettings(), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.mutateAsync({
+      mcp_config: { stdio1: { transport: "stdio", command: "cmd", args: [] } },
+    });
+
+    expect(trackMcpConfigUpdatedMock).not.toHaveBeenCalled();
+  });
+
   it("counts zero servers correctly when server arrays are empty", async () => {
     const { result } = renderHook(() => useSaveSettings(), {
       wrapper: createWrapper(),
@@ -94,6 +118,7 @@ describe("useSaveSettings - MCP tracking", () => {
       expect(trackMcpConfigUpdatedMock).toHaveBeenCalledWith({
         sseServersCount: 0,
         stdioServersCount: 0,
+        httpServersCount: 0,
       });
     });
   });
