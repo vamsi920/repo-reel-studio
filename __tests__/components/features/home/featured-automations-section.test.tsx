@@ -113,6 +113,24 @@ function getStoredPinnedIds(): string | null {
   return key ? window.localStorage.getItem(key) : null;
 }
 
+/**
+ * Directly seeds the pinned-ids localStorage entry (mounting the dashboard
+ * first writes an initial `[]` under the backend/org-scoped key, so it's
+ * discoverable by prefix) and dispatches the same `storage` event
+ * `@uidotdev/usehooks`'s `useLocalStorage` uses internally, so the mounted
+ * component's `useSyncExternalStore` subscription picks up the change
+ * without needing to drive real pin clicks through the UI.
+ */
+function seedStoredPinnedIds(ids: string[]): void {
+  const key = Object.keys(window.localStorage).find((storageKey) =>
+    storageKey.startsWith(HOME_PINNED_AUTOMATIONS_KEY),
+  );
+  if (!key) throw new Error("pinned-ids key not found; render first");
+  const newValue = JSON.stringify(ids);
+  window.localStorage.setItem(key, newValue);
+  window.dispatchEvent(new StorageEvent("storage", { key, newValue }));
+}
+
 function renderHomeAutomations(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -446,6 +464,36 @@ describe("home automations composer layout", () => {
     expect(
       screen.queryByTestId("pinned-automation-card-auto-1"),
     ).not.toBeInTheDocument();
+  });
+
+  it("still shows a pinned automation outside the run-state fan-out cap of 20 enabled automations", async () => {
+    const automations = Array.from({ length: 22 }, (_, index) =>
+      makeAutomation({
+        id: `auto-${index + 1}`,
+        name: `Automation ${index + 1}`,
+      }),
+    );
+    vi.mocked(AutomationService.getAutomations).mockResolvedValue({
+      automations,
+      total: 22,
+    });
+
+    renderHomeAutomations(<PinnedAutomationsDashboard />);
+
+    // Mounting writes the initial `[]` pins entry; wait for it to exist
+    // before seeding, and for the health/automations queries to settle so
+    // the seeded pin resolves against the full automations list.
+    await waitFor(() => expect(getStoredPinnedIds()).not.toBeNull());
+    await waitFor(() =>
+      expect(AutomationService.getAutomations).toHaveBeenCalled(),
+    );
+
+    seedStoredPinnedIds(["auto-22"]);
+
+    const dashboard = await screen.findByTestId("pinned-automations-dashboard");
+    expect(
+      within(dashboard).getByTestId("pinned-automation-card-auto-22"),
+    ).toBeInTheDocument();
   });
 
   it("shows an error toast when turning an automation off fails", async () => {

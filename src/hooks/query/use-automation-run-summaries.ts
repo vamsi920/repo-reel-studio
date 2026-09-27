@@ -32,12 +32,17 @@ export function useAutomationRunSummaries(
 
   return useQueries({
     queries: automations.map((automation) => ({
+      // Include connectionRevision (bumped on an in-place host/apiKey edit to
+      // the same backend.id, see active-backend-context.tsx) so correcting a
+      // local backend's connection details doesn't keep serving the previous
+      // agent-server's run summaries until staleTime lapses.
       queryKey: [
         ...AUTOMATION_RUNS_QUERY_KEY,
         automation.id,
         { limit: RECENT_RUN_SAMPLE_SIZE, offset: 0 },
         active.backend.id,
         active.orgId,
+        active.backend.connectionRevision ?? 0,
       ],
       queryFn: () =>
         AutomationService.getAutomationRuns(

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DetailHeader } from "#/components/features/automations/detail/detail-header";
 import type { Automation } from "#/types/automation";
 
@@ -7,9 +8,14 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+const mockUseHasPermission = vi.hoisted(() => vi.fn(() => true));
 vi.mock("#/hooks/use-has-permission", () => ({
-  useHasPermission: () => true,
+  useHasPermission: mockUseHasPermission,
 }));
+
+beforeEach(() => {
+  mockUseHasPermission.mockReturnValue(true);
+});
 
 const baseAutomation: Automation = {
   id: "auto-1",
@@ -52,5 +58,33 @@ describe("DetailHeader", () => {
     expect(
       screen.queryByTestId("unsupported-trigger-badge"),
     ).not.toBeInTheDocument();
+  });
+
+  it("still offers Export and Download Tarball to a view-only user, but hides Edit/Toggle/Delete", async () => {
+    mockUseHasPermission.mockReturnValue(false);
+    const user = userEvent.setup();
+
+    render(
+      <DetailHeader
+        automation={baseAutomation}
+        onToggle={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onExport={vi.fn()}
+        onDownloadTarball={vi.fn()}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "AUTOMATIONS$ACTIONS_MENU" }),
+    );
+
+    expect(screen.getByText("AUTOMATIONS$EXPORT")).toBeInTheDocument();
+    expect(
+      screen.getByText("AUTOMATIONS$DOWNLOAD_TARBALL"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("AUTOMATIONS$EDIT")).not.toBeInTheDocument();
+    expect(screen.queryByText("AUTOMATIONS$TURN_OFF")).not.toBeInTheDocument();
+    expect(screen.queryByText("AUTOMATIONS$DELETE")).not.toBeInTheDocument();
   });
 });

@@ -43,8 +43,11 @@ export function DetailHeader({
   const { t } = useTranslation("openhands");
   const canManage = useHasPermission("manage_automations");
 
+  // Export/Download Tarball stay available to view-only users, matching the
+  // list view's `buildAutomationMenuItems` — only the mutating actions
+  // (Edit/Toggle/Delete) are gated behind `canManage`.
   const kebabItems = [
-    ...(onEdit
+    ...(canManage && onEdit
       ? [
           {
             label: t(I18nKey.AUTOMATIONS$EDIT),
@@ -53,14 +56,18 @@ export function DetailHeader({
           },
         ]
       : []),
-    {
-      label: automation.enabled
-        ? t(I18nKey.AUTOMATIONS$TURN_OFF)
-        : t(I18nKey.AUTOMATIONS$TURN_ON),
-      icon: <PowerIcon className="size-4" />,
-      onClick: onToggle,
-      disabled: isTogglePending,
-    },
+    ...(canManage
+      ? [
+          {
+            label: automation.enabled
+              ? t(I18nKey.AUTOMATIONS$TURN_OFF)
+              : t(I18nKey.AUTOMATIONS$TURN_ON),
+            icon: <PowerIcon className="size-4" />,
+            onClick: onToggle,
+            disabled: isTogglePending,
+          },
+        ]
+      : []),
     {
       label: t(I18nKey.AUTOMATIONS$EXPORT),
       icon: <DownloadIcon className="size-4" />,
@@ -71,11 +78,15 @@ export function DetailHeader({
       icon: <DownloadIcon className="size-4" />,
       onClick: onDownloadTarball,
     },
-    {
-      label: t(I18nKey.AUTOMATIONS$DELETE),
-      icon: <TrashIcon className="size-4" />,
-      onClick: onDelete,
-    },
+    ...(canManage
+      ? [
+          {
+            label: t(I18nKey.AUTOMATIONS$DELETE),
+            icon: <TrashIcon className="size-4" />,
+            onClick: onDelete,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -116,7 +127,7 @@ export function DetailHeader({
               disabled={isTogglePending}
             />
           )}
-          {canManage && <KebabMenu items={kebabItems} />}
+          {kebabItems.length > 0 && <KebabMenu items={kebabItems} />}
         </div>
       </div>
     </div>

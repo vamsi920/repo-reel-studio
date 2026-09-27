@@ -47,9 +47,15 @@ export function useHomeAutomations() {
     ? HOME_AUTOMATIONS_DEMO_AUTOMATIONS
     : (automationsData?.automations ?? []);
 
-  const enabledAutomations = allAutomations
-    .filter((automation) => automation.enabled)
-    .slice(0, MAX_HOME_AUTOMATION_CHIPS);
+  // Unbounded: used to resolve which automations are pin-eligible, so a pin
+  // outside the run-state fan-out cap below doesn't silently vanish.
+  const allEnabledAutomations = allAutomations.filter(
+    (automation) => automation.enabled,
+  );
+  const enabledAutomations = allEnabledAutomations.slice(
+    0,
+    MAX_HOME_AUTOMATION_CHIPS,
+  );
 
   // Memoized so its identity is stable across renders that don't actually
   // change the automation list — consumers depend on it in effect arrays.
@@ -74,6 +80,7 @@ export function useHomeAutomations() {
       isError: false,
       isAutomationsLoading: false,
       enabledAutomations,
+      allEnabledAutomations,
       knownAutomationIds,
       isAutomationListComplete,
       runStates,
@@ -86,6 +93,7 @@ export function useHomeAutomations() {
     isError,
     isAutomationsLoading,
     enabledAutomations,
+    allEnabledAutomations,
     knownAutomationIds,
     isAutomationListComplete,
     runStates,

@@ -25,7 +25,7 @@ export function PinnedAutomationsDashboard() {
     isBackendHealthy,
     isHealthLoading,
     isError,
-    enabledAutomations,
+    allEnabledAutomations,
     knownAutomationIds,
     isAutomationListComplete,
     runStates,
@@ -44,8 +44,11 @@ export function PinnedAutomationsDashboard() {
     pruneMissing(knownAutomationIds);
   }, [isAutomationListComplete, knownAutomationIds, pruneMissing]);
 
+  // Resolved against the full enabled list (not the run-state fan-out cap in
+  // `enabledAutomations`), so a pin outside the first N enabled automations
+  // doesn't silently disappear from the dashboard.
   const enabledById = new Map(
-    enabledAutomations.map((automation) => [automation.id, automation]),
+    allEnabledAutomations.map((automation) => [automation.id, automation]),
   );
   const pinnedAutomations = pinnedIds
     .map((id) => enabledById.get(id))

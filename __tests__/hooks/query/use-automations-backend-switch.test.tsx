@@ -21,6 +21,8 @@ import {
   useAutomationDetail,
   useAutomationRuns,
 } from "#/hooks/query/use-automation-detail";
+import { useAutomationRunSummaries } from "#/hooks/query/use-automation-run-summaries";
+import { useLatestAutomationRuns } from "#/hooks/query/use-latest-automation-runs";
 import type { Backend } from "#/api/backend-registry/types";
 import { AutomationRunStatus } from "#/types/automation";
 import type {
@@ -270,6 +272,72 @@ describe("automation hooks — backend switch", () => {
 
     expect(mintLocalGithubCloneCredentialMock).toHaveBeenCalledWith("github");
     expect(callOrder).toEqual(["mint", "dispatch"]);
+  });
+});
+
+describe("run-summary/latest-run hooks — backend switch", () => {
+  it("useAutomationRunSummaries refetches when the active backend's host/apiKey change in place, same backend.id", async () => {
+    vi.mocked(AutomationService.getAutomationRuns).mockResolvedValue({
+      runs: [automationRun],
+      total: 1,
+    });
+
+    const { result } = renderHook(
+      () => useAutomationRunSummaries([automation]),
+      { wrapper: makeWrapper() },
+    );
+    await waitFor(() => {
+      expect(AutomationService.getAutomationRuns).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      setRegisteredBackends([
+        {
+          ...localBackend,
+          host: "http://localhost:9999",
+          apiKey: "rotated-key",
+          connectionRevision: 1,
+        },
+        cloudBackend,
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(AutomationService.getAutomationRuns).toHaveBeenCalledTimes(2);
+    });
+    expect(result.current.get(automation.id)?.isLoading).toBe(false);
+  });
+
+  it("useLatestAutomationRuns refetches when the active backend's host/apiKey change in place, same backend.id", async () => {
+    vi.mocked(AutomationService.getAutomationRuns).mockResolvedValue({
+      runs: [automationRun],
+      total: 1,
+    });
+
+    const { result } = renderHook(
+      () => useLatestAutomationRuns([automation]),
+      { wrapper: makeWrapper() },
+    );
+    await waitFor(() => {
+      expect(AutomationService.getAutomationRuns).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      setRegisteredBackends([
+        {
+          ...localBackend,
+          host: "http://localhost:9999",
+          apiKey: "rotated-key",
+          connectionRevision: 1,
+        },
+        cloudBackend,
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(AutomationService.getAutomationRuns).toHaveBeenCalledTimes(2);
+    });
+    expect(result.current.get(automation.id)?.isLoading).toBe(false);
   });
 });
 

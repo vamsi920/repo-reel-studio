@@ -44,12 +44,17 @@ export function useLatestAutomationRuns(
 
   const results = useQueries({
     queries: automations.map((automation) => ({
+      // Include connectionRevision (bumped on an in-place host/apiKey edit to
+      // the same backend.id, see active-backend-context.tsx) so correcting a
+      // local backend's connection details doesn't keep serving the previous
+      // agent-server's run data until staleTime lapses.
       queryKey: [
         ...AUTOMATION_RUNS_QUERY_KEY,
         automation.id,
         { limit: AUTOMATION_RUN_ACTIVITY_LIMIT, offset: 0 },
         active.backend.id,
         active.orgId,
+        active.backend.connectionRevision ?? 0,
       ],
       queryFn: () =>
         AutomationService.getAutomationRuns(
