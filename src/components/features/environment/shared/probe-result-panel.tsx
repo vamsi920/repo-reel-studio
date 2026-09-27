@@ -107,7 +107,9 @@ export function ProbeResultPanel({
 
       {skewProblem ? (
         <p className="text-xs text-[var(--warning-500)]">
-          {`${t(I18nKey.ENVIRONMENT$STATUS_ERROR)} · ${Math.round((result.clockSkewMs ?? 0) / 1000)}s`}
+          {t(I18nKey.ENVIRONMENT$CLOCK_SKEW_WARNING, {
+            seconds: Math.round(Math.abs(result.clockSkewMs ?? 0) / 1000),
+          })}
         </p>
       ) : null}
 

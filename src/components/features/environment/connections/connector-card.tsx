@@ -158,10 +158,13 @@ export function ConnectorCard({
           target="_blank"
           rel="noreferrer noopener"
           data-testid={`connector-docs-${manifest.id}`}
+          aria-label={t(I18nKey.ENVIRONMENT$VIEW_DOCS_FOR, {
+            provider: t(manifest.nameKey),
+          })}
           className="ml-auto inline-flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
         >
           <ExternalLink size={12} aria-hidden />
-          {manifest.id}
+          {t(I18nKey.ENVIRONMENT$VIEW_DOCS)}
         </a>
       </div>
     </motion.article>

@@ -77,6 +77,25 @@ describe("ConnectorCard", () => {
     expect(onDisconnect).toHaveBeenCalledWith(connection);
   });
 
+  it("labels the docs link with a translated name, not the raw provider id", () => {
+    // The link used to render `manifest.id` (e.g. "linear") as its only
+    // visible text, with no accessible name explaining what it links to.
+    render(
+      <ConnectorCard
+        manifest={manifest}
+        connection={undefined}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+      />,
+    );
+
+    const link = screen.getByTestId("connector-docs-linear");
+    expect(link).toHaveTextContent("ENVIRONMENT$VIEW_DOCS");
+    expect(link).toHaveAccessibleName("ENVIRONMENT$VIEW_DOCS_FOR");
+  });
+
   it("disables Connect while the connections list is still loading its first answer", () => {
     // `connection` is indistinguishable from "confirmed disconnected" in this
     // window -- offering an active Connect button here risks a redundant
