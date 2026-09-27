@@ -227,6 +227,99 @@ describe("useKnowledgeStore concurrent generation attempts", () => {
   });
 });
 
+// Regression: `hydrate` (the cold-rehydration fallback) has no attempt
+// token of its own, so it can't use the same isStaleAttempt guard as
+// setProgress/setReady/setError. Its caller decides to call it only after an
+// async Supabase round-trip that follows a live-generation failure -- if a
+// newer attempt has since taken over, applying that stale decision would
+// silently regress a live entry back to older content and null out its real
+// conversationUrl/sessionApiKey.
+describe("useKnowledgeStore hydrate", () => {
+  beforeEach(() => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+  });
+
+  const coldKnowledge = {
+    repositoryId: snapshot.repositoryId,
+    commitSha: "cold-sha",
+    title: "Cold",
+    summary: "",
+    sections: [],
+    pages: [],
+    generatedAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("hydrates a repository with no existing entry", () => {
+    const { hydrate } = useKnowledgeStore.getState();
+    hydrate(snapshot.repositoryId, snapshot, coldKnowledge, []);
+
+    const state =
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId];
+    expect(state.status).toBe("ready");
+    expect(state.knowledge).toBe(coldKnowledge);
+  });
+
+  it("hydrates over an entry that settled into 'error'", () => {
+    const { startGenerating, setError, hydrate } =
+      useKnowledgeStore.getState();
+    startGenerating(snapshot, "https://example.test", "key");
+    setError(snapshot.repositoryId, "DeepWiki failed");
+
+    hydrate(snapshot.repositoryId, snapshot, coldKnowledge, []);
+
+    const state =
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId];
+    expect(state.status).toBe("ready");
+    expect(state.knowledge).toBe(coldKnowledge);
+  });
+
+  it("does not clobber a newer attempt that is still generating", () => {
+    const { startGenerating, setError, hydrate } =
+      useKnowledgeStore.getState();
+    startGenerating(snapshot, "https://example.test", "key");
+    setError(snapshot.repositoryId, "DeepWiki failed");
+    // A newer attempt (e.g. a manual Regenerate) starts before the stale
+    // cold-rehydration fallback's async lookup resolves.
+    startGenerating(snapshot, "https://example.test", "key");
+
+    hydrate(snapshot.repositoryId, snapshot, coldKnowledge, []);
+
+    const state =
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId];
+    expect(state.status).toBe("generating");
+    expect(state.knowledge).toBeNull();
+    expect(state.conversationUrl).toBe("https://example.test");
+    expect(state.sessionApiKey).toBe("key");
+  });
+
+  it("does not clobber a newer attempt that already went ready", () => {
+    const { startGenerating, setError, setReady, hydrate } =
+      useKnowledgeStore.getState();
+    startGenerating(snapshot, "https://example.test", "key");
+    setError(snapshot.repositoryId, "DeepWiki failed");
+    startGenerating(snapshot, "https://example.test", "key");
+    const freshKnowledge = {
+      repositoryId: snapshot.repositoryId,
+      commitSha: "fresh-sha",
+      title: "Fresh",
+      summary: "",
+      sections: [],
+      pages: [],
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    setReady(snapshot.repositoryId, freshKnowledge, []);
+
+    hydrate(snapshot.repositoryId, snapshot, coldKnowledge, []);
+
+    const state =
+      useKnowledgeStore.getState().byRepositoryId[snapshot.repositoryId];
+    expect(state.status).toBe("ready");
+    expect(state.knowledge).toBe(freshKnowledge);
+    expect(state.conversationUrl).toBe("https://example.test");
+    expect(state.sessionApiKey).toBe("key");
+  });
+});
+
 describe("useKnowledgeStore reset", () => {
   it("drops every in-memory entry, including provisioning state", () => {
     const {

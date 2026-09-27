@@ -231,24 +231,42 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
     }),
 
   hydrate: (repositoryId, snapshot, knowledge, qualityFlags) =>
-    set((state) => ({
-      byRepositoryId: {
-        ...state.byRepositoryId,
-        [repositoryId]: {
-          snapshot,
-          conversationUrl: null,
-          sessionApiKey: null,
-          status: "ready",
-          progress: null,
-          lastNonTerminalStatus: null,
-          knowledge,
-          error: null,
-          qualityFlags,
-          refreshCadence:
-            state.byRepositoryId[repositoryId]?.refreshCadence ?? "manual",
+    set((state) => {
+      const existing = state.byRepositoryId[repositoryId];
+      // `hydrate` has no attempt token of its own (it runs outside the
+      // startGenerating/setProgress/setReady/setError attempt-tracking
+      // system above), so it can't rely on `isStaleAttempt`. Its caller
+      // (use-knowledge-rehydration.ts) only *decides* to call this after an
+      // async Supabase round-trip (resolveOrgId -> findRepositoryUuid ->
+      // getLatestGenerationForRepository) that follows a live-generation
+      // failure -- if a newer attempt (a manual Regenerate, or a second
+      // rehydration race) started and changed this entry's status in the
+      // meantime, that decision is stale by the time this actually runs.
+      // Applying it anyway would silently regress a live "generating"/"ready"
+      // entry back to older Supabase-only content and null out its real
+      // `conversationUrl`/`sessionApiKey`, permanently breaking Watch KT for
+      // an entry that just had a live session moments ago. Only ever
+      // overwrite when there's nothing here yet, or the last known status
+      // was still the "error" this fallback exists to cover.
+      if (existing && existing.status !== "error") return state;
+      return {
+        byRepositoryId: {
+          ...state.byRepositoryId,
+          [repositoryId]: {
+            snapshot,
+            conversationUrl: null,
+            sessionApiKey: null,
+            status: "ready",
+            progress: null,
+            lastNonTerminalStatus: null,
+            knowledge,
+            error: null,
+            qualityFlags,
+            refreshCadence: existing?.refreshCadence ?? "manual",
+          },
         },
-      },
-    })),
+      };
+    }),
 
   setError: (repositoryId, error, attempt) =>
     set((state) => {

@@ -98,6 +98,55 @@ describe("KtList", () => {
     );
   });
 
+  // Regression: the knowledge store deliberately keeps a prior `knowledge`
+  // payload intact when a regeneration fails (see `startGenerating` in
+  // knowledge-store.ts), so kt-repository.tsx and kt-page.tsx both treat
+  // `state.knowledge` (not `state.status`) as "there's real content to show".
+  // This card checked only `status === "ready"`, so a repo whose last
+  // regeneration attempt failed rendered "Generate" instead of "View
+  // Knowledge", hiding a working Docs/Graph/Video entry.
+  it("still offers View Knowledge for a repo whose last regeneration failed", async () => {
+    setConnected(UNPROVISIONED);
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [UNPROVISIONED.repositoryId]: {
+          snapshot: {
+            repositoryId: UNPROVISIONED.repositoryId,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abc123",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "error",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: {
+            repositoryId: UNPROVISIONED.repositoryId,
+            commitSha: "abc123",
+            title: "API",
+            summary: "",
+            sections: [],
+            pages: [],
+            generatedAt: "2026-01-01T00:00:00.000Z",
+          },
+          error: "DeepWiki failed",
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+      provisioningByRepositoryId: {},
+    });
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByText("KT$VIEW_KNOWLEDGE")).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-generate-button")).toBeNull();
+    expect(screen.getByText("DeepWiki failed")).toBeInTheDocument();
+  });
+
   it("still lists connected repositories when the persisted lookup fails", async () => {
     const rejections: unknown[] = [];
     const onUnhandled = (reason: unknown) => rejections.push(reason);

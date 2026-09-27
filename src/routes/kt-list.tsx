@@ -215,8 +215,17 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isGenerating = state?.status === "generating" || isSubmitting;
+  // The store deliberately keeps a prior `knowledge` payload intact when a
+  // regeneration fails (see `startGenerating` in knowledge-store.ts) so a
+  // failed refresh doesn't hide real, still-valid content -- kt-repository.tsx
+  // and kt-page.tsx both key their "has real content" branch off
+  // `state.knowledge` for exactly that reason. This card checked only
+  // `status === "ready"`, so a repo whose last regeneration attempt failed
+  // (`status: "error"`, `knowledge` still populated) rendered "Generate"
+  // instead of "View Knowledge", hiding a working Docs/Graph/Video entry
+  // behind a button that looks like nothing has been generated yet.
   const isReady =
-    state?.status === "ready" || (!state && candidate.knownGenerated);
+    Boolean(state?.knowledge) || (!state && candidate.knownGenerated);
   const errorMessage =
     (state?.status === "error" ? state.error : null) ?? submitError;
 
