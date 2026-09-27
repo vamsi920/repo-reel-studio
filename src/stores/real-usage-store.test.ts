@@ -60,6 +60,19 @@ describe("real-usage-store", () => {
     expect(useRealUsageStore.getState().eventsByWorkspace.ws_a).toHaveLength(1);
   });
 
+  it("patches a client-generated id without duplicating when the Realtime echo arrives first", () => {
+    // Arrival order between the insert's own response (which triggers
+    // patchEventId) and its Realtime echo (which calls recordUsageEvent) is
+    // not guaranteed -- this covers the reverse of the case above.
+    useRealUsageStore.getState().recordUsageEvent(event({ id: "local-2" }));
+    useRealUsageStore.getState().recordUsageEvent(event({ id: "server-2" }));
+    useRealUsageStore.getState().patchEventId("ws_a", "local-2", "server-2");
+
+    const events = useRealUsageStore.getState().eventsByWorkspace.ws_a;
+    expect(events).toHaveLength(1);
+    expect(events[0].id).toBe("server-2");
+  });
+
   it("keeps workspaces isolated", () => {
     useRealUsageStore
       .getState()

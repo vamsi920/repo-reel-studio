@@ -54,12 +54,23 @@ export const useRealUsageStore = create<RealUsageStore>()(
         set((state) => {
           const existing = state.eventsByWorkspace[workspaceId];
           if (!existing) return state;
+          const target = existing.find((event) => event.id === oldId);
+          if (!target) return state;
+          // The Realtime echo of this same write can arrive (and get
+          // recorded under `newId` via `recordUsageEvent`) before this patch
+          // runs -- arrival order between the two is not guaranteed. Without
+          // dropping any existing `newId` entry here, a plain `.map()` rename
+          // would leave two rows sharing the same id once both have landed,
+          // double-counting the event in anything that sums the workspace's
+          // events. Filtering out both ids before re-inserting the renamed
+          // target makes this idempotent regardless of which arrives first.
+          const withoutOldAndNew = existing.filter(
+            (event) => event.id !== oldId && event.id !== newId,
+          );
           return {
             eventsByWorkspace: {
               ...state.eventsByWorkspace,
-              [workspaceId]: existing.map((event) =>
-                event.id === oldId ? { ...event, id: newId } : event,
-              ),
+              [workspaceId]: [...withoutOldAndNew, { ...target, id: newId }],
             },
           };
         }),
