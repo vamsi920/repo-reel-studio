@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OpenAISubscriptionAuthCard } from "#/components/features/settings/llm-settings/openai-subscription-auth-card";
@@ -64,6 +64,39 @@ describe("OpenAISubscriptionAuthCard", () => {
     await waitFor(() =>
       expect(copyButton).toHaveAttribute("aria-label", "BUTTON$COPIED"),
     );
+  });
+
+  it("clears the pending 'copied' reset timer on unmount instead of leaking it", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup();
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.spyOn(navigator.clipboard, "writeText").mockImplementation(
+        writeText,
+      );
+
+      await openDeviceChallenge(user);
+      // Snapshot the pending-timer count with the device-poll loop already
+      // scheduled but before copying, so unrelated background timers (e.g.
+      // react-query's own gc/refetch timers) are accounted for on both sides
+      // of the comparison below.
+      const beforeCopyCount = vi.getTimerCount();
+
+      await user.click(screen.getByTestId("copy-to-clipboard"));
+      await waitFor(() => expect(writeText).toHaveBeenCalled());
+      expect(vi.getTimerCount()).toBe(beforeCopyCount + 1);
+
+      cleanup();
+
+      // Unmounting always clears the device-poll timer that was already
+      // pending at the `beforeCopyCount` snapshot, so a clean unmount lands
+      // one *below* that baseline. If the "copied" reset timer leaks instead
+      // of being cleared, it backfills that slot and the count matches the
+      // baseline instead of dropping below it.
+      expect(vi.getTimerCount()).toBe(beforeCopyCount - 1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("reports a failed clipboard write instead of silently showing 'copied'", async () => {

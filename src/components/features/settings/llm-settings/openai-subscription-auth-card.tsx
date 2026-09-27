@@ -46,6 +46,7 @@ export function OpenAISubscriptionAuthCard({
   const [autoPollStopped, setAutoPollStopped] = React.useState(false);
   const pollTimeoutRef = React.useRef<number | null>(null);
   const pollFailureCountRef = React.useRef(0);
+  const copiedTimeoutRef = React.useRef<number | null>(null);
 
   const clearPollTimeout = React.useCallback(() => {
     if (pollTimeoutRef.current !== null) {
@@ -54,11 +55,26 @@ export function OpenAISubscriptionAuthCard({
     }
   }, []);
 
+  React.useEffect(
+    () => () => {
+      if (copiedTimeoutRef.current !== null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
   const handleCopyCode = async () => {
     if (!challenge) return;
     if (await copyTextToClipboard(challenge.userCode)) {
+      if (copiedTimeoutRef.current !== null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      copiedTimeoutRef.current = window.setTimeout(() => {
+        copiedTimeoutRef.current = null;
+        setCopied(false);
+      }, 2000);
     }
   };
 

@@ -49,11 +49,6 @@ export const useSearchSecrets = (options: UseSearchSecretsOptions = {}) => {
     data: filteredSecrets,
     isLoading: query.isLoading,
     isError: query.isError,
-    // Agent-server API doesn't support pagination
-    hasNextPage: false,
-    isFetchingNextPage: false,
-    fetchNextPage: () => {},
-    onLoadMore: () => {},
     refetch: query.refetch,
   };
 };
