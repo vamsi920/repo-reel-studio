@@ -2434,6 +2434,7 @@
   "CODEGRAPH$FILTERS": "Filters",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",
+  "CODEGRAPH$SYSTEM_ROOT": "System",
   "CODEGRAPH$OTHER_LEVEL": "Navigates to another level",
   "CODEGRAPH$NODES": "{{count}} nodes",
   "CODEGRAPH$NODES_one": "{{count}} node",

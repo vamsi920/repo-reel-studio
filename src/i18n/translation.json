@@ -41394,6 +41394,23 @@
     "tr": "Graph breadcrumbs",
     "uk": "Graph breadcrumbs"
   },
+  "CODEGRAPH$SYSTEM_ROOT": {
+    "en": "System",
+    "ja": "System",
+    "zh-CN": "System",
+    "zh-TW": "System",
+    "ko-KR": "System",
+    "no": "System",
+    "ar": "System",
+    "de": "System",
+    "fr": "System",
+    "it": "System",
+    "pt": "System",
+    "es": "System",
+    "ca": "System",
+    "tr": "System",
+    "uk": "System"
+  },
   "CODEGRAPH$OTHER_LEVEL": {
     "en": "Navigates to another level",
     "ja": "Navigates to another level",

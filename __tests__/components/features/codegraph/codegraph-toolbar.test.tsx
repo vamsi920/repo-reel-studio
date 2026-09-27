@@ -61,9 +61,28 @@ describe("CodeGraphToolbar", () => {
     renderToolbar();
     const nav = screen.getByTestId("codegraph-breadcrumbs");
 
-    expect(nav).toHaveTextContent("System");
+    expect(nav).toHaveTextContent("CODEGRAPH$SYSTEM_ROOT");
     expect(nav).toHaveTextContent("Payment Service");
     expect(nav).toHaveTextContent("Processing");
+  });
+
+  it("labels the root crumb through i18n instead of its stored name", () => {
+    // The root crumb's `name` is baked into the analyzer's stored output in
+    // English at analysis time (see `breadcrumbsFor` in hierarchy.ts) — the
+    // toolbar must ignore it and always show the translated label so a
+    // graph analyzed before this fix (or by a future non-English build)
+    // still renders correctly.
+    renderToolbar({
+      crumbs: [
+        { id: null, name: "not a translation key" },
+        { id: "subsystem:pay", name: "Payment Service" },
+      ],
+    });
+
+    expect(screen.getByText("CODEGRAPH$SYSTEM_ROOT")).toBeInTheDocument();
+    expect(
+      screen.queryByText("not a translation key"),
+    ).not.toBeInTheDocument();
   });
 
   it("navigates to an ancestor when its crumb is clicked", async () => {
@@ -79,7 +98,7 @@ describe("CodeGraphToolbar", () => {
     renderToolbar();
 
     expect(screen.getByText("Processing")).toBeDisabled();
-    expect(screen.getByText("System")).toBeEnabled();
+    expect(screen.getByText("CODEGRAPH$SYSTEM_ROOT")).toBeEnabled();
   });
 
   it("goes back to the immediate parent, not the root", async () => {

@@ -226,7 +226,7 @@ describe("KtGraph search", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
-        "System",
+        "CODEGRAPH$SYSTEM_ROOT",
       );
       expect(screen.getByTestId("codegraph-breadcrumbs")).not.toHaveTextContent(
         "sub1",
@@ -275,7 +275,7 @@ describe("KtGraph search", () => {
     // The already-open graph (breadcrumbs, node) stays mounted...
     expect(
       await screen.findByTestId("codegraph-breadcrumbs"),
-    ).toHaveTextContent("System");
+    ).toHaveTextContent("CODEGRAPH$SYSTEM_ROOT");
     expect(screen.getByTestId("codegraph-node-count")).toBeInTheDocument();
     // ...and the rebuild control reflects the in-progress rebuild rather than
     // the whole view disappearing behind a blank "analyzing" spinner.
@@ -473,7 +473,7 @@ describe("KtGraph search", () => {
       );
     });
     expect(screen.getByTestId("codegraph-breadcrumbs")).toHaveTextContent(
-      "System",
+      "CODEGRAPH$SYSTEM_ROOT",
     );
     expect(screen.queryByText("sandbox timed out")).not.toBeInTheDocument();
     // The failed, retargeted attempt leaves no orphaned store entry and no
@@ -1045,7 +1045,7 @@ describe("KtGraph cold rehydration", () => {
 
     expect(
       await screen.findByTestId("codegraph-breadcrumbs"),
-    ).toHaveTextContent("System");
+    ).toHaveTextContent("CODEGRAPH$SYSTEM_ROOT");
 
     expect(findRepositoryUuid).toHaveBeenCalledWith(
       "org-1",

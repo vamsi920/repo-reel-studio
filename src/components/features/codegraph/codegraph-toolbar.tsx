@@ -129,6 +129,16 @@ export function CodeGraphToolbar({
         >
           {crumbs.map((crumb, index) => {
             const isLast = index === crumbs.length - 1;
+            // The root crumb's `name` is baked into the analyzer's stored
+            // output (see `breadcrumbsFor` in `hierarchy.ts`, which runs
+            // server-side, long before any locale is known) as the literal
+            // English word "System" — rendering it verbatim would ship that
+            // one word in English to every locale forever. Every other crumb
+            // names a real, untranslatable piece of code structure (a folder,
+            // a detected subsystem), so only the synthetic root label is
+            // overridden here.
+            const label =
+              crumb.id === null ? t(I18nKey.CODEGRAPH$SYSTEM_ROOT) : crumb.name;
             return (
               <React.Fragment key={crumb.id ?? "__root__"}>
                 {index > 0 ? (
@@ -147,7 +157,7 @@ export function CodeGraphToolbar({
                       : "truncate text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]"
                   }
                 >
-                  {crumb.name}
+                  {label}
                 </button>
               </React.Fragment>
             );
