@@ -44,16 +44,52 @@ const LOOPBACK_ALLOWED_PROVIDERS = new Set([
   "postgres",
 ]);
 
-export function isBlockedHost(host: string, providerId?: string): boolean {
-  const bare = host
+/**
+ * IPv6 ranges with the same "reach the host/orchestrator, not the customer's
+ * service" problem as their IPv4 counterparts above.
+ */
+const BLOCKED_IPV6_PATTERNS: RegExp[] = [
+  /^::1$/, // loopback
+  /^::$/, // unspecified
+  /^fe[89ab][0-9a-f]:/i, // link-local, fe80::/10
+  /^f[cd][0-9a-f]{2}:/i, // unique-local, fc00::/7
+];
+
+/**
+ * Strips a scheme, path and port down to the bare host, the way the two
+ * `isBlockedHost` callers below already expect -- except a bracketed IPv6
+ * literal (`[::1]`, `[::1]:8080`) has colons that are part of the address,
+ * not a port separator. Blindly taking everything before the first `:` (the
+ * previous implementation) left `bare` as a lone `"["` for any such host,
+ * which no blocklist pattern could ever match.
+ */
+function normalizeHostForBlockCheck(host: string): string {
+  const stripped = host
     .trim()
     .toLowerCase()
     .replace(/^https?:\/\//, "")
-    .split("/")[0]
-    .split(":")[0];
+    .split("/")[0];
+  const bracketed = stripped.match(/^\[(.+)\](?::\d{1,5})?$/);
+  if (bracketed) return bracketed[1];
+  // An unbracketed literal IPv6 address has more than one colon; there is no
+  // port to strip, and doing so would mangle the address the same way.
+  if ((stripped.match(/:/g) ?? []).length > 1) return stripped;
+  return stripped.split(":")[0];
+}
+
+export function isBlockedHost(host: string, providerId?: string): boolean {
+  const bare = normalizeHostForBlockCheck(host);
   if (!bare) return false;
   if (providerId && LOOPBACK_ALLOWED_PROVIDERS.has(providerId)) return false;
-  return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(bare));
+  if (BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(bare))) return true;
+  if (!bare.includes(":")) return false;
+  if (BLOCKED_IPV6_PATTERNS.some((pattern) => pattern.test(bare))) return true;
+  // An IPv4-mapped IPv6 address (`::ffff:169.254.169.254`) embeds the exact
+  // address the IPv4 patterns above already block -- check that tail too.
+  const mapped = bare.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)?.[1];
+  return Boolean(
+    mapped && BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(mapped)),
+  );
 }
 
 export function isFieldRequired(

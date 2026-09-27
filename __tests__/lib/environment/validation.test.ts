@@ -73,6 +73,24 @@ describe("host blocking", () => {
     expect(errors.instanceHost).toEqual({ code: "blockedHost" });
   });
 
+  it.each([
+    "::1",
+    "[::1]",
+    "[::1]:8080",
+    "::",
+    "fe80::1",
+    "fc00::1",
+    "[::ffff:169.254.169.254]",
+  ])("blocks the IPv6 literal %s", (host) => {
+    expect(isBlockedHost(host, "gitlab-self-managed")).toBe(true);
+  });
+
+  it("does not mistake a real IPv6 host for the lone bracket the old port-strip left behind", () => {
+    // Regression: splitting on the first ":" reduced any bracketed IPv6 host
+    // (real or blocked) down to a bare "[", which never matched any pattern.
+    expect(isBlockedHost("[2001:db8::1]", "gitlab-self-managed")).toBe(false);
+  });
+
   it("still allows an ollama host field through validation", () => {
     const errors = validateConnectorValues(ollama, {
       instanceHost: "localhost:11434",
