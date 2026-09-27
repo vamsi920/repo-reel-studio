@@ -1,6 +1,10 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
-import { JIRA_WEBHOOK_REGISTER_URL_TEMPLATE } from "../_shared/jira.ts";
+import {
+  JIRA_WEBHOOK_REGISTER_URL_TEMPLATE,
+  decryptJiraToken,
+  refreshJiraAccessTokenLocked,
+} from "../_shared/jira.ts";
 
 interface RegisterBody {
   orgId: string;
@@ -12,6 +16,7 @@ interface RegisterBody {
 interface JiraConnectionRow {
   cloud_id: string;
   encrypted_access_token: string;
+  encrypted_refresh_token: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -47,7 +52,7 @@ Deno.serve(async (req) => {
 
   const { data: connection } = await admin
     .from("jira_connections")
-    .select("cloud_id, encrypted_access_token")
+    .select("cloud_id, encrypted_access_token, encrypted_refresh_token")
     .eq("user_id", userId)
     .maybeSingle<JiraConnectionRow>();
   if (!connection) {
@@ -59,10 +64,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "encryption_not_configured" }, { status: 500 });
   }
 
-  const { data: accessToken } = await admin.rpc("decrypt_github_token", {
-    ciphertext: connection.encrypted_access_token,
-    encryption_key: encryptionKey,
-  });
+  let accessToken = await decryptJiraToken(
+    admin,
+    connection.encrypted_access_token,
+    encryptionKey,
+  );
   if (!accessToken) {
     return jsonResponse({ error: "decryption_failed" }, { status: 500 });
   }
@@ -73,20 +79,47 @@ Deno.serve(async (req) => {
     connection.cloud_id,
   );
 
-  const registerResponse = await fetch(atlassianUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      url: callbackUrl,
-      webhooks: [
-        { events: ["jira:issue_created", "jira:issue_updated"] },
-      ],
-    }),
-  });
+  const registerWithToken = (token: string) =>
+    fetch(atlassianUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        url: callbackUrl,
+        webhooks: [
+          { events: ["jira:issue_created", "jira:issue_updated"] },
+        ],
+      }),
+    });
+
+  let registerResponse = await registerWithToken(accessToken);
+  // Access tokens expire after ~1 hour (see `_shared/jira.ts`); a connection
+  // idle since then previously left this endpoint stuck returning
+  // `atlassian_registration_failed` with no retry, even though a working
+  // refresh token was sitting right there (the same 401-then-refresh-then-
+  // retry pattern `jira-api-proxy` already uses for the identical reason).
+  if (registerResponse.status === 401 && connection.encrypted_refresh_token) {
+    const refreshToken = await decryptJiraToken(
+      admin,
+      connection.encrypted_refresh_token,
+      encryptionKey,
+    );
+    if (refreshToken) {
+      const refreshed = await refreshJiraAccessTokenLocked(
+        admin,
+        userId,
+        refreshToken,
+        encryptionKey,
+      );
+      if (refreshed) {
+        accessToken = refreshed;
+        registerResponse = await registerWithToken(accessToken);
+      }
+    }
+  }
   if (!registerResponse.ok) {
     return jsonResponse(
       { error: "atlassian_registration_failed", status: registerResponse.status },

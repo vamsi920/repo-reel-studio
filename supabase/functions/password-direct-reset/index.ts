@@ -65,19 +65,31 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "domain_rejected" }, { status: 403 });
   }
 
-  // supabase-js's admin API has no lookup-by-email; GoTrue's admin REST
-  // endpoint does (`?email=`), so this one lookup goes direct.
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const lookupRes = await fetch(
-    `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-    { headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey } },
-  );
-  if (!lookupRes.ok) {
-    return jsonResponse({ error: "lookup_failed" }, { status: 502 });
+  // GoTrue's admin REST `/admin/users` endpoint has no `email=` filter --
+  // confirmed against the actual handler, which recognizes only
+  // `page`/`per_page`/`filter` and silently ignores unknown query params.
+  // The previous version of this lookup built exactly that unsupported
+  // `?email=` request, so it always got back the server's default first
+  // page of ALL users and took `users[0]` unconditionally -- meaning ANY
+  // request whose email address merely had an allowlisted domain (real
+  // account or not) reset the password of whichever user GoTrue happened to
+  // list first, a full account-takeover of an arbitrary (likely the
+  // earliest-created) account. Fixed by paging through `listUsers` and
+  // matching the normalized address ourselves; capped at MAX_PAGES so a
+  // public, unauthenticated caller (this endpoint has no session by design)
+  // can't force an unbounded table scan.
+  const PAGE_SIZE = 200;
+  const MAX_PAGES = 25;
+  let user: { id: string } | undefined;
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const { data: pageData, error: listError } =
+      await admin.auth.admin.listUsers({ page, perPage: PAGE_SIZE });
+    if (listError) {
+      return jsonResponse({ error: "lookup_failed" }, { status: 502 });
+    }
+    user = pageData.users.find((u) => u.email?.toLowerCase() === email);
+    if (user || pageData.users.length < PAGE_SIZE) break;
   }
-  const lookupBody = (await lookupRes.json()) as { users?: { id: string }[] };
-  const user = lookupBody.users?.[0];
   if (!user) {
     return jsonResponse({ error: "no_account" }, { status: 404 });
   }
