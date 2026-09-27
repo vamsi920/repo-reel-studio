@@ -25368,10 +25368,8 @@ function resolveImportPath(fromPath, source, hasFile) {
   const joined = resolvePath("/", fromDir, source).slice(1);
   const candidates = [
     joined,
-    ...CANDIDATE_EXTENSIONS.flatMap((ext) => [
-      `${joined}${ext}`,
-      `${joined}/index${ext}`
-    ])
+    ...CANDIDATE_EXTENSIONS.map((ext) => `${joined}${ext}`),
+    ...CANDIDATE_EXTENSIONS.map((ext) => `${joined}/index${ext}`)
   ];
   const stripped = withoutCompiledExtension(joined);
   if (stripped !== null) {

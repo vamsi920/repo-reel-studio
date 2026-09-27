@@ -238,6 +238,171 @@ describe("CodeGraphToolbar", () => {
     expect(props.onSelectResult).toHaveBeenCalledWith(entry);
   });
 
+  it("moves the keyboard selection through results with the arrow keys and wraps at the ends", async () => {
+    const user = userEvent.setup();
+    const results: SearchEntry[] = [
+      {
+        id: "a",
+        name: "alpha",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+      {
+        id: "b",
+        name: "beta",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+    ];
+    renderToolbar({ searchQuery: "a", searchResults: results });
+    const input = screen.getByTestId("codegraph-search");
+
+    await user.click(input);
+    await user.keyboard("{ArrowDown}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      "codegraph-search-option-a",
+    );
+
+    await user.keyboard("{ArrowDown}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      "codegraph-search-option-b",
+    );
+
+    // Wraps back to the first result rather than stopping at the last.
+    await user.keyboard("{ArrowDown}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      "codegraph-search-option-a",
+    );
+
+    // Wraps to the last result when moving up from the first.
+    await user.keyboard("{ArrowUp}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      "codegraph-search-option-b",
+    );
+  });
+
+  it("selects the keyboard-highlighted result on Enter", async () => {
+    const user = userEvent.setup();
+    const results: SearchEntry[] = [
+      {
+        id: "a",
+        name: "alpha",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+    ];
+    const props = renderToolbar({ searchQuery: "a", searchResults: results });
+    const input = screen.getByTestId("codegraph-search");
+
+    await user.click(input);
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    expect(props.onSelectResult).toHaveBeenCalledWith(results[0]);
+  });
+
+  it("does nothing on Enter before any result has been highlighted with the arrow keys", async () => {
+    const user = userEvent.setup();
+    const results: SearchEntry[] = [
+      {
+        id: "a",
+        name: "alpha",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+    ];
+    const props = renderToolbar({ searchQuery: "a", searchResults: results });
+
+    await user.click(screen.getByTestId("codegraph-search"));
+    await user.keyboard("{Enter}");
+
+    expect(props.onSelectResult).not.toHaveBeenCalled();
+  });
+
+  it("clears the keyboard highlight when the result set changes underneath it", async () => {
+    const user = userEvent.setup();
+    const results: SearchEntry[] = [
+      {
+        id: "a",
+        name: "alpha",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+    ];
+    const { rerender } = render(
+      <CodeGraphToolbar
+        {...{
+          crumbs: CRUMBS,
+          nodeCount: 1,
+          visibleCount: 1,
+          types: [],
+          hiddenTypes: [],
+          onToggleType: vi.fn(),
+          onNavigate: vi.fn(),
+          searchQuery: "a",
+          onSearchChange: vi.fn(),
+          searchResults: results,
+          onSelectResult: vi.fn(),
+          levelNodes: [],
+          onRebuild: vi.fn(),
+        }}
+      />,
+    );
+    const input = screen.getByTestId("codegraph-search");
+
+    await user.click(input);
+    await user.keyboard("{ArrowDown}");
+    expect(input).toHaveAttribute(
+      "aria-activedescendant",
+      "codegraph-search-option-a",
+    );
+
+    const newResults: SearchEntry[] = [
+      {
+        id: "b",
+        name: "beta",
+        type: "function",
+        filePath: "",
+        parentId: "",
+        level: "symbol",
+      },
+    ];
+    rerender(
+      <CodeGraphToolbar
+        {...{
+          crumbs: CRUMBS,
+          nodeCount: 1,
+          visibleCount: 1,
+          types: [],
+          hiddenTypes: [],
+          onToggleType: vi.fn(),
+          onNavigate: vi.fn(),
+          searchQuery: "b",
+          onSearchChange: vi.fn(),
+          searchResults: newResults,
+          onSelectResult: vi.fn(),
+          levelNodes: [],
+          onRebuild: vi.fn(),
+        }}
+      />,
+    );
+
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+  });
+
   it("says so when a query matches nothing, instead of showing nothing", () => {
     renderToolbar({ searchQuery: "zzz", searchResults: [] });
 

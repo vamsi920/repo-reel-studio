@@ -75,6 +75,50 @@ export function CodeGraphToolbar({
     [levelNodes],
   );
 
+  // Which result row is highlighted for keyboard selection, `null` when none
+  // is (the mouse is the only pointer, or the list just changed underneath).
+  // A stale index pointing past the new list would arrow-select the wrong row
+  // or silently do nothing on Enter, so any change to the result set itself
+  // clears it rather than trying to carry it forward.
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    setActiveIndex(null);
+  }, [searchResults]);
+
+  const optionId = (id: string) => `codegraph-search-option-${id}`;
+
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    // Escape dismisses the results the same way it does in every other search
+    // box; without it the list covers the canvas until the query is deleted
+    // by hand.
+    if (event.key === "Escape" && searchQuery) {
+      event.preventDefault();
+      onSearchChange("");
+      return;
+    }
+    if (!searchResults.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current === null || current >= searchResults.length - 1
+          ? 0
+          : current + 1,
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current === null || current <= 0
+          ? searchResults.length - 1
+          : current - 1,
+      );
+    } else if (event.key === "Enter" && activeIndex !== null) {
+      event.preventDefault();
+      onSelectResult(searchResults[activeIndex]);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2 border-b border-[var(--oh-border)] px-4 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -209,19 +253,19 @@ export function CodeGraphToolbar({
         />
         <input
           type="search"
+          role="combobox"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          onKeyDown={(event) => {
-            // Escape dismisses the results the same way it does in every
-            // other search box; without it the list covers the canvas until
-            // the query is deleted by hand.
-            if (event.key === "Escape" && searchQuery) {
-              event.preventDefault();
-              onSearchChange("");
-            }
-          }}
+          onKeyDown={handleSearchKeyDown}
           placeholder={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
           aria-label={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
+          aria-expanded={searchQuery.length > 0 && searchResults.length > 0}
+          aria-controls="codegraph-search-results"
+          aria-activedescendant={
+            activeIndex !== null && searchResults[activeIndex]
+              ? optionId(searchResults[activeIndex].id)
+              : undefined
+          }
           data-testid="codegraph-search"
           className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] py-1.5 pl-8 pr-3 text-xs text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-500)]"
         />
@@ -240,16 +284,26 @@ export function CodeGraphToolbar({
 
         {searchQuery && searchResults.length > 0 ? (
           <ul
+            id="codegraph-search-results"
+            role="listbox"
             data-testid="codegraph-search-results"
             aria-label={t(I18nKey.CODEGRAPH$SEARCH_PLACEHOLDER)}
             className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] shadow-lg custom-scrollbar"
           >
-            {searchResults.map((entry) => (
-              <li key={entry.id}>
+            {searchResults.map((entry, index) => (
+              <li key={entry.id} role="presentation">
                 <button
                   type="button"
+                  id={optionId(entry.id)}
+                  role="option"
+                  aria-selected={index === activeIndex}
                   onClick={() => onSelectResult(entry)}
-                  className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-[var(--oh-interactive-hover)]"
+                  onMouseEnter={() => setActiveIndex(index)}
+                  className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-[var(--oh-interactive-hover)] ${
+                    index === activeIndex
+                      ? "bg-[var(--oh-interactive-hover)]"
+                      : ""
+                  }`}
                 >
                   <span className="truncate text-[var(--oh-foreground)]">
                     {entry.name}

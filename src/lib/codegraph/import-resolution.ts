@@ -63,12 +63,18 @@ export function resolveImportPath(
     : "";
   const joined = resolvePath("/", fromDir, source).slice(1);
 
+  // Every direct-file candidate is tried, in extension-priority order, before
+  // any directory-index candidate -- mirroring Node/TS module resolution,
+  // where a file match always wins over a same-named directory's index. The
+  // previous order interleaved the two (file.ts, dir/index.ts, file.tsx,
+  // dir/index.tsx, ...), so a lower-priority extension's directory index
+  // could incorrectly win over a higher-priority extension's direct file --
+  // e.g. a real `widgets.js` file losing to `widgets/index.ts` purely because
+  // `.ts` is checked before `.js` in `CANDIDATE_EXTENSIONS`.
   const candidates = [
     joined,
-    ...CANDIDATE_EXTENSIONS.flatMap((ext) => [
-      `${joined}${ext}`,
-      `${joined}/index${ext}`,
-    ]),
+    ...CANDIDATE_EXTENSIONS.map((ext) => `${joined}${ext}`),
+    ...CANDIDATE_EXTENSIONS.map((ext) => `${joined}/index${ext}`),
   ];
 
   const stripped = withoutCompiledExtension(joined);

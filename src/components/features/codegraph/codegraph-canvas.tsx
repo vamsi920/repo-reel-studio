@@ -115,16 +115,6 @@ function CodeGraphCanvasInner({
     [selectedNodeId, edges],
   );
 
-  const degrees = React.useMemo(() => {
-    const incoming = new Map<string, number>();
-    const outgoing = new Map<string, number>();
-    for (const edge of edges) {
-      outgoing.set(edge.source, (outgoing.get(edge.source) ?? 0) + 1);
-      incoming.set(edge.target, (incoming.get(edge.target) ?? 0) + 1);
-    }
-    return { incoming, outgoing };
-  }, [edges]);
-
   // Layout runs off the structural identity of the level only. Selection and
   // search change styling, and re-running ELK for those would make nodes jump
   // under the user's cursor.
@@ -250,8 +240,6 @@ function CodeGraphCanvasInner({
             isSelectionFaded: Boolean(
               selectedNodeId && !isSelected && !isNeighbour,
             ),
-            incomingCount: degrees.incoming.get(node.id) ?? 0,
-            outgoingCount: degrees.outgoing.get(node.id) ?? 0,
             tags: node.tags,
             onNodeClick: handleNodeClick,
           } satisfies CustomNodeData,
@@ -264,7 +252,6 @@ function CodeGraphCanvasInner({
       upstream,
       downstream,
       highlightedIds,
-      degrees,
       handleNodeClick,
     ],
   );

@@ -76,6 +76,25 @@ describe("resolveImportPath", () => {
     expect(result).toBe("src/utils.js");
   });
 
+  // A file resolution must win over a same-named directory's index, even when
+  // the file's own extension is checked later in `CANDIDATE_EXTENSIONS` than
+  // the extension the directory index happens to use. The previous
+  // implementation interleaved file and directory-index candidates per
+  // extension (file.ts, dir/index.ts, file.tsx, dir/index.tsx, ...), so
+  // `widgets/index.ts` would incorrectly win over the real `widgets.js` file
+  // purely because `.ts` sorts before `.js` in the candidate list.
+  it("prefers a direct file match over a same-named directory's index, regardless of extension order", () => {
+    const analyzed = new Set(["src/widgets.js", "src/widgets/index.ts"]);
+
+    const result = resolveImportPath(
+      "src/caller.ts",
+      "./widgets",
+      (candidate) => analyzed.has(candidate),
+    );
+
+    expect(result).toBe("src/widgets.js");
+  });
+
   it("walks up parent directories for '../' specifiers", () => {
     const analyzed = new Set(["shared/helpers.ts"]);
 
