@@ -206,6 +206,55 @@ export function evaluateBudgets({
   return { breaches, warnings };
 }
 
+/**
+ * The floor for an approved budget headroom: the breach's own limit if
+ * positive, else $1. Approving a budget breach with zero (or no) headroom
+ * would raise the limit to exactly what has already been spent, which
+ * `evaluateBudgets` breaches on `>=` — the collector would halt the same run
+ * again on its very next tick. Mirrors the UI's own default in
+ * `approvals-queue.tsx`; kept here too so `/approvals/:id/approve` in
+ * scripts/agentops-server.mjs enforces the same floor even when a caller
+ * bypasses the UI (or omits the field) entirely.
+ */
+export function defaultHeadroomUsd(breach) {
+  const limit = breach?.limitUsd;
+  return typeof limit === "number" && Number.isFinite(limit) && limit > 0
+    ? limit
+    : 1;
+}
+
+/**
+ * Resolve and validate the headroom a budget approval is granted.
+ *
+ * A caller that supplies a non-positive or non-finite amount is rejected
+ * outright — silently coercing it (to 0, or to "no limit") would quietly
+ * lift or freeze a spending cap, the same class of mistake `parseBudgetUsd`
+ * in budgets-panel.tsx already guards against on the input side. A caller
+ * that omits the field gets the same default the UI applies before it ever
+ * lets Approve be clicked, so a request made without going through the UI
+ * can't silently raise the limit to exactly what has already been spent.
+ *
+ * @param {unknown} rawAdditionalUsd `body.additionalBudgetUsd` as received
+ * @param {{limitUsd?: number} | null} breach the approval's first breach
+ * @returns {{ok: true, additionalUsd: number} | {ok: false, error: string}}
+ */
+export function resolveApprovedHeadroomUsd(rawAdditionalUsd, breach) {
+  if (rawAdditionalUsd === undefined || rawAdditionalUsd === null) {
+    return { ok: true, additionalUsd: defaultHeadroomUsd(breach) };
+  }
+  if (
+    typeof rawAdditionalUsd !== "number" ||
+    !Number.isFinite(rawAdditionalUsd) ||
+    rawAdditionalUsd <= 0
+  ) {
+    return {
+      ok: false,
+      error: "additionalBudgetUsd must be a positive number",
+    };
+  }
+  return { ok: true, additionalUsd: rawAdditionalUsd };
+}
+
 /** Whether a tool call is allowed by policy. `null` allowedTools means "all". */
 export function isToolAllowed(toolName, policy) {
   if (!policy?.allowedTools) return true;

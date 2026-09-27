@@ -48,6 +48,7 @@ import {
 import {
   applyBudgetApproval,
   buildWorkspaceBudget,
+  resolveApprovedHeadroomUsd,
   summarize,
 } from "./agentops/policy.mjs";
 import {
@@ -362,10 +363,24 @@ function createRouter({ store, client, collector, storeKind }) {
           // `runBudgetUsd` is one workspace-wide setting, so writing to it
           // would silently raise the ceiling for every other run in the
           // workspace too.
-          const additionalUsd =
-            typeof body?.additionalBudgetUsd === "number"
-              ? body.additionalBudgetUsd
-              : 0;
+          //
+          // The UI never lets Approve be clicked without a positive headroom
+          // (see `headroomIsValid` in approvals-queue.tsx), but this endpoint
+          // is reachable by anything that can send a request, not only that
+          // form. Trusting a missing/zero/negative value here would raise the
+          // limit to exactly what's already spent, which `evaluateBudgets`
+          // breaches on `>=` — the same run would halt again on the very next
+          // tick. Validate/default it the same way the UI does before it
+          // ever reaches policy.
+          const headroom = resolveApprovedHeadroomUsd(
+            body?.additionalBudgetUsd,
+            (approval.breaches ?? [])[0] ?? null,
+          );
+          if (!headroom.ok) {
+            sendJson(res, 400, { error: headroom.error });
+            return true;
+          }
+          const additionalUsd = headroom.additionalUsd;
           approvedBreaches = (approval.breaches ?? []).map((breach) =>
             breach.scope === "run"
               ? { ...breach, raisedToUsd: breach.usedUsd + additionalUsd }

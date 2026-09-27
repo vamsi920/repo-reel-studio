@@ -5,12 +5,14 @@ import {
   buildWorkspaceBudget,
   computeSpend,
   dayStart,
+  defaultHeadroomUsd,
   evaluateBudgets,
   isToolAllowed,
   meetsRiskThreshold,
   monthStart,
   projectMonthlySpend,
   requiresConfirmationMode,
+  resolveApprovedHeadroomUsd,
   summarize,
 } from "../../scripts/agentops/policy.mjs";
 
@@ -277,6 +279,69 @@ describe("summarize", () => {
     expect(summary.activeRuns).toBe(0);
     expect(summary.failures).toBe(1);
   });
+});
+
+describe("defaultHeadroomUsd", () => {
+  it("defaults to the breach's own limit", () => {
+    expect(defaultHeadroomUsd({ limitUsd: 5 })).toBe(5);
+  });
+
+  it("falls back to $1 when the breach has no positive limit", () => {
+    expect(defaultHeadroomUsd(null)).toBe(1);
+    expect(defaultHeadroomUsd({ limitUsd: 0 })).toBe(1);
+    expect(defaultHeadroomUsd({ limitUsd: -5 })).toBe(1);
+    expect(defaultHeadroomUsd({})).toBe(1);
+  });
+});
+
+describe("resolveApprovedHeadroomUsd", () => {
+  // Regression: `/approvals/:id/approve` used to trust `body.additionalBudgetUsd`
+  // outright, defaulting a missing value straight to 0. Approving with zero
+  // headroom raises the limit to exactly what's already been spent, which
+  // `evaluateBudgets` breaches on `>=` — the collector halted the same run
+  // again on its very next tick, even though the operator had just approved
+  // past the breach. The UI already prevents this (`headroomIsValid` in
+  // approvals-queue.tsx disables Approve), but the endpoint itself must not
+  // rely on that — anything that can send a request reaches it.
+  it("defaults a missing amount to the breach's own limit, never to 0", () => {
+    const result = resolveApprovedHeadroomUsd(undefined, { limitUsd: 5 });
+    expect(result).toEqual({ ok: true, additionalUsd: 5 });
+  });
+
+  it("defaults a null amount the same way", () => {
+    expect(resolveApprovedHeadroomUsd(null, { limitUsd: 2 })).toEqual({
+      ok: true,
+      additionalUsd: 2,
+    });
+  });
+
+  it("falls back to $1 when there is no breach to size the default from", () => {
+    expect(resolveApprovedHeadroomUsd(undefined, null)).toEqual({
+      ok: true,
+      additionalUsd: 1,
+    });
+  });
+
+  it("accepts an explicit positive amount", () => {
+    expect(resolveApprovedHeadroomUsd(10, { limitUsd: 5 })).toEqual({
+      ok: true,
+      additionalUsd: 10,
+    });
+  });
+
+  // `null`/`undefined` are valid "not supplied" sentinels, covered above;
+  // everything else that isn't a finite positive number must be refused,
+  // not silently coerced (to 0, or to "no limit").
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY, "10"])(
+    "rejects a non-positive or non-numeric amount: %p",
+    (invalid) => {
+      const result = resolveApprovedHeadroomUsd(invalid, { limitUsd: 5 });
+      expect(result.ok).toBe(false);
+      expect(result).toMatchObject({
+        error: expect.stringContaining("positive number"),
+      });
+    },
+  );
 });
 
 describe("applyBudgetApproval", () => {
