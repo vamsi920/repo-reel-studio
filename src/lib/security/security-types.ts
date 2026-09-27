@@ -41,6 +41,23 @@ export type SecurityCategory =
   | "remediation";
 
 /**
+ * The presentation order for `SecurityCategory` on the page's future-area
+ * list. Kept as a `readonly SecurityCategory[]` (mirroring
+ * `SECURITY_SEVERITIES` below) rather than letting the page derive its own
+ * order from an object literal, so both the page's per-category copy and any
+ * future consumer iterate in the same order and neither can quietly drop a
+ * category the type union still declares.
+ */
+export const SECURITY_CATEGORIES: readonly SecurityCategory[] = [
+  "repository",
+  "dependencies",
+  "secrets",
+  "misconfiguration",
+  "risk",
+  "remediation",
+] as const;
+
+/**
  * Which tool produced a finding. Left as a plain string: no scanner is chosen
  * or integrated by this shard, and pinning an enum here would prejudge that
  * decision.

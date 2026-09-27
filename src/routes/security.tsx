@@ -14,6 +14,7 @@ import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
 import { useConnectedRepositories } from "#/lib/knowledge/connected-repositories";
 import { I18nKey } from "#/i18n/declaration";
 import {
+  SECURITY_CATEGORIES,
   SECURITY_SEVERITIES,
   type SecurityCategory,
   type SecuritySeverity,
@@ -211,49 +212,53 @@ const SEVERITY_KEY: Record<SecuritySeverity, I18nKey> = {
   info: I18nKey.SECURITY$SEVERITY_INFO,
 };
 
-const FUTURE_AREAS: {
-  category: SecurityCategory;
-  titleKey: I18nKey;
-  detailKey: I18nKey;
-  icon: React.ComponentType<{ className?: string }>;
-}[] = [
+/**
+ * Keyed by `SecurityCategory` (rather than a plain array) so TypeScript
+ * enforces the "page and model cannot drift apart" guarantee
+ * `SecurityCategory`'s own doc comment already promises: a future category
+ * added to the union fails this object literal to compile until it gains a
+ * matching entry here, the same exhaustiveness `SEVERITY_KEY` below already
+ * relies on for severities.
+ */
+const FUTURE_AREAS: Record<
+  SecurityCategory,
   {
-    category: "repository",
+    titleKey: I18nKey;
+    detailKey: I18nKey;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+> = {
+  repository: {
     titleKey: I18nKey.SECURITY$AREA_REPOSITORY,
     detailKey: I18nKey.SECURITY$AREA_REPOSITORY_DETAIL,
     icon: ShieldCheck,
   },
-  {
-    category: "dependencies",
+  dependencies: {
     titleKey: I18nKey.SECURITY$AREA_DEPENDENCIES,
     detailKey: I18nKey.SECURITY$AREA_DEPENDENCIES_DETAIL,
     icon: Boxes,
   },
-  {
-    category: "secrets",
+  secrets: {
     titleKey: I18nKey.SECURITY$AREA_SECRETS,
     detailKey: I18nKey.SECURITY$AREA_SECRETS_DETAIL,
     icon: KeyRound,
   },
-  {
-    category: "misconfiguration",
+  misconfiguration: {
     titleKey: I18nKey.SECURITY$AREA_MISCONFIGURATION,
     detailKey: I18nKey.SECURITY$AREA_MISCONFIGURATION_DETAIL,
     icon: SlidersHorizontal,
   },
-  {
-    category: "risk",
+  risk: {
     titleKey: I18nKey.SECURITY$AREA_RISK,
     detailKey: I18nKey.SECURITY$AREA_RISK_DETAIL,
     icon: FileWarning,
   },
-  {
-    category: "remediation",
+  remediation: {
     titleKey: I18nKey.SECURITY$AREA_REMEDIATION,
     detailKey: I18nKey.SECURITY$AREA_REMEDIATION_DETAIL,
     icon: Wrench,
   },
-];
+};
 
 interface RepositorySelectProps {
   repositories: SecurityRepositoryOption[];
@@ -282,13 +287,20 @@ function RepositorySelect({
   // Two connected snapshots of the same owner/repo on different branches
   // share the same `label` ("owner/repo") — without the branch, their
   // options would render as identical, indistinguishable text and a user
-  // could not tell which one they were picking.
-  const labelCounts = useMemo(() => {
-    const counts = new Map<string, number>();
+  // could not tell which one they were picking. Only "does this label
+  // collide" is ever needed below, not how many times, so a `Set` of
+  // colliding labels is enough -- a `Map<string, number>` here previously
+  // needed a `?? 0` fallback on every lookup that could never actually run,
+  // since every repository read back out is one this same pass already
+  // counted.
+  const duplicateLabels = useMemo(() => {
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
     repositories.forEach((repository) => {
-      counts.set(repository.label, (counts.get(repository.label) ?? 0) + 1);
+      if (seen.has(repository.label)) duplicates.add(repository.label);
+      seen.add(repository.label);
     });
-    return counts;
+    return duplicates;
   }, [repositories]);
   return (
     <div className="mt-3 flex flex-col gap-1">
@@ -317,7 +329,7 @@ function RepositorySelect({
         )}
         {repositories.map((repository) => (
           <option key={repository.repositoryId} value={repository.repositoryId}>
-            {(labelCounts.get(repository.label) ?? 0) > 1
+            {duplicateLabels.has(repository.label)
               ? `${repository.label} (${repository.branch})`
               : repository.label}
           </option>
@@ -527,13 +539,14 @@ function SecurityScreen() {
           className="grid gap-3 sm:grid-cols-2"
           data-testid="security-future-areas"
         >
-          {FUTURE_AREAS.map((area) => {
+          {SECURITY_CATEGORIES.map((category) => {
+            const area = FUTURE_AREAS[category];
             const Icon = area.icon;
             return (
               <li
-                key={area.category}
+                key={category}
                 className="instrument-panel ame-card flex flex-col gap-2 p-4"
-                data-testid={`security-area-${area.category}`}
+                data-testid={`security-area-${category}`}
               >
                 <div className="flex items-center gap-2">
                   <Icon className="size-4 text-[var(--oh-muted)]" aria-hidden />

@@ -9,6 +9,7 @@ import routes from "#/routes";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 import {
+  SECURITY_CATEGORIES,
   SECURITY_SEVERITIES,
   type SecurityFinding,
   type SecurityProvider,
@@ -196,21 +197,24 @@ describe("Security route", () => {
     ]);
   });
 
-  it("lists every future area", () => {
+  it("lists every future area, in SECURITY_CATEGORIES order", () => {
+    // Regression: the page used to hardcode its own category-ordered array
+    // instead of rendering `SECURITY_CATEGORIES` from security-types.ts, so
+    // a future edit could silently drop or reorder a category on one side
+    // without the other -- exactly the "page and model cannot drift apart"
+    // guarantee `SecurityCategory`'s own doc comment claims. Asserting
+    // against the shared export, in order, is what actually holds that
+    // claim to account.
     renderSecurity();
 
-    [
-      "repository",
-      "dependencies",
-      "secrets",
-      "misconfiguration",
-      "risk",
-      "remediation",
-    ].forEach((category) => {
-      expect(
-        screen.getByTestId(`security-area-${category}`),
-      ).toBeInTheDocument();
-    });
+    const rendered = Array.from(
+      screen
+        .getByTestId("security-future-areas")
+        .querySelectorAll("li[data-testid]"),
+    ).map((li) => li.getAttribute("data-testid"));
+    expect(rendered).toEqual(
+      SECURITY_CATEGORIES.map((category) => `security-area-${category}`),
+    );
   });
 
   it("hides decorative icons from screen readers instead of announcing them alongside their adjacent text", () => {
@@ -931,6 +935,17 @@ describe("Security types", () => {
       "medium",
       "low",
       "info",
+    ]);
+  });
+
+  it("orders categories the same way the page presents its future-area sections", () => {
+    expect(SECURITY_CATEGORIES).toEqual([
+      "repository",
+      "dependencies",
+      "secrets",
+      "misconfiguration",
+      "risk",
+      "remediation",
     ]);
   });
 
