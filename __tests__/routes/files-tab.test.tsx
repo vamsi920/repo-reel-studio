@@ -536,6 +536,27 @@ describe("FilesTab", () => {
     expect(refetchGitChangesMock).toHaveBeenCalledTimes(1);
   });
 
+  it("invalidates the per-file diff cache on Refresh, so an already-open diff isn't left stale", async () => {
+    // `file_diff` has its own 5-minute staleTime and is not covered by
+    // `refetchGitChanges` (the top-level changed-files list only) — the
+    // manual Refresh button must invalidate it explicitly, the same way
+    // `useAutoRefreshFilesOnEdit` already does for agent-driven edits.
+    useHasAttachedSourceMock.mockReturnValue({
+      hasAttachedSource: false,
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+
+    renderTab();
+
+    await user.click(screen.getByTestId("files-tab-refresh"));
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["file_diff"] });
+
+    invalidateSpy.mockRestore();
+  });
+
   // A failed workspace listing must be visibly different from an empty
   // workspace, and the user must have a way to retry that re-runs the
   // listing itself (not just the git-changes refetch the toolbar fires).

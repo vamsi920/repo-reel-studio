@@ -208,6 +208,15 @@ function FilesTab() {
     queryClient.invalidateQueries({ queryKey: ["workspace-files"] });
     queryClient.invalidateQueries({ queryKey: ["workspace-file-content"] });
     queryClient.invalidateQueries({ queryKey: ["git_commits"] });
+    // Per-file diff content (an already-expanded row in the Diff view) has
+    // its own 5-minute staleTime and is not covered by `refetchGitChanges`
+    // (which only refreshes the top-level changed-files list) — without
+    // this, clicking Refresh while looking at a stale diff would leave that
+    // diff's body untouched. `useAutoRefreshFilesOnEdit` already invalidates
+    // this same key on every agent-driven edit; the manual button must do
+    // the same. Per-commit diffs (`commit_file_diff`) are sha-addressed and
+    // immutable, so they are deliberately left out here too.
+    queryClient.invalidateQueries({ queryKey: ["file_diff"] });
   };
 
   return (

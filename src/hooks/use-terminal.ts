@@ -8,18 +8,8 @@ import { Command, useCommandStore } from "#/stores/command-store";
   The reason for this is that the hook exposes a ref that requires a DOM element to be rendered.
 */
 
-const renderCommand = (
-  command: Command,
-  terminal: Terminal,
-  isUserInput: boolean = false,
-) => {
+const renderCommand = (command: Command, terminal: Terminal) => {
   const { content, type } = command;
-
-  // Skip rendering user input commands that come from the event stream
-  // as they've already been displayed in the terminal as the user typed
-  if (type === "input" && isUserInput) {
-    return;
-  }
 
   const trimmedContent = (content || "").replaceAll("\n", "\r\n").trim();
 
@@ -172,9 +162,7 @@ export const useTerminal = () => {
           if (initialCommands[i].type === "input") {
             terminal.current.write("$ ");
           }
-          // Don't pass isUserInput=true here because we're initializing the terminal
-          // and need to show all previous commands
-          renderCommand(initialCommands[i], terminal.current, false);
+          renderCommand(initialCommands[i], terminal.current);
         }
         lastCommandIndex.current = initialCommands.length;
       }
@@ -216,9 +204,7 @@ export const useTerminal = () => {
         if (latest[i].type === "input") {
           terminal.current.write("$ ");
         }
-        // Don't pass isUserInput=true: the read-only terminal never echoed
-        // these itself, so every input line still has to be written here.
-        renderCommand(latest[i], terminal.current, false);
+        renderCommand(latest[i], terminal.current);
       }
       lastCommandIndex.current = latest.length;
     }

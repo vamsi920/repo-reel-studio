@@ -21,7 +21,14 @@ interface FileContentViewerProps {
   viewMode: ViewMode;
 }
 
-const HTML_LIKE_EXTS = new Set(["html", "htm", "svg"]);
+// Note: "svg" is deliberately NOT included here. `.svg` files are
+// classified as kind "image" (see IMAGE_EXTENSIONS in
+// use-workspace-file-content.ts) and are always intercepted by the
+// `kind === "image"` branch above, so this iframe branch never sees one —
+// and that's the right outcome: rendering an SVG through <img> (as the
+// image branch does) is inert, while an iframe/object embed would execute
+// any script the SVG carries.
+const HTML_LIKE_EXTS = new Set(["html", "htm"]);
 
 // Office/document formats we can't preview inline. The label doubles as the
 // allow-list (a present entry => Office doc) and feeds a clear, format-named

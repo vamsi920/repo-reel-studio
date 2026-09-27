@@ -279,6 +279,23 @@ describe("FileContentViewer", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it("renders an SVG as an <img>, not an iframe, so no embedded script can execute", async () => {
+      // .svg is classified as kind "image" (see IMAGE_EXTENSIONS in
+      // use-workspace-file-content.ts), so it must take the same inert
+      // <img>-based path as PNG/JPEG — never the sandboxed-but-still-live
+      // iframe path used for HTML files.
+      renderViewer("logo.svg", "rich");
+
+      expect(
+        await screen.findByTestId("file-content-viewer-image"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("file-content-viewer-iframe"),
+      ).not.toBeInTheDocument();
+      // Image/PDF kinds render straight from staticUrl — no byte fetch.
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("rich-renders a markdown file's content instead of showing its raw source", async () => {
       fetchMock.mockResolvedValue({
         ok: true,
