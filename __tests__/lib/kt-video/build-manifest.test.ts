@@ -393,6 +393,70 @@ describe("buildKtManifest", () => {
     );
     expect(codeScene!.focus_symbols).toContain("greet");
   });
+
+  it("recognizes a plain C function definition with no leading keyword", () => {
+    // Regression test: unlike every other language handled here, C/C++ has
+    // no `fn`/`func`/`fun`/`def`/`function` keyword in front of an ordinary
+    // function definition — it's just `returnType name(args) {`. Without a
+    // dedicated fallback, a real .c file with no wrapping class/struct
+    // produced zero symbols, so `pickPrimary` returned null and the
+    // walkthrough narrated it as "mostly declarative content" even though
+    // it's a real function doing real work.
+    const fileContents = {
+      "src/math_utils.c":
+        "#include <stdio.h>\n" +
+        "\n" +
+        "static int add_numbers(int a, int b) {\n" +
+        "    return a + b;\n" +
+        "}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.narration_text).toContain(
+      "The heart of this file is add_numbers",
+    );
+    expect(codeScene!.focus_symbols).toContain("add_numbers");
+  });
+
+  it("does not mistake a call inside a control-flow/return statement for a C function definition", () => {
+    // `return foo(x);` and `if (x > 0) {` share the same "identifier followed
+    // by parens" shape as a real definition, so the fallback must not treat
+    // either as one — otherwise a call site could outrank (or masquerade as)
+    // the file's real primary symbol.
+    const fileContents = {
+      "src/guard.c":
+        "int clamp_value(int x) {\n" +
+        "    if (x > 0) {\n" +
+        "        return x;\n" +
+        "    }\n" +
+        "    return 0;\n" +
+        "}\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.focus_symbols).toEqual(["clamp_value"]);
+  });
+
+  it("extracts a symbol from a header (.h) file, which previously got no symbol extraction at all", () => {
+    const fileContents = {
+      "include/math_utils.h":
+        "#ifndef MATH_UTILS_H\n" +
+        "#define MATH_UTILS_H\n" +
+        "\n" +
+        "int add_numbers(int a, int b);\n" +
+        "\n" +
+        "#endif\n",
+    };
+
+    const manifest = buildKtManifest("repo", fileContents, 1);
+    const codeScene = manifest.scenes.find((s) => s.type === "code");
+
+    expect(codeScene!.focus_symbols).toContain("add_numbers");
+  });
 });
 
 describe("isFileSceneEligible", () => {

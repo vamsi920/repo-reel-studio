@@ -43,6 +43,40 @@ const NOISE_FILE =
   /(\.min\.|\.lock$|\.map$|package-lock\.json$|yarn\.lock$|pnpm-lock\.yaml$|\.snap$|\.d\.ts$)/i;
 const TEST_FILE = /(\.|\/)(test|spec)\.|(^|\/)(tests?|__tests__)(\/|$)/i;
 
+/**
+ * Unlike every other language handled below, C/C++ has no leading keyword
+ * (`fn`/`func`/`fun`/`def`/`function`) on an ordinary function definition —
+ * it's just `returnType name(args) {`. Without this fallback, a plain .c/.h
+ * file (real logic, no wrapping class/struct) produced zero symbols, so
+ * `pickPrimary` always returned null and the walkthrough narrated it as
+ * "mostly declarative content" even when it was a real function doing real
+ * work. Requires a return-type-ish prefix before the name (so a bare macro
+ * call like `FOO(x)` at the start of a line doesn't match) and the first
+ * word is checked separately against `C_CONTROL_KEYWORDS` (so
+ * `return foo(x);` / `if (x) {` / `while (x) {` aren't mistaken for a
+ * definition of "foo"/"if"/"while").
+ */
+const C_STYLE_FUNCTION_RE =
+  /^[A-Za-z_][\w:<>,*&\s]*[\s*&:]([A-Za-z_]\w*)\s*\(([^;{}]*)\)\s*(?:const\s*)?[{;]/;
+const C_CONTROL_KEYWORDS = new Set([
+  "if",
+  "for",
+  "while",
+  "switch",
+  "catch",
+  "return",
+  "else",
+  "do",
+  "sizeof",
+  "typedef",
+  "using",
+  "namespace",
+  "template",
+  "static_assert",
+  "new",
+  "delete",
+]);
+
 const SOURCE_EXT = new Set([
   "ts",
   "tsx",
@@ -355,6 +389,8 @@ function extractSymbols(path: string, content: string): FileSymbol[] {
         "c",
         "cc",
         "cpp",
+        "h",
+        "hpp",
       ].includes(ext)
     ) {
       if (
@@ -374,6 +410,12 @@ function extractSymbols(path: string, content: string): FileSymbol[] {
         ))
       ) {
         push({ name: m[1], line: ln, kind: "class", exported: true });
+      } else if (
+        ["c", "cc", "cpp", "h", "hpp"].includes(ext) &&
+        !C_CONTROL_KEYWORDS.has(trimmed.match(/^[A-Za-z_]\w*/)?.[0] ?? "") &&
+        (m = trimmed.match(C_STYLE_FUNCTION_RE))
+      ) {
+        push({ name: m[1], line: ln, kind: "function", exported: true });
       }
     }
   }
