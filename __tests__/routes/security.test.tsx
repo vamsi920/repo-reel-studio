@@ -379,6 +379,24 @@ describe("Security route", () => {
       );
     });
 
+    it("treats a present-but-empty ?repository= the same as no selection at all, not as a request for the empty string", () => {
+      // Regression: `searchParams.get("repository")` returns `""` (not
+      // `null`) for a literal `/security?repository=` -- a truthy check
+      // instead of the current falsy one would read that as "the user asked
+      // for repository ''", landing on the same `requested-not-connected`
+      // lie the docstring says this hook exists to avoid, instead of
+      // falling through to the ordinary no-param default pick.
+      seedRepository();
+      renderSecurity("/security?repository=");
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+      expect(
+        screen.queryByTestId("security-repository-not-connected"),
+      ).not.toBeInTheDocument();
+    });
+
     it("refuses to fall back to another repository when ?repository= is unknown", () => {
       seedRepository();
       renderSecurity("/security?repository=acme%2Fghost%40main");
@@ -607,6 +625,35 @@ describe("Security route", () => {
 
       expect(
         await screen.findByTestId("security-no-workspace"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("security-workspace-scope"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("reports the requested repository as no longer connected, rather than silently re-scoping to a sibling, once it drops out of a live store update", async () => {
+      // Regression: the test above only ever covers the *last* repository
+      // disappearing (straight to `no-repositories`). With a sibling
+      // repository still present, `entries.length` stays > 0 after the
+      // update, so a broken lookup could plausibly fall through to the
+      // no-param "pick the first entry" branch instead -- silently
+      // reporting the survivor's posture under the URL's original request,
+      // which is exactly the lie this page's own docstring says
+      // `requested-not-connected` exists to prevent.
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity("/security?repository=acme%2Fweb%40main");
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/web@abcdef1",
+      );
+
+      useKnowledgeStore.setState((state) => {
+        const { "acme/web@main": _removed, ...rest } = state.byRepositoryId;
+        return { byRepositoryId: rest };
+      });
+
+      expect(
+        await screen.findByTestId("security-repository-not-connected"),
       ).toBeInTheDocument();
       expect(
         screen.queryByTestId("security-workspace-scope"),
@@ -845,6 +892,33 @@ describe("Security route", () => {
       // the plain label, not invent a sha for either one.
       expect(scopeText).toHaveTextContent("acme/web");
       expect(scopeText).not.toHaveTextContent("@abcdef1");
+    });
+
+    it("hides itself live once a store update leaves only one connected repository", async () => {
+      // Regression: every other picker-visibility assertion only ever
+      // checks a single static render (mount with one repo, or mount with
+      // two). `showRepositorySelect` is recomputed from `repositories`,
+      // which is itself computed inside the memoised hook -- a stale
+      // dependency array on either could leave a two-repository render's
+      // picker mounted even after the store drops back to one, the same
+      // class of staleness the scope-level "drops the scope live" test
+      // guards against for the workspace banner.
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      renderSecurity();
+      expect(
+        screen.getByTestId("security-repository-select"),
+      ).toBeInTheDocument();
+
+      useKnowledgeStore.setState((state) => {
+        const { "acme/web@main": _removed, ...rest } = state.byRepositoryId;
+        return { byRepositoryId: rest };
+      });
+
+      await screen.findByTestId("security-workspace-scope");
+      expect(
+        screen.queryByTestId("security-repository-select"),
+      ).not.toBeInTheDocument();
     });
   });
 });
