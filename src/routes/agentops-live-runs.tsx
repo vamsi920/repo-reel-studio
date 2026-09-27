@@ -13,8 +13,11 @@ function AgentOpsLiveRuns() {
   });
 
   // Elapsed time is computed from `Date.now()`, so it needs its own tick — the
-  // query itself only refetches when the collector has new data.
-  useLiveElapsedTick(true);
+  // query itself only refetches when the collector has new data. Gate on
+  // there being active runs, like the Overview/Run-detail tabs do, so this
+  // tab doesn't keep re-rendering every second forever once the list is
+  // empty.
+  useLiveElapsedTick((data ?? []).length > 0);
 
   return (
     // This is the tab someone has open while watching an agent work, polling

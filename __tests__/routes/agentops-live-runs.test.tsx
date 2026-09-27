@@ -5,10 +5,16 @@ import AgentOpsLiveRuns from "#/routes/agentops-live-runs";
 import type { AgentOpsRun } from "#/api/agentops-service/agentops-service.types";
 
 const runsQuery = vi.hoisted(() => vi.fn());
+const liveElapsedTick = vi.hoisted(() => vi.fn());
 
 vi.mock("#/hooks/query/use-agentops", async (importOriginal) => ({
   ...(await importOriginal<typeof import("#/hooks/query/use-agentops")>()),
   useAgentOpsRuns: () => runsQuery(),
+}));
+
+vi.mock("#/hooks/use-live-elapsed-tick", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#/hooks/use-live-elapsed-tick")>()),
+  useLiveElapsedTick: (active: boolean) => liveElapsedTick(active),
 }));
 
 const RUN: AgentOpsRun = {
@@ -58,6 +64,21 @@ function renderLiveRuns() {
 }
 
 describe("AgentOpsLiveRuns", () => {
+  it("stops the elapsed-time tick once there are no active runs left, like Overview/Run-detail do", () => {
+    // Elapsed time is derived from `Date.now()` at render time, so it needs a
+    // 1s re-render tick while it can still change. Ticking unconditionally
+    // would keep re-rendering this tab forever even with an empty list.
+    runsQuery.mockReturnValue(loaded([]));
+    const { rerender } = renderLiveRuns();
+
+    expect(liveElapsedTick).toHaveBeenLastCalledWith(false);
+
+    runsQuery.mockReturnValue(loaded([RUN]));
+    rerender();
+
+    expect(liveElapsedTick).toHaveBeenLastCalledWith(true);
+  });
+
   it("shows the collector card when the very first fetch fails", () => {
     runsQuery.mockReturnValue({
       data: undefined,
