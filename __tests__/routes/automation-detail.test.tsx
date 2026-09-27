@@ -264,6 +264,41 @@ describe("AutomationDetail — backend-change guard", () => {
     });
   });
 
+  it("closes an open delete-confirmation modal instead of letting it silently reappear after a backend switch round trip", async () => {
+    // Arrange — open the kebab and choose Delete, so the confirmation modal
+    // is showing before the backend ever changes.
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+    });
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$DELETE }),
+    );
+    expect(
+      screen.getByText(I18nKey.AUTOMATIONS$DELETE_CONFIRM_TITLE),
+    ).toBeInTheDocument();
+
+    // Act — switch the active backend away (the guard renders null while
+    // it's mismatched) and then back to the originally-mounted one, exactly
+    // as reselecting the same backend from "Manage Backends" would, with no
+    // navigation away from this page in between.
+    setActiveSelection({ backendId: cloudBackend.id });
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Test Automation"),
+      ).not.toBeInTheDocument();
+    });
+    setActiveSelection({ backendId: localBackend.id });
+    expect(await screen.findByText("Test Automation")).toBeInTheDocument();
+
+    // Assert — the confirmation modal did not pop back open unprompted.
+    expect(
+      screen.queryByText(I18nKey.AUTOMATIONS$DELETE_CONFIRM_TITLE),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the model field as the persisted model profile name", async () => {
     renderDetail();
 

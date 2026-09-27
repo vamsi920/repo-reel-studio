@@ -21,11 +21,16 @@ export function useAutomations(options: UseAutomationsOptions = {}) {
   const { limit = 50, offset = 0, enabled = true } = options;
   const active = useActiveBackend();
   return useQuery({
+    // Include connectionRevision (bumped on an in-place host/apiKey edit to
+    // the same backend.id, see active-backend-context.tsx) so correcting a
+    // local backend's connection details doesn't keep serving the previous
+    // agent-server's automation list until staleTime lapses.
     queryKey: [
       ...AUTOMATIONS_QUERY_KEY,
       { limit, offset },
       active.backend.id,
       active.orgId,
+      active.backend.connectionRevision ?? 0,
     ],
     queryFn: () => AutomationService.getAutomations(limit, offset),
     staleTime: 0,

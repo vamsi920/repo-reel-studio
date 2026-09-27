@@ -22,7 +22,16 @@ export function useDeploymentCapabilities() {
   const { backend, orgId } = useActiveBackend();
 
   return useQuery({
-    queryKey: [...SETUP_QUERY_KEYS.capabilities(), backend.id, orgId],
+    // Include connectionRevision (bumped on an in-place host/apiKey edit to
+    // the same backend.id, see active-backend-context.tsx) so correcting a
+    // local backend's connection details doesn't keep serving the previous
+    // agent-server's capabilities until staleTime lapses.
+    queryKey: [
+      ...SETUP_QUERY_KEYS.capabilities(),
+      backend.id,
+      orgId,
+      backend.connectionRevision ?? 0,
+    ],
     queryFn: () => AutomationService.getCapabilities(),
     retry: false,
     staleTime: 1000 * 60 * 5,

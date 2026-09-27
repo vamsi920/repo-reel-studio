@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "Zaman aşımı geçerli bir sayı olmalıdır",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "Zaman aşımı pozitif olmalıdır",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "Zaman aşımı {{max}} saniyeyi aşamaz",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "Zaman aşımı en az {{min}} saniye olmalıdır",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "Bu otomasyon özel bir zamanlama kullanır. Bozmamak için sıklık düzenlemesi devre dışı bırakılmıştır.",
   "AUTOMATIONS$EDIT_SUCCESS": "Otomasyon güncellendi",
   "AUTOMATIONS$EDIT_ERROR": "Otomasyon güncellenemedi",

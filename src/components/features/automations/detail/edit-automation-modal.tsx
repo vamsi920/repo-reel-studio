@@ -144,6 +144,9 @@ export function EditAutomationModal({
     serviceTimeoutMax === undefined
       ? undefined
       : Math.min(serviceTimeoutMax, timeoutSpec.max ?? serviceTimeoutMax);
+  // The deployment has no notion of a floor -- only the manifest does. Falls
+  // back to 1 (today's implicit "must be positive" floor) absent a manifest.
+  const timeoutMin = timeoutSpec.min ?? 1;
   const { data: profilesData, isLoading: isLoadingProfiles } = useLlmProfiles();
   const profiles = profilesData?.profiles ?? [];
   const modelItems = [
@@ -217,9 +220,15 @@ export function EditAutomationModal({
     }
     setNameError(null);
 
-    const timeoutResult = validateAutomationTimeout(form.timeout, timeoutMax);
+    const timeoutResult = validateAutomationTimeout(
+      form.timeout,
+      timeoutMax,
+      timeoutMin,
+    );
     if ("errorKey" in timeoutResult) {
-      setTimeoutError(t(timeoutResult.errorKey, { max: timeoutMax }));
+      setTimeoutError(
+        t(timeoutResult.errorKey, { max: timeoutMax, min: timeoutMin }),
+      );
       return;
     }
     setTimeoutError(null);
@@ -374,7 +383,7 @@ export function EditAutomationModal({
                 onChange={(value) => setForm((f) => ({ ...f, timeout: value }))}
                 error={timeoutError ?? undefined}
                 showOptionalTag
-                min={timeoutSpec.min ?? 1}
+                min={timeoutMin}
                 max={timeoutMax}
                 step={1}
                 placeholder={String(AUTOMATION_TIMEOUT_DEFAULT_SECONDS)}

@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "O timeout deve ser um número válido",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "O timeout deve ser positivo",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "O timeout não pode exceder {{max}} segundos",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "O timeout deve ser de pelo menos {{min}} segundos",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "Esta automação usa um cronograma personalizado. A edição da frequência está desativada para evitar quebrá-la.",
   "AUTOMATIONS$EDIT_SUCCESS": "Automação atualizada",
   "AUTOMATIONS$EDIT_ERROR": "Não foi possível atualizar a automação",

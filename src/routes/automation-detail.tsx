@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
@@ -66,6 +66,20 @@ export default function AutomationDetail() {
   const active = useActiveBackend();
   const mountedBackendId = useRef(active.backend.id);
   const backendChanged = mountedBackendId.current !== active.backend.id;
+
+  // `showDeleteModal`/`showEditModal` are plain component state, so they
+  // survive the `backendChanged` guard below returning null -- the component
+  // itself never unmounts. Without this, opening a modal and then switching
+  // the active backend away and back (e.g. via "Manage Backends", which
+  // reselects the originally-mounted backend without ever navigating away
+  // from this page) resumes rendering the cached automation with the modal's
+  // state untouched, popping it back open with no corresponding user click.
+  useEffect(() => {
+    if (backendChanged) {
+      setShowDeleteModal(false);
+      setShowEditModal(false);
+    }
+  }, [backendChanged]);
 
   // Only fetch automation details if the backend is healthy and hasn't changed
   const {

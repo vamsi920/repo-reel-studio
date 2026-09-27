@@ -14415,6 +14415,23 @@
     "uk": "Таймаут не може перевищувати {{max}} секунд",
     "ca": "El temps d'espera no pot superar els {{max}} segons"
   },
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": {
+    "en": "Timeout must be at least {{min}} seconds",
+    "ja": "タイムアウトは{{min}}秒以上である必要があります",
+    "zh-CN": "超时必须至少为{{min}}秒",
+    "zh-TW": "超時必須至少為{{min}}秒",
+    "ko-KR": "타임아웃은 최소 {{min}}초 이상이어야 합니다",
+    "no": "Timeout må være minst {{min}} sekunder",
+    "it": "Il timeout deve essere di almeno {{min}} secondi",
+    "pt": "O timeout deve ser de pelo menos {{min}} segundos",
+    "es": "El timeout debe ser de al menos {{min}} segundos",
+    "ar": "يجب أن تكون المهلة الزمنية {{min}} ثانية على الأقل",
+    "fr": "Le timeout doit être d'au moins {{min}} secondes",
+    "tr": "Zaman aşımı en az {{min}} saniye olmalıdır",
+    "de": "Timeout muss mindestens {{min}} Sekunden betragen",
+    "uk": "Таймаут повинен бути не менше {{min}} секунд",
+    "ca": "El temps d'espera ha de ser d'almenys {{min}} segons"
+  },
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": {
     "en": "This automation uses a custom schedule. Frequency editing is disabled to avoid breaking it.",
     "ja": "このオートメーションはカスタムスケジュールを使用しています。誤って壊さないよう、頻度の編集は無効化されています。",

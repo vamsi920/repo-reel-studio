@@ -14,11 +14,16 @@ export type AutomationTimeoutValidation =
  * Validate a raw timeout string from the edit form. A blank string means "use
  * the server default" (resolved as `null`). Otherwise the value must be a
  * positive integer. When capability discovery supplies a ceiling, values above
- * it are rejected before the request reaches the service.
+ * it are rejected before the request reaches the service. When the interface
+ * manifest declares a floor above 1 (`minSeconds`), values below it are
+ * rejected the same way -- otherwise the field's `min` attribute is purely a
+ * cosmetic HTML hint (the form renders with `noValidate`) and a manifest's
+ * declared minimum is never actually enforced.
  */
 export function validateAutomationTimeout(
   raw: string,
   maxSeconds?: number,
+  minSeconds?: number,
 ): AutomationTimeoutValidation {
   const trimmed = raw.trim();
   if (!trimmed) return { value: null };
@@ -29,6 +34,9 @@ export function validateAutomationTimeout(
   }
   if (seconds <= 0) {
     return { errorKey: I18nKey.AUTOMATIONS$ERROR_TIMEOUT_POSITIVE };
+  }
+  if (minSeconds !== undefined && seconds < minSeconds) {
+    return { errorKey: I18nKey.AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET };
   }
   if (maxSeconds !== undefined && seconds > maxSeconds) {
     return { errorKey: I18nKey.AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED };

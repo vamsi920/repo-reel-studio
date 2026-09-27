@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "타임아웃은 유효한 숫자여야 합니다",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "타임아웃은 양수여야 합니다",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "타임아웃은 {{max}}초를 초과할 수 없습니다",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "타임아웃은 최소 {{min}}초 이상이어야 합니다",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "이 자동화는 사용자 지정 일정을 사용합니다. 손상을 피하기 위해 빈도 편집이 비활성화되어 있습니다.",
   "AUTOMATIONS$EDIT_SUCCESS": "자동화가 업데이트되었습니다",
   "AUTOMATIONS$EDIT_ERROR": "자동화를 업데이트할 수 없습니다",

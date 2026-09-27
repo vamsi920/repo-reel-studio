@@ -18,11 +18,16 @@ export function useAutomationDetail(options: UseAutomationDetailOptions) {
   const { id, enabled = true } = options;
   const active = useActiveBackend();
   return useQuery({
+    // Include connectionRevision (bumped on an in-place host/apiKey edit to
+    // the same backend.id, see active-backend-context.tsx) so correcting a
+    // local backend's connection details doesn't keep serving the previous
+    // agent-server's automation until staleTime lapses.
     queryKey: [
       ...AUTOMATION_DETAIL_QUERY_KEY,
       id,
       active.backend.id,
       active.orgId,
+      active.backend.connectionRevision ?? 0,
     ],
     queryFn: () => AutomationService.getAutomation(id),
     staleTime: 5 * 60 * 1000,
@@ -41,12 +46,14 @@ export function useAutomationRuns(options: UseAutomationRunsOptions) {
   const { id, limit = 20, offset = 0, enabled = true } = options;
   const active = useActiveBackend();
   return useQuery({
+    // Include connectionRevision, same reasoning as useAutomationDetail above.
     queryKey: [
       ...AUTOMATION_RUNS_QUERY_KEY,
       id,
       { limit, offset },
       active.backend.id,
       active.orgId,
+      active.backend.connectionRevision ?? 0,
     ],
     queryFn: () => AutomationService.getAutomationRuns(id, limit, offset),
     staleTime: 60 * 1000,

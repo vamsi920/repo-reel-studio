@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "Timeout må være et gyldig tall",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "Timeout må være positiv",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "Timeout kan ikke overstige {{max}} sekunder",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "Timeout må være minst {{min}} sekunder",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "Denne automatiseringen bruker en tilpasset plan. Frekvensredigering er deaktivert for å unngå å ødelegge den.",
   "AUTOMATIONS$EDIT_SUCCESS": "Automatisering oppdatert",
   "AUTOMATIONS$EDIT_ERROR": "Kunne ikke oppdatere automatiseringen",

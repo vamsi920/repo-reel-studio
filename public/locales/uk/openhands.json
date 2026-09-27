@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "Таймаут повинен бути дійсним числом",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "Таймаут повинен бути позитивним",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "Таймаут не може перевищувати {{max}} секунд",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "Таймаут повинен бути не менше {{min}} секунд",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "Ця автоматизація використовує власний розклад. Редагування частоти вимкнено, щоб не пошкодити її.",
   "AUTOMATIONS$EDIT_SUCCESS": "Автоматизацію оновлено",
   "AUTOMATIONS$EDIT_ERROR": "Не вдалося оновити автоматизацію",

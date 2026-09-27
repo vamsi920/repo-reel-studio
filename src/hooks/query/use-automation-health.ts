@@ -12,7 +12,16 @@ const HEALTHY_STALE_MS = 30 * 1000;
 export function useAutomationHealth() {
   const active = useActiveBackend();
   return useQuery({
-    queryKey: [...AUTOMATION_HEALTH_QUERY_KEY, active.backend.id, active.orgId],
+    // Include connectionRevision (bumped on an in-place host/apiKey edit to
+    // the same backend.id, see active-backend-context.tsx) so correcting a
+    // local backend's connection details doesn't keep reporting the previous
+    // agent-server's health until staleTime lapses.
+    queryKey: [
+      ...AUTOMATION_HEALTH_QUERY_KEY,
+      active.backend.id,
+      active.orgId,
+      active.backend.connectionRevision ?? 0,
+    ],
     queryFn: () => AutomationService.checkHealth(),
     staleTime: HEALTHY_STALE_MS,
     // `checkHealth` never throws — it reports a failure as `{status: "error"}` —

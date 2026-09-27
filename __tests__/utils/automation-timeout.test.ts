@@ -61,4 +61,18 @@ describe("validateAutomationTimeout", () => {
       errorKey: I18nKey.AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED,
     });
   });
+
+  it("rejects a value below a manifest-declared floor", () => {
+    // Arrange / Act — a manifest min of 60 moves the boundary: 60 stays in
+    // range while 5, otherwise a perfectly ordinary positive integer, is now
+    // rejected.
+    const belowFloor = validateAutomationTimeout("5", 1800, 60);
+    const atFloor = validateAutomationTimeout("60", 1800, 60);
+
+    // Assert
+    expect(belowFloor).toEqual({
+      errorKey: I18nKey.AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET,
+    });
+    expect(atFloor).toEqual({ value: 60 });
+  });
 });

@@ -179,6 +179,62 @@ describe("automation hooks — backend switch", () => {
     });
   });
 
+  it("useAutomations refetches when the active backend's host/apiKey change in place, same backend.id", async () => {
+    // Arrange — mount and capture the initial fetch under the local backend.
+    const { result } = renderHook(
+      () => useAutomations({ limit: 50, offset: 0 }),
+      { wrapper: makeWrapper() },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(AutomationService.getAutomations).toHaveBeenCalledTimes(1);
+
+    // Act — same backend.id/orgId, only the connection details changed, as
+    // updateBackend() does when a user edits a registered backend's host or
+    // rotates its API key in place (bumps connectionRevision).
+    act(() => {
+      setRegisteredBackends([
+        {
+          ...localBackend,
+          host: "http://localhost:9999",
+          apiKey: "rotated-key",
+          connectionRevision: 1,
+        },
+        cloudBackend,
+      ]);
+    });
+
+    // Assert — the query key includes connectionRevision, so this is treated
+    // as a fresh query and refetches instead of continuing to serve the
+    // previous agent-server's automation list.
+    await waitFor(() => {
+      expect(AutomationService.getAutomations).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("useAutomationDetail refetches when the active backend's host/apiKey change in place, same backend.id", async () => {
+    const { result } = renderHook(() => useAutomationDetail({ id: "auto-1" }), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(AutomationService.getAutomation).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      setRegisteredBackends([
+        {
+          ...localBackend,
+          host: "http://localhost:9999",
+          apiKey: "rotated-key",
+          connectionRevision: 1,
+        },
+        cloudBackend,
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(AutomationService.getAutomation).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("useDispatchAutomation dispatches the selected automation", async () => {
     const { result } = renderHook(() => useDispatchAutomation(), {
       wrapper: makeWrapper(),

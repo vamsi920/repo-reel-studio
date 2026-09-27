@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "タイムアウトは有効な数値である必要があります",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "タイムアウトは正の値である必要があります",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "タイムアウトは{{max}}秒を超えることはできません",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "タイムアウトは{{min}}秒以上である必要があります",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "このオートメーションはカスタムスケジュールを使用しています。誤って壊さないよう、頻度の編集は無効化されています。",
   "AUTOMATIONS$EDIT_SUCCESS": "オートメーションを更新しました",
   "AUTOMATIONS$EDIT_ERROR": "オートメーションを更新できませんでした",

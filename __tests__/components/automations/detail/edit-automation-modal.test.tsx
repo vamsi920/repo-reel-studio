@@ -550,6 +550,33 @@ describe("EditAutomationModal", () => {
     });
   });
 
+  it("blocks submit for a manifest-declared timeout floor, not just a cosmetic input hint", async () => {
+    // Arrange — the manifest requires at least a full minute per run. The
+    // form renders `noValidate`, so only `validateAutomationTimeout` itself
+    // (not the browser) can actually enforce this.
+    specOverrides.current = { timeout: { min: 60 } };
+    const user = userEvent.setup();
+    renderModal(timeoutAutomation);
+    await waitFor(() => {
+      expect(screen.getByTestId("edit-automation-timeout")).toHaveAttribute(
+        "min",
+        "60",
+      );
+    });
+
+    // Act — enter a positive value that is still below the manifest's floor.
+    const timeoutInput = screen.getByTestId("edit-automation-timeout");
+    await user.clear(timeoutInput);
+    await user.type(timeoutInput, "5");
+    await user.click(screen.getByTestId("edit-automation-save"));
+
+    // Assert — no PATCH fired, inline error appears.
+    expect(AutomationService.updateAutomation).not.toHaveBeenCalled();
+    expect(
+      screen.getByTestId("edit-automation-timeout-error"),
+    ).toBeInTheDocument();
+  });
+
   it("renders only the attributes the interface manifest declares, with its copy", async () => {
     // Arrange — an admitted manifest that omits `prompt` and relabels `name`.
     specOverrides.current = {

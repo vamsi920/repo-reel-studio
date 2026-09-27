@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "يجب أن يكون المهلة الزمنية رقمًا صالحًا",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "يجب أن تكون المهلة الزمنية موجبة",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "لا يمكن أن تتجاوز المهلة الزمنية {{max}} ثانية",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "يجب أن تكون المهلة الزمنية {{min}} ثانية على الأقل",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "تستخدم هذه الأتمتة جدولاً مخصصًا. تم تعطيل تعديل التكرار لتجنب كسرها.",
   "AUTOMATIONS$EDIT_SUCCESS": "تم تحديث الأتمتة",
   "AUTOMATIONS$EDIT_ERROR": "تعذر تحديث الأتمتة",

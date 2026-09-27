@@ -847,6 +847,7 @@
   "AUTOMATIONS$ERROR_TIMEOUT_INVALID_NUMBER": "El temps d'espera ha de ser un número vàlid",
   "AUTOMATIONS$ERROR_TIMEOUT_POSITIVE": "El temps d'espera ha de ser positiu",
   "AUTOMATIONS$ERROR_TIMEOUT_MAX_EXCEEDED": "El temps d'espera no pot superar els {{max}} segons",
+  "AUTOMATIONS$ERROR_TIMEOUT_MIN_NOT_MET": "El temps d'espera ha de ser d'almenys {{min}} segons",
   "AUTOMATIONS$CUSTOM_SCHEDULE_HINT": "Aquesta automatització utilitza un calendari personalitzat. L'edició de la freqüència està desactivada per evitar trencar-la.",
   "AUTOMATIONS$EDIT_SUCCESS": "S'ha actualitzat l'automatització",
   "AUTOMATIONS$EDIT_ERROR": "No s'ha pogut actualitzar l'automatització",
