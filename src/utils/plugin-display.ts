@@ -47,7 +47,20 @@ export function getPluginSourceLabel(plugin: PluginSpec): string {
   return plugin.ref ? `${base} @ ${plugin.ref}` : base;
 }
 
-/** Stable key for a plugin reference (coordinates only). */
+/**
+ * Stable key for a plugin reference (coordinates only).
+ *
+ * Serialized with `JSON.stringify` rather than joining with a separator
+ * character: two genuinely different plugins can tie under a naive
+ * `[source, ref, repo_path].join(" ")` key once a coordinate itself contains
+ * the separator (e.g. `source: "foo", ref: "bar"` vs. `source: "foo bar",
+ * ref: ""`), which silently drops one of them wherever this key dedupes a
+ * plugin list. Mirrors `pluginSpecKey` in `plugin-spec-identity.ts`.
+ */
 export function pluginReferenceKey(plugin: PluginSpec): string {
-  return [plugin.source, plugin.ref ?? "", plugin.repo_path ?? ""].join(" ");
+  return JSON.stringify([
+    plugin.source,
+    plugin.ref ?? "",
+    plugin.repo_path ?? "",
+  ]);
 }
