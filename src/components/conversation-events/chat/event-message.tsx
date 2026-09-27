@@ -46,6 +46,14 @@ interface EventMessageProps {
   /** Set of event IDs that should render PlanPreview (one per user message phase) */
   planPreviewEventIds?: Set<string>;
   /**
+   * Precomputed `action id -> ActionEvent` lookup (see `buildActionsById`) for
+   * an observation event's "corresponding action" lookup below. When absent,
+   * falls back to scanning `messages` linearly — callers that render many
+   * events per pass (the live message list) should always pass this so the
+   * lookup is O(1) instead of O(n) per observation.
+   */
+  actionsById?: Map<string, ActionEvent>;
+  /**
    * When true, do not render the inline `ThoughtEventMessage` for action /
    * observation events. The caller is expected to render the thought
    * separately (e.g. via a hoisted "thought" rendered item) so the message
@@ -140,6 +148,7 @@ export function EventMessage({
   isLastMessage,
   isInLast10Actions,
   planPreviewEventIds,
+  actionsById,
   suppressThought = false,
 }: EventMessageProps) {
   const { data: config } = useConfig();
@@ -278,10 +287,14 @@ export function EventMessage({
       return null;
     }
 
-    // Find the action that this observation is responding to
-    const correspondingAction = messages.find(
-      (msg) => isActionEvent(msg) && msg.id === event.action_id,
-    );
+    // Find the action that this observation is responding to. Prefer the
+    // precomputed map (O(1)) over a linear scan of the (unbounded,
+    // live-growing) conversation history.
+    const correspondingAction = actionsById
+      ? actionsById.get(event.action_id)
+      : messages.find(
+          (msg) => isActionEvent(msg) && msg.id === event.action_id,
+        );
 
     // Skip ThoughtEventMessage for ThinkAction (thought IS the action)
     const shouldShowThought =

@@ -71,6 +71,22 @@ const makeImageOnlyEvent = (id: string): MessageEvent =>
     critic_result: null,
   }) as unknown as MessageEvent;
 
+// A user message with both text and an attached image.
+const makeTextAndImageEvent = (id: string): MessageEvent =>
+  ({
+    id,
+    source: "user",
+    timestamp: "2024-01-01T00:00:00.000Z",
+    llm_message: {
+      role: "user",
+      content: [
+        { type: "text", text: "Hello world" },
+        { type: "image", image_urls: ["data:image/png;base64,AAAA"] },
+      ],
+    },
+    critic_result: null,
+  }) as unknown as MessageEvent;
+
 const renderMessage = (event: MessageEvent) =>
   renderWithProviders(
     <UserAssistantEventMessage
@@ -209,6 +225,25 @@ describe("UserAssistantEventMessage — branch action", () => {
     // no prefill, so the image is not dropped.
     await waitFor(() =>
       expect(forkSpy).toHaveBeenCalledWith("conv-1", "evt-img", undefined),
+    );
+    expect(parentSpy).not.toHaveBeenCalled();
+    expect(setMessageToSendMock).not.toHaveBeenCalled();
+  });
+
+  it("branches a user message with both text and an image inclusively (keeps the image, no prefill)", async () => {
+    renderMessage(makeTextAndImageEvent("evt-text-img"));
+
+    fireEvent.mouseEnter(screen.getByTestId("user-message"));
+    fireEvent.click(screen.getByRole("button", { name: BRANCH_LABEL }));
+
+    // Editing would exclude the message and only restore its text, dropping
+    // the image — branch at the message itself (inclusive) instead.
+    await waitFor(() =>
+      expect(forkSpy).toHaveBeenCalledWith(
+        "conv-1",
+        "evt-text-img",
+        undefined,
+      ),
     );
     expect(parentSpy).not.toHaveBeenCalled();
     expect(setMessageToSendMock).not.toHaveBeenCalled();

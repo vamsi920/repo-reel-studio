@@ -89,6 +89,7 @@ export const Messages: React.FC<MessagesProps> = React.memo(
         isLastMessage={messages.length - 1 === index}
         isInLast10Actions={messages.length - 1 - index < 10}
         planPreviewEventIds={planPreviewEventIds}
+        actionsById={actionsById}
         suppressThought={suppressThought}
       />
     );

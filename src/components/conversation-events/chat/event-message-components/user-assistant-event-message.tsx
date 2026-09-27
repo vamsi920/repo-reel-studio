@@ -74,9 +74,12 @@ export function UserAssistantEventMessage({
       source?.id === conversationId ? source.title : undefined;
     const branchTitle = sourceTitle ? `${sourceTitle} (branch)` : undefined;
 
-    // Only edit when there's text: an image-only message parses to "", so
-    // branch it inclusively rather than dropping the image.
-    const isEdit = event.source === "user" && message.length > 0;
+    // Only edit when there's text and no image: an image-only message parses
+    // to "", and edit-mode excludes the whole message (only its text is
+    // restored to the composer, see onSuccess below) - branch inclusively
+    // instead whenever an image is attached, text or not, so it isn't dropped.
+    const isEdit =
+      event.source === "user" && message.length > 0 && imageUrls.length === 0;
 
     forkConversation(
       {
