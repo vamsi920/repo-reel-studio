@@ -139,6 +139,36 @@ describe("useUnifiedGetGitChanges", () => {
     );
   });
 
+  it("refreshes an already-tracked path's status instead of freezing it at its first-seen value", async () => {
+    useConversationIdMock.mockReturnValue({ conversationId: "conv-a" });
+    useActiveConversationMock.mockReturnValue({
+      data: conversationFor("conv-a"),
+    });
+
+    getGitChangesSpy.mockResolvedValueOnce([
+      { status: "M", path: "a.txt" },
+    ] as GitChange[]);
+
+    const { result, rerender } = renderHook(() => useUnifiedGetGitChanges(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ status: "M", path: "a.txt" }]),
+    );
+
+    // The agent deletes the file through the shell: same path, new status.
+    getGitChangesSpy.mockResolvedValueOnce([
+      { status: "D", path: "a.txt" },
+    ] as GitChange[]);
+    result.current.refetch();
+    rerender();
+
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ status: "D", path: "a.txt" }]),
+    );
+  });
+
   it("reports isLoading while the query is disabled (runtime not ready yet), not just while fetching", async () => {
     useRuntimeIsReadyMock.mockReturnValue(false);
     useConversationIdMock.mockReturnValue({ conversationId: "conv-a" });

@@ -77,7 +77,9 @@ export const useUnifiedGetGitChanges = () => {
 
         // Figure out new items by comparing with what we already have
         if (Array.isArray(currentData)) {
-          const currentIds = new Set(currentData.map((item) => item.path));
+          const currentByPath = new Map(
+            currentData.map((item) => [item.path, item]),
+          );
           const existingIds = new Set(orderedChanges.map((item) => item.path));
 
           // Filter out items that already exist in orderedChanges
@@ -85,10 +87,17 @@ export const useUnifiedGetGitChanges = () => {
             (item) => !existingIds.has(item.path),
           );
 
-          // Filter out items that no longer exist in the API response
-          const existingItems = orderedChanges.filter((item) =>
-            currentIds.has(item.path),
-          );
+          // Keep the previous relative order for paths we already track, but
+          // pull each one's fields (e.g. `status`) from the fresh fetch —
+          // reusing the old `orderedChanges` object left a path's status
+          // frozen at whatever it was the first time we saw it, so e.g. a
+          // file that went from modified to deleted kept rendering as
+          // "modified" (and the diff viewer kept requesting a diff for a
+          // path that no longer exists) until it dropped out of the list
+          // entirely and got re-added.
+          const existingItems = orderedChanges
+            .filter((item) => currentByPath.has(item.path))
+            .map((item) => currentByPath.get(item.path)!);
 
           // Add new items to the beginning
           setOrderedChanges([...newItems, ...existingItems]);
