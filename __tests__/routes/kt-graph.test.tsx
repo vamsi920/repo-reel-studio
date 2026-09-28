@@ -1129,7 +1129,7 @@ describe("KtGraph cold rehydration", () => {
     renderWithProviders(<KtGraph />);
 
     expect(
-      await screen.findByText(/open this repository's conversation/i),
+      await screen.findByText("CODEGRAPH$NEEDS_CONVERSATION"),
     ).toBeInTheDocument();
   });
 

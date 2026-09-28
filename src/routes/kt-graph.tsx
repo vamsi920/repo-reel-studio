@@ -273,10 +273,7 @@ function KtGraph() {
       if (!snapshot.localPath || !conversationUrl || !sessionApiKey) {
         useCodeGraphStore
           .getState()
-          .setError(
-            targetKey,
-            "Open this repository's conversation to build the code graph — analysis needs a live workspace session.",
-          );
+          .setError(targetKey, t(I18nKey.CODEGRAPH$NEEDS_CONVERSATION));
         settle();
         return;
       }
@@ -366,7 +363,7 @@ function KtGraph() {
         emitCodeGraphMilestone(context, { kind: "analysis.failed", reason });
       }
     },
-    [snapshot, docsSnapshot, knowledgeState, key, backend.id],
+    [snapshot, docsSnapshot, knowledgeState, key, backend.id, t],
   );
 
   // On a fresh page load (no in-memory graph state yet), check whether a

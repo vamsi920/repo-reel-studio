@@ -40731,6 +40731,23 @@
     "tr": "Graph analysis failed",
     "uk": "Graph analysis failed"
   },
+  "CODEGRAPH$NEEDS_CONVERSATION": {
+    "en": "Open this repository's conversation to build the code graph — analysis needs a live workspace session.",
+    "ja": "このリポジトリの会話を開いてコードグラフを構築してください — 解析にはライブのワークスペースセッションが必要です。",
+    "zh-CN": "打开此仓库的会话以构建代码图谱 — 分析需要实时工作区会话。",
+    "zh-TW": "開啟此儲存庫的對話以建立程式碼圖譜 — 分析需要即時工作區工作階段。",
+    "ko-KR": "이 리포지토리의 대화를 열어 코드 그래프를 빌드하세요 — 분석에는 실시간 작업 공간 세션이 필요합니다.",
+    "no": "Åpne denne depotets samtale for å bygge kodegrafen — analyse krever en aktiv arbeidsområdeøkt.",
+    "ar": "افتح محادثة هذا المستودع لبناء الرسم البياني للكود — يحتاج التحليل إلى جلسة مساحة عمل مباشرة.",
+    "de": "Öffnen Sie die Unterhaltung dieses Repositorys, um den Codegraphen zu erstellen — die Analyse benötigt eine aktive Workspace-Sitzung.",
+    "fr": "Ouvrez la conversation de ce dépôt pour créer le graphe de code — l'analyse nécessite une session d'espace de travail active.",
+    "it": "Apri la conversazione di questo repository per creare il grafo del codice — l'analisi richiede una sessione dello spazio di lavoro attiva.",
+    "pt": "Abra a conversa deste repositório para criar o grafo de código — a análise precisa de uma sessão de workspace ativa.",
+    "es": "Abre la conversación de este repositorio para crear el grafo de código — el análisis necesita una sesión de espacio de trabajo activa.",
+    "ca": "Obre la conversa d'aquest repositori per crear el graf de codi — l'anàlisi necessita una sessió d'espai de treball activa.",
+    "tr": "Kod grafiğini oluşturmak için bu deponun konuşmasını açın — analiz, canlı bir çalışma alanı oturumu gerektirir.",
+    "uk": "Відкрийте розмову цього репозиторію, щоб побудувати граф коду — для аналізу потрібен активний сеанс робочої області."
+  },
   "CODEGRAPH$LAYOUT_FAILED": {
     "en": "Could not lay out this view. Try a different level, or re-analyze the repository.",
     "ja": "Could not lay out this view. Try a different level, or re-analyze the repository.",
