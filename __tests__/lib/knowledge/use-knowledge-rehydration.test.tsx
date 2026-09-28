@@ -193,6 +193,46 @@ describe("useKnowledgeRehydration", () => {
     expect(entry?.knowledge?.commitSha).toBe("persisted-sha");
   });
 
+  it("logs the swallowed error and falls through to cold rehydration when the live match attempt throws", async () => {
+    useConnectedRepositoriesMock.mockReturnValue({
+      repositories: [
+        {
+          repositoryId,
+          owner: "acme",
+          repo: "api",
+          branch: "main",
+          conversationUrl: "https://conversation.example",
+          sessionApiKey: "session-key",
+          workingDir: "/workspace/acme-api",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+    const resolveCommitShaError = new Error("clone never finished");
+    resolveCommitSha.mockRejectedValue(resolveCommitShaError);
+    resolveOrgId.mockResolvedValue("org-1");
+    findRepositoryUuid.mockResolvedValue("repo-uuid");
+    getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
+
+    await waitFor(() => expect(result.current).toBe(true));
+    expect(generateKnowledge).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[kt-repository] live rehydration failed",
+      repositoryId,
+      resolveCommitShaError,
+    );
+    const entry = useKnowledgeStore.getState().byRepositoryId[repositoryId];
+    expect(entry?.knowledge?.commitSha).toBe("persisted-sha");
+
+    consoleErrorSpy.mockRestore();
+  });
+
   it("goes straight to cold rehydration when no live conversation exists for this repo", async () => {
     resolveOrgId.mockResolvedValue("org-1");
     findRepositoryUuid.mockResolvedValue("repo-uuid");

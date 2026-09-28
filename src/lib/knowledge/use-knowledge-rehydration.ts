@@ -241,10 +241,19 @@ export function useKnowledgeRehydration(
             return;
           }
           liveGenerationFailed = true;
-        } catch {
+        } catch (error) {
           // Fall through to the content-only Supabase stub below rather
           // than leaving the page stuck on a live-session attempt that
-          // failed (e.g. the clone never finished).
+          // failed (e.g. the clone never finished). Logged so this failure
+          // isn't silently indistinguishable from "no live conversation at
+          // all" -- without it, resolveCommitSha timing out or
+          // generateKnowledge throwing left zero console signal, unlike the
+          // cold-rehydration catch right below, which already logs.
+          console.error(
+            "[kt-repository] live rehydration failed",
+            repositoryId,
+            error,
+          );
         }
       }
       if (!cancelled || liveGenerationFailed) {
