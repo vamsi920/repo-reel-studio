@@ -13,9 +13,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * dynamic, non-literal specifier.
  */
 const TEMPLATE_PATH = ["..", "..", "..", "supabase", "functions", "_shared", "template.ts"].join("/");
-const { resolveBaseUrl, assertHostAllowed, TemplateError } = await import(
-  /* @vite-ignore */ TEMPLATE_PATH
-);
+const { resolveBaseUrl, assertHostAllowed, interpolatePath, TemplateError } =
+  await import(/* @vite-ignore */ TEMPLATE_PATH);
 
 function manifest(overrides: Record<string, unknown> = {}) {
   return {
@@ -131,5 +130,53 @@ describe("assertHostAllowed IPv6 bypasses", () => {
 
   it("still allows an ordinary public hostname", () => {
     expect(() => assertHostAllowed("https://github.example.com/", "github")).not.toThrow();
+  });
+});
+
+describe("interpolatePath path-traversal / query-injection guard", () => {
+  /**
+   * connections-proxy passes caller-supplied `payload.params` straight
+   * through as `context.params`, and `operations[].params` only allowlists
+   * the placeholder NAME, never its value -- these tests exercise
+   * `interpolatePath` the same way that caller does.
+   */
+  function params(value: Record<string, string>) {
+    return { config: {}, credentials: {}, params: value };
+  }
+
+  it("still substitutes an ordinary single-segment value (no regression)", () => {
+    expect(
+      interpolatePath("/repos/{{owner}}/{{repo}}/branches", params({ owner: "octocat", repo: "hello-world" })),
+    ).toBe("/repos/octocat/hello-world/branches");
+  });
+
+  it("still allows a legitimate multi-segment value (hashicorp-vault's {{path}})", () => {
+    expect(
+      interpolatePath("/{{mountPath}}/data/{{path}}", params({ mountPath: "secret", path: "myapp/db/creds" })),
+    ).toBe("/secret/data/myapp/db/creds");
+  });
+
+  it("rejects a path-traversal segment instead of walking out of the operation's own path", () => {
+    expect(() =>
+      interpolatePath("/{{mountPath}}/data/{{path}}", params({ mountPath: "secret", path: "../../sys/policies" })),
+    ).toThrow(TemplateError);
+  });
+
+  it("rejects a bare '..' value", () => {
+    expect(() =>
+      interpolatePath("/repos/{{owner}}/{{repo}}/branches", params({ owner: "..", repo: "hello-world" })),
+    ).toThrow(TemplateError);
+  });
+
+  it("rejects a value carrying a query-string delimiter", () => {
+    expect(() =>
+      interpolatePath("/repos/{{owner}}/{{repo}}/branches", params({ owner: "octocat", repo: "x?admin=1" })),
+    ).toThrow(TemplateError);
+  });
+
+  it("rejects a value carrying a fragment delimiter", () => {
+    expect(() =>
+      interpolatePath("/repos/{{owner}}/{{repo}}/branches", params({ owner: "octocat", repo: "x#y" })),
+    ).toThrow(TemplateError);
   });
 });

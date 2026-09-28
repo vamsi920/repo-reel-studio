@@ -44,11 +44,41 @@ function lookup(name: string, context: TemplateContext, allowSecrets: boolean): 
   throw new TemplateError("unknown_placeholder", `unknown placeholder "${name}"`);
 }
 
+// `encodeURI` deliberately leaves `/` unescaped -- some manifest operations
+// (e.g. hashicorp-vault's `{{path}}`, an allowlisted caller-supplied param)
+// legitimately interpolate a multi-segment value. But it also leaves `?`,
+// `#`, `.` and `..` unescaped, and connections-proxy's `payload.params` is
+// otherwise-untrusted per-request input from any org member: a `path` value
+// of `../../../sys/policies` (or one containing `?`/`#`) lets an interpolated
+// value walk out of the pathTemplate's own structure into a different
+// endpoint or append unintended query/fragment content on the same host --
+// defeating the declared-`operations` allowlist that is this proxy's entire
+// authorization model (see this file's top comment), using whatever shared
+// org credential the connection holds. Every path-segment placeholder value
+// is checked for that before being interpolated; a config-only caller (the
+// OAuth token/identity URLs, which pass `params: {}`) is never affected.
+function assertSafePathSegmentValue(name: string, value: string): void {
+  if (/[?#]/.test(value)) {
+    throw new TemplateError(
+      "invalid_path_value",
+      `refusing to interpolate "${name}" into a URL path: contains a query/fragment delimiter`,
+    );
+  }
+  if (value.split("/").some((segment) => segment === "." || segment === "..")) {
+    throw new TemplateError(
+      "invalid_path_value",
+      `refusing to interpolate "${name}" into a URL path: contains a path-traversal segment`,
+    );
+  }
+}
+
 /** Interpolates a URL path or query. Secrets are refused outright. */
 export function interpolatePath(template: string, context: TemplateContext): string {
-  return template.replace(PLACEHOLDER, (_match, name: string) =>
-    encodeURI(lookup(name, context, false)),
-  );
+  return template.replace(PLACEHOLDER, (_match, name: string) => {
+    const value = lookup(name, context, false);
+    assertSafePathSegmentValue(name, value);
+    return encodeURI(value);
+  });
 }
 
 /** Interpolates a header or body. Secrets are permitted here. */
