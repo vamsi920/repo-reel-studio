@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "レベルを読み込み中…",
+  "CODEGRAPH$REBUILDING": "グラフを再構築中…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "{{name}} を読み込めませんでした",
   "CODEGRAPH$RETRY": "再試行",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

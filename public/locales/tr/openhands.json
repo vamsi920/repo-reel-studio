@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "Seviye yükleniyor…",
+  "CODEGRAPH$REBUILDING": "Grafik yeniden oluşturuluyor…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "{{name}} yüklenemedi",
   "CODEGRAPH$RETRY": "Yeniden dene",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

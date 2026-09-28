@@ -961,6 +961,46 @@ describe("KtGraph search", () => {
       "CODEGRAPH$FAILED",
     );
   });
+
+  it("announces a reduced analysis to screen readers", async () => {
+    // Unlike the stale banner right above it, this notice had no ARIA role at
+    // all -- a screen reader user had no way to learn the graph only covers
+    // part of the repository unless they happened to read the muted text.
+    const key = useCodeGraphStore.getState().start({
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+    });
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    useCodeGraphStore.getState().setReady(key, {
+      meta: {
+        workspaceId: WORKSPACE_ID,
+        repositoryId: REPOSITORY_ID,
+        commitSha: COMMIT,
+        generatedAt: "2026-01-01T00:00:00.000Z",
+        fileCount: 1,
+        symbolCount: 1,
+        languages: [],
+        frameworks: [],
+        reducedAnalysis: true,
+        skippedFileCount: 42,
+      },
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    const notice = await screen.findByText("CODEGRAPH$REDUCED");
+    expect(notice).toHaveAttribute("role", "status");
+  });
 });
 
 describe("KtGraph cold rehydration", () => {

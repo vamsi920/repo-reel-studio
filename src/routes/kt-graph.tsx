@@ -536,6 +536,25 @@ function KtGraph() {
     [key, drillDown],
   );
 
+  const level = selectCurrentLevel(state);
+
+  const availableTypes = React.useMemo(
+    () =>
+      Array.from(new Set((level?.nodes ?? []).map((node) => node.type))).sort(),
+    [level?.nodes],
+  );
+
+  // A fresh `Set` reference on every render would defeat `CodeGraphCanvas`'s
+  // own `styledNodes` memoization (it depends on `highlightedIds` by
+  // reference), forcing a full node-styling recompute on every unrelated
+  // store tick (e.g. an in-flight level fetch) instead of only when the
+  // search query or its results actually change.
+  const highlighted = React.useMemo(
+    () =>
+      new Set(state?.searchQuery ? searchResults.map((entry) => entry.id) : []),
+    [state?.searchQuery, searchResults],
+  );
+
   // --- Render --------------------------------------------------------------
   if (!knowledgeState?.knowledge || !snapshot) {
     return (
@@ -564,15 +583,10 @@ function KtGraph() {
     );
   }
 
-  const level = selectCurrentLevel(state);
   const visibleNodes = selectVisibleNodes(state);
   const selectedNode = state?.selectedNodeId
     ? level?.nodes.find((node) => node.id === state.selectedNodeId)
     : undefined;
-
-  const availableTypes = Array.from(
-    new Set((level?.nodes ?? []).map((node) => node.type)),
-  ).sort();
 
   const failedLevelId = state?.levelError ?? null;
   const failedLevelName = failedLevelId
@@ -580,10 +594,6 @@ function KtGraph() {
       level?.crumbs.find((crumb) => crumb.id === failedLevelId)?.name ??
       failedLevelId)
     : null;
-
-  const highlighted = new Set(
-    state?.searchQuery ? searchResults.map((entry) => entry.id) : [],
-  );
 
   return (
     <main className="flex h-full min-h-0 flex-col" data-testid="kt-graph">
@@ -635,7 +645,10 @@ function KtGraph() {
       ) : null}
 
       {state?.meta?.reducedAnalysis ? (
-        <p className="mx-6 mt-2 rounded-md border border-[var(--oh-border)] px-3 py-2 text-xs text-[var(--oh-muted)]">
+        <p
+          role="status"
+          className="mx-6 mt-2 rounded-md border border-[var(--oh-border)] px-3 py-2 text-xs text-[var(--oh-muted)]"
+        >
           {t(I18nKey.CODEGRAPH$REDUCED)}
         </p>
       ) : null}

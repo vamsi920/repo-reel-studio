@@ -41785,6 +41785,23 @@
     "tr": "Seviye yükleniyor…",
     "uk": "Завантаження рівня…"
   },
+  "CODEGRAPH$REBUILDING": {
+    "en": "Rebuilding graph…",
+    "ja": "グラフを再構築中…",
+    "zh-CN": "正在重新生成图…",
+    "zh-TW": "正在重新產生圖…",
+    "ko-KR": "그래프 다시 생성 중…",
+    "no": "Bygger grafen på nytt…",
+    "ar": "جارٍ إعادة إنشاء الرسم البياني…",
+    "de": "Graph wird neu erstellt…",
+    "fr": "Reconstruction du graphe…",
+    "it": "Ricostruzione del grafico…",
+    "pt": "Reconstruindo o grafo…",
+    "es": "Reconstruyendo el grafo…",
+    "ca": "Reconstruint el graf…",
+    "tr": "Grafik yeniden oluşturuluyor…",
+    "uk": "Перебудова графа…"
+  },
   "CODEGRAPH$LEVEL_LOAD_FAILED": {
     "en": "Couldn't load {{name}}",
     "ja": "{{name}} を読み込めませんでした",

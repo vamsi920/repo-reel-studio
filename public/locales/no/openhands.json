@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "Laster nivå…",
+  "CODEGRAPH$REBUILDING": "Bygger grafen på nytt…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "Kunne ikke laste {{name}}",
   "CODEGRAPH$RETRY": "Prøv igjen",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

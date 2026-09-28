@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "جارٍ تحميل المستوى…",
+  "CODEGRAPH$REBUILDING": "جارٍ إعادة إنشاء الرسم البياني…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "تعذّر تحميل {{name}}",
   "CODEGRAPH$RETRY": "إعادة المحاولة",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

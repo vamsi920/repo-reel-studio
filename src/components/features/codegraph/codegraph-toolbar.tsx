@@ -220,6 +220,7 @@ export function CodeGraphToolbar({
           data-testid="codegraph-rebuild"
           onClick={onRebuild}
           disabled={isRebuilding}
+          aria-busy={isRebuilding}
           className="flex shrink-0 items-center gap-1 rounded-md border border-[var(--oh-border)] px-2 py-1 text-xs text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RefreshCw
@@ -228,6 +229,15 @@ export function CodeGraphToolbar({
           />
           {t(I18nKey.CODEGRAPH$REBUILD)}
         </button>
+        {isRebuilding ? (
+          <span
+            role="status"
+            data-testid="codegraph-rebuilding-status"
+            className="sr-only"
+          >
+            {t(I18nKey.CODEGRAPH$REBUILDING)}
+          </span>
+        ) : null}
       </div>
 
       {levelError ? (

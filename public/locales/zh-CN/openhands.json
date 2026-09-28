@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "正在加载层级…",
+  "CODEGRAPH$REBUILDING": "正在重新生成图…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "无法加载 {{name}}",
   "CODEGRAPH$RETRY": "重试",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "Ebene wird geladen…",
+  "CODEGRAPH$REBUILDING": "Graph wird neu erstellt…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "{{name}} konnte nicht geladen werden",
   "CODEGRAPH$RETRY": "Erneut versuchen",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",

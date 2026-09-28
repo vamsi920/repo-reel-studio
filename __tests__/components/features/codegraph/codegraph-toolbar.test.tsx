@@ -503,4 +503,28 @@ describe("CodeGraphToolbar", () => {
     await user.click(screen.getByTestId("codegraph-level-retry"));
     expect(onRetryLevel).toHaveBeenCalledWith("subsystem:pay");
   });
+
+  it("announces a rebuild in progress to assistive technology", () => {
+    renderToolbar({ isRebuilding: true });
+
+    expect(screen.getByTestId("codegraph-rebuilding-status")).toHaveTextContent(
+      "CODEGRAPH$REBUILDING",
+    );
+    expect(screen.getByTestId("codegraph-rebuild")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  });
+
+  it("does not announce a rebuild when none is in progress", () => {
+    renderToolbar();
+
+    expect(
+      screen.queryByTestId("codegraph-rebuilding-status"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("codegraph-rebuild")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
 });

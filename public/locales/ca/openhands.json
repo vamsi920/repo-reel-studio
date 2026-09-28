@@ -2457,6 +2457,7 @@
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",
   "CODEGRAPH$SOURCE_MISSING": "Source unavailable at this commit",
   "CODEGRAPH$LEVEL_LOADING": "Carregant el nivell…",
+  "CODEGRAPH$REBUILDING": "Reconstruint el graf…",
   "CODEGRAPH$LEVEL_LOAD_FAILED": "No s'ha pogut carregar {{name}}",
   "CODEGRAPH$RETRY": "Torna-ho a provar",
   "AUTOMATIONS$PROACTIVATION_TITLE": "Proactive Engineering",
