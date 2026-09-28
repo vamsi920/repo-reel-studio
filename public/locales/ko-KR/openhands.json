@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "하위 에이전트 활성화",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "에이전트 컨텍스트",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "지속 에이전트 메모리",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "에이전트는 .openhands/memory/ 아래에 메모를 저장하고 새 대화를 시작할 때마다 불러오며, 시간이 지남에 따라 코드베이스와 선호도를 학습합니다.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "에이전트는 대화 중에 .openhands/memory/ 아래에 메모를 저장할 수 있지만, 새 대화로 이어지는지 여부는 이 배포의 스토리지 구성에 따라 달라집니다. 일부 환경에서는 대화마다 작업 공간을 초기화하므로 보장된 영속성이 아니라 최선의 노력으로 간주하세요.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "LLM 요약 압축기를 활성화합니다.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "메모리 압축 활성화",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "압축기가 실행되기 전에 유지되는 최대 이벤트 수입니다.",

@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "启用子智能体",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "代理上下文",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "持久代理记忆",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "代理会在 .openhands/memory/ 下保存笔记，并在每次新会话开始时加载它们，随着时间推移学习您的代码库和偏好。",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "代理可以在对话过程中将笔记保存到 .openhands/memory/ 下，但这些笔记能否延续到新的对话取决于此部署的存储配置——某些环境会在每次对话之间重置工作区，因此请将其视为尽力而为，而非有保证的持久化。",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "启用LLM摘要压缩器。",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "启用内存压缩",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "压缩器运行前保留的最大事件数。",

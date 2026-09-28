@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "Увімкнути субагентів",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "Контекст агента",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "Постійна пам'ять агента",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Агент зберігає нотатки в .openhands/memory/ і завантажує їх на початку кожної нової розмови, з часом вивчаючи вашу кодову базу та вподобання.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Агент може зберігати нотатки в .openhands/memory/ під час розмови, але чи перенесуться вони в нову розмову, залежить від налаштувань сховища цього розгортання — деякі середовища скидають робочий простір між розмовами, тож сприймайте це як спробу за можливості, а не гарантовану стійкість.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "Увімкнути конденсатор резюмування LLM.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "Увімкнути конденсацію пам'яті",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "Максимальна кількість подій до запуску конденсатора.",

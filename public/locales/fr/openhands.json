@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "Activer les sous-agents",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "Contexte de l'agent",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "Mémoire persistante de l'agent",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "L'agent conserve des notes dans .openhands/memory/ et les charge au début de chaque nouvelle conversation, apprenant votre base de code et vos préférences au fil du temps.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "L'agent peut enregistrer des notes dans .openhands/memory/ pendant une conversation, mais leur report dans une nouvelle conversation dépend de la configuration de stockage de ce déploiement — certains environnements réinitialisent l'espace de travail entre les conversations ; considérez donc cela comme un effort au mieux, pas une persistance garantie.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "Activer le condenseur de résumé LLM.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "Activer la condensation de mémoire",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "Nombre maximum d'événements conservés avant l'exécution du condenseur.",

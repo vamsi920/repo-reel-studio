@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "サブエージェントを有効にする",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "エージェントコンテキスト",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "永続エージェントメモリ",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "エージェントは .openhands/memory/ にメモを保存し、新しい会話の開始時に読み込みます。時間とともにコードベースや好みを学習します。",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "エージェントは会話中に .openhands/memory/ にメモを保存できますが、それが新しい会話に引き継がれるかどうかはこのデプロイのストレージ構成によります。環境によっては会話ごとにワークスペースがリセットされるため、確実な永続化ではなくベストエフォートとして扱ってください。",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "LLM要約コンデンサーを有効にします。",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "メモリ圧縮を有効化",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "コンデンサーが実行される前に保持されるイベントの最大数。",

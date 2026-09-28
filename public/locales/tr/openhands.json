@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "Alt ajanları etkinleştir",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "Ajan Bağlamı",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "Kalıcı Ajan Belleği",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Ajan, .openhands/memory/ altında notlar tutar ve her yeni konuşmanın başında bunları yükler; zamanla kod tabanınızı ve tercihlerinizi öğrenir.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Ajan, bir konuşma sırasında .openhands/memory/ altına notlar kaydedebilir, ancak bunların yeni bir konuşmaya taşınıp taşınmayacağı bu dağıtımın depolama yapılandırmasına bağlıdır — bazı ortamlar konuşmalar arasında çalışma alanını sıfırlar, bu nedenle bunu garanti edilen bir kalıcılık değil, en iyi çaba olarak değerlendirin.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "LLM özetleme yoğunlaştırıcısını etkinleştirin.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "Bellek Yoğunlaştırmayı Etkinleştir",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "Yoğunlaştırıcı çalışmadan önce tutulan maksimum olay sayısı.",

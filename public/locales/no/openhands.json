@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "Aktiver underagenter",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "Agentkontekst",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "Vedvarende agentminne",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Agenten lagrer notater under .openhands/memory/ og laster dem inn ved starten av hver nye samtale, og lærer kodebasen og preferansene dine over tid.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "Agenten kan lagre notater under .openhands/memory/ under en samtale, men om de tas med videre til en ny samtale avhenger av denne distribusjonens lagringsoppsett — enkelte miljøer nullstiller arbeidsområdet mellom samtaler, så behandle dette som beste innsats, ikke garantert varighet.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "Aktiver LLM-oppsummeringskondensatoren.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "Aktiver minnekondensering",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "Maksimalt antall hendelser som beholdes før kondensatoren kjører.",

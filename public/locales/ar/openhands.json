@@ -196,7 +196,7 @@
   "SCHEMA$ENABLE_SUB_AGENTS$LABEL": "تمكين الوكلاء الفرعيين",
   "SCHEMA$AGENT_CONTEXT$SECTION_LABEL": "سياق الوكيل",
   "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$LABEL": "ذاكرة الوكيل الدائمة",
-  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "يحتفظ الوكيل بملاحظات ضمن .openhands/memory/ ويحمّلها في بداية كل محادثة جديدة، فيتعلم قاعدة التعليمات البرمجية وتفضيلاتك بمرور الوقت.",
+  "SCHEMA$AGENT_CONTEXT$LOAD_MEMORY$DESCRIPTION": "يمكن للوكيل حفظ ملاحظات ضمن .openhands/memory/ أثناء المحادثة، لكن انتقالها إلى محادثة جديدة يعتمد على إعداد التخزين في هذا النشر — بعض البيئات تعيد ضبط مساحة العمل بين المحادثات، لذا تعامل مع هذا كمحاولة أفضل جهد وليس استمرارية مضمونة.",
   "SCHEMA$CONDENSER$ENABLED$DESCRIPTION": "تمكين مكثف تلخيص LLM.",
   "SCHEMA$CONDENSER$ENABLED$LABEL": "تمكين ضغط الذاكرة",
   "SCHEMA$CONDENSER$MAX_SIZE$DESCRIPTION": "الحد الأقصى لعدد الأحداث المحفوظة قبل تشغيل المكثف.",
