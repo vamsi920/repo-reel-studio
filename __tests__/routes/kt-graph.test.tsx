@@ -9,6 +9,7 @@ import { pinKey, useCodeGraphStore } from "#/stores/codegraph-store";
 import {
   resolveOrgId,
   findRepositoryUuid,
+  resolvePersistenceIds,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { codegraphPersistenceRepository } from "#/lib/data-platform/repositories/codegraph-repository";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
@@ -319,9 +320,10 @@ describe("KtGraph search", () => {
       loadSearchIndex: async () => [],
       readSource: async () => null,
     });
-    vi.mocked(runAnalysis).mockImplementation(async (options) =>
-      makeHandle(options.snapshot.commitSha),
-    );
+    vi.mocked(runAnalysis).mockImplementation(async (options) => ({
+      ...makeHandle(options.snapshot.commitSha),
+      storageMirrored: false,
+    }));
 
     const oldKey = useCodeGraphStore.getState().start({
       workspaceId: WORKSPACE_ID,
@@ -372,6 +374,116 @@ describe("KtGraph search", () => {
       useKnowledgeStore.getState().byRepositoryId[REPOSITORY_ID].snapshot
         .commitSha,
     ).toBe(COMMIT);
+  });
+
+  it("only persists a snapshot pointer when the analysis's Storage mirror actually landed", async () => {
+    // Regression for a bug where a snapshot row was written with a real
+    // node/edge count pointing at an `outputPath` that Storage mirroring
+    // never actually wrote -- once the sandbox that produced it was gone,
+    // the graph became permanently unrecoverable and the cold-load path
+    // showed a misleading "needs a live workspace session" error even
+    // though the analysis itself had genuinely succeeded.
+    vi.mocked(resolvePersistenceIds).mockResolvedValue({
+      workspaceId: "real-ws-id",
+      repositoryUuid: "real-repo-uuid",
+    });
+    useKnowledgeStore.setState((current) => ({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          ...current.byRepositoryId[REPOSITORY_ID],
+          conversationUrl: "http://agent.test/conversations/1",
+          sessionApiKey: "key",
+        },
+      },
+    }));
+
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    vi.mocked(runAnalysis).mockResolvedValue({
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+      storageMirrored: false,
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    await userEvent.click(await screen.findByTestId("codegraph-generate"));
+
+    await waitFor(() => expect(runAnalysis).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("codegraph-breadcrumbs");
+    expect(codegraphPersistenceRepository.saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("persists a snapshot pointer once the analysis's Storage mirror lands", async () => {
+    vi.mocked(resolvePersistenceIds).mockResolvedValue({
+      workspaceId: "real-ws-id",
+      repositoryUuid: "real-repo-uuid",
+    });
+    useKnowledgeStore.setState((current) => ({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          ...current.byRepositoryId[REPOSITORY_ID],
+          conversationUrl: "http://agent.test/conversations/1",
+          sessionApiKey: "key",
+        },
+      },
+    }));
+
+    const rootLevel: CodeGraphLevelPayload = {
+      parentId: null,
+      nodes: [node("sub1")],
+      edges: [],
+      crumbs: [{ id: null, name: "System" }],
+    };
+    const meta: CodeGraphMeta = {
+      workspaceId: WORKSPACE_ID,
+      repositoryId: REPOSITORY_ID,
+      commitSha: COMMIT,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      fileCount: 1,
+      symbolCount: 1,
+      languages: [],
+      frameworks: [],
+    };
+    vi.mocked(runAnalysis).mockResolvedValue({
+      meta,
+      root: rootLevel,
+      loadLevel: async () => null,
+      loadSearchIndex: async () => [],
+      readSource: async () => null,
+      storageMirrored: true,
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    await userEvent.click(await screen.findByTestId("codegraph-generate"));
+
+    await waitFor(() =>
+      expect(codegraphPersistenceRepository.saveSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: "real-ws-id",
+          repositoryUuid: "real-repo-uuid",
+          commitSha: COMMIT,
+        }),
+      ),
+    );
   });
 
   it("does not apply another workspace's pin to a repository checked out somewhere else", () => {

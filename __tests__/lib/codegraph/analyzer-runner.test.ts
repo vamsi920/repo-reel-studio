@@ -686,6 +686,65 @@ describe("runAnalysis", () => {
     );
 
     expect(handle.meta).toEqual(META);
+    // A caller that persists `outputPath` (e.g. a DB snapshot row) must be
+    // able to tell the mirror never landed, or it records a pointer to
+    // nothing that outlives the sandbox that could have rebuilt it.
+    expect(handle.storageMirrored).toBe(false);
+  });
+
+  it("reports storageMirrored: false when there are no storageIds at all", async () => {
+    wireHappyExecuteCommand();
+    wireHappyFetch();
+    fileUploadMock.mockResolvedValue({});
+    uploadTextMock.mockResolvedValue({});
+    downloadAsTextMock.mockImplementation(async (path: string) => {
+      if (path.endsWith("meta.json")) return JSON.stringify(META);
+      if (path.endsWith("root.json")) return JSON.stringify(ROOT);
+      throw new Error(`unexpected download ${path}`);
+    });
+
+    const handle = await runAnalysis(baseOptions({ storageIds: null }));
+
+    expect(handle.storageMirrored).toBe(false);
+  });
+
+  it("reports storageMirrored: true once every artifact actually lands in Storage", async () => {
+    wireHappyFetch();
+    fileUploadMock.mockResolvedValue({});
+    uploadTextMock.mockResolvedValue({});
+    downloadAsTextMock.mockImplementation(async (path: string) => {
+      if (path.endsWith("meta.json")) return JSON.stringify(META);
+      if (path.endsWith("root.json")) return JSON.stringify(ROOT);
+      throw new Error(`unexpected download ${path}`);
+    });
+    executeCommandMock.mockImplementation(async (command: string) => {
+      if (command.startsWith("node --version")) {
+        return { exit_code: 0, stdout: "v20.11.0\n" };
+      }
+      if (command.includes("&& node ")) {
+        return {
+          exit_code: 0,
+          stdout: '{"__codegraph":"ready","subsystemCount":1}',
+        };
+      }
+      if (command.startsWith("test -f")) return { exit_code: 0, stdout: "1\n" };
+      if (command.startsWith("mkdir -p")) return { exit_code: 0, stdout: "" };
+      if (command.startsWith("find "))
+        return {
+          exit_code: 0,
+          stdout:
+            "/workspace/project/.neodevex/codegraph/out/abc123/meta.json\n",
+        };
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    const handle = await runAnalysis(
+      baseOptions({
+        storageIds: { workspaceId: "ws-1", repositoryUuid: "repo-uuid" },
+      }),
+    );
+
+    expect(handle.storageMirrored).toBe(true);
   });
 });
 

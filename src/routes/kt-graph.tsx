@@ -323,7 +323,11 @@ function KtGraph() {
         // "Build code graph". `outputPath` points at the Storage mirror
         // `runAnalysis` just wrote (when `persistenceIds` resolved) -- that's
         // the payload a future visit actually reads, live sandbox or not.
-        if (persistenceIds) {
+        // Gated on `storageMirrored`: a snapshot row must never point at a
+        // mirror that never landed, or a later cold visit (no live sandbox
+        // left) sees a permanently unrecoverable "needs a live workspace
+        // session" error despite the analysis having genuinely succeeded.
+        if (persistenceIds && result.storageMirrored) {
           void codegraphPersistenceRepository.saveSnapshot({
             workspaceId: persistenceIds.workspaceId,
             repositoryUuid: persistenceIds.repositoryUuid,

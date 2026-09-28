@@ -315,24 +315,29 @@ async function readJsonFromStorage<T>(path: string): Promise<T | null> {
  * render the graph without a live sandbox. Never throws — a failed upload
  * just means the next `openExistingAnalysis` falls back to the sandbox (or,
  * if that's gone too, to re-analysis) instead of the Storage fast path.
+ * Returns whether every artifact actually landed: callers that persist a
+ * pointer to this mirror (e.g. a DB snapshot row's `outputPath`) must only
+ * do so on `true`, otherwise that row can outlive the sandbox it depends on
+ * and point at nothing.
  */
 async function uploadArtifactsToStorage(
   workspace: RemoteWorkspace,
   dir: string,
   prefix: string,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const listing = await workspace.executeCommand(
       `find ${quote(dir)} -type f`,
       undefined,
       60,
     );
-    if (listing.exit_code !== 0) return;
+    if (listing.exit_code !== 0) return false;
     const files = (listing.stdout ?? "")
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    await Promise.all(
+    if (files.length === 0) return false;
+    const results = await Promise.all(
       files.map(async (file) => {
         const relative = file.slice(dir.length + 1);
         try {
@@ -343,14 +348,19 @@ async function uploadArtifactsToStorage(
             new Blob([text], { type: "application/json" }),
             { contentType: "application/json" },
           );
+          return true;
         } catch {
-          // One shard failing to mirror shouldn't stop the others.
+          // One shard failing to mirror shouldn't stop the others, but it
+          // does mean the mirror as a whole can't be trusted as complete.
+          return false;
         }
       }),
     );
+    return results.every(Boolean);
   } catch {
     // Storage mirroring is an optimization, not a requirement for analysis
     // to succeed.
+    return false;
   }
 }
 
@@ -525,7 +535,7 @@ function makeHandle(
 
 export async function runAnalysis(
   options: RunAnalysisOptions,
-): Promise<AnalysisHandle> {
+): Promise<AnalysisHandle & { storageMirrored: boolean }> {
   const {
     snapshot,
     conversationUrl,
@@ -603,17 +613,17 @@ export async function runAnalysis(
     );
   }
 
-  if (storageIds) {
-    await uploadArtifactsToStorage(
-      workspace,
-      dir,
-      codegraphStoragePrefix(
-        storageIds.workspaceId,
-        storageIds.repositoryUuid,
-        snapshot.commitSha,
-      ),
-    );
-  }
+  const storageMirrored = storageIds
+    ? await uploadArtifactsToStorage(
+        workspace,
+        dir,
+        codegraphStoragePrefix(
+          storageIds.workspaceId,
+          storageIds.repositoryUuid,
+          snapshot.commitSha,
+        ),
+      )
+    : false;
 
-  return makeHandle(workspace, snapshot, meta, root);
+  return { ...makeHandle(workspace, snapshot, meta, root), storageMirrored };
 }
