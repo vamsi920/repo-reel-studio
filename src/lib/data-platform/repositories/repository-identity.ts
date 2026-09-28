@@ -135,6 +135,39 @@ export async function resolveOrgId(): Promise<string | null> {
 }
 
 /**
+ * Same resolution as `resolveOrgId`, but also reports whether the org
+ * lookup itself failed (a real Supabase/auth-timing error, e.g. INC-8's
+ * "no suitable key" PostgREST rejection) rather than the browser simply
+ * having no session yet -- `resolveOrgId` can't tell these apart for
+ * callers because `resolvePersonalOrg` already logs and returns `null` on
+ * every one of its own failure paths without rejecting (every other caller
+ * of `resolveOrgId` relies on exactly that "never throws" contract, so this
+ * is an additive function rather than a behavior change to it). Once a real
+ * `userId` is known, `ensurePersonalOrg` only ever resolves to `null` on
+ * one of those failure paths -- there is no legitimate "no org" outcome
+ * past that point. Used by the Environment > Connections page to show an
+ * honest "can't check your connections right now" state instead of
+ * silently rendering every provider as never-connected during the glitch.
+ */
+export async function resolveOrgIdWithStatus(): Promise<{
+  orgId: string | null;
+  hadError: boolean;
+}> {
+  if (!isSupabaseConfigured || !supabase) {
+    return { orgId: null, hadError: false };
+  }
+  try {
+    const userId = await ensureSupabaseSession();
+    if (!userId) return { orgId: null, hadError: false };
+    const orgId = await ensurePersonalOrg(userId);
+    return { orgId, hadError: orgId === null };
+  } catch (error) {
+    logFailure("resolveOrgId", error);
+    return { orgId: null, hadError: true };
+  }
+}
+
+/**
  * Read-only lookup -- does not create a `repositories` row. Used for cold
  * rehydration, where fabricating a row for a repo that was never actually
  * generated would be a pointless write on every page view.

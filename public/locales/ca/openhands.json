@@ -3227,6 +3227,8 @@
   "ENVIRONMENT$ERROR_SAVE": "Could not save that change.",
   "ENVIRONMENT$ERROR_PROBE": "The check could not be run.",
   "ENVIRONMENT$SUPABASE_REQUIRED": "This section needs a configured Supabase project. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY, then reload.",
+  "ENVIRONMENT$CONNECTIONS_LOAD_ERROR": "We can't check your connections right now. Try again in a bit.",
+  "ENVIRONMENT$RETRY": "Retry",
   "CONNECTOR$ERROR_REQUIRED": "Required.",
   "CONNECTOR$ERROR_MIN_LENGTH": "Too short.",
   "CONNECTOR$ERROR_MAX_LENGTH": "Too long.",

@@ -18,6 +18,7 @@ vi.mock("#/lib/data-platform/client", () => ({
 const connectionsState = vi.hoisted(() => ({
   data: [] as unknown[],
   isPending: false,
+  isOrgError: false,
 }));
 
 vi.mock("#/hooks/query/use-connections", () => ({
@@ -75,13 +76,16 @@ function renderScreen(entry = "/environment/connections") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[entry]}>
-        <EnvironmentConnectionsScreen />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+  return {
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[entry]}>
+          <EnvironmentConnectionsScreen />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+    queryClient,
+  };
 }
 
 beforeEach(() => {
@@ -92,6 +96,7 @@ beforeEach(() => {
   resetOAuthReceiptGuardForTests();
   connectionsState.data = [];
   connectionsState.isPending = false;
+  connectionsState.isOrgError = false;
 });
 
 async function submitOllamaForm() {
@@ -159,6 +164,50 @@ describe("Environment connections form panel", () => {
       "connector-connect-ollama",
     );
     expect(connectButton).toBeDisabled();
+  });
+});
+
+describe("Environment connections org resolution failure", () => {
+  // Regression (INC-8): a fresh sign-in can hit a transient Supabase
+  // auth-timing glitch that makes the org lookup itself fail. Before this,
+  // that failure was invisible -- resolveOrgId swallowed it and resolved to
+  // `null`, so every provider card rendered a plain "Connect" button
+  // indistinguishable from "you have nothing connected here", and confirmed
+  // reconnections weren't reflected in the UI either.
+  it("renders an honest retry banner instead of a misleading catalog when the org lookup fails", async () => {
+    connectionsState.isOrgError = true;
+
+    renderScreen();
+
+    expect(
+      await screen.findByTestId("environment-connections-org-error"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render the org-error banner once the lookup succeeds", async () => {
+    connectionsState.isOrgError = false;
+
+    renderScreen();
+
+    await screen.findByTestId("connector-connect-ollama");
+    expect(
+      screen.queryByTestId("environment-connections-org-error"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("retries the org lookup when the banner's retry button is clicked", async () => {
+    connectionsState.isOrgError = true;
+    const user = userEvent.setup();
+    const { queryClient } = renderScreen();
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+
+    await user.click(
+      await screen.findByTestId("environment-connections-org-retry"),
+    );
+
+    expect(invalidateQueries).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["environment", "org-id"] }),
+    );
   });
 });
 

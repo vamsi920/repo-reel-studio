@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
-import { Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
 import { CAPABILITIES } from "#/lib/environment/types/capability";
 import type {
@@ -17,6 +17,7 @@ import {
 } from "#/lib/environment/registry";
 import { CAPABILITY_LABEL_KEY } from "#/lib/environment/display";
 import { useConnections } from "#/hooks/query/use-connections";
+import { ENVIRONMENT_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import { consumeOAuthReceiptOnce } from "#/lib/environment/oauth-receipt-guard";
@@ -40,8 +41,18 @@ function EnvironmentConnectionsScreen() {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: connections, isPending: connectionsPending } = useConnections();
+  const {
+    data: connections,
+    isPending: connectionsPending,
+    isOrgError,
+  } = useConnections();
   const { data: profile } = useEnvironmentProfile();
+
+  const retryOrgResolution = React.useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: ENVIRONMENT_QUERY_KEYS.orgId(),
+    });
+  }, [queryClient]);
 
   const [search, setSearch] = React.useState("");
   const [activeManifest, setActiveManifest] =
@@ -281,6 +292,30 @@ function EnvironmentConnectionsScreen() {
           />
         </label>
       </div>
+
+      {isOrgError ? (
+        // The org lookup itself failed (e.g. the INC-8 auth-timing glitch),
+        // not "you have nothing connected yet" -- without this, every card
+        // below rendered a plain, never-connected-looking "Connect" state
+        // with no indication the real cause was a lookup failure. Mirrors
+        // kt-list.tsx's KT$LOAD_ERROR banner for the equivalent case.
+        <div
+          data-testid="environment-connections-org-error"
+          role="alert"
+          className="rounded-lg border border-dashed border-[var(--error-500)] p-4 text-center text-sm text-[var(--error-500)]"
+        >
+          <RefreshCw className="mx-auto mb-2 size-5" aria-hidden />
+          <p>{t(I18nKey.ENVIRONMENT$CONNECTIONS_LOAD_ERROR)}</p>
+          <button
+            type="button"
+            onClick={retryOrgResolution}
+            data-testid="environment-connections-org-retry"
+            className="mt-3 rounded-md border border-[var(--error-500)] px-3 py-1.5 text-sm font-medium text-[var(--error-500)] hover:bg-[var(--error-bg-subtle)]"
+          >
+            {t(I18nKey.ENVIRONMENT$RETRY)}
+          </button>
+        </div>
+      ) : null}
 
       {lastProbe ? <ProbeResultPanel result={lastProbe} /> : null}
 
