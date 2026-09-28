@@ -15,6 +15,10 @@ import { BlockingIssuesPanel } from "#/components/features/environment/overview/
 import { DeploymentModeCard } from "#/components/features/environment/overview/deployment-mode-card";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 import { useRequirementLabel } from "#/components/features/environment/shared/requirement-label";
+import {
+  findConnectionForNode,
+  useFixSeedConnectionContext,
+} from "#/components/features/environment/shared/copilot-fix-seed";
 
 function EnvironmentOverviewScreen() {
   const { t } = useTranslation("openhands");
@@ -23,6 +27,7 @@ function EnvironmentOverviewScreen() {
   const readiness = useEnvironmentReadiness(profile ?? null);
   const openCopilot = useOnboardingCopilotStore((state) => state.openWithSeed);
   const labelFor = useRequirementLabel();
+  const connectionContextFor = useFixSeedConnectionContext();
 
   const providerByCapability = React.useMemo(() => {
     const map = new Map<Capability, string>();
@@ -52,11 +57,12 @@ function EnvironmentOverviewScreen() {
 
   const handleFix = React.useCallback(
     (item: ReadinessItem) => {
+      const connection = findConnectionForNode(item.node, connections);
       openCopilot(
-        `${t(I18nKey.ENVIRONMENT$COPILOT_SEED_FIX)}: ${t(item.featureNameKey)} — ${labelFor(item.node)}`,
+        `${t(I18nKey.ENVIRONMENT$COPILOT_SEED_FIX)}: ${t(item.featureNameKey)} — ${labelFor(item.node)}${connectionContextFor(connection)}`,
       );
     },
-    [openCopilot, t, labelFor],
+    [openCopilot, t, labelFor, connections, connectionContextFor],
   );
 
   if (!isSupabaseConfigured) {

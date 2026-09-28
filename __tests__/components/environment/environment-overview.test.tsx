@@ -1,11 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import EnvironmentOverviewScreen from "#/routes/environment-overview";
 import { createEmptyProfile } from "#/lib/environment/types/profile";
 import type { ReadinessReport } from "#/lib/environment/types/requirements";
 import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
+import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 
 const state = vi.hoisted(() => ({
   supabaseConfigured: true,
@@ -88,6 +90,7 @@ beforeEach(() => {
   state.supabaseConfigured = true;
   state.readiness = baseReport();
   state.connections = [];
+  useOnboardingCopilotStore.setState({ open: false, seedPrompt: null });
 });
 
 describe("Environment overview", () => {
@@ -221,5 +224,42 @@ describe("Environment overview", () => {
     expect(
       within(tile).queryByText("CONNECTOR$GHES_NAME"),
     ).not.toBeInTheDocument();
+  });
+
+  it("seeds the fix-with-agent copilot with the already-known connection diagnosis instead of a generic prompt", async () => {
+    // Regression: the CTA used to seed only the feature/requirement label,
+    // even though the page already knows the provider, account and missing
+    // scopes for a broken connection (visible on the same page's Connections
+    // tab) -- forcing the onboarding agent to ask the user to re-explain a
+    // failure the app already diagnosed.
+    state.connections = [
+      connectionRecord({
+        providerId: "github",
+        displayName: "vamsi920",
+        status: "error",
+        requestedScopes: ["read:user", "repo"],
+        grantedScopes: [],
+      }),
+    ];
+    state.readiness = baseReport({
+      blocking: [
+        {
+          id: "a",
+          featureId: "repositories.browse",
+          featureNameKey: "REQUIREMENT$FEATURE_REPOSITORIES_BROWSE",
+          node: { kind: "capability", capability: "source-control" },
+          severity: "blocking",
+          status: "unsatisfied",
+        },
+      ],
+    });
+    renderScreen();
+
+    await userEvent.click(screen.getByTestId("fix-with-agent-a"));
+
+    const seed = useOnboardingCopilotStore.getState().seedPrompt;
+    expect(seed).toContain("CONNECTOR$GITHUB_NAME");
+    expect(seed).toContain("vamsi920");
+    expect(seed).toContain("read:user, repo");
   });
 });

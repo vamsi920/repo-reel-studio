@@ -10,12 +10,14 @@ import {
 import { createEmptyProfile } from "#/lib/environment/types/profile";
 import type { ProbeResult } from "#/lib/environment/types/probe";
 import type { ReadinessReport } from "#/lib/environment/types/requirements";
+import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
 
 const NOW = "2026-09-09T00:00:00.000Z";
 
 const state = vi.hoisted(() => ({
   readiness: null as unknown,
   seeds: [] as string[],
+  connections: [] as ConnectionRecord[],
 }));
 
 vi.mock("#/hooks/query/use-environment-profile", () => ({
@@ -24,6 +26,10 @@ vi.mock("#/hooks/query/use-environment-profile", () => ({
 
 vi.mock("#/hooks/query/use-environment-readiness", () => ({
   useEnvironmentReadiness: () => state.readiness,
+}));
+
+vi.mock("#/hooks/query/use-connections", () => ({
+  useConnections: () => ({ data: state.connections }),
 }));
 
 vi.mock("#/stores/onboarding-copilot-store", () => ({
@@ -45,9 +51,34 @@ function report(evidence: ReadinessEvidence): ReadinessReport {
   return computeReadiness(evidence, null, NOW);
 }
 
+function connectionRecord(
+  overrides: Partial<ConnectionRecord>,
+): ConnectionRecord {
+  return {
+    id: "conn-1",
+    orgId: "org-1",
+    capability: "source-control",
+    providerId: "github",
+    instanceKey: "default",
+    displayName: null,
+    config: {},
+    redactedSummary: {},
+    requestedScopes: [],
+    grantedScopes: [],
+    status: "ok",
+    lastProbe: null,
+    lastProbeAt: null,
+    expiresAt: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   state.readiness = report(EMPTY_EVIDENCE);
   state.seeds = [];
+  state.connections = [];
 });
 
 describe("Environment requirements", () => {
@@ -107,6 +138,38 @@ describe("Environment requirements", () => {
       within(feature).getByTestId("requirement-fix-repositories.browse"),
     );
     expect(state.seeds).toHaveLength(1);
+  });
+
+  it("folds the already-known connection diagnosis into the fix-with-agent seed", async () => {
+    // Same regression as the Overview tab's matching CTA: the seed used to
+    // carry only the requirement label, forcing the agent to ask what the
+    // page already knows (provider, account, missing scopes).
+    state.readiness = report({
+      probes: {},
+      capabilities: { "source-control": "missing" },
+    });
+    state.connections = [
+      connectionRecord({
+        providerId: "github",
+        displayName: "vamsi920",
+        status: "error",
+        requestedScopes: ["read:user", "repo"],
+        grantedScopes: [],
+      }),
+    ];
+    render(<EnvironmentRequirementsScreen />);
+    const feature = screen.getByTestId(
+      "requirement-feature-repositories.browse",
+    );
+
+    await userEvent.click(
+      within(feature).getByTestId("requirement-fix-repositories.browse"),
+    );
+
+    expect(state.seeds).toHaveLength(1);
+    expect(state.seeds[0]).toContain("CONNECTOR$GITHUB_NAME");
+    expect(state.seeds[0]).toContain("vamsi920");
+    expect(state.seeds[0]).toContain("read:user, repo");
   });
 
   it("does not put a not-applicable requirement on the checklist as passing", () => {
