@@ -186,6 +186,56 @@ describe("KtList", () => {
     expect(screen.queryByTestId("kt-list-loading")).toBeNull();
   });
 
+  // Accessibility: the loading and error states next to this one both
+  // announce themselves (role="status"/role="alert") — the plain "nothing
+  // here yet" state rendered with no role at all, so a screen reader user
+  // got no indication the page had finished loading with zero repositories.
+  it("marks the empty state as an accessible status region", async () => {
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByText("KT$EMPTY")).toHaveAttribute(
+      "role",
+      "status",
+    );
+  });
+
+  // Accessibility: the generating status text updates in place (e.g.
+  // "starting" -> "indexing" -> "generating") with nothing announcing the
+  // change to a screen reader user watching a card they can't see re-render.
+  it("marks the generating status as an accessible live region", async () => {
+    setConnected(UNPROVISIONED);
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [UNPROVISIONED.repositoryId]: {
+          snapshot: {
+            repositoryId: UNPROVISIONED.repositoryId,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abc123",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "generating",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: null,
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+      provisioningByRepositoryId: {},
+    });
+
+    renderWithProviders(<KtList />);
+
+    const status = await screen.findByText("KT$STARTING");
+    expect(status).toHaveAttribute("role", "status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+  });
+
   it("keeps the loading placeholder while conversation history is still loading", async () => {
     connectedLoading = true;
     listGeneratedRepositories.mockResolvedValue({ summaries: [], error: false });

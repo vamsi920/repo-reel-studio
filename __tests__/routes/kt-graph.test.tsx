@@ -332,9 +332,14 @@ describe("KtGraph search", () => {
 
     renderWithProviders(<KtGraph />);
 
-    expect(
-      await screen.findByTestId("codegraph-stale-banner"),
-    ).toHaveTextContent(`${COMMIT.slice(0, 7)} → ${HEAD.slice(0, 7)}`);
+    const staleBanner = await screen.findByTestId("codegraph-stale-banner");
+    expect(staleBanner).toHaveTextContent(
+      `${COMMIT.slice(0, 7)} → ${HEAD.slice(0, 7)}`,
+    );
+    // Accessibility: nothing else on this route announces that the graph has
+    // gone stale — without a role, a screen reader user would only learn
+    // about it by noticing the new warning-colored text on screen.
+    expect(staleBanner).toHaveAttribute("role", "status");
 
     await userEvent.click(screen.getByTestId("codegraph-reanalyze"));
 

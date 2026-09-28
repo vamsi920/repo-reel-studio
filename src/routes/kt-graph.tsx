@@ -609,6 +609,7 @@ function KtGraph() {
       {state?.freshness?.freshness === "stale" ? (
         <div
           data-testid="codegraph-stale-banner"
+          role="status"
           className="mx-6 mt-3 flex items-center gap-2 rounded-md border border-[var(--warning-500)] bg-[var(--warning-bg-subtle)] px-3 py-2 text-xs text-[var(--oh-foreground)]"
         >
           <AlertTriangle

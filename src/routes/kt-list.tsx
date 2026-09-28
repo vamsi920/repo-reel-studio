@@ -287,7 +287,11 @@ function RepoCard({ candidate }: { candidate: RepoCandidate }) {
           className="ame-btn-primary ame-btn-sm self-start disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isGenerating ? (
-            <span className="flex items-center gap-1.5">
+            <span
+              className="flex items-center gap-1.5"
+              role="status"
+              aria-live="polite"
+            >
               <Loader2 className="size-3.5 animate-spin" aria-hidden />
               {state?.progress?.status
                 ? t(I18nKey.KT$STATUS, { status: state.progress.status })
@@ -569,7 +573,10 @@ function KtList() {
             {t(I18nKey.KT$LOAD_ERROR)}
           </div>
         ) : repositories.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-center text-sm text-[var(--oh-muted)]">
+          <div
+            role="status"
+            className="rounded-lg border border-dashed border-[var(--oh-border)] p-8 text-center text-sm text-[var(--oh-muted)]"
+          >
             <RefreshCw className="mx-auto mb-2 size-5" aria-hidden />
             {t(I18nKey.KT$EMPTY)}
           </div>
