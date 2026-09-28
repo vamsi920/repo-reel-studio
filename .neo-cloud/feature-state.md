@@ -23,9 +23,9 @@ design decisions:
 
 milestones:
 - [x] 1. MVP: steps + store + caption-bar wizard (Back/Next/Skip/Finish, progress, dots, keys) + left-edge launcher + auto-start after onboarding + i18n + tests — done 2026-09-28
-- [ ] 2. Spotlight: highlight the sidebar item each step talks about (anchor via data-testid, dim the rest, scroll into view; open the mobile drawer / expand collapsed sidebar as needed)
+- [x] 2. Spotlight: highlight the sidebar item each step talks about (anchor via data-testid, dim the rest, scroll into view) — done 2026-09-28 (works in expanded + collapsed sidebar; on phones the sidebar is hidden so no spotlight shows — opening the mobile drawer mid-tour deferred to milestone 4)
 - [ ] 3. Auto-play mode: optional play/pause that advances captions on a timer sized to caption length ("watch" mode), respecting prefers-reduced-motion
-- [ ] 4. Edge cases: Cloud backends that skip onboarding (treat as new user when tutorial never seen and no conversations), resume position after reload mid-tour, launcher placement on mobile + conversation route, analytics events via useTracking
+- [ ] 4. Edge cases: Cloud backends that skip onboarding (treat as new user when tutorial never seen and no conversations), resume position after reload mid-tour, launcher placement on mobile + conversation route, spotlight on mobile (open drawer or anchor the header menu button), analytics events via useTracking
 - [ ] 5. a11y + polish: focus return to launcher on close, tooltip on launcher, reduced-motion, dark/light tokens review, RTL (ar) check
 
-last commit: feat(tutorial): guided tour wizard with subtitles, navigation and left-edge launcher (2026-09-28)
+last commit: feat(tutorial): spotlight the sidebar item each tour step describes (2026-09-28)

@@ -19,6 +19,12 @@ export interface TutorialStep {
   subtitleKey: I18nKey;
   /** Route the tour navigates to when this step becomes active. */
   route?: string;
+  /**
+   * `data-testid`s of the UI element this step talks about, in preference
+   * order. The first one that is actually on screen gets the spotlight (the
+   * expanded and collapsed sidebars render different elements).
+   */
+  anchorTestIds?: string[];
 }
 
 /**
@@ -37,42 +43,49 @@ export function getTutorialSteps(): TutorialStep[] {
       titleKey: I18nKey.TUTORIAL$STEP_CONVERSATIONS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_CONVERSATIONS_SUBTITLE,
       route: "/conversations",
+      anchorTestIds: ["sidebar-conversations-link"],
     },
     {
       id: "customize",
       titleKey: I18nKey.TUTORIAL$STEP_CUSTOMIZE_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_CUSTOMIZE_SUBTITLE,
       route: "/customize",
+      anchorTestIds: ["sidebar-skills-link"],
     },
     {
       id: "automations",
       titleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_SUBTITLE,
       route: automationListPath(),
+      anchorTestIds: ["sidebar-automations-link"],
     },
     {
       id: "environment",
       titleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_SUBTITLE,
       route: "/environment",
+      anchorTestIds: ["sidebar-environment-link"],
     },
     {
       id: "agentops",
       titleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_SUBTITLE,
       route: "/agentops",
+      anchorTestIds: ["sidebar-agentops-link"],
     },
     {
       id: "knowledge",
       titleKey: I18nKey.TUTORIAL$STEP_KNOWLEDGE_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_KNOWLEDGE_SUBTITLE,
       route: "/kt",
+      anchorTestIds: ["sidebar-kt-link"],
     },
     {
       id: "settings",
       titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_SUBTITLE,
       route: "/settings",
+      anchorTestIds: ["collapsed-settings-link", "user-menu-trigger"],
     },
     {
       id: "finish",

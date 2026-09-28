@@ -12,6 +12,7 @@ import {
   ONBOARDING_COMPLETED_STORAGE_KEY,
 } from "#/components/features/onboarding/use-onboarding-completion";
 import { NavigationProvider } from "#/context/navigation-context";
+import { findTutorialAnchor } from "#/components/features/tutorial/tutorial-spotlight";
 
 const navigate = vi.fn();
 
@@ -121,5 +122,45 @@ describe("TutorialHost", () => {
       window.dispatchEvent(new Event(ONBOARDING_COMPLETED_EVENT));
     });
     expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
+  });
+
+  it("spotlights the on-screen sidebar item for the current step", async () => {
+    const user = userEvent.setup();
+    const link = document.createElement("a");
+    link.dataset.testid = "sidebar-conversations-link";
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
+    document.body.appendChild(link);
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+    });
+    renderHost();
+    expect(screen.queryByTestId("tutorial-spotlight")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    const spotlight = screen.getByTestId("tutorial-spotlight");
+    expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "208px" });
+    link.remove();
+  });
+});
+
+describe("findTutorialAnchor", () => {
+  it("skips hidden matches and falls back to the next test id", () => {
+    const hidden = document.createElement("a");
+    hidden.dataset.testid = "collapsed-settings-link";
+    const visible = document.createElement("button");
+    visible.dataset.testid = "user-menu-trigger";
+    visible.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 40, height: 40 }) as DOMRect;
+    const root = document.createElement("div");
+    root.append(hidden, visible);
+
+    expect(
+      findTutorialAnchor(
+        ["collapsed-settings-link", "user-menu-trigger"],
+        root,
+      ),
+    ).toBe(visible);
   });
 });
