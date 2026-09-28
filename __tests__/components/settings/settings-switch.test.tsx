@@ -62,6 +62,27 @@ describe("SettingsSwitch", () => {
     expect(screen.getByTestId("test-switch")).not.toBeChecked();
   });
 
+  it("should keep the checkbox input in the accessibility tree and tab order, and toggle it from the keyboard", async () => {
+    const user = userEvent.setup();
+    const onToggleMock = vi.fn();
+    render(
+      <SettingsSwitch testId="test-switch" onToggle={onToggleMock}>
+        Test Switch
+      </SettingsSwitch>,
+    );
+
+    // `hidden` removes an element from the accessibility tree and tab
+    // order entirely; the checkbox must be discoverable by role instead.
+    const switchInput = screen.getByRole("checkbox", { name: "Test Switch" });
+    expect(switchInput).not.toHaveAttribute("hidden");
+
+    await user.tab();
+    expect(switchInput).toHaveFocus();
+
+    await user.keyboard(" ");
+    expect(onToggleMock).toHaveBeenCalledWith(true);
+  });
+
   it("should resync to a changed defaultIsToggled prop (e.g. a background settings refetch)", () => {
     const { rerender } = render(
       <SettingsSwitch

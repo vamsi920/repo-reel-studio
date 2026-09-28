@@ -55,8 +55,12 @@ export function SettingsSwitch({
   };
 
   const input = (
+    // sr-only (not `hidden`) keeps the real checkbox in the accessibility
+    // tree and the tab order so keyboard/screen-reader users can find and
+    // toggle it; the decorative visual switch below carries `aria-hidden`
+    // instead. `hidden` removes an element from both entirely.
     <input
-      hidden
+      className="sr-only"
       data-testid={testId}
       name={name}
       type="checkbox"
