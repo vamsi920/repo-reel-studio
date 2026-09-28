@@ -7,6 +7,13 @@ import React from "react";
  */
 export const ONBOARDING_COMPLETED_STORAGE_KEY = "openhands-onboarded";
 
+/**
+ * Same-tab window event fired by `markCompleted()`, so every mounted instance
+ * of the hook (e.g. the tutorial host) sees completion without a reload —
+ * the `storage` event only reaches other tabs.
+ */
+export const ONBOARDING_COMPLETED_EVENT = "neo:onboarding-completed";
+
 function readCompletedFromStorage(): boolean {
   if (typeof window === "undefined") return true;
   try {
@@ -36,8 +43,13 @@ export function useOnboardingCompletion() {
       if (event.key !== ONBOARDING_COMPLETED_STORAGE_KEY) return;
       setIsCompleted(readCompletedFromStorage());
     };
+    const handleCompleted = () => setIsCompleted(true);
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener(ONBOARDING_COMPLETED_EVENT, handleCompleted);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(ONBOARDING_COMPLETED_EVENT, handleCompleted);
+    };
   }, []);
 
   const markCompleted = React.useCallback(() => {
@@ -47,6 +59,7 @@ export function useOnboardingCompletion() {
       // best-effort; we still flip the in-memory flag below.
     }
     setIsCompleted(true);
+    window.dispatchEvent(new Event(ONBOARDING_COMPLETED_EVENT));
   }, []);
 
   return { isCompleted, markCompleted } as const;

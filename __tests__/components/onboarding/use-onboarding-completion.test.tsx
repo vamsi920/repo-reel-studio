@@ -25,6 +25,17 @@ describe("useOnboardingCompletion", () => {
     expect(result.current.isCompleted).toBe(true);
   });
 
+  it("propagates completion to other mounted instances in the same tab", () => {
+    const writer = renderHook(() => useOnboardingCompletion());
+    const reader = renderHook(() => useOnboardingCompletion());
+
+    act(() => {
+      writer.result.current.markCompleted();
+    });
+
+    expect(reader.result.current.isCompleted).toBe(true);
+  });
+
   it("persists completion to localStorage and flips the flag", () => {
     const { result } = renderHook(() => useOnboardingCompletion());
     expect(result.current.isCompleted).toBe(false);
