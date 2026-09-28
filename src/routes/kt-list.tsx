@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Loader2, Plus, RefreshCw } from "lucide-react";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
@@ -48,16 +48,24 @@ interface PersistedRepositories {
    * now" instead of the misleading "nothing generated yet" empty state when
    * real generations may exist and just couldn't be read. */
   error: boolean;
+  /** Re-runs the Supabase lookup on demand. Unlike the connected-repositories
+   * query, this effect fires once on mount and never retries on its own — a
+   * real failure (a dropped connection, a transient RLS hiccup) otherwise
+   * leaves the user stuck on the error state below until they reload the
+   * whole page. */
+  retry: () => void;
 }
 
 function usePersistedRepositories(): PersistedRepositories {
-  const [state, setState] = useState<PersistedRepositories>({
+  const [state, setState] = useState<Omit<PersistedRepositories, "retry">>({
     summaries: [],
     loaded: false,
     error: false,
   });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    setState((prev) => (prev.loaded ? { ...prev, loaded: false } : prev));
     (async () => {
       try {
         const { summaries, error } =
@@ -76,8 +84,9 @@ function usePersistedRepositories(): PersistedRepositories {
     return () => {
       cancelled = true;
     };
-  }, []);
-  return state;
+  }, [attempt]);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { ...state, retry };
 }
 
 interface AllRepositories {
@@ -96,18 +105,23 @@ interface AllRepositories {
    * bug already fixed for the persisted half alone (see the regression test
    * for INC-2), just on the other data source. */
   error: boolean;
+  /** Re-runs both sources this list is built from — wired to the error
+   * state's retry button. */
+  retry: () => void;
 }
 
 function useAllRepositories({
   repositories: connected,
   isLoading: connectedLoading,
   isError: connectedError,
+  refetch: refetchConnected,
 }: ConnectedRepositories): AllRepositories {
   const byRepositoryId = useKnowledgeStore((s) => s.byRepositoryId);
   const {
     summaries: persisted,
     loaded: persistedLoaded,
     error: persistedError,
+    retry: retryPersisted,
   } = usePersistedRepositories();
   const repositories = useMemo(() => {
     // Repos already generated in Supabase, regardless of whether they also
@@ -164,10 +178,15 @@ function useAllRepositories({
         candidate.knownGenerated || persistedIds.has(candidate.repositoryId),
     }));
   }, [connected, byRepositoryId, persisted]);
+  const retry = useCallback(() => {
+    retryPersisted();
+    refetchConnected();
+  }, [retryPersisted, refetchConnected]);
   return {
     repositories,
     isLoading: connectedLoading || !persistedLoaded,
     error: persistedError || connectedError,
+    retry,
   };
 }
 
@@ -509,7 +528,7 @@ function AddRepositoryTrigger() {
 
 function KtList() {
   const { t } = useTranslation("openhands");
-  const { repositories, isLoading, error } = useAllRepositories(
+  const { repositories, isLoading, error, retry } = useAllRepositories(
     useConnectedRepositories(),
   );
   const [search, setSearch] = useState("");
@@ -570,7 +589,15 @@ function KtList() {
             className="rounded-lg border border-dashed border-[var(--error-500)] p-8 text-center text-sm text-[var(--error-500)]"
           >
             <RefreshCw className="mx-auto mb-2 size-5" aria-hidden />
-            {t(I18nKey.KT$LOAD_ERROR)}
+            <p>{t(I18nKey.KT$LOAD_ERROR)}</p>
+            <button
+              type="button"
+              onClick={retry}
+              data-testid="kt-list-retry"
+              className="mt-3 rounded-md border border-[var(--error-500)] px-3 py-1.5 text-sm font-medium text-[var(--error-500)] hover:bg-[var(--error-bg-subtle)]"
+            >
+              {t(I18nKey.KT$RETRY)}
+            </button>
           </div>
         ) : repositories.length === 0 ? (
           <div

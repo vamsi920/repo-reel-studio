@@ -39575,6 +39575,23 @@
     "tr": "We can't load your data right now. Try again in a bit.",
     "uk": "We can't load your data right now. Try again in a bit."
   },
+  "KT$RETRY": {
+    "en": "Retry",
+    "ja": "Retry",
+    "zh-CN": "Retry",
+    "zh-TW": "Retry",
+    "ko-KR": "Retry",
+    "no": "Retry",
+    "ar": "Retry",
+    "de": "Retry",
+    "fr": "Retry",
+    "it": "Retry",
+    "pt": "Retry",
+    "es": "Retry",
+    "ca": "Retry",
+    "tr": "Retry",
+    "uk": "Retry"
+  },
   "KT$LOADING": {
     "en": "Loading repositories…",
     "ja": "Loading repositories…",

@@ -137,6 +137,20 @@ describe("useConnectedRepositories", () => {
     );
   });
 
+  it("forwards a refetch that re-runs the underlying conversation history query", () => {
+    const refetch = vi.fn();
+    mockUsePaginatedConversations.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      refetch,
+    });
+
+    const { result } = renderHook(() => useConnectedRepositories());
+    result.current.refetch();
+
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
   it("normalizes a blank working_dir to null instead of an empty string", () => {
     mockUsePaginatedConversations.mockReturnValue({
       data: {

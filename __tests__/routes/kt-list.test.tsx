@@ -9,6 +9,7 @@ import type { RepoCandidate } from "#/lib/knowledge/connected-repositories";
 const connected: RepoCandidate[] = [];
 let connectedLoading = false;
 let connectedError = false;
+const connectedRefetch = vi.fn();
 const listGeneratedRepositories = vi.fn();
 
 vi.mock("#/lib/knowledge/connected-repositories", () => ({
@@ -16,6 +17,7 @@ vi.mock("#/lib/knowledge/connected-repositories", () => ({
     repositories: connected,
     isLoading: connectedLoading,
     isError: connectedError,
+    refetch: connectedRefetch,
   }),
   resolveCommitSha: vi.fn(),
 }));
@@ -305,6 +307,27 @@ describe("KtList", () => {
     );
     expect(screen.queryByTestId("kt-list-loading")).toBeNull();
     expect(screen.queryByText("KT$EMPTY")).toBeNull();
+  });
+
+  it("retries both data sources when the retry button on the load-error state is clicked", async () => {
+    connectedError = true;
+    listGeneratedRepositories.mockRejectedValueOnce(new Error("no supabase"));
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtList />);
+
+    expect(await screen.findByTestId("kt-list-error")).toHaveTextContent(
+      "KT$LOAD_ERROR",
+    );
+    expect(listGeneratedRepositories).toHaveBeenCalledTimes(1);
+
+    listGeneratedRepositories.mockResolvedValue({ summaries: [], error: false });
+    await user.click(screen.getByTestId("kt-list-retry"));
+
+    expect(connectedRefetch).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(listGeneratedRepositories).toHaveBeenCalledTimes(2),
+    );
   });
 
   it("still lists persisted repositories when the connected-repositories lookup errors", async () => {

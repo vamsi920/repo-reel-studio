@@ -30,6 +30,11 @@ export interface ConnectedRepositories {
    * know", not "there really are none" — callers must not read it as the
    * latter, the same way they must not while `isLoading` is true. */
   isError: boolean;
+  /** Re-runs the conversation history query on demand. The query already
+   * polls every 10s on its own, but a caller surfacing `isError` to the user
+   * (e.g. kt-list.tsx's retry button) needs a way to retry immediately
+   * instead of making them wait out the rest of that interval. */
+  refetch: () => void;
 }
 
 /** One entry per distinct repository with a live conversation right now,
@@ -37,7 +42,7 @@ export interface ConnectedRepositories {
  * repos) and kt-repository.tsx (to upgrade a cold/Supabase-only Docs entry
  * to a real live one with a usable session, whenever one is available). */
 export function useConnectedRepositories(): ConnectedRepositories {
-  const { data, isLoading, isError } = usePaginatedConversations(100);
+  const { data, isLoading, isError, refetch } = usePaginatedConversations(100);
   const repositories = useMemo(() => {
     const conversations = data?.pages.flatMap((page) => page.items) ?? [];
     const byRepo = new Map<string, RepoCandidate>();
@@ -61,7 +66,14 @@ export function useConnectedRepositories(): ConnectedRepositories {
     }
     return Array.from(byRepo.values());
   }, [data]);
-  return { repositories, isLoading, isError };
+  return {
+    repositories,
+    isLoading,
+    isError,
+    refetch: () => {
+      void refetch();
+    },
+  };
 }
 
 const COMMIT_POLL_INTERVAL_MS = 2000;
