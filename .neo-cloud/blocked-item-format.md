@@ -47,9 +47,18 @@ because these files split on blank lines. End with exactly one blank line, then
 nothing else from this run. Max one item per run per file. Retry once before
 filing; never file flakes or style nitpicks.
 
-An item that can't be done (too big, gate failed) is rewritten in place as
-`# BLOCKED <date>: <reason>` above its commented-out (`# `-prefixed) original —
-never deleted, never left live to be retried forever.
+An item that can't be done is rewritten as `# RETRY <date> (attempt n/3):
+<reason> — next try: <smaller scope>` above its commented original, and retried
+next run; after 3 failed attempts it moves to `needs-human.md`. See
+`never-block.md`.
+
+**Filing quality (testers):** before filing, grep `TODO.txt`, `findings.txt`,
+`needs-human.md`, `verify-queue.md` for the same route + symptom — if present,
+add a `seen again <date>: <new evidence>` clause to that item instead of a new
+one. Every item must name: route/screen, exact steps, expected vs actual, and
+decisive evidence (error line, status code, screenshot path). Do NOT file:
+vague impressions, test-tool artifacts, flakes that didn't reproduce on
+retry, or things already fixed on main (`git log --oneline -S '<phrase>'`).
 
 ## One-off design/ambiguity questions → `~/.claude/neo-ui-tester/needs-human.md`
 

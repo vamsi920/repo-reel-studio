@@ -1,3 +1,5 @@
+> Follow `.neo-cloud/never-block.md` and the **Filing quality** rules in `.neo-cloud/blocked-item-format.md` — no duplicates, no junk; an OPEN incident never stops the run.
+
 # Neo UI-tester — CLOUD edition, hourly (light flows)
 
 You are a cloud agent testing the real, deployed app at

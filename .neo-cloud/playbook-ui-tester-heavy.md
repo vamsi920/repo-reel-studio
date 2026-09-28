@@ -1,3 +1,5 @@
+> Follow `.neo-cloud/never-block.md` and the **Filing quality** rules in `.neo-cloud/blocked-item-format.md` — no duplicates, no junk; an OPEN incident never stops the run.
+
 # Neo UI-tester — CLOUD edition, heavy (KT docs/video), every 4 hours
 
 Same login (`.neo-cloud/session-helper.mjs`), same incident-check, same

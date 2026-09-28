@@ -7,6 +7,9 @@ to anything outside this repo — all state you need lives inside it, under
 `main` on its own schedule — you may occasionally need to rebase past its
 commit (handled in step 7); this is expected, not a bug.
 
+**Read `.neo-cloud/never-block.md` first — it overrides any SKIP/BLOCKED/ABANDON
+wording below.** A third cloud routine, `neo-feature-builder-cloud`, also pushes.
+
 State lives in `.neo-cloud/`:
 - `hourly-state.json` — rotation state for section mode
 - `TODO.txt` — the user's own requests, freeform, git-tracked (edit it on GitHub)
@@ -44,10 +47,8 @@ git status --porcelain   # should already be empty — fresh checkout
 git checkout main && git pull --ff-only
 ```
 
-If for any reason the tree is not clean, do not stash or force anything — log a
-`SKIPPED (dirty tree)` block to `.neo-cloud/runs/hourly-$(date -u +%F).md`, commit
-just that log addition, push, and stop. This should be rare/never in a fresh
-cloud checkout.
+If the tree is not clean, `git reset --hard origin/main && git clean -fd` and
+continue — never skip the run (never-block.md rule 1).
 
 Record `BASE_SHA=$(git rev-parse HEAD)`. Read `AGENTS.md` (repo root) before
 editing anything.
@@ -64,7 +65,14 @@ one thought across lines into multiple todos; don't merge two genuinely separate
 requests that lack a blank line between them — a fresh imperative verb/subject
 starting mid-block is a sign of a second item, use judgment.
 
-1. Read the file, segment into items, skip comments. Take the **first** item in
+0. **Hygiene pass first (cheap, every run):** remove exact/near duplicates
+   (same route + same symptom — keep the one with more evidence, merge new
+   evidence into it), delete junk (vague "looks off" with no route/steps,
+   test-tool artifacts, items whose fix is already on main — check
+   `git log --oneline -S '<key phrase>' -20`). Treat old `# BLOCKED` items as
+   `# RETRY (attempt 1/3)`. Include hygiene edits in this run's commit.
+1. Read the file, segment into items, skip comments. Live items first, then
+   `# RETRY` items (use their `next try:` smaller scope). Take the **first** item in
    full. None at all → skip to step 2b (section mode).
 2. **Brainstorm before touching code.** Restate the whole item in 1–2 sentences
    (if the restatement misses something the text asked for, you under-segmented —
@@ -79,10 +87,11 @@ starting mid-block is a sign of a second item, use judgment.
 5. If step 8 later reverts, put the item's text back prefixed
    `# BLOCKED <YYYY-MM-DD>: reverted, CI red: <reason>` on its own line, original
    text unchanged below it — as an amendment pushed right after the revert.
-6. If the item is over the size cap, or the run is `ABANDONED`, rewrite it in
-   place as `# BLOCKED <YYYY-MM-DD>: <reason>` above the original text (comment
-   each original line with a leading `# `, never delete). Then, if under ~20
-   minutes into the run, fall through to step 2b; otherwise log and stop.
+6. If the item is over the size cap, ship the smallest useful slice of it now
+   and leave the rest as a `# RETRY` item describing the remaining slice. If
+   the run fails, rewrite it as `# RETRY <date> (attempt n/3): <reason> — next
+   try: <smaller scope>` (never-block.md rule 4) and fall through to step 2b —
+   something always ships.
 7. A todo run does not consume a section's rotation turn: leave `hourly-state.json`
    `sections` untouched, use `todo` as the section key in the log.
 
@@ -122,6 +131,20 @@ section two runs in a row; never let one section dominate.
 | `skills-plugins-mcp` | `src/components/features/skills`, `src/components/features/plugins` |
 | `files-terminal-browser` | `src/components/files`, `src/components/terminal`, `src/components/browser` |
 
+## 2c. Run type — alternate bug-hunt and small-feature runs
+
+In section mode, read `lastRunType` in `hourly-state.json` (`bugs` or
+`feature`) and do the OTHER one this run (default `feature` if missing), then
+save it back:
+- `bugs` → steps 3–4 as written.
+- `feature` → build ONE small, finished UX improvement in the section that a
+  user would notice: a helpful empty state, clearer loading/error copy, an
+  inline hint, a keyboard shortcut, a confirm/undo, remembering a filter, a
+  shortcut from one screen to the next. ≤ ~200 changed lines, with tests and
+  i18n. Pick what makes the section feel more polished, not a big feature
+  (big features belong to `FEATURE.md`/the feature builder). Log status
+  `FEATURE`.
+
 ## 3. Hunt bugs first
 
 Read the section's source and its tests (top-level `__tests__/` mirrors `src/`).
@@ -157,9 +180,11 @@ bad cache keys, state that survives when it shouldn't. Reproduce with
 npm run lint && npm test && npm run build && npm run build:lib
 ```
 
-One repair attempt. Still failing → `git reset --hard $BASE_SHA`, log
-`ABANDONED (gate failed)` with the failing command and shortest decisive error
-line, push just that log entry, and stop. Never push ungated work.
+Judge differentially (main is red at baseline — only NEW failures vs
+`BASE_SHA` count). One repair attempt; still failing → drop the failing part
+and ship what gates. Nothing gateable → `git reset --hard $BASE_SHA`, requeue
+as `# RETRY` per never-block.md, log `ABANDONED (gate failed)` with the
+shortest decisive error line, push the log. Never push ungated work.
 
 ## 7. Commit and push
 
@@ -177,7 +202,7 @@ git push origin main
 
 **Rejected as non-fast-forward?** `neo-focus-fixer-cloud` landed first —
 expected, never force. `git fetch origin && git rebase origin/main`; conflict
-→ abort, reset to origin/main, log `ABANDONED (rebase conflict)`, stop; clean
+→ follow never-block.md rule 2 (re-apply on fresh main, don't abandon); clean
 rebase → re-run `npm run lint` plus `npx vitest run` on the files you touched
 (not the full suite — it already passed on this diff), then push again.
 

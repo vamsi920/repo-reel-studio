@@ -1,3 +1,5 @@
+> Follow `.neo-cloud/never-block.md` and the **Filing quality** rules in `.neo-cloud/blocked-item-format.md` — no duplicates, no junk; an OPEN incident never stops the run.
+
 # Neo focus explorer — CLOUD edition, hourly, one module all day
 
 You are a cloud agent (Anthropic CCR) in a fresh checkout of this repo on
