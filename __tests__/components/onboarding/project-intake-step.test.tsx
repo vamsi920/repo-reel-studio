@@ -22,8 +22,9 @@ vi.mock("#/hooks/mutation/use-create-conversation", () => ({
   }),
 }));
 
+const useIsCreatingConversationMock = vi.fn(() => false);
 vi.mock("#/hooks/use-is-creating-conversation", () => ({
-  useIsCreatingConversation: () => false,
+  useIsCreatingConversation: () => useIsCreatingConversationMock(),
 }));
 
 const useLlmConfiguredMock = vi.fn();
@@ -43,7 +44,7 @@ describe("ProjectIntakeStep", () => {
     });
     const user = userEvent.setup();
 
-    render(<ProjectIntakeStep onLaunched={vi.fn()} />);
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={vi.fn()} />);
     await user.type(
       screen.getByTestId("onboarding-project-input"),
       "a todo app",
@@ -64,7 +65,7 @@ describe("ProjectIntakeStep", () => {
       isLoading: true,
     });
 
-    render(<ProjectIntakeStep onLaunched={vi.fn()} />);
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={vi.fn()} />);
 
     expect(
       screen.queryByTestId("home-llm-not-configured-banner"),
@@ -78,7 +79,7 @@ describe("ProjectIntakeStep", () => {
     });
     const user = userEvent.setup();
 
-    render(<ProjectIntakeStep onLaunched={vi.fn()} />);
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={vi.fn()} />);
     await user.type(
       screen.getByTestId("onboarding-project-input"),
       "a todo app",
@@ -107,7 +108,7 @@ describe("ProjectIntakeStep", () => {
     const onLaunched = vi.fn();
     const user = userEvent.setup();
 
-    render(<ProjectIntakeStep onLaunched={onLaunched} />);
+    render(<ProjectIntakeStep onLaunched={onLaunched} onSkip={vi.fn()} />);
     await user.type(
       screen.getByTestId("onboarding-project-input"),
       "a todo app",
@@ -144,7 +145,7 @@ describe("ProjectIntakeStep", () => {
     );
     const user = userEvent.setup();
 
-    render(<ProjectIntakeStep onLaunched={vi.fn()} />);
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={vi.fn()} />);
     await user.type(
       screen.getByTestId("onboarding-project-input"),
       "a todo app",
@@ -159,5 +160,33 @@ describe("ProjectIntakeStep", () => {
     expect(
       screen.queryByTestId("onboarding-project-error"),
     ).not.toBeInTheDocument();
+  });
+
+  it("lets the user skip even when no LLM is configured, so they are never trapped", async () => {
+    useLlmConfiguredMock.mockReturnValue({
+      isConfigured: false,
+      isLoading: false,
+    });
+    const onSkip = vi.fn();
+    const user = userEvent.setup();
+
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={onSkip} />);
+
+    expect(screen.getByTestId("onboarding-project-submit")).toBeDisabled();
+    await user.click(screen.getByTestId("onboarding-project-skip"));
+
+    expect(onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables skip while a launch is in flight", () => {
+    useLlmConfiguredMock.mockReturnValue({
+      isConfigured: true,
+      isLoading: false,
+    });
+    useIsCreatingConversationMock.mockReturnValue(true);
+
+    render(<ProjectIntakeStep onLaunched={vi.fn()} onSkip={vi.fn()} />);
+
+    expect(screen.getByTestId("onboarding-project-skip")).toBeDisabled();
   });
 });

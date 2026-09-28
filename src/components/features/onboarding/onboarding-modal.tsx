@@ -72,7 +72,7 @@ export function OnboardingModal({
         data-preview={isPreview ? "true" : undefined}
         className="flex max-h-[90vh] w-[min(90vw,720px)] flex-col overflow-y-auto rounded-2xl border border-white/10 bg-base-secondary shadow-2xl"
       >
-        <ProjectIntakeStep onLaunched={handleLaunched} />
+        <ProjectIntakeStep onLaunched={handleLaunched} onSkip={onClose} />
       </section>
     </ModalBackdrop>
   );

@@ -18,10 +18,21 @@ vi.mock("#/hooks/use-tracking", () => ({
 }));
 
 vi.mock("#/components/features/onboarding/steps/project-intake-step", () => ({
-  ProjectIntakeStep: ({ onLaunched }: { onLaunched: () => void }) => (
-    <button type="button" data-testid="launch-stub" onClick={onLaunched}>
-      launch
-    </button>
+  ProjectIntakeStep: ({
+    onLaunched,
+    onSkip,
+  }: {
+    onLaunched: () => void;
+    onSkip: () => void;
+  }) => (
+    <>
+      <button type="button" data-testid="launch-stub" onClick={onLaunched}>
+        launch
+      </button>
+      <button type="button" data-testid="skip-stub" onClick={onSkip}>
+        skip
+      </button>
+    </>
   ),
 }));
 
@@ -77,5 +88,21 @@ describe("OnboardingModal", () => {
       agent: "openhands",
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: the modal used to have no dismiss affordance at all --
+  // ModalBackdrop is rendered with closeOnEscape/closeOnBackdropClick both
+  // false, so a user who can't or doesn't want to launch a conversation right
+  // now (e.g. no LLM configured yet) had no way out of their very first
+  // screen.
+  it("closes without an onboarding_completed event when the user skips", async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+
+    render(<OnboardingModal onClose={onClose} />);
+    await user.click(screen.getByTestId("skip-stub"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(trackOnboardingCompletedMock).not.toHaveBeenCalled();
   });
 });

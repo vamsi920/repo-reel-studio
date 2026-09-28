@@ -11,6 +11,11 @@ interface ProjectIntakeStepProps {
   /** Called once the conversation has been created and navigation has
    * started — the parent marks onboarding complete and unmounts. */
   onLaunched: () => void;
+  /** Called when the user dismisses onboarding without launching a
+   * conversation (e.g. no working LLM yet, or they just want to look
+   * around first). Uses the same completion path as `onLaunched` so the
+   * modal never traps a user with no way out. */
+  onSkip: () => void;
 }
 
 /**
@@ -21,7 +26,10 @@ interface ProjectIntakeStepProps {
  * real conversation is created — once the user has told us what they're
  * building.
  */
-export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
+export function ProjectIntakeStep({
+  onLaunched,
+  onSkip,
+}: ProjectIntakeStepProps) {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
   const [project, setProject] = React.useState("");
@@ -151,6 +159,15 @@ export function ProjectIntakeStep({ onLaunched }: ProjectIntakeStepProps) {
           ) : null}
         </div>
       </form>
+      <button
+        type="button"
+        data-testid="onboarding-project-skip"
+        onClick={onSkip}
+        disabled={isLaunching}
+        className="ame-btn-secondary ame-btn-sm disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {t(I18nKey.ONBOARDING$SKIP)}
+      </button>
     </div>
   );
 }
