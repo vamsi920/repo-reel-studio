@@ -746,6 +746,69 @@ describe("ChatInterface - Scroll-up loads older events", () => {
     // conversation B's actual state. That must never happen.
     expect(scrollTopSets).not.toContain(1000);
   });
+
+  it("resets the scroll-to-bottom affordance when the conversation changes", async () => {
+    // ChatInterface stays mounted across a conversation switch, so
+    // useScrollToBottom's hitBottom/autoScroll state is the same hook
+    // instance for both conversations. Scrolling up in conversation A must
+    // not leave conversation B opened mid-history with a stale "jump to
+    // bottom" button and no auto-follow of its own new messages.
+    vi.mocked(useLoadOlderEvents).mockReturnValue({
+      isLoading: false,
+      hasMore: false,
+      loadOlder: vi.fn().mockResolvedValue(undefined),
+    });
+    const seedEvent: MessageEvent = {
+      id: "msg-seed",
+      timestamp: "2025-07-01T00:00:00Z",
+      source: "user",
+      llm_message: {
+        role: "user",
+        content: [{ type: "text", text: "Conversation A message" }],
+      },
+      activated_microagents: [],
+      extended_content: [],
+    };
+    useEventStore.setState({
+      events: [seedEvent],
+      eventIds: new Set(["msg-seed"]),
+      uiEvents: [seedEvent],
+    });
+
+    const tree = (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/conversation-a"]}>
+          <Routes>
+            <Route path=":conversationId" element={<ChatInterface />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree);
+
+    const scrollContainer = document.querySelector(
+      "[data-testid='chat-scroll-container']",
+    ) as HTMLElement;
+    setScrollMetrics(scrollContainer, {
+      scrollTop: 0,
+      scrollHeight: 5000,
+      clientHeight: 800,
+    });
+
+    // Scrolled far from the bottom -> the affordance appears.
+    fireEvent.scroll(scrollContainer);
+    await waitFor(() => {
+      expect(screen.getByTestId("scroll-to-bottom")).toBeInTheDocument();
+    });
+
+    // User switches to a different conversation (same component instance).
+    vi.mocked(useOptionalConversationId).mockReturnValue({
+      conversationId: "conversation-b",
+    });
+    rerender(tree);
+
+    expect(screen.queryByTestId("scroll-to-bottom")).not.toBeInTheDocument();
+  });
 });
 
 describe("ChatInterface - Pending message queue", () => {

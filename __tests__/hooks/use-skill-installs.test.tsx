@@ -109,24 +109,32 @@ describe("useSkillInstalls", () => {
     ]);
   });
 
-  it("dismissAll dismisses exactly the currently visible installs, not already-dismissed ones", () => {
+  it("dismiss only marks the event ids it's given, leaving other installs untouched", () => {
     act(() => {
-      useEventStore.getState().addEvent(makeInstallEvent("evt-1", "alpha"));
-      useEventStore.getState().addEvent(makeInstallEvent("evt-2", "beta"));
+      useEventStore
+        .getState()
+        .addEvent(makeInstallEvent("evt-1", "alpha", "/tmp/ws-a"));
+      useEventStore
+        .getState()
+        .addEvent(makeInstallEvent("evt-2", "beta", "/tmp/ws-b"));
     });
-    useSkillInstallBannerStore.getState().dismiss(["evt-1"]);
 
     const { result } = renderHook(() => useSkillInstalls(CONVERSATION_ID), {
       wrapper: createWrapper(),
     });
 
+    // A caller (e.g. the restart banner) dismisses only the group it's
+    // currently displaying -- an install from a different workspace must
+    // stay un-dismissed.
     act(() => {
-      result.current.dismissAll();
+      result.current.dismiss(["evt-2"]);
     });
 
     expect(useSkillInstallBannerStore.getState().dismissedEventIds).toEqual({
-      "evt-1": true,
       "evt-2": true,
     });
+    expect(result.current.installs).toEqual([
+      expect.objectContaining({ eventId: "evt-1", skillName: "alpha" }),
+    ]);
   });
 });

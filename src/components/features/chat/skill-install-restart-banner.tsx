@@ -24,7 +24,7 @@ export function SkillInstallRestartBanner({
   conversationId,
 }: SkillInstallRestartBannerProps) {
   const { t } = useTranslation("openhands");
-  const { installs, dismissAll } = useSkillInstalls(conversationId);
+  const { installs, dismiss } = useSkillInstalls(conversationId);
   const { backend } = useActiveBackend();
   const { mutate: createConversation, isPending } = useCreateConversation();
   const isCreatingElsewhere = useIsCreatingConversation();
@@ -35,9 +35,10 @@ export function SkillInstallRestartBanner({
   if (backend.kind !== "local" || installs.length === 0) return null;
 
   const latest = installs[installs.length - 1];
-  const skillNames = installs
-    .filter((install) => install.workspacePath === latest.workspacePath)
-    .map((install) => install.skillName);
+  const groupInstalls = installs.filter(
+    (install) => install.workspacePath === latest.workspacePath,
+  );
+  const skillNames = groupInstalls.map((install) => install.skillName);
 
   const handleRestart = () => {
     if (isPending || isCreatingElsewhere) return;
@@ -90,7 +91,10 @@ export function SkillInstallRestartBanner({
       </div>
       <button
         type="button"
-        onClick={dismissAll}
+        // Dismiss only the workspace group this banner is showing -- an
+        // install from a *different* workspace can still be un-dismissed and
+        // pending its own restart notice, and must not be discarded here.
+        onClick={() => dismiss(groupInstalls.map((install) => install.eventId))}
         className="shrink-0 cursor-pointer rounded-md p-1 text-[var(--oh-muted)] hover:bg-[var(--oh-interactive-hover)] hover:text-[var(--oh-foreground)]"
         aria-label={t(I18nKey.BUTTON$CLOSE)}
         data-testid="skill-install-restart-dismiss"

@@ -23,7 +23,7 @@ export const useSkillInstalls = (conversationId: string | null | undefined) => {
   const dismissedEventIds = useSkillInstallBannerStore(
     (s) => s.dismissedEventIds,
   );
-  const dismiss = useSkillInstallBannerStore((s) => s.dismiss);
+  const storeDismiss = useSkillInstallBannerStore((s) => s.dismiss);
   const { backend } = useActiveBackend();
   const queryClient = useQueryClient();
 
@@ -52,10 +52,14 @@ export const useSkillInstalls = (conversationId: string | null | undefined) => {
     [rawInstalls, dismissedEventIds],
   );
 
-  const dismissAll = useCallback(
-    () => dismiss(installs.map((install) => install.eventId)),
-    [dismiss, installs],
+  // Callers dismiss a specific set of event ids (e.g. just the workspace
+  // group they're currently displaying), never "everything currently
+  // visible" -- installs from an unrelated workspace can be un-dismissed at
+  // the same time and must not be discarded by another workspace's dismiss.
+  const dismiss = useCallback(
+    (eventIds: string[]) => storeDismiss(eventIds),
+    [storeDismiss],
   );
 
-  return { installs, dismissAll };
+  return { installs, dismiss };
 };

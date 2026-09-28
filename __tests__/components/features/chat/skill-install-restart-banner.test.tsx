@@ -144,6 +144,45 @@ describe("SkillInstallRestartBanner", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("dismissing the shown workspace group leaves a different workspace's pending install visible", async () => {
+    const createConversationSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-1",
+        app_conversation_id: "new-conv-1",
+        agent_server_url: null,
+      } as never);
+    renderBanner();
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(makeInstallEvent("evt-1", "alpha", "/tmp/ws-a"));
+    });
+    await screen.findByTestId("skill-install-restart-banner");
+
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(makeInstallEvent("evt-2", "beta", "/tmp/ws-b"));
+    });
+    await screen.findByTestId("skill-install-restart-banner");
+
+    // Dismiss the banner while it's showing the most recent install's
+    // workspace (ws-b).
+    await userEvent.click(screen.getByTestId("skill-install-restart-dismiss"));
+
+    // ws-a's still-pending install must not have been discarded along with
+    // ws-b's -- the banner should still show, now for ws-a.
+    await screen.findByTestId("skill-install-restart-banner");
+    await userEvent.click(screen.getByTestId("skill-install-restart-action"));
+
+    await waitFor(() => {
+      expect(createConversationSpy.mock.lastCall?.[0]?.workingDirOverride).toBe(
+        "/tmp/ws-a",
+      );
+    });
+  });
+
   it("resurfaces the banner when a new install happens after a dismissal", async () => {
     renderBanner();
     addInstallEvent("evt-1");

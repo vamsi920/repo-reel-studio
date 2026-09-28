@@ -40,6 +40,14 @@ export function useCompactContextAction(perTurnToken: number = 0) {
   const description = t(I18nKey.CONVERSATION$COMPACT_CONTEXT_DESCRIPTION);
 
   const conversationId = conversation?.id;
+  // Read inside the condense mutation's callbacks (below) so a POST that
+  // resolves *after* the user has switched to a different conversation does
+  // not re-arm the compaction watch for whichever conversation is now
+  // active — the callbacks close over the conversation id captured when the
+  // request was fired, which is stale once the id changes.
+  const activeConversationIdRef = React.useRef(conversationId);
+  activeConversationIdRef.current = conversationId;
+
   React.useEffect(
     () => () => {
       // Neither the Usage tab nor the composer's context-window popover
@@ -95,6 +103,7 @@ export function useCompactContextAction(perTurnToken: number = 0) {
   const handleCompact = () => {
     if (!conversation?.id || isCompacting) return;
 
+    const requestConversationId = conversation.id;
     const snapshot =
       useMetricsStore.getState().usage?.per_turn_token ?? perTurnToken;
     // The condense POST can return only after the server already emitted its
@@ -110,10 +119,16 @@ export function useCompactContextAction(perTurnToken: number = 0) {
       },
       {
         onSuccess: () => {
+          if (activeConversationIdRef.current !== requestConversationId) {
+            return;
+          }
           setBeforeToken(snapshot);
           displaySuccessToast(t(I18nKey.CONVERSATION$COMPACT_CONTEXT_STARTED));
         },
         onError: (error) => {
+          if (activeConversationIdRef.current !== requestConversationId) {
+            return;
+          }
           setBeforeToken(null);
           baselineEventIdsRef.current = null;
           displayErrorToast(

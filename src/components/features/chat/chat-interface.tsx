@@ -202,6 +202,14 @@ export function ChatInterface() {
   React.useEffect(() => {
     preserveScrollPosition.current = null;
   }, [conversationId]);
+  // `useScrollToBottom`'s state is the same for the same reason: scrolling
+  // up in one conversation (autoScroll=false) must not carry over and leave
+  // a freshly opened conversation not auto-following its own new messages,
+  // or showing a stale "jump to bottom" affordance.
+  React.useEffect(() => {
+    setAutoScroll(true);
+    setHitBottom(true);
+  }, [conversationId, setAutoScroll, setHitBottom]);
   const maybeLoadOlder = React.useCallback(
     (target: HTMLElement) => {
       if (isProvisioningTask || isLoadingOlderEvents || !hasMoreOlderEvents) {

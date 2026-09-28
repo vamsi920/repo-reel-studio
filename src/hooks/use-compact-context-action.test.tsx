@@ -158,4 +158,36 @@ describe("useCompactContextAction (integration)", () => {
     expect(successToast).not.toHaveBeenCalled();
     expect(errorToast).not.toHaveBeenCalled();
   });
+
+  it("ignores a late onSuccess whose conversation is no longer active", () => {
+    let resolveOnSuccess: (() => void) | undefined;
+    mutateMock.mockImplementation((_vars, opts) => {
+      resolveOnSuccess = opts.onSuccess;
+    });
+
+    const { result, rerender } = renderHook(() => useCompactContextAction(), {
+      wrapper,
+    });
+
+    act(() => result.current.handleCompact());
+    expect(result.current.isCompacting).toBe(false);
+
+    // Switch conversations before the condense POST for the first one ever
+    // resolves (e.g. it was slow, or the user clicked away immediately).
+    act(() => {
+      activeConversation.current = {
+        id: "c2",
+        conversation_url: null,
+        session_api_key: null,
+      };
+    });
+    rerender();
+
+    act(() => resolveOnSuccess?.());
+
+    expect(result.current.isCompacting).toBe(false);
+    expect(successToast).not.toHaveBeenCalledWith(
+      I18nKey.CONVERSATION$COMPACT_CONTEXT_STARTED,
+    );
+  });
 });
