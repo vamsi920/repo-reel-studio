@@ -115,6 +115,31 @@ describe('translation.json', () => {
     });
   });
 
+  it('keeps ordinary-word sidebar labels translated, not allowlisted as brand names', () => {
+    // Regression: these four were previously English-copied-everywhere and
+    // silenced via IDENTICAL_VALUE_ALLOWLIST rather than translated.
+    // SIDEBAR$AGENTOPS is intentionally excluded -- "AgentOps" is a product
+    // name, matching AGENTOPS$TITLE's own allowlisted convention.
+    const keys = [
+      'SIDEBAR$SECURITY',
+      'SIDEBAR$ENVIRONMENT',
+      'SIDEBAR$KNOWLEDGE',
+      'SIDEBAR$USAGE',
+    ];
+
+    keys.forEach((key) => {
+      expect(IDENTICAL_VALUE_ALLOWLIST.has(key), `${key} should not be allowlisted`).toBe(false);
+      const translations = translationJson[key];
+      expect(translations, `missing key ${key}`).toBeDefined();
+      ['ja', 'zh-CN', 'fr'].forEach((lang) => {
+        expect(
+          translations[lang],
+          `${key} is not translated for ${lang}`,
+        ).not.toBe(translations.en);
+      });
+    });
+  });
+
   it('preserves interpolation placeholders in every translation', () => {
     const mismatches: string[] = [];
 
