@@ -146,6 +146,37 @@ describe("MCPServerForm validation", () => {
     });
   });
 
+  it("parses a scientific-notation timeout to its real value instead of truncating at the 'e'", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <MCPServerForm
+        mode="add"
+        server={{ id: "tmp", type: "shttp" }}
+        existingServers={[]}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("server-name-input"), {
+      target: { value: "integrations-hub" },
+    });
+    fireEvent.change(screen.getByTestId("url-input"), {
+      target: { value: "https://api.example.com/mcp" },
+    });
+    // A browser-valid number input value; `parseInt("1e2", 10)` stops at
+    // "e" and returns 1 instead of the real value, 100.
+    fireEvent.change(screen.getByTestId("timeout-input"), {
+      target: { value: "1e2" },
+    });
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ timeout: 100 });
+  });
+
   it("submits header authentication as a tagged auth credential", () => {
     const onSubmit = vi.fn();
 

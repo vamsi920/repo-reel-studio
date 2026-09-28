@@ -213,8 +213,13 @@ export function MCPServerForm({
   const validateTimeout = (timeoutStr: string): string | null => {
     if (!timeoutStr.trim()) return null; // Optional field
 
-    const timeout = parseInt(timeoutStr.trim(), 10);
-    if (Number.isNaN(timeout)) {
+    // `parseInt` stops at the first non-digit, so it under-parses
+    // browser-valid scientific notation ("1e2", numerically 100 -- a value
+    // the <input type="number"> min/max/step accept and submit as-is) down
+    // to 1, passing this check and then saving the wrong number. `Number`
+    // parses the whole string.
+    const timeout = Number(timeoutStr.trim());
+    if (!Number.isInteger(timeout)) {
       return t(I18nKey.SETTINGS$MCP_ERROR_TIMEOUT_INVALID_NUMBER);
     }
     if (timeout <= 0) {
@@ -395,10 +400,13 @@ export function MCPServerForm({
         ...(auth && { auth }),
       };
 
-      // Only add timeout for SHTTP servers
+      // Only add timeout for SHTTP servers. Mirrors `validateTimeout`'s use
+      // of `Number` over `parseInt` -- this value has already passed that
+      // validation, so re-parsing with `parseInt` here would persist a
+      // different (under-parsed) number than the one that was validated.
       if (serverType === "shttp" && timeoutStr) {
-        const timeoutValue = parseInt(timeoutStr, 10);
-        if (!Number.isNaN(timeoutValue)) {
+        const timeoutValue = Number(timeoutStr);
+        if (Number.isInteger(timeoutValue)) {
           serverConfig.timeout = timeoutValue;
         }
       }
