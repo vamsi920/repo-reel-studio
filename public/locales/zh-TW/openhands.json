@@ -2353,6 +2353,8 @@
   "KT$REFRESH_MONTHLY": "Monthly",
   "KT$LAST_GENERATED": "Last generated {{time}}",
   "KT$REFRESH_NEEDS_CONVERSATION": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+  "KT$WATCH_NEEDS_CONVERSATION": "開啟此儲存庫的對話以觀看 KT 影片 — 影片需要即時工作區工作階段。",
+  "KT$WATCH_SOURCE_FILES_UNAVAILABLE": "無法載入此頁面的原始碼檔案 — 僅顯示摘要。",
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",

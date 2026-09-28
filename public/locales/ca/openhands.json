@@ -2353,6 +2353,8 @@
   "KT$REFRESH_MONTHLY": "Monthly",
   "KT$LAST_GENERATED": "Last generated {{time}}",
   "KT$REFRESH_NEEDS_CONVERSATION": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+  "KT$WATCH_NEEDS_CONVERSATION": "Obre la conversa d'aquest repositori per veure el KT — el vídeo necessita una sessió d'espai de treball activa.",
+  "KT$WATCH_SOURCE_FILES_UNAVAILABLE": "No s'han pogut carregar els fitxers font d'aquesta pàgina — es mostra només un resum.",
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",

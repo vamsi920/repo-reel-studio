@@ -2353,6 +2353,8 @@
   "KT$REFRESH_MONTHLY": "Monthly",
   "KT$LAST_GENERATED": "Last generated {{time}}",
   "KT$REFRESH_NEEDS_CONVERSATION": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+  "KT$WATCH_NEEDS_CONVERSATION": "Öffnen Sie die Unterhaltung dieses Repositorys, um KT anzusehen — das Video benötigt eine aktive Workspace-Sitzung.",
+  "KT$WATCH_SOURCE_FILES_UNAVAILABLE": "Die Quelldateien dieser Seite konnten nicht geladen werden — es wird nur eine Zusammenfassung angezeigt.",
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",

@@ -125,9 +125,7 @@ function KtPage() {
       // A cold-rehydrated (Supabase) entry has real Docs content but no live
       // session — Watch KT needs one to download real file content. Real
       // scope boundary, not a bug: open/reopen this repo's conversation.
-      displayErrorToast(
-        "Open this repository's conversation to watch KT — video needs a live workspace session.",
-      );
+      displayErrorToast(t(I18nKey.KT$WATCH_NEEDS_CONVERSATION));
       setMode("read");
       return;
     }
@@ -158,9 +156,7 @@ function KtPage() {
         // error, which is exactly the "not generating at all" failure mode
         // this is fixing. Still render what we can (intro/diagram scenes),
         // but say so.
-        displayErrorToast(
-          `Couldn't load this page's source files — showing a summary only.`,
-        );
+        displayErrorToast(t(I18nKey.KT$WATCH_SOURCE_FILES_UNAVAILABLE));
       }
       const conceptHops = codeGraphHandle
         ? await findConceptFlow(

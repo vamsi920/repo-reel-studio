@@ -116,6 +116,7 @@ import {
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 const REPOSITORY_ID = "acme/api@main";
 
@@ -518,6 +519,79 @@ describe("KtPage", () => {
 
     await user.click(narrationToggle);
     expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("tells the user (via i18n) to open the conversation instead of silently doing nothing when Watch KT is clicked on a cold-rehydrated entry", async () => {
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: KNOWLEDGE,
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    const user = userEvent.setup();
+
+    render(<KtPage />);
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+
+    await waitFor(() =>
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        I18nKey.KT$WATCH_NEEDS_CONVERSATION,
+      ),
+    );
+    expect(readSnapshotFiles).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("kt-video-player")).not.toBeInTheDocument();
+  });
+
+  it("tells the user (via i18n) when every one of a page's source files failed to load, instead of a silent near-empty video", async () => {
+    const pageWithFiles = {
+      ...page("page-a", "Page A"),
+      relevantFiles: [{ path: "src/a.ts" }],
+    };
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: SNAPSHOT,
+          conversationUrl: "http://localhost:3000/conversations/c1",
+          sessionApiKey: "key",
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: { ...KNOWLEDGE, pages: [pageWithFiles, page("page-b", "Page B")] },
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    vi.mocked(readSnapshotFiles).mockResolvedValueOnce({
+      contents: {},
+      failedPaths: ["src/a.ts"],
+    });
+    const user = userEvent.setup();
+
+    render(<KtPage />);
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+
+    await waitFor(() =>
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        I18nKey.KT$WATCH_SOURCE_FILES_UNAVAILABLE,
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toBeInTheDocument(),
+    );
   });
 });
 

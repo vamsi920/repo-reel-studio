@@ -2353,6 +2353,8 @@
   "KT$REFRESH_MONTHLY": "Monthly",
   "KT$LAST_GENERATED": "Last generated {{time}}",
   "KT$REFRESH_NEEDS_CONVERSATION": "Open this repository's conversation to regenerate KT — regenerating needs a live workspace session.",
+  "KT$WATCH_NEEDS_CONVERSATION": "이 리포지토리의 대화를 열어 KT를 시청하세요 — 동영상에는 실시간 작업 공간 세션이 필요합니다.",
+  "KT$WATCH_SOURCE_FILES_UNAVAILABLE": "이 페이지의 소스 파일을 불러올 수 없습니다 — 요약만 표시합니다.",
   "KT$REFRESH_DUE": "Update available",
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
