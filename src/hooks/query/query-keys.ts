@@ -44,6 +44,14 @@ export const ENVIRONMENT_QUERY_KEYS = {
 export const GITHUB_CONNECTION_QUERY_KEY = ["github-connection"] as const;
 export const JIRA_CONNECTION_QUERY_KEY = ["jira-connection"] as const;
 
+/**
+ * Neodevex-authored automation pull requests. Same no-identity-in-key
+ * contract as the two connection keys above -- see `useSupabaseSession`.
+ */
+export const NEODEVEX_PULL_REQUESTS_QUERY_KEY = [
+  "neodevex-pull-requests",
+] as const;
+
 export const LLM_PROFILES_QUERY_KEYS = {
   all: ["llm-profiles"] as const,
 } as const;

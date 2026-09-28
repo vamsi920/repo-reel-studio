@@ -3,10 +3,7 @@ import { listNeodevexPullRequests } from "#/api/git-service/local-github-service
 import type { NeodevexPullRequest } from "#/api/git-service/local-github-service.api";
 import { useGithubConnection } from "./use-github-connection";
 import { LOCAL_AUTOMATION_CATALOG } from "#/manifests/local-automation-catalog";
-
-export const NEODEVEX_PULL_REQUESTS_QUERY_KEY = [
-  "neodevex-pull-requests",
-] as const;
+import { NEODEVEX_PULL_REQUESTS_QUERY_KEY } from "./query-keys";
 
 /**
  * Slugs that don't come from a catalog entry at all, because the automation

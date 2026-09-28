@@ -6,6 +6,7 @@ import {
   ENVIRONMENT_QUERY_KEYS,
   GITHUB_CONNECTION_QUERY_KEY,
   JIRA_CONNECTION_QUERY_KEY,
+  NEODEVEX_PULL_REQUESTS_QUERY_KEY,
 } from "./query-keys";
 
 export type SupabaseSessionStatus = "loading" | "none" | "anonymous" | "real";
@@ -30,15 +31,16 @@ export function useSupabaseSession(): SupabaseSessionState {
 
   React.useEffect(() => {
     if (!supabase) return undefined;
-    // `useEnvironmentOrgId`/`useGithubConnection`/`useJiraConnection` cache
-    // under keys that carry no user/org identity (org id has `staleTime:
-    // Infinity`, the connections default to a plain minute), so a real
-    // identity change in the same tab -- anonymous session upgraded to a
-    // signed-in user, or one real user handing off to another -- would
-    // otherwise keep serving the previous identity's org/connection data
-    // with no error. `previousUserId` starts `undefined` so the listener's
-    // own initial fire (the current session, not a change) never triggers
-    // this; only an actual user-id transition on a later event does.
+    // `useEnvironmentOrgId`/`useGithubConnection`/`useJiraConnection`/
+    // `useNeodevexPullRequests` cache under keys that carry no user/org
+    // identity (org id has `staleTime: Infinity`, the connections and PR
+    // list default to a plain minute), so a real identity change in the
+    // same tab -- anonymous session upgraded to a signed-in user, or one
+    // real user handing off to another -- would otherwise keep serving the
+    // previous identity's org/connection/PR data with no error.
+    // `previousUserId` starts `undefined` so the listener's own initial
+    // fire (the current session, not a change) never triggers this; only
+    // an actual user-id transition on a later event does.
     let previousUserId: string | null | undefined;
     const {
       data: { subscription },
@@ -52,6 +54,9 @@ export function useSupabaseSession(): SupabaseSessionState {
           queryKey: GITHUB_CONNECTION_QUERY_KEY,
         });
         queryClient.invalidateQueries({ queryKey: JIRA_CONNECTION_QUERY_KEY });
+        queryClient.invalidateQueries({
+          queryKey: NEODEVEX_PULL_REQUESTS_QUERY_KEY,
+        });
       }
       previousUserId = nextUserId;
       queryClient.invalidateQueries({ queryKey: SUPABASE_SESSION_QUERY_KEY });

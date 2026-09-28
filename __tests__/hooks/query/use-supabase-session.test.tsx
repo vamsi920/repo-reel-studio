@@ -7,6 +7,7 @@ import {
   ENVIRONMENT_QUERY_KEYS,
   GITHUB_CONNECTION_QUERY_KEY,
   JIRA_CONNECTION_QUERY_KEY,
+  NEODEVEX_PULL_REQUESTS_QUERY_KEY,
 } from "#/hooks/query/query-keys";
 
 type AuthChangeCallback = (
@@ -93,6 +94,9 @@ describe("useSupabaseSession", () => {
     expect(invalidate).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: JIRA_CONNECTION_QUERY_KEY }),
     );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: NEODEVEX_PULL_REQUESTS_QUERY_KEY }),
+    );
   });
 
   it("does not invalidate those caches when the same user's session merely refreshes", () => {
@@ -114,6 +118,9 @@ describe("useSupabaseSession", () => {
     );
     expect(invalidate).not.toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: JIRA_CONNECTION_QUERY_KEY }),
+    );
+    expect(invalidate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: NEODEVEX_PULL_REQUESTS_QUERY_KEY }),
     );
   });
 

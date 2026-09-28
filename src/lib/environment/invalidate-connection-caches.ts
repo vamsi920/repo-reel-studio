@@ -5,9 +5,9 @@ import {
   ENVIRONMENT_QUERY_KEYS,
   GITHUB_CONNECTION_QUERY_KEY,
   JIRA_CONNECTION_QUERY_KEY,
+  NEODEVEX_PULL_REQUESTS_QUERY_KEY,
   SETTINGS_QUERY_KEYS,
 } from "#/hooks/query/query-keys";
-import { NEODEVEX_PULL_REQUESTS_QUERY_KEY } from "#/hooks/query/use-neodevex-pull-requests";
 
 /**
  * Everything that has to be refreshed for a new connection to be usable,
