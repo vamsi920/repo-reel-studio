@@ -362,12 +362,50 @@ describe("applyBudgetApproval", () => {
       ],
     };
 
+    // additionalUsd=1 was resolved against breaches[0] (the "run" breach,
+    // limitUsd: 2) — it must not also be reused verbatim for the workspace
+    // and agent breaches, which are a completely different order of
+    // magnitude. Each gets raised, but by its own magnitude-appropriate
+    // default headroom instead.
     const updated = applyBudgetApproval(policies, approval, 1);
 
     expect(updated.workspaces["/workspace/project"].monthlyBudgetUsd).toBe(
-      101.5,
+      200.5,
     );
-    expect(updated.agents["OpenHands Agent"].agentBudgetUsd).toBe(21.5);
+    expect(updated.agents["OpenHands Agent"].agentBudgetUsd).toBe(40.5);
+  });
+
+  it("regression: a headroom sized for a small run breach does not silently mis-size a much larger shared budget", () => {
+    // This is the exact failure mode the fix addresses: a run costs $2.50
+    // against a $2 run cap at the same moment the workspace has already
+    // spent $100.50 against its $100 monthly cap. Approving with the UI's
+    // own suggested default (sized off the $2 run breach) used to bump the
+    // $100 monthly workspace budget by only $2 — re-breaching within the
+    // next tick or two for some unrelated run.
+    const policies = {
+      workspaces: {
+        "/workspace/project": { runBudgetUsd: 2, monthlyBudgetUsd: 100 },
+      },
+      agents: {},
+    };
+    const approval = {
+      workspaceId: "/workspace/project",
+      agentName: "OpenHands Agent",
+      breaches: [
+        { scope: "run", usedUsd: 2.5, limitUsd: 2 },
+        { scope: "workspace", usedUsd: 100.5, limitUsd: 100 },
+      ],
+    };
+
+    // additionalUsd: 2 mirrors defaultHeadroomUsd's own default for the run
+    // breach (its $2 limit) — the exact value the UI would have suggested.
+    const updated = applyBudgetApproval(policies, approval, 2);
+
+    const raisedTo = updated.workspaces["/workspace/project"].monthlyBudgetUsd;
+    expect(raisedTo).toBe(200.5);
+    // However it got raised, it must clear the collector's own `>=` breach
+    // check by more than a sliver — otherwise the fix is cosmetic.
+    expect(raisedTo - approval.breaches[1].usedUsd).toBeGreaterThan(10);
   });
 
   it("never raises the workspace-wide runBudgetUsd for a 'run' scope breach", () => {

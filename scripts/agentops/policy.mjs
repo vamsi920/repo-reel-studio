@@ -289,19 +289,37 @@ export function requiresConfirmationMode(policy) {
  * raised ceiling is instead stamped onto the approval's own breach entry
  * (`raisedToUsd`, see the `/approvals/:id/approve` handler) and applied only
  * to that run via `evaluateBudgets`'s `runBudgetOverrideUsd`.
+ *
+ * `additionalUsd` is only ever sized against (and only ever shown to the
+ * operator for) `approval.breaches[0]` — see `resolveApprovedHeadroomUsd` and
+ * the headroom input in `approvals-queue.tsx`. Reusing that same raw number
+ * for every *other* simultaneously-breached scope silently mis-sizes shared
+ * budgets whose limit is a completely different order of magnitude: a $2
+ * run-scope headroom would bump a $100 monthly workspace budget by only $2,
+ * which re-breaches on the very next tick for some unrelated run — a change
+ * the operator approving the run breach never saw coming. Any breach other
+ * than `breaches[0]` therefore always gets its own magnitude-appropriate
+ * default headroom (`defaultHeadroomUsd`) instead of the caller-supplied
+ * amount, which only ever applies to the primary breach it was resolved for.
  */
 export function applyBudgetApproval(policies, approval, additionalUsd = 0) {
   const workspaces = { ...(policies?.workspaces ?? {}) };
   const agents = { ...(policies?.agents ?? {}) };
   const workspace = { ...(workspaces[approval.workspaceId] ?? {}) };
 
-  for (const breach of approval.breaches ?? []) {
+  const breaches = approval.breaches ?? [];
+  const primaryBreach = breaches[0] ?? null;
+
+  for (const breach of breaches) {
+    const headroomForBreach =
+      breach === primaryBreach ? additionalUsd : defaultHeadroomUsd(breach);
+
     if (breach.scope === "workspace") {
-      workspace.monthlyBudgetUsd = breach.usedUsd + additionalUsd;
+      workspace.monthlyBudgetUsd = breach.usedUsd + headroomForBreach;
     } else if (breach.scope === "agent") {
       agents[approval.agentName] = {
         ...(agents[approval.agentName] ?? {}),
-        agentBudgetUsd: breach.usedUsd + additionalUsd,
+        agentBudgetUsd: breach.usedUsd + headroomForBreach,
       };
     }
   }
