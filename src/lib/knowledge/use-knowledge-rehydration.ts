@@ -98,6 +98,14 @@ async function tryColdRehydration(
  * a cold store too. Each renders its loading state until this reports
  * `true`, then falls through to its own "not found" only if nothing was
  * hydrated.
+ *
+ * A cold (Supabase-only) entry isn't necessarily the final answer: if this
+ * repositoryId's live conversation appears (or its `workingDir` finally
+ * populates) after the initial cold-vs-live race already settled on cold —
+ * e.g. the connected-repositories list hadn't caught up to a just-created
+ * conversation on the first pass — this hook retries the live path once
+ * more and upgrades the entry in place, silently, without flipping the
+ * already-showing content back to a loading state.
  */
 export function useKnowledgeRehydration(
   repositoryId: string | undefined,
@@ -118,6 +126,20 @@ export function useKnowledgeRehydration(
     const status = s.byRepositoryId[repositoryId]?.status;
     return status === "ready" || status === "error";
   });
+  // A settled entry with no `conversationUrl` is a cold (Supabase-only)
+  // entry — real content, but no session, so Watch KT/CodeGraph can't work.
+  // Without tracking this, a cold entry that won this hook's one-shot
+  // live-vs-cold race (e.g. because the matching conversation's workspace
+  // hadn't reported a `workingDir` yet on the first pass) stayed
+  // session-less forever: `hasEntry` alone made every future run of this
+  // effect bail out at the top before ever looking at `liveMatch` again,
+  // even after the real live conversation's workspace became ready and
+  // `liveKey` changed to reflect it.
+  const hasLiveSession = useKnowledgeStore((s) =>
+    repositoryId
+      ? Boolean(s.byRepositoryId[repositoryId]?.conversationUrl)
+      : false,
+  );
   const hydrate = useKnowledgeStore((s) => s.hydrate);
   const startGenerating = useKnowledgeStore((s) => s.startGenerating);
   const setProgress = useKnowledgeStore((s) => s.setProgress);
@@ -152,12 +174,23 @@ export function useKnowledgeRehydration(
   liveMatchRef.current = liveMatch;
 
   useEffect(() => {
-    if (hasEntry || !repositoryId) {
-      // An entry already exists (ours or a sibling route's) -- never start a
-      // second, duplicate rehydration/generation attempt for it, but only
-      // report "checked" once it has actually settled (see `isEntrySettled`
-      // above); re-runs as the entry's status changes so a foreign
-      // in-flight generation still flips this to `true` once it lands.
+    // A settled, session-less entry can still be upgraded: if a live
+    // conversation for this exact repositoryId has since appeared (or its
+    // `workingDir` has since populated), attempt the real live-generation
+    // path against it instead of leaving the cold Supabase content as the
+    // permanent, session-less answer.
+    const canUpgradeExistingEntry =
+      hasEntry &&
+      isEntrySettled &&
+      !hasLiveSession &&
+      Boolean(liveMatchRef.current?.workingDir);
+    if ((hasEntry && !canUpgradeExistingEntry) || !repositoryId) {
+      // An entry already exists (ours or a sibling route's) and there's
+      // nothing new to try -- never start a second, duplicate rehydration/
+      // generation attempt for it, but only report "checked" once it has
+      // actually settled (see `isEntrySettled` above); re-runs as the
+      // entry's status changes so a foreign in-flight generation still
+      // flips this to `true` once it lands.
       setChecked(isEntrySettled);
       return undefined;
     }
@@ -172,18 +205,36 @@ export function useKnowledgeRehydration(
     // own loading flag, not on the list being empty: a user with no open
     // conversations at all has a permanently empty list, and gating on that
     // left this page spinning forever instead of falling back to the
-    // persisted Supabase content this hook exists to load.
-    if (liveKey === null && connectedLoading) return undefined;
-    if (attemptedRef.current === repositoryId) return undefined;
-    attemptedRef.current = repositoryId;
+    // persisted Supabase content this hook exists to load. Only applies to
+    // a genuinely fresh attempt -- an upgrade attempt already has a settled
+    // entry to fall back on, so it must not wait on this.
+    if (!canUpgradeExistingEntry && liveKey === null && connectedLoading) {
+      return undefined;
+    }
+    // A fresh attempt is deduped per repositoryId (only one first attempt
+    // ever runs); an upgrade attempt is deduped per repositoryId+liveKey so
+    // a *new* live match (or its `workingDir` finally populating) still
+    // gets its own attempt even though an older liveKey already tried and
+    // lost the race to cold rehydration.
+    const attemptKey = canUpgradeExistingEntry
+      ? `${repositoryId}::upgrade::${liveKey}`
+      : repositoryId;
+    if (attemptedRef.current === attemptKey) return undefined;
+    attemptedRef.current = attemptKey;
     // `checked` is local component state, but this route (`kt/:repositoryId`)
     // is reused across navigations between repositories — React doesn't
     // remount just because the param changed. Without this reset, switching
     // from a repo that had already settled `checked: true` (e.g. an earlier,
     // already-hydrated repo) straight to a fresh repo that still needs this
     // attempt would render "not found" for the new repo until the attempt
-    // below finishes, instead of the loading state it's actually in.
-    setChecked(false);
+    // below finishes, instead of the loading state it's actually in. An
+    // upgrade attempt already has real, presentable content from the
+    // existing settled entry, so it must not flip back to an unchecked/
+    // loading state and hide that content while it silently tries to attach
+    // a live session behind the scenes.
+    if (!canUpgradeExistingEntry) {
+      setChecked(false);
+    }
 
     let cancelled = false;
     // `generateKnowledge` calls `store.startGenerating` synchronously at the
@@ -278,15 +329,31 @@ export function useKnowledgeRehydration(
     });
     return () => {
       cancelled = true;
-      // A cancelled attempt settles nothing (no store entry, no `checked`),
-      // so it must not count as this repository's one attempt — otherwise
-      // the re-run that follows bails out here and the page spins forever.
-      if (attemptedRef.current === repositoryId) attemptedRef.current = null;
+      // A cancelled *fresh* attempt settles nothing (no store entry, no
+      // `checked`), so it must not count as this repository's one attempt —
+      // otherwise the re-run that follows bails out here and the page spins
+      // forever. An *upgrade* attempt is different: `generateKnowledge`
+      // failing internally (e.g. DeepWiki down) leaves the entry's status as
+      // "error", which `hydrate`'s cold-rehydration fallback happily
+      // overwrites every single time it's asked -- flipping `conversationUrl`
+      // back to null and making `hasLiveSession` false again, which looks
+      // exactly like a brand-new upgrade opportunity to this same effect.
+      // Without permanently locking an upgrade attempt in per `liveKey`
+      // (never reset here), a live conversation whose generation keeps
+      // failing retriggers this same attempt/fail/cold-rehydrate cycle
+      // forever -- confirmed by reproduction, not just reasoning: the
+      // unguarded version hung the "falls through to cold rehydration when
+      // the live generation attempt errors" test until the process ran out
+      // of memory.
+      if (!canUpgradeExistingEntry && attemptedRef.current === attemptKey) {
+        attemptedRef.current = null;
+      }
     };
   }, [
     repositoryId,
     hasEntry,
     isEntrySettled,
+    hasLiveSession,
     hydrate,
     liveKey,
     connectedLoading,

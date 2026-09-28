@@ -248,6 +248,78 @@ describe("useKnowledgeRehydration", () => {
     ).toBe("persisted-sha");
   });
 
+  it("upgrades a cold (session-less) entry to a live one once its matching conversation's workspace becomes ready", async () => {
+    // First pass: no live conversation for this repo yet -- the one-shot
+    // race falls back to cold rehydration, same as the "goes straight to
+    // cold rehydration" case above.
+    resolveOrgId.mockResolvedValue("org-1");
+    findRepositoryUuid.mockResolvedValue("repo-uuid");
+    getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
+
+    const { result, rerender } = renderHook(
+      ({ repoId }: { repoId: string }) => useKnowledgeRehydration(repoId),
+      { initialProps: { repoId: repositoryId } },
+    );
+
+    await waitFor(() => expect(result.current).toBe(true));
+    expect(generateKnowledge).not.toHaveBeenCalled();
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[repositoryId]
+        ?.conversationUrl,
+    ).toBeNull();
+
+    // Second pass: the matching conversation's workspace has since become
+    // ready (e.g. the connected-repositories list caught up to a
+    // just-created conversation) -- the cold, session-less entry should be
+    // upgraded to a real live one rather than staying stuck forever.
+    resolveCommitSha.mockResolvedValue("live-sha");
+    generateKnowledge.mockImplementation(
+      async (snapshot, _url, _key, store) => {
+        store.startGenerating(
+          snapshot,
+          "https://conversation.example",
+          "session-key",
+        );
+        store.setReady(snapshot.repositoryId, persistedKnowledge(), []);
+      },
+    );
+    useConnectedRepositoriesMock.mockReturnValue({
+      repositories: [
+        {
+          repositoryId,
+          owner: "acme",
+          repo: "api",
+          branch: "main",
+          conversationUrl: "https://conversation.example",
+          sessionApiKey: "session-key",
+          workingDir: "/workspace/acme-api",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+    rerender({ repoId: repositoryId });
+
+    await waitFor(() =>
+      expect(
+        useKnowledgeStore.getState().byRepositoryId[repositoryId]
+          ?.conversationUrl,
+      ).toBe("https://conversation.example"),
+    );
+    expect(resolveCommitSha).toHaveBeenCalledWith(
+      "acme",
+      "api",
+      "/workspace/acme-api",
+      "https://conversation.example",
+      "session-key",
+    );
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[repositoryId]
+        ?.sessionApiKey,
+    ).toBe("session-key");
+    expect(result.current).toBe(true);
+  });
+
   it("leaves the store untouched and still reports checked when nothing was ever generated for this repo", async () => {
     resolveOrgId.mockResolvedValue("org-1");
     findRepositoryUuid.mockResolvedValue(null);
