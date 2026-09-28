@@ -60,6 +60,7 @@ function seedRepository(
     owner: string;
     repo: string;
     branch: string;
+    localPath: string;
   }> = {},
 ) {
   const repositoryId = overrides.repositoryId ?? "acme/api@main";
@@ -73,7 +74,8 @@ function seedRepository(
           repo: overrides.repo ?? "api",
           branch: overrides.branch ?? "main",
           commitSha: "abcdef1234567890",
-          localPath: `/workspace/${overrides.repo ?? "api"}`,
+          localPath:
+            overrides.localPath ?? `/workspace/${overrides.repo ?? "api"}`,
         },
         conversationUrl: null,
         sessionApiKey: null,
@@ -528,6 +530,41 @@ describe("Security route", () => {
       expect(result.current.repositories).toEqual([
         { repositoryId: "acme/api@main", label: "acme/api", branch: "main" },
       ]);
+    });
+
+    it("ignores a cold-rehydrated knowledge-store entry with no checkout -- there is no working directory to scope to", () => {
+      // Regression: `tryColdRehydration` (use-knowledge-rehydration.ts)
+      // seeds a content-only store entry with `localPath: ""` for a repo
+      // whose Docs were restored from Supabase with no live session. Before
+      // this fix, that empty `localPath` was handed out directly as
+      // `workspaceId`, so every such repository collided on the same empty
+      // scope identity instead of being reported as having no checkout.
+      seedRepository({ localPath: "" });
+
+      const { result } = renderHook(() => useSecurityWorkspaceScope(null));
+
+      expect(result.current.scope).toEqual({ state: "no-repositories" });
+      expect(result.current.repositories).toEqual([]);
+    });
+
+    it("falls back to a live conversation's real working directory when the same repository's store entry is cold-rehydrated", () => {
+      seedRepository({ localPath: "" });
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api-live",
+      });
+
+      const { result } = renderHook(() => useSecurityWorkspaceScope(null));
+
+      expect(result.current.scope).toMatchObject({
+        state: "scoped",
+        scope: { workspaceId: "/workspace/api-live", commitSha: null },
+      });
     });
 
     it("keeps the same result reference across a re-render when nothing relevant changed", () => {

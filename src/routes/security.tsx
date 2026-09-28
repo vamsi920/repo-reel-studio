@@ -87,9 +87,14 @@ export interface SecurityWorkspaceScopeState {
  * for any repository the store doesn't already know about; it has no resolved
  * commit yet, so `commitSha` is left `null` rather than invented, and a
  * candidate with no working directory yet (still provisioning) is left out —
- * there is no checkout to scope to. A store entry, when one exists, always
- * wins: it reflects a real generation or a resolved commit, strictly more
- * than a bare open conversation does.
+ * there is no checkout to scope to. The same is true of a cold-rehydrated
+ * store entry (content-only Docs restored from Supabase with no live
+ * session): its `localPath` is empty, so it is left out too rather than
+ * handing out an empty, collision-prone `workspaceId` — a live conversation
+ * for the same repository, if one exists, can still supply a real one via
+ * the fallback below. A store entry, when one exists and has a real
+ * checkout, always wins: it reflects a real generation or a resolved
+ * commit, strictly more than a bare open conversation does.
  *
  * With no `?repository=`, the connected repositories are ordered by id and the
  * first wins, so a reload cannot quietly re-scope the page just because the
@@ -118,9 +123,19 @@ export function useSecurityWorkspaceScope(
       { scope: SecurityWorkspaceScope; branch: string }
     >();
     Object.values(byRepositoryId).forEach(({ snapshot }) => {
+      const workspaceId = workspaceIdForSnapshot(snapshot);
+      // A cold-rehydrated store entry (content-only Docs generated from
+      // Supabase, no live session -- see useKnowledgeRehydration's
+      // tryColdRehydration) has an empty `localPath`: there is no real
+      // checkout for Security to scope to, and every such repository would
+      // otherwise collide on the same empty workspaceId. Skip it here the
+      // same way a connected candidate with no workingDir is skipped below;
+      // a live conversation for the same repository, if one exists, can
+      // still supply a real workspaceId via the `connected` loop.
+      if (!workspaceId.trim()) return;
       byId.set(snapshot.repositoryId, {
         scope: {
-          workspaceId: workspaceIdForSnapshot(snapshot),
+          workspaceId,
           repositoryId: snapshot.repositoryId,
           label: `${snapshot.owner}/${snapshot.repo}`,
           commitSha: snapshot.commitSha,
