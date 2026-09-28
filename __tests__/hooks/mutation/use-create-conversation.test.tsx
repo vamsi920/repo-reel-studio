@@ -176,6 +176,52 @@ describe("useCreateConversation", () => {
     });
   });
 
+  it("warns when a GitHub repo is attached to a local conversation but no clone instruction could be built", async () => {
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
+    vi.spyOn(
+      AgentServerConversationService,
+      "createConversation",
+    ).mockResolvedValue({
+      id: "task-id",
+      app_conversation_id: "conv-1",
+      agent_server_url: "http://agent-server.local",
+    } as never);
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    // No local GitHub connection is configured in this test environment, so
+    // `buildLocalGithubCloneInstructions` resolves to null (same as a real
+    // session with a dead/disconnected GitHub OAuth per the standing
+    // incident) -- the repo is attached via metadata but nothing will clone
+    // it, and that gap must not stay silent.
+    await result.current.mutateAsync({
+      query: "hi",
+      repository: {
+        name: "owner/repo",
+        gitProvider: "github",
+        branch: "main",
+      },
+    });
+
+    await waitFor(() => {
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "[create-conversation] no clone instruction was sent for attached repository",
+        "owner/repo",
+        "-- local GitHub connection may be missing or its credential mint failed",
+      );
+    });
+
+    consoleWarnSpy.mockRestore();
+  });
+
   it("launches new local conversations from the active AgentProfile (#3727)", async () => {
     listAgentProfilesMock.mockResolvedValue({
       profiles: [],

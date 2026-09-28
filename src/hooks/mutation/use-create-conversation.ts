@@ -259,6 +259,27 @@ export const useCreateConversation = () => {
       const cloneInstructions = repository
         ? await buildLocalGithubCloneInstructions(repository)
         : null;
+      // A repo attached to a local (non-Cloud) conversation with no local
+      // GitHub connection (or a failed credential mint) gets metadata
+      // (`selected_repository`) but no actual `git clone` instruction --
+      // silently, with nothing in the conversation to say so. Logged so this
+      // is distinguishable from "the clone happened" while investigating
+      // reports of live conversations that never actually got a working
+      // checkout for their attached repo (see the Watch KT rehydration
+      // investigation in use-knowledge-rehydration.ts, which has no visibility
+      // into whether a clone instruction was ever sent in the first place).
+      if (
+        repository &&
+        !isCloud &&
+        repository.gitProvider === "github" &&
+        !cloneInstructions
+      ) {
+        console.warn(
+          "[create-conversation] no clone instruction was sent for attached repository",
+          repository.name,
+          "-- local GitHub connection may be missing or its credential mint failed",
+        );
+      }
       const effectiveConversationInstructions = cloneInstructions
         ? [cloneInstructions, conversationInstructions]
             .filter(Boolean)
