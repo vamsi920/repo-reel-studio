@@ -525,6 +525,47 @@ describe("ActivityLogItem — Proactivation dismiss reason draft", () => {
       ),
     ).toHaveValue("");
   });
+
+  // Previously this dialog rendered its own backdrop/close markup instead of
+  // the shared `ModalBackdrop`, the same pre-fix pattern `DeleteConfirmationModal`
+  // and `TurnOffConfirmationModal` had: its Escape handler lived on a plain
+  // `role="presentation"` div beside the dialog content, not above it, so a
+  // keydown bubbling up from a focused control inside the dialog never
+  // reached it -- Escape did nothing.
+  it("closes the dismiss dialog on Escape while focus is inside it", async () => {
+    const automation = makeAutomation({
+      prompt: buildProactivationPrompt({
+        watchAreas: ["dependency"],
+        autonomyLevel: "prepare-fix",
+        repository: "acme/repo",
+      }),
+    });
+    const run = makeRun({
+      status: AutomationRunStatus.COMPLETED,
+      conversation_id: "conv-1",
+    });
+    renderItem(run, automation);
+
+    const user = userEvent.setup();
+    fireEvent.click(
+      screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS),
+    );
+    expect(
+      screen.getByPlaceholderText(
+        I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+      ),
+    ).toBeInTheDocument();
+
+    // Focus starts inside the dialog (moved there on open); Escape from here
+    // used to be swallowed because the old handler lived on a DOM sibling.
+    await user.keyboard("{Escape}");
+
+    expect(
+      screen.queryByPlaceholderText(
+        I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_REASON_PLACEHOLDER,
+      ),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("ActivityLogItem — Proactivation dismissal persistence", () => {

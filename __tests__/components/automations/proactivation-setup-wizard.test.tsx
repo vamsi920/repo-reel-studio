@@ -88,6 +88,29 @@ function Wizard({
   );
 }
 
+// Previously this wizard rendered its own backdrop/close markup instead of
+// the shared `ModalBackdrop`, the same pre-fix pattern `DeleteConfirmationModal`
+// and `TurnOffConfirmationModal` had: its Escape handler lived on a plain
+// `role="presentation"` div beside the dialog content, not above it, so a
+// keydown bubbling up from a focused control inside the dialog never reached
+// it -- Escape did nothing -- and neither Tab-trapping nor initial focus were
+// wired up at all.
+describe("ProactivationSetupWizard modal accessibility", () => {
+  it("closes on Escape while focus is inside the dialog", async () => {
+    mockUseUserProviders.mockReturnValue({ providers: ["github"] });
+
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<Wizard onClose={onClose} />);
+
+    // Focus starts inside the dialog (moved there on open); Escape from here
+    // used to be swallowed because the old handler lived on a DOM sibling.
+    await user.keyboard("{Escape}");
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("ProactivationSetupWizard repositories step", () => {
   it("re-syncs selectedProvider once the async provider list resolves, instead of staying stuck with no input", async () => {
     // Mirrors the real flow: useUserProviders resolves providers

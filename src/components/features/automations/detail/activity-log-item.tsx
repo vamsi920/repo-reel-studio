@@ -8,6 +8,7 @@ import {
   type AutomationRun,
 } from "#/types/automation";
 import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
+import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { isRateLimitErrorDetail } from "#/components/features/home/featured-automations/automation-run-health";
 import { RunStatusBadge } from "./run-status-badge";
 import { RunLogsModal } from "./run-logs-modal";
@@ -90,15 +91,10 @@ function DismissReasonModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onCancel}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onCancel();
-        }}
-        role="presentation"
-      />
+    <ModalBackdrop
+      onClose={onCancel}
+      aria-label={t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_TITLE)}
+    >
       <div className="relative w-full max-w-sm rounded-xl border border-[var(--oh-border)] bg-[var(--oh-surface)] p-5">
         <h3 className="text-sm font-semibold text-content">
           {t(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISS_TITLE)}
@@ -129,7 +125,7 @@ function DismissReasonModal({
           </BrandButton>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }
 

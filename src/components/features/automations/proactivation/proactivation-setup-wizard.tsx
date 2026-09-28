@@ -14,6 +14,8 @@ import { useWorkspaceMemoryStore } from "#/stores/workspace-memory-store";
 import { GitProviderDropdown } from "#/components/features/home/git-provider-dropdown/git-provider-dropdown";
 import { GitRepoDropdown } from "#/components/features/home/git-repo-dropdown/git-repo-dropdown";
 import { BrandButton } from "#/components/features/settings/brand-button";
+import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
+import { ModalCloseButton } from "#/components/shared/modals/modal-close-button";
 import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
 import { modalTitleLgMediumClassName } from "#/utils/modal-classes";
 import { cn } from "#/utils/utils";
@@ -352,25 +354,18 @@ export function ProactivationSetupWizard({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={handleClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") handleClose();
-        }}
-        role="presentation"
-      />
+    <ModalBackdrop
+      onClose={isSubmitting ? undefined : onClose}
+      closeOnEscape={!isSubmitting}
+      closeOnBackdropClick={!isSubmitting}
+      aria-label={t(I18nKey.AUTOMATIONS$PROACTIVATION_WIZARD_TITLE)}
+    >
       <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[var(--oh-border)] bg-[var(--oh-surface)] p-6">
-        <button
-          type="button"
-          onClick={handleClose}
+        <ModalCloseButton
+          onClose={handleClose}
+          testId="proactivation-wizard-close"
           disabled={isSubmitting}
-          className="absolute right-4 top-4 text-muted hover:text-foreground"
-          aria-label={t(I18nKey.AUTOMATIONS$PROACTIVATION_CANCEL)}
-        >
-          <XMarkIcon className="size-5" />
-        </button>
+        />
 
         <h2 className={modalTitleLgMediumClassName}>
           {t(I18nKey.AUTOMATIONS$PROACTIVATION_WIZARD_TITLE)}
@@ -675,6 +670,6 @@ export function ProactivationSetupWizard({
           )}
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 }
