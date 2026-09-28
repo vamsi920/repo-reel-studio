@@ -20,7 +20,7 @@ import { useEnvironmentReadiness } from "#/hooks/query/use-environment-readiness
 
 function EnvironmentRunbookScreen() {
   const { t } = useTranslation("openhands");
-  const { data: checks } = useEnvironmentChecks(100);
+  const { data: checks, isLoading: checksLoading } = useEnvironmentChecks(100);
   const { data: profile } = useEnvironmentProfile();
   const { data: connections } = useConnections();
   const readiness = useEnvironmentReadiness(profile ?? null);
@@ -160,7 +160,14 @@ function EnvironmentRunbookScreen() {
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">
           {t(I18nKey.ENVIRONMENT$CHECK_HISTORY)}
         </h2>
-        {checks && checks.length > 0 ? (
+        {checksLoading ? (
+          <p
+            data-testid="check-history-loading"
+            className="text-sm text-[var(--text-secondary)]"
+          >
+            {t(I18nKey.ENVIRONMENT$CHECK_HISTORY_LOADING)}
+          </p>
+        ) : checks && checks.length > 0 ? (
           <div className="overflow-x-auto">
             <table
               data-testid="check-history"

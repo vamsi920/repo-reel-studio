@@ -3191,6 +3191,7 @@
   "ENVIRONMENT$RUNBOOK_SUBTITLE": "Every check that has run, and everything needed to hand this install over.",
   "ENVIRONMENT$CHECK_HISTORY": "Check history",
   "ENVIRONMENT$CHECK_HISTORY_EMPTY": "No checks have run yet.",
+  "ENVIRONMENT$CHECK_HISTORY_LOADING": "Caricamento della cronologia dei controlli…",
   "ENVIRONMENT$HANDOFF_PACKET": "Admin handoff packet",
   "ENVIRONMENT$HANDOFF_PACKET_HELP": "Callback URLs, permission scopes, firewall rules and environment variables, written out for the customer's own administrators.",
   "ENVIRONMENT$GENERATE_PACKET": "Generate packet",

@@ -54263,6 +54263,23 @@
     "tr": "No checks have run yet.",
     "uk": "No checks have run yet."
   },
+  "ENVIRONMENT$CHECK_HISTORY_LOADING": {
+    "en": "Loading check history…",
+    "ja": "チェック履歴を読み込み中…",
+    "zh-CN": "正在加载检查历史记录…",
+    "zh-TW": "正在載入檢查記錄…",
+    "ko-KR": "점검 기록을 불러오는 중…",
+    "no": "Laster sjekkhistorikk…",
+    "ar": "جارٍ تحميل سجل الفحوصات…",
+    "de": "Prüfverlauf wird geladen…",
+    "fr": "Chargement de l'historique des vérifications…",
+    "it": "Caricamento della cronologia dei controlli…",
+    "pt": "Carregando histórico de verificações…",
+    "es": "Cargando historial de comprobaciones…",
+    "ca": "Carregant l'historial de comprovacions…",
+    "tr": "Kontrol geçmişi yükleniyor…",
+    "uk": "Завантаження історії перевірок…"
+  },
   "ENVIRONMENT$HANDOFF_PACKET": {
     "en": "Admin handoff packet",
     "ja": "Admin handoff packet",

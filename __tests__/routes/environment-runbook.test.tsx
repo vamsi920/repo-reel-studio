@@ -6,8 +6,13 @@ import EnvironmentRunbookScreen from "#/routes/environment-runbook";
 import { buildEnvironmentBundle } from "#/lib/environment/bundle";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
+const mockUseEnvironmentChecks = vi.fn(() => ({
+  data: [] as unknown[] | undefined,
+  isLoading: false,
+}));
+
 vi.mock("#/hooks/query/use-environment-checks", () => ({
-  useEnvironmentChecks: () => ({ data: [] }),
+  useEnvironmentChecks: () => mockUseEnvironmentChecks(),
 }));
 
 vi.mock("#/hooks/query/use-environment-profile", () => ({
@@ -48,6 +53,40 @@ vi.mock("#/utils/custom-toast-handlers", () => ({
 beforeEach(() => {
   vi.mocked(buildEnvironmentBundle).mockReset();
   vi.mocked(displayErrorToast).mockReset();
+  mockUseEnvironmentChecks.mockReturnValue({ data: [], isLoading: false });
+});
+
+describe("Environment runbook check history", () => {
+  it("shows a loading state instead of the empty state while checks are still loading", () => {
+    // `checks` is `undefined` both while the query is loading and once it has
+    // resolved to zero rows -- collapsing those into one `checks && checks.length
+    // > 0` branch told a user whose history simply hasn't loaded yet that no
+    // checks have ever run.
+    mockUseEnvironmentChecks.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    render(<EnvironmentRunbookScreen />);
+
+    expect(screen.getByTestId("check-history-loading")).toBeInTheDocument();
+    expect(
+      screen.queryByText("ENVIRONMENT$CHECK_HISTORY_EMPTY"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the empty state once loading has finished with no checks", () => {
+    mockUseEnvironmentChecks.mockReturnValue({ data: [], isLoading: false });
+
+    render(<EnvironmentRunbookScreen />);
+
+    expect(
+      screen.getByText("ENVIRONMENT$CHECK_HISTORY_EMPTY"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("check-history-loading"),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("Environment runbook export bundle", () => {
