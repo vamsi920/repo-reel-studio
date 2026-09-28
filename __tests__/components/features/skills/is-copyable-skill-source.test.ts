@@ -16,4 +16,20 @@ describe("isCopyableSkillSource", () => {
       isCopyableSkillSource("https://github.com/example/skills"),
     ).toBe(true);
   });
+
+  it("returns true for relative and home-relative paths", () => {
+    expect(isCopyableSkillSource("./skills/foo/SKILL.md")).toBe(true);
+    expect(isCopyableSkillSource("../skills/foo/SKILL.md")).toBe(true);
+    expect(isCopyableSkillSource("~/.agents/skills/foo/SKILL.md")).toBe(true);
+  });
+
+  it("returns true for Windows drive-letter paths", () => {
+    expect(isCopyableSkillSource("C:\\skills\\foo\\SKILL.md")).toBe(true);
+    expect(isCopyableSkillSource("D:/skills/foo/SKILL.md")).toBe(true);
+  });
+
+  it("returns false for undefined and values with no path/URL shape", () => {
+    expect(isCopyableSkillSource(undefined)).toBe(false);
+    expect(isCopyableSkillSource("personal")).toBe(false);
+  });
 });

@@ -12,11 +12,11 @@ import {
 import { I18nKey } from "#/i18n/declaration";
 import { useActiveBackendContext } from "#/contexts/active-backend-context";
 import { isNoBackend } from "#/api/backend-registry/active-store";
-
-/** Only the Skills item points to a cloud-hosted page today. */
-const CLOUD_LINKED_EXTENSION_PATH = "/skills";
-/** Plugins are not available on Cloud backends, so this item is hidden there. */
-const CLOUD_HIDDEN_EXTENSION_PATH = "/plugins";
+import {
+  buildCloudSkillsUrl,
+  CLOUD_HIDDEN_EXTENSION_PATH,
+  CLOUD_LINKED_EXTENSION_PATH,
+} from "./extensions-nav-constants";
 
 interface ExtensionNavItem {
   to: string;
@@ -105,7 +105,7 @@ export function ExtensionsNavigation() {
           );
 
           if (isCloudSkillsLink) {
-            const cloudSkillsUrl = `${backend.host.replace(/\/+$/, "")}/settings/skills`;
+            const cloudSkillsUrl = buildCloudSkillsUrl(backend.host);
             return (
               <a
                 key={item.to}

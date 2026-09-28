@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPluginsViewModel,
+  matchesPluginSearch,
   matchesPluginStatus,
 } from "#/components/features/plugins/build-plugins-view-model";
 import type { MarketplacePlugin, LocalPlugin } from "#/api/plugins-service";
@@ -165,6 +166,42 @@ describe("buildPluginsViewModel", () => {
     });
   });
 
+  it("sorts installed plugins first, then local, then available, alphabetically within each group", () => {
+    const installedB: InstalledPluginInfo = {
+      ...installedPlugin,
+      name: "zeta-installed",
+    };
+    const installedA: InstalledPluginInfo = {
+      ...installedPlugin,
+      name: "alpha-installed",
+    };
+    const localB: LocalPlugin = { ...localPlugin, name: "zeta-local" };
+    const localA: LocalPlugin = { ...localPlugin, name: "alpha-local" };
+    const availableB: MarketplacePlugin = {
+      ...catalogPlugin,
+      name: "zeta-available",
+    };
+    const availableA: MarketplacePlugin = {
+      ...catalogPlugin,
+      name: "alpha-available",
+    };
+
+    const result = buildPluginsViewModel(
+      [availableB, availableA],
+      [installedB, installedA],
+      [localB, localA],
+    );
+
+    expect(result.map((plugin) => plugin.name)).toEqual([
+      "alpha-installed",
+      "zeta-installed",
+      "alpha-local",
+      "zeta-local",
+      "alpha-available",
+      "zeta-available",
+    ]);
+  });
+
   it("carries a local plugin's contents into its entry", () => {
     const result = buildPluginsViewModel(
       [],
@@ -184,5 +221,43 @@ describe("buildPluginsViewModel", () => {
       skills: [{ name: "ambient-skill" }],
       files: ["SKILL.md"],
     });
+  });
+});
+
+describe("matchesPluginSearch", () => {
+  const [plugin] = buildPluginsViewModel([catalogPlugin], [installedPlugin]);
+
+  it("matches everything when the query is empty or whitespace-only", () => {
+    expect(matchesPluginSearch(plugin, "")).toBe(true);
+    expect(matchesPluginSearch(plugin, "   ")).toBe(true);
+  });
+
+  it("matches case-insensitively against name, description, source, repoPath, and ref", () => {
+    expect(matchesPluginSearch(plugin, "DEMO-plugin")).toBe(true);
+    expect(matchesPluginSearch(plugin, "installed description")).toBe(true);
+    expect(matchesPluginSearch(plugin, "openhands/extensions")).toBe(true);
+    expect(matchesPluginSearch(plugin, "plugins/demo-plugin")).toBe(true);
+    expect(matchesPluginSearch(plugin, "MAIN")).toBe(true);
+  });
+
+  it("returns false when no field contains the query", () => {
+    expect(matchesPluginSearch(plugin, "nonexistent-term")).toBe(false);
+  });
+
+  it("does not throw when optional fields are null", () => {
+    const [bare] = buildPluginsViewModel(
+      [],
+      [
+        {
+          ...installedPlugin,
+          description: null,
+          resolved_ref: null,
+          repo_path: null,
+        },
+      ],
+    );
+
+    expect(matchesPluginSearch(bare, "demo")).toBe(true);
+    expect(matchesPluginSearch(bare, "anything-else")).toBe(false);
   });
 });
