@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Назад",
   "TUTORIAL$NEXT": "Далі",
   "TUTORIAL$FINISH": "Завершити",
+  "TUTORIAL$PLAY": "Відтворювати тур автоматично",
+  "TUTORIAL$PAUSE": "Призупинити автоматичне відтворення",
   "TUTORIAL$STEP_WELCOME_TITLE": "Вітаємо! Коротка екскурсія",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "Менш ніж за хвилину ми покажемо кожну частину застосунку. Використовуйте «Далі» й «Назад» або клавіші зі стрілками.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Почніть розмову",

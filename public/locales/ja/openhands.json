@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "戻る",
   "TUTORIAL$NEXT": "次へ",
   "TUTORIAL$FINISH": "完了",
+  "TUTORIAL$PLAY": "ツアーを自動再生",
+  "TUTORIAL$PAUSE": "自動再生を一時停止",
   "TUTORIAL$STEP_WELCOME_TITLE": "ようこそ！簡単にご案内します",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "1分以内でアプリの各機能をご紹介します。「次へ」「戻る」または矢印キーで移動できます。",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "会話を始める",

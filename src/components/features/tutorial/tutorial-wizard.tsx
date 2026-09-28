@@ -1,11 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { Pause, Play, X } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
 import { useNavigation } from "#/context/navigation-context";
 import { cn } from "#/utils/utils";
 import { getTutorialSteps } from "./tutorial-steps";
-import { useTutorialStore } from "./tutorial-store";
+import { getCaptionDurationMs, useTutorialStore } from "./tutorial-store";
 import { TutorialSpotlight } from "./tutorial-spotlight";
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -20,7 +20,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * The guided tour itself: a caption bar pinned to the bottom of the screen,
  * like video subtitles, narrating one area of the app per step. Each step
  * navigates to the page it describes so the user sees it behind the caption.
- * Arrow keys move between steps; Escape skips the tour.
+ * Arrow keys move between steps; Escape skips the tour. In "watch" mode the
+ * captions advance on their own, each held long enough to read, and stop on
+ * the last step so the user finishes deliberately.
  */
 export function TutorialWizard() {
   const { t } = useTranslation("openhands");
@@ -29,10 +31,14 @@ export function TutorialWizard() {
   const stepIndex = useTutorialStore((state) => state.stepIndex);
   const goTo = useTutorialStore((state) => state.goTo);
   const close = useTutorialStore((state) => state.close);
+  const isPlaying = useTutorialStore((state) => state.isPlaying);
+  const setPlaying = useTutorialStore((state) => state.setPlaying);
 
   const step = steps[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
+  const subtitle = t(step.subtitleKey);
+  const captionDurationMs = getCaptionDurationMs(subtitle);
 
   React.useEffect(() => {
     if (step.route && currentPath !== step.route) navigate(step.route);
@@ -47,6 +53,20 @@ export function TutorialWizard() {
   const goBack = React.useCallback(() => {
     goTo(stepIndex - 1, steps.length);
   }, [goTo, stepIndex, steps.length]);
+
+  // Manual Back/Next while playing restarts the timer for the new caption.
+  React.useEffect(() => {
+    if (!isPlaying) return undefined;
+    const timer = window.setTimeout(() => {
+      if (isLast) setPlaying(false);
+      else goTo(stepIndex + 1, steps.length);
+    }, captionDurationMs);
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, isLast, stepIndex, steps.length, captionDurationMs]);
+
+  const playToggleLabel = t(
+    isPlaying ? I18nKey.TUTORIAL$PAUSE : I18nKey.TUTORIAL$PLAY,
+  );
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -105,8 +125,24 @@ export function TutorialWizard() {
           aria-live="polite"
           className="mt-1 text-base leading-relaxed text-white/90"
         >
-          {t(step.subtitleKey)}
+          {subtitle}
         </p>
+
+        {isPlaying ? (
+          <div
+            aria-hidden="true"
+            className="mt-3 h-0.5 overflow-hidden rounded-full bg-white/15"
+          >
+            <div
+              key={step.id}
+              data-testid="tutorial-caption-timer"
+              className="h-full origin-left bg-white/70 motion-reduce:hidden"
+              style={{
+                animation: `tutorial-caption-progress ${captionDurationMs}ms linear forwards`,
+              }}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -121,6 +157,20 @@ export function TutorialWizard() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              data-testid="tutorial-play-toggle"
+              onClick={() => setPlaying(!isPlaying)}
+              aria-label={playToggleLabel}
+              title={playToggleLabel}
+              className="rounded-lg p-2 hover:bg-white/10"
+            >
+              {isPlaying ? (
+                <Pause width={14} height={14} aria-hidden="true" />
+              ) : (
+                <Play width={14} height={14} aria-hidden="true" />
+              )}
+            </button>
             {!isFirst ? (
               <button
                 type="button"

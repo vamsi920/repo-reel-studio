@@ -1,8 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorialHost } from "#/components/features/tutorial";
 import {
+  getCaptionDurationMs,
+  TUTORIAL_MAX_CAPTION_MS,
+  TUTORIAL_MIN_CAPTION_MS,
   TUTORIAL_SEEN_STORAGE_KEY,
   useTutorialStore,
 } from "#/components/features/tutorial/tutorial-store";
@@ -33,12 +36,14 @@ function renderHost() {
 
 beforeEach(() => {
   window.localStorage.clear();
-  useTutorialStore.setState({ isOpen: false, stepIndex: 0 });
+  useTutorialStore.setState({ isOpen: false, stepIndex: 0, isPlaying: false });
   navigate.mockClear();
 });
 
 afterEach(() => {
   window.localStorage.clear();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("TutorialHost", () => {
@@ -142,6 +147,84 @@ describe("TutorialHost", () => {
     const spotlight = screen.getByTestId("tutorial-spotlight");
     expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "208px" });
     link.remove();
+  });
+});
+
+describe("TutorialHost watch mode", () => {
+  it("auto-plays captions on a timer and stops on the last step", () => {
+    vi.useFakeTimers();
+    const steps = getTutorialSteps();
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: steps.length - 2,
+        isPlaying: true,
+      });
+    });
+    renderHost();
+    const wizard = screen.getByTestId("tutorial-wizard");
+
+    act(() => {
+      vi.advanceTimersByTime(TUTORIAL_MAX_CAPTION_MS);
+    });
+    expect(wizard).toHaveAttribute("data-step", "finish");
+    expect(screen.getByTestId("tutorial-caption-timer")).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(TUTORIAL_MAX_CAPTION_MS);
+    });
+    expect(wizard).toHaveAttribute("data-step", "finish");
+    expect(useTutorialStore.getState().isPlaying).toBe(false);
+    expect(
+      screen.queryByTestId("tutorial-caption-timer"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("pausing holds the current caption", () => {
+    vi.useFakeTimers();
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: 0,
+        isPlaying: true,
+      });
+    });
+    renderHost();
+
+    fireEvent.click(screen.getByTestId("tutorial-play-toggle"));
+    act(() => {
+      vi.advanceTimersByTime(TUTORIAL_MAX_CAPTION_MS * 2);
+    });
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "welcome",
+    );
+  });
+
+  it("starts paused for users who prefer reduced motion", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string) =>
+        ({ matches: query.includes("reduce") }) as MediaQueryList,
+    );
+
+    act(() => useTutorialStore.getState().start());
+
+    expect(useTutorialStore.getState()).toMatchObject({
+      isOpen: true,
+      isPlaying: false,
+    });
+  });
+
+  it("sizes caption time to caption length within readable bounds", () => {
+    expect(getCaptionDurationMs("Hi")).toBe(TUTORIAL_MIN_CAPTION_MS);
+    expect(getCaptionDurationMs("x".repeat(1000))).toBe(
+      TUTORIAL_MAX_CAPTION_MS,
+    );
+    expect(getCaptionDurationMs("x".repeat(100))).toBeGreaterThan(
+      getCaptionDurationMs("x".repeat(60)),
+    );
   });
 });
 

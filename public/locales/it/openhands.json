@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Indietro",
   "TUTORIAL$NEXT": "Avanti",
   "TUTORIAL$FINISH": "Fine",
+  "TUTORIAL$PLAY": "Riproduci il tour automaticamente",
+  "TUTORIAL$PAUSE": "Metti in pausa la riproduzione automatica",
   "TUTORIAL$STEP_WELCOME_TITLE": "Benvenuto! Facciamo un giro veloce",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "In meno di un minuto ti mostreremo ogni parte dell'app. Usa Avanti e Indietro, o i tasti freccia, per spostarti.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Avvia una conversazione",

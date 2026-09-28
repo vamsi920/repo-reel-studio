@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "上一步",
   "TUTORIAL$NEXT": "下一步",
   "TUTORIAL$FINISH": "完成",
+  "TUTORIAL$PLAY": "自動播放導覽",
+  "TUTORIAL$PAUSE": "暫停自動播放",
   "TUTORIAL$STEP_WELCOME_TITLE": "歡迎！我們來快速瀏覽一下",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "不到一分鐘，我們將帶你了解應用程式的每個部分。使用「下一步」與「上一步」或方向鍵進行瀏覽。",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "開始對話",

@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "이전",
   "TUTORIAL$NEXT": "다음",
   "TUTORIAL$FINISH": "완료",
+  "TUTORIAL$PLAY": "투어 자동 재생",
+  "TUTORIAL$PAUSE": "자동 재생 일시 중지",
   "TUTORIAL$STEP_WELCOME_TITLE": "환영합니다! 빠르게 둘러볼까요",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "1분 안에 앱의 모든 부분을 보여드릴게요. 다음/이전 버튼이나 화살표 키로 이동하세요.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "대화 시작하기",

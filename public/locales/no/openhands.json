@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Tilbake",
   "TUTORIAL$NEXT": "Neste",
   "TUTORIAL$FINISH": "Fullfør",
+  "TUTORIAL$PLAY": "Spill av omvisningen automatisk",
+  "TUTORIAL$PAUSE": "Sett automatisk avspilling på pause",
   "TUTORIAL$STEP_WELCOME_TITLE": "Velkommen! La oss ta en rask omvisning",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "På under ett minutt viser vi deg alle deler av appen. Bruk Neste og Tilbake, eller piltastene, for å navigere.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Start en samtale",

@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "رجوع",
   "TUTORIAL$NEXT": "التالي",
   "TUTORIAL$FINISH": "إنهاء",
+  "TUTORIAL$PLAY": "تشغيل الجولة تلقائيًا",
+  "TUTORIAL$PAUSE": "إيقاف التشغيل التلقائي مؤقتًا",
   "TUTORIAL$STEP_WELCOME_TITLE": "مرحبًا! لنأخذ جولة سريعة",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "في أقل من دقيقة سنعرض لك كل جزء من التطبيق. استخدم «التالي» و«رجوع» أو مفاتيح الأسهم للتنقل.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "ابدأ محادثة",

@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Back",
   "TUTORIAL$NEXT": "Next",
   "TUTORIAL$FINISH": "Finish",
+  "TUTORIAL$PLAY": "Play tour automatically",
+  "TUTORIAL$PAUSE": "Pause automatic playback",
   "TUTORIAL$STEP_WELCOME_TITLE": "Welcome! Let's take a quick tour",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "In under a minute we'll show you every part of the app. Use Next and Back, or the arrow keys, to move around.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Start a conversation",

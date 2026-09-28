@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Geri",
   "TUTORIAL$NEXT": "İleri",
   "TUTORIAL$FINISH": "Bitir",
+  "TUTORIAL$PLAY": "Turu otomatik oynat",
+  "TUTORIAL$PAUSE": "Otomatik oynatmayı duraklat",
   "TUTORIAL$STEP_WELCOME_TITLE": "Hoş geldiniz! Hızlı bir tura çıkalım",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "Bir dakikadan kısa sürede uygulamanın her bölümünü göstereceğiz. Gezinmek için İleri ve Geri'yi ya da ok tuşlarını kullanın.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Bir sohbet başlatın",

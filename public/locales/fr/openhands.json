@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Retour",
   "TUTORIAL$NEXT": "Suivant",
   "TUTORIAL$FINISH": "Terminer",
+  "TUTORIAL$PLAY": "Lire la visite automatiquement",
+  "TUTORIAL$PAUSE": "Mettre en pause la lecture automatique",
   "TUTORIAL$STEP_WELCOME_TITLE": "Bienvenue ! Petite visite guidée",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "En moins d'une minute, nous vous montrons chaque partie de l'application. Utilisez Suivant et Retour, ou les flèches du clavier.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Lancez une conversation",

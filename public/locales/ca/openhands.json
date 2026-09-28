@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Enrere",
   "TUTORIAL$NEXT": "Següent",
   "TUTORIAL$FINISH": "Finalitza",
+  "TUTORIAL$PLAY": "Reprodueix el recorregut automàticament",
+  "TUTORIAL$PAUSE": "Posa en pausa la reproducció automàtica",
   "TUTORIAL$STEP_WELCOME_TITLE": "Benvingut! Fem una volta ràpida",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "En menys d'un minut et mostrarem cada part de l'aplicació. Fes servir Següent i Enrere, o les tecles de fletxa, per navegar.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Comença una conversa",

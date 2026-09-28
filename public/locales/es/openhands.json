@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Atrás",
   "TUTORIAL$NEXT": "Siguiente",
   "TUTORIAL$FINISH": "Finalizar",
+  "TUTORIAL$PLAY": "Reproducir el recorrido automáticamente",
+  "TUTORIAL$PAUSE": "Pausar la reproducción automática",
   "TUTORIAL$STEP_WELCOME_TITLE": "¡Bienvenido! Hagamos un recorrido rápido",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "En menos de un minuto te mostraremos cada parte de la aplicación. Usa Siguiente y Atrás, o las flechas del teclado, para moverte.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Inicia una conversación",

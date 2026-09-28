@@ -3319,6 +3319,8 @@
   "TUTORIAL$BACK": "Zurück",
   "TUTORIAL$NEXT": "Weiter",
   "TUTORIAL$FINISH": "Fertig",
+  "TUTORIAL$PLAY": "Tour automatisch abspielen",
+  "TUTORIAL$PAUSE": "Automatische Wiedergabe pausieren",
   "TUTORIAL$STEP_WELCOME_TITLE": "Willkommen! Eine kurze Tour",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "In weniger als einer Minute zeigen wir dir jeden Bereich der App. Navigiere mit Weiter und Zurück oder den Pfeiltasten.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Starte eine Unterhaltung",

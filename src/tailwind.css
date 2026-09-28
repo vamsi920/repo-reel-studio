@@ -667,6 +667,16 @@ button.extension-module-card-interactive {
   animation: gradient-slide 1.25s linear infinite;
 }
 
+/* Guided tutorial "watch" mode: fills the caption timer bar left to right. */
+@keyframes tutorial-caption-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* CTA card gradient and shadow */
 .cta-card-gradient {
   background:
