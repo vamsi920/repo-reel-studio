@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { I18nKey } from "#/i18n/declaration";
-import { useSettings } from "#/hooks/query/use-settings";
 import { useTracking } from "#/hooks/use-tracking";
 import { ProjectIntakeStep } from "./steps/project-intake-step";
 
@@ -34,18 +33,28 @@ export function OnboardingModal({
   isPreview = false,
 }: OnboardingModalProps) {
   const { t } = useTranslation("openhands");
-  const { data: settings } = useSettings();
-  const analyticsEnabled = settings?.user_consents_to_analytics === true;
   const { trackOnboardingStarted, trackOnboardingCompleted } = useTracking();
 
+  // Consent is enforced centrally by the shared PostHog client (see
+  // `telemetry.ts`/`useSyncTelemetryConsent`) -- gating this capture on a
+  // `useSettings()` snapshot (as this used to do via
+  // `user_consents_to_analytics`) violates that rule (see `useTracking`'s own
+  // doc comment) and is a real race on top of it: on a genuinely fresh
+  // install the settings query is still loading when this modal first mounts,
+  // so the stale/undefined snapshot read as "no consent" and could suppress
+  // `onboarding_started` for good if the user finished the one-question flow
+  // before settings resolved -- while the ungated `trackOnboardingCompleted`
+  // below fired every time regardless. Only `isPreview` (a design-review
+  // render, not a real session) and the once-per-session dedupe guard this
+  // event.
   const startedTrackedRef = React.useRef(false);
   React.useEffect(() => {
-    if (isPreview || !analyticsEnabled || startedTrackedRef.current) return;
+    if (isPreview || startedTrackedRef.current) return;
     if (window.sessionStorage.getItem(ONBOARDING_STARTED_TRACKED_KEY)) return;
     startedTrackedRef.current = true;
     window.sessionStorage.setItem(ONBOARDING_STARTED_TRACKED_KEY, "1");
     trackOnboardingStarted();
-  }, [isPreview, analyticsEnabled]);
+  }, [isPreview]);
 
   const handleLaunched = () => {
     trackOnboardingCompleted({ agent: "openhands" });
