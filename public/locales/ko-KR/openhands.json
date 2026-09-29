@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "환영합니다! 빠르게 둘러볼까요",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "1분 안에 앱의 모든 부분을 보여드릴게요. 다음/이전 버튼이나 화살표 키로 이동하세요.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "대화 시작하기",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "여기서 에이전트에게 만들 것을 알려주세요. 워크스페이스를 고르고 작업을 설명하면 에이전트가 코드를 작성하고 실행합니다.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "여기서 에이전트에게 만들 것을 알려주세요. 저장소를 연결하고 작업을 설명하면 에이전트가 코드를 작성하고 실행합니다.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "에이전트 맞춤 설정",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "스킬, 플러그인, MCP 서버를 추가해 GitHub나 Slack 접근 같은 새로운 지식과 도구를 에이전트에 제공하세요.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "반복 작업 자동화",

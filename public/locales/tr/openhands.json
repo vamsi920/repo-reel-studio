@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "Hoş geldiniz! Hızlı bir tura çıkalım",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "Bir dakikadan kısa sürede uygulamanın her bölümünü göstereceğiz. Gezinmek için İleri ve Geri'yi ya da ok tuşlarını kullanın.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Bir sohbet başlatın",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Ajana ne inşa edeceğini burada söylersiniz. Bir çalışma alanı seçin, görevi anlatın; ajan kodu sizin için yazıp çalıştırır.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Ajana ne inşa edeceğini burada söylersiniz. Bir depo ekleyin, görevi anlatın; ajan kodu sizin için yazıp çalıştırır.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "Ajanınızı özelleştirin",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "Ajana GitHub veya Slack erişimi gibi yeni bilgi ve araçlar kazandırmak için beceriler, eklentiler ve MCP sunucuları ekleyin.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "Tekrarlanan işleri otomatikleştirin",

@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "Benvingut! Fem una volta ràpida",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "En menys d'un minut et mostrarem cada part de l'aplicació. Fes servir Següent i Enrere, o les tecles de fletxa, per navegar.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Comença una conversa",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Aquí dius a l'agent què vols construir. Tria un espai de treball, escriu la petició i l'agent escriurà i executarà el codi per tu.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Aquí dius a l'agent què vols construir. Adjunta un repositori, escriu la petició i l'agent escriurà i executarà el codi per tu.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "Personalitza el teu agent",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "Afegeix habilitats, connectors i servidors MCP per donar a l'agent nous coneixements i eines, com l'accés a GitHub o Slack.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "Automatitza la feina repetitiva",

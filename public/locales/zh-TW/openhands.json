@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "歡迎！我們來快速瀏覽一下",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "不到一分鐘，我們將帶你了解應用程式的每個部分。使用「下一步」與「上一步」或方向鍵進行瀏覽。",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "開始對話",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "在這裡告訴代理你想建構什麼。選擇一個工作區，描述任務，代理就會為你撰寫並執行程式碼。",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "在這裡告訴代理你想建構什麼。附加一個儲存庫，描述任務，代理就會為你撰寫並執行程式碼。",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "自訂你的代理",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "新增技能、外掛程式與 MCP 伺服器，為代理提供新的知識與工具，例如存取 GitHub 或 Slack。",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "自動化重複工作",

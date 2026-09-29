@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "ようこそ！簡単にご案内します",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "1分以内でアプリの各機能をご紹介します。「次へ」「戻る」または矢印キーで移動できます。",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "会話を始める",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "ここでエージェントに作りたいものを伝えます。ワークスペースを選び、タスクを書けば、エージェントがコードを書いて実行します。",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "ここでエージェントに作りたいものを伝えます。リポジトリを添付し、タスクを書けば、エージェントがコードを書いて実行します。",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "エージェントをカスタマイズ",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "スキル、プラグイン、MCPサーバーを追加して、GitHubやSlackへのアクセスなど新しい知識とツールをエージェントに与えます。",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "繰り返し作業を自動化",

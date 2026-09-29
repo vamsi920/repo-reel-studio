@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "Вітаємо! Коротка екскурсія",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "Менш ніж за хвилину ми покажемо кожну частину застосунку. Використовуйте «Далі» й «Назад» або клавіші зі стрілками.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Почніть розмову",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Тут ви кажете агенту, що створити. Оберіть робочий простір, опишіть завдання, і агент напише та запустить код за вас.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Тут ви кажете агенту, що створити. Додайте репозиторій, опишіть завдання, і агент напише та запустить код за вас.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "Налаштуйте свого агента",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "Додавайте навички, плагіни та MCP-сервери, щоб дати агенту нові знання й інструменти, як-от доступ до GitHub чи Slack.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "Автоматизуйте рутинну роботу",

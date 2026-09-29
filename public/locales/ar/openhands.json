@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "مرحبًا! لنأخذ جولة سريعة",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "في أقل من دقيقة سنعرض لك كل جزء من التطبيق. استخدم «التالي» و«رجوع» أو مفاتيح الأسهم للتنقل.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "ابدأ محادثة",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "هنا تخبر الوكيل بما تريد بناءه. اختر مساحة عمل، واكتب طلبك، وسيكتب الوكيل الكود وينفّذه نيابةً عنك.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "هنا تخبر الوكيل بما تريد بناءه. أرفق مستودعًا، واكتب طلبك، وسيكتب الوكيل الكود وينفّذه نيابةً عنك.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "خصّص وكيلك",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "أضف المهارات والإضافات وخوادم MCP لمنح الوكيل معرفة وأدوات جديدة، مثل الوصول إلى GitHub أو Slack.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "أتمت العمل المتكرر",

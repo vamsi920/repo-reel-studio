@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "Willkommen! Eine kurze Tour",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "In weniger als einer Minute zeigen wir dir jeden Bereich der App. Navigiere mit Weiter und Zurück oder den Pfeiltasten.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Starte eine Unterhaltung",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Hier sagst du dem Agenten, was du bauen willst. Wähle einen Workspace, beschreibe deine Aufgabe, und der Agent schreibt und führt den Code für dich aus.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Hier sagst du dem Agenten, was du bauen willst. Hänge ein Repository an, beschreibe deine Aufgabe, und der Agent schreibt und führt den Code für dich aus.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "Passe deinen Agenten an",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "Füge Skills, Plugins und MCP-Server hinzu, um dem Agenten neues Wissen und Werkzeuge zu geben, etwa Zugriff auf GitHub oder Slack.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "Automatisiere Routinearbeit",

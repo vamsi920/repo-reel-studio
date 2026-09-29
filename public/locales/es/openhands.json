@@ -3342,7 +3342,7 @@
   "TUTORIAL$STEP_WELCOME_TITLE": "¡Bienvenido! Hagamos un recorrido rápido",
   "TUTORIAL$STEP_WELCOME_SUBTITLE": "En menos de un minuto te mostraremos cada parte de la aplicación. Usa Siguiente y Atrás, o las flechas del teclado, para moverte.",
   "TUTORIAL$STEP_CONVERSATIONS_TITLE": "Inicia una conversación",
-  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Aquí le dices al agente qué construir. Elige un espacio de trabajo, describe la tarea y el agente escribirá y ejecutará el código por ti.",
+  "TUTORIAL$STEP_CONVERSATIONS_SUBTITLE": "Aquí le dices al agente qué construir. Adjunta un repositorio, describe la tarea y el agente escribirá y ejecutará el código por ti.",
   "TUTORIAL$STEP_CUSTOMIZE_TITLE": "Personaliza tu agente",
   "TUTORIAL$STEP_CUSTOMIZE_SUBTITLE": "Añade habilidades, plugins y servidores MCP para dar al agente nuevos conocimientos y herramientas, como acceso a GitHub o Slack.",
   "TUTORIAL$STEP_AUTOMATIONS_TITLE": "Automatiza el trabajo repetitivo",
