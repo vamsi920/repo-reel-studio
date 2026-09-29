@@ -40765,6 +40765,23 @@
     "tr": "No graph has been built for this commit yet.",
     "uk": "No graph has been built for this commit yet."
   },
+  "CODEGRAPH$COLD_LOAD_ERROR": {
+    "en": "We couldn't check for an existing graph. This may be temporary — please try again.",
+    "ja": "既存のグラフを確認できませんでした。一時的な問題の可能性があります — もう一度お試しください。",
+    "zh-CN": "无法检查是否已存在图谱，这可能是暂时性问题——请重试。",
+    "zh-TW": "無法檢查是否已存在圖譜，這可能是暫時性問題——請重試。",
+    "ko-KR": "기존 그래프를 확인할 수 없습니다. 일시적인 문제일 수 있습니다 — 다시 시도해 주세요.",
+    "no": "Vi kunne ikke sjekke om det finnes en graf fra før. Dette kan være midlertidig — prøv igjen.",
+    "ar": "تعذّر التحقق من وجود رسم بياني حالي. قد يكون هذا مؤقتًا — يُرجى المحاولة مرة أخرى.",
+    "de": "Wir konnten nicht prüfen, ob bereits ein Graph vorhanden ist. Dies könnte vorübergehend sein — bitte versuchen Sie es erneut.",
+    "fr": "Nous n'avons pas pu vérifier l'existence d'un graphe. Cela peut être temporaire — veuillez réessayer.",
+    "it": "Non siamo riusciti a verificare l'esistenza di un grafo. Potrebbe essere temporaneo — riprova.",
+    "pt": "Não foi possível verificar se já existe um grafo. Isso pode ser temporário — tente novamente.",
+    "es": "No pudimos comprobar si ya existe un grafo. Esto puede ser temporal — inténtalo de nuevo.",
+    "ca": "No hem pogut comprovar si ja existeix un graf. Això pot ser temporal — torna-ho a provar.",
+    "tr": "Var olan bir grafiği kontrol edemedik. Bu geçici olabilir — lütfen tekrar deneyin.",
+    "uk": "Не вдалося перевірити наявність графа. Це може бути тимчасовим — спробуйте ще раз."
+  },
   "CODEGRAPH$STALE": {
     "en": "This graph was built from an older commit and may no longer match the code.",
     "ja": "This graph was built from an older commit and may no longer match the code.",

@@ -2397,6 +2397,7 @@
   "CODEGRAPH$GENERATE": "Build code graph",
   "CODEGRAPH$REBUILD": "Re-analyze",
   "CODEGRAPH$EMPTY": "No graph has been built for this commit yet.",
+  "CODEGRAPH$COLD_LOAD_ERROR": "Var olan bir grafiği kontrol edemedik. Bu geçici olabilir — lütfen tekrar deneyin.",
   "CODEGRAPH$STALE": "This graph was built from an older commit and may no longer match the code.",
   "CODEGRAPH$UNKNOWN_FRESHNESS": "Could not confirm whether this graph matches the current commit.",
   "CODEGRAPH$REDUCED": "Reduced analysis — some files were not parsed.",

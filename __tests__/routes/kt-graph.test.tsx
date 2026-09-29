@@ -8,6 +8,7 @@ import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { pinKey, useCodeGraphStore } from "#/stores/codegraph-store";
 import {
   resolveOrgId,
+  resolveOrgIdWithStatus,
   findRepositoryUuid,
   resolvePersistenceIds,
 } from "#/lib/data-platform/repositories/repository-identity";
@@ -34,6 +35,9 @@ vi.mock("#/contexts/active-backend-context", () => ({
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
   resolvePersistenceIds: vi.fn().mockResolvedValue(null),
   resolveOrgId: vi.fn().mockResolvedValue(null),
+  resolveOrgIdWithStatus: vi
+    .fn()
+    .mockResolvedValue({ orgId: null, hadError: false }),
   findRepositoryUuid: vi.fn().mockResolvedValue(null),
 }));
 
@@ -1167,7 +1171,10 @@ describe("KtGraph cold rehydration", () => {
   });
 
   it("renders a graph that was already generated elsewhere instead of showing the empty state", async () => {
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     vi.mocked(
       codegraphPersistenceRepository.findSnapshotWorkspaceId,
@@ -1229,7 +1236,10 @@ describe("KtGraph cold rehydration", () => {
     // this was guarded, the auto-check effect's unhandled rejection left the
     // store on "analyzing" forever instead of falling through to the
     // existing "open a live session" guard below it.
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     vi.mocked(
       codegraphPersistenceRepository.findSnapshotWorkspaceId,
@@ -1246,7 +1256,10 @@ describe("KtGraph cold rehydration", () => {
   });
 
   it("keeps showing the empty state, not an error, when no prior snapshot exists for this commit", async () => {
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     vi.mocked(
       codegraphPersistenceRepository.findSnapshotWorkspaceId,
@@ -1258,8 +1271,60 @@ describe("KtGraph cold rehydration", () => {
     expect(openExistingAnalysis).not.toHaveBeenCalled();
   });
 
+  it("shows an honest error instead of the empty 'no graph yet' state when the org lookup itself fails (INC-8)", async () => {
+    // `resolveOrgIdWithStatus` reports `hadError: true` for a real lookup
+    // failure (e.g. INC-8's transient PostgREST rejection), as opposed to a
+    // legitimate "no org yet" `null`. Before this was distinguished, a
+    // failure here looked byte-for-byte identical to "no graph has ever been
+    // built for this commit" -- even when one actually exists in Storage.
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: null,
+      hadError: true,
+    });
+
+    renderWithProviders(<KtGraph />);
+
+    expect(
+      await screen.findByText(I18nKey.CODEGRAPH$COLD_LOAD_ERROR),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("codegraph-generate")).not.toBeInTheDocument();
+    expect(findRepositoryUuid).not.toHaveBeenCalled();
+  });
+
+  it("retries the org lookup and proceeds normally once the transient error clears", async () => {
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValueOnce({
+      orgId: null,
+      hadError: true,
+    });
+    vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
+    vi.mocked(
+      codegraphPersistenceRepository.findSnapshotWorkspaceId,
+    ).mockResolvedValue(null);
+
+    renderWithProviders(<KtGraph />);
+
+    await screen.findByText(I18nKey.CODEGRAPH$COLD_LOAD_ERROR);
+
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
+    await userEvent.click(screen.getByTestId("codegraph-cold-load-retry"));
+
+    expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
+    expect(
+      screen.queryByText(I18nKey.CODEGRAPH$COLD_LOAD_ERROR),
+    ).not.toBeInTheDocument();
+    expect(vi.mocked(resolveOrgIdWithStatus).mock.calls.length).toBeGreaterThanOrEqual(
+      2,
+    );
+  });
+
   it("does not fire a second concurrent cold-load lookup when the knowledge store emits a new object reference for the same repo before the first lookup settles", async () => {
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     let releaseSnapshotLookup: ((value: string | null) => void) | undefined;
     vi.mocked(
@@ -1303,14 +1368,13 @@ describe("KtGraph cold rehydration", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     // This effect always calls `findRepositoryUuid` with 4 arguments
-    // (orgId, owner, repo, localPath-or-undefined). `findRepositoryUuid` and
-    // `resolveOrgId` are not asserted on by raw call count: both are also
-    // called, independently of this effect and with a different argument
-    // shape, by `useKnowledgeRehydration`'s own (unrelated) cold-rehydration
-    // path and by the app-wide `useConnectionsRealtimeSync` that
-    // `renderWithProviders` mounts alongside every route. Filtering by this
-    // effect's own call shape keeps the assertion specific to it regardless
-    // of what else legitimately calls the same mocked functions.
+    // (orgId, owner, repo, localPath-or-undefined). `findRepositoryUuid` is
+    // not asserted on by raw call count: it is also called, independently of
+    // this effect and with a different argument shape, by
+    // `useKnowledgeRehydration`'s own (unrelated) cold-rehydration path.
+    // Filtering by this effect's own call shape keeps the assertion specific
+    // to it regardless of what else legitimately calls the same mocked
+    // function.
     const callsFromThisEffect = vi
       .mocked(findRepositoryUuid)
       .mock.calls.filter((call) => call.length === 4);
@@ -1350,7 +1414,16 @@ describe("KtGraph deep link on a cold store", () => {
   });
 
   it("rehydrates the persisted knowledge instead of asking to generate docs first", async () => {
+    // `useKnowledgeRehydration`'s own cold-rehydration path still calls the
+    // plain `resolveOrgId` (unrelated to this page's own cold-load effect,
+    // which is what `resolveOrgIdWithStatus` below feeds) -- both need a
+    // real org id here for `tryColdRehydration` to reach
+    // `getLatestGenerationForRepository` at all.
     vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     vi.mocked(
       knowledgePersistenceRepository.getLatestGenerationForRepository,
@@ -1385,7 +1458,10 @@ describe("KtGraph deep link on a cold store", () => {
   });
 
   it("falls back to the empty state only after the lookup found nothing", async () => {
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue(null);
 
     renderWithProviders(<KtGraph />);

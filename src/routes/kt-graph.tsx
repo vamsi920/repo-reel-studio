@@ -39,7 +39,7 @@ import {
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import {
   resolvePersistenceIds,
-  resolveOrgId,
+  resolveOrgIdWithStatus,
   findRepositoryUuid,
   type PersistenceIds,
 } from "#/lib/data-platform/repositories/repository-identity";
@@ -383,9 +383,9 @@ function KtGraph() {
   // snapshot under, and an empty path produces a *different* id that never
   // matches the stored row (confirmed: this is why a real, previously
   // generated graph stayed permanently invisible on every cold load). The
-  // read-only `resolveOrgId` + `findRepositoryUuid` pair Knowledge docs
-  // already use for the same cold-rehydration problem needs neither, and
-  // `findSnapshotWorkspaceId` then asks the snapshot row itself which
+  // read-only `resolveOrgIdWithStatus` + `findRepositoryUuid` pair Knowledge
+  // docs already use for the same cold-rehydration problem needs neither,
+  // and `findSnapshotWorkspaceId` then asks the snapshot row itself which
   // workspace actually generated it.
   //
   // `knowledgeState` is in this effect's deps only to keep `analyze`'s own
@@ -395,19 +395,33 @@ function KtGraph() {
   // lookup chain below is several awaits deep before anything lands in the
   // CodeGraph store (which is what `state` guards against), so without this
   // ref a churn mid-chain re-entered the effect and fired a second, fully
-  // duplicate set of `resolveOrgId`/`findRepositoryUuid`/
+  // duplicate set of `resolveOrgIdWithStatus`/`findRepositoryUuid`/
   // `findSnapshotWorkspaceId` calls for the exact same key. One attempt per
   // key is enough; a failed attempt (nothing found) intentionally does not
   // retry either, same as `useKnowledgeRehydration`'s own `attemptedRef`.
   const coldLoadAttemptedKeyRef = React.useRef<string | null>(null);
+  // Set when `resolveOrgIdWithStatus()` reports a real lookup failure (e.g.
+  // INC-8's transient PostgREST/auth-timing rejection), as opposed to the
+  // browser simply having no org yet. Without distinguishing these, a
+  // previously-generated graph looked identical to "never built" during the
+  // glitch -- no error was ever surfaced, and `state` just stayed
+  // `undefined` forever, silently discarding the cold-load attempt. Cleared
+  // on the next attempted key and by `retryColdLoad`.
+  const [coldLoadOrgError, setColdLoadOrgError] = React.useState(false);
+  const [coldLoadRetryToken, setColdLoadRetryToken] = React.useState(0);
   React.useEffect(() => {
     if (!snapshot || !key || state) return;
     if (coldLoadAttemptedKeyRef.current === key) return;
     coldLoadAttemptedKeyRef.current = key;
     let cancelled = false;
     (async () => {
-      const orgId = await resolveOrgId();
-      if (!orgId || cancelled) return;
+      setColdLoadOrgError(false);
+      const { orgId, hadError } = await resolveOrgIdWithStatus();
+      if (cancelled) return;
+      if (!orgId) {
+        if (hadError) setColdLoadOrgError(true);
+        return;
+      }
       const repositoryUuid = await findRepositoryUuid(
         orgId,
         snapshot.owner,
@@ -428,7 +442,18 @@ function KtGraph() {
     };
 
     // itself depends on `snapshot`/`knowledgeState`, already covered here.
-  }, [snapshot, key, state, knowledgeState, backend.id]);
+  }, [snapshot, key, state, knowledgeState, backend.id, coldLoadRetryToken]);
+
+  // Re-runs the cold-load effect above for the same key -- the ref guard
+  // normally makes one attempt per key final (matching
+  // `useKnowledgeRehydration`'s own no-auto-retry contract), so a manual
+  // retry has to both clear the ref and change a dependency to force the
+  // effect to fire again.
+  const retryColdLoad = React.useCallback(() => {
+    coldLoadAttemptedKeyRef.current = null;
+    setColdLoadOrgError(false);
+    setColdLoadRetryToken((token) => token + 1);
+  }, []);
 
   // Returns whether the view actually ended up on `nodeId` -- callers that
   // chain further state off a successful drill (like search, below) need to
@@ -654,7 +679,30 @@ function KtGraph() {
         </p>
       ) : null}
 
-      {!state || state.status === "idle" ? (
+      {(!state || state.status === "idle") && coldLoadOrgError ? (
+        <div
+          role="alert"
+          className="flex flex-1 flex-col items-center justify-center gap-3 px-6"
+        >
+          <AlertTriangle
+            className="size-7 text-[var(--error-500)]"
+            aria-hidden
+          />
+          <p className="max-w-md text-center text-sm text-[var(--oh-foreground)]">
+            {t(I18nKey.CODEGRAPH$COLD_LOAD_ERROR)}
+          </p>
+          <button
+            type="button"
+            data-testid="codegraph-cold-load-retry"
+            onClick={retryColdLoad}
+            className="rounded-md border border-[var(--oh-border)] px-3 py-1.5 text-sm text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"
+          >
+            {t(I18nKey.ENVIRONMENT$RETRY)}
+          </button>
+        </div>
+      ) : null}
+
+      {(!state || state.status === "idle") && !coldLoadOrgError ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3">
           <Network className="size-8 text-[var(--oh-muted)]" aria-hidden />
           <p className="text-sm text-[var(--oh-muted)]">
