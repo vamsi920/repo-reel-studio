@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Einstellungen bestätigen",
   "SETTINGS$SAVING": "Speichern...",
   "SETTINGS$SAVE_CHANGES": "Änderungen speichern",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "Sie haben ungespeicherte Änderungen. Scrollen Sie nach unten und klicken Sie unter Git-Einstellungen auf „Änderungen speichern“, um sie zu speichern.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Bei NeoDevEx anmelden",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "NeoDevEx-Konto erstellen",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Melden Sie sich mit Ihrer geschäftlichen E-Mail-Adresse und Ihrem Passwort an.",

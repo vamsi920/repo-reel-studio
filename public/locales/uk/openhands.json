@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Підтвердити налаштування",
   "SETTINGS$SAVING": "Зберігаю...",
   "SETTINGS$SAVE_CHANGES": "Зберегти зміни",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "У вас є незбережені зміни. Прогорніть униз і натисніть «Зберегти зміни» у розділі Git налаштування, щоб зберегти їх.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Увійти в NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "Створіть свій обліковий запис NeoDevEx",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Увійдіть за допомогою робочої електронної пошти та пароля.",

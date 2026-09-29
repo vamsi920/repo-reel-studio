@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Confirmar preferencias",
   "SETTINGS$SAVING": "Guardando...",
   "SETTINGS$SAVE_CHANGES": "Guardar cambios",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "Tienes cambios sin guardar. Desplázate hacia abajo y haz clic en \"Guardar cambios\" en Configuración Git para guardarlos.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Iniciar sesión en NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "Crea tu cuenta de NeoDevEx",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Inicia sesión con tu correo de trabajo y contraseña.",

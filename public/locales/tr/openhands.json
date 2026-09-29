@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Tercihleri Onayla",
   "SETTINGS$SAVING": "Kayıt yapılıyor...",
   "SETTINGS$SAVE_CHANGES": "Değişiklikleri Kaydet",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "Kaydedilmemiş değişiklikleriniz var. Aşağı kaydırıp Git Ayarları altındaki \"Değişiklikleri Kaydet\"e tıklayarak kaydedin.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "NeoDevEx'e giriş yap",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "NeoDevEx hesabınızı oluşturun",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "İş e-postanız ve parolanızla oturum açın.",

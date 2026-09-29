@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Confirm Preferences",
   "SETTINGS$SAVING": "Saving...",
   "SETTINGS$SAVE_CHANGES": "Save Changes",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "You have unsaved changes. Scroll down and click \"Save Changes\" under Git Settings to save them.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Sign in to Neo",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "Create your Neo account",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Sign in with your work email and password.",

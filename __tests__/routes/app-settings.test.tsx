@@ -277,6 +277,54 @@ describe("AppSettingsScreen", () => {
     });
   });
 
+  it("shows an unsaved-changes notice near the top controls until the page is saved", async () => {
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+    const getSettingsSpy = vi
+      .spyOn(SettingsService, "getSettings")
+      .mockResolvedValue(buildSettings({ enable_sound_notifications: false }));
+
+    renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    const soundSwitch = await screen.findByTestId(
+      "enable-sound-notifications-switch",
+    );
+
+    // Arrange/Assert: nothing changed yet, so no notice.
+    expect(
+      screen.queryByTestId("app-settings-unsaved-changes-notice"),
+    ).not.toBeInTheDocument();
+
+    // Act: toggling a control up here doesn't visibly move the Save button,
+    // which lives under the unrelated Git Settings section further down.
+    await user.click(soundSwitch);
+
+    // Assert: the page now tells the user there's something to save.
+    expect(
+      screen.getByTestId("app-settings-unsaved-changes-notice"),
+    ).toBeInTheDocument();
+
+    // The save's own query invalidation triggers a refetch, which reports
+    // back exactly what was just saved (mirrors the resync test above).
+    getSettingsSpy.mockResolvedValue(
+      buildSettings({ enable_sound_notifications: true }),
+    );
+    await user.click(screen.getByTestId("submit-button"));
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ enable_sound_notifications: true }),
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("app-settings-unsaved-changes-notice"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("saves a dedicated title generation profile", async () => {
     vi.spyOn(ProfilesService, "listProfiles").mockResolvedValue({
       profiles: [

@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "确认偏好",
   "SETTINGS$SAVING": "保存中...",
   "SETTINGS$SAVE_CHANGES": "保存更改",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "您有未保存的更改。请向下滚动，点击“Git设置”下的“保存更改”以保存。",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "登录 NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "创建您的 NeoDevEx 账户",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "使用您的工作邮箱和密码登录。",

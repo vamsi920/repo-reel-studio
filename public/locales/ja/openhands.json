@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "設定を確認",
   "SETTINGS$SAVING": "保存中...",
   "SETTINGS$SAVE_CHANGES": "変更を保存",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "未保存の変更があります。下にスクロールし、「Git設定」の「変更を保存」をクリックして保存してください。",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "NeoDevExにサインイン",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "NeoDevExアカウントを作成",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "職場のメールアドレスとパスワードでサインインしてください。",

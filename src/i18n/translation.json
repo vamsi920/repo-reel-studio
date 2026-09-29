@@ -2719,6 +2719,23 @@
     "uk": "Зберегти зміни",
     "ca": "Desa els canvis"
   },
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": {
+    "en": "You have unsaved changes. Scroll down and click \"Save Changes\" under Git Settings to save them.",
+    "ja": "未保存の変更があります。下にスクロールし、「Git設定」の「変更を保存」をクリックして保存してください。",
+    "zh-CN": "您有未保存的更改。请向下滚动，点击“Git设置”下的“保存更改”以保存。",
+    "zh-TW": "您有未儲存的變更。請向下捲動，點擊「Git設定」下的「儲存變更」以儲存。",
+    "ko-KR": "저장되지 않은 변경 사항이 있습니다. 아래로 스크롤하여 'Git 설정'의 '변경 사항 저장'을 클릭하세요.",
+    "no": "Du har ulagrede endringer. Bla ned og klikk på «Lagre endringer» under Git-innstillinger for å lagre dem.",
+    "ar": "لديك تغييرات غير محفوظة. مرر إلى الأسفل وانقر على \"حفظ التغييرات\" أسفل إعدادات Git لحفظها.",
+    "de": "Sie haben ungespeicherte Änderungen. Scrollen Sie nach unten und klicken Sie unter Git-Einstellungen auf „Änderungen speichern“, um sie zu speichern.",
+    "fr": "Vous avez des modifications non enregistrées. Faites défiler vers le bas et cliquez sur « Enregistrer les modifications » sous Paramètres Git pour les enregistrer.",
+    "it": "Hai modifiche non salvate. Scorri verso il basso e fai clic su \"Salva modifiche\" in Impostazioni Git per salvarle.",
+    "pt": "Você tem alterações não salvas. Role para baixo e clique em \"Salvar alterações\" em Configurações Git para salvá-las.",
+    "es": "Tienes cambios sin guardar. Desplázate hacia abajo y haz clic en \"Guardar cambios\" en Configuración Git para guardarlos.",
+    "ca": "Tens canvis sense desar. Desplaça't cap avall i fes clic a \"Desa els canvis\" a Configuració de Git per desar-los.",
+    "tr": "Kaydedilmemiş değişiklikleriniz var. Aşağı kaydırıp Git Ayarları altındaki \"Değişiklikleri Kaydet\"e tıklayarak kaydedin.",
+    "uk": "У вас є незбережені зміни. Прогорніть униз і натисніть «Зберегти зміни» у розділі Git налаштування, щоб зберегти їх."
+  },
   "NEODEVEX_AUTH$SIGN_IN_TITLE": {
     "en": "Sign in to Neo",
     "ja": "NeoDevExにサインイン",

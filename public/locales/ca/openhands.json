@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Confirma les preferències",
   "SETTINGS$SAVING": "Desant...",
   "SETTINGS$SAVE_CHANGES": "Desa els canvis",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "Tens canvis sense desar. Desplaça't cap avall i fes clic a \"Desa els canvis\" a Configuració de Git per desar-los.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Inicia sessió a NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "Crea el teu compte de NeoDevEx",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Inicieu la sessió amb el vostre correu de la feina i la contrasenya.",

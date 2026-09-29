@@ -213,6 +213,16 @@ export function AppSettingsScreen() {
       {shouldBeLoading && <AppSettingsInputsSkeleton />}
       {!shouldBeLoading && (
         <div className="flex flex-col gap-6">
+          {!formIsClean ? (
+            <div
+              role="status"
+              data-testid="app-settings-unsaved-changes-notice"
+              className="rounded-lg border border-tertiary bg-tertiary/40 px-4 py-3 text-sm text-tertiary-light"
+            >
+              {t(I18nKey.SETTINGS$UNSAVED_CHANGES_NOTICE)}
+            </div>
+          ) : null}
+
           <LanguageInput
             name="language-input"
             defaultKey={settings.language}

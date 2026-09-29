@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "기본 설정 확인",
   "SETTINGS$SAVING": "저장 중...",
   "SETTINGS$SAVE_CHANGES": "변경 사항 저장",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "저장되지 않은 변경 사항이 있습니다. 아래로 스크롤하여 'Git 설정'의 '변경 사항 저장'을 클릭하세요.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "NeoDevEx에 로그인",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "NeoDevEx 계정 만들기",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "회사 이메일과 비밀번호로 로그인하세요.",

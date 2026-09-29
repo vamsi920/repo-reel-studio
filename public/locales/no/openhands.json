@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "Bekreft preferanser",
   "SETTINGS$SAVING": "Lagrer...",
   "SETTINGS$SAVE_CHANGES": "Lagre endringer",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "Du har ulagrede endringer. Bla ned og klikk på «Lagre endringer» under Git-innstillinger for å lagre dem.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "Logg inn på NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "Opprett din NeoDevEx-konto",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "Logg inn med jobb-e-posten og passordet ditt.",

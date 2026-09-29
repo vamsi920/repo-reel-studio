@@ -159,6 +159,7 @@
   "ANALYTICS$CONFIRM_PREFERENCES": "تأكيد التفضيلات",
   "SETTINGS$SAVING": "جار الحفظ...",
   "SETTINGS$SAVE_CHANGES": "حفظ التغييرات",
+  "SETTINGS$UNSAVED_CHANGES_NOTICE": "لديك تغييرات غير محفوظة. مرر إلى الأسفل وانقر على \"حفظ التغييرات\" أسفل إعدادات Git لحفظها.",
   "NEODEVEX_AUTH$SIGN_IN_TITLE": "تسجيل الدخول إلى NeoDevEx",
   "NEODEVEX_AUTH$SIGN_UP_TITLE": "أنشئ حساب NeoDevEx الخاص بك",
   "NEODEVEX_AUTH$SIGN_IN_SUBTITLE": "سجّل الدخول باستخدام بريد العمل وكلمة المرور.",
