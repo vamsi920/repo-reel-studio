@@ -1,12 +1,12 @@
 {
   "repo": "https://github.com/vamsi920/repo-reel-studio",
-  "lastSection": "knowledge-kt",
-  "lastRunType": "feature",
+  "lastSection": "agentops",
+  "lastRunType": "bugs",
   "sections": {
     "knowledge-kt": { "lastRun": "2026-09-29T17:38:00Z", "runCount": 24 },
     "kt-video": { "lastRun": "2026-09-29T08:11:02Z", "runCount": 23 },
     "codegraph": { "lastRun": "2026-09-28T17:38:00Z", "runCount": 25 },
-    "agentops": { "lastRun": "2026-09-28T14:43:58Z", "runCount": 23 },
+    "agentops": { "lastRun": "2026-09-29T18:50:06Z", "runCount": 24 },
     "automations": { "lastRun": "2026-09-28T15:39:00Z", "runCount": 24 },
     "environment-onboarding": { "lastRun": "2026-09-28T16:48:00Z", "runCount": 23 },
     "security": { "lastRun": "2026-09-29T13:52:00Z", "runCount": 23 },

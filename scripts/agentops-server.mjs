@@ -37,6 +37,7 @@
 
 import { createServer } from "node:http";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
 import { AgentServerClient } from "./agentops/agent-server-client.mjs";
 import { Collector } from "./agentops/collector.mjs";
@@ -106,6 +107,13 @@ function sendJson(res, status, body) {
   res.end(payload);
 }
 
+/** A malformed request body: the caller's fault, never the server's. */
+function badRequestError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -115,7 +123,7 @@ function readBody(req) {
       // Policies are the only writable payload and they are tiny; anything
       // larger is a bug or an attack, not a legitimate request.
       if (size > 1_000_000) {
-        reject(new Error("Request body too large"));
+        reject(badRequestError("Request body too large"));
         req.destroy();
         return;
       }
@@ -127,7 +135,7 @@ function readBody(req) {
       try {
         resolve(JSON.parse(raw));
       } catch {
-        reject(new Error("Body is not valid JSON"));
+        reject(badRequestError("Body is not valid JSON"));
       }
     });
     req.on("error", reject);
@@ -148,28 +156,23 @@ function createStore() {
   return new AgentOpsStore();
 }
 
-async function main() {
-  const apiKey = await resolveSessionApiKey();
-  const store = createStore();
-  const storeKind = isSupabaseConfigured() ? "supabase" : "jsonl";
-  const client = new AgentServerClient({
-    baseUrl: AGENT_SERVER_URL,
-    sessionApiKey: apiKey,
-  });
-  const collector = new Collector({ client, store });
-
+/**
+ * Everything a request needs once CORS/OPTIONS has already been handled by
+ * the caller (a preflight carries no key, so that check must run first):
+ * health, auth, dispatch to the router, and mapping a thrown error to a
+ * status code. Split out from `main()` so it is testable without booting a
+ * real HTTP server or the collector's background poll loop.
+ */
+export function createRequestHandler({
+  store,
+  client,
+  collector,
+  storeKind,
+  apiKey,
+}) {
   const routes = createRouter({ store, client, collector, storeKind });
 
-  const server = createServer(async (req, res) => {
-    applyCorsHeaders(res, req.headers.origin, ALLOWED_CORS_ORIGINS);
-    if (req.method === "OPTIONS") {
-      // Preflight only — the real request follows once the browser sees
-      // these headers allow it. Nothing to authenticate or route yet.
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
+  return async function handleRequest(req, res) {
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname.startsWith(BASE_PATH)
       ? url.pathname.slice(BASE_PATH.length) || "/"
@@ -198,9 +201,49 @@ async function main() {
       const handled = await routes(req, res, path, url);
       if (!handled) sendJson(res, 404, { error: `No route for ${path}` });
     } catch (error) {
-      console.error(`[agentops] ${req.method} ${path} failed:`, error.message);
-      sendJson(res, 500, { error: error.message });
+      // A malformed request body (see readBody's `badRequestError`) is the
+      // caller's fault, not the server's — only default to 500 when the
+      // thrown error didn't already say otherwise.
+      const status = typeof error.status === "number" ? error.status : 500;
+      if (status >= 500) {
+        console.error(
+          `[agentops] ${req.method} ${path} failed:`,
+          error.message,
+        );
+      }
+      sendJson(res, status, { error: error.message });
     }
+  };
+}
+
+async function main() {
+  const apiKey = await resolveSessionApiKey();
+  const store = createStore();
+  const storeKind = isSupabaseConfigured() ? "supabase" : "jsonl";
+  const client = new AgentServerClient({
+    baseUrl: AGENT_SERVER_URL,
+    sessionApiKey: apiKey,
+  });
+  const collector = new Collector({ client, store });
+
+  const handleRequest = createRequestHandler({
+    store,
+    client,
+    collector,
+    storeKind,
+    apiKey,
+  });
+
+  const server = createServer(async (req, res) => {
+    applyCorsHeaders(res, req.headers.origin, ALLOWED_CORS_ORIGINS);
+    if (req.method === "OPTIONS") {
+      // Preflight only — the real request follows once the browser sees
+      // these headers allow it. Nothing to authenticate or route yet.
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    await handleRequest(req, res);
   });
 
   server.listen(PORT, () => {
@@ -220,7 +263,7 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
-function createRouter({ store, client, collector, storeKind }) {
+export function createRouter({ store, client, collector, storeKind }) {
   return async function route(req, res, path, url) {
     const method = req.method ?? "GET";
     const now = new Date().toISOString();
@@ -509,7 +552,16 @@ function createRouter({ store, client, collector, storeKind }) {
   };
 }
 
-main().catch((error) => {
-  console.error(`[agentops] failed to start: ${error.message}`);
-  process.exitCode = 1;
-});
+// Only run the server when this file is executed directly (`node
+// scripts/agentops-server.mjs`), not when a test imports it for
+// `createRouter`/`createRequestHandler` — matching the guard `dev-safe.mjs`
+// and other launcher scripts in this repo already use.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main().catch((error) => {
+    console.error(`[agentops] failed to start: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

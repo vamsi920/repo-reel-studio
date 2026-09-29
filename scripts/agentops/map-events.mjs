@@ -43,18 +43,6 @@ export const RUN_PHASES = [
   "completed",
 ];
 
-/** Human-readable labels; the UI renders these, the ids above are the contract. */
-export const RUN_PHASE_LABELS = {
-  planning: "Planning",
-  repository_inspection: "Repository inspection",
-  tool_call: "Tool call",
-  code_edit: "Code edit",
-  tests: "Tests",
-  review: "Review",
-  waiting_approval: "Waiting approval",
-  completed: "Completed",
-};
-
 /** Action kinds that read the repository rather than change it. */
 const INSPECTION_ACTION_KINDS = new Set([
   "GlobAction",

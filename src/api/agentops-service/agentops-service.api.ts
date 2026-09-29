@@ -27,7 +27,6 @@ import type {
   AgentOpsRun,
   AgentOpsRunControl,
   AgentOpsRunDetail,
-  AgentOpsSpan,
   AgentOpsSummary,
 } from "./agentops-service.types";
 
@@ -198,13 +197,6 @@ class AgentOpsService {
 
   static async getRun(runId: string): Promise<AgentOpsRunDetail> {
     return request<AgentOpsRunDetail>(`/runs/${encodeURIComponent(runId)}`);
-  }
-
-  static async getRunSpans(runId: string): Promise<AgentOpsSpan[]> {
-    const { spans } = await request<{ spans: AgentOpsSpan[] }>(
-      `/runs/${encodeURIComponent(runId)}/spans`,
-    );
-    return spans;
   }
 
   /**
