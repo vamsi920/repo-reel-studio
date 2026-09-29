@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin updated.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Skills in this plugin bundle",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Discover skills to add to your workspace. Open a card for prompts, curl, and install flows. Search from the sidebar to filter the list. Enable or disable default skills. Disabled skills will not be loaded into agent context.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Your active agent profile, \"{{profileName}}\", launches new conversations from its own configuration, so these toggles won't take effect until a conversation starts without a named agent profile.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Add skill",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Use skill",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Add a skill",

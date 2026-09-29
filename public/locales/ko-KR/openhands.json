@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "플러그인이 업데이트되었습니다.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "이 플러그인 번들에 포함된 스킬",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "워크스페이스에 추가할 스킬을 찾아보세요. 카드를 열어 프롬프트, curl, 설치 흐름을 확인하세요. 사이드바에서 검색하여 목록을 필터링하세요. 기본 스킬을 활성화하거나 비활성화하세요. 비활성화된 스킬은 에이전트 컨텍스트에 로드되지 않습니다.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "현재 활성화된 에이전트 프로필 \"{{profileName}}\"은(는) 자체 구성으로 새 대화를 시작하므로, 명명된 에이전트 프로필을 사용하지 않는 대화가 시작될 때까지 이 토글은 적용되지 않습니다.",
   "SETTINGS$SKILLS_ADD_BUTTON": "스킬 추가",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "스킬 사용",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "스킬 추가",

@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "外掛程式已更新。",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "此外掛程式套件中的技能",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "探索要加入工作區的技能。開啟卡片以查看提示、curl 和安裝流程。從側邊欄搜尋以篩選清單。啟用或停用預設技能。停用的技能不會載入到代理上下文中。",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "您目前啟用的代理設定檔「{{profileName}}」會使用自身的設定啟動新對話，因此在未使用具名代理設定檔的對話開始之前，這些切換不會生效。",
   "SETTINGS$SKILLS_ADD_BUTTON": "新增技能",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "使用技能",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "新增技能",

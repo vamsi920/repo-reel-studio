@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin mis à jour.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Compétences incluses dans ce plugin",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Découvrez des compétences à ajouter à votre espace de travail. Ouvrez une fiche pour les invites, curl et les flux d'installation. Recherchez dans la barre latérale pour filtrer la liste. Activez ou désactivez les compétences par défaut. Les compétences désactivées ne seront pas chargées dans le contexte de l'agent.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Votre profil d'agent actif, « {{profileName}} », démarre les nouvelles conversations avec sa propre configuration. Ces bascules ne prendront effet que lorsqu'une conversation démarrera sans profil d'agent nommé.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Ajouter une compétence",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Utiliser la compétence",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Ajouter une compétence",

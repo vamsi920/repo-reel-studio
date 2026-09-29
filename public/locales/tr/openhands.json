@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Eklenti güncellendi.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Bu eklenti paketindeki yetenekler",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Çalışma alanınıza eklenecek yetenekleri keşfedin. İstemler, curl ve yükleme akışları için bir kart açın. Listeyi filtrelemek için kenar çubuğundan arama yapın. Varsayılan yetenekleri etkinleştirin veya devre dışı bırakın. Devre dışı bırakılan yetenekler ajan bağlamına yüklenmez.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Etkin ajan profiliniz \"{{profileName}}\", yeni konuşmaları kendi yapılandırmasıyla başlatır; bu nedenle adlandırılmış bir ajan profili kullanılmayan bir konuşma başlayana kadar bu anahtarlar etkili olmaz.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Yetenek ekle",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Yeteneği kullan",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Yetenek ekle",

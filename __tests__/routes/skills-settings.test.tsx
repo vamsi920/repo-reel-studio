@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import SkillsSettingsScreen from "#/routes/skills-settings";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import SkillsService from "#/api/skills-service";
+import type { AgentProfileListResponse } from "#/api/agent-profiles-service/agent-profiles-service.api";
 import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
 import {
   ADD_SKILL_DOCS_URL,
@@ -39,6 +40,18 @@ vi.mock("#/context/navigation-context", () => ({
     isNavigating: false,
   }),
   NavigationProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Service-level mock (not the hook): drives the "active profile bypasses
+// these toggles" notice, which reads the real useAgentProfiles query.
+// Defaults to no profiles so every pre-existing test in this file keeps
+// seeing no notice, matching current (unmocked) behavior.
+const listAgentProfilesMock = vi
+  .fn<() => Promise<AgentProfileListResponse>>()
+  .mockResolvedValue({ profiles: [], active_agent_profile_id: null });
+vi.mock("#/api/agent-profiles-service/agent-profiles-service.api", () => ({
+  default: { listProfiles: () => listAgentProfilesMock() },
+  WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME: "default",
 }));
 
 function buildSettings(overrides: Partial<Settings> = {}): Settings {
@@ -94,9 +107,7 @@ function renderSkillsSettingsScreen(
 
   render(<RouterProvider router={router} />, {
     wrapper: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     ),
   });
 
@@ -107,6 +118,9 @@ describe("SkillsSettingsScreen", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     navigateMock.mockReset();
+    listAgentProfilesMock
+      .mockReset()
+      .mockResolvedValue({ profiles: [], active_agent_profile_id: null });
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
   });
 
@@ -167,10 +181,7 @@ describe("SkillsSettingsScreen", () => {
     expect(await screen.findByTestId("skills-error")).toHaveTextContent(
       "SETTINGS$SKILLS_LOAD_ERROR",
     );
-    expect(screen.getByTestId("skills-error")).toHaveAttribute(
-      "role",
-      "alert",
-    );
+    expect(screen.getByTestId("skills-error")).toHaveAttribute("role", "alert");
     expect(screen.queryByTestId("skills-empty")).not.toBeInTheDocument();
   });
 
@@ -822,7 +833,10 @@ Full skill body.`,
     // (React Query's structural sharing would otherwise reuse the exact same
     // `settings` object/skip this effect entirely if nothing had changed).
     getSpy.mockResolvedValue(
-      buildSettings({ disabled_skills: [], git_user_name: "changed-elsewhere" }),
+      buildSettings({
+        disabled_skills: [],
+        git_user_name: "changed-elsewhere",
+      }),
     );
     await act(async () => {
       await queryClient.invalidateQueries({
@@ -1020,5 +1034,90 @@ Full skill body.`,
       setActiveSelection(null);
       __resetActiveStoreForTests();
     }
+  });
+
+  // Regression: a conversation launched from a named agent profile (or any
+  // ACP profile) resolves its skills server-side from that profile and never
+  // sends the personal disabled_skills list these toggles write to, so the
+  // page's own "Disabled skills will not be loaded into agent context"
+  // promise silently didn't hold while such a profile was active, with no
+  // indication to the user.
+  it("shows a notice when the active agent profile is a named, non-default profile", async () => {
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-1",
+          name: "neodevex-gemini-default",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gemini",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-1",
+    });
+
+    renderSkillsSettingsScreen();
+
+    // The i18n mock returns the raw key rather than an interpolated string;
+    // the real translated copy carries the profile name, verified separately
+    // by `check-translation-completeness` and the translation.json entry.
+    expect(
+      await screen.findByTestId("skills-active-profile-notice"),
+    ).toHaveTextContent("SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE");
+  });
+
+  it('shows a notice when the active profile is an ACP profile even if it\'s named "default"', async () => {
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-1",
+          name: "default",
+          agent_kind: "acp",
+          revision: 1,
+          llm_profile_ref: null,
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-1",
+    });
+
+    renderSkillsSettingsScreen();
+
+    expect(
+      await screen.findByTestId("skills-active-profile-notice"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show a notice when the active profile is the well-known default openhands profile", async () => {
+    vi.spyOn(SkillsService, "getSkills").mockResolvedValue([]);
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-1",
+          name: "default",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gemini",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-1",
+    });
+
+    renderSkillsSettingsScreen();
+    await screen.findByTestId("skills-page");
+    // Wait for the profiles query to actually resolve before asserting
+    // absence, or this would trivially pass before it ever ran.
+    await waitFor(() => expect(listAgentProfilesMock).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(
+      screen.queryByTestId("skills-active-profile-notice"),
+    ).not.toBeInTheDocument();
   });
 });

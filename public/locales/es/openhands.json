@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Complemento actualizado.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Habilidades incluidas en este complemento",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Descubre habilidades para agregar a tu espacio de trabajo. Abre una tarjeta para ver indicaciones, curl y flujos de instalación. Busca desde la barra lateral para filtrar la lista. Habilita o deshabilita las habilidades predeterminadas. Las habilidades deshabilitadas no se cargarán en el contexto del agente.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Tu perfil de agente activo, \"{{profileName}}\", inicia nuevas conversaciones con su propia configuración, por lo que estos interruptores no tendrán efecto hasta que una conversación comience sin un perfil de agente con nombre.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Agregar habilidad",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Usar habilidad",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Agregar una habilidad",

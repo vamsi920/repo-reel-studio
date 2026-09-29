@@ -24,8 +24,11 @@ import {
 import { SkillsToolbar } from "#/components/features/skills/skills-toolbar";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
 import { SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
+import { useAgentProfiles } from "#/hooks/query/use-agent-profiles";
 import { useSettings } from "#/hooks/query/use-settings";
 import { useSkills } from "#/hooks/query/use-skills";
+import { useActiveBackend } from "#/contexts/active-backend-context";
+import { WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME } from "#/api/agent-profiles-service/agent-profiles-service.api";
 import { I18nKey } from "#/i18n/declaration";
 import type { SkillInfo } from "#/types/settings";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
@@ -52,6 +55,28 @@ function SkillsSettingsScreen() {
     isError: skillsFailed,
     refetch: refetchSkills,
   } = useSkills();
+  const { backend } = useActiveBackend();
+  const { data: agentProfiles } = useAgentProfiles();
+
+  // A new conversation launched from a named (non-`default`) agent profile,
+  // or any ACP profile, resolves its skill list from that profile
+  // server-side and never sends the personal `agent_settings`/`agent_context`
+  // payload these toggles write to (see `useCreateConversation`'s
+  // `effectiveAgentProfileId` gate) -- so the page's own promise that
+  // "disabled skills will not be loaded into agent context" silently doesn't
+  // hold while such a profile is active. Cloud never falls back to
+  // `agent_settings` at all (it always launches from the resolved profile),
+  // so the toggles are bypassed there regardless of profile name. Surface
+  // that instead of letting the user believe a toggle took effect when it
+  // didn't.
+  const activeAgentProfile = agentProfiles?.profiles?.find(
+    (profile) => profile.id === agentProfiles.active_agent_profile_id,
+  );
+  const skillTogglesBypassedByActiveProfile =
+    !!activeAgentProfile &&
+    (backend.kind === "cloud" ||
+      activeAgentProfile.name !== WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME ||
+      activeAgentProfile.agent_kind !== "openhands");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [queryInput, setQueryInput] = React.useState(
@@ -257,6 +282,18 @@ function SkillsSettingsScreen() {
               {t(I18nKey.SETTINGS$SKILLS_ADD_BUTTON)}
             </BrandButton>
           </div>
+
+          {skillTogglesBypassedByActiveProfile ? (
+            <div
+              role="status"
+              data-testid="skills-active-profile-notice"
+              className="rounded-lg border border-tertiary bg-tertiary/40 px-4 py-3 text-sm text-tertiary-light"
+            >
+              {t(I18nKey.SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE, {
+                profileName: activeAgentProfile?.name,
+              })}
+            </div>
+          ) : null}
 
           {isLoading ? (
             <div

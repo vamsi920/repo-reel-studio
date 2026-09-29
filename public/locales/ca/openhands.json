@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Connector actualitzat.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Habilitats incloses en aquest connector",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Descobreix habilitats per afegir al teu espai de treball. Obre una targeta per veure indicacions, curl i fluxos d'instal·lació. Cerca des de la barra lateral per filtrar la llista. Activeu o desactiveu les habilitats predeterminades. Les habilitats desactivades no es carregaran al context de l'agent.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "El teu perfil d'agent actiu, \"{{profileName}}\", inicia noves converses amb la seva pròpia configuració, de manera que aquests commutadors no tindran efecte fins que una conversa comenci sense un perfil d'agent amb nom.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Afegir habilitat",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Utilitzar habilitat",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Afegir una habilitat",

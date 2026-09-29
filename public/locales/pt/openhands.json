@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin atualizado.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Habilidades incluídas neste plugin",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Descubra habilidades para adicionar ao seu espaço de trabalho. Abra um cartão para prompts, curl e fluxos de instalação. Pesquise na barra lateral para filtrar a lista. Ative ou desative as habilidades padrão. Habilidades desativadas não serão carregadas no contexto do agente.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Seu perfil de agente ativo, \"{{profileName}}\", inicia novas conversas com sua própria configuração, portanto, essas alternâncias só terão efeito quando uma conversa começar sem um perfil de agente nomeado.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Adicionar habilidade",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Usar habilidade",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Adicionar uma habilidade",

@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin aktualisiert.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Fähigkeiten in diesem Plugin-Paket",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Entdecken Sie Fähigkeiten, die Sie Ihrem Arbeitsbereich hinzufügen können. Öffnen Sie eine Karte für Eingabeaufforderungen, curl und Installationsabläufe. Suchen Sie in der Seitenleiste, um die Liste zu filtern. Aktivieren oder deaktivieren Sie Standardfähigkeiten. Deaktivierte Fähigkeiten werden nicht in den Agentenkontext geladen.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Ihr aktives Agentenprofil „{{profileName}}“ startet neue Unterhaltungen mit seiner eigenen Konfiguration. Diese Schalter wirken sich erst aus, sobald eine Unterhaltung ohne benanntes Agentenprofil gestartet wird.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Skill hinzufügen",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Skill verwenden",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Skill hinzufügen",

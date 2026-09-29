@@ -34016,6 +34016,23 @@
     "uk": "Відкривайте навички для додавання до вашого робочого простору. Відкрийте картку для запитів, curl та процесів встановлення. Шукайте на бічній панелі, щоб фільтрувати список. Увімкніть або вимкніть навички за замовчуванням. Вимкнені навички не завантажуватимуться в контекст агента.",
     "ca": "Descobreix habilitats per afegir al teu espai de treball. Obre una targeta per veure indicacions, curl i fluxos d'instal·lació. Cerca des de la barra lateral per filtrar la llista. Activeu o desactiveu les habilitats predeterminades. Les habilitats desactivades no es carregaran al context de l'agent."
   },
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": {
+    "en": "Your active agent profile, \"{{profileName}}\", launches new conversations from its own configuration, so these toggles won't take effect until a conversation starts without a named agent profile.",
+    "ja": "現在有効なエージェントプロファイル「{{profileName}}」は独自の設定で新しい会話を開始するため、名前付きエージェントプロファイルを使用しない会話が始まるまで、これらの切り替えは反映されません。",
+    "zh-CN": "您当前激活的代理配置文件“{{profileName}}”会使用自身的配置启动新对话，因此在未使用具名代理配置文件的对话开始之前，这些开关不会生效。",
+    "zh-TW": "您目前啟用的代理設定檔「{{profileName}}」會使用自身的設定啟動新對話，因此在未使用具名代理設定檔的對話開始之前，這些切換不會生效。",
+    "ko-KR": "현재 활성화된 에이전트 프로필 \"{{profileName}}\"은(는) 자체 구성으로 새 대화를 시작하므로, 명명된 에이전트 프로필을 사용하지 않는 대화가 시작될 때까지 이 토글은 적용되지 않습니다.",
+    "no": "Den aktive agentprofilen din, «{{profileName}}», starter nye samtaler med sin egen konfigurasjon, så disse bryterne trer ikke i kraft før en samtale starter uten en navngitt agentprofil.",
+    "ar": "يبدأ ملف تعريف الوكيل النشط لديك، \"{{profileName}}\"، المحادثات الجديدة بإعداداته الخاصة، لذا لن تُطبَّق هذه المفاتيح حتى تبدأ محادثة بدون ملف تعريف وكيل مُسمّى.",
+    "de": "Ihr aktives Agentenprofil „{{profileName}}“ startet neue Unterhaltungen mit seiner eigenen Konfiguration. Diese Schalter wirken sich erst aus, sobald eine Unterhaltung ohne benanntes Agentenprofil gestartet wird.",
+    "fr": "Votre profil d'agent actif, « {{profileName}} », démarre les nouvelles conversations avec sa propre configuration. Ces bascules ne prendront effet que lorsqu'une conversation démarrera sans profil d'agent nommé.",
+    "it": "Il tuo profilo agente attivo, \"{{profileName}}\", avvia le nuove conversazioni con la propria configurazione, quindi questi interruttori non avranno effetto finché non inizierà una conversazione senza un profilo agente denominato.",
+    "pt": "Seu perfil de agente ativo, \"{{profileName}}\", inicia novas conversas com sua própria configuração, portanto, essas alternâncias só terão efeito quando uma conversa começar sem um perfil de agente nomeado.",
+    "es": "Tu perfil de agente activo, \"{{profileName}}\", inicia nuevas conversaciones con su propia configuración, por lo que estos interruptores no tendrán efecto hasta que una conversación comience sin un perfil de agente con nombre.",
+    "tr": "Etkin ajan profiliniz \"{{profileName}}\", yeni konuşmaları kendi yapılandırmasıyla başlatır; bu nedenle adlandırılmış bir ajan profili kullanılmayan bir konuşma başlayana kadar bu anahtarlar etkili olmaz.",
+    "uk": "Ваш активний профіль агента «{{profileName}}» запускає нові розмови з власною конфігурацією, тому ці перемикачі не діятимуть, доки розмова не почнеться без іменованого профілю агента.",
+    "ca": "El teu perfil d'agent actiu, \"{{profileName}}\", inicia noves converses amb la seva pròpia configuració, de manera que aquests commutadors no tindran efecte fins que una conversa comenci sense un perfil d'agent amb nom."
+  },
   "SETTINGS$SKILLS_ADD_BUTTON": {
     "en": "Add skill",
     "ja": "スキルを追加",

@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin oppdatert.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Ferdigheter i denne plugin-pakken",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Oppdag ferdigheter du kan legge til i arbeidsområdet ditt. Åpne et kort for ledetekster, curl og installasjonsflyt. Søk fra sidefeltet for å filtrere listen. Aktiver eller deaktiver standardferdigheter. Deaktiverte ferdigheter lastes ikke inn i agentkonteksten.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Den aktive agentprofilen din, «{{profileName}}», starter nye samtaler med sin egen konfigurasjon, så disse bryterne trer ikke i kraft før en samtale starter uten en navngitt agentprofil.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Legg til ferdighet",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Bruk ferdighet",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Legg til en ferdighet",

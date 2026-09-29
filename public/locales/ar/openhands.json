@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "تم تحديث الإضافة.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "المهارات في حزمة الإضافة هذه",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "اكتشف المهارات لإضافتها إلى مساحة عملك. افتح بطاقة لعرض التعليمات وأوامر curl وعمليات التثبيت. ابحث من الشريط الجانبي لتصفية القائمة. قم بتمكين أو تعطيل المهارات الافتراضية. لن يتم تحميل المهارات المعطلة في سياق الوكيل.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "يبدأ ملف تعريف الوكيل النشط لديك، \"{{profileName}}\"، المحادثات الجديدة بإعداداته الخاصة، لذا لن تُطبَّق هذه المفاتيح حتى تبدأ محادثة بدون ملف تعريف وكيل مُسمّى.",
   "SETTINGS$SKILLS_ADD_BUTTON": "إضافة مهارة",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "استخدام المهارة",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "إضافة مهارة",

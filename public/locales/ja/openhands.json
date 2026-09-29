@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "プラグインを更新しました。",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "このプラグインバンドルに含まれるスキル",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "ワークスペースに追加するスキルを見つけましょう。カードを開いて、プロンプト、curl、インストール手順を確認できます。サイドバーから検索してリストを絞り込めます。デフォルトスキルの有効化・無効化が可能です。無効化されたスキルはエージェントコンテキストに読み込まれません。",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "現在有効なエージェントプロファイル「{{profileName}}」は独自の設定で新しい会話を開始するため、名前付きエージェントプロファイルを使用しない会話が始まるまで、これらの切り替えは反映されません。",
   "SETTINGS$SKILLS_ADD_BUTTON": "スキルを追加",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "スキルを使う",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "スキルを追加",

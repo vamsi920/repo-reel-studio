@@ -2000,6 +2000,7 @@
   "SETTINGS$PLUGINS_REFRESH_SUCCESS": "Plugin aggiornato.",
   "SETTINGS$PLUGINS_SKILLS_IN_BUNDLE": "Competenze incluse in questo plugin",
   "SETTINGS$SKILLS_PAGE_DESCRIPTION": "Scopri le competenze da aggiungere al tuo spazio di lavoro. Apri una scheda per i prompt, curl e i flussi di installazione. Cerca dalla barra laterale per filtrare l'elenco. Abilita o disabilita le competenze predefinite. Le competenze disabilitate non verranno caricate nel contesto dell'agente.",
+  "SETTINGS$SKILLS_ACTIVE_PROFILE_NOTICE": "Il tuo profilo agente attivo, \"{{profileName}}\", avvia le nuove conversazioni con la propria configurazione, quindi questi interruttori non avranno effetto finché non inizierà una conversazione senza un profilo agente denominato.",
   "SETTINGS$SKILLS_ADD_BUTTON": "Aggiungi competenza",
   "SETTINGS$SKILLS_USE_SKILL_BUTTON": "Usa competenza",
   "SETTINGS$SKILLS_ADD_MODAL_TITLE": "Aggiungi una competenza",
