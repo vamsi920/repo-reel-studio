@@ -1579,6 +1579,8 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "確認モードが有効になっています",
   "COMMON$MOST_RECENT": "最新",
   "HOME$NO_REPOSITORY_FOUND": "会話を開始するためのリポジトリが見つかりません",
+  "HOME$NO_BRANCH_FOUND": "ブランチが見つかりません",
+  "HOME$NO_BRANCH_AVAILABLE": "利用可能なブランチがありません",
   "HOME$GITHUB_NOT_CONNECTED": "GitHubが接続されていません — [環境] > [接続]で再接続してください",
   "CONVERSATION$VERSION_V1_NEW": "会話API バージョン1（新規）",
   "CONVERSATION$VERSION_V0_LEGACY": "会話API バージョン0（レガシー）",

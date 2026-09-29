@@ -1579,6 +1579,8 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Onay modu etkinleştirildi",
   "COMMON$MOST_RECENT": "En Son",
   "HOME$NO_REPOSITORY_FOUND": "Konuşma başlatmak için depo bulunamadı",
+  "HOME$NO_BRANCH_FOUND": "Dal bulunamadı",
+  "HOME$NO_BRANCH_AVAILABLE": "Kullanılabilir dal yok",
   "HOME$GITHUB_NOT_CONNECTED": "GitHub bağlı değil — Ortam > Bağlantılar bölümünden yeniden bağlanın",
   "CONVERSATION$VERSION_V1_NEW": "Konuşma API'si Sürüm 1 (Yeni)",
   "CONVERSATION$VERSION_V0_LEGACY": "Konuşma API'si Sürüm 0 (Eski)",

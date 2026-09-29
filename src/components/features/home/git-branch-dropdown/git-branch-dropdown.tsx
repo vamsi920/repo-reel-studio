@@ -65,6 +65,7 @@ export function GitBranchDropdown({
     hasNextPage,
     isFetchingNextPage,
     isSearchLoading,
+    isProviderDisconnected,
   } = useBranchData(
     repository,
     provider,
@@ -236,9 +237,17 @@ export function GitBranchDropdown({
         getItemProps={getItemProps}
         onScroll={handleMenuScroll}
         menuRef={menuRef}
+        isProviderDisconnected={isProviderDisconnected}
       />
 
-      <ErrorMessage isError={isError} message={branchError?.message} />
+      {/* `isProviderDisconnected` already covers this failure with the
+          friendlier "GitHub isn't connected" copy in the empty state above --
+          showing the raw error too would duplicate the same problem as two
+          separate, conflicting messages. */}
+      <ErrorMessage
+        isError={isError && !isProviderDisconnected}
+        message={branchError?.message}
+      />
     </div>
   );
 }

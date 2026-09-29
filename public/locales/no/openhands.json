@@ -1579,6 +1579,8 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Bekreftelsesmodus aktivert",
   "COMMON$MOST_RECENT": "Nyeste",
   "HOME$NO_REPOSITORY_FOUND": "Ingen repository funnet for å starte samtale",
+  "HOME$NO_BRANCH_FOUND": "Ingen grener funnet",
+  "HOME$NO_BRANCH_AVAILABLE": "Ingen grener tilgjengelig",
   "HOME$GITHUB_NOT_CONNECTED": "GitHub er ikke tilkoblet — koble til på nytt under Miljø > Tilkoblinger",
   "CONVERSATION$VERSION_V1_NEW": "Samtale-API versjon 1 (Ny)",
   "CONVERSATION$VERSION_V0_LEGACY": "Samtale-API versjon 0 (Gammel)",

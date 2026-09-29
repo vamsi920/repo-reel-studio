@@ -228,4 +228,141 @@ describe("GitBranchDropdown", () => {
       ).toBeInTheDocument();
     });
   });
+
+  // Mitigation: a dead GitHub connection used to leave the branch dropdown
+  // stuck on a bare "No branches found"/"No branches available" empty state
+  // -- indistinguishable from a repository that genuinely has no branches --
+  // because only the paginated list query's isError reached this component,
+  // and typing a search term (the common path once a repo is picked) swaps
+  // the displayed branches to a query whose own error was never read at
+  // all. `isProviderDisconnected` now renders the same actionable message
+  // the sibling repository dropdown already shows for this failure.
+  describe("disconnected provider state", () => {
+    it("shows a reconnect message instead of the generic empty state when the provider is confirmed disconnected", async () => {
+      mockUseBranchData.mockReturnValue({
+        branches: [],
+        isLoading: false,
+        isError: false,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isSearchLoading: false,
+        isProviderDisconnected: true,
+      });
+
+      render(
+        <GitBranchDropdown
+          repository="user/repo"
+          provider="github"
+          selectedBranch={null}
+          onBranchSelect={mockOnBranchSelect}
+        />,
+        {
+          wrapper: ({ children }) => (
+            <QueryClientProvider
+              client={
+                new QueryClient({
+                  defaultOptions: { queries: { retry: false } },
+                })
+              }
+            >
+              {children}
+            </QueryClientProvider>
+          ),
+        },
+      );
+
+      const input = screen.getByTestId("git-branch-dropdown-input");
+      await userEvent.click(input);
+
+      // vitest.setup.ts mocks useTranslation's t() to return the raw key,
+      // not a translated string.
+      expect(
+        await screen.findByTestId("git-branch-dropdown-disconnected"),
+      ).toHaveTextContent("HOME$GITHUB_NOT_CONNECTED");
+    });
+
+    it("shows the generic empty state when there simply are no branches", async () => {
+      mockUseBranchData.mockReturnValue({
+        branches: [],
+        isLoading: false,
+        isError: false,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isSearchLoading: false,
+        isProviderDisconnected: false,
+      });
+
+      render(
+        <GitBranchDropdown
+          repository="user/repo"
+          provider="github"
+          selectedBranch={null}
+          onBranchSelect={mockOnBranchSelect}
+        />,
+        {
+          wrapper: ({ children }) => (
+            <QueryClientProvider
+              client={
+                new QueryClient({
+                  defaultOptions: { queries: { retry: false } },
+                })
+              }
+            >
+              {children}
+            </QueryClientProvider>
+          ),
+        },
+      );
+
+      const input = screen.getByTestId("git-branch-dropdown-input");
+      await userEvent.click(input);
+
+      expect(
+        await screen.findByTestId("git-branch-dropdown-empty"),
+      ).toHaveTextContent("HOME$NO_BRANCH_AVAILABLE");
+    });
+
+    it("suppresses the raw error message when the provider is confirmed disconnected", () => {
+      mockUseBranchData.mockReturnValue({
+        branches: [],
+        isLoading: false,
+        isError: true,
+        error: new Error("GitHub API error (401)"),
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        isSearchLoading: false,
+        isProviderDisconnected: true,
+      });
+
+      render(
+        <GitBranchDropdown
+          repository="user/repo"
+          provider="github"
+          selectedBranch={null}
+          onBranchSelect={mockOnBranchSelect}
+        />,
+        {
+          wrapper: ({ children }) => (
+            <QueryClientProvider
+              client={
+                new QueryClient({
+                  defaultOptions: { queries: { retry: false } },
+                })
+              }
+            >
+              {children}
+            </QueryClientProvider>
+          ),
+        },
+      );
+
+      // The disconnected empty state already covers this -- showing the raw
+      // "GitHub API error (401)" too would duplicate the same problem as two
+      // conflicting messages.
+      expect(screen.queryByTestId("dropdown-error")).not.toBeInTheDocument();
+    });
+  });
 });

@@ -1579,6 +1579,8 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "Mode de confirmation activé",
   "COMMON$MOST_RECENT": "Le plus récent",
   "HOME$NO_REPOSITORY_FOUND": "Aucun dépôt trouvé pour lancer la conversation",
+  "HOME$NO_BRANCH_FOUND": "Aucune branche trouvée",
+  "HOME$NO_BRANCH_AVAILABLE": "Aucune branche disponible",
   "HOME$GITHUB_NOT_CONNECTED": "GitHub n'est pas connecté — reconnectez-vous dans Environnement > Connexions",
   "CONVERSATION$VERSION_V1_NEW": "API de conversation version 1 (Nouvelle)",
   "CONVERSATION$VERSION_V0_LEGACY": "API de conversation version 0 (Ancienne)",

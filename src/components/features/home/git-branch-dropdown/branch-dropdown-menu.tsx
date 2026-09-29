@@ -3,7 +3,9 @@ import {
   UseComboboxGetMenuPropsOptions,
   UseComboboxGetItemPropsOptions,
 } from "downshift";
+import { useTranslation } from "react-i18next";
 import { Branch } from "#/types/git";
+import { I18nKey } from "#/i18n/declaration";
 import { DropdownItem } from "../shared/dropdown-item";
 import { GenericDropdownMenu, EmptyState } from "../shared";
 
@@ -21,6 +23,15 @@ export interface BranchDropdownMenuProps {
   ) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
   onScroll: (event: React.UIEvent<HTMLUListElement>) => void;
   menuRef: React.RefObject<HTMLUListElement | null>;
+  /**
+   * True once we've conclusively determined the GitHub connection this
+   * branch lookup depends on is dead (see useBranchData/isProviderDisconnected).
+   * Renders the same actionable "GitHub isn't connected" message the sibling
+   * repository dropdown already shows for this failure, instead of a bare
+   * empty state indistinguishable from "this repository really has no
+   * branches".
+   */
+  isProviderDisconnected?: boolean;
 }
 
 export function BranchDropdownMenu({
@@ -33,7 +44,9 @@ export function BranchDropdownMenu({
   getItemProps,
   onScroll,
   menuRef,
+  isProviderDisconnected = false,
 }: BranchDropdownMenuProps) {
+  const { t } = useTranslation("openhands");
   const renderItem = (
     branch: Branch,
     index: number,
@@ -58,9 +71,21 @@ export function BranchDropdownMenu({
     <li className="px-3 py-2">
       <EmptyState
         inputValue={currentInputValue}
-        searchMessage="No branches found"
-        emptyMessage="No branches available"
-        testId="git-branch-dropdown-empty"
+        searchMessage={
+          isProviderDisconnected
+            ? t(I18nKey.HOME$GITHUB_NOT_CONNECTED)
+            : t(I18nKey.HOME$NO_BRANCH_FOUND)
+        }
+        emptyMessage={
+          isProviderDisconnected
+            ? t(I18nKey.HOME$GITHUB_NOT_CONNECTED)
+            : t(I18nKey.HOME$NO_BRANCH_AVAILABLE)
+        }
+        testId={
+          isProviderDisconnected
+            ? "git-branch-dropdown-disconnected"
+            : "git-branch-dropdown-empty"
+        }
       />
     </li>
   );

@@ -3,6 +3,8 @@ import { useRepositoryBranchesPaginated } from "./use-repository-branches";
 import { useSearchBranches } from "./use-search-branches";
 import { Branch } from "#/types/git";
 import { Provider } from "#/types/settings";
+import { useUserProviders } from "#/hooks/use-user-providers";
+import { GithubProxyError } from "#/api/git-service/local-github-service.api";
 
 export function useBranchData(
   repository: string | null,
@@ -24,12 +26,12 @@ export function useBranchData(
   } = useRepositoryBranchesPaginated(repository, 30, provider);
 
   // Search branches when user types
-  const { data: searchData, isLoading: isSearchLoading } = useSearchBranches(
-    repository,
-    processedSearchInput,
-    30,
-    provider,
-  );
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    error: searchError,
+  } = useSearchBranches(repository, processedSearchInput, 30, provider);
 
   // Combine all branches from paginated data - use .items for V1 response
   const allBranches = useMemo(
@@ -56,13 +58,38 @@ export function useBranchData(
     allBranches.length > 0 &&
     !processedSearchInput; // Don't search for default branch when user is searching
 
-  const { data: defaultBranchData, isLoading: isDefaultBranchLoading } =
-    useSearchBranches(
-      repository,
-      shouldSearchDefaultBranch ? defaultBranch : "",
-      30,
-      provider,
-    );
+  const {
+    data: defaultBranchData,
+    isLoading: isDefaultBranchLoading,
+    isError: isDefaultBranchError,
+    error: defaultBranchError,
+  } = useSearchBranches(
+    repository,
+    shouldSearchDefaultBranch ? defaultBranch : "",
+    30,
+    provider,
+  );
+
+  // `isGithubDisconnected` (DB-row presence only) plus a live auth failure
+  // from any of the three branch queries above -- matching
+  // useRepositoryData's isProviderDisconnected for the sibling repository
+  // dropdown -- so a dead GitHub connection always renders the same
+  // actionable message instead of a bare "No branches found"/"No branches
+  // available" empty state that looks identical to a repository that
+  // genuinely has no branches. Branch lookups go through the same
+  // GithubProxyError-throwing invokeProxy helper as repository lookups
+  // (getLocalGithubRepositoryBranches), so check its error code rather than
+  // matching on `message` -- a friendly, i18n-facing string that can (and
+  // did: see use-repository-data.tsx) change wording without notice.
+  const { isGithubDisconnected } = useUserProviders();
+  const combinedError = error ?? searchError ?? defaultBranchError ?? null;
+  const isGithubAuthFailure =
+    provider === "github" &&
+    combinedError instanceof GithubProxyError &&
+    (combinedError.code === "github_auth_error" ||
+      combinedError.code === "not_connected");
+  const isProviderDisconnected =
+    provider === "github" && (isGithubDisconnected || isGithubAuthFailure);
 
   // Get branches to display with default branch prioritized
   const branches = useMemo(() => {
@@ -123,8 +150,13 @@ export function useBranchData(
     hasNextPage,
     isLoading: isLoading || isDefaultBranchLoading,
     isFetchingNextPage,
-    isError,
-    error,
+    // Previously only the paginated list query's error reached the
+    // dropdown -- a search-only failure (the common case once the user
+    // types anything) was invisible here. See the "branch dropdown shows a
+    // permanent empty state" report.
+    isError: isError || isSearchError || isDefaultBranchError,
+    error: combinedError,
     isSearchLoading,
+    isProviderDisconnected,
   };
 }

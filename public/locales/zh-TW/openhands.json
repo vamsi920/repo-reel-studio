@@ -1579,6 +1579,8 @@
   "COMMON$CONFIRMATION_MODE_ENABLED": "已啟用確認模式",
   "COMMON$MOST_RECENT": "最新",
   "HOME$NO_REPOSITORY_FOUND": "未找到用於啟動對話的存儲庫",
+  "HOME$NO_BRANCH_FOUND": "找不到分支",
+  "HOME$NO_BRANCH_AVAILABLE": "沒有可用分支",
   "HOME$GITHUB_NOT_CONNECTED": "GitHub 未連接 — 請在「環境」>「連接」中重新連接",
   "CONVERSATION$VERSION_V1_NEW": "對話API版本1（新）",
   "CONVERSATION$VERSION_V0_LEGACY": "對話API版本0（舊版）",
