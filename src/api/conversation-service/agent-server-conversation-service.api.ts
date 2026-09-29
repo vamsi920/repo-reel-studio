@@ -297,10 +297,23 @@ function requireDirectConversationInfo(item: unknown): DirectConversationInfo {
 function requireDirectConversationItems(
   items: unknown,
 ): DirectConversationInfo[] {
+  // A batch-by-id request for a conversation the agent-server no longer has
+  // (wiped by a restart, deleted, never existed) can answer with `null`/
+  // `undefined` instead of an empty array, and some batch shapes carry a
+  // positional `null` placeholder for each id it couldn't find rather than
+  // omitting it. Either is a legitimate "not found" signal, not a payload
+  // shaped in a way this UI can't parse -- treat both as "no items" instead
+  // of throwing the generic incompatible-response error, while still
+  // throwing when a present item fails to parse as a real conversation.
+  if (items === null || items === undefined) {
+    return [];
+  }
   if (!Array.isArray(items)) {
     throw invalidConversationResponse();
   }
-  return items.map(requireDirectConversationInfo);
+  return items
+    .filter((item) => item !== null && item !== undefined)
+    .map(requireDirectConversationInfo);
 }
 
 function requireConversationSearchPage(page: unknown): {

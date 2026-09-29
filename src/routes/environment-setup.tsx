@@ -21,9 +21,11 @@ import { OnboardingWorkbench } from "#/components/features/environment/studio/on
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import {
   ONBOARDING_ORG_UNRESOLVED_ERROR,
+  useEndOnboardingSession,
   useOnboardingSession,
   useStartOnboardingSession,
 } from "#/hooks/query/use-onboarding-session";
+import { useUserConversation } from "#/hooks/query/use-user-conversation";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
@@ -148,6 +150,7 @@ function EnvironmentSetupScreen() {
 
   const { data: session, isLoading: sessionLoading } = useOnboardingSession();
   const { mutate: startSession } = useStartOnboardingSession();
+  const { mutate: endSession } = useEndOnboardingSession();
   const { mutate: createConversation, isPending: creating } =
     useCreateConversation();
   const { data: profile } = useEnvironmentProfile();
@@ -187,12 +190,55 @@ function EnvironmentSetupScreen() {
   const [conversationId, setConversationId] = React.useState<string | null>(
     null,
   );
+  // A conversation id this screen has confirmed no longer exists on the
+  // agent server (see the staleness check below). Excluded from the sticky
+  // latch above so a background refetch of the still-`active` session row
+  // (its cleanup mutation hasn't landed yet) can't re-point `conversationId`
+  // right back at the id we just fell back from.
+  const staleConversationIdsRef = React.useRef<Set<string>>(new Set());
   if (
     sessionConversationId !== null &&
-    sessionConversationId !== conversationId
+    sessionConversationId !== conversationId &&
+    !staleConversationIdsRef.current.has(sessionConversationId)
   ) {
     setConversationId(sessionConversationId);
   }
+
+  // The agent-server has no persistent storage and can wipe every
+  // conversation on a restart (see `.neo-cloud/incidents.md` INC-3), leaving
+  // this org's persisted `onboarding_sessions` row pointing at a conversation
+  // that no longer exists. Left alone, this screen rendered the studio
+  // shell anyway: the chat/workbench sat forever on a disabled loading state
+  // with no way back to a fresh start. Once the batch lookup for this exact
+  // id has cleanly settled with nothing found -- not merely still loading,
+  // and not a network/auth failure, which must not trigger this -- mark the
+  // stale session row abandoned so a future visit doesn't hit the same wall,
+  // and fall back to the normal "start a new session" screen below.
+  const {
+    data: activeConversation,
+    isFetched: activeConversationFetched,
+    error: activeConversationError,
+  } = useUserConversation(conversationId);
+  const conversationConfirmedMissing =
+    activeConversationFetched &&
+    !activeConversationError &&
+    !activeConversation;
+  const staleSessionHandledRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (backendChanged) return;
+    if (!conversationConfirmedMissing || !session || !conversationId) return;
+    if (staleSessionHandledRef.current === session.id) return;
+    staleSessionHandledRef.current = session.id;
+    staleConversationIdsRef.current.add(conversationId);
+    endSession({ id: session.id, status: "abandoned" });
+    setConversationId(null);
+  }, [
+    backendChanged,
+    conversationConfirmedMissing,
+    session,
+    conversationId,
+    endSession,
+  ]);
 
   // The store's cards/facts/plan belong to one onboarding conversation. If a
   // second, different session ever mounts this screen in the same tab (the

@@ -34,12 +34,16 @@ const cloudBackend: Backend = {
 };
 
 const state = vi.hoisted(() => ({
-  session: null as { conversationId: string } | null,
+  session: null as { id: string; conversationId: string } | null,
   sessionLoading: true,
   posted: [] as string[],
   startSession: vi.fn(),
+  endSession: vi.fn(),
   createConversation: vi.fn(),
   deleteConversation: vi.fn().mockResolvedValue(undefined),
+  activeConversation: undefined as { id: string } | null | undefined,
+  activeConversationFetched: false,
+  activeConversationError: null as Error | null,
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -54,6 +58,15 @@ vi.mock("#/hooks/query/use-onboarding-session", () => ({
     isLoading: state.sessionLoading,
   }),
   useStartOnboardingSession: () => ({ mutate: state.startSession }),
+  useEndOnboardingSession: () => ({ mutate: state.endSession }),
+}));
+
+vi.mock("#/hooks/query/use-user-conversation", () => ({
+  useUserConversation: () => ({
+    data: state.activeConversation,
+    isFetched: state.activeConversationFetched,
+    error: state.activeConversationError,
+  }),
 }));
 
 vi.mock("#/hooks/mutation/use-create-conversation", () => ({
@@ -150,8 +163,16 @@ beforeEach(() => {
   state.sessionLoading = true;
   state.posted = [];
   state.startSession.mockReset();
+  state.endSession.mockReset();
   state.createConversation.mockReset();
   state.deleteConversation.mockClear();
+  // Default: the active-conversation lookup for whatever `conversationId`
+  // this screen lands on hasn't settled yet -- most tests below don't care
+  // about the runtime-staleness check at all, so they should never trip the
+  // "confirmed missing" fallback by default.
+  state.activeConversation = undefined;
+  state.activeConversationFetched = false;
+  state.activeConversationError = null;
   vi.mocked(displayErrorToast).mockReset();
   resetOAuthReceiptGuardForTests();
   useOnboardingStudioStore.getState().reset();
@@ -176,7 +197,7 @@ describe("Environment setup OAuth receipt", () => {
     expect(state.posted).toEqual([]);
 
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     rerender(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter
@@ -196,7 +217,7 @@ describe("Environment setup OAuth receipt", () => {
 
   it("posts a failed connection so the agent can recover from it", async () => {
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     renderScreen("/environment/setup?error=access_denied");
 
     await waitFor(() => expect(state.posted).toHaveLength(1));
@@ -210,7 +231,7 @@ describe("Environment setup OAuth receipt", () => {
     // second connect is always a fresh page load, which is what resetting
     // the guard here simulates.
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     renderScreen("/environment/setup?connected=github&mirror=ok");
     await waitFor(() => expect(state.posted).toHaveLength(1));
 
@@ -226,7 +247,7 @@ describe("Environment setup OAuth receipt", () => {
 describe("Environment setup studio workbench reset", () => {
   it("wipes the previous conversation's cards when a new session starts", async () => {
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     const { rerender } = renderScreen("/environment/setup");
 
     await waitFor(() =>
@@ -244,7 +265,7 @@ describe("Environment setup studio workbench reset", () => {
     // new session after the first completed, or a different org) must not
     // leave the first session's singleton discovery/plan cards behind --
     // they would otherwise block a fresh discovery card from ever rendering.
-    state.session = { conversationId: "conv-2" };
+    state.session = { id: "session-2", conversationId: "conv-2" };
     rerender(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter initialEntries={["/environment/setup"]}>
@@ -268,7 +289,7 @@ describe("Environment setup studio workbench reset", () => {
     // That refetch resolves to `null` (no more "active" row) while the studio
     // is still mounted showing that very summary. It must not be torn down.
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     const { rerender } = renderScreen("/environment/setup");
 
     await waitFor(() =>
@@ -295,6 +316,61 @@ describe("Environment setup studio workbench reset", () => {
   });
 });
 
+describe("Environment setup stale session fallback", () => {
+  // Regression: the agent-server has no persistent storage and wipes every
+  // conversation on a restart (INC-3). Left alone, a session row pointing at
+  // a since-wiped conversation left this screen permanently rendering the
+  // studio shell with nothing behind it -- no recoverable state, no way for
+  // the user to start over.
+  it("abandons the stale session and falls back to start when its conversation no longer exists", async () => {
+    state.sessionLoading = false;
+    state.session = { id: "session-stale", conversationId: "conv-gone" };
+    // The batch lookup for "conv-gone" has cleanly settled with nothing
+    // found -- not still loading, not a network/auth error.
+    state.activeConversation = null;
+    state.activeConversationFetched = true;
+    state.activeConversationError = null;
+
+    renderScreen("/environment/setup");
+
+    await screen.findByTestId("environment-setup-start");
+    expect(state.endSession).toHaveBeenCalledWith({
+      id: "session-stale",
+      status: "abandoned",
+    });
+    expect(screen.queryByTestId("chat-stub")).not.toBeInTheDocument();
+  });
+
+  it("does not abandon the session while the conversation lookup is still loading", async () => {
+    state.sessionLoading = false;
+    state.session = { id: "session-1", conversationId: "conv-1" };
+    state.activeConversation = undefined;
+    state.activeConversationFetched = false;
+    state.activeConversationError = null;
+
+    renderScreen("/environment/setup");
+
+    await screen.findByTestId("chat-stub");
+    expect(state.endSession).not.toHaveBeenCalled();
+  });
+
+  it("does not abandon the session on a real network/auth failure looking up the conversation", async () => {
+    // A transient outage or auth failure must not be mistaken for "this
+    // conversation doesn't exist" -- that would throw away a perfectly
+    // good, still-active onboarding session over a blip.
+    state.sessionLoading = false;
+    state.session = { id: "session-1", conversationId: "conv-1" };
+    state.activeConversation = undefined;
+    state.activeConversationFetched = true;
+    state.activeConversationError = new Error("network error");
+
+    renderScreen("/environment/setup");
+
+    await screen.findByTestId("chat-stub");
+    expect(state.endSession).not.toHaveBeenCalled();
+  });
+});
+
 describe("Environment setup seed forwarding", () => {
   it("posts a `?seed=` fix-with-agent request into an already-active conversation", async () => {
     // The dock's Launch button always encodes the seed into this URL,
@@ -303,7 +379,7 @@ describe("Environment setup seed forwarding", () => {
     // never fires once a session is already active, so without this the
     // seed text just vanished with no feedback.
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     renderScreen("/environment/setup?seed=fix+my+thing");
 
     await waitFor(() => expect(state.posted).toEqual(["fix my thing"]));
@@ -325,7 +401,7 @@ describe("Environment setup seed forwarding", () => {
     // seeded link clicked while the studio tab was already open here) was
     // silently dropped instead of being posted to the running conversation.
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -356,7 +432,7 @@ describe("Environment setup backend-change guard", () => {
     // but `ManageBackendsModal` calls `setActive` directly with no
     // navigation, same as the already-fixed `automation-detail.tsx` case.
     state.sessionLoading = false;
-    state.session = { conversationId: "conv-1" };
+    state.session = { id: "session-1", conversationId: "conv-1" };
 
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },

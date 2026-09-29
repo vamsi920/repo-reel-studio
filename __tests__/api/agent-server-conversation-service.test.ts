@@ -708,6 +708,44 @@ describe("AgentServerConversationService", () => {
       );
     });
 
+    // Regression: a batch-by-id lookup for a conversation the agent-server
+    // no longer has (wiped by a restart, deleted, never existed) answered
+    // with `null` -- either the whole body or a positional placeholder for
+    // an id it couldn't find -- rather than an empty array. That was being
+    // treated the same as a genuinely incompatible response shape and
+    // thrown as "data this UI does not understand", when it's actually a
+    // legitimate "not found" that callers already know how to handle as an
+    // empty result.
+    it("resolves to an empty list instead of throwing when the response body is null", async () => {
+      mockHttpGet.mockResolvedValue({ data: null });
+
+      const result = await AgentServerConversationService.batchGetAppConversations(
+        ["missing-id"],
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("drops null placeholders for not-found ids instead of throwing", async () => {
+      mockHttpGet.mockResolvedValue({
+        data: [
+          null,
+          {
+            id: "conv-found",
+            created_at: "2024-01-01",
+            updated_at: "2024-01-01",
+          },
+        ],
+      });
+
+      const result = await AgentServerConversationService.batchGetAppConversations(
+        ["missing-id", "conv-found"],
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ id: "conv-found" });
+    });
+
     it("preserves sandbox_status from batchGetAppConversations response", async () => {
       mockHttpGet.mockResolvedValue({
         data: [
