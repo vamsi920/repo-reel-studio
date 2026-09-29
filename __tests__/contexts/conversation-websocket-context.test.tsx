@@ -452,6 +452,109 @@ describe("ConversationWebSocketProvider — conversation-scoped event store", ()
     expect(useCommandStore.getState().commands).toEqual([]);
   });
 
+  it("keys ActionEvent cache invalidation off the real conversation id, never a placeholder", async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ConversationWebSocketProvider
+          conversationId="conv-cache-real"
+          conversationUrl="http://main.example/api/conversations/conv-cache-real"
+        >
+          <div />
+        </ConversationWebSocketProvider>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(wsCapture.mainOnMessage).not.toBeNull());
+
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    act(() => {
+      wsCapture.mainOnMessage!({
+        data: JSON.stringify(makeBashAction("main-bash-1", "ls")),
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["file_changes", "conv-cache-real"],
+      }),
+      expect.anything(),
+    );
+    expect(invalidateSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: expect.arrayContaining(["test-conversation-id"]),
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("keys the planning sub-conversation's ActionEvent cache invalidation off its real id, never a placeholder", async () => {
+    const planningConversation: AppConversation = {
+      id: "planning-cache-real",
+      created_by_user_id: null,
+      selected_repository: null,
+      selected_branch: null,
+      git_provider: null,
+      title: "Planner",
+      trigger: null,
+      pr_number: [],
+      llm_model: null,
+      metrics: null,
+      created_at: "2026-07-28T00:00:00Z",
+      updated_at: "2026-07-28T00:00:00Z",
+      execution_status: null,
+      conversation_url:
+        "http://planner.example/api/conversations/planning-cache-real",
+      session_api_key: null,
+      sandbox_id: null,
+      sub_conversation_ids: [],
+    };
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ConversationWebSocketProvider
+          conversationId="conv-with-planner-cache"
+          conversationUrl="http://main.example/api/conversations/conv-with-planner-cache"
+          subConversationIds={[planningConversation.id]}
+          subConversations={[planningConversation]}
+        >
+          <div />
+        </ConversationWebSocketProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(
+        wsCapture.calls.some(({ url }) =>
+          url.endsWith("/sockets/events/planning-cache-real"),
+        ),
+      ).toBe(true),
+    );
+    const planningOnMessage = wsCapture.calls.find(({ url }) =>
+      url.endsWith("/sockets/events/planning-cache-real"),
+    )?.options?.onMessage;
+
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    act(() => {
+      planningOnMessage!({
+        data: JSON.stringify(makeBashAction("plan-bash-cache-1", "ls -la")),
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["file_changes", "planning-cache-real"],
+      }),
+      expect.anything(),
+    );
+    expect(invalidateSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: expect.arrayContaining(["test-conversation-id"]),
+      }),
+      expect.anything(),
+    );
+  });
+
   it("preserves the conversation's attached plugins across an agent-triggered model switch", async () => {
     // Arrange: the conversation's metadata already carries an attached plugin.
     setStoredConversationMetadata("conv-switch", {

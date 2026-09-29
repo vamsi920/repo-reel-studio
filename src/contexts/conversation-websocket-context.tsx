@@ -744,13 +744,14 @@ export function ConversationWebSocketProvider({
             }
           }
 
-          // Handle cache invalidation for ActionEvent
-          if (isActionEvent(event)) {
-            const currentConversationId =
-              conversationId || "test-conversation-id"; // TODO: Get from context
+          // Handle cache invalidation for ActionEvent. Only invalidate under
+          // the real conversation id -- a placeholder fallback here would
+          // silently invalidate a cache key nothing reads, leaving the real
+          // conversation's file/diff caches stale.
+          if (isActionEvent(event) && conversationId) {
             handleActionEventCacheInvalidation(
               event,
-              currentConversationId,
+              conversationId,
               queryClient,
             );
           }
@@ -977,14 +978,15 @@ export function ConversationWebSocketProvider({
             }
           }
 
-          // Handle cache invalidation for ActionEvent
-          if (isActionEvent(event)) {
-            const planningAgentConversation = subConversations?.[0];
-            const currentConversationId =
-              planningAgentConversation?.id || "test-conversation-id"; // TODO: Get from context
+          // Handle cache invalidation for ActionEvent. Only invalidate under
+          // the real sub-conversation id -- a placeholder fallback here would
+          // silently invalidate a cache key nothing reads, leaving the real
+          // conversation's file/diff caches stale.
+          const planningAgentConversation = subConversations?.[0];
+          if (isActionEvent(event) && planningAgentConversation?.id) {
             handleActionEventCacheInvalidation(
               event,
-              currentConversationId,
+              planningAgentConversation.id,
               queryClient,
             );
           }
