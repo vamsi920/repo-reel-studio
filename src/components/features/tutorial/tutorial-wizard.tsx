@@ -18,6 +18,21 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+// The wizard is intentionally non-modal (`aria-modal="false"`) so its global
+// arrow-key/Escape listener keeps working no matter where focus sits on the
+// page. But a real blocking modal (Manage Backends, Add Backend, the
+// onboarding modal — anything rendered through `ModalBackdrop`, which sets
+// `aria-modal="true"`) can open on top of a running tour, since nothing
+// about the tour prevents the rest of the app shell from being interacted
+// with. Without this check, Escape pressed on a non-input control inside
+// that modal (or arrow keys used to navigate one) would both close the
+// modal *and* skip/advance the tour underneath it — the keystroke was meant
+// for the modal alone.
+function isInsideBlockingModal(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.closest('[role="dialog"][aria-modal="true"]') !== null;
+}
+
 /**
  * The guided tour itself: a caption bar pinned to the bottom of the screen,
  * like video subtitles, narrating one area of the app per step. Each step
@@ -104,6 +119,7 @@ export function TutorialWizard() {
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
+      if (isInsideBlockingModal(event.target)) return;
       if (event.key === "ArrowRight") goNext();
       else if (event.key === "ArrowLeft") goBack();
       else if (event.key === "Escape") skip();

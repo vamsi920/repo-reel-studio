@@ -462,6 +462,53 @@ describe("TutorialHost", () => {
     expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
   });
 
+  it("ignores Escape/arrow keys aimed at a blocking modal stacked on top of a running tour", async () => {
+    // The wizard is non-modal, so a real modal (Manage Backends, Add
+    // Backend, onboarding — anything using ModalBackdrop, which marks
+    // itself aria-modal="true") can open on top of it. A keystroke meant to
+    // close/navigate that modal (e.g. Escape on a non-input control inside
+    // it, since text inputs are already excluded via isTypingTarget) must
+    // not also skip or advance the tour underneath.
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getByTestId("tutorial-next"));
+    const wizard = screen.getByTestId("tutorial-wizard");
+    expect(wizard).toHaveAttribute("data-step", "conversations");
+
+    const modal = document.createElement("div");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    const modalButton = document.createElement("button");
+    modalButton.type = "button";
+    modal.append(modalButton);
+    document.body.append(modal);
+    modalButton.focus();
+
+    fireEvent.keyDown(modalButton, { key: "Escape" });
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+
+    fireEvent.keyDown(modalButton, { key: "ArrowRight" });
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+
+    modal.remove();
+
+    // Sanity check: the same keys still work once focus is back outside a
+    // blocking modal, proving the guard is scoped and not a dead check.
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "customize",
+    );
+  });
+
   it("keeps caption-bar text on fixed white-based colors instead of theme tokens", async () => {
     // The caption bar is a fixed black/white video-caption overlay,
     // independent of the active app color theme (default "deepsea" theme
