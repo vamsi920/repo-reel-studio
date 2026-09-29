@@ -2,7 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import PluginsManagementService from "#/api/plugins-management-service";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import { PLUGINS_QUERY_KEYS } from "#/hooks/query/query-keys";
+import {
+  PLUGINS_QUERY_KEYS,
+  SKILLS_QUERY_KEYS,
+} from "#/hooks/query/query-keys";
 import { I18nKey } from "#/i18n/declaration";
 import {
   displayErrorToast,
@@ -13,7 +16,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
 /**
  * Uninstall a plugin. The plugin returns to "available" in the catalog, so both
  * the installed list and the marketplace catalog are invalidated on success,
- * scoped to the backend the mutation actually ran against.
+ * scoped to the backend the mutation actually ran against. The plugin's bundled
+ * skills stop auto-loading once uninstalled, so the skills catalog is
+ * invalidated too — otherwise the Skills page can keep showing them for up to
+ * 10 minutes (see `useSkills`'s `staleTime`).
  *
  * `meta.disableToast` keeps the global MutationCache handler from stacking a
  * second identical toast on top of the one below (same pattern as
@@ -34,6 +40,9 @@ export function useUninstallPlugin() {
       });
       queryClient.invalidateQueries({
         queryKey: PLUGINS_QUERY_KEYS.marketplace(backend.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: SKILLS_QUERY_KEYS.all(backend.id),
       });
       displaySuccessToast(t(I18nKey.SETTINGS$PLUGINS_UNINSTALL_SUCCESS));
     },

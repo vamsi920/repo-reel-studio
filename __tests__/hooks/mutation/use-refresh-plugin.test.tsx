@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import PluginsManagementService, {
   type InstalledPluginInfo,
 } from "#/api/plugins-management-service";
+import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backend";
 import { useRefreshPlugin } from "#/hooks/mutation/use-refresh-plugin";
+import { SKILLS_QUERY_KEYS } from "#/hooks/query/query-keys";
 
 const createWrapper = (
   queryClient = new QueryClient({
@@ -59,6 +61,32 @@ describe("useRefreshPlugin", () => {
 
     expect(refreshSpy).toHaveBeenCalledOnce();
     expect(refreshSpy).toHaveBeenCalledWith("demo-plugin");
+  });
+
+  // Regression test: a refresh can add, remove, or change a plugin's bundled
+  // skills, so the skills catalog must be invalidated too — otherwise the
+  // Skills page could serve up to 10 minutes of stale data (`useSkills`'s
+  // `staleTime`).
+  it("invalidates the skills catalog on success", async () => {
+    vi.spyOn(PluginsManagementService, "refreshPlugin").mockResolvedValue({
+      message: "ok",
+      plugin: buildInstalledPlugin(),
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useRefreshPlugin(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await result.current.mutateAsync("demo-plugin");
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: SKILLS_QUERY_KEYS.all(SEEDED_DEFAULT_BACKEND_ID),
+      }),
+    );
   });
 
   // Regression test: the mutation's own `onError` already toasts the

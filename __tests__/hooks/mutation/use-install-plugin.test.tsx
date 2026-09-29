@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import PluginsManagementService, {
   type InstalledPluginInfo,
 } from "#/api/plugins-management-service";
+import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backend";
 import { useInstallPlugin } from "#/hooks/mutation/use-install-plugin";
+import { SKILLS_QUERY_KEYS } from "#/hooks/query/query-keys";
 
 const createWrapper = (
   queryClient = new QueryClient({
@@ -64,6 +66,35 @@ describe("useInstallPlugin", () => {
       ref: null,
       repo_path: "plugins/demo-plugin",
     });
+  });
+
+  // Regression test: a newly-installed plugin can bundle skills that
+  // auto-load once enabled. Without invalidating the skills catalog, the
+  // Skills page could serve up to 10 minutes of stale data (`useSkills`'s
+  // `staleTime`) and appear to be missing the plugin's skills.
+  it("invalidates the skills catalog on success so newly-bundled skills show up", async () => {
+    vi.spyOn(PluginsManagementService, "installPlugin").mockResolvedValue(
+      buildInstalledPlugin(),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useInstallPlugin(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await result.current.mutateAsync({
+      source: "github:OpenHands/extensions",
+      ref: null,
+      repo_path: "plugins/demo-plugin",
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: SKILLS_QUERY_KEYS.all(SEEDED_DEFAULT_BACKEND_ID),
+      }),
+    );
   });
 
   // Regression test: the mutation's own `onError` already toasts the

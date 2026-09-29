@@ -2,7 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import PluginsManagementService from "#/api/plugins-management-service";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import { PLUGINS_QUERY_KEYS } from "#/hooks/query/query-keys";
+import {
+  PLUGINS_QUERY_KEYS,
+  SKILLS_QUERY_KEYS,
+} from "#/hooks/query/query-keys";
 import { I18nKey } from "#/i18n/declaration";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
@@ -11,7 +14,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * Enable or disable an installed plugin. Enabled installed plugins auto-load
  * into new conversations (via the SDK auto-load wiring), so the enabled flag is
  * the enforced source of truth — invalidate the installed list on success,
- * scoped to the backend the mutation actually ran against.
+ * scoped to the backend the mutation actually ran against. Toggling also flips
+ * whether the plugin's bundled skills auto-load, so the skills catalog is
+ * invalidated too — otherwise the Skills page can serve up to 10 minutes of
+ * stale data (see `useSkills`'s `staleTime`).
  *
  * `meta.disableToast` keeps the global MutationCache handler from stacking a
  * second identical toast on top of the one below (same pattern as
@@ -29,6 +35,9 @@ export function useSetPluginEnabled() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: PLUGINS_QUERY_KEYS.installed(backend.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: SKILLS_QUERY_KEYS.all(backend.id),
       });
     },
     onError: (error) => {

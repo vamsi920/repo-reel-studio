@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PluginsManagementService from "#/api/plugins-management-service";
+import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backend";
 import { useSetPluginEnabled } from "#/hooks/mutation/use-set-plugin-enabled";
+import { SKILLS_QUERY_KEYS } from "#/hooks/query/query-keys";
 
 const createWrapper = (
   queryClient = new QueryClient({
@@ -37,6 +39,32 @@ describe("useSetPluginEnabled", () => {
 
     expect(toggleSpy).toHaveBeenCalledOnce();
     expect(toggleSpy).toHaveBeenCalledWith("demo-plugin", false);
+  });
+
+  // Regression test: toggling a plugin also flips whether its bundled skills
+  // auto-load, so the skills catalog must be invalidated too — otherwise the
+  // Skills page could serve up to 10 minutes of stale data (`useSkills`'s
+  // `staleTime`).
+  it("invalidates the skills catalog on success", async () => {
+    vi.spyOn(PluginsManagementService, "setPluginEnabled").mockResolvedValue({
+      name: "demo-plugin",
+      enabled: false,
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useSetPluginEnabled(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await result.current.mutateAsync({ name: "demo-plugin", enabled: false });
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: SKILLS_QUERY_KEYS.all(SEEDED_DEFAULT_BACKEND_ID),
+      }),
+    );
   });
 
   // Regression test: the mutation's own `onError` already toasts the

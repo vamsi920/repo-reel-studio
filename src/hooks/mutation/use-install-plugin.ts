@@ -4,7 +4,10 @@ import PluginsManagementService, {
   type InstallPluginRequest,
 } from "#/api/plugins-management-service";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import { PLUGINS_QUERY_KEYS } from "#/hooks/query/query-keys";
+import {
+  PLUGINS_QUERY_KEYS,
+  SKILLS_QUERY_KEYS,
+} from "#/hooks/query/query-keys";
 import { I18nKey } from "#/i18n/declaration";
 import {
   displayErrorToast,
@@ -16,7 +19,10 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
  * Install a plugin from a git source or local path. Installing flips a catalog
  * entry from available to installed, so both the installed list and the
  * marketplace catalog are invalidated on success, scoped to the backend the
- * mutation actually ran against.
+ * mutation actually ran against. A freshly-installed plugin can bundle skills
+ * that auto-load once enabled, so the skills catalog is invalidated too —
+ * otherwise the Skills page can serve up to 10 minutes of stale data (see
+ * `useSkills`'s `staleTime`) and appear to be missing the plugin's skills.
  *
  * Errors are toasted here once (`meta.disableToast` keeps the global
  * MutationCache handler from stacking a second identical toast); the add
@@ -38,6 +44,9 @@ export function useInstallPlugin() {
       });
       queryClient.invalidateQueries({
         queryKey: PLUGINS_QUERY_KEYS.marketplace(backend.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: SKILLS_QUERY_KEYS.all(backend.id),
       });
       displaySuccessToast(t(I18nKey.SETTINGS$PLUGINS_INSTALL_SUCCESS));
     },
