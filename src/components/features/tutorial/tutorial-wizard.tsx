@@ -5,6 +5,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useNavigation } from "#/context/navigation-context";
 import { cn } from "#/utils/utils";
 import { useTracking } from "#/hooks/use-tracking";
+import { useSidebarMobileNav } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 import { getTutorialSteps } from "./tutorial-steps";
 import { getCaptionDurationMs, useTutorialStore } from "./tutorial-store";
 import { TutorialSpotlight } from "./tutorial-spotlight";
@@ -35,6 +36,7 @@ export function TutorialWizard() {
   const { trackTutorialCompleted, trackTutorialSkipped } = useTracking();
   const isPlaying = useTutorialStore((state) => state.isPlaying);
   const setPlaying = useTutorialStore((state) => state.setPlaying);
+  const { open: openMobileNav, close: closeMobileNav } = useSidebarMobileNav();
 
   const step = steps[stepIndex];
   const isFirst = stepIndex === 0;
@@ -46,6 +48,21 @@ export function TutorialWizard() {
     if (step.route && currentPath !== step.route) navigate(step.route);
     // Only react to step changes: the user may browse away mid-step.
   }, [step.id]);
+
+  // On a phone the sidebar itself is off-screen until the drawer is open, so
+  // every step that spotlights a real sidebar link (as opposed to a step
+  // like "welcome"/"finish" with nothing to highlight) opens the drawer for
+  // the duration of that step — letting the spotlight ring the actual link
+  // instead of falling back to the hamburger button. Sidebar.tsx's own
+  // close-on-navigate effect steps aside while the tour is open (see the
+  // comment there) so this doesn't get undone the instant the tour
+  // navigates. Closed again on the last cleanup when the tour itself ends.
+  React.useEffect(() => {
+    if (step.anchorTestIds?.length) openMobileNav();
+    else closeMobileNav();
+  }, [step.id, openMobileNav, closeMobileNav]);
+
+  React.useEffect(() => () => closeMobileNav(), [closeMobileNav]);
 
   const finish = React.useCallback(() => {
     trackTutorialCompleted({ totalSteps: steps.length });

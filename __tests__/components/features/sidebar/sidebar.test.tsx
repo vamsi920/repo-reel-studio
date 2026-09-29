@@ -11,6 +11,7 @@ import { Sidebar } from "#/components/features/sidebar/sidebar";
 import { SidebarMobileNavProvider } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 import { SidebarMobileMenuBar } from "#/components/features/sidebar/sidebar-mobile-menu-bar";
 import { useSidebarStore } from "#/stores/sidebar-store";
+import { useTutorialStore } from "#/components/features/tutorial/tutorial-store";
 import {
   NavigationProvider,
   type NavigationContextValue,
@@ -238,11 +239,21 @@ describe("Sidebar", () => {
     // Zustand store is a module singleton; reset it so collapsed state from
     // a prior test doesn't bleed into this one.
     useSidebarStore.setState({ collapsed: false });
+    useTutorialStore.setState({
+      isOpen: false,
+      stepIndex: 0,
+      isPlaying: false,
+    });
   });
 
   afterEach(() => {
     window.localStorage.clear();
     useSidebarStore.setState({ collapsed: false });
+    useTutorialStore.setState({
+      isOpen: false,
+      stepIndex: 0,
+      isPlaying: false,
+    });
   });
 
   it("opens and closes the mobile navigation drawer from the menu button", async () => {
@@ -260,6 +271,48 @@ describe("Sidebar", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(within(drawer).getByTestId("sidebar-mobile-drawer-close"));
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("sidebar-mobile-drawer"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("keeps the mobile drawer open across tutorial-driven navigation, but resumes closing on navigation once the tour ends", async () => {
+    // The tutorial deliberately keeps the drawer open across its own routed
+    // steps (TutorialWizard) so the spotlight can ring the real sidebar
+    // link instead of falling back to the hamburger button. Without the
+    // escape hatch in this same-effect close, every tutorial-driven
+    // navigation would immediately undo that.
+    useTutorialStore.setState({ isOpen: true });
+    const navigate = vi.fn();
+    const renderAt = (currentPath: string) => (
+      <QueryClientProvider client={new QueryClient()}>
+        <NavigationProvider
+          value={{
+            currentPath,
+            conversationId: null,
+            isNavigating: false,
+            navigate,
+          }}
+        >
+          <SidebarMobileNavProvider>
+            <Sidebar />
+            <SidebarMobileMenuBar />
+          </SidebarMobileNavProvider>
+        </NavigationProvider>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(renderAt("/conversations"));
+
+    fireEvent.click(screen.getByTestId("sidebar-mobile-menu-toggle"));
+    expect(screen.getByTestId("sidebar-mobile-drawer")).toBeInTheDocument();
+
+    rerender(renderAt("/customize"));
+    expect(screen.getByTestId("sidebar-mobile-drawer")).toBeInTheDocument();
+
+    useTutorialStore.setState({ isOpen: false });
+    rerender(renderAt("/automations"));
     await waitFor(() => {
       expect(
         screen.queryByTestId("sidebar-mobile-drawer"),

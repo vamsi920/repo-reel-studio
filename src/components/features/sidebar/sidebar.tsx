@@ -12,6 +12,7 @@ import { useSidebarMobileNav } from "./sidebar-mobile-nav-context";
 import { useSidebarStore } from "#/stores/sidebar-store";
 import { useClickOutsideElement } from "#/hooks/use-click-outside-element";
 import { useBackendsHealth } from "#/hooks/query/use-backends-health";
+import { useTutorialStore } from "#/components/features/tutorial/tutorial-store";
 // The LLM settings modal is only mounted when the settings query 404s and
 // LLM settings aren't hidden — keep it out of the sidebar's eager graph.
 const SettingsModal = React.lazy(() =>
@@ -76,6 +77,12 @@ export function Sidebar() {
   const settingsErrorStatus = getErrorStatus(settingsError);
 
   React.useEffect(() => {
+    // The guided tutorial drives its own routed steps and deliberately keeps
+    // the mobile drawer open across them so it can spotlight the real
+    // sidebar link instead of just the hamburger fallback (see
+    // TutorialWizard). Without this escape hatch, every tutorial navigation
+    // would trip this same-effect close and immediately undo it.
+    if (useTutorialStore.getState().isOpen) return;
     closeMobileNav();
   }, [currentPath, closeMobileNav]);
 

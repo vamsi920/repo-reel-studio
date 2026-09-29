@@ -89,9 +89,9 @@ vi.mock("#/api/automation-service/automation-service.api", () => ({
 
 const navigate = vi.fn();
 
-/** Exposes the mobile nav drawer's open/close controls for tests that need them. */
+/** Exposes the mobile nav drawer's open/close controls and state for tests that need them. */
 function MobileNavTestControls() {
-  const { open, close } = useSidebarMobileNav();
+  const { isOpen, open, close } = useSidebarMobileNav();
   return (
     <>
       <button type="button" data-testid="test-open-mobile-nav" onClick={open} />
@@ -100,6 +100,9 @@ function MobileNavTestControls() {
         data-testid="test-close-mobile-nav"
         onClick={close}
       />
+      <span data-testid="test-mobile-nav-state">
+        {isOpen ? "open" : "closed"}
+      </span>
     </>
   );
 }
@@ -184,6 +187,61 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-back"));
     expect(wizard).toHaveAttribute("data-step", "conversations");
+  });
+
+  it("opens the mobile nav drawer for a routed step so the real sidebar link is on screen, not just the hamburger fallback", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "closed",
+    );
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "welcome",
+    );
+    // "welcome" has nothing to spotlight, so the drawer stays closed.
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "closed",
+    );
+
+    await user.click(screen.getByTestId("tutorial-next"));
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+
+    await user.click(screen.getByTestId("tutorial-next"));
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "customize",
+    );
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+  });
+
+  it("closes the mobile nav drawer once the tour ends, however it ends", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getByTestId("tutorial-next"));
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+
+    await user.click(screen.getByTestId("tutorial-skip"));
+
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "closed",
+    );
   });
 
   it("covers the Security and Usage sidebar links added after the tour shipped", async () => {
