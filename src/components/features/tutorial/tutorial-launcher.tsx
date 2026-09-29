@@ -2,6 +2,10 @@ import { useTranslation } from "react-i18next";
 import { GraduationCap } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
 import { useSidebarMobileNav } from "#/components/features/sidebar/sidebar-mobile-nav-context";
+import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
+
+/** `data-testid` of the launcher button, so other modules can find and focus it without a prop-drilled ref. */
+export const TUTORIAL_LAUNCHER_TEST_ID = "tutorial-launcher";
 
 /**
  * Small tab pinned to the left edge of the screen that (re)starts the guided
@@ -20,15 +24,16 @@ export function TutorialLauncher({ onStart }: { onStart: () => void }) {
   if (isMobileNavOpen) return null;
 
   return (
-    <button
-      type="button"
-      data-testid="tutorial-launcher"
-      onClick={onStart}
-      aria-label={label}
-      title={label}
-      className="fixed left-0 top-16 z-[45] translate-y-0 md:top-1/2 md:-translate-y-1/2 rounded-r-lg border border-l-0 border-[var(--oh-border)] bg-base-secondary px-1.5 py-2 text-[var(--oh-muted)] shadow-md hover:text-white focus-visible:text-white"
-    >
-      <GraduationCap width={16} height={16} aria-hidden="true" />
-    </button>
+    <StyledTooltip content={label} placement="right">
+      <button
+        type="button"
+        data-testid={TUTORIAL_LAUNCHER_TEST_ID}
+        onClick={onStart}
+        aria-label={label}
+        className="fixed left-0 top-16 z-[45] translate-y-0 md:top-1/2 md:-translate-y-1/2 rounded-r-lg border border-l-0 border-[var(--oh-border)] bg-base-secondary px-1.5 py-2 text-[var(--oh-muted)] shadow-md hover:text-white focus-visible:text-white"
+      >
+        <GraduationCap width={16} height={16} aria-hidden="true" />
+      </button>
+    </StyledTooltip>
   );
 }

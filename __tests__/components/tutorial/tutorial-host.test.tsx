@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   act,
   fireEvent,
@@ -21,6 +22,25 @@ import {
   getTutorialSteps,
   MOBILE_MENU_TOGGLE_TEST_ID,
 } from "#/components/features/tutorial/tutorial-steps";
+import { TUTORIAL_LAUNCHER_TEST_ID } from "#/components/features/tutorial/tutorial-launcher";
+
+// HeroUI's Tooltip (the real engine behind StyledTooltip) only mounts its
+// content on real-DOM hover, which jsdom doesn't fire reliably, so stub it
+// to surface the content as a marker element instead.
+vi.mock("#/components/shared/buttons/styled-tooltip", () => ({
+  StyledTooltip: ({
+    content,
+    children,
+  }: {
+    content: ReactNode;
+    children: ReactNode;
+  }) => (
+    <>
+      {children}
+      <span data-testid="styled-tooltip-content">{content}</span>
+    </>
+  ),
+}));
 import {
   ONBOARDING_COMPLETED_EVENT,
   ONBOARDING_COMPLETED_STORAGE_KEY,
@@ -259,6 +279,51 @@ describe("TutorialHost", () => {
     expect(
       window.localStorage.getItem(TUTORIAL_PROGRESS_STORAGE_KEY),
     ).toBeNull();
+  });
+
+  it("shows the start label in a tooltip on the launcher", () => {
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+
+    const launcher = screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID);
+    expect(screen.getByTestId("styled-tooltip-content")).toHaveTextContent(
+      launcher.getAttribute("aria-label") ?? "",
+    );
+  });
+
+  it("returns focus to the launcher after finishing the tour", async () => {
+    const user = userEvent.setup();
+    const lastIndex = getTutorialSteps().length - 1;
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: lastIndex });
+    });
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
+  });
+
+  it("returns focus to the launcher after skipping the tour", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+
+    await user.click(screen.getByTestId("tutorial-skip"));
+
+    expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
+  });
+
+  it("returns focus to the launcher after Escape closes the tour", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
   });
 
   it("hides the launcher while the mobile nav drawer is open", async () => {

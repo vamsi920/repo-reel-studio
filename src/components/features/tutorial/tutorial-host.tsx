@@ -8,7 +8,10 @@ import {
   useTutorialStore,
 } from "./tutorial-store";
 import { getTutorialSteps } from "./tutorial-steps";
-import { TutorialLauncher } from "./tutorial-launcher";
+import {
+  TUTORIAL_LAUNCHER_TEST_ID,
+  TutorialLauncher,
+} from "./tutorial-launcher";
 import { TutorialWizard } from "./tutorial-wizard";
 import { TutorialCloudAutoStart } from "./tutorial-cloud-auto-start";
 
@@ -28,6 +31,22 @@ export function TutorialHost() {
   const isCloudBackend = useActiveBackend().backend.kind === "cloud";
   const wasOnboardedAtMountRef = React.useRef(onboardingCompleted);
   const autoStartedRef = React.useRef(false);
+  const wasOpenRef = React.useRef(isOpen);
+
+  // The wizard replaces the launcher in the DOM while it's open; once it
+  // closes (finish, skip, or Escape), send focus back to the launcher that
+  // takes its place so keyboard/screen-reader users aren't left on a node
+  // that just disappeared.
+  React.useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      document
+        .querySelector<HTMLButtonElement>(
+          `[data-testid="${TUTORIAL_LAUNCHER_TEST_ID}"]`,
+        )
+        ?.focus();
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
 
   React.useEffect(() => {
     if (useTutorialStore.getState().isOpen) return;
