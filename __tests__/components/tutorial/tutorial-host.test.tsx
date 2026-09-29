@@ -17,13 +17,20 @@ import {
   TUTORIAL_SEEN_STORAGE_KEY,
   useTutorialStore,
 } from "#/components/features/tutorial/tutorial-store";
-import { getTutorialSteps } from "#/components/features/tutorial/tutorial-steps";
+import {
+  getTutorialSteps,
+  MOBILE_MENU_TOGGLE_TEST_ID,
+} from "#/components/features/tutorial/tutorial-steps";
 import {
   ONBOARDING_COMPLETED_EVENT,
   ONBOARDING_COMPLETED_STORAGE_KEY,
 } from "#/components/features/onboarding/use-onboarding-completion";
 import { NavigationProvider } from "#/context/navigation-context";
 import { findTutorialAnchor } from "#/components/features/tutorial/tutorial-spotlight";
+import {
+  SidebarMobileNavProvider,
+  useSidebarMobileNav,
+} from "#/components/features/sidebar/sidebar-mobile-nav-context";
 
 const { trackEvent, activeBackend, getSettings, searchConversations } =
   vi.hoisted(() => ({
@@ -62,6 +69,21 @@ vi.mock("#/api/automation-service/automation-service.api", () => ({
 
 const navigate = vi.fn();
 
+/** Exposes the mobile nav drawer's open/close controls for tests that need them. */
+function MobileNavTestControls() {
+  const { open, close } = useSidebarMobileNav();
+  return (
+    <>
+      <button type="button" data-testid="test-open-mobile-nav" onClick={open} />
+      <button
+        type="button"
+        data-testid="test-close-mobile-nav"
+        onClick={close}
+      />
+    </>
+  );
+}
+
 function renderHost() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -76,7 +98,10 @@ function renderHost() {
           navigate,
         }}
       >
-        <TutorialHost />
+        <SidebarMobileNavProvider>
+          <MobileNavTestControls />
+          <TutorialHost />
+        </SidebarMobileNavProvider>
       </NavigationProvider>
     </QueryClientProvider>,
   );
@@ -234,6 +259,39 @@ describe("TutorialHost", () => {
     expect(
       window.localStorage.getItem(TUTORIAL_PROGRESS_STORAGE_KEY),
     ).toBeNull();
+  });
+
+  it("hides the launcher while the mobile nav drawer is open", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    expect(screen.getByTestId("tutorial-launcher")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("test-open-mobile-nav"));
+    expect(screen.queryByTestId("tutorial-launcher")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("test-close-mobile-nav"));
+    expect(screen.getByTestId("tutorial-launcher")).toBeInTheDocument();
+  });
+
+  it("falls back to the mobile menu toggle for the spotlight when the real sidebar link is off-screen", async () => {
+    const user = userEvent.setup();
+    const menuToggle = document.createElement("button");
+    menuToggle.dataset.testid = MOBILE_MENU_TOGGLE_TEST_ID;
+    menuToggle.getBoundingClientRect = () =>
+      ({ top: 8, left: 8, width: 32, height: 32 }) as DOMRect;
+    document.body.appendChild(menuToggle);
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+    });
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    expect(findTutorialAnchor([MOBILE_MENU_TOGGLE_TEST_ID])).toBe(menuToggle);
+    const spotlight = screen.getByTestId("tutorial-spotlight");
+    expect(spotlight).toHaveStyle({ top: "4px", left: "4px", width: "40px" });
+    menuToggle.remove();
   });
 
   it("spotlights the on-screen sidebar item for the current step", async () => {
