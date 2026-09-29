@@ -551,6 +551,33 @@ describe("ConversationCard", () => {
     expect(onChangeTitle).not.toBeCalled();
   });
 
+  it("should discard the draft and keep the saved title on Escape", async () => {
+    const user = userEvent.setup();
+    const onContextMenuToggle = vi.fn();
+    renderWithProviders(
+      <ConversationCard
+        onDelete={onDelete}
+        onChangeTitle={onChangeTitle}
+        title="Conversation 1"
+        selectedRepository={null}
+        lastUpdatedAt="2021-10-01T12:00:00Z"
+        contextMenuOpen
+        onContextMenuToggle={onContextMenuToggle}
+      />,
+    );
+
+    await clickOnEditButton(user);
+
+    const title = screen.getByTestId("conversation-card-title");
+
+    await user.clear(title);
+    await user.type(title, "Accidental draft");
+    await user.keyboard("{Escape}");
+
+    expect(onChangeTitle).not.toHaveBeenCalled();
+    expect(title).not.toHaveFocus();
+  });
+
   test("clicking the title should trigger the onClick handler", async () => {
     const user = userEvent.setup();
     renderWithProviders(

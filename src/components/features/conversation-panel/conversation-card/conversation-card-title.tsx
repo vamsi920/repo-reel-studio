@@ -37,6 +37,13 @@ export function ConversationCardTitle({
           }
           if (event.key === "Enter") {
             event.currentTarget.blur();
+          } else if (event.key === "Escape") {
+            // Cancel the edit: restore the saved title so the blur that
+            // follows sees an unchanged value and does not persist the
+            // abandoned draft.
+            const input = event.currentTarget;
+            input.value = title;
+            input.blur();
           }
         }}
         type="text"
