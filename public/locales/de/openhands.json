@@ -2447,6 +2447,7 @@
   "CODEGRAPH$SEARCH_NO_RESULTS": "Keine Treffer",
   "CODEGRAPH$SEARCH_LOADING": "Suchindex wird geladen…",
   "CODEGRAPH$FILTERS": "Filters",
+  "CODEGRAPH$SHOW_ALL_TYPES": "Alle anzeigen",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",
   "CODEGRAPH$SYSTEM_ROOT": "System",

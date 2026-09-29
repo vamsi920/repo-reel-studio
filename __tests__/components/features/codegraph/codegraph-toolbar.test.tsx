@@ -43,6 +43,7 @@ function renderToolbar(
     types: ["file", "class"],
     hiddenTypes: [] as string[],
     onToggleType: vi.fn(),
+    onClearFilters: vi.fn(),
     onNavigate: vi.fn(),
     searchQuery: "",
     onSearchChange: vi.fn(),
@@ -158,6 +159,27 @@ describe("CodeGraphToolbar", () => {
     );
   });
 
+  it("offers to clear every filter at once only when something is hidden", async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+
+    await user.click(screen.getByTestId("codegraph-filters-toggle"));
+
+    expect(
+      screen.queryByTestId("codegraph-filters-clear"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears every hidden type in one click", async () => {
+    const user = userEvent.setup();
+    const props = renderToolbar({ hiddenTypes: ["class"] });
+
+    await user.click(screen.getByTestId("codegraph-filters-toggle"));
+    await user.click(screen.getByTestId("codegraph-filters-clear"));
+
+    expect(props.onClearFilters).toHaveBeenCalled();
+  });
+
   it("keeps the filter panel closed until asked for", () => {
     renderToolbar();
 
@@ -200,6 +222,7 @@ describe("CodeGraphToolbar", () => {
         types={[]}
         hiddenTypes={[]}
         onToggleType={vi.fn()}
+        onClearFilters={vi.fn()}
         onNavigate={vi.fn()}
         searchQuery=""
         onSearchChange={vi.fn()}
@@ -222,6 +245,7 @@ describe("CodeGraphToolbar", () => {
         types={[]}
         hiddenTypes={[]}
         onToggleType={vi.fn()}
+        onClearFilters={vi.fn()}
         onNavigate={vi.fn()}
         searchQuery="charge"
         onSearchChange={vi.fn()}
@@ -370,6 +394,7 @@ describe("CodeGraphToolbar", () => {
           types: [],
           hiddenTypes: [],
           onToggleType: vi.fn(),
+          onClearFilters: vi.fn(),
           onNavigate: vi.fn(),
           searchQuery: "a",
           onSearchChange: vi.fn(),
@@ -408,6 +433,7 @@ describe("CodeGraphToolbar", () => {
           types: [],
           hiddenTypes: [],
           onToggleType: vi.fn(),
+          onClearFilters: vi.fn(),
           onNavigate: vi.fn(),
           searchQuery: "b",
           onSearchChange: vi.fn(),

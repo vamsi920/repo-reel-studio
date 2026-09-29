@@ -2447,6 +2447,7 @@
   "CODEGRAPH$SEARCH_NO_RESULTS": "Eşleşme yok",
   "CODEGRAPH$SEARCH_LOADING": "Arama dizini yükleniyor…",
   "CODEGRAPH$FILTERS": "Filters",
+  "CODEGRAPH$SHOW_ALL_TYPES": "Tümünü göster",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",
   "CODEGRAPH$SYSTEM_ROOT": "System",

@@ -23,6 +23,8 @@ interface Props {
   types: string[];
   hiddenTypes: string[];
   onToggleType: (type: string) => void;
+  /** Un-hides every type on the current level in one click. */
+  onClearFilters: () => void;
   onNavigate: (parentId: string | null) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -55,6 +57,7 @@ export function CodeGraphToolbar({
   types,
   hiddenTypes,
   onToggleType,
+  onClearFilters,
   onNavigate,
   searchQuery,
   onSearchChange,
@@ -358,8 +361,18 @@ export function CodeGraphToolbar({
           data-testid="codegraph-filters"
           role="group"
           aria-label={t(I18nKey.CODEGRAPH$FILTERS)}
-          className="flex flex-wrap gap-1.5 rounded-md border border-[var(--oh-border)] p-2"
+          className="flex flex-wrap items-center gap-1.5 rounded-md border border-[var(--oh-border)] p-2"
         >
+          {hiddenTypes.length > 0 ? (
+            <button
+              type="button"
+              data-testid="codegraph-filters-clear"
+              onClick={onClearFilters}
+              className="rounded-full border border-[var(--oh-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]"
+            >
+              {t(I18nKey.CODEGRAPH$SHOW_ALL_TYPES)}
+            </button>
+          ) : null}
           {types.map((type) => {
             const hidden = hiddenTypes.includes(type);
             return (

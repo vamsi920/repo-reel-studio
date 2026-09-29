@@ -768,6 +768,9 @@ function KtGraph() {
               onToggleType={(type) =>
                 useCodeGraphStore.getState().toggleType(key, type)
               }
+              onClearFilters={() =>
+                useCodeGraphStore.getState().clearHiddenTypes(key)
+              }
               onNavigate={(parentId) => {
                 if (parentId === null) {
                   useCodeGraphStore.getState().navigateTo(key, null);

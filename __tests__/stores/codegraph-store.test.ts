@@ -294,6 +294,49 @@ describe("codegraph store", () => {
     expect(selectVisibleNodes(state).map((n) => n.id)).toEqual(["d"]);
   });
 
+  it("clears every hidden type on the current level in one call", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(
+        key,
+        handle(level(null, [node("a", "file"), node("b", "class")])),
+      );
+    useCodeGraphStore.getState().toggleType(key, "class");
+    useCodeGraphStore.getState().toggleType(key, "file");
+    expect(
+      selectHiddenTypes(useCodeGraphStore.getState().byKey[key]),
+    ).toEqual(["class", "file"]);
+
+    useCodeGraphStore.getState().clearHiddenTypes(key);
+
+    const state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual([]);
+    expect(selectVisibleNodes(state)).toHaveLength(2);
+  });
+
+  it("leaves other levels' filters alone when clearing the current one", () => {
+    const key = start();
+    useCodeGraphStore
+      .getState()
+      .setReady(key, handle(level(null, [node("sub", "subsystem")])));
+    useCodeGraphStore
+      .getState()
+      .setLevel(key, "sub", level("sub", [node("f", "file")]));
+
+    useCodeGraphStore.getState().toggleType(key, "subsystem");
+    useCodeGraphStore.getState().navigateTo(key, "sub");
+    useCodeGraphStore.getState().toggleType(key, "file");
+
+    useCodeGraphStore.getState().clearHiddenTypes(key);
+    let state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual([]);
+
+    useCodeGraphStore.getState().navigateTo(key, null);
+    state = useCodeGraphStore.getState().byKey[key];
+    expect(selectHiddenTypes(state)).toEqual(["subsystem"]);
+  });
+
   it("drops every type filter when the graph is rebuilt", () => {
     const key = start();
     useCodeGraphStore

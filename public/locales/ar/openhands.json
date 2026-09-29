@@ -2447,6 +2447,7 @@
   "CODEGRAPH$SEARCH_NO_RESULTS": "لا توجد نتائج مطابقة",
   "CODEGRAPH$SEARCH_LOADING": "جارٍ تحميل فهرس البحث…",
   "CODEGRAPH$FILTERS": "Filters",
+  "CODEGRAPH$SHOW_ALL_TYPES": "إظهار الكل",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",
   "CODEGRAPH$SYSTEM_ROOT": "System",

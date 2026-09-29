@@ -41615,6 +41615,23 @@
     "tr": "Filters",
     "uk": "Filters"
   },
+  "CODEGRAPH$SHOW_ALL_TYPES": {
+    "en": "Show all",
+    "ja": "すべて表示",
+    "zh-CN": "全部显示",
+    "zh-TW": "全部顯示",
+    "ko-KR": "모두 표시",
+    "no": "Vis alle",
+    "ar": "إظهار الكل",
+    "de": "Alle anzeigen",
+    "fr": "Tout afficher",
+    "it": "Mostra tutto",
+    "pt": "Mostrar tudo",
+    "es": "Mostrar todo",
+    "ca": "Mostra-ho tot",
+    "tr": "Tümünü göster",
+    "uk": "Показати всі"
+  },
   "CODEGRAPH$BACK": {
     "en": "Back",
     "ja": "Back",

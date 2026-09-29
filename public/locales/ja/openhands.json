@@ -2447,6 +2447,7 @@
   "CODEGRAPH$SEARCH_NO_RESULTS": "一致する項目がありません",
   "CODEGRAPH$SEARCH_LOADING": "検索インデックスを読み込み中…",
   "CODEGRAPH$FILTERS": "Filters",
+  "CODEGRAPH$SHOW_ALL_TYPES": "すべて表示",
   "CODEGRAPH$BACK": "Back",
   "CODEGRAPH$BREADCRUMBS_LABEL": "Graph breadcrumbs",
   "CODEGRAPH$SYSTEM_ROOT": "System",

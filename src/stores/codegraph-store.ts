@@ -107,6 +107,7 @@ interface CodeGraphStore {
   setSearchIndex: (key: string, entries: SearchEntry[]) => void;
   setSearchQuery: (key: string, query: string) => void;
   toggleType: (key: string, type: string) => void;
+  clearHiddenTypes: (key: string) => void;
   reset: (key: string) => void;
 }
 
@@ -299,6 +300,18 @@ export const useCodeGraphStore = create<CodeGraphStore>()((set) => {
               : [...hidden, type],
           },
         };
+      }),
+
+    // Un-hides every type on the current level in one action — hiding several
+    // types is a click each, so getting back to "show everything" should not
+    // be the same number of clicks in reverse.
+    clearHiddenTypes: (key) =>
+      update(key, (state) => {
+        const current = levelKey(state.currentParentId);
+        if (!state.hiddenTypes[current]?.length) return state;
+        const hiddenTypes = { ...state.hiddenTypes };
+        delete hiddenTypes[current];
+        return { ...state, hiddenTypes };
       }),
 
     reset: (key) =>
