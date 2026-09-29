@@ -34,6 +34,19 @@ export interface PendingUserMessage {
   fileUrls: string[];
   timestamp: string;
   errorMessage?: string;
+  /**
+   * True once the underlying `send()` call has resolved successfully, i.e.
+   * the message has actually been handed off to the server (over the
+   * WebSocket or the REST fallback). Before that point "sending" only means
+   * "queued locally" and a Stop/cancel action can genuinely prevent the send;
+   * after it, the server already has the message and Stop can no longer stop
+   * anything real — it would just hide the local bubble while the agent
+   * still processes the message, risking a duplicate turn if the user
+   * resends the restored draft. Callers that don't go through the standard
+   * send path (e.g. cloud task provisioning) never set this, so their
+   * entries keep the original always-show-Stop behavior.
+   */
+  dispatched?: boolean;
 }
 
 interface OptimisticUserMessageState {
@@ -66,6 +79,14 @@ interface OptimisticUserMessageActions {
   markPendingMessageError: (id: string, errorMessage?: string) => void;
   /** Mark a pending message as sending again (used when retrying). */
   markPendingMessageSending: (id: string) => void;
+  /**
+   * Mark a pending message as actually dispatched to the server (the
+   * underlying `send()` resolved successfully). Hides the Stop affordance
+   * for it, since cancelling locally can no longer prevent the real send.
+   * No-ops if the id is no longer in the queue (e.g. already stopped/removed
+   * or already consumed by the echo).
+   */
+  markPendingMessageDispatched: (id: string) => void;
   /** Drop a pending message from the queue (e.g., after success/cancellation). */
   removePendingMessage: (id: string) => void;
   /**
@@ -159,6 +180,7 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
         imageUrls: payload.imageUrls ?? [],
         fileUrls: payload.fileUrls ?? [],
         timestamp: payload.timestamp ?? new Date().toISOString(),
+        dispatched: false,
       };
       set((state) => ({
         pendingMessages: [...state.pendingMessages, message],
@@ -185,12 +207,24 @@ export const useOptimisticUserMessageStore = create<OptimisticUserMessageStore>(
       set((state) => ({
         pendingMessages: state.pendingMessages.map((message) =>
           message.id === id
-            ? { ...message, status: "sending", errorMessage: undefined }
+            ? {
+                ...message,
+                status: "sending",
+                errorMessage: undefined,
+                dispatched: false,
+              }
             : message,
         ),
       }));
       armWatchdog(id);
     },
+
+    markPendingMessageDispatched: (id) =>
+      set((state) => ({
+        pendingMessages: state.pendingMessages.map((message) =>
+          message.id === id ? { ...message, dispatched: true } : message,
+        ),
+      })),
 
     removePendingMessage: (id) => {
       clearWatchdog(id);

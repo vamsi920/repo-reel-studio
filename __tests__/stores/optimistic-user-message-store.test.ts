@@ -33,6 +33,54 @@ describe("optimistic-user-message-store", () => {
     expect(pending[0].imageUrls).toEqual([]);
     expect(pending[0].fileUrls).toEqual([]);
     expect(typeof pending[0].timestamp).toBe("string");
+    expect(pending[0].dispatched).toBe(false);
+  });
+
+  it("markPendingMessageDispatched flips only the matching entry's `dispatched` flag", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    const targetId = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "target",
+    });
+    const otherId = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "other",
+    });
+
+    store.markPendingMessageDispatched(targetId);
+
+    const pending = useOptimisticUserMessageStore.getState().pendingMessages;
+    expect(pending.find((m) => m.id === targetId)?.dispatched).toBe(true);
+    expect(pending.find((m) => m.id === otherId)?.dispatched).toBe(false);
+  });
+
+  it("markPendingMessageDispatched no-ops when the id is no longer queued", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    const id = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "gone",
+    });
+    store.removePendingMessage(id);
+
+    expect(() => store.markPendingMessageDispatched(id)).not.toThrow();
+    expect(
+      useOptimisticUserMessageStore.getState().pendingMessages,
+    ).toHaveLength(0);
+  });
+
+  it("markPendingMessageSending (retry) resets `dispatched` to false", () => {
+    const store = useOptimisticUserMessageStore.getState();
+    const id = store.enqueuePendingMessage({
+      conversationId: CONVO,
+      text: "flaky",
+    });
+    store.markPendingMessageDispatched(id);
+    store.markPendingMessageError(id, "boom");
+
+    store.markPendingMessageSending(id);
+
+    const [entry] = useOptimisticUserMessageStore.getState().pendingMessages;
+    expect(entry.dispatched).toBe(false);
   });
 
   it("preserves FIFO order across multiple enqueues", () => {

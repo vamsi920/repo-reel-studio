@@ -86,6 +86,9 @@ export function ChatInterface() {
   const markPendingMessageError = useOptimisticUserMessageStore(
     (state) => state.markPendingMessageError,
   );
+  const markPendingMessageDispatched = useOptimisticUserMessageStore(
+    (state) => state.markPendingMessageDispatched,
+  );
   const pendingMessages = useOptimisticUserMessageStore(
     (state) => state.pendingMessages,
   );
@@ -408,6 +411,10 @@ export function ChatInterface() {
       await send(
         createChatMessage(prompt, imageUrls, uploadedFiles, timestamp),
       );
+      // The message has actually reached the server now — Stop can no
+      // longer prevent it, so stop offering it (see `dispatched` doc on
+      // `PendingUserMessage`).
+      markPendingMessageDispatched(pendingId);
     } catch (sendError) {
       const sendErrorMessage =
         sendError instanceof Error

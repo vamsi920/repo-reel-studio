@@ -34,6 +34,9 @@ export function PendingUserMessages() {
   const markPendingMessageSending = useOptimisticUserMessageStore(
     (state) => state.markPendingMessageSending,
   );
+  const markPendingMessageDispatched = useOptimisticUserMessageStore(
+    (state) => state.markPendingMessageDispatched,
+  );
   const removePendingMessage = useOptimisticUserMessageStore(
     (state) => state.removePendingMessage,
   );
@@ -78,6 +81,9 @@ export function PendingUserMessages() {
             message.timestamp,
           ),
         );
+        // The retry has actually reached the server now — Stop can no
+        // longer prevent it, so stop offering it (see `dispatched` doc).
+        markPendingMessageDispatched(id);
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -86,7 +92,13 @@ export function PendingUserMessages() {
         markPendingMessageError(id, errorMessage);
       }
     },
-    [send, markPendingMessageError, markPendingMessageSending, t],
+    [
+      send,
+      markPendingMessageError,
+      markPendingMessageSending,
+      markPendingMessageDispatched,
+      t,
+    ],
   );
 
   const handleStop = React.useCallback(
@@ -127,7 +139,7 @@ export function PendingUserMessages() {
               : undefined
           }
           onStop={
-            message.status === "sending"
+            message.status === "sending" && !message.dispatched
               ? () => handleStop(message.id, message.text)
               : undefined
           }

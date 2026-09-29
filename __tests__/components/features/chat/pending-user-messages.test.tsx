@@ -104,6 +104,53 @@ describe("PendingUserMessages", () => {
     );
   });
 
+  it("hides the stop button once the send has actually reached the server", () => {
+    const id = useOptimisticUserMessageStore
+      .getState()
+      .enqueuePendingMessage({
+        conversationId: ACTIVE_CONVO,
+        text: "already dispatched",
+      });
+    useOptimisticUserMessageStore.getState().markPendingMessageDispatched(id);
+
+    renderWithProviders(<PendingUserMessages />);
+
+    // Still shown as "sending" (echo hasn't arrived yet)...
+    expect(screen.getByTestId("user-message")).toHaveAttribute(
+      "data-pending-status",
+      "sending",
+    );
+    // ...but Stop is gone: cancelling locally can no longer prevent the send
+    // the server already has, so offering it would be misleading and risks
+    // a duplicate turn if the user resends the restored draft.
+    expect(screen.queryByTestId("chat-message-stop")).not.toBeInTheDocument();
+  });
+
+  it("marks the message dispatched (hiding Stop) once a retry send resolves", async () => {
+    mockSend.mockResolvedValueOnce({ queued: false });
+    const id = useOptimisticUserMessageStore
+      .getState()
+      .enqueuePendingMessage({
+        conversationId: ACTIVE_CONVO,
+        text: "retry me",
+      });
+    useOptimisticUserMessageStore
+      .getState()
+      .markPendingMessageError(id, "Server unavailable");
+
+    renderWithProviders(<PendingUserMessages />);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("chat-message-retry"));
+
+    await waitFor(() => {
+      const [entry] =
+        useOptimisticUserMessageStore.getState().pendingMessages;
+      expect(entry.dispatched).toBe(true);
+    });
+    expect(screen.queryByTestId("chat-message-stop")).not.toBeInTheDocument();
+  });
+
   it("keeps the stop button out of the bubble layout while sending", () => {
     useOptimisticUserMessageStore.getState().enqueuePendingMessage({
       conversationId: ACTIVE_CONVO,

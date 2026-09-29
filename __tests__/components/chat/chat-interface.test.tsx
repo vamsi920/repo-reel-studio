@@ -886,6 +886,28 @@ describe("ChatInterface - Pending message queue", () => {
     resolveSend?.({ queued: false });
   });
 
+  it("hides the stop affordance once the send actually reaches the server", async () => {
+    mockSend.mockResolvedValue({ queued: false });
+
+    renderInterface();
+    submitMessage("hello world");
+
+    const pendingMessage = await screen.findByTestId("user-message");
+    expect(pendingMessage).toHaveAttribute("data-pending-status", "sending");
+
+    // Once `send()` resolves the message has actually been handed to the
+    // server — cancelling locally can no longer stop it, so the Stop button
+    // must not be offered any more (it would just mislead the user into
+    // thinking they can still cancel, risking a duplicate resend).
+    await waitFor(() => {
+      expect(
+        useOptimisticUserMessageStore.getState().pendingMessages[0]
+          ?.dispatched,
+      ).toBe(true);
+    });
+    expect(screen.queryByTestId("chat-message-stop")).not.toBeInTheDocument();
+  });
+
   it("flips the message to 'error' with a retry link when send rejects", async () => {
     mockSend.mockRejectedValue(new Error("network down"));
 
