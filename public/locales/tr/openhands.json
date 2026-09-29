@@ -3284,6 +3284,8 @@
   "ENVIRONMENT$STUDIO_SUBTITLE": "Tell the agent how your company works. It will connect the pieces as you go.",
   "ENVIRONMENT$STUDIO_START": "Start the setup conversation",
   "ENVIRONMENT$STUDIO_STARTING": "Starting",
+  "ENVIRONMENT$STUDIO_START_ERROR_ORG": "Couldn't resolve your organization — try again in a moment.",
+  "ENVIRONMENT$STUDIO_START_ERROR": "Couldn't start the setup conversation. Please try again.",
   "ENVIRONMENT$STUDIO_RESUME": "Resume setup",
   "ENVIRONMENT$STUDIO_EMPTY_TITLE": "Nothing here yet",
   "ENVIRONMENT$STUDIO_EMPTY_BODY": "Connection forms, checks and proposals appear here as the conversation reaches them.",

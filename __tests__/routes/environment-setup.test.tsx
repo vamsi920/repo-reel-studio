@@ -39,6 +39,7 @@ const state = vi.hoisted(() => ({
   posted: [] as string[],
   startSession: vi.fn(),
   createConversation: vi.fn(),
+  deleteConversation: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -47,6 +48,7 @@ vi.mock("#/lib/data-platform/client", () => ({
 }));
 
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
+  ONBOARDING_ORG_UNRESOLVED_ERROR: "onboarding session organization not resolved",
   useOnboardingSession: () => ({
     data: state.session,
     isLoading: state.sessionLoading,
@@ -59,6 +61,10 @@ vi.mock("#/hooks/mutation/use-create-conversation", () => ({
     mutate: state.createConversation,
     isPending: false,
   }),
+}));
+
+vi.mock("#/api/conversation-service/agent-server-conversation-service.api", () => ({
+  default: { deleteConversation: state.deleteConversation },
 }));
 
 vi.mock("#/utils/custom-toast-handlers", () => ({
@@ -145,6 +151,7 @@ beforeEach(() => {
   state.posted = [];
   state.startSession.mockReset();
   state.createConversation.mockReset();
+  state.deleteConversation.mockClear();
   vi.mocked(displayErrorToast).mockReset();
   resetOAuthReceiptGuardForTests();
   useOnboardingStudioStore.getState().reset();
@@ -398,6 +405,60 @@ describe("Environment setup session start failure", () => {
     await user.click(await screen.findByTestId("environment-setup-begin"));
 
     await waitFor(() => expect(displayErrorToast).toHaveBeenCalledTimes(1));
+    expect(displayErrorToast).toHaveBeenCalledWith(
+      "ENVIRONMENT$STUDIO_START_ERROR",
+    );
     expect(screen.getByTestId("environment-setup-start")).toBeInTheDocument();
+  });
+
+  // Regression: a failed `startSession` left a real, orphaned agent-server
+  // conversation behind every time (the conversation itself had already been
+  // created successfully before the session row failed to save), since
+  // nothing ever cleaned it up on that path.
+  it("deletes the just-created conversation when starting its session fails", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onSuccess({ conversation_id: "conv-orphan" });
+    });
+    state.startSession.mockImplementation((_conversationId, options) => {
+      options.onError(new Error("insert failed"));
+    });
+
+    renderScreen("/environment/setup");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    await waitFor(() =>
+      expect(state.deleteConversation).toHaveBeenCalledWith("conv-orphan"),
+    );
+  });
+
+  // Regression: this failure used to always show the generic, unrelated
+  // "Could not load the environment profile." copy, and a genuine transient
+  // org-lookup failure (the standing Supabase/PostgREST incident) was
+  // indistinguishable from real Supabase misconfiguration -- both surfaced
+  // as "onboarding session storage is not configured" verbatim.
+  it("shows an org-specific message when the session fails because the org could not be resolved", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onSuccess({ conversation_id: "conv-1" });
+    });
+    state.startSession.mockImplementation((_conversationId, options) => {
+      options.onError(
+        new Error("onboarding session organization not resolved"),
+      );
+    });
+
+    renderScreen("/environment/setup");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    await waitFor(() =>
+      expect(displayErrorToast).toHaveBeenCalledWith(
+        "ENVIRONMENT$STUDIO_START_ERROR_ORG",
+      ),
+    );
   });
 });

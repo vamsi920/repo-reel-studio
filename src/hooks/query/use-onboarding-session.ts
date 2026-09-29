@@ -55,14 +55,27 @@ export function useOnboardingSession() {
   });
 }
 
+/**
+ * Thrown by `useStartOnboardingSession` when Supabase itself is reachable but
+ * the caller's org could not be resolved yet (e.g. the standing PostgREST
+ * org-lookup incident). Distinct from a real "storage not configured" error
+ * so callers can show an accurate, non-misleading message instead of
+ * implying the deployment is missing Supabase config entirely.
+ */
+export const ONBOARDING_ORG_UNRESOLVED_ERROR =
+  "onboarding session organization not resolved";
+
 export function useStartOnboardingSession() {
   const queryClient = useQueryClient();
   const { data: orgId } = useEnvironmentOrgId();
 
   return useMutation({
     mutationFn: async (conversationId: string): Promise<OnboardingSession> => {
-      if (!isSupabaseConfigured || !supabase || !orgId) {
+      if (!isSupabaseConfigured || !supabase) {
         throw new Error("onboarding session storage is not configured");
+      }
+      if (!orgId) {
+        throw new Error(ONBOARDING_ORG_UNRESOLVED_ERROR);
       }
       const { data, error } = await supabase
         .from("onboarding_sessions")
@@ -110,6 +123,13 @@ export function useStartOnboardingSession() {
         session,
       );
     },
+    // The caller (`environment-setup.tsx`) always shows its own accurate,
+    // context-aware error toast and cleans up the just-created conversation
+    // on failure. Without this, the global mutation cache's default handler
+    // also fires and surfaces this hook's internal error text verbatim (e.g.
+    // "onboarding session storage is not configured" even when the real
+    // cause is a transient org-lookup failure) as a second, misleading toast.
+    meta: { disableToast: true },
   });
 }
 

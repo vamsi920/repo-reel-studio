@@ -20,10 +20,12 @@ import { useBreakpoint } from "#/hooks/use-breakpoint";
 import { OnboardingWorkbench } from "#/components/features/environment/studio/onboarding-workbench";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import {
+  ONBOARDING_ORG_UNRESOLVED_ERROR,
   useOnboardingSession,
   useStartOnboardingSession,
 } from "#/hooks/query/use-onboarding-session";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
+import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { useEnvironmentReadiness } from "#/hooks/query/use-environment-readiness";
 import { createConversationResultPoster } from "#/services/onboarding-control";
@@ -295,10 +297,25 @@ function EnvironmentSetupScreen() {
             // The conversation now exists, but with no session row nothing
             // ever sets `conversationId`, so this screen silently sat on its
             // "start a new session" state forever with no sign that anything
-            // had gone wrong.
-            onError: () => displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD)),
+            // had gone wrong. A failure here also leaves a real, orphaned
+            // agent-server conversation behind (no session row will ever
+            // point at it) every time the user retries, so clean it up
+            // instead of accumulating them -- best-effort, a delete failure
+            // here must not mask the original error toast below.
+            onError: (error) => {
+              void AgentServerConversationService.deleteConversation(
+                response.conversation_id,
+              ).catch(() => {});
+              displayErrorToast(
+                error instanceof Error &&
+                  error.message === ONBOARDING_ORG_UNRESOLVED_ERROR
+                  ? t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR_ORG)
+                  : t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR),
+              );
+            },
           }),
-        onError: () => displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_LOAD)),
+        onError: () =>
+          displayErrorToast(t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR)),
       },
     );
   }, [createConversation, startSession, seed, t]);
