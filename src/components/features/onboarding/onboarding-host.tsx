@@ -1,25 +1,13 @@
 import { useLocation } from "react-router";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useSettings } from "#/hooks/query/use-settings";
-import { isSubscriptionLlmConfig } from "#/constants/llm-subscription";
-import type { Settings } from "#/types/settings";
+import { hasUsableCloudLlm } from "./cloud-llm-readiness";
 import { OnboardingModal } from "./onboarding-modal";
 import {
   isOnboardingPreviewActive,
   readOnboardingPreviewStep,
 } from "./onboarding-preview";
 import { useOnboardingCompletion } from "./use-onboarding-completion";
-
-function hasUsableCloudLlm(settings: Settings | undefined): boolean {
-  const llm = settings?.agent_settings?.llm as
-    | Record<string, unknown>
-    | undefined;
-  const hasModel =
-    typeof llm?.model === "string" && llm.model.trim().length > 0;
-  const hasAuth =
-    settings?.llm_api_key_set === true || isSubscriptionLlmConfig(llm);
-  return hasModel && hasAuth;
-}
 
 /**
  * Mounts the onboarding modal automatically the first time the user

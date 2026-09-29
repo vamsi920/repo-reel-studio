@@ -26,7 +26,8 @@ milestones:
 - [x] 2. Spotlight: highlight the sidebar item each step talks about (anchor via data-testid, dim the rest, scroll into view) — done 2026-09-28 (works in expanded + collapsed sidebar; on phones the sidebar is hidden so no spotlight shows — opening the mobile drawer mid-tour deferred to milestone 4)
 - [x] 3. Auto-play mode: optional play/pause that advances captions on a timer sized to caption length ("watch" mode), respecting prefers-reduced-motion — done 2026-09-28 (tour starts playing unless reduced motion; 4–15 s per caption by length; thin timer bar; stops on the last step so Finish is deliberate; manual Back/Next restarts the timer)
 - [x] 4. Edge cases (part 1): resume position after reload mid-tour + analytics events via useTracking — done 2026-09-29 (open tour's step saved in localStorage `neo-tutorial-progress`, reopened paused at that step on reload and cleared on close; `tutorial_started` {trigger: auto|launcher|resume}, `tutorial_completed`, `tutorial_skipped` {step, step_index, total_steps})
-- [ ] 4b. Edge cases (part 2): Cloud backends that skip onboarding (treat as new user when tutorial never seen and no conversations), launcher placement on mobile + conversation route, spotlight on mobile (open drawer or anchor the header menu button)
+- [x] 4b. Edge cases (part 2a): Cloud backends that skip onboarding — done 2026-09-29 (a Cloud account with a ready LLM never sees onboarding, so the tour now auto-starts for it when the tour was never seen and the account has zero conversations; accounts with history only get the launcher; readiness check shared with OnboardingHost via `onboarding/cloud-llm-readiness.ts`)
+- [ ] 4c. Edge cases (part 2b): launcher placement on mobile + conversation route, spotlight on mobile (open drawer or anchor the header menu button)
 - [ ] 5. a11y + polish: focus return to launcher on close, tooltip on launcher, reduced-motion, dark/light tokens review, RTL (ar) check
 
-last commit: feat(tutorial): resume an interrupted tour after reload and track tour analytics (2026-09-29)
+last commit: feat(tutorial): auto-start the tour for new Cloud accounts that skip onboarding (2026-09-29)

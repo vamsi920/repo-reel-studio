@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TutorialHost } from "#/components/features/tutorial";
@@ -18,7 +25,31 @@ import {
 import { NavigationProvider } from "#/context/navigation-context";
 import { findTutorialAnchor } from "#/components/features/tutorial/tutorial-spotlight";
 
-const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+const { trackEvent, activeBackend, getSettings, searchConversations } =
+  vi.hoisted(() => ({
+    trackEvent: vi.fn(),
+    activeBackend: { current: null as null | { backend: unknown } },
+    getSettings: vi.fn(),
+    searchConversations: vi.fn(),
+  }));
+
+vi.mock("#/contexts/active-backend-context", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("#/contexts/active-backend-context")>();
+  return {
+    ...actual,
+    useActiveBackend: () => activeBackend.current ?? actual.useActiveBackend(),
+  };
+});
+
+vi.mock("#/api/settings-service/settings-service.api", () => ({
+  default: { getSettings },
+}));
+
+vi.mock(
+  "#/api/conversation-service/agent-server-conversation-service.api",
+  () => ({ default: { searchConversations } }),
+);
 
 vi.mock("#/services/telemetry", () => ({
   trackEvent,
@@ -32,17 +63,22 @@ vi.mock("#/api/automation-service/automation-service.api", () => ({
 const navigate = vi.fn();
 
 function renderHost() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <NavigationProvider
-      value={{
-        currentPath: "/",
-        conversationId: null,
-        isNavigating: false,
-        navigate,
-      }}
-    >
-      <TutorialHost />
-    </NavigationProvider>,
+    <QueryClientProvider client={queryClient}>
+      <NavigationProvider
+        value={{
+          currentPath: "/",
+          conversationId: null,
+          isNavigating: false,
+          navigate,
+        }}
+      >
+        <TutorialHost />
+      </NavigationProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -51,6 +87,7 @@ beforeEach(() => {
   useTutorialStore.setState({ isOpen: false, stepIndex: 0, isPlaying: false });
   navigate.mockClear();
   trackEvent.mockClear();
+  activeBackend.current = null;
 });
 
 afterEach(() => {
@@ -217,6 +254,56 @@ describe("TutorialHost", () => {
     const spotlight = screen.getByTestId("tutorial-spotlight");
     expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "208px" });
     link.remove();
+  });
+});
+
+describe("TutorialHost on a Cloud backend that skips onboarding", () => {
+  function useReadyCloudAccount(conversationCount: number) {
+    activeBackend.current = {
+      backend: {
+        id: "cloud-1",
+        name: "Cloud",
+        host: "https://app.all-hands.dev",
+        apiKey: "k",
+        kind: "cloud",
+      },
+    };
+    getSettings.mockResolvedValue({
+      agent_settings: { llm: { model: "openhands/minimax-m2.7" } },
+      llm_api_key_set: true,
+    });
+    searchConversations.mockResolvedValue({
+      items: Array.from({ length: conversationCount }, (_, i) => ({
+        id: `c${i}`,
+      })),
+      next_page_id: null,
+    });
+  }
+
+  it("auto-starts the tour for a brand-new account", async () => {
+    useReadyCloudAccount(0);
+
+    renderHost();
+
+    expect(await screen.findByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "welcome",
+    );
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_started",
+      expect.objectContaining({ trigger: "auto" }),
+    );
+  });
+
+  it("leaves an account with conversation history alone", async () => {
+    useReadyCloudAccount(2);
+
+    renderHost();
+
+    await waitFor(() => expect(searchConversations).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tutorial-launcher")).toBeInTheDocument();
   });
 });
 
