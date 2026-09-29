@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
+import CopyIcon from "#/icons/copy.svg?react";
+import CheckmarkIcon from "#/icons/checkmark.svg?react";
 
 type BrowserChromeBarProps = {
   url: string;
@@ -22,10 +26,32 @@ export function isOpenableBrowserUrl(url: string): boolean {
 
 export function BrowserChromeBar({ url, hasPage }: BrowserChromeBarProps) {
   const { t } = useTranslation("openhands");
+  const [urlCopied, setUrlCopied] = useState(false);
+
+  // Reset the "Copied" confirmation a couple of seconds after a successful
+  // copy, mirroring the same timeout pattern used by SkillCard's copy button.
+  useEffect(() => {
+    if (!urlCopied) {
+      return undefined;
+    }
+    const timeout = setTimeout(() => setUrlCopied(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [urlCopied]);
+
+  const handleCopyUrl = async () => {
+    if (await copyTextToClipboard(url)) {
+      setUrlCopied(true);
+    }
+  };
 
   const disabledButtonClassName = cn(
     "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md",
     "text-[var(--oh-text-tertiary)] opacity-40 cursor-not-allowed",
+  );
+
+  const activeButtonClassName = cn(
+    "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md",
+    "text-[var(--oh-text-tertiary)] hover:bg-tertiary cursor-pointer",
   );
 
   const iconClassName = "w-3.5 h-3.5";
@@ -49,6 +75,41 @@ export function BrowserChromeBar({ url, hasPage }: BrowserChromeBarProps) {
         </span>
       </div>
 
+      {url ? (
+        <button
+          type="button"
+          disabled={urlCopied}
+          onClick={handleCopyUrl}
+          aria-label={t(
+            urlCopied ? I18nKey.BUTTON$COPIED : I18nKey.BUTTON$COPY,
+          )}
+          title={t(urlCopied ? I18nKey.BUTTON$COPIED : I18nKey.BUTTON$COPY)}
+          data-testid="browser-chrome-copy-url"
+          className={cn(activeButtonClassName, urlCopied && "cursor-default")}
+        >
+          {urlCopied ? (
+            // checkmark.svg hardcodes fill="white"; force currentColor so it
+            // matches the toolbar's muted icon color instead of always white.
+            <CheckmarkIcon
+              className={cn(iconClassName, "[&_path]:fill-current")}
+              aria-hidden
+            />
+          ) : (
+            <CopyIcon className={iconClassName} aria-hidden />
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled
+          aria-label={t(I18nKey.BUTTON$COPY)}
+          title={t(I18nKey.BUTTON$COPY)}
+          className={disabledButtonClassName}
+        >
+          <CopyIcon className={iconClassName} aria-hidden />
+        </button>
+      )}
+
       {hasPage && isOpenableBrowserUrl(url) ? (
         <a
           href={url}
@@ -57,10 +118,7 @@ export function BrowserChromeBar({ url, hasPage }: BrowserChromeBarProps) {
           aria-label={t(I18nKey.BUTTON$OPEN_IN_NEW_TAB)}
           title={t(I18nKey.BUTTON$OPEN_IN_NEW_TAB)}
           data-testid="browser-chrome-open-external"
-          className={cn(
-            "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md",
-            "text-[var(--oh-text-tertiary)] hover:bg-tertiary cursor-pointer",
-          )}
+          className={activeButtonClassName}
         >
           <ExternalLink className={iconClassName} aria-hidden strokeWidth={2} />
         </a>

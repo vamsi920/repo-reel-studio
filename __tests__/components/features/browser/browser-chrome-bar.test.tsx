@@ -1,6 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isOpenableBrowserUrl } from "#/components/features/browser/browser-chrome-bar";
+import {
+  BrowserChromeBar,
+  isOpenableBrowserUrl,
+} from "#/components/features/browser/browser-chrome-bar";
+
+function stubClipboard(clipboard: Clipboard | undefined) {
+  Object.defineProperty(navigator, "clipboard", {
+    value: clipboard,
+    configurable: true,
+    writable: true,
+  });
+}
 
 // `isOpenableBrowserUrl` is the only thing standing between an
 // agent-reported URL and a real, user-clickable `<a href>` (see
@@ -32,5 +45,38 @@ describe("isOpenableBrowserUrl", () => {
     [""],
   ])("rejects %s", (url) => {
     expect(isOpenableBrowserUrl(url)).toBe(false);
+  });
+});
+
+describe("BrowserChromeBar copy button", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, "clipboard");
+    vi.restoreAllMocks();
+  });
+
+  it("copies the current URL to the clipboard and shows a confirmation", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    stubClipboard({ writeText } as unknown as Clipboard);
+
+    render(<BrowserChromeBar url="https://example.com/page" hasPage />);
+
+    const copyButton = screen.getByTestId("browser-chrome-copy-url");
+    await user.click(copyButton);
+
+    expect(writeText).toHaveBeenCalledWith("https://example.com/page");
+    expect(copyButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "BUTTON$COPIED" })).toBe(
+      copyButton,
+    );
+  });
+
+  it("disables the copy button when there is no URL yet", () => {
+    render(<BrowserChromeBar url="" hasPage={false} />);
+
+    expect(
+      screen.queryByTestId("browser-chrome-copy-url"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "BUTTON$COPY" })).toBeDisabled();
   });
 });
