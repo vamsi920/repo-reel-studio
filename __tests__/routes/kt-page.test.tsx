@@ -521,6 +521,30 @@ describe("KtPage", () => {
     expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("remembers the narration toggle across reloads instead of resetting to off every time", async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    mockUseParams.mockReturnValue(paramsFor("page-a"));
+    const { unmount } = render(<KtPage />);
+
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    const narrationToggle = await screen.findByTestId(
+      "kt-page-narration-toggle",
+    );
+    await user.click(narrationToggle);
+    expect(narrationToggle).toHaveAttribute("aria-pressed", "true");
+    unmount();
+
+    // Simulates a reload: a fresh mount of the same route should pick the
+    // preference back up instead of starting muted again.
+    render(<KtPage />);
+    await user.click(screen.getByTestId("kt-page-watch-button"));
+    expect(
+      await screen.findByTestId("kt-page-narration-toggle"),
+    ).toHaveAttribute("aria-pressed", "true");
+    window.localStorage.clear();
+  });
+
   it("tells the user (via i18n) to open the conversation instead of silently doing nothing when Watch KT is clicked on a cold-rehydrated entry", async () => {
     useKnowledgeStore.setState({
       byRepositoryId: {

@@ -24,6 +24,10 @@ import {
 import { findConceptFlow } from "#/lib/kt-video/concept-flow";
 import { narrateManifest } from "#/lib/kt-video/narrate-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
+import {
+  readStoredNarrationPreference,
+  writeStoredNarrationPreference,
+} from "#/lib/kt-video/narration-preference";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
@@ -70,7 +74,12 @@ function KtPage() {
   > | null>(null);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const playerRef = useRef<PlayerRef>(null);
-  const [narrationEnabled, setNarrationEnabled] = useState(false);
+  // Remembered across pages/reloads (see narration-preference.ts) -- without
+  // this, re-enabling narration after every single page navigation made the
+  // toggle feel broken rather than like a real setting.
+  const [narrationEnabled, setNarrationEnabled] = useState(() =>
+    readStoredNarrationPreference(),
+  );
   const speechSupported =
     typeof window !== "undefined" && "speechSynthesis" in window;
 
@@ -312,7 +321,13 @@ function KtPage() {
             {mode === "watch" ? (
               <button
                 type="button"
-                onClick={() => setNarrationEnabled((v) => !v)}
+                onClick={() =>
+                  setNarrationEnabled((v) => {
+                    const next = !v;
+                    writeStoredNarrationPreference(next);
+                    return next;
+                  })
+                }
                 disabled={!speechSupported}
                 aria-pressed={narrationEnabled}
                 data-testid="kt-page-narration-toggle"
