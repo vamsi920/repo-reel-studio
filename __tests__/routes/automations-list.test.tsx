@@ -491,10 +491,13 @@ describe("AutomationsList — toggle and delete failures", () => {
     renderList();
     await screen.findByText(automation.name);
 
-    // Act — open the row kebab and pick "Turn off".
+    // Act — open the row kebab, pick "Turn off", then confirm in the modal.
     await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
     await user.click(
       screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await user.click(
+      await screen.findByTestId("turn-off-automation-confirm"),
     );
 
     // Assert — the failure is reported instead of the row silently staying
@@ -566,7 +569,8 @@ describe("AutomationsList — toggle and delete failures", () => {
     );
 
     // Act — turn off automation 1 (stays pending), then automation 2 (which
-    // resolves right away) before automation 1 settles.
+    // resolves right away) before automation 1 settles. Each turn-off goes
+    // through the confirmation modal first.
     await user.click(
       within(firstCard).getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU),
     );
@@ -574,10 +578,16 @@ describe("AutomationsList — toggle and delete failures", () => {
       screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
     );
     await user.click(
+      await screen.findByTestId("turn-off-automation-confirm"),
+    );
+    await user.click(
       within(secondCard).getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU),
     );
     await user.click(
       screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await user.click(
+      await screen.findByTestId("turn-off-automation-confirm"),
     );
     await waitFor(() => {
       expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
@@ -597,5 +607,123 @@ describe("AutomationsList — toggle and delete failures", () => {
     await waitFor(() => {
       expect(displayErrorToast).toHaveBeenCalledWith("Scheduler unavailable");
     });
+  });
+});
+
+describe("AutomationsList — turn off confirmation", () => {
+  beforeEach(() => {
+    vi.mocked(AutomationService.toggleAutomation).mockReset();
+  });
+
+  it("does not call the toggle API until the confirmation modal is accepted", async () => {
+    // Arrange — the automation starts enabled, so "Turn off" is offered.
+    vi.mocked(AutomationService.toggleAutomation).mockResolvedValue({
+      ...automation,
+      enabled: false,
+    });
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+
+    // Act — open the row kebab and pick "Turn off".
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+
+    // Assert — the confirmation modal is showing and the API has not fired.
+    expect(
+      await screen.findByText(I18nKey.AUTOMATIONS$TURN_OFF_CONFIRM_TITLE),
+    ).toBeInTheDocument();
+    expect(AutomationService.toggleAutomation).not.toHaveBeenCalled();
+  });
+
+  it("leaves the automation untouched when the confirmation is cancelled", async () => {
+    // Arrange
+    vi.mocked(AutomationService.toggleAutomation).mockResolvedValue({
+      ...automation,
+      enabled: false,
+    });
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+
+    // Act — open the modal, then cancel instead of confirming.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await screen.findByText(I18nKey.AUTOMATIONS$TURN_OFF_CONFIRM_TITLE);
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$CANCEL }),
+    );
+
+    // Assert — the modal is gone and the automation was never toggled.
+    expect(
+      screen.queryByText(I18nKey.AUTOMATIONS$TURN_OFF_CONFIRM_TITLE),
+    ).not.toBeInTheDocument();
+    expect(AutomationService.toggleAutomation).not.toHaveBeenCalled();
+  });
+
+  it("calls the toggle API with enabled: false once the confirmation is accepted", async () => {
+    // Arrange
+    vi.mocked(AutomationService.toggleAutomation).mockResolvedValue({
+      ...automation,
+      enabled: false,
+    });
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(automation.name);
+
+    // Act — open the modal and confirm.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_OFF }),
+    );
+    await user.click(
+      await screen.findByTestId("turn-off-automation-confirm"),
+    );
+
+    // Assert
+    await waitFor(() => {
+      expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
+        automation.id,
+        false,
+      );
+    });
+  });
+
+  it("turns an automation back on immediately, without a confirmation modal", async () => {
+    // Arrange — the automation starts disabled, so the menu offers "Turn on".
+    const disabledAutomation: Automation = { ...automation, enabled: false };
+    vi.mocked(AutomationService.getAutomations).mockResolvedValue({
+      automations: [disabledAutomation],
+      total: 1,
+    });
+    vi.mocked(AutomationService.toggleAutomation).mockResolvedValue({
+      ...disabledAutomation,
+      enabled: true,
+    });
+    const user = userEvent.setup();
+    renderList();
+    await screen.findByText(disabledAutomation.name);
+
+    // Act — open the row kebab and pick "Turn on". Turning on has no
+    // destructive consequence, so it should not require confirmation.
+    await user.click(screen.getByLabelText(I18nKey.AUTOMATIONS$ACTIONS_MENU));
+    await user.click(
+      screen.getByRole("button", { name: I18nKey.AUTOMATIONS$TURN_ON }),
+    );
+
+    // Assert — the API fires right away, no modal in the way.
+    await waitFor(() => {
+      expect(AutomationService.toggleAutomation).toHaveBeenCalledWith(
+        disabledAutomation.id,
+        true,
+      );
+    });
+    expect(
+      screen.queryByText(I18nKey.AUTOMATIONS$TURN_OFF_CONFIRM_TITLE),
+    ).not.toBeInTheDocument();
   });
 });

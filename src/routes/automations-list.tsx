@@ -38,6 +38,7 @@ import { EmptyState } from "#/components/features/automations/empty-state";
 import { ErrorState } from "#/components/features/automations/error-state";
 import { BackendNotConfigured } from "#/components/features/automations/backend-not-configured";
 import { DeleteConfirmationModal } from "#/components/features/automations/delete-confirmation-modal";
+import { TurnOffConfirmationModal } from "#/components/features/automations/turn-off-confirmation-modal";
 import { EditAutomationModal } from "#/components/features/automations/detail/edit-automation-modal";
 import { AddAutomationModal } from "#/components/features/automations/add-automation-modal";
 import { ImportAutomationModal } from "#/components/features/automations/import-automation-modal";
@@ -103,6 +104,10 @@ export default function AutomationsList() {
   );
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [turnOffTarget, setTurnOffTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -178,8 +183,7 @@ export default function AutomationsList() {
     () => new Set(),
   );
 
-  const handleToggle = async (id: string, currentEnabled: boolean) => {
-    const willEnable = !currentEnabled;
+  const performToggle = async (id: string, willEnable: boolean) => {
     if (willEnable) {
       const automation = data?.automations.find((a) => a.id === id);
       trackPrebuiltAutomationEnabled({
@@ -220,6 +224,32 @@ export default function AutomationsList() {
         return next;
       });
     }
+  };
+
+  const handleToggle = (id: string, currentEnabled: boolean) => {
+    const willEnable = !currentEnabled;
+    // Turning off silently disables an automation's schedule/triggers with
+    // no undo, so confirm first — mirrors the home page's pinned-card
+    // behavior (`useHomeAutomationActions`), which already gates the same
+    // action behind `TurnOffConfirmationModal`. Turning on has no similarly
+    // surprising consequence, so it still fires immediately.
+    if (!willEnable) {
+      const automation = data?.automations.find((a) => a.id === id);
+      setTurnOffTarget({ id, name: automation?.name ?? id });
+      return;
+    }
+    void performToggle(id, willEnable);
+  };
+
+  const handleTurnOffConfirm = () => {
+    if (!turnOffTarget) return;
+    const { id } = turnOffTarget;
+    setTurnOffTarget(null);
+    void performToggle(id, false);
+  };
+
+  const handleTurnOffCancel = () => {
+    setTurnOffTarget(null);
   };
 
   const [pendingRunIds, setPendingRunIds] = useState<ReadonlySet<string>>(
@@ -598,6 +628,14 @@ export default function AutomationsList() {
         isOpen={deleteTarget !== null}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Turn-off confirmation modal */}
+      <TurnOffConfirmationModal
+        automationName={turnOffTarget?.name ?? ""}
+        isOpen={turnOffTarget !== null}
+        onConfirm={handleTurnOffConfirm}
+        onCancel={handleTurnOffCancel}
       />
 
       {/* Edit modal — local backends only */}
