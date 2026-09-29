@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Loader2, Plus, RefreshCw } from "lucide-react";
+import { BookOpen, Loader2, Plus, RefreshCw, X } from "lucide-react";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
@@ -609,15 +609,28 @@ function KtList() {
           </div>
         ) : (
           <>
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
-              aria-label={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
-              data-testid="kt-search-input"
-              className="mb-4 w-full rounded-md border border-[var(--oh-border)] bg-transparent px-3 py-2 text-sm text-[var(--oh-foreground)] placeholder:text-[var(--oh-muted)]"
-            />
+            <div className="relative mb-4">
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
+                aria-label={t(I18nKey.KT$SEARCH_PLACEHOLDER)}
+                data-testid="kt-search-input"
+                className="w-full rounded-md border border-[var(--oh-border)] bg-transparent px-3 py-2 pr-9 text-sm text-[var(--oh-foreground)] placeholder:text-[var(--oh-muted)]"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label={t(I18nKey.COMMAND_MENU$CLEAR_SEARCH_LABEL)}
+                  data-testid="kt-search-clear"
+                  className="absolute inset-y-0 right-0 flex items-center px-2.5 text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]"
+                >
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              )}
+            </div>
             {filtered.length === 0 ? (
               <div
                 data-testid="kt-search-no-results"

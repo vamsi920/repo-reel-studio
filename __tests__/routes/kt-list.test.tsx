@@ -486,4 +486,28 @@ describe("KtList", () => {
     );
     expect(screen.queryByTestId("kt-repo-card")).toBeNull();
   });
+
+  // A typed search query previously had no way to clear it besides manually
+  // deleting the text -- the clear button restores the full list in one click.
+  it("clears the search query and restores the full list via the clear button", async () => {
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtList />);
+    await screen.findByTestId("kt-repo-card");
+
+    expect(screen.queryByTestId("kt-search-clear")).toBeNull();
+
+    await user.type(screen.getByTestId("kt-search-input"), "zzz-no-match");
+    expect(await screen.findByTestId("kt-search-no-results")).toBeVisible();
+
+    await user.click(screen.getByTestId("kt-search-clear"));
+
+    expect(screen.getByTestId("kt-search-input")).toHaveValue("");
+    expect(await screen.findByTestId("kt-repo-card")).toBeVisible();
+    expect(screen.queryByTestId("kt-search-clear")).toBeNull();
+  });
 });
