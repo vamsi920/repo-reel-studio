@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createUserMessageEvent } from "test-utils";
-import { ConversationWebSocketProvider } from "#/contexts/conversation-websocket-context";
+import {
+  ConversationWebSocketProvider,
+  mergeWebSocketConnectionStates,
+} from "#/contexts/conversation-websocket-context";
 import { useEventStore } from "#/stores/use-event-store";
 import useMetricsStore from "#/stores/metrics-store";
 import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-store";
@@ -1148,5 +1151,51 @@ describe("ConversationWebSocketProvider — terminal seeded from history", () =>
 
     await waitFor(() => expect(eventIds()).toEqual(["user-msg-conv-b"]));
     expect(commands()).toEqual([]);
+  });
+});
+
+describe("mergeWebSocketConnectionStates", () => {
+  it("returns the main state directly when there is no planning connection", () => {
+    expect(mergeWebSocketConnectionStates("OPEN", "CONNECTING", false)).toBe(
+      "OPEN",
+    );
+  });
+
+  it("reports OPEN while the main socket is open and streaming, even if the planning socket has closed", () => {
+    // Regression: a genuinely open, event-streaming main socket (the one
+    // driving the visible chat/terminal/browser tab) paired with a closed
+    // planning socket (its sub-conversation task finished, or it was never
+    // needed this turn) used to fall through to the CLOSED default, showing
+    // a stuck "Disconnected" pill for a turn that was running fine.
+    expect(mergeWebSocketConnectionStates("OPEN", "CLOSED", true)).toBe("OPEN");
+    expect(mergeWebSocketConnectionStates("CLOSED", "OPEN", true)).toBe("OPEN");
+  });
+
+  it("still reports CONNECTING while either socket is connecting", () => {
+    expect(mergeWebSocketConnectionStates("CONNECTING", "OPEN", true)).toBe(
+      "CONNECTING",
+    );
+    expect(mergeWebSocketConnectionStates("OPEN", "CONNECTING", true)).toBe(
+      "CONNECTING",
+    );
+  });
+
+  it("reports OPEN when both connections are open", () => {
+    expect(mergeWebSocketConnectionStates("OPEN", "OPEN", true)).toBe("OPEN");
+  });
+
+  it("reports CLOSED when both connections are closed", () => {
+    expect(mergeWebSocketConnectionStates("CLOSED", "CLOSED", true)).toBe(
+      "CLOSED",
+    );
+  });
+
+  it("reports CLOSING when neither socket is open but one is closing", () => {
+    expect(mergeWebSocketConnectionStates("CLOSING", "CLOSED", true)).toBe(
+      "CLOSING",
+    );
+    expect(mergeWebSocketConnectionStates("CLOSED", "CLOSING", true)).toBe(
+      "CLOSING",
+    );
   });
 });

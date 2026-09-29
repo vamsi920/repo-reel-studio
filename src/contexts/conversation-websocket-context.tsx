@@ -95,6 +95,61 @@ export type WebSocketConnectionState =
   | "CLOSED"
   | "CLOSING";
 
+/**
+ * Combines the main and planning-agent socket states into the single status
+ * the chat pill (`getStatusCode`) renders. Exported as a pure function so the
+ * merge rules are unit-testable without driving two separate WebSocket mocks.
+ *
+ * Regression: a mismatched pair that wasn't "both open", "both closed",
+ * "either connecting" or "either closing" -- most commonly the main socket
+ * OPEN and actively streaming events while the planning socket had closed
+ * (its sub-conversation task finished, or it was never needed for a turn
+ * that didn't delegate) -- used to fall through every branch to the CLOSED
+ * default. That showed a stuck "Disconnected" pill for a turn that was
+ * genuinely running to completion on the main channel the whole time. One
+ * live channel is enough to not report full disconnection.
+ */
+export function mergeWebSocketConnectionStates(
+  mainConnectionState: WebSocketConnectionState,
+  planningConnectionState: WebSocketConnectionState,
+  hasPlanningConnection: boolean,
+): WebSocketConnectionState {
+  if (!hasPlanningConnection) {
+    return mainConnectionState;
+  }
+
+  if (
+    mainConnectionState === "CONNECTING" ||
+    planningConnectionState === "CONNECTING"
+  ) {
+    return "CONNECTING";
+  }
+
+  if (mainConnectionState === "OPEN" && planningConnectionState === "OPEN") {
+    return "OPEN";
+  }
+
+  if (
+    mainConnectionState === "CLOSED" &&
+    planningConnectionState === "CLOSED"
+  ) {
+    return "CLOSED";
+  }
+
+  if (mainConnectionState === "OPEN" || planningConnectionState === "OPEN") {
+    return "OPEN";
+  }
+
+  if (
+    mainConnectionState === "CLOSING" ||
+    planningConnectionState === "CLOSING"
+  ) {
+    return "CLOSING";
+  }
+
+  return "CLOSED";
+}
+
 interface SendMessageResult {
   queued: boolean; // true if message was queued for later delivery, false if sent immediately
 }
@@ -542,44 +597,15 @@ export function ConversationWebSocketProvider({
   }, [subConversations]);
 
   // Merged connection state - reflects combined status of both connections
-  const connectionState = useMemo<WebSocketConnectionState>(() => {
-    // If planning agent connection doesn't exist, use main connection state
-    if (!planningAgentWsUrl) {
-      return mainConnectionState;
-    }
-
-    // If either is connecting, merged state is connecting
-    if (
-      mainConnectionState === "CONNECTING" ||
-      planningConnectionState === "CONNECTING"
-    ) {
-      return "CONNECTING";
-    }
-
-    // If both are open, merged state is open
-    if (mainConnectionState === "OPEN" && planningConnectionState === "OPEN") {
-      return "OPEN";
-    }
-
-    // If both are closed, merged state is closed
-    if (
-      mainConnectionState === "CLOSED" &&
-      planningConnectionState === "CLOSED"
-    ) {
-      return "CLOSED";
-    }
-
-    // If either is closing, merged state is closing
-    if (
-      mainConnectionState === "CLOSING" ||
-      planningConnectionState === "CLOSING"
-    ) {
-      return "CLOSING";
-    }
-
-    // Default to closed if states don't match expected patterns
-    return "CLOSED";
-  }, [mainConnectionState, planningConnectionState, planningAgentWsUrl]);
+  const connectionState = useMemo<WebSocketConnectionState>(
+    () =>
+      mergeWebSocketConnectionStates(
+        mainConnectionState,
+        planningConnectionState,
+        !!planningAgentWsUrl,
+      ),
+    [mainConnectionState, planningConnectionState, planningAgentWsUrl],
+  );
 
   useEffect(() => {
     if (
