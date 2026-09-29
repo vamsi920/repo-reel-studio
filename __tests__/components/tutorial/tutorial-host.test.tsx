@@ -186,6 +186,52 @@ describe("TutorialHost", () => {
     expect(wizard).toHaveAttribute("data-step", "conversations");
   });
 
+  it("covers the Security and Usage sidebar links added after the tour shipped", async () => {
+    const user = userEvent.setup();
+    const steps = getTutorialSteps();
+    const securityIndex = steps.findIndex((s) => s.id === "security");
+    const usageIndex = steps.findIndex((s) => s.id === "usage");
+
+    expect(steps[securityIndex]).toMatchObject({
+      route: "/security",
+      anchorTestIds: ["sidebar-security-link", MOBILE_MENU_TOGGLE_TEST_ID],
+    });
+    expect(steps[usageIndex]).toMatchObject({
+      route: "/usage",
+      anchorTestIds: ["sidebar-usage-link", MOBILE_MENU_TOGGLE_TEST_ID],
+    });
+    // Security sits with the other top-level sidebar links, before the
+    // Settings step; Usage sits with them too, still before Settings.
+    const settingsIndex = steps.findIndex((s) => s.id === "settings");
+    expect(securityIndex).toBeGreaterThan(0);
+    expect(securityIndex).toBeLessThan(settingsIndex);
+    expect(usageIndex).toBeGreaterThan(securityIndex);
+    expect(usageIndex).toBeLessThan(settingsIndex);
+
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: securityIndex });
+    });
+    renderHost();
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "security",
+    );
+    expect(navigate).toHaveBeenCalledWith("/security");
+
+    await user.click(screen.getByTestId("tutorial-next"));
+    for (let i = securityIndex + 1; i < usageIndex; i += 1) {
+      // eslint-disable-next-line no-await-in-loop -- steps must advance in order
+      await user.click(screen.getByTestId("tutorial-next"));
+    }
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "usage",
+    );
+    expect(navigate).toHaveBeenCalledWith("/usage");
+  });
+
   it("finishing the last step closes the tour and remembers it was seen", async () => {
     const user = userEvent.setup();
     const lastIndex = getTutorialSteps().length - 1;

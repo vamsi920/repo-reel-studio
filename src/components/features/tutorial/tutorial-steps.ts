@@ -6,9 +6,11 @@ export type TutorialStepId =
   | "conversations"
   | "customize"
   | "automations"
+  | "security"
   | "environment"
   | "agentops"
   | "knowledge"
+  | "usage"
   | "settings"
   | "finish";
 
@@ -71,6 +73,13 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["sidebar-automations-link", MOBILE_MENU_TOGGLE_TEST_ID],
     },
     {
+      id: "security",
+      titleKey: I18nKey.TUTORIAL$STEP_SECURITY_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SECURITY_SUBTITLE,
+      route: "/security",
+      anchorTestIds: ["sidebar-security-link", MOBILE_MENU_TOGGLE_TEST_ID],
+    },
+    {
       id: "environment",
       titleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_SUBTITLE,
@@ -90,6 +99,13 @@ export function getTutorialSteps(): TutorialStep[] {
       subtitleKey: I18nKey.TUTORIAL$STEP_KNOWLEDGE_SUBTITLE,
       route: "/kt",
       anchorTestIds: ["sidebar-kt-link", MOBILE_MENU_TOGGLE_TEST_ID],
+    },
+    {
+      id: "usage",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_SUBTITLE,
+      route: "/usage",
+      anchorTestIds: ["sidebar-usage-link", MOBILE_MENU_TOGGLE_TEST_ID],
     },
     {
       id: "settings",
