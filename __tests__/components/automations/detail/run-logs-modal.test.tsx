@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { I18nKey } from "#/i18n/declaration";
 import { RunLogsModal } from "#/components/features/automations/detail/run-logs-modal";
-import { AutomationRunStatus, type AutomationRun } from "#/types/automation";
+import {
+  AutomationRunStatus,
+  type Automation,
+  type AutomationRun,
+} from "#/types/automation";
 
 const { useBashCommandLogsMock } = vi.hoisted(() => ({
   useBashCommandLogsMock: vi.fn(),
@@ -327,6 +331,83 @@ describe("RunLogsModal — Debug with OpenHands button", () => {
     );
     expect(
       screen.queryByTestId("debug-automation-button-stub"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("RunLogsModal — repo clone failure warning", () => {
+  const makeCompletedRun = (): AutomationRun => ({
+    id: "run-1",
+    status: AutomationRunStatus.COMPLETED,
+    conversation_id: "conv-1",
+    bash_command_id: "cmd-1",
+    error_detail: null,
+    started_at: "2026-01-01T10:00:00Z",
+    completed_at: "2026-01-01T10:02:00Z",
+  });
+
+  const makeAutomation = (repository?: string): Automation => ({
+    id: "auto-1",
+    name: "Test automation",
+    trigger: { type: "schedule" },
+    enabled: true,
+    repository,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    prompt: "do something",
+  });
+
+  function renderWithStdout(stdout: string, repository?: string) {
+    useBashCommandLogsMock.mockReturnValue(
+      makeHookResult({
+        data: [
+          {
+            id: "o1",
+            kind: "BashOutput",
+            timestamp: "2026-01-01T10:00:00Z",
+            command_id: "cmd-1",
+            order: 0,
+            stdout,
+            stderr: null,
+          },
+        ],
+      }),
+    );
+    render(
+      <RunLogsModal
+        isOpen
+        conversationId="conv-1"
+        bashCommandId="cmd-1"
+        onClose={() => {}}
+        run={makeCompletedRun()}
+        automation={makeAutomation(repository)}
+      />,
+    );
+  }
+
+  it("shows the warning when the run completed but the configured repository never cloned", () => {
+    renderWithStdout(
+      "cloned 0/1 repos\nALL_OK\n",
+      "vamsi920/neo-qa-fixture",
+    );
+    expect(
+      screen.getByTestId("run-logs-repo-clone-failed-warning"),
+    ).toHaveTextContent(
+      I18nKey.AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING,
+    );
+  });
+
+  it("does not show the warning when the repository cloned successfully", () => {
+    renderWithStdout("cloned 1/1 repos\nALL_OK\n", "vamsi920/neo-qa-fixture");
+    expect(
+      screen.queryByTestId("run-logs-repo-clone-failed-warning"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the warning when the automation has no configured repository", () => {
+    renderWithStdout("cloned 0/1 repos\nALL_OK\n", undefined);
+    expect(
+      screen.queryByTestId("run-logs-repo-clone-failed-warning"),
     ).not.toBeInTheDocument();
   });
 });

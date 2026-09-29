@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "{{timestamp}} 실행 로그 보기",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "로그 보기",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Neo로 디버그",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "이 실행은 성공으로 보고되었지만 구성된 저장소를 복제하지 못했습니다 — 에이전트는 저장소가 연결되지 않은 상태로 작업했습니다. 기록에 있는 저장소 관련 답변은 신뢰할 수 없는 것으로 간주하세요.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "로그",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "출력",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "오류",

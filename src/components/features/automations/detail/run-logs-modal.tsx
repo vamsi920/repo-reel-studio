@@ -14,6 +14,7 @@ import {
   type Automation,
   type AutomationRun,
 } from "#/types/automation";
+import { detectRepoCloneFailure } from "#/components/features/home/featured-automations/automation-run-health";
 import { DebugAutomationButton } from "./debug-automation-button";
 
 /**
@@ -109,6 +110,9 @@ export function RunLogsModal({
   const loading = isResolvingConversation || (isFetching && !outputs);
   const noBashCommand = !bashCommandId;
   const activeBody = activeTab === "stdout" ? stdout : stderr;
+  const showRepoCloneFailedWarning =
+    run?.status === AutomationRunStatus.COMPLETED &&
+    detectRepoCloneFailure(stdout, !!automation?.repository);
 
   const tabBaseClass =
     "border-b-2 px-3 py-2 text-sm font-normal transition-colors focus:outline-none";
@@ -143,6 +147,15 @@ export function RunLogsModal({
         <h2 className={cn("pr-8", modalTitleLgMediumClassName)}>
           {t(I18nKey.AUTOMATIONS$DETAIL$LOGS_TITLE)}
         </h2>
+
+        {showRepoCloneFailedWarning && (
+          <p
+            data-testid="run-logs-repo-clone-failed-warning"
+            className="mt-3 rounded-md border border-[var(--oh-danger)]/50 bg-[var(--oh-danger)]/10 p-3 text-xs text-danger"
+          >
+            {t(I18nKey.AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING)}
+          </p>
+        )}
 
         <div
           role="tablist"

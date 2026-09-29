@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Afficher les journaux pour l'exécution du {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Afficher les journaux",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Déboguer avec Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Cette exécution a été signalée comme réussie, mais le dépôt configuré n'a pas pu être cloné — l'agent a travaillé sans dépôt associé. Considérez comme peu fiable toute réponse liée au dépôt dans la transcription.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Journaux",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Sortie",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Erreur",

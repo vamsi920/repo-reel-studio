@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Ver registos da execução de {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Ver registos",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Depurar com Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Esta execução foi registada como bem-sucedida, mas o repositório configurado não pôde ser clonado — o agente trabalhou sem nenhum repositório associado. Considere pouco fiável qualquer resposta relacionada com o repositório na transcrição.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Registos",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Saída",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Erro",

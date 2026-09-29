@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Переглянути журнали запуску від {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Переглянути журнали",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Налагодити за допомогою Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Цей запуск було позначено як успішний, але налаштований репозиторій не вдалося клонувати — агент працював без підключеного репозиторію. Вважайте будь-яку відповідь, пов'язану з репозиторієм, у транскрипті ненадійною.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Журнали",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Вивід",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Помилка",

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { isRateLimitErrorDetail } from "#/components/features/home/featured-automations/automation-run-health";
+import {
+  detectRepoCloneFailure,
+  isRateLimitErrorDetail,
+} from "#/components/features/home/featured-automations/automation-run-health";
 
 describe("isRateLimitErrorDetail", () => {
   it.each([
@@ -21,5 +24,34 @@ describe("isRateLimitErrorDetail", () => {
     ["an empty string", ""],
   ])("returns false for %s", (_label, detail) => {
     expect(isRateLimitErrorDetail(detail)).toBe(false);
+  });
+});
+
+describe("detectRepoCloneFailure", () => {
+  it("returns true when the dispatcher reports 0 clones out of a configured repository", () => {
+    expect(
+      detectRepoCloneFailure(
+        "installing deps\ncloned 0/1 repos\nALL_OK\n",
+        true,
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when the dispatcher reports at least one successful clone", () => {
+    expect(
+      detectRepoCloneFailure("cloned 1/1 repos\nALL_OK\n", true),
+    ).toBe(false);
+  });
+
+  it("returns false when the automation has no configured repository", () => {
+    expect(detectRepoCloneFailure("cloned 0/1 repos\n", false)).toBe(false);
+  });
+
+  it("returns false when stdout has no clone-count line at all", () => {
+    expect(detectRepoCloneFailure("hello world\n", true)).toBe(false);
+  });
+
+  it("returns false for empty stdout", () => {
+    expect(detectRepoCloneFailure("", true)).toBe(false);
   });
 });

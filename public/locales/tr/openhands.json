@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "{{timestamp}} çalıştırması için günlükleri görüntüle",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Günlükleri görüntüle",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Neo ile hata ayıkla",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Bu çalıştırma başarılı olarak raporlandı, ancak yapılandırılmış depo klonlanamadı — aracı hiçbir depo bağlı olmadan çalıştı. Dökümdeki depoyla ilgili herhangi bir yanıtı güvenilmez kabul edin.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Günlükler",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Çıktı",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Hata",

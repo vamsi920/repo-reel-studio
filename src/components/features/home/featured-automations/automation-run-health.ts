@@ -134,6 +134,27 @@ export function isRateLimitErrorDetail(detail: string): boolean {
 }
 
 /**
+ * True when a run's stdout shows the automation dispatcher's repo-clone
+ * step reported zero successes out of at least one configured repository
+ * (dispatcher prints a line like "cloned 0/1 repos"), while the automation
+ * itself has a repository configured. The dispatcher only logs this as
+ * informational stdout rather than raising, so a run can still finish and
+ * be reported COMPLETED/"Successful" even though the agent never actually
+ * had the repository attached — this lets the UI warn the user that any
+ * repository-related answer in that transcript is unreliable.
+ */
+export function detectRepoCloneFailure(
+  stdout: string,
+  hasConfiguredRepository: boolean,
+): boolean {
+  if (!hasConfiguredRepository || !stdout) return false;
+  const match = stdout.match(/cloned\s+(\d+)\s*\/\s*(\d+)\s+repos/i);
+  if (!match) return false;
+  const [, successCount, total] = match;
+  return Number(successCount) === 0 && Number(total) > 0;
+}
+
+/**
  * Timestamp to show as the run's "last run" moment, or null when the run
  * has no usable timestamp yet. The backend leaves started_at unset
  * (epoch/zero) while a run is PENDING and only populates it once execution

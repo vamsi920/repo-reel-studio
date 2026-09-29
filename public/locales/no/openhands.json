@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Vis logger for kjøring {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Vis logger",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Feilsøk med Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Denne kjøringen ble rapportert som vellykket, men det konfigurerte repositoriet kunne ikke klones — agenten jobbet uten et tilkoblet repositorium. Behandle alle repositoriumsrelaterte svar i transkripsjonen som upålitelige.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Logger",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Utdata",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Feil",

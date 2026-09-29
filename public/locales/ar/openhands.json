@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "عرض السجلات لتشغيل {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "عرض السجلات",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "التصحيح باستخدام Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "أُبلغ عن نجاح هذا التشغيل، لكن تعذّر استنساخ المستودع المُهيَّأ — عمل الوكيل دون إرفاق أي مستودع. تعامل مع أي إجابة متعلقة بالمستودع في النص على أنها غير موثوقة.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "السجلات",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "الإخراج",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "الخطأ",

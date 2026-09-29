@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "{{timestamp}} の実行ログを表示",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "ログを表示",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Neoでデバッグ",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "このランは成功と報告されましたが、設定されたリポジトリをクローンできませんでした — エージェントはリポジトリが接続されていない状態で作業しました。トランスクリプト内のリポジトリに関する回答は信頼できないものとして扱ってください。",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "ログ",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "出力",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "エラー",

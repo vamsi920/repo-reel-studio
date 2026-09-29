@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Mostra els registres de l'execució de {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Mostra els registres",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Depura amb Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Aquesta execució s'ha informat com a correcta, però no s'ha pogut clonar el repositori configurat — l'agent ha treballat sense cap repositori adjunt. Considereu poc fiable qualsevol resposta relacionada amb el repositori en la transcripció.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Registres",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Sortida",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Error",

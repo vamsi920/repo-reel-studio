@@ -15061,6 +15061,23 @@
     "uk": "Налагодити за допомогою Neo",
     "ca": "Depura amb Neo"
   },
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": {
+    "en": "This run reported success, but its configured repository could not be cloned — the agent worked with no repository attached. Treat any repository-related answer in the transcript as unreliable.",
+    "ja": "このランは成功と報告されましたが、設定されたリポジトリをクローンできませんでした — エージェントはリポジトリが接続されていない状態で作業しました。トランスクリプト内のリポジトリに関する回答は信頼できないものとして扱ってください。",
+    "zh-CN": "此次运行报告为成功,但其配置的仓库未能克隆——代理是在未附加任何仓库的情况下工作的。请将记录中与仓库相关的任何回答视为不可靠。",
+    "zh-TW": "此次執行回報成功,但其設定的儲存庫未能複製——代理程式是在未附加任何儲存庫的情況下運作的。請將逐字稿中與儲存庫相關的任何回答視為不可靠。",
+    "ko-KR": "이 실행은 성공으로 보고되었지만 구성된 저장소를 복제하지 못했습니다 — 에이전트는 저장소가 연결되지 않은 상태로 작업했습니다. 기록에 있는 저장소 관련 답변은 신뢰할 수 없는 것으로 간주하세요.",
+    "no": "Denne kjøringen ble rapportert som vellykket, men det konfigurerte repositoriet kunne ikke klones — agenten jobbet uten et tilkoblet repositorium. Behandle alle repositoriumsrelaterte svar i transkripsjonen som upålitelige.",
+    "it": "Questa esecuzione è stata segnalata come riuscita, ma il repository configurato non è stato clonato — l'agente ha lavorato senza alcun repository collegato. Considera come inaffidabile qualsiasi risposta relativa al repository nella trascrizione.",
+    "pt": "Esta execução foi registada como bem-sucedida, mas o repositório configurado não pôde ser clonado — o agente trabalhou sem nenhum repositório associado. Considere pouco fiável qualquer resposta relacionada com o repositório na transcrição.",
+    "es": "Esta ejecución se informó como exitosa, pero no se pudo clonar el repositorio configurado — el agente trabajó sin ningún repositorio adjunto. Considere poco fiable cualquier respuesta relacionada con el repositorio en la transcripción.",
+    "ar": "أُبلغ عن نجاح هذا التشغيل، لكن تعذّر استنساخ المستودع المُهيَّأ — عمل الوكيل دون إرفاق أي مستودع. تعامل مع أي إجابة متعلقة بالمستودع في النص على أنها غير موثوقة.",
+    "fr": "Cette exécution a été signalée comme réussie, mais le dépôt configuré n'a pas pu être cloné — l'agent a travaillé sans dépôt associé. Considérez comme peu fiable toute réponse liée au dépôt dans la transcription.",
+    "tr": "Bu çalıştırma başarılı olarak raporlandı, ancak yapılandırılmış depo klonlanamadı — aracı hiçbir depo bağlı olmadan çalıştı. Dökümdeki depoyla ilgili herhangi bir yanıtı güvenilmez kabul edin.",
+    "de": "Dieser Lauf wurde als erfolgreich gemeldet, aber das konfigurierte Repository konnte nicht geklont werden — der Agent hat ohne angehängtes Repository gearbeitet. Behandeln Sie jede repository-bezogene Antwort im Transkript als unzuverlässig.",
+    "uk": "Цей запуск було позначено як успішний, але налаштований репозиторій не вдалося клонувати — агент працював без підключеного репозиторію. Вважайте будь-яку відповідь, пов'язану з репозиторієм, у транскрипті ненадійною.",
+    "ca": "Aquesta execució s'ha informat com a correcta, però no s'ha pogut clonar el repositori configurat — l'agent ha treballat sense cap repositori adjunt. Considereu poc fiable qualsevol resposta relacionada amb el repositori en la transcripció."
+  },
   "AUTOMATIONS$DETAIL$LOGS_TITLE": {
     "en": "Logs",
     "ja": "ログ",

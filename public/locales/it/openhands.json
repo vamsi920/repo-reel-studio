@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Visualizza i log per l'esecuzione del {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Visualizza log",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Esegui il debug con Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Questa esecuzione è stata segnalata come riuscita, ma il repository configurato non è stato clonato — l'agente ha lavorato senza alcun repository collegato. Considera come inaffidabile qualsiasi risposta relativa al repository nella trascrizione.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Log",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Output",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Errore",

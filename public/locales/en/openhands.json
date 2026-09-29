@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "View logs for run on {{timestamp}}",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "View logs",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Debug with Neo",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "This run reported success, but its configured repository could not be cloned — the agent worked with no repository attached. Treat any repository-related answer in the transcript as unreliable.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Logs",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Output",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Error",

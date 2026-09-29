@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "查看 {{timestamp}} 的執行日誌",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "查看日誌",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "使用 Neo 偵錯",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "此次執行回報成功,但其設定的儲存庫未能複製——代理程式是在未附加任何儲存庫的情況下運作的。請將逐字稿中與儲存庫相關的任何回答視為不可靠。",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "日誌",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "輸出",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "錯誤",

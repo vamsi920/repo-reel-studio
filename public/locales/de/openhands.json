@@ -885,6 +885,7 @@
   "AUTOMATIONS$DETAIL$LOGS_VIEW": "Protokolle für Ausführung am {{timestamp}} anzeigen",
   "AUTOMATIONS$DETAIL$LOGS_VIEW_SHORT": "Protokolle anzeigen",
   "AUTOMATIONS$DETAIL$DEBUG_WITH_OPENHANDS": "Mit Neo debuggen",
+  "AUTOMATIONS$DETAIL$REPO_CLONE_FAILED_WARNING": "Dieser Lauf wurde als erfolgreich gemeldet, aber das konfigurierte Repository konnte nicht geklont werden — der Agent hat ohne angehängtes Repository gearbeitet. Behandeln Sie jede repository-bezogene Antwort im Transkript als unzuverlässig.",
   "AUTOMATIONS$DETAIL$LOGS_TITLE": "Protokolle",
   "AUTOMATIONS$DETAIL$LOGS_TAB_OUTPUT": "Ausgabe",
   "AUTOMATIONS$DETAIL$LOGS_TAB_ERROR": "Fehler",
