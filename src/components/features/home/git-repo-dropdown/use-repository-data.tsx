@@ -4,6 +4,7 @@ import { GitRepository } from "#/types/git";
 import { useGitRepositories } from "#/hooks/query/use-git-repositories";
 import { useSearchRepositories } from "#/hooks/query/use-search-repositories";
 import { useUserProviders } from "#/hooks/use-user-providers";
+import { GithubProxyError } from "#/api/git-service/local-github-service.api";
 
 export function useRepositoryData(
   provider: Provider,
@@ -48,16 +49,21 @@ export function useRepositoryData(
 
   // A GitHub connection with a dead/expired token still has a DB row, so
   // `isGithubDisconnected` (DB-row presence only) stays false and the list
-  // query instead fails live with the github-api-proxy's own
-  // `GitHub API error (401)` / `GitHub API error (403)` text (see
+  // query instead fails live with a `GithubProxyError` carrying
+  // "github_auth_error"/"not_connected" (see
   // supabase/functions/github-api-proxy/index.ts). Treat that the same as a
   // confirmed disconnect so the two never render as separate, conflicting
-  // messages -- see the "token present but dead" report.
+  // messages -- see the "token present but dead" report. This used to match
+  // on `listError.message` against a literal "GitHub API error (401)"
+  // string that `describeProxyError` stopped producing once it started
+  // returning friendly, translated-sounding text instead -- the regex could
+  // then never match anything, so check the proxy's own error code instead.
   const isGithubAuthFailure =
     provider === "github" &&
     isError &&
-    listError instanceof Error &&
-    /GitHub API error \(40[13]\)/.test(listError.message);
+    listError instanceof GithubProxyError &&
+    (listError.code === "github_auth_error" ||
+      listError.code === "not_connected");
 
   // Surfaced separately from `isError` -- a dead/missing GitHub connection
   // doesn't fail the repositories query, it just leaves it disabled (see

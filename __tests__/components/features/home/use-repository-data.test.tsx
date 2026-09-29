@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { useRepositoryData } from "#/components/features/home/git-repo-dropdown/use-repository-data";
+import { GithubProxyError } from "#/api/git-service/local-github-service.api";
 
 const mockUseGitRepositories = vi.fn();
 vi.mock("#/hooks/query/use-git-repositories", () => ({
@@ -179,11 +180,59 @@ describe("useRepositoryData", () => {
 
   // Regression (INC-1 "token present but dead"): a GitHub connection whose
   // DB row still exists but whose token is expired/revoked never flips
-  // `isGithubDisconnected` -- the list query instead fails live with the
-  // github-api-proxy's own "GitHub API error (401)" text. That live failure
-  // must be treated as disconnected too, or the dropdown shows a generic
-  // empty state plus a separate raw error line instead of one clear message.
-  it("reports the provider as disconnected on a live GitHub 401 even when the DB connection row still exists", () => {
+  // `isGithubDisconnected` -- the list query instead fails live with a
+  // `GithubProxyError` carrying the proxy's own "github_auth_error" code.
+  // That live failure must be treated as disconnected too, or the dropdown
+  // shows a generic empty state plus a separate raw error line instead of
+  // one clear message.
+  it("reports the provider as disconnected on a live github_auth_error even when the DB connection row still exists", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: new GithubProxyError(
+        "Your GitHub connection isn't working. Reconnect it in Settings > Connections.",
+        "github_auth_error",
+      ),
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(true);
+  });
+
+  it("reports the provider as disconnected on a live not_connected error too", () => {
+    mockUseUserProviders.mockReturnValue({
+      providers: ["github"],
+      isGithubDisconnected: false,
+    });
+    mockUseGitRepositories.mockReturnValue({
+      ...defaultGitRepositoriesResult,
+      isError: true,
+      error: new GithubProxyError(
+        "Connect your GitHub account before browsing repositories.",
+        "not_connected",
+      ),
+    });
+
+    const { result } = renderHook(() =>
+      useRepositoryData("github", false, "", [], ""),
+    );
+
+    expect(result.current.isProviderDisconnected).toBe(true);
+  });
+
+  // Regression: this used to match on `listError.message` against a
+  // literal "GitHub API error (401)" string that the proxy client stopped
+  // producing once `describeProxyError` started returning friendly,
+  // translated-sounding text instead -- so the check below (a plain Error
+  // with that dead literal) must NOT be mistaken for a real disconnect.
+  it("does not report disconnected for a plain error carrying the old dead literal text", () => {
     mockUseUserProviders.mockReturnValue({
       providers: ["github"],
       isGithubDisconnected: false,
@@ -198,10 +247,10 @@ describe("useRepositoryData", () => {
       useRepositoryData("github", false, "", [], ""),
     );
 
-    expect(result.current.isProviderDisconnected).toBe(true);
+    expect(result.current.isProviderDisconnected).toBe(false);
   });
 
-  it("reports the provider as disconnected on a live GitHub 403 too", () => {
+  it("does not report disconnected for a temporary github_api_error", () => {
     mockUseUserProviders.mockReturnValue({
       providers: ["github"],
       isGithubDisconnected: false,
@@ -209,25 +258,10 @@ describe("useRepositoryData", () => {
     mockUseGitRepositories.mockReturnValue({
       ...defaultGitRepositoriesResult,
       isError: true,
-      error: new Error("GitHub API error (403)"),
-    });
-
-    const { result } = renderHook(() =>
-      useRepositoryData("github", false, "", [], ""),
-    );
-
-    expect(result.current.isProviderDisconnected).toBe(true);
-  });
-
-  it("does not report disconnected for an unrelated list-query error", () => {
-    mockUseUserProviders.mockReturnValue({
-      providers: ["github"],
-      isGithubDisconnected: false,
-    });
-    mockUseGitRepositories.mockReturnValue({
-      ...defaultGitRepositoriesResult,
-      isError: true,
-      error: new Error("GitHub API error (502)"),
+      error: new GithubProxyError(
+        "GitHub is temporarily unreachable. Please try again.",
+        "github_api_error",
+      ),
     });
 
     const { result } = renderHook(() =>

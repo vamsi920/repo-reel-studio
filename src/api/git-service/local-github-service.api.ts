@@ -40,14 +40,33 @@ export interface NeodevexPullRequestPage {
  * just never received a real error to display. Throwing here lets that
  * existing error state (and this page's own error state) actually fire.
  */
+export type GithubProxyErrorCode =
+  | "unauthorized"
+  | "not_connected"
+  | "missing_repository"
+  | "unknown_action"
+  | "github_auth_error"
+  | "github_api_error";
+
 export class GithubProxyError extends Error {
-  constructor(message: string) {
+  /**
+   * The raw `github-api-proxy` error code (see `PROXY_ERROR_MESSAGES`
+   * below), when the edge function returned one. Callers that need to
+   * distinguish failure reasons (e.g. "connection is dead" vs. "GitHub is
+   * temporarily down") should check this rather than matching on
+   * `message`, which is a friendly, i18n-facing string that can change
+   * wording without notice.
+   */
+  code?: GithubProxyErrorCode;
+
+  constructor(message: string, code?: GithubProxyErrorCode) {
     super(message);
     this.name = "GithubProxyError";
+    this.code = code;
   }
 }
 
-const PROXY_ERROR_MESSAGES: Record<string, string> = {
+const PROXY_ERROR_MESSAGES: Record<GithubProxyErrorCode, string> = {
   unauthorized: "You need to be signed in to browse GitHub repositories.",
   not_connected: "Connect your GitHub account before browsing repositories.",
   missing_repository: "No repository was specified.",
@@ -57,6 +76,10 @@ const PROXY_ERROR_MESSAGES: Record<string, string> = {
   github_api_error: "GitHub is temporarily unreachable. Please try again.",
 };
 
+function isKnownProxyErrorCode(value: string): value is GithubProxyErrorCode {
+  return value in PROXY_ERROR_MESSAGES;
+}
+
 /**
  * supabase-js's `FunctionsHttpError` hardcodes `error.message` to "Edge
  * Function returned a non-2xx status code" regardless of what the function
@@ -64,21 +87,30 @@ const PROXY_ERROR_MESSAGES: Record<string, string> = {
  * `error.context`. Read it so callers (and the UI) see e.g. "not_connected"
  * or a real GitHub API error instead of that generic string.
  */
-async function describeProxyError(error: unknown): Promise<string> {
+async function describeProxyError(
+  error: unknown,
+): Promise<{ message: string; code?: GithubProxyErrorCode }> {
   const context = (error as { context?: unknown } | null)?.context;
   if (context instanceof Response) {
     try {
       const body = (await context.clone().json()) as { error?: string };
       if (body.error) {
-        return PROXY_ERROR_MESSAGES[body.error] ?? body.error;
+        const code = isKnownProxyErrorCode(body.error) ? body.error : undefined;
+        return {
+          message: code ? PROXY_ERROR_MESSAGES[code] : body.error,
+          code,
+        };
       }
     } catch {
       // Response body wasn't JSON -- fall through to the generic message below.
     }
   }
-  return error instanceof Error
-    ? error.message
-    : "GitHub connection request failed";
+  return {
+    message:
+      error instanceof Error
+        ? error.message
+        : "GitHub connection request failed",
+  };
 }
 
 async function invokeProxy<T>(body: Record<string, unknown>): Promise<T> {
@@ -89,7 +121,8 @@ async function invokeProxy<T>(body: Record<string, unknown>): Promise<T> {
     body,
   });
   if (error) {
-    throw new GithubProxyError(await describeProxyError(error));
+    const { message, code } = await describeProxyError(error);
+    throw new GithubProxyError(message, code);
   }
   return data as T;
 }

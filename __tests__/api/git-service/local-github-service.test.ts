@@ -69,4 +69,27 @@ describe("local github proxy error messages", () => {
       getLocalGithubRepositoryBranches({ repository: "user/repo" }),
     ).rejects.toBeInstanceOf(GithubProxyError);
   });
+
+  // Regression: callers (e.g. the "token present but dead" GitRepoDropdown
+  // fix) need to distinguish failure reasons without matching on `message`,
+  // a friendly, i18n-facing string that can change wording without notice.
+  it("carries the raw proxy error code on the thrown error", async () => {
+    state.invokeError = {
+      context: proxyErrorResponse({ error: "github_auth_error" }, 401),
+    };
+
+    await expect(
+      getLocalGithubRepositoryBranches({ repository: "user/repo" }),
+    ).rejects.toMatchObject({ code: "github_auth_error" });
+  });
+
+  it("leaves code undefined for an unrecognized error", async () => {
+    state.invokeError = {
+      context: proxyErrorResponse({ error: "some_new_code" }, 500),
+    };
+
+    await expect(
+      getLocalGithubRepositoryBranches({ repository: "user/repo" }),
+    ).rejects.toMatchObject({ code: undefined });
+  });
 });
