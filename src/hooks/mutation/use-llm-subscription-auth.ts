@@ -13,8 +13,11 @@ export function usePollOpenAISubscriptionLogin() {
   return useMutation({
     mutationFn: LLMSubscriptionService.pollOpenAIDeviceLogin,
     onSuccess: () => {
+      // Invalidate by the shared prefix (not a single backend-scoped key) so
+      // this matches every openaiStatus query regardless of which backend it
+      // was fetched for -- same convention as LLM_PROFILES_QUERY_KEYS.all.
       queryClient.invalidateQueries({
-        queryKey: LLM_SUBSCRIPTION_QUERY_KEYS.openaiStatus,
+        queryKey: LLM_SUBSCRIPTION_QUERY_KEYS.all,
       });
     },
   });
@@ -26,7 +29,7 @@ export function useLogoutOpenAISubscription() {
     mutationFn: LLMSubscriptionService.logoutOpenAI,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: LLM_SUBSCRIPTION_QUERY_KEYS.openaiStatus,
+        queryKey: LLM_SUBSCRIPTION_QUERY_KEYS.all,
       });
     },
   });

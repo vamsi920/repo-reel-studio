@@ -67,8 +67,37 @@ export const AGENT_PROFILES_RETRY_OPTIONS = {
 
 export const LLM_SUBSCRIPTION_QUERY_KEYS = {
   all: ["llm-subscription"] as const,
-  openaiStatus: ["llm-subscription", "openai", "status"] as const,
-  openaiModels: ["llm-subscription", "openai", "models"] as const,
+  // Include backend identity to prevent cache pollution when switching
+  // backends, matching LLM_PROFILES_QUERY_KEYS -- the OpenAI subscription
+  // status/models are per-agent-server state (see
+  // llm-subscription-service.ts's getAgentServerClientOptions() usage), not
+  // global, so two local backends must not share a cache entry.
+  openaiStatus: (
+    backendId: string,
+    orgId?: string | null,
+    connectionRevision?: number,
+  ) =>
+    [
+      "llm-subscription",
+      "openai",
+      "status",
+      backendId,
+      orgId ?? null,
+      connectionRevision ?? 0,
+    ] as const,
+  openaiModels: (
+    backendId: string,
+    orgId?: string | null,
+    connectionRevision?: number,
+  ) =>
+    [
+      "llm-subscription",
+      "openai",
+      "models",
+      backendId,
+      orgId ?? null,
+      connectionRevision ?? 0,
+    ] as const,
 } as const;
 
 export const LOCAL_WORKSPACES_QUERY_KEYS = {
