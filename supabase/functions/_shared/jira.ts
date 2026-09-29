@@ -207,6 +207,9 @@ async function encryptJiraToken(
  * than falling back to the token already known to be dead) so the caller can
  * tell "no usable token" apart from "here's one worth retrying with".
  */
+const LOCK_WAIT_ATTEMPTS = 10;
+const LOCK_WAIT_DELAY_MS = 250;
+
 export async function refreshJiraAccessTokenLocked(
   admin: SupabaseClient,
   userId: string,
@@ -227,6 +230,28 @@ export async function refreshJiraAccessTokenLocked(
     { lock_key: lockKey },
   );
   if (!holdsAdvisoryLock(gotLock, lockError)) {
+    // `environment_try_advisory_lock` is `pg_try_advisory_lock` -- it
+    // returns immediately, so losing the race here only means the winner
+    // started an instant ago, not that it has finished. The caller landed
+    // here because its own token already 401'd; reading `jira_connections`
+    // right away used to reliably return that exact same dead token, since
+    // the winner's `fetch()` round-trip to Atlassian plus its DB write take
+    // real time that this branch previously didn't wait for -- surfacing a
+    // spurious auth failure on a refresh that was genuinely in flight and
+    // about to succeed. Poll for the lock to free (bounded, so a wedged
+    // winner can't hang this request) before reading: the winner only
+    // releases it in its own `finally`, after the fresh token is written.
+    for (let attempt = 0; attempt < LOCK_WAIT_ATTEMPTS; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, LOCK_WAIT_DELAY_MS));
+      const { data: retryLock, error: retryError } = await admin.rpc(
+        "environment_try_advisory_lock",
+        { lock_key: lockKey },
+      );
+      if (holdsAdvisoryLock(retryLock, retryError)) {
+        await admin.rpc("environment_advisory_unlock", { lock_key: lockKey });
+        break;
+      }
+    }
     const { data: current } = await admin
       .from("jira_connections")
       .select("encrypted_access_token")

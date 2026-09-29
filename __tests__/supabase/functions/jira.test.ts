@@ -205,12 +205,19 @@ describe("refreshJiraAccessToken", () => {
 });
 
 function makeFakeLockableAdmin(options: {
+  /** Applied to every `environment_try_advisory_lock` call unless
+   * `gotLockSequence` is given. */
   gotLock: boolean | null | undefined;
+  /** One value per successive `environment_try_advisory_lock` call (the
+   * initial attempt plus each retry while polling for the lock to free);
+   * the last entry repeats once exhausted. Overrides `gotLock` when set. */
+  gotLockSequence?: (boolean | null | undefined)[];
   lockError?: unknown;
   currentEncryptedAccessToken?: string;
 }) {
   const rpcCalls: { fn: string; args: unknown }[] = [];
   const updateCalls: { table: string; row: unknown; userId: string }[] = [];
+  let lockAttempt = 0;
   const admin = {
     from(table: string) {
       return {
@@ -237,6 +244,14 @@ function makeFakeLockableAdmin(options: {
     rpc: async (fn: string, args: Record<string, string>) => {
       rpcCalls.push({ fn, args });
       if (fn === "environment_try_advisory_lock") {
+        if (options.gotLockSequence) {
+          const value =
+            options.gotLockSequence[
+              Math.min(lockAttempt, options.gotLockSequence.length - 1)
+            ];
+          lockAttempt += 1;
+          return { data: value, error: options.lockError ?? null };
+        }
         return { data: options.gotLock, error: options.lockError ?? null };
       }
       if (fn === "environment_advisory_unlock") return { data: true, error: null };
@@ -256,6 +271,7 @@ function makeFakeLockableAdmin(options: {
 describe("refreshJiraAccessTokenLocked", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("acquires the lock, refreshes, persists, and releases the lock on success", async () => {
@@ -298,25 +314,72 @@ describe("refreshJiraAccessTokenLocked", () => {
     ]);
   });
 
-  it("reuses the winner's freshly-committed token instead of racing a second refresh grant when the lock is already held", async () => {
+  it("waits for the winner's lock to free rather than immediately re-reading the same token that just 401'd, then reuses the winner's freshly-committed token", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("Deno", { env: { get: () => "test-oauth-value" } });
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const { admin, updateCalls } = makeFakeLockableAdmin({
+    // The initial attempt loses the race, and so do the first two polls --
+    // the winner's fetch()+DB write is still in flight -- before the lock
+    // frees on the third poll.
+    const { admin, rpcCalls, updateCalls } = makeFakeLockableAdmin({
       gotLock: false,
+      gotLockSequence: [false, false, false, true],
       currentEncryptedAccessToken: "encrypted(winners-access-token)",
     });
 
-    const result = await refreshJiraAccessTokenLocked(
+    const resultPromise = refreshJiraAccessTokenLocked(
       admin,
       "user-1",
       "old-refresh-token",
       "encryption-key",
     );
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
 
     expect(result).toBe("winners-access-token");
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(updateCalls).toHaveLength(0);
+    // Initial attempt + 3 polls before the lock is seen free, then a single
+    // unlock of the lock this call itself briefly re-acquired to detect that.
+    expect(
+      rpcCalls.filter((call) => call.fn === "environment_try_advisory_lock"),
+    ).toHaveLength(4);
+    expect(
+      rpcCalls.filter((call) => call.fn === "environment_advisory_unlock"),
+    ).toHaveLength(1);
+  });
+
+  it("falls back to whatever is currently stored if the winner's lock never frees within the bounded poll budget", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("Deno", { env: { get: () => "test-oauth-value" } });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const { admin, rpcCalls, updateCalls } = makeFakeLockableAdmin({
+      gotLock: false,
+      currentEncryptedAccessToken: "encrypted(still-stale-access-token)",
+    });
+
+    const resultPromise = refreshJiraAccessTokenLocked(
+      admin,
+      "user-1",
+      "old-refresh-token",
+      "encryption-key",
+    );
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
+
+    expect(result).toBe("still-stale-access-token");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(updateCalls).toHaveLength(0);
+    // Initial attempt + every bounded retry, all still reporting the lock
+    // held, and never an unlock call of a lock this call never acquired.
+    expect(
+      rpcCalls.filter((call) => call.fn === "environment_try_advisory_lock"),
+    ).toHaveLength(11);
+    expect(
+      rpcCalls.filter((call) => call.fn === "environment_advisory_unlock"),
+    ).toHaveLength(0);
   });
 
   it("returns null rather than racing a second grant when the lock RPC itself fails", async () => {

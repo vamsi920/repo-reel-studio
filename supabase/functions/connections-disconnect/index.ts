@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: connection } = await admin
     .from("connections")
-    .select("id, org_id, provider_id, instance_key")
+    .select("id, org_id, provider_id, instance_key, created_by")
     .eq("id", payload.connectionId)
     .maybeSingle();
 
@@ -63,12 +63,25 @@ Deno.serve(async (req: Request) => {
 
   // Remove the mirrored legacy row too, or the two stores diverge: the
   // Environment screen would show the provider as gone while the repo picker
-  // kept working off a connection nobody can see or revoke.
-  await unmirrorFromLegacy(
-    admin,
-    connection.provider_id as string,
-    userId,
-  ).catch(() => undefined);
+  // kept working off a connection nobody can see or revoke. The legacy
+  // tables are keyed by whoever originally authorised the connection
+  // (`created_by`, set by `mirrorToLegacy`/`connections-oauth-complete`),
+  // which is not necessarily the caller disconnecting it here -- any org
+  // admin can disconnect a connection a teammate created. Passing the
+  // caller's own id instead used to unmirror nothing when the disconnecting
+  // admin differed from the original connector (no row keyed by the admin's
+  // id existed), leaving the original connector's legacy-mirrored credential
+  // fully usable via github-api-proxy/github-mint-clone-credential even
+  // though the UI reported the provider as disconnected. `created_by` can be
+  // null if that user's account was since deleted, in which case the legacy
+  // row was already removed by the same cascade and there's nothing to do.
+  if (connection.created_by) {
+    await unmirrorFromLegacy(
+      admin,
+      connection.provider_id as string,
+      connection.created_by as string,
+    ).catch(() => undefined);
+  }
 
   await admin.from("environment_checks").insert({
     org_id: orgId,

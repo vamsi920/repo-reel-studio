@@ -113,6 +113,18 @@ Deno.serve(async (req) => {
     },
   });
   const me = meResponse.ok ? await meResponse.json() : null;
+  // `atlassian_account_id` is NOT NULL (see
+  // supabase/migrations/20260825161919_jira_connections.sql) and nothing
+  // downstream can re-resolve it later, so a failed/unresolved `/me` lookup
+  // must abort the connection rather than silently persist an empty string
+  // that reads as "connected" forever with no real account id -- the
+  // sibling generic-flow mirror (`mirrorToLegacy` in
+  // `_shared/legacy-mirror.ts`) already treats this exact failure as fatal
+  // to its write; this direct legacy path used to do the opposite.
+  const atlassianAccountId = me?.account_id as string | undefined;
+  if (!atlassianAccountId) {
+    return redirectTo("/settings/connections?error=jira_identity_unavailable");
+  }
 
   const encryptionKey = Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY");
   if (!encryptionKey) {
@@ -142,7 +154,7 @@ Deno.serve(async (req) => {
     cloud_id: resource.id,
     site_url: resource.url,
     site_name: resource.name,
-    atlassian_account_id: (me?.account_id as string | undefined) ?? "",
+    atlassian_account_id: atlassianAccountId,
     atlassian_email: (me?.email as string | undefined) ?? null,
     encrypted_access_token: encryptedAccessToken,
     encrypted_refresh_token: encryptedRefreshToken,
