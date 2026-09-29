@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "创建配置文件",
   "SETTINGS$EDIT_PROFILE": "编辑配置文件",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "返回LLM配置文件列表",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "配置文件“{{name}}”已保存,但服务器意外删除了其他配置文件:{{names}}。这是已知的后端问题——您可能需要重新创建它们。",
   "SETTINGS$PROFILE_CREATED": "配置文件「{{name}}」已创建",
   "SETTINGS$PROFILE_UPDATED": "配置文件「{{name}}」已更新",
   "SETTINGS$MODEL_REQUIRED": "模型是必需的",

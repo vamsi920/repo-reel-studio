@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "Profil Oluştur",
   "SETTINGS$EDIT_PROFILE": "Profili Düzenle",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "LLM profilleri listesine dön",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "\"{{name}}\" profili kaydedildi, ancak sunucu beklenmedik şekilde başka profil(ler)i kaldırdı: {{names}}. Bu bilinen bir arka uç sorunudur — bunları yeniden oluşturmanız gerekebilir.",
   "SETTINGS$PROFILE_CREATED": "\"{{name}}\" profili oluşturuldu",
   "SETTINGS$PROFILE_UPDATED": "\"{{name}}\" profili güncellendi",
   "SETTINGS$MODEL_REQUIRED": "Model gereklidir",

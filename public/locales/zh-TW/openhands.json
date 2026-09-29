@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "建立設定檔",
   "SETTINGS$EDIT_PROFILE": "編輯設定檔",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "返回LLM設定檔列表",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "設定檔「{{name}}」已儲存,但伺服器意外刪除了其他設定檔:{{names}}。這是已知的後端問題——您可能需要重新建立它們。",
   "SETTINGS$PROFILE_CREATED": "設定檔「{{name}}」已建立",
   "SETTINGS$PROFILE_UPDATED": "設定檔「{{name}}」已更新",
   "SETTINGS$MODEL_REQUIRED": "模型為必填",

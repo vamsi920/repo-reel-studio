@@ -32996,6 +32996,23 @@
     "uk": "Повернутися до списку профілів LLM",
     "ca": "Torna a la llista de perfils LLM"
   },
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": {
+    "en": "Profile \"{{name}}\" was saved, but the server unexpectedly removed other profile(s): {{names}}. This is a known backend issue — you may need to recreate them.",
+    "ja": "プロファイル「{{name}}」は保存されましたが、サーバーが他のプロファイル({{names}})を予期せず削除しました。既知のバックエンドの問題です。再作成が必要な場合があります。",
+    "zh-CN": "配置文件“{{name}}”已保存,但服务器意外删除了其他配置文件:{{names}}。这是已知的后端问题——您可能需要重新创建它们。",
+    "zh-TW": "設定檔「{{name}}」已儲存,但伺服器意外刪除了其他設定檔:{{names}}。這是已知的後端問題——您可能需要重新建立它們。",
+    "ko-KR": "프로필 \"{{name}}\"이(가) 저장되었지만 서버에서 다른 프로필({{names}})이 예기치 않게 삭제되었습니다. 알려진 백엔드 문제입니다 — 다시 생성해야 할 수 있습니다.",
+    "no": "Profilen \"{{name}}\" ble lagret, men serveren fjernet uventet andre profiler: {{names}}. Dette er et kjent problem på serversiden — du må kanskje opprette dem på nytt.",
+    "it": "Il profilo \"{{name}}\" è stato salvato, ma il server ha rimosso inaspettatamente altri profili: {{names}}. Si tratta di un problema noto del backend: potrebbe essere necessario ricrearli.",
+    "pt": "O perfil \"{{name}}\" foi salvo, mas o servidor removeu inesperadamente outro(s) perfil(is): {{names}}. Este é um problema conhecido do backend — pode ser necessário recriá-los.",
+    "es": "El perfil \"{{name}}\" se guardó, pero el servidor eliminó inesperadamente otro(s) perfil(es): {{names}}. Este es un problema conocido del backend; es posible que deba volver a crearlos.",
+    "ar": "تم حفظ الملف الشخصي \"{{name}}\"، لكن الخادم أزال بشكل غير متوقع ملفًا (ملفات) شخصية أخرى: {{names}}. هذه مشكلة معروفة في الخادم الخلفي — قد تحتاج إلى إعادة إنشائها.",
+    "fr": "Le profil \"{{name}}\" a été enregistré, mais le serveur a supprimé de manière inattendue d'autres profils : {{names}}. Il s'agit d'un problème connu du backend — vous devrez peut-être les recréer.",
+    "tr": "\"{{name}}\" profili kaydedildi, ancak sunucu beklenmedik şekilde başka profil(ler)i kaldırdı: {{names}}. Bu bilinen bir arka uç sorunudur — bunları yeniden oluşturmanız gerekebilir.",
+    "de": "Profil \"{{name}}\" wurde gespeichert, aber der Server hat unerwartet andere Profile entfernt: {{names}}. Dies ist ein bekanntes Backend-Problem — Sie müssen sie möglicherweise neu erstellen.",
+    "uk": "Профіль \"{{name}}\" збережено, але сервер несподівано видалив інші профілі: {{names}}. Це відома проблема бекенду — можливо, вам доведеться створити їх знову.",
+    "ca": "El perfil \"{{name}}\" s'ha desat, però el servidor ha eliminat inesperadament altres perfils: {{names}}. Es tracta d'un problema conegut del backend — potser haureu de tornar-los a crear."
+  },
   "SETTINGS$PROFILE_CREATED": {
     "en": "Profile \"{{name}}\" created",
     "ja": "プロファイル「{{name}}」が作成されました",

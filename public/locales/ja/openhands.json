@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "プロファイルを作成",
   "SETTINGS$EDIT_PROFILE": "プロファイルを編集",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "LLMプロファイル一覧に戻る",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "プロファイル「{{name}}」は保存されましたが、サーバーが他のプロファイル({{names}})を予期せず削除しました。既知のバックエンドの問題です。再作成が必要な場合があります。",
   "SETTINGS$PROFILE_CREATED": "プロファイル「{{name}}」が作成されました",
   "SETTINGS$PROFILE_UPDATED": "プロファイル「{{name}}」が更新されました",
   "SETTINGS$MODEL_REQUIRED": "モデルは必須です",

@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "Criar perfil",
   "SETTINGS$EDIT_PROFILE": "Editar perfil",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "Voltar para a lista de perfis LLM",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "O perfil \"{{name}}\" foi salvo, mas o servidor removeu inesperadamente outro(s) perfil(is): {{names}}. Este é um problema conhecido do backend — pode ser necessário recriá-los.",
   "SETTINGS$PROFILE_CREATED": "Perfil \"{{name}}\" criado",
   "SETTINGS$PROFILE_UPDATED": "Perfil \"{{name}}\" atualizado",
   "SETTINGS$MODEL_REQUIRED": "O modelo é obrigatório",

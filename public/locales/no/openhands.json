@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "Opprett profil",
   "SETTINGS$EDIT_PROFILE": "Rediger profil",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "Tilbake til LLM-profillisten",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "Profilen \"{{name}}\" ble lagret, men serveren fjernet uventet andre profiler: {{names}}. Dette er et kjent problem på serversiden — du må kanskje opprette dem på nytt.",
   "SETTINGS$PROFILE_CREATED": "Profilen \"{{name}}\" opprettet",
   "SETTINGS$PROFILE_UPDATED": "Profilen \"{{name}}\" oppdatert",
   "SETTINGS$MODEL_REQUIRED": "Modell er påkrevd",

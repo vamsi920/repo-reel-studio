@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "Створити профіль",
   "SETTINGS$EDIT_PROFILE": "Редагувати профіль",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "Повернутися до списку профілів LLM",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "Профіль \"{{name}}\" збережено, але сервер несподівано видалив інші профілі: {{names}}. Це відома проблема бекенду — можливо, вам доведеться створити їх знову.",
   "SETTINGS$PROFILE_CREATED": "Профіль \"{{name}}\" створено",
   "SETTINGS$PROFILE_UPDATED": "Профіль \"{{name}}\" оновлено",
   "SETTINGS$MODEL_REQUIRED": "Модель обов'язкова",

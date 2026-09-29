@@ -1940,6 +1940,7 @@
   "SETTINGS$CREATE_PROFILE": "إنشاء ملف شخصي",
   "SETTINGS$EDIT_PROFILE": "تعديل الملف الشخصي",
   "SETTINGS$BACK_TO_LLM_PROFILES_LIST": "العودة إلى قائمة ملفات تعريف LLM",
+  "SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING": "تم حفظ الملف الشخصي \"{{name}}\"، لكن الخادم أزال بشكل غير متوقع ملفًا (ملفات) شخصية أخرى: {{names}}. هذه مشكلة معروفة في الخادم الخلفي — قد تحتاج إلى إعادة إنشائها.",
   "SETTINGS$PROFILE_CREATED": "تم إنشاء الملف الشخصي \"{{name}}\"",
   "SETTINGS$PROFILE_UPDATED": "تم تحديث الملف الشخصي \"{{name}}\"",
   "SETTINGS$MODEL_REQUIRED": "النموذج مطلوب",

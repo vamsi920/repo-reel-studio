@@ -7,6 +7,7 @@ import { renderWithProviders } from "test-utils";
 import {
   LlmSettingsLocalView,
   shouldReapplyProfileAfterSave,
+  detectProfilesLostAfterSave,
 } from "#/components/features/settings/llm-profiles/llm-settings-local-view";
 import * as useLlmProfilesHook from "#/hooks/query/use-llm-profiles";
 import * as useActivateLlmProfileHook from "#/hooks/mutation/use-activate-llm-profile";
@@ -118,6 +119,17 @@ vi.mock("#/hooks/mutation/use-activate-llm-profile");
 vi.mock("#/hooks/mutation/use-save-llm-profile");
 vi.mock("#/hooks/mutation/use-rename-llm-profile");
 vi.mock("#/api/profiles-service/profiles-service.api");
+
+const toastMocks = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}));
+vi.mock("#/utils/custom-toast-handlers", () => ({
+  displaySuccessToast: toastMocks.success,
+  displayErrorToast: toastMocks.error,
+  displayWarningToast: toastMocks.warning,
+}));
 
 const mockProfiles = [
   {
@@ -395,6 +407,80 @@ describe("LlmSettingsLocalView", () => {
 
       // The key "new-profile" should be used, ensuring a fresh form mount
       // that doesn't inherit any existing profile data
+    });
+  });
+
+  describe("profile save data-loss detection", () => {
+    it("warns instead of showing success when creating a profile unexpectedly drops other profiles", async () => {
+      const user = userEvent.setup();
+      mockSaveMutateAsync.mockResolvedValueOnce({ success: true });
+      // The server's post-save list only contains the newly created profile —
+      // both previously-known profiles vanished.
+      vi.mocked(ProfilesService.listProfiles).mockResolvedValueOnce({
+        profiles: [
+          {
+            name: "new-profile",
+            model: "openhands/glm-5.2",
+            base_url: null,
+            api_key_set: true,
+          },
+        ],
+        active_profile: "new-profile",
+      });
+
+      renderWithProviders(<LlmSettingsLocalView />);
+
+      await user.click(screen.getByTestId("add-llm-profile"));
+      const nameInput = screen.getByTestId("profile-name-input");
+      await user.clear(nameInput);
+      await user.type(nameInput, "new-profile");
+      await waitFor(() => {
+        expect(screen.getByTestId("save-profile-btn")).not.toBeDisabled();
+      });
+      await user.click(screen.getByTestId("save-profile-btn"));
+
+      await waitFor(() => {
+        expect(toastMocks.warning).toHaveBeenCalledTimes(1);
+      });
+      expect(toastMocks.warning.mock.calls[0][0]).toMatch(
+        /SETTINGS\$PROFILE_SAVE_DATA_LOSS_WARNING/,
+      );
+      expect(toastMocks.success).not.toHaveBeenCalled();
+    });
+
+    it("shows the normal success toast when no other profiles are lost", async () => {
+      const user = userEvent.setup();
+      mockSaveMutateAsync.mockResolvedValueOnce({ success: true });
+      // The server's post-save list still contains every previously-known
+      // profile alongside the new one — nothing was lost.
+      vi.mocked(ProfilesService.listProfiles).mockResolvedValueOnce({
+        profiles: [
+          ...mockProfiles,
+          {
+            name: "new-profile",
+            model: "openhands/glm-5.2",
+            base_url: null,
+            api_key_set: true,
+          },
+        ],
+        active_profile: "gpt-4-profile",
+      });
+
+      renderWithProviders(<LlmSettingsLocalView />);
+
+      await user.click(screen.getByTestId("add-llm-profile"));
+      const nameInput = screen.getByTestId("profile-name-input");
+      await user.clear(nameInput);
+      await user.type(nameInput, "new-profile");
+      await waitFor(() => {
+        expect(screen.getByTestId("save-profile-btn")).not.toBeDisabled();
+      });
+      await user.click(screen.getByTestId("save-profile-btn"));
+
+      await waitFor(() => {
+        expect(toastMocks.success).toHaveBeenCalledTimes(1);
+      });
+      expect(toastMocks.warning).not.toHaveBeenCalled();
     });
   });
 
@@ -1051,5 +1137,45 @@ describe("shouldReapplyProfileAfterSave", () => {
         savedName: "gpt-4-profile",
       }),
     ).toBe(false);
+  });
+});
+
+describe("detectProfilesLostAfterSave", () => {
+  it("returns previously-known names that are no longer present", () => {
+    expect(
+      detectProfilesLostAfterSave({
+        previousNames: ["gpt-4-profile", "claude-profile"],
+        currentNames: ["claude-profile", "new-profile"],
+      }),
+    ).toEqual(["gpt-4-profile"]);
+  });
+
+  it("returns an empty list when every previous name is still present", () => {
+    expect(
+      detectProfilesLostAfterSave({
+        previousNames: ["gpt-4-profile", "claude-profile"],
+        currentNames: ["gpt-4-profile", "claude-profile", "new-profile"],
+      }),
+    ).toEqual([]);
+  });
+
+  it("excludes the pre-rename name from the lost list", () => {
+    expect(
+      detectProfilesLostAfterSave({
+        previousNames: ["gpt-4-profile", "claude-profile"],
+        currentNames: ["claude-profile", "my-renamed-profile"],
+        renamedFrom: "gpt-4-profile",
+      }),
+    ).toEqual([]);
+  });
+
+  it("still reports an unrelated profile lost alongside an intentional rename", () => {
+    expect(
+      detectProfilesLostAfterSave({
+        previousNames: ["gpt-4-profile", "claude-profile"],
+        currentNames: ["my-renamed-profile"],
+        renamedFrom: "gpt-4-profile",
+      }),
+    ).toEqual(["claude-profile"]);
   });
 });

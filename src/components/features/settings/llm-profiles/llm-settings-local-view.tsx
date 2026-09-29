@@ -24,6 +24,7 @@ import ProfilesService, {
 import {
   displayErrorToast,
   displaySuccessToast,
+  displayWarningToast,
 } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
 import {
@@ -73,6 +74,31 @@ export function shouldReapplyProfileAfterSave({
   if (!activeProfileName) return false;
   if (originalName) return activeProfileName === originalName;
   return activeProfileName === savedName;
+}
+
+/**
+ * Some agent-server builds have been observed replacing the entire profile
+ * store instead of upserting just the named profile on save (see
+ * .neo-cloud/incidents.md INC-10) — a brand-new profile is created but every
+ * other previously-known profile silently vanishes from the server. This
+ * compares the profile names known before a save against the names actually
+ * present afterward so that server-side data loss surfaces as a visible
+ * warning instead of a plain "success" toast. `renamedFrom` excludes the
+ * profile's own pre-rename name, which is expected to disappear.
+ */
+export function detectProfilesLostAfterSave({
+  previousNames,
+  currentNames,
+  renamedFrom,
+}: {
+  previousNames: string[];
+  currentNames: string[];
+  renamedFrom?: string | null;
+}): string[] {
+  const currentNameSet = new Set(currentNames);
+  return previousNames.filter(
+    (name) => name !== renamedFrom && !currentNameSet.has(name),
+  );
 }
 
 /**
@@ -345,6 +371,10 @@ export function LlmSettingsLocalView() {
       originalName,
       savedName: trimmedName,
     });
+    // Snapshot the names known before this save so a post-save re-fetch can
+    // detect whether the server unexpectedly dropped any of them.
+    const previousProfileNames =
+      profilesData?.profiles.map((p) => p.name) ?? [];
 
     setIsSaving(true);
     try {
@@ -383,11 +413,43 @@ export function LlmSettingsLocalView() {
         await activateProfile.mutateAsync(trimmedName);
       }
 
-      displaySuccessToast(
-        viewMode === "create"
-          ? t(I18nKey.SETTINGS$PROFILE_CREATED, { name: trimmedName })
-          : t(I18nKey.SETTINGS$PROFILE_UPDATED, { name: trimmedName }),
-      );
+      // Best-effort verification only: some agent-server builds have replaced
+      // the entire profile store instead of upserting just this one (see
+      // .neo-cloud/incidents.md INC-10). A failure here must not block or
+      // undo the save the user already completed successfully.
+      let lostProfileNames: string[] = [];
+      try {
+        const freshProfiles = await ProfilesService.listProfiles();
+        if (!freshProfiles || !Array.isArray(freshProfiles.profiles)) {
+          throw new Error("Unexpected profile list response shape");
+        }
+        lostProfileNames = detectProfilesLostAfterSave({
+          previousNames: previousProfileNames,
+          currentNames: freshProfiles.profiles.map((p) => p.name),
+          renamedFrom: isRename ? originalName : null,
+        });
+      } catch (verifyError) {
+        console.error("Failed to verify profile list after save:", verifyError);
+      }
+
+      if (lostProfileNames.length > 0) {
+        console.error(
+          "Saving profile unexpectedly removed other profile(s) from the server:",
+          lostProfileNames,
+        );
+        displayWarningToast(
+          t(I18nKey.SETTINGS$PROFILE_SAVE_DATA_LOSS_WARNING, {
+            name: trimmedName,
+            names: lostProfileNames.join(", "),
+          }),
+        );
+      } else {
+        displaySuccessToast(
+          viewMode === "create"
+            ? t(I18nKey.SETTINGS$PROFILE_CREATED, { name: trimmedName })
+            : t(I18nKey.SETTINGS$PROFILE_UPDATED, { name: trimmedName }),
+        );
+      }
       handleBackToList();
     } catch (error) {
       console.error("Failed to save profile:", error);
