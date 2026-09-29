@@ -68,14 +68,19 @@ listAgentProfilesMock.mockResolvedValue({
 
 // LLM-profile service: real listProfiles calls (the llmProfileExists
 // validation — see use-create-conversation.ts) so it can be asserted per-test.
+// getProfile backs the subscription-detail fetch the same validation makes
+// when a matched profile's `api_key_set` flag is not `true`.
 const listLlmProfilesMock = vi.fn();
+const getLlmProfileMock = vi.fn();
 vi.mock("#/api/profiles-service/profiles-service.api", () => ({
   __esModule: true,
   default: {
     listProfiles: (...args: unknown[]) => listLlmProfilesMock(...args),
+    getProfile: (...args: unknown[]) => getLlmProfileMock(...args),
   },
 }));
 listLlmProfilesMock.mockResolvedValue({ profiles: [], active_profile: null });
+getLlmProfileMock.mockResolvedValue({ config: {} });
 
 describe("useCreateConversation", () => {
   afterEach(() => {
@@ -95,6 +100,8 @@ describe("useCreateConversation", () => {
       profiles: [],
       active_profile: null,
     });
+    getLlmProfileMock.mockReset();
+    getLlmProfileMock.mockResolvedValue({ config: {} });
     useLlmProfilesMock.mockReturnValue({ data: { active_profile: null } });
     removeStoredConversationMetadata("conv-with-plugins");
     removeStoredConversationMetadata("conv-ref-stamp");
@@ -563,6 +570,104 @@ describe("useCreateConversation", () => {
     expect(createConversationSpy).not.toHaveBeenCalled();
   });
 
+  it("downgrades to agent_settings when the matched LLM profile has no key and isn't subscription-backed", async () => {
+    // The ref existing in the list isn't enough -- a matched profile with
+    // `api_key_set: false` and no subscription auth would otherwise launch
+    // blind and fail its first turn with an opaque litellm auth error
+    // (TODO.txt 2026-09 report).
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-gemini",
+          name: "Gemini launcher",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gemini-default",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-gemini",
+    });
+    listLlmProfilesMock.mockResolvedValue({
+      profiles: [
+        { name: "gemini-default", api_key_set: false },
+        { name: "other-profile", api_key_set: true },
+      ],
+      active_profile: "other-profile",
+    });
+    getLlmProfileMock.mockResolvedValue({
+      config: { auth_type: "api_key" },
+    });
+    const createConversationSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-id",
+        app_conversation_id: "conv-1",
+        agent_server_url: "http://agent-server.local",
+      } as never);
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await result.current.mutateAsync({ query: "hello" });
+
+    expect(getLlmProfileMock).toHaveBeenCalledWith("gemini-default");
+    const call = createConversationSpy.mock.lastCall;
+    expect(call?.[0]?.agentProfileId).toBeUndefined();
+  });
+
+  it("still launches from a matched LLM profile that is subscription-backed instead of key-backed", async () => {
+    // A subscription profile has no `api_key_set` by design -- the fallback
+    // above must not treat it as unusable just because the list flag reads
+    // false.
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-chatgpt",
+          name: "ChatGPT launcher",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "chatgpt-subscription",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-chatgpt",
+    });
+    listLlmProfilesMock.mockResolvedValue({
+      profiles: [{ name: "chatgpt-subscription", api_key_set: false }],
+      active_profile: "chatgpt-subscription",
+    });
+    getLlmProfileMock.mockResolvedValue({
+      config: { auth_type: "subscription" },
+    });
+    const createConversationSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-id",
+        app_conversation_id: "conv-1",
+        agent_server_url: "http://agent-server.local",
+      } as never);
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await result.current.mutateAsync({ query: "hello" });
+
+    expect(getLlmProfileMock).toHaveBeenCalledWith("chatgpt-subscription");
+    const call = createConversationSpy.mock.lastCall;
+    expect(call?.[0]?.agentProfileId).toBe("profile-chatgpt");
+  });
+
   it("keeps the profile path for an ACP `default` profile (agent_settings can't carry ACP config)", async () => {
     // The default→agent_settings shortcut is OpenHands-only: activation is
     // pointer-only, so global agent_settings is stale (still OpenHands) for an
@@ -674,7 +779,7 @@ describe("useCreateConversation", () => {
       active_agent_profile_id: "profile-custom",
     });
     listLlmProfilesMock.mockResolvedValue({
-      profiles: [{ name: "claude" }],
+      profiles: [{ name: "claude", api_key_set: true }],
       active_profile: "standalone-active",
     });
     const createConversationSpy = vi

@@ -10,6 +10,7 @@ import { useActiveBackend } from "#/contexts/active-backend-context";
 import ProfilesService, {
   type ProfileListResponse,
 } from "#/api/profiles-service/profiles-service.api";
+import { isSubscriptionLlmConfig } from "#/constants/llm-subscription";
 import AgentProfilesService, {
   WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME,
   type AgentProfileListResponse,
@@ -205,6 +206,9 @@ export const useCreateConversation = () => {
         // `useLlmProfiles()` result: a send fired before that query loads (or
         // after it errors) must still validate the ref, not launch blind.
         let llmProfileExists = false;
+        let matchedLlmProfile:
+          | ProfileListResponse["profiles"][number]
+          | undefined;
         let llmProfilesFetched: ProfileListResponse | undefined;
         try {
           const llm = await queryClient.ensureQueryData({
@@ -220,18 +224,62 @@ export const useCreateConversation = () => {
             retry: 1,
           });
           llmProfilesFetched = llm;
-          llmProfileExists = llm.profiles.some(
+          matchedLlmProfile = llm.profiles.find(
             (profile) => profile.name === resolvedAgentProfile.llm_profile_ref,
           );
+          llmProfileExists = matchedLlmProfile !== undefined;
         } catch {
           // List unavailable → can't validate → fall back to agent_settings.
         }
-        if (!llmProfileExists) {
+        // The list endpoint's `api_key_set` flag alone can't tell a genuinely
+        // keyless profile apart from a subscription-backed one (which has no
+        // key by design) -- the matched ref existing in the list isn't enough
+        // to prove the profile the conversation is about to launch from is
+        // actually usable. Mirror `useLlmConfigured`'s
+        // `hasActiveProfileSubscription` check: only pay for the extra
+        // profile-detail fetch when the cheap `api_key_set` flag didn't
+        // already confirm it (TODO.txt 2026-09 report -- silent gpt-5.5/no-key
+        // launch via a named agent profile whose llm_profile_ref resolves to a
+        // keyless, non-subscription LLM profile).
+        let matchedLlmProfileUsable = llmProfileExists;
+        if (
+          !isCloud &&
+          matchedLlmProfile &&
+          matchedLlmProfile.api_key_set !== true
+        ) {
+          try {
+            const detail = await queryClient.ensureQueryData({
+              queryKey: [
+                ...LLM_PROFILES_QUERY_KEYS.all,
+                backend.id,
+                orgId,
+                "detail",
+                matchedLlmProfile.name,
+              ],
+              queryFn: () =>
+                ProfilesService.getProfile(matchedLlmProfile!.name),
+              retry: 1,
+            });
+            matchedLlmProfileUsable = isSubscriptionLlmConfig(
+              detail.config as Record<string, unknown> | undefined,
+            );
+          } catch {
+            // Detail unavailable → can't confirm subscription auth → treat as
+            // unusable rather than launch blind.
+            matchedLlmProfileUsable = false;
+          }
+        }
+        if (!llmProfileExists || !matchedLlmProfileUsable) {
           // Downgrade is silent in the UI; leave a diagnosable trace.
           console.warn(
-            `Agent profile "${resolvedAgentProfile.name}" references missing ` +
-              `LLM profile "${resolvedAgentProfile.llm_profile_ref}"; ` +
-              "launching from agent_settings instead.",
+            llmProfileExists
+              ? `Agent profile "${resolvedAgentProfile.name}" references LLM ` +
+                  `profile "${resolvedAgentProfile.llm_profile_ref}", which has ` +
+                  "no API key and is not subscription-backed; launching from " +
+                  "agent_settings instead."
+              : `Agent profile "${resolvedAgentProfile.name}" references missing ` +
+                  `LLM profile "${resolvedAgentProfile.llm_profile_ref}"; ` +
+                  "launching from agent_settings instead.",
           );
           // The agent_settings fallback only exists on local (#1571). If the
           // list genuinely loaded and shows no profile with a key configured
