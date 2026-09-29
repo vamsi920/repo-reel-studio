@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { PluginSpec } from "#/api/conversation-service/agent-server-conversation-service.types";
+import SettingsService from "#/api/settings-service/settings-service.api";
 import { SuggestedTask } from "#/utils/types";
 import { Provider } from "#/types/settings";
 import { useTracking } from "#/hooks/use-tracking";
@@ -198,6 +199,26 @@ export const useCreateConversation = () => {
         // Scoped to local: cloud never writes agent_settings, so it always
         // resolves `default` server-side via agent_profile_id (validated below).
         effectiveAgentProfileId = undefined;
+
+        // Unlike the llm_profile_ref branch below (hardened by ed89a005),
+        // this fallback had no check at all that agent_settings actually
+        // resolves to a usable LLM -- a conversation could launch blind with
+        // the agent-server SDK's own bare default (gpt-5.5, no key) and fail
+        // every turn with no visible error (TODO.txt 2026-09 report). Fetch
+        // the same settings `createConversation` is about to launch from and
+        // apply the identical api_key-or-subscription guard.
+        const currentSettings = await SettingsService.getSettings();
+        const currentLlm = currentSettings.agent_settings?.llm as
+          | Record<string, unknown>
+          | undefined;
+        const hasUsableAgentSettingsLlm =
+          currentSettings.llm_api_key_set === true ||
+          isSubscriptionLlmConfig(currentLlm);
+        if (!hasUsableAgentSettingsLlm) {
+          throw new Error(
+            "No LLM is configured for this account. Add one in Settings > LLM before starting a conversation.",
+          );
+        }
       } else if (
         resolvedAgentProfile?.agent_kind === "openhands" &&
         resolvedAgentProfile.llm_profile_ref

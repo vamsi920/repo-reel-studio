@@ -2,12 +2,14 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
+import SettingsService from "#/api/settings-service/settings-service.api";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
 import { SuggestedTask } from "#/utils/types";
 import {
   getStoredConversationMetadata,
   removeStoredConversationMetadata,
 } from "#/api/conversation-metadata-store";
+import type { Settings } from "#/types/settings";
 
 vi.mock("#/hooks/use-tracking", () => ({
   useTracking: () => ({
@@ -82,6 +84,17 @@ vi.mock("#/api/profiles-service/profiles-service.api", () => ({
 listLlmProfilesMock.mockResolvedValue({ profiles: [], active_profile: null });
 getLlmProfileMock.mockResolvedValue({ config: {} });
 
+// The seeded `default` profile's agent_settings launch path (see
+// use-create-conversation.ts) validates the account's global LLM the same
+// way the named llm_profile_ref path already did (ed89a005) -- default to a
+// usable LLM so tests that don't care about this specifically stay on their
+// existing launch behavior, and override per-test to exercise the guard.
+const getSettingsSpy = vi.spyOn(SettingsService, "getSettings");
+getSettingsSpy.mockResolvedValue({
+  llm_api_key_set: true,
+  agent_settings: { llm: {} },
+} as unknown as Settings);
+
 describe("useCreateConversation", () => {
   afterEach(() => {
     // Restore the default (no active AgentProfile) so the overrides below
@@ -103,6 +116,11 @@ describe("useCreateConversation", () => {
     getLlmProfileMock.mockReset();
     getLlmProfileMock.mockResolvedValue({ config: {} });
     useLlmProfilesMock.mockReturnValue({ data: { active_profile: null } });
+    getSettingsSpy.mockReset();
+    getSettingsSpy.mockResolvedValue({
+      llm_api_key_set: true,
+      agent_settings: { llm: {} },
+    } as unknown as Settings);
     removeStoredConversationMetadata("conv-with-plugins");
     removeStoredConversationMetadata("conv-ref-stamp");
   });
@@ -454,6 +472,90 @@ describe("useCreateConversation", () => {
       profiles: [{ name: "gpt" }],
       active_profile: "gpt",
     });
+    const createConversationSpy = vi
+      .spyOn(AgentServerConversationService, "createConversation")
+      .mockResolvedValue({
+        id: "task-id",
+        app_conversation_id: "conv-1",
+        agent_server_url: "http://agent-server.local",
+      } as never);
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await result.current.mutateAsync({ query: "hello" });
+
+    const call = createConversationSpy.mock.lastCall;
+    expect(call?.[0]?.agentProfileId).toBeUndefined();
+  });
+
+  it("fails loudly instead of silently launching gpt-5.5/no-key when the seeded `default` profile's agent_settings has no usable LLM", async () => {
+    // Regression: the seeded `default` profile launches via agent_settings
+    // (see the test above), but unlike the named llm_profile_ref branch
+    // (hardened by ed89a005) this path had no guard at all -- a conversation
+    // could launch blind with the agent-server SDK's own bare default
+    // (gpt-5.5, no key) and fail every turn with no visible error (TODO.txt
+    // 2026-09 report).
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-default",
+          name: "default",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gpt",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-default",
+    });
+    getSettingsSpy.mockResolvedValue({
+      llm_api_key_set: false,
+      agent_settings: { llm: {} },
+    } as unknown as Settings);
+    const createConversationSpy = vi.spyOn(
+      AgentServerConversationService,
+      "createConversation",
+    );
+    createConversationSpy.mockClear();
+
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    await expect(
+      result.current.mutateAsync({ query: "hello" }),
+    ).rejects.toThrow(/No LLM is configured/);
+    expect(createConversationSpy).not.toHaveBeenCalled();
+  });
+
+  it("still launches the seeded `default` profile when its agent_settings LLM is subscription-backed (no key by design)", async () => {
+    listAgentProfilesMock.mockResolvedValue({
+      profiles: [
+        {
+          id: "profile-default",
+          name: "default",
+          agent_kind: "openhands",
+          revision: 1,
+          llm_profile_ref: "gpt",
+          mcp_server_refs: null,
+        },
+      ],
+      active_agent_profile_id: "profile-default",
+    });
+    getSettingsSpy.mockResolvedValue({
+      llm_api_key_set: false,
+      agent_settings: { llm: { auth_type: "subscription" } },
+    } as unknown as Settings);
     const createConversationSpy = vi
       .spyOn(AgentServerConversationService, "createConversation")
       .mockResolvedValue({
