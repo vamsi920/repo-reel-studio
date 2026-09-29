@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Warten auf den Start der Laufzeit...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Noch keine Commits",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Hier wurden keine Commits gefunden, aber dieser Arbeitsbereich enthält verfolgte Änderungen — das Repository befindet sich möglicherweise in einem noch nicht erkannten Unterverzeichnis",
   "DIFF_VIEWER$COMMITS_CAP": "Die letzten {{count}} Commits werden angezeigt",
   "DIFF_VIEWER$CHANGES_CAP": "Die ersten {{count}} von {{total}} geänderten Dateien werden angezeigt",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Agent-Tools und Metadaten",

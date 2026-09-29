@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "等待运行时启动...",
   "DIFF_VIEWER$COMMITS": "提交记录",
   "DIFF_VIEWER$NO_COMMITS": "暂无提交",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "此处未找到提交，但该工作区存在被跟踪的更改——仓库可能位于尚未被检测到的子目录中",
   "DIFF_VIEWER$COMMITS_CAP": "显示最新的 {{count}} 个提交",
   "DIFF_VIEWER$CHANGES_CAP": "正在显示前 {{count}} 个更改的文件（共 {{total}} 个）",
   "SYSTEM_MESSAGE_MODAL$TITLE": "代理工具和元数据",

@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Çalışma zamanının başlamasını bekliyor...",
   "DIFF_VIEWER$COMMITS": "Commit'ler",
   "DIFF_VIEWER$NO_COMMITS": "Henüz commit yok",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Burada commit bulunamadı, ancak bu çalışma alanında izlenen değişiklikler var — depo, henüz algılanmamış bir alt dizinde olabilir",
   "DIFF_VIEWER$COMMITS_CAP": "En son {{count}} commit gösteriliyor",
   "DIFF_VIEWER$CHANGES_CAP": "{{total}} değiştirilen dosyadan ilk {{count}} tanesi gösteriliyor",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Ajan Araçları ve Meta Verileri",

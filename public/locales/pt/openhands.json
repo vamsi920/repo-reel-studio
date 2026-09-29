@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Aguardando o tempo de execução para iniciar...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Nenhum commit ainda",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Nenhum commit encontrado aqui, mas este workspace tem alterações rastreadas — o repositório pode estar em um subdiretório ainda não detectado",
   "DIFF_VIEWER$COMMITS_CAP": "Mostrando os últimos {{count}} commits",
   "DIFF_VIEWER$CHANGES_CAP": "Mostrando os primeiros {{count}} de {{total}} arquivos alterados",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Ferramentas e metadados do agente",

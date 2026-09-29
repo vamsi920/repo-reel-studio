@@ -21011,6 +21011,23 @@
     "uk": "Ще немає комітів",
     "ca": "Encara no hi ha commits"
   },
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": {
+    "en": "No commits found here, but this workspace has tracked changes — the repository may live in a subdirectory that isn't detected yet",
+    "ja": "ここにはコミットが見つかりませんが、このワークスペースには追跡された変更があります。リポジトリはまだ検出されていないサブディレクトリにある可能性があります",
+    "zh-CN": "此处未找到提交，但该工作区存在被跟踪的更改——仓库可能位于尚未被检测到的子目录中",
+    "zh-TW": "此處未找到提交，但此工作區存在被追蹤的變更——儲存庫可能位於尚未被偵測到的子目錄中",
+    "ko-KR": "여기서는 커밋을 찾을 수 없지만 이 작업 공간에는 추적된 변경 사항이 있습니다. 저장소가 아직 감지되지 않은 하위 디렉터리에 있을 수 있습니다",
+    "no": "Fant ingen commits her, men dette arbeidsområdet har sporede endringer — depotet kan ligge i en underkatalog som ennå ikke er oppdaget",
+    "it": "Nessun commit trovato qui, ma questo workspace ha modifiche monitorate: il repository potrebbe trovarsi in una sottodirectory non ancora rilevata",
+    "pt": "Nenhum commit encontrado aqui, mas este workspace tem alterações rastreadas — o repositório pode estar em um subdiretório ainda não detectado",
+    "es": "No se encontraron commits aquí, pero este espacio de trabajo tiene cambios rastreados; el repositorio podría estar en un subdirectorio que aún no se ha detectado",
+    "ar": "لم يتم العثور على إيداعات هنا، ولكن يحتوي مساحة العمل هذه على تغييرات متتبَّعة — قد يكون المستودع موجودًا في دليل فرعي لم يتم اكتشافه بعد",
+    "fr": "Aucun commit trouvé ici, mais cet espace de travail contient des modifications suivies — le dépôt se trouve peut-être dans un sous-répertoire non encore détecté",
+    "tr": "Burada commit bulunamadı, ancak bu çalışma alanında izlenen değişiklikler var — depo, henüz algılanmamış bir alt dizinde olabilir",
+    "de": "Hier wurden keine Commits gefunden, aber dieser Arbeitsbereich enthält verfolgte Änderungen — das Repository befindet sich möglicherweise in einem noch nicht erkannten Unterverzeichnis",
+    "uk": "Комітів тут не знайдено, але в цьому робочому просторі є відстежувані зміни — репозиторій може знаходитися в піддиректорії, яку ще не виявлено",
+    "ca": "No s'han trobat commits aquí, però aquest espai de treball té canvis registrats — el repositori pot trobar-se en un subdirectori que encara no s'ha detectat"
+  },
   "DIFF_VIEWER$COMMITS_CAP": {
     "en": "Showing the latest {{count}} commits",
     "ja": "最新の{{count}}件のコミットを表示しています",

@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "ランタイムの起動を待っています...",
   "DIFF_VIEWER$COMMITS": "コミット",
   "DIFF_VIEWER$NO_COMMITS": "コミットはまだありません",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "ここにはコミットが見つかりませんが、このワークスペースには追跡された変更があります。リポジトリはまだ検出されていないサブディレクトリにある可能性があります",
   "DIFF_VIEWER$COMMITS_CAP": "最新の{{count}}件のコミットを表示しています",
   "DIFF_VIEWER$CHANGES_CAP": "変更されたファイルの最初の{{count}}件（全{{total}}件中）を表示しています",
   "SYSTEM_MESSAGE_MODAL$TITLE": "エージェントツールとメタデータ",

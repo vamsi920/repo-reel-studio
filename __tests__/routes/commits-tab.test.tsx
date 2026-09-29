@@ -55,10 +55,13 @@ describe("Commits Tab", () => {
     AgentServerGitService,
     "getCommitChanges",
   );
+  const getGitChangesSpy = vi.spyOn(AgentServerGitService, "getGitChanges");
 
   beforeEach(() => {
     getGitCommitsSpy.mockReset();
     getCommitChangesSpy.mockReset();
+    getGitChangesSpy.mockReset();
+    getGitChangesSpy.mockResolvedValue([]);
     vi.mocked(useAgentState).mockReturnValue({
       curAgentState: AgentState.RUNNING,
     });
@@ -89,6 +92,27 @@ describe("Commits Tab", () => {
     expect(
       await screen.findByText("DIFF_VIEWER$NO_COMMITS"),
     ).toBeInTheDocument();
+  });
+
+  it("shows an undiscovered-repo hint when there are no commits but there are tracked changes", async () => {
+    // Arrange — the changes endpoint discovers a nested repo the commits
+    // endpoint doesn't, so the workspace has changes but no commit history
+    // at the resolved gitPath.
+    getGitCommitsSpy.mockResolvedValue({ commits: [], hasMore: false });
+    getGitChangesSpy.mockResolvedValue([
+      { status: "M", path: "qa-git-test/committed.txt" },
+    ]);
+
+    // Act
+    render(<GitCommits />, { wrapper });
+
+    // Assert
+    expect(
+      await screen.findByText("DIFF_VIEWER$NO_COMMITS_AT_PATH"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("DIFF_VIEWER$NO_COMMITS"),
+    ).not.toBeInTheDocument();
   });
 
   it("lists the commits returned by the server", async () => {

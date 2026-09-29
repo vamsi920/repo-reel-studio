@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "في انتظار بدء وقت التشغيل...",
   "DIFF_VIEWER$COMMITS": "الإيداعات",
   "DIFF_VIEWER$NO_COMMITS": "لا توجد إيداعات بعد",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "لم يتم العثور على إيداعات هنا، ولكن يحتوي مساحة العمل هذه على تغييرات متتبَّعة — قد يكون المستودع موجودًا في دليل فرعي لم يتم اكتشافه بعد",
   "DIFF_VIEWER$COMMITS_CAP": "عرض أحدث {{count}} إيداعًا",
   "DIFF_VIEWER$CHANGES_CAP": "عرض أول {{count}} من أصل {{total}} ملفًا تم تغييره",
   "SYSTEM_MESSAGE_MODAL$TITLE": "أدوات الوكيل والبيانات الوصفية",

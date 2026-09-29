@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Esperant que l'entorn d'execució s'iniciï...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Encara no hi ha commits",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "No s'han trobat commits aquí, però aquest espai de treball té canvis registrats — el repositori pot trobar-se en un subdirectori que encara no s'ha detectat",
   "DIFF_VIEWER$COMMITS_CAP": "Es mostren els darrers {{count}} commits",
   "DIFF_VIEWER$CHANGES_CAP": "Es mostren els primers {{count}} de {{total}} fitxers modificats",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Eines i metadades de l'agent",

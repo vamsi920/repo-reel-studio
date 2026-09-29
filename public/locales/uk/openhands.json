@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Очікування початку виконання...",
   "DIFF_VIEWER$COMMITS": "Коміти",
   "DIFF_VIEWER$NO_COMMITS": "Ще немає комітів",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Комітів тут не знайдено, але в цьому робочому просторі є відстежувані зміни — репозиторій може знаходитися в піддиректорії, яку ще не виявлено",
   "DIFF_VIEWER$COMMITS_CAP": "Показано останні {{count}} комітів",
   "DIFF_VIEWER$CHANGES_CAP": "Показано перші {{count}} з {{total}} змінених файлів",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Інструменти та метадані агента",

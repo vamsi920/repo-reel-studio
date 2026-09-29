@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Waiting for runtime to start...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "No commits yet",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "No commits found here, but this workspace has tracked changes — the repository may live in a subdirectory that isn't detected yet",
   "DIFF_VIEWER$COMMITS_CAP": "Showing the latest {{count}} commits",
   "DIFF_VIEWER$CHANGES_CAP": "Showing the first {{count}} of {{total}} changed files",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Agent Tools & Metadata",

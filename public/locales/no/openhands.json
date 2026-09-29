@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "Venter på at kjøretid skal starte...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Ingen commits ennå",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Fant ingen commits her, men dette arbeidsområdet har sporede endringer — depotet kan ligge i en underkatalog som ennå ikke er oppdaget",
   "DIFF_VIEWER$COMMITS_CAP": "Viser de siste {{count}} commitene",
   "DIFF_VIEWER$CHANGES_CAP": "Viser de første {{count}} av {{total}} endrede filer",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Agent-verktøy og metadata",

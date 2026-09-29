@@ -1235,6 +1235,7 @@
   "DIFF_VIEWER$WAITING_FOR_RUNTIME": "En attente du démarrage de l'exécution...",
   "DIFF_VIEWER$COMMITS": "Commits",
   "DIFF_VIEWER$NO_COMMITS": "Aucun commit pour le moment",
+  "DIFF_VIEWER$NO_COMMITS_AT_PATH": "Aucun commit trouvé ici, mais cet espace de travail contient des modifications suivies — le dépôt se trouve peut-être dans un sous-répertoire non encore détecté",
   "DIFF_VIEWER$COMMITS_CAP": "Affichage des {{count}} derniers commits",
   "DIFF_VIEWER$CHANGES_CAP": "Affichage des {{count}} premiers fichiers modifiés sur {{total}}",
   "SYSTEM_MESSAGE_MODAL$TITLE": "Outils d'agent et métadonnées",
