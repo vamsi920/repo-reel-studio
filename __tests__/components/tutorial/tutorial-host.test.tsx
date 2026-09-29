@@ -6,6 +6,7 @@ import {
   getCaptionDurationMs,
   TUTORIAL_MAX_CAPTION_MS,
   TUTORIAL_MIN_CAPTION_MS,
+  TUTORIAL_PROGRESS_STORAGE_KEY,
   TUTORIAL_SEEN_STORAGE_KEY,
   useTutorialStore,
 } from "#/components/features/tutorial/tutorial-store";
@@ -16,6 +17,17 @@ import {
 } from "#/components/features/onboarding/use-onboarding-completion";
 import { NavigationProvider } from "#/context/navigation-context";
 import { findTutorialAnchor } from "#/components/features/tutorial/tutorial-spotlight";
+
+const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+
+vi.mock("#/services/telemetry", () => ({
+  trackEvent,
+  setTelemetryBackendContext: vi.fn(),
+}));
+
+vi.mock("#/api/automation-service/automation-service.api", () => ({
+  default: { getSdkVersion: vi.fn().mockResolvedValue(null) },
+}));
 
 const navigate = vi.fn();
 
@@ -38,6 +50,7 @@ beforeEach(() => {
   window.localStorage.clear();
   useTutorialStore.setState({ isOpen: false, stepIndex: 0, isPlaying: false });
   navigate.mockClear();
+  trackEvent.mockClear();
 });
 
 afterEach(() => {
@@ -106,6 +119,10 @@ describe("TutorialHost", () => {
     expect(
       window.localStorage.getItem(TUTORIAL_SEEN_STORAGE_KEY),
     ).not.toBeNull();
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_completed",
+      expect.objectContaining({ total_steps: lastIndex + 1 }),
+    );
   });
 
   it("Escape skips the tour and it does not auto-start again", async () => {
@@ -127,6 +144,59 @@ describe("TutorialHost", () => {
       window.dispatchEvent(new Event(ONBOARDING_COMPLETED_EVENT));
     });
     expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
+  });
+
+  it("reopens an interrupted tour at the same step after a reload", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    const first = renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getByTestId("tutorial-next"));
+    await user.click(screen.getByTestId("tutorial-next"));
+    first.unmount();
+    act(() => {
+      useTutorialStore.setState({ isOpen: false, stepIndex: 0 });
+    });
+    navigate.mockClear();
+
+    renderHost();
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "customize",
+    );
+    expect(navigate).toHaveBeenCalledWith("/customize");
+    expect(useTutorialStore.getState().isPlaying).toBe(false);
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_started",
+      expect.objectContaining({ trigger: "resume" }),
+    );
+  });
+
+  it("reports how far a user got when they skip, and forgets the position", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    await user.click(screen.getByTestId("tutorial-skip"));
+
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_started",
+      expect.objectContaining({ trigger: "launcher" }),
+    );
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_skipped",
+      expect.objectContaining({
+        step: "conversations",
+        step_index: 1,
+        total_steps: getTutorialSteps().length,
+      }),
+    );
+    expect(
+      window.localStorage.getItem(TUTORIAL_PROGRESS_STORAGE_KEY),
+    ).toBeNull();
   });
 
   it("spotlights the on-screen sidebar item for the current step", async () => {

@@ -25,7 +25,8 @@ milestones:
 - [x] 1. MVP: steps + store + caption-bar wizard (Back/Next/Skip/Finish, progress, dots, keys) + left-edge launcher + auto-start after onboarding + i18n + tests — done 2026-09-28
 - [x] 2. Spotlight: highlight the sidebar item each step talks about (anchor via data-testid, dim the rest, scroll into view) — done 2026-09-28 (works in expanded + collapsed sidebar; on phones the sidebar is hidden so no spotlight shows — opening the mobile drawer mid-tour deferred to milestone 4)
 - [x] 3. Auto-play mode: optional play/pause that advances captions on a timer sized to caption length ("watch" mode), respecting prefers-reduced-motion — done 2026-09-28 (tour starts playing unless reduced motion; 4–15 s per caption by length; thin timer bar; stops on the last step so Finish is deliberate; manual Back/Next restarts the timer)
-- [ ] 4. Edge cases: Cloud backends that skip onboarding (treat as new user when tutorial never seen and no conversations), resume position after reload mid-tour, launcher placement on mobile + conversation route, spotlight on mobile (open drawer or anchor the header menu button), analytics events via useTracking
+- [x] 4. Edge cases (part 1): resume position after reload mid-tour + analytics events via useTracking — done 2026-09-29 (open tour's step saved in localStorage `neo-tutorial-progress`, reopened paused at that step on reload and cleared on close; `tutorial_started` {trigger: auto|launcher|resume}, `tutorial_completed`, `tutorial_skipped` {step, step_index, total_steps})
+- [ ] 4b. Edge cases (part 2): Cloud backends that skip onboarding (treat as new user when tutorial never seen and no conversations), launcher placement on mobile + conversation route, spotlight on mobile (open drawer or anchor the header menu button)
 - [ ] 5. a11y + polish: focus return to launcher on close, tooltip on launcher, reduced-motion, dark/light tokens review, RTL (ar) check
 
-last commit: feat(tutorial): watch mode that auto-plays captions with play/pause (2026-09-28)
+last commit: feat(tutorial): resume an interrupted tour after reload and track tour analytics (2026-09-29)

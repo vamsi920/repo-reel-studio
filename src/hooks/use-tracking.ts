@@ -398,6 +398,34 @@ export const useTracking = () => {
     });
   };
 
+  const trackTutorialStarted = ({
+    trigger,
+  }: {
+    trigger: "auto" | "launcher" | "resume";
+  }) => {
+    track("tutorial_started", { trigger });
+  };
+
+  const trackTutorialCompleted = ({ totalSteps }: { totalSteps: number }) => {
+    track("tutorial_completed", { total_steps: totalSteps });
+  };
+
+  const trackTutorialSkipped = ({
+    step,
+    stepIndex,
+    totalSteps,
+  }: {
+    step: string;
+    stepIndex: number;
+    totalSteps: number;
+  }) => {
+    track("tutorial_skipped", {
+      step,
+      step_index: stepIndex,
+      total_steps: totalSteps,
+    });
+  };
+
   return {
     trackLoginButtonClick,
     trackConversationCreated,
@@ -430,5 +458,8 @@ export const useTracking = () => {
     trackOnboardingStepViewed,
     trackOnboardingCompleted,
     trackOnboardingSkipped,
+    trackTutorialStarted,
+    trackTutorialCompleted,
+    trackTutorialSkipped,
   };
 };

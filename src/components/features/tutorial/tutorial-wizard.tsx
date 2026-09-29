@@ -4,6 +4,7 @@ import { Pause, Play, X } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
 import { useNavigation } from "#/context/navigation-context";
 import { cn } from "#/utils/utils";
+import { useTracking } from "#/hooks/use-tracking";
 import { getTutorialSteps } from "./tutorial-steps";
 import { getCaptionDurationMs, useTutorialStore } from "./tutorial-store";
 import { TutorialSpotlight } from "./tutorial-spotlight";
@@ -30,7 +31,8 @@ export function TutorialWizard() {
   const steps = React.useMemo(() => getTutorialSteps(), []);
   const stepIndex = useTutorialStore((state) => state.stepIndex);
   const goTo = useTutorialStore((state) => state.goTo);
-  const close = useTutorialStore((state) => state.close);
+  const closeTour = useTutorialStore((state) => state.close);
+  const { trackTutorialCompleted, trackTutorialSkipped } = useTracking();
   const isPlaying = useTutorialStore((state) => state.isPlaying);
   const setPlaying = useTutorialStore((state) => state.setPlaying);
 
@@ -45,10 +47,24 @@ export function TutorialWizard() {
     // Only react to step changes: the user may browse away mid-step.
   }, [step.id]);
 
+  const finish = React.useCallback(() => {
+    trackTutorialCompleted({ totalSteps: steps.length });
+    closeTour();
+  }, [closeTour, steps.length]);
+
+  const skip = React.useCallback(() => {
+    trackTutorialSkipped({
+      step: step.id,
+      stepIndex,
+      totalSteps: steps.length,
+    });
+    closeTour();
+  }, [closeTour, step.id, stepIndex, steps.length]);
+
   const goNext = React.useCallback(() => {
-    if (isLast) close();
+    if (isLast) finish();
     else goTo(stepIndex + 1, steps.length);
-  }, [isLast, close, goTo, stepIndex, steps.length]);
+  }, [isLast, finish, goTo, stepIndex, steps.length]);
 
   const goBack = React.useCallback(() => {
     goTo(stepIndex - 1, steps.length);
@@ -73,11 +89,11 @@ export function TutorialWizard() {
       if (isTypingTarget(event.target)) return;
       if (event.key === "ArrowRight") goNext();
       else if (event.key === "ArrowLeft") goBack();
-      else if (event.key === "Escape") close();
+      else if (event.key === "Escape") skip();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [goNext, goBack, close]);
+  }, [goNext, goBack, skip]);
 
   const titleId = "tutorial-wizard-title";
   const subtitleId = "tutorial-wizard-subtitle";
@@ -107,7 +123,7 @@ export function TutorialWizard() {
           <button
             type="button"
             data-testid="tutorial-skip"
-            onClick={close}
+            onClick={skip}
             aria-label={t(I18nKey.TUTORIAL$SKIP)}
             className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--oh-muted)] hover:bg-white/10 hover:text-white"
           >
