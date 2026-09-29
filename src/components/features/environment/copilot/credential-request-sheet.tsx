@@ -193,7 +193,21 @@ export function CredentialRequestSheet({
           latency_ms: receipt.probe?.latencyMs,
         })}`,
       );
-      onDone();
+      // The Edge Function always saves the record and always runs the probe,
+      // but a saved record is not the same thing as a working one. Closing
+      // the sheet here regardless of `receipt.probe.ok` told the user
+      // nothing when their credential was rejected -- the sheet just
+      // vanished with no toast and no way to correct the value, unlike the
+      // sibling `ConnectionCard`/`environment-connections.tsx` forms, which
+      // both keep the form open and toast on the same outcome. Only settle
+      // (close) the sheet once the probe agrees the credential actually
+      // works; the values the user typed stay in place so a wrong field can
+      // be corrected without retyping everything.
+      if (receipt.probe?.ok) {
+        onDone();
+      } else {
+        displayErrorToast(t(I18nKey.ENVIRONMENT$ERROR_PROBE));
+      }
     } catch (error) {
       reportFailure(
         error instanceof EnvironmentServiceError

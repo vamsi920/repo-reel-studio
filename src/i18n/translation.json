@@ -54875,6 +54875,23 @@
     "tr": "Help me fix this",
     "uk": "Help me fix this"
   },
+  "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": {
+    "en": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "ja": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "zh-CN": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "zh-TW": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "ko-KR": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "no": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "ar": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "de": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "fr": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "it": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "pt": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "es": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "ca": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "tr": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
+    "uk": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request."
+  },
   "ENVIRONMENT$CREDENTIAL_TITLE": {
     "en": "Enter a credential",
     "ja": "Enter a credential",

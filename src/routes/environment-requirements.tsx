@@ -120,7 +120,7 @@ function EnvironmentRequirementsScreen() {
                 return (
                   <li
                     key={`${feature.featureId}:${nodeId}:${entry.severity}`}
-                    data-testid={`requirement-row-${feature.featureId}`}
+                    data-testid={`requirement-row-${feature.featureId}-${nodeId}`}
                     data-status={status}
                     className="flex flex-wrap items-center justify-between gap-2 py-2"
                   >
@@ -145,7 +145,7 @@ function EnvironmentRequirementsScreen() {
                       {status === "unsatisfied" ? (
                         <button
                           type="button"
-                          data-testid={`requirement-fix-${feature.featureId}`}
+                          data-testid={`requirement-fix-${feature.featureId}-${nodeId}`}
                           onClick={() =>
                             openCopilot(
                               `${t(I18nKey.ENVIRONMENT$COPILOT_SEED_FIX)}: ${t(feature.nameKey)} — ${labelFor(entry.node)}${connectionContextFor(findConnectionForNode(entry.node, connections))}`,

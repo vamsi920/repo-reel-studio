@@ -49,6 +49,7 @@ export function OnboardingDock() {
   // in the studio's conversation. Posting through the REST send works even
   // though this component is not mounted on that conversation's socket.
   const { data: session } = useOnboardingSession();
+  const sessionReady = Boolean(session?.conversationId);
   const postResult: PostResultFn = React.useMemo(
     () =>
       session?.conversationId
@@ -153,12 +154,32 @@ export function OnboardingDock() {
                 keeps what was typed in local state, and one provider's
                 half-entered secret must never carry over into the next. */}
             {pending ? (
-              <CredentialRequestSheet
-                key={pending.requestId}
-                request={pending}
-                onDone={clearCredentialRequest}
-                onResult={postResult}
-              />
+              sessionReady ? (
+                <CredentialRequestSheet
+                  key={pending.requestId}
+                  request={pending}
+                  onDone={clearCredentialRequest}
+                  onResult={postResult}
+                />
+              ) : (
+                // `useOnboardingSession` has not resolved a conversation id
+                // yet (still loading, or the org lookup that backs it hasn't
+                // settled). Rendering the sheet anyway would let the user
+                // submit a credential whose `onResult` silently no-ops --
+                // the server saves it, but the agent waiting on this reply
+                // never hears back and hangs forever with no visible sign
+                // anything went wrong. Refusing to render it until the
+                // conversation id is known keeps that guarantee intact; the
+                // "Open studio" launch button below still gets the user to a
+                // live conversation that can answer this request directly.
+                <p
+                  data-testid="onboarding-dock-session-unavailable"
+                  role="status"
+                  className="rounded-[var(--radius-sm)] bg-[var(--background-secondary)] p-3 text-xs text-[var(--text-secondary)]"
+                >
+                  {t(I18nKey.ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE)}
+                </p>
+              )
             ) : null}
 
             {seedPrompt ? (

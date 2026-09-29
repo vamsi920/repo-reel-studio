@@ -8,6 +8,7 @@ import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
 import type { PendingCredentialRequest } from "#/stores/onboarding-copilot-store";
 import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
 import { EnvironmentService } from "#/api/environment-service/environment-service.api";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { ConnectionReceipt } from "#/lib/environment/types/probe";
 import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
 
@@ -261,6 +262,47 @@ describe("CredentialRequestSheet", () => {
       provider: "posthog",
       verified: true,
     });
+  });
+
+  it("keeps the sheet open and toasts an error when the server saves the credential but its probe fails", async () => {
+    // The Edge Function always saves the record and always runs the probe --
+    // a saved record is not the same thing as a working one. Before this
+    // fix, a resolved receipt with `probe.ok: false` (e.g. a typo'd API key
+    // the server still accepted and stored) still closed the sheet via an
+    // unconditional `onDone()`, with no toast anywhere on this path -- the
+    // request just vanished as if it had succeeded.
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      receipt(false),
+    );
+    pushStudioCard();
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    const onResult = vi.fn();
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone,
+      onResult,
+    });
+
+    await user.type(
+      screen.getByTestId("connector-field-projectApiKey"),
+      "phc_secret",
+    );
+    await user.click(screen.getByTestId("credential-submit"));
+
+    await waitFor(() => expect(onResult).toHaveBeenCalledTimes(1));
+    expect(lastReceipt(onResult)).toMatchObject({
+      status: "degraded",
+      provider: "posthog",
+      verified: false,
+    });
+    expect(studioCard()).toMatchObject({
+      status: "failed",
+      result: expect.objectContaining({ ok: false }),
+    });
+    expect(displayErrorToast).toHaveBeenCalledTimes(1);
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByTestId("credential-request-sheet")).toBeInTheDocument();
   });
 
   it("marks the studio card failed when the server rejects the credential", async () => {

@@ -1,14 +1,14 @@
 {
   "repo": "https://github.com/vamsi920/repo-reel-studio",
-  "lastSection": "automations",
-  "lastRunType": "feature",
+  "lastSection": "environment-onboarding",
+  "lastRunType": "bugs",
   "sections": {
     "knowledge-kt": { "lastRun": "2026-09-29T17:38:00Z", "runCount": 24 },
     "kt-video": { "lastRun": "2026-09-29T08:11:02Z", "runCount": 23 },
     "codegraph": { "lastRun": "2026-09-28T17:38:00Z", "runCount": 25 },
     "agentops": { "lastRun": "2026-09-29T18:50:06Z", "runCount": 24 },
     "automations": { "lastRun": "2026-09-29T19:47:09Z", "runCount": 25 },
-    "environment-onboarding": { "lastRun": "2026-09-28T16:48:00Z", "runCount": 23 },
+    "environment-onboarding": { "lastRun": "2026-09-29T21:06:56Z", "runCount": 24 },
     "security": { "lastRun": "2026-09-29T13:52:00Z", "runCount": 23 },
     "auth-data-platform": { "lastRun": "2026-09-29T12:52:00Z", "runCount": 23 },
     "settings": { "lastRun": "2026-09-29T16:33:31Z", "runCount": 25 },

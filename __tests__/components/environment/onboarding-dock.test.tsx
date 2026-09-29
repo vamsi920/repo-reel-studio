@@ -6,8 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OnboardingDock } from "#/components/features/environment/copilot/onboarding-dock";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 
+let mockSessionData: { conversationId: string } | null = {
+  conversationId: "conv-1",
+};
+
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
-  useOnboardingSession: () => ({ data: null }),
+  useOnboardingSession: () => ({ data: mockSessionData }),
 }));
 
 vi.mock("#/hooks/query/use-connections", () => ({
@@ -39,6 +43,7 @@ function renderDock(path = "/") {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockSessionData = { conversationId: "conv-1" };
 });
 
 describe("OnboardingDock", () => {
@@ -106,5 +111,33 @@ describe("OnboardingDock", () => {
 
     expect(screen.getByText("CONNECTOR$ANTHROPIC_NAME")).toBeInTheDocument();
     expect(screen.getByTestId("connector-field-apiKey")).toHaveValue("");
+  });
+
+  it("does not render the credential sheet before the onboarding session has resolved a conversation id", () => {
+    // `postResult` becomes a no-op `() => undefined` whenever
+    // `useOnboardingSession()` has no `conversationId` yet (still loading, or
+    // the org lookup behind it hasn't settled). Rendering the sheet anyway
+    // let the user submit a credential that was saved on the server but
+    // never reported back to the agent -- the tool call that raised the
+    // request just hung forever with no visible sign anything went wrong.
+    mockSessionData = null;
+    act(() => {
+      useOnboardingCopilotStore.getState().requestCredentials({
+        requestId: "linear:default",
+        capability: "issue-tracker",
+        providerId: "linear",
+        instanceKey: "default",
+        fields: ["apiKey"],
+      });
+    });
+    renderDock();
+
+    expect(screen.getByTestId("onboarding-dock")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("credential-request-sheet"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("onboarding-dock-session-unavailable"),
+    ).toBeInTheDocument();
   });
 });

@@ -90,7 +90,7 @@ describe("Environment requirements", () => {
     const feature = screen.getByTestId("requirement-feature-automations.run");
     expect(feature).toHaveAttribute("data-status", "unknown");
     for (const row of within(feature).getAllByTestId(
-      "requirement-row-automations.run",
+      /^requirement-row-automations\.run-/,
     )) {
       expect(row).toHaveAttribute("data-status", "unknown");
     }
@@ -107,7 +107,7 @@ describe("Environment requirements", () => {
     const feature = screen.getByTestId("requirement-feature-telemetry");
     expect(feature).toHaveAttribute("data-status", "degraded");
     expect(
-      within(feature).getByTestId("requirement-row-telemetry"),
+      within(feature).getByTestId(/^requirement-row-telemetry-/),
     ).toHaveAttribute("data-status", "unsatisfied");
   });
 
@@ -135,7 +135,7 @@ describe("Environment requirements", () => {
     expect(feature).toHaveAttribute("data-status", "blocked");
 
     await userEvent.click(
-      within(feature).getByTestId("requirement-fix-repositories.browse"),
+      within(feature).getByTestId(/^requirement-fix-repositories\.browse-/),
     );
     expect(state.seeds).toHaveLength(1);
   });
@@ -163,7 +163,7 @@ describe("Environment requirements", () => {
     );
 
     await userEvent.click(
-      within(feature).getByTestId("requirement-fix-repositories.browse"),
+      within(feature).getByTestId(/^requirement-fix-repositories\.browse-/),
     );
 
     expect(state.seeds).toHaveLength(1);
@@ -172,12 +172,52 @@ describe("Environment requirements", () => {
     expect(state.seeds[0]).toContain("read:user, repo");
   });
 
+  it("gives each unsatisfied requirement row and fix button its own test id when a feature has more than one failing requirement", () => {
+    // `requirement-row-<featureId>`/`requirement-fix-<featureId>` used to be
+    // keyed only by featureId, not by the individual requirement node. Any
+    // feature with two-or-more simultaneously unsatisfied requirements (like
+    // repositories.browse: a missing source-control capability AND a missing
+    // GITHUB_TOKEN_ENCRYPTION_KEY env var) rendered two elements sharing the
+    // same test id, so a scoped `getByTestId` query would have thrown a
+    // "Found multiple elements" error instead of resolving.
+    state.readiness = report({
+      probes: {
+        "env:supabase-edge:GITHUB_TOKEN_ENCRYPTION_KEY": probe(false),
+      },
+      capabilities: { "source-control": "missing" },
+    });
+    render(<EnvironmentRequirementsScreen />);
+    const feature = screen.getByTestId(
+      "requirement-feature-repositories.browse",
+    );
+
+    const rows = within(feature).getAllByTestId(
+      /^requirement-row-repositories\.browse-/,
+    );
+    expect(rows).toHaveLength(2);
+    // Every row's test id is unique -- no two share the same value.
+    expect(new Set(rows.map((row) => row.getAttribute("data-testid"))).size).toBe(
+      2,
+    );
+
+    const fixButtons = within(feature).getAllByTestId(
+      /^requirement-fix-repositories\.browse-/,
+    );
+    expect(fixButtons).toHaveLength(2);
+    expect(
+      new Set(fixButtons.map((button) => button.getAttribute("data-testid")))
+        .size,
+    ).toBe(2);
+  });
+
   it("does not put a not-applicable requirement on the checklist as passing", () => {
     const profile = createEmptyProfile("org", NOW);
     profile.mode = "saas";
     state.readiness = computeReadiness(EMPTY_EVIDENCE, profile, NOW);
     render(<EnvironmentRequirementsScreen />);
-    const rows = screen.getAllByTestId("requirement-row-agentops.persistence");
+    const rows = screen.getAllByTestId(
+      /^requirement-row-agentops\.persistence-/,
+    );
     for (const row of rows) {
       expect(row).not.toHaveAttribute("data-status", "satisfied");
     }

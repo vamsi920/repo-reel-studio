@@ -3227,6 +3227,7 @@
   "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "The onboarding agent needs an OpenHands agent profile. The profile currently selected runs a different agent, which cannot drive this screen.",
   "ENVIRONMENT$COPILOT_STARTING": "Starting the onboarding agent",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Help me fix this",
+  "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Can't reach the onboarding conversation from here yet. Open the studio to answer this request.",
   "ENVIRONMENT$CREDENTIAL_TITLE": "Enter a credential",
   "ENVIRONMENT$CREDENTIAL_NOTE": "This value goes straight to the server and is encrypted there. It is never added to the conversation and the agent never sees it.",
   "ENVIRONMENT$CREDENTIAL_SUBMIT": "Save and verify",
