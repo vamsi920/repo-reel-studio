@@ -10,7 +10,7 @@ import { generateKnowledge } from "#/lib/knowledge/generate-knowledge";
 import { findRepositoryUuid } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 
-const resolveOrgId = vi.fn();
+const resolveOrgIdWithStatus = vi.fn();
 
 /** What the mocked conversation-history hook reports; tests mutate it. */
 const connected: { repositories: RepoCandidate[]; isLoading: boolean } = {
@@ -35,7 +35,7 @@ vi.mock("#/lib/knowledge/generate-knowledge", () => ({
 }));
 
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
-  resolveOrgId: () => resolveOrgId(),
+  resolveOrgIdWithStatus: () => resolveOrgIdWithStatus(),
   findRepositoryUuid: vi.fn(),
 }));
 
@@ -79,7 +79,7 @@ describe("KtRepository", () => {
       repositoryId: encodeURIComponent(REPOSITORY_ID),
     } as never);
     useKnowledgeStore.setState({ byRepositoryId: {} });
-    resolveOrgId.mockResolvedValue(null);
+    resolveOrgIdWithStatus.mockResolvedValue({ orgId: null, hadError: false });
     connected.repositories = [];
     connected.isLoading = false;
   });
@@ -207,12 +207,17 @@ describe("KtRepository", () => {
     // repositories -- React doesn't remount just because the param changed.
     seedFailedGeneration("boom");
     const { rerender } = renderWithProviders(<KtRepository />);
-    expect(await screen.findByTestId("kt-repository-error")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("kt-repository-error"),
+    ).toBeInTheDocument();
 
-    let resolveOrg: (value: string | null) => void = () => {};
-    resolveOrgId.mockImplementation(
+    let resolveOrg: (value: {
+      orgId: string | null;
+      hadError: boolean;
+    }) => void = () => {};
+    resolveOrgIdWithStatus.mockImplementation(
       () =>
-        new Promise<string | null>((resolve) => {
+        new Promise<{ orgId: string | null; hadError: boolean }>((resolve) => {
           resolveOrg = resolve;
         }),
     );
@@ -229,7 +234,7 @@ describe("KtRepository", () => {
     expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
     expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
 
-    resolveOrg(null);
+    resolveOrg({ orgId: null, hadError: false });
     expect(await screen.findByText(I18nKey.KT$NOT_FOUND)).toBeInTheDocument();
   });
 
@@ -374,7 +379,10 @@ describe("KtRepository", () => {
         store.setError(snapshot.repositoryId, "DeepWiki rate limited.");
       },
     );
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid");
     vi.mocked(
       knowledgePersistenceRepository.getLatestGenerationForRepository,
@@ -391,16 +399,14 @@ describe("KtRepository", () => {
     renderWithProviders(<KtRepository />);
 
     expect(await screen.findByText("API (persisted)")).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("kt-repository-error"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("kt-repository-error")).not.toBeInTheDocument();
   });
 
   it("falls back to the empty state when cold rehydration rejects", async () => {
     const rejections: unknown[] = [];
     const onUnhandled = (reason: unknown) => rejections.push(reason);
     process.on("unhandledRejection", onUnhandled);
-    resolveOrgId.mockRejectedValue(new Error("supabase unreachable"));
+    resolveOrgIdWithStatus.mockRejectedValue(new Error("supabase unreachable"));
 
     try {
       renderWithProviders(<KtRepository />);

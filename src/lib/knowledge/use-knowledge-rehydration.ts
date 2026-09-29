@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import {
-  resolveOrgId,
+  resolveOrgIdWithStatus,
   findRepositoryUuid,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
@@ -25,6 +25,18 @@ function parseRepositoryId(
   return { owner, repo, branch };
 }
 
+/** `tryColdRehydration`'s outcome. `"org-error"` is distinct from
+ * `"not-found"`: it means the org lookup itself failed (a real
+ * Supabase/auth-timing glitch, e.g. INC-8's PostgREST JWT-timing rejection)
+ * rather than there genuinely being no persisted generation for this repo --
+ * the caller surfaces that case as an honest error instead of silently
+ * falling through to the same "hasn't been generated yet" empty state a
+ * real never-generated repo shows. */
+type ColdRehydrationResult =
+  | { status: "hydrated" }
+  | { status: "not-found" }
+  | { status: "org-error" };
+
 /** Content-only fallback: checks Supabase for a previously-persisted
  * generation and seeds the store from it, so Docs renders real content
  * instead of "hasn't been generated yet" even with no live session. Used
@@ -32,8 +44,9 @@ function parseRepositoryId(
  * `useKnowledgeRehydration` below) — a hydrated entry this way has
  * `conversationUrl`/`sessionApiKey: null` and `localPath: ""`, so Watch KT
  * and CodeGraph correctly ask for a live session rather than silently
- * failing. Best-effort: any failure (unconfigured, RLS, nothing found) just
- * leaves today's empty-state fallback in place. */
+ * failing. Best-effort beyond the org lookup: a `findRepositoryUuid`/
+ * `getLatestGenerationForRepository` failure (RLS, nothing found) still
+ * just leaves today's empty-state fallback in place. */
 async function tryColdRehydration(
   repositoryId: string,
   parsed: { owner: string; repo: string; branch: string },
@@ -49,21 +62,21 @@ async function tryColdRehydration(
       ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
     >[3],
   ) => void,
-): Promise<boolean> {
-  const orgId = await resolveOrgId();
-  if (!orgId) return false;
+): Promise<ColdRehydrationResult> {
+  const { orgId, hadError } = await resolveOrgIdWithStatus();
+  if (!orgId) return { status: hadError ? "org-error" : "not-found" };
   const repositoryUuid = await findRepositoryUuid(
     orgId,
     parsed.owner,
     parsed.repo,
   );
-  if (!repositoryUuid) return false;
+  if (!repositoryUuid) return { status: "not-found" };
   const knowledge =
     await knowledgePersistenceRepository.getLatestGenerationForRepository(
       repositoryUuid,
       parsed.branch,
     );
-  if (!knowledge) return false;
+  if (!knowledge) return { status: "not-found" };
   hydrate(
     repositoryId,
     {
@@ -77,7 +90,7 @@ async function tryColdRehydration(
     knowledge,
     [],
   );
-  return true;
+  return { status: "hydrated" };
 }
 
 /**
@@ -309,7 +322,35 @@ export function useKnowledgeRehydration(
       }
       if (!cancelled || liveGenerationFailed) {
         try {
-          await tryColdRehydration(repositoryId, parsed, hydrate);
+          const result = await tryColdRehydration(
+            repositoryId,
+            parsed,
+            hydrate,
+          );
+          // Only a genuinely fresh attempt (no entry at all yet, checked
+          // against the live store rather than this closure's own -- possibly
+          // stale by now -- `hasEntry` capture) turns an org-lookup glitch
+          // into a visible error: an upgrade attempt already has a settled
+          // entry (real content, or a live-failure's own more specific
+          // error) to fall back on, which this must not clobber.
+          if (
+            result.status === "org-error" &&
+            !useKnowledgeStore.getState().byRepositoryId[repositoryId]
+          ) {
+            console.error(
+              "[kt-repository] cold rehydration org lookup failed",
+              repositoryId,
+            );
+            startGenerating(
+              { repositoryId, ...parsed, commitSha: "", localPath: "" },
+              null,
+              null,
+            );
+            setError(
+              repositoryId,
+              "We couldn't check for existing content for this repository. This may be temporary — please try again.",
+            );
+          }
         } catch (error) {
           // Best-effort: an unconfigured/unreachable Supabase, an RLS
           // denial, or a missing generation must not reject out of this

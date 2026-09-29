@@ -97,7 +97,9 @@ vi.mock("#/lib/knowledge/connected-repositories", () => ({
 }));
 
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
-  resolveOrgId: vi.fn().mockResolvedValue(null),
+  resolveOrgIdWithStatus: vi
+    .fn()
+    .mockResolvedValue({ orgId: null, hadError: false }),
   findRepositoryUuid: vi.fn().mockResolvedValue(null),
 }));
 
@@ -112,7 +114,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import {
   findRepositoryUuid,
-  resolveOrgId,
+  resolveOrgIdWithStatus,
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
@@ -634,7 +636,10 @@ describe("KtPage deep link on a cold store", () => {
 
   it("rehydrates the persisted knowledge instead of rendering 'Page not found'", async () => {
     mockUseParams.mockReturnValue(paramsFor("page-b"));
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue("repo-uuid-1");
     vi.mocked(
       knowledgePersistenceRepository.getLatestGenerationForRepository,
@@ -653,7 +658,10 @@ describe("KtPage deep link on a cold store", () => {
 
   it("says 'Page not found' only after the lookup found nothing", async () => {
     mockUseParams.mockReturnValue(paramsFor("page-b"));
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
+    vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     vi.mocked(findRepositoryUuid).mockResolvedValue(null);
 
     render(<KtPage />);

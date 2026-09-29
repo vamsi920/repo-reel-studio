@@ -9,10 +9,11 @@ vi.mock("#/contexts/active-backend-context", () => ({
   useActiveBackend: () => useActiveBackendMock(),
 }));
 
-const resolveOrgId = vi.fn();
+const resolveOrgIdWithStatus = vi.fn();
 const findRepositoryUuid = vi.fn();
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
-  resolveOrgId: (...args: unknown[]) => resolveOrgId(...args),
+  resolveOrgIdWithStatus: (...args: unknown[]) =>
+    resolveOrgIdWithStatus(...args),
   findRepositoryUuid: (...args: unknown[]) => findRepositoryUuid(...args),
 }));
 
@@ -60,7 +61,7 @@ describe("useKnowledgeRehydration", () => {
       backend: { id: "backend-1", name: "Local", host: "", kind: "local" },
       orgId: null,
     });
-    resolveOrgId.mockReset();
+    resolveOrgIdWithStatus.mockReset();
     findRepositoryUuid.mockReset();
     getLatestGenerationForRepository.mockReset();
     useConnectedRepositoriesMock
@@ -78,7 +79,7 @@ describe("useKnowledgeRehydration", () => {
     const { result } = renderHook(() => useKnowledgeRehydration(undefined));
 
     expect(result.current).toBe(true);
-    expect(resolveOrgId).not.toHaveBeenCalled();
+    expect(resolveOrgIdWithStatus).not.toHaveBeenCalled();
   });
 
   it("reports checked without hydrating when the repositoryId doesn't parse as owner/repo@branch", async () => {
@@ -87,7 +88,7 @@ describe("useKnowledgeRehydration", () => {
     );
 
     await waitFor(() => expect(result.current).toBe(true));
-    expect(resolveOrgId).not.toHaveBeenCalled();
+    expect(resolveOrgIdWithStatus).not.toHaveBeenCalled();
     expect(
       useKnowledgeStore.getState().byRepositoryId["not-a-valid-id"],
     ).toBeUndefined();
@@ -103,7 +104,7 @@ describe("useKnowledgeRehydration", () => {
     const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
 
     expect(result.current).toBe(false);
-    expect(resolveOrgId).not.toHaveBeenCalled();
+    expect(resolveOrgIdWithStatus).not.toHaveBeenCalled();
   });
 
   it("runs live generation for an open conversation and never falls back to cold rehydration when it succeeds", async () => {
@@ -147,7 +148,7 @@ describe("useKnowledgeRehydration", () => {
     expect(
       useKnowledgeStore.getState().byRepositoryId[repositoryId]?.status,
     ).toBe("ready");
-    expect(resolveOrgId).not.toHaveBeenCalled();
+    expect(resolveOrgIdWithStatus).not.toHaveBeenCalled();
   });
 
   it("falls through to cold rehydration when the live generation attempt errors", async () => {
@@ -177,7 +178,10 @@ describe("useKnowledgeRehydration", () => {
         store.setError(snapshot.repositoryId, "DeepWiki unreachable");
       },
     );
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     findRepositoryUuid.mockResolvedValue("repo-uuid");
     getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
 
@@ -211,7 +215,10 @@ describe("useKnowledgeRehydration", () => {
     });
     const resolveCommitShaError = new Error("clone never finished");
     resolveCommitSha.mockRejectedValue(resolveCommitShaError);
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     findRepositoryUuid.mockResolvedValue("repo-uuid");
     getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
     const consoleErrorSpy = vi
@@ -234,7 +241,10 @@ describe("useKnowledgeRehydration", () => {
   });
 
   it("goes straight to cold rehydration when no live conversation exists for this repo", async () => {
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     findRepositoryUuid.mockResolvedValue("repo-uuid");
     getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
 
@@ -252,7 +262,10 @@ describe("useKnowledgeRehydration", () => {
     // First pass: no live conversation for this repo yet -- the one-shot
     // race falls back to cold rehydration, same as the "goes straight to
     // cold rehydration" case above.
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     findRepositoryUuid.mockResolvedValue("repo-uuid");
     getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
 
@@ -314,14 +327,16 @@ describe("useKnowledgeRehydration", () => {
       "session-key",
     );
     expect(
-      useKnowledgeStore.getState().byRepositoryId[repositoryId]
-        ?.sessionApiKey,
+      useKnowledgeStore.getState().byRepositoryId[repositoryId]?.sessionApiKey,
     ).toBe("session-key");
     expect(result.current).toBe(true);
   });
 
   it("leaves the store untouched and still reports checked when nothing was ever generated for this repo", async () => {
-    resolveOrgId.mockResolvedValue("org-1");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
     findRepositoryUuid.mockResolvedValue(null);
 
     const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
@@ -331,5 +346,35 @@ describe("useKnowledgeRehydration", () => {
     expect(
       useKnowledgeStore.getState().byRepositoryId[repositoryId],
     ).toBeUndefined();
+  });
+
+  it("leaves the store untouched when the org lookup genuinely has no org yet (not an error)", async () => {
+    resolveOrgIdWithStatus.mockResolvedValue({ orgId: null, hadError: false });
+
+    const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
+
+    await waitFor(() => expect(result.current).toBe(true));
+    expect(findRepositoryUuid).not.toHaveBeenCalled();
+    expect(
+      useKnowledgeStore.getState().byRepositoryId[repositoryId],
+    ).toBeUndefined();
+  });
+
+  it("surfaces an honest error entry instead of a false 'not found' when the org lookup itself fails (e.g. an INC-8-style auth/timing glitch)", async () => {
+    resolveOrgIdWithStatus.mockResolvedValue({ orgId: null, hadError: true });
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
+
+    await waitFor(() => expect(result.current).toBe(true));
+    expect(findRepositoryUuid).not.toHaveBeenCalled();
+    const entry = useKnowledgeStore.getState().byRepositoryId[repositoryId];
+    expect(entry?.status).toBe("error");
+    expect(entry?.knowledge).toBeNull();
+    expect(entry?.error).toBeTruthy();
+
+    consoleErrorSpy.mockRestore();
   });
 });

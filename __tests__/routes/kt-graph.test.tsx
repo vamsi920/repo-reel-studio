@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, useParamsMock } from "test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +7,6 @@ import { I18nKey } from "#/i18n/declaration";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { pinKey, useCodeGraphStore } from "#/stores/codegraph-store";
 import {
-  resolveOrgId,
   resolveOrgIdWithStatus,
   findRepositoryUuid,
   resolvePersistenceIds,
@@ -34,7 +33,6 @@ vi.mock("#/contexts/active-backend-context", () => ({
 
 vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
   resolvePersistenceIds: vi.fn().mockResolvedValue(null),
-  resolveOrgId: vi.fn().mockResolvedValue(null),
   resolveOrgIdWithStatus: vi
     .fn()
     .mockResolvedValue({ orgId: null, hadError: false }),
@@ -1161,6 +1159,18 @@ describe("KtGraph cold rehydration", () => {
   });
 
   afterEach(() => {
+    // Unmount before clearing the store: `useKnowledgeRehydration` treats a
+    // store clear on an already-mounted, still-`hasEntry` route as "the
+    // entry just disappeared, try a fresh cold-rehydration attempt" -- with
+    // the previous test's `resolveOrgIdWithStatus`/`findRepositoryUuid`
+    // mocks still in place (this file's own `vi.clearAllMocks()` below
+    // clears call history, not the resolved-value implementation), that
+    // stray attempt's calls can land during the *next* test instead,
+    // confirmed by reproduction (`findRepositoryUuid` seen called with a
+    // stale "org-1" from a prior test while asserting the INC-8 case below
+    // never calls it at all). Unmounting first lets the effect's own
+    // cleanup (`cancelled = true`) suppress that stray attempt entirely.
+    cleanup();
     useKnowledgeStore.setState({ byRepositoryId: {} });
     useCodeGraphStore.setState({
       byKey: {},
@@ -1414,12 +1424,10 @@ describe("KtGraph deep link on a cold store", () => {
   });
 
   it("rehydrates the persisted knowledge instead of asking to generate docs first", async () => {
-    // `useKnowledgeRehydration`'s own cold-rehydration path still calls the
-    // plain `resolveOrgId` (unrelated to this page's own cold-load effect,
-    // which is what `resolveOrgIdWithStatus` below feeds) -- both need a
-    // real org id here for `tryColdRehydration` to reach
+    // `useKnowledgeRehydration`'s own cold-rehydration path and this page's
+    // own cold-load effect both now go through `resolveOrgIdWithStatus` --
+    // a real org id here lets `tryColdRehydration` reach
     // `getLatestGenerationForRepository` at all.
-    vi.mocked(resolveOrgId).mockResolvedValue("org-1");
     vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
       orgId: "org-1",
       hadError: false,
