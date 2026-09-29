@@ -108,12 +108,18 @@ export function TutorialWizard() {
         aria-describedby={subtitleId}
         data-testid="tutorial-wizard"
         data-step={step.id}
-        className="fixed inset-x-0 bottom-4 z-[60] mx-auto w-[min(92vw,640px)] rounded-2xl border border-[var(--oh-border)] bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
+        // This bar is a fixed video-caption overlay (black/white, like real
+        // subtitles) independent of the active app color theme — including
+        // the default light "deepsea" theme where --oh-muted/--oh-border
+        // resolve to dark colors meant for light surfaces, not this black
+        // bar. Every color inside it must stay a fixed white-based utility
+        // rather than an --oh-* theme token, or it becomes unreadable.
+        className="fixed inset-x-0 bottom-4 z-[60] mx-auto w-[min(92vw,640px)] rounded-2xl border border-white/15 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
       >
         <div className="flex items-center justify-between gap-3">
           <span
             data-testid="tutorial-progress"
-            className="text-xs uppercase tracking-wide text-[var(--oh-muted)]"
+            className="text-xs uppercase tracking-wide text-white/60"
           >
             {t(I18nKey.TUTORIAL$STEP_PROGRESS, {
               current: stepIndex + 1,
@@ -125,7 +131,7 @@ export function TutorialWizard() {
             data-testid="tutorial-skip"
             onClick={skip}
             aria-label={t(I18nKey.TUTORIAL$SKIP)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--oh-muted)] hover:bg-white/10 hover:text-white"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
           >
             {t(I18nKey.TUTORIAL$SKIP)}
             <X width={12} height={12} aria-hidden="true" />
@@ -165,8 +171,9 @@ export function TutorialWizard() {
             {steps.map((s, index) => (
               <span
                 key={s.id}
+                data-testid="tutorial-progress-dot"
                 className={cn(
-                  "h-1.5 rounded-full transition-all",
+                  "h-1.5 rounded-full transition-all motion-reduce:transition-none",
                   index === stepIndex ? "w-5 bg-white" : "w-1.5 bg-white/30",
                 )}
               />
