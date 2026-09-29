@@ -73,8 +73,8 @@
 ## 07:25 UTC — (fresh invocation) — NOTHING LEFT, STOPPED
 - finding: n/a — `findings.txt` had zero live/RETRY items (only its header comments) and no `MITIGATION for INC-<n>:` item. Fell back to `TODO.txt` per the playbook: also zero non-comment lines — genuinely empty, not even a stale item to skip.
 - brainstorm: n/a — no item chosen. Step 0 checked `.neo-cloud/incidents.md` for any `OPEN` row this run could build a fresh, in-scope mitigation for: INC-3 (Fly persistent-storage/deploy-cadence, explicitly an infra/deploy-config decision out of scope), INC-6/INC-7 (both explicitly held pending a human decision/reference doc a sandbox can't obtain, unchanged since 2026-09-28 17:10 UTC), and INC-9 (Netlify dashboard access this sandbox doesn't have, read-only MCP tools only) all already carry current, detailed "why not" reasoning with nothing new to add. No buildable mitigation available this run.
-- base: 4798019 (== origin/main)  commit: (this log entry only)
-- changes: none — only this run-log line.
-- gate: not applicable, nothing shipped.
-- deploy: not checked, nothing pushed to production.
+- base: 4798019 (== origin/main)  commit: 3ea27c7 (this log entry only, `.neo-cloud/runs/` — no `src/`/`supabase/` change, nothing deploy-relevant)
+- changes: none to app code — only this run-log line, pushed for the hand-off bookkeeping never-block.md rule 5 expects.
+- gate: not applicable, nothing shipped to app code.
+- deploy: pushed cleanly on the first attempt (no rebase needed). `Deploy to Fly.io` run 36536613594 on `3ea27c7` was still `in_progress` at check time (~90s post-push); given the commit touches only `.neo-cloud/runs/*.md`, no revert risk regardless of outcome — not worth blocking this log entry on a slow CI poll.
 - notes: stopping per the playbook's own "still nothing → stop" instruction (same precedent as the 02:58/03:24/05:23 UTC entries above). Preflight hit the same recurring shallow-clone artifact noted in prior runs' notes: this container's local `main` ref (`c29a9e3`, unrelated root commit `b12c352`) had diverged 50/50 from a force-updated `origin/main` (`4798019`, root `3c05f2c`) — no local work at risk (fresh checkout, clean tree), realigned non-destructively via `git checkout -B main origin/main`. Re-fetched `origin/main` immediately before logging to rule out a same-cycle race — no new commits landed.
