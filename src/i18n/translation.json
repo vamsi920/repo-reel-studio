@@ -53226,6 +53226,23 @@
     "tr": "Connect",
     "uk": "Connect"
   },
+  "ENVIRONMENT$CONNECT_PROVIDER": {
+    "en": "Connect {{provider}}",
+    "ja": "{{provider}} を接続",
+    "zh-CN": "连接 {{provider}}",
+    "zh-TW": "連接 {{provider}}",
+    "ko-KR": "{{provider}} 연결",
+    "no": "Koble til {{provider}}",
+    "ar": "ربط {{provider}}",
+    "de": "{{provider}} verbinden",
+    "fr": "Connecter {{provider}}",
+    "it": "Connetti {{provider}}",
+    "pt": "Conectar {{provider}}",
+    "es": "Conectar {{provider}}",
+    "ca": "Connecta {{provider}}",
+    "tr": "{{provider}} bağla",
+    "uk": "Підключити {{provider}}"
+  },
   "ENVIRONMENT$VIEW_DOCS": {
     "en": "View docs",
     "ja": "ドキュメントを見る",
@@ -53294,6 +53311,23 @@
     "tr": "Disconnect",
     "uk": "Disconnect"
   },
+  "ENVIRONMENT$DISCONNECT_PROVIDER": {
+    "en": "Disconnect {{provider}}",
+    "ja": "{{provider}} の接続を解除",
+    "zh-CN": "断开 {{provider}} 连接",
+    "zh-TW": "中斷 {{provider}} 連線",
+    "ko-KR": "{{provider}} 연결 해제",
+    "no": "Koble fra {{provider}}",
+    "ar": "قطع اتصال {{provider}}",
+    "de": "{{provider}} trennen",
+    "fr": "Déconnecter {{provider}}",
+    "it": "Disconnetti {{provider}}",
+    "pt": "Desconectar {{provider}}",
+    "es": "Desconectar {{provider}}",
+    "ca": "Desconnecta {{provider}}",
+    "tr": "{{provider}} bağlantısını kes",
+    "uk": "Відключити {{provider}}"
+  },
   "ENVIRONMENT$RECONNECT": {
     "en": "Reconnect",
     "ja": "Reconnect",
@@ -53327,6 +53361,23 @@
     "ca": "Test",
     "tr": "Test",
     "uk": "Test"
+  },
+  "ENVIRONMENT$TEST_CONNECTION_FOR": {
+    "en": "Test the {{provider}} connection",
+    "ja": "{{provider}} 接続をテスト",
+    "zh-CN": "测试 {{provider}} 连接",
+    "zh-TW": "測試 {{provider}} 連線",
+    "ko-KR": "{{provider}} 연결 테스트",
+    "no": "Test {{provider}}-tilkoblingen",
+    "ar": "اختبار اتصال {{provider}}",
+    "de": "{{provider}}-Verbindung testen",
+    "fr": "Tester la connexion {{provider}}",
+    "it": "Verifica la connessione a {{provider}}",
+    "pt": "Testar a conexão com {{provider}}",
+    "es": "Probar la conexión de {{provider}}",
+    "ca": "Prova la connexió de {{provider}}",
+    "tr": "{{provider}} bağlantısını test et",
+    "uk": "Перевірити з'єднання {{provider}}"
   },
   "ENVIRONMENT$TESTING_CONNECTION": {
     "en": "Testing",

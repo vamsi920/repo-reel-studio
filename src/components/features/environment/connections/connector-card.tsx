@@ -126,6 +126,9 @@ export function ConnectorCard({
               data-testid={`connector-test-${manifest.id}`}
               disabled={busy}
               onClick={() => onTest(connection)}
+              aria-label={t(I18nKey.ENVIRONMENT$TEST_CONNECTION_FOR, {
+                provider: t(manifest.nameKey),
+              })}
               className={cn("ame-btn-secondary ame-btn-sm", busy && "loading")}
             >
               {busy
@@ -137,6 +140,9 @@ export function ConnectorCard({
               data-testid={`connector-disconnect-${manifest.id}`}
               disabled={busy}
               onClick={() => onDisconnect(connection)}
+              aria-label={t(I18nKey.ENVIRONMENT$DISCONNECT_PROVIDER, {
+                provider: t(manifest.nameKey),
+              })}
               className="ame-btn-ghost ame-btn-sm"
             >
               {t(I18nKey.ENVIRONMENT$DISCONNECT)}
@@ -148,6 +154,9 @@ export function ConnectorCard({
             data-testid={`connector-connect-${manifest.id}`}
             disabled={busy || pending}
             onClick={() => onConnect(manifest)}
+            aria-label={t(I18nKey.ENVIRONMENT$CONNECT_PROVIDER, {
+              provider: t(manifest.nameKey),
+            })}
             className={cn("ame-btn-primary ame-btn-sm", pending && "loading")}
           >
             {t(I18nKey.ENVIRONMENT$CONNECT)}

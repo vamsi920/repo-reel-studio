@@ -96,6 +96,48 @@ describe("ConnectorCard", () => {
     expect(link).toHaveAccessibleName("ENVIRONMENT$VIEW_DOCS_FOR");
   });
 
+  it("gives each Connect/Test/Disconnect button a per-provider accessible name", () => {
+    // Every provider card's Connect/Test/Disconnect button used to share the
+    // exact same bare accessible name ("Connect", "Test", "Disconnect"), so a
+    // screen-reader user browsing by a buttons-only list heard the same
+    // label repeated for every one of the 35+ provider cards with no way to
+    // tell them apart -- mirrors the per-card disambiguation the docs link
+    // already had.
+    const connection = connectionWith();
+    const { rerender } = render(
+      <ConnectorCard
+        manifest={manifest}
+        connection={connection}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("connector-test-linear")).toHaveAccessibleName(
+      "ENVIRONMENT$TEST_CONNECTION_FOR",
+    );
+    expect(
+      screen.getByTestId("connector-disconnect-linear"),
+    ).toHaveAccessibleName("ENVIRONMENT$DISCONNECT_PROVIDER");
+
+    rerender(
+      <ConnectorCard
+        manifest={manifest}
+        connection={undefined}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("connector-connect-linear")).toHaveAccessibleName(
+      "ENVIRONMENT$CONNECT_PROVIDER",
+    );
+  });
+
   it("disables Connect while the connections list is still loading its first answer", () => {
     // `connection` is indistinguishable from "confirmed disconnected" in this
     // window -- offering an active Connect button here risks a redundant
