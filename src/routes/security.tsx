@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import {
@@ -12,6 +12,8 @@ import {
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
 import { useConnectedRepositories } from "#/lib/knowledge/connected-repositories";
+import { CopyToClipboardButton } from "#/components/shared/buttons/copy-to-clipboard-button";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 import { I18nKey } from "#/i18n/declaration";
 import {
   SECURITY_CATEGORIES,
@@ -19,6 +21,9 @@ import {
   type SecurityCategory,
   type SecuritySeverity,
 } from "#/lib/security/security-types";
+
+/** How long the copy-scope button shows its "copied" state before reverting. */
+const COPY_SCOPE_CONFIRMATION_MS = 2000;
 
 interface SecurityWorkspaceScope {
   workspaceId: string;
@@ -354,6 +359,40 @@ function RepositorySelect({
   );
 }
 
+/**
+ * A user reporting a security-page bug (or asking an agent to look at "this
+ * workspace") needs the exact scope string, not a re-typed approximation --
+ * `owner/repo` and a 7-char sha are easy to fat-finger by hand. Copies
+ * exactly what the status line already shows, so what lands on the clipboard
+ * always matches what was on screen when it was clicked.
+ */
+function CopyScopeButton({ scopeText }: { scopeText: string }) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    const copied = await copyTextToClipboard(scopeText);
+    if (copied) setIsCopied(true);
+  }, [scopeText]);
+
+  useEffect(() => {
+    if (!isCopied) return undefined;
+    const timeout = setTimeout(
+      () => setIsCopied(false),
+      COPY_SCOPE_CONFIRMATION_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [isCopied]);
+
+  return (
+    <CopyToClipboardButton
+      isHidden={false}
+      isDisabled={isCopied}
+      onClick={handleCopy}
+      mode={isCopied ? "copied" : "copy"}
+    />
+  );
+}
+
 function SeverityLegend() {
   const { t } = useTranslation("openhands");
   return (
@@ -398,6 +437,15 @@ function SecurityScreen() {
   // choice to make, or the URL asks for a repository that is not there.
   const showRepositorySelect =
     repositories.length > 1 || scope.state === "requested-not-connected";
+  // The exact text the status line renders below -- computed once so the
+  // copy button always copies precisely what is on screen, never a
+  // re-derived approximation.
+  const scopedLabel =
+    scope.state === "scoped"
+      ? scope.scope.commitSha
+        ? `${scope.scope.label}@${scope.scope.commitSha.slice(0, 7)}`
+        : scope.scope.label
+      : null;
 
   return (
     <main className="min-h-full" data-testid="security-page">
@@ -417,16 +465,17 @@ function SecurityScreen() {
           {t(I18nKey.SECURITY$SUBTITLE)}
         </p>
 
-        {scope.state === "scoped" && (
-          <p
-            className="mt-3 font-mono text-xs text-[var(--oh-muted)]"
-            data-testid="security-workspace-scope"
-            role="status"
-          >
-            {scope.scope.commitSha
-              ? `${scope.scope.label}@${scope.scope.commitSha.slice(0, 7)}`
-              : scope.scope.label}
-          </p>
+        {scope.state === "scoped" && scopedLabel !== null && (
+          <div className="mt-3 flex items-center gap-1">
+            <p
+              className="font-mono text-xs text-[var(--oh-muted)]"
+              data-testid="security-workspace-scope"
+              role="status"
+            >
+              {scopedLabel}
+            </p>
+            <CopyScopeButton scopeText={scopedLabel} />
+          </div>
         )}
         {scope.state === "requested-not-connected" && isError && (
           <p

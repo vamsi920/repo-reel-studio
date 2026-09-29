@@ -1,4 +1,4 @@
-import { renderHook, screen, within } from "@testing-library/react";
+import { renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { renderWithProviders } from "test-utils";
@@ -959,6 +959,97 @@ describe("Security route", () => {
       await screen.findByTestId("security-workspace-scope");
       expect(
         screen.queryByTestId("security-repository-select"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("copy workspace scope", () => {
+    it("copies exactly the text the status line shows, and confirms it", async () => {
+      const user = userEvent.setup();
+      seedRepository();
+      renderSecurity();
+
+      const scopeText = screen.getByTestId("security-workspace-scope");
+      expect(scopeText).toHaveTextContent("acme/api@abcdef1");
+
+      const copyButton = screen.getByTestId("copy-to-clipboard");
+      expect(copyButton).toHaveAttribute("aria-label", I18nKey.BUTTON$COPY);
+
+      await user.click(copyButton);
+
+      await expect(navigator.clipboard.readText()).resolves.toBe(
+        "acme/api@abcdef1",
+      );
+      expect(copyButton).toHaveAttribute("aria-label", I18nKey.BUTTON$COPIED);
+    });
+
+    it("copies the plain label when there is no resolved commit yet, never a fabricated sha", async () => {
+      // Regression tripwire: a copy button that always appended "@<sha>"
+      // regardless of `commitSha` would hand out a fake commit for a
+      // repository this page's own status line deliberately leaves bare
+      // (see the sibling "scopes to an open conversation's repository"
+      // test above).
+      const user = userEvent.setup();
+      setConnected({
+        repositoryId: "acme/api@main",
+        owner: "acme",
+        repo: "api",
+        branch: "main",
+        conversationUrl: "https://example.com/conv",
+        sessionApiKey: "key",
+        workingDir: "/workspace/api",
+      });
+      renderSecurity();
+
+      await user.click(screen.getByTestId("copy-to-clipboard"));
+
+      await expect(navigator.clipboard.readText()).resolves.toBe("acme/api");
+    });
+
+    it("reverts to the copy affordance after the confirmation window, so a second copy is still possible", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup();
+      seedRepository();
+      renderSecurity();
+
+      const copyButton = screen.getByTestId("copy-to-clipboard");
+      await user.click(copyButton);
+      expect(copyButton).toHaveAttribute("aria-label", I18nKey.BUTTON$COPIED);
+      expect(copyButton).toBeDisabled();
+
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await waitFor(() =>
+        expect(copyButton).toHaveAttribute("aria-label", I18nKey.BUTTON$COPY),
+      );
+      expect(copyButton).not.toBeDisabled();
+
+      vi.useRealTimers();
+    });
+
+    it("keeps offering to copy, without a false confirmation, when the clipboard write fails", async () => {
+      const writeText = vi
+        .spyOn(navigator.clipboard, "writeText")
+        .mockRejectedValue(new Error("Document is not focused"));
+      const user = userEvent.setup();
+      seedRepository();
+      renderSecurity();
+
+      await user.click(screen.getByTestId("copy-to-clipboard"));
+
+      expect(
+        screen.getByTestId("copy-to-clipboard"),
+      ).toHaveAttribute("aria-label", I18nKey.BUTTON$COPY);
+      expect(screen.getByTestId("copy-to-clipboard")).not.toBeDisabled();
+
+      writeText.mockRestore();
+    });
+
+    it("offers no copy button when there is no workspace scope to copy", () => {
+      renderSecurity();
+
+      expect(
+        screen.queryByTestId("copy-to-clipboard"),
       ).not.toBeInTheDocument();
     });
   });
