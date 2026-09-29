@@ -331,6 +331,20 @@ function EnvironmentSetupScreen() {
 
   const handleStart = React.useCallback(() => {
     consumedSeedRef.current = seed;
+    // The seed is already folded into this conversation's initial query
+    // below; leaving it in the URL broke the same invariant the follow-up
+    // effect further down promises ("drop it from the URL so a refresh or
+    // remount can't resend it") -- it only stripped the param on *that*
+    // effect's own branch. A reload of this exact URL reset `consumedSeedRef`
+    // to null on the fresh mount while the session was by then already
+    // active, so the effect's guard no longer matched and it silently
+    // replayed the seed as a duplicate follow-up message into the running
+    // conversation.
+    if (seed) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("seed");
+      setSearchParams(next, { replace: true });
+    }
     createConversation(
       {
         query: seed || t(I18nKey.ENVIRONMENT$STUDIO_START_PROMPT),
@@ -364,7 +378,14 @@ function EnvironmentSetupScreen() {
           displayErrorToast(t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR)),
       },
     );
-  }, [createConversation, startSession, seed, t]);
+  }, [
+    createConversation,
+    startSession,
+    seed,
+    t,
+    searchParams,
+    setSearchParams,
+  ]);
 
   // `handleStart` only runs from the "start a new session" screen below, so
   // it never sees a `?seed=` that arrives while a session is already active

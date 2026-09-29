@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useNavigate } from "react-router";
+import { MemoryRouter, useNavigate, useSearchParams } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -142,6 +142,16 @@ function SeedNavigator({ seed }: { seed: string }) {
     >
       navigate
     </button>
+  );
+}
+
+// Reads the live URL search string alongside `EnvironmentSetupScreen` in the
+// same mounted `MemoryRouter`, so a test can assert on a param being stripped
+// without needing its own direct access to router internals.
+function LocationSearchDisplay() {
+  const [searchParams] = useSearchParams();
+  return (
+    <div data-testid="location-search">{searchParams.toString()}</div>
   );
 }
 
@@ -421,6 +431,49 @@ describe("Environment setup seed forwarding", () => {
 
     await waitFor(() =>
       expect(state.posted).toEqual(["fix my thing", "fix a different thing"]),
+    );
+  });
+
+  // Regression: `handleStart` folded the seed into the new conversation's
+  // initial query but never removed it from the URL, unlike the follow-up
+  // effect above which explicitly promises to. Left in place, a reload of
+  // that same `?seed=` URL (a fresh mount, so `consumedSeedRef` resets to
+  // null) found the session already active and silently replayed the seed
+  // as a duplicate follow-up message into the running conversation.
+  it("strips `?seed=` from the URL once `handleStart` consumes it, so a reload can't replay it", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onSuccess({ conversation_id: "conv-1" });
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/environment/setup?seed=fix+my+thing"]}>
+          <EnvironmentSetupScreen />
+          <LocationSearchDisplay />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("location-search").textContent).toContain(
+      "seed",
+    );
+
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    expect(state.createConversation).toHaveBeenCalledWith(
+      expect.objectContaining({ query: "fix my thing" }),
+      expect.anything(),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location-search").textContent).not.toContain(
+        "seed",
+      ),
     );
   });
 });
