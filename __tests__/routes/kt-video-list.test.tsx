@@ -188,15 +188,38 @@ describe("KtVideoList", () => {
 
     const items = screen.getAllByTestId("kt-video-list-item");
     expect(
-      items[0].querySelector(
-        `[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`,
-      ),
+      items[0].querySelector(`[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`),
     ).toBeInTheDocument();
     expect(
-      items[1].querySelector(
-        `[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`,
-      ),
+      items[1].querySelector(`[aria-label="${I18nKey.KT$QUALITY_FLAG_BADGE}"]`),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps a word boundary between the page title and the Watch KT label in the accessible name", () => {
+    seedKnowledge([
+      {
+        id: "page-1",
+        title: "Architecture",
+        description: "",
+        contentMarkdown: "",
+        importance: "high",
+        relevantFiles: [],
+        diagrams: [],
+        relatedPageIds: [],
+      },
+    ]);
+
+    renderWithProviders(<KtVideoList />);
+
+    const item = screen.getByTestId("kt-video-list-item");
+    // Regression: the title and "Watch KT" spans previously sat directly
+    // against each other with no whitespace text node, so a screen reader's
+    // accessible name for the button read as one run-on word, e.g.
+    // "ArchitectureKT$WATCH_KT" instead of two distinguishable phrases.
+    expect(item.textContent).not.toContain(
+      `Architecture${I18nKey.KT$WATCH_KT}`,
+    );
+    expect(item.textContent).toContain(`Architecture, ${I18nKey.KT$WATCH_KT}`);
   });
 
   it("navigates to the watch view for the selected page", async () => {

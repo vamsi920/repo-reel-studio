@@ -104,6 +104,11 @@ function KtVideoList() {
                     />
                   </span>
                 )}
+                {/* Visually-hidden word boundary: the title and flag spans
+                    above sit directly against this one in the DOM with no
+                    whitespace text node, so the button's accessible name runs
+                    the two together (e.g. "ArchitectureWatch KT"). */}
+                <span className="sr-only">, </span>
                 <span className="shrink-0 text-xs text-[var(--oh-muted)]">
                   {t(I18nKey.KT$WATCH_KT)}
                 </span>
