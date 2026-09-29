@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Bot,
+  GraduationCap,
   Home,
   Keyboard,
   KeyRound,
@@ -52,6 +53,7 @@ export type CommandMenuItemId =
   | "secrets-settings"
   | "environment"
   | "onboarding-agent"
+  | "start-tutorial"
   | "toggle-sidebar";
 
 export interface CommandMenuItemDefinition {
@@ -84,9 +86,11 @@ export const COMMAND_MENU_GROUP_ORDER: CommandMenuGroupId[] = [
 export const createCommandMenuItems = ({
   toggleSidebar,
   openOnboardingAgent,
+  startTutorial,
 }: {
   toggleSidebar: () => void;
   openOnboardingAgent: () => void;
+  startTutorial: () => void;
 }): CommandMenuItemDefinition[] => [
   {
     id: "environment",
@@ -216,5 +220,14 @@ export const createCommandMenuItems = ({
     keywordsKey: I18nKey.COMMAND_MENU$TOGGLE_SIDEBAR_KEYWORDS,
     icon: <Keyboard size={ICON_SIZE} />,
     perform: toggleSidebar,
+  },
+  {
+    id: "start-tutorial",
+    group: "actions",
+    titleKey: I18nKey.COMMAND_MENU$START_TUTORIAL_TITLE,
+    descriptionKey: I18nKey.COMMAND_MENU$START_TUTORIAL_DESCRIPTION,
+    keywordsKey: I18nKey.COMMAND_MENU$START_TUTORIAL_KEYWORDS,
+    icon: <GraduationCap size={ICON_SIZE} />,
+    perform: startTutorial,
   },
 ];

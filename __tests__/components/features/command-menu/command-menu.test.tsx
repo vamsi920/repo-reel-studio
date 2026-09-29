@@ -8,6 +8,7 @@ import {
 import { COMMAND_MENU_ROUTE } from "#/components/features/command-menu/command-menu-items";
 import { useCommandMenuStore } from "#/stores/command-menu-store";
 import { useSidebarStore } from "#/stores/sidebar-store";
+import { useTutorialStore } from "#/components/features/tutorial/tutorial-store";
 import { renderWithProviders } from "../../../../test-utils";
 
 const OPEN_LABEL_KEY = "COMMAND_MENU$OPEN_LABEL";
@@ -16,6 +17,7 @@ const AUTOMATIONS_TITLE_KEY = "COMMAND_MENU$AUTOMATIONS_TITLE";
 const NEW_CHAT_TITLE_KEY = "COMMAND_MENU$NEW_CHAT_TITLE";
 const SECRETS_TITLE_KEY = "COMMAND_MENU$SECRETS_SETTINGS_TITLE";
 const TOGGLE_SIDEBAR_TITLE_KEY = "COMMAND_MENU$TOGGLE_SIDEBAR_TITLE";
+const START_TUTORIAL_TITLE_KEY = "COMMAND_MENU$START_TUTORIAL_TITLE";
 
 // The pinned package may publish an interface manifest whose literal copy
 // replaces the host's translations. Pin the candidate to "not published" so
@@ -40,6 +42,7 @@ beforeEach(() => {
   window.localStorage.clear();
   useCommandMenuStore.setState({ isOpen: false });
   useSidebarStore.setState({ collapsed: false });
+  useTutorialStore.setState({ isOpen: false, stepIndex: 0, isPlaying: false });
 });
 
 describe("CommandMenu", () => {
@@ -124,6 +127,23 @@ describe("CommandMenu", () => {
     await userEvent.click(screen.getByText(TOGGLE_SIDEBAR_TITLE_KEY));
 
     expect(useSidebarStore.getState().collapsed).toBe(true);
+  });
+
+  it("starts the guided tutorial from the menu and closes it", async () => {
+    useCommandMenuStore.getState().open();
+    renderCommandMenu();
+
+    await userEvent.type(
+      screen.getByRole("combobox", { name: SEARCH_LABEL_KEY }),
+      "tutorial",
+    );
+    await userEvent.click(screen.getByText(START_TUTORIAL_TITLE_KEY));
+
+    expect(useTutorialStore.getState().isOpen).toBe(true);
+    expect(useTutorialStore.getState().stepIndex).toBe(0);
+    await waitFor(() => {
+      expect(screen.queryByTestId("command-menu")).not.toBeInTheDocument();
+    });
   });
 });
 

@@ -401,7 +401,7 @@ export const useTracking = () => {
   const trackTutorialStarted = ({
     trigger,
   }: {
-    trigger: "auto" | "launcher" | "resume";
+    trigger: "auto" | "launcher" | "resume" | "command-menu";
   }) => {
     track("tutorial_started", { trigger });
   };

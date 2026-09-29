@@ -7,6 +7,8 @@ import { useNavigation } from "#/context/navigation-context";
 import { useCommandMenuStore } from "#/stores/command-menu-store";
 import { useSidebarStore } from "#/stores/sidebar-store";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
+import { useTutorialStore } from "#/components/features/tutorial/tutorial-store";
+import { useTracking } from "#/hooks/use-tracking";
 import { cn } from "#/utils/utils";
 import {
   COMMAND_MENU_GROUP_LABELS,
@@ -60,6 +62,7 @@ function matchesQuery({
 export function CommandMenu() {
   const { t } = useTranslation("openhands");
   const { navigate } = useNavigation();
+  const { trackTutorialStarted } = useTracking();
   const isOpen = useCommandMenuStore((state) => state.isOpen);
   const open = useCommandMenuStore((state) => state.open);
   const close = useCommandMenuStore((state) => state.close);
@@ -100,6 +103,10 @@ export function CommandMenu() {
       createCommandMenuItems({
         toggleSidebar: () => useSidebarStore.getState().toggleCollapsed(),
         openOnboardingAgent: () => useOnboardingCopilotStore.getState().open_(),
+        startTutorial: () => {
+          useTutorialStore.getState().start();
+          trackTutorialStarted({ trigger: "command-menu" });
+        },
       }),
     [],
   );
