@@ -23,7 +23,12 @@ import {
 function statusFromProbe(status: string | undefined): CapabilityStatus | null {
   if (status === "degraded") return "degraded";
   if (status === "error" || status === "expired" || status === "revoked") {
-    return "missing";
+    // A connection record exists and was probed -- the credential is
+    // rejected, not absent. That is "configured but failing", the same
+    // bucket StatusPip already renders distinctly as "degraded"; reporting
+    // "missing" here would tell the user to connect for the first time when
+    // the real remediation is to reconnect.
+    return "degraded";
   }
   return null;
 }

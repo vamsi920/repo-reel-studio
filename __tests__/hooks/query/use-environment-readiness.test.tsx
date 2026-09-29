@@ -95,7 +95,13 @@ describe("useEnvironmentReadiness", () => {
     expect(result.current.byCapability["source-control"]).toBe("degraded");
   });
 
-  it("reports source-control missing when the persisted connection's last probe failed outright", () => {
+  it("downgrades source-control to degraded, not missing, when a connected credential was probed and rejected", () => {
+    // The bug this guards: a connection record existing but failing its
+    // probe (credential rejected -- error/expired/revoked) previously
+    // reported "missing", the same status as never having connected at
+    // all, telling the user to connect for the first time instead of
+    // reconnect. See the Connections tab, which already renders this exact
+    // state as "Failing" with a specific reason, not "Not configured".
     state.github = { isLoading: false, isPending: false, data: { id: "row" } };
     state.connections = {
       isLoading: false,
@@ -105,7 +111,7 @@ describe("useEnvironmentReadiness", () => {
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));
 
-    expect(result.current.byCapability["source-control"]).toBe("missing");
+    expect(result.current.byCapability["source-control"]).toBe("degraded");
   });
 
   it("stays unknown while the connections list is still loading, even if the old connection row already resolved", () => {
@@ -155,7 +161,7 @@ describe("useEnvironmentReadiness", () => {
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));
 
-    expect(result.current.byCapability["source-control"]).toBe("missing");
+    expect(result.current.byCapability["source-control"]).toBe("degraded");
   });
 
   it("does not let an unrelated capability's connection record affect source-control", () => {
