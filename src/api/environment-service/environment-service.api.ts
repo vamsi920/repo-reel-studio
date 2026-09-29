@@ -31,6 +31,45 @@ function requireSupabase() {
   return supabase;
 }
 
+/**
+ * supabase-js's `FunctionsHttpError` hardcodes `error.message` to "Edge
+ * Function returned a non-2xx status code" regardless of what the function
+ * actually returned -- the real reason lives in the Response body on
+ * `error.context` (see the identical gotcha documented on `describeProxyError`
+ * in `src/api/git-service/local-github-service.api.ts`). Read it so callers
+ * (and the UI, which renders `EnvironmentServiceError.message` verbatim) see
+ * e.g. "oauth_not_configured: missing GITLAB_OAUTH_CLIENT_ID,
+ * GITLAB_OAUTH_CLIENT_SECRET" instead of that generic string.
+ */
+async function describeInvokeError(error: unknown): Promise<string> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const body = (await context.clone().json()) as {
+        error?: string;
+        requires?: string[];
+        field?: string;
+        detail?: string;
+      };
+      if (body.error) {
+        if (body.requires && body.requires.length > 0) {
+          return `${body.error}: missing ${body.requires.join(", ")}`;
+        }
+        if (body.field) {
+          return `${body.error}: ${body.field}`;
+        }
+        if (body.detail) {
+          return `${body.error}: ${body.detail}`;
+        }
+        return body.error;
+      }
+    } catch {
+      // Response body wasn't JSON -- fall through to the generic message below.
+    }
+  }
+  return error instanceof Error ? error.message : "edge_function_error";
+}
+
 async function invoke<T>(
   fn: string,
   body: Record<string, unknown>,
@@ -38,7 +77,10 @@ async function invoke<T>(
   const client = requireSupabase();
   const { data, error } = await client.functions.invoke<T>(fn, { body });
   if (error) {
-    throw new EnvironmentServiceError("edge_function_error", error.message);
+    throw new EnvironmentServiceError(
+      "edge_function_error",
+      await describeInvokeError(error),
+    );
   }
   if (!data) {
     throw new EnvironmentServiceError("empty_response");
