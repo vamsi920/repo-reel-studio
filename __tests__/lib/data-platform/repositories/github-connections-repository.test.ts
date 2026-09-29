@@ -23,9 +23,8 @@ vi.mock("#/lib/data-platform/client", () => ({
   },
 }));
 
-const { githubConnectionsRepository } = await import(
-  "#/lib/data-platform/repositories/github-connections-repository"
-);
+const { githubConnectionsRepository } =
+  await import("#/lib/data-platform/repositories/github-connections-repository");
 
 describe("githubConnectionsRepository.getConnection", () => {
   beforeEach(() => {
@@ -91,5 +90,68 @@ describe("githubConnectionsRepository.getConnection", () => {
     expect(errorSpy).toHaveBeenCalledWith(
       "[github-connections-repository] getConnection: getUser() returned no user despite an active session",
     );
+  });
+});
+
+// Regression (INC-8 gap): `getConnection()`'s "never throws, null on any
+// failure" contract makes a real lookup failure indistinguishable from a
+// genuine "never connected" result to any caller that only reads its
+// return value -- `getConnectionWithStatus()` is the additive, status-aware
+// sibling that lets a caller tell those two cases apart (mirrors
+// `resolveOrgIdWithStatus` in repository-identity.ts).
+describe("githubConnectionsRepository.getConnectionWithStatus", () => {
+  beforeEach(() => {
+    state.user = { id: "user-1" };
+    state.data = null;
+    state.error = null;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("reports hadError: false alongside the connection when a row exists", async () => {
+    state.data = {
+      github_username: "octocat",
+      enterprise_host: null,
+      connected_at: "2026-09-01T00:00:00.000Z",
+    };
+
+    await expect(
+      githubConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({
+      connection: {
+        githubUsername: "octocat",
+        enterpriseHost: null,
+        connectedAt: "2026-09-01T00:00:00.000Z",
+      },
+      hadError: false,
+    });
+  });
+
+  it("reports hadError: false when there is legitimately no row", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      githubConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: false });
+  });
+
+  it("reports hadError: true when the query errors", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    state.error = { message: "permission denied for table github_connections" };
+
+    await expect(
+      githubConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: true });
+  });
+
+  it("reports hadError: true when there is no authenticated user", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    state.user = null;
+
+    await expect(
+      githubConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: true });
   });
 });

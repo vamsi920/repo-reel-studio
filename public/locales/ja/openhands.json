@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jiraを切断しました。",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jiraを接続しました。",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "接続に失敗しました: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "キャンセル",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "キャンセル中...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "この実行を停止します。クラッシュにより取り残された場合など、予想より大幅に長く実行されている場合に使用してください。",

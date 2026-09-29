@@ -19,8 +19,18 @@ export interface JiraConnectionStatus {
   cloudId: string;
 }
 
+export interface JiraConnectionStatusResult {
+  connection: JiraConnectionStatus | null;
+  /** True when the lookup itself failed (e.g. an INC-8-style auth-timing
+   * glitch), as opposed to a legitimate "never connected" result -- see
+   * `resolveOrgIdWithStatus` in `repository-identity.ts` for the same
+   * distinction applied to org lookups. */
+  hadError: boolean;
+}
+
 export interface JiraConnectionsRepository {
   getConnection(): Promise<JiraConnectionStatus | null>;
+  getConnectionWithStatus(): Promise<JiraConnectionStatusResult>;
 }
 
 // Mirrors the same fix applied to github-connections-repository.ts's
@@ -35,8 +45,10 @@ function logFailure(step: string, error: unknown): void {
 }
 
 class SupabaseJiraConnectionsRepository implements JiraConnectionsRepository {
-  async getConnection(): Promise<JiraConnectionStatus | null> {
-    if (!isSupabaseConfigured || !supabase) return null;
+  async getConnectionWithStatus(): Promise<JiraConnectionStatusResult> {
+    if (!isSupabaseConfigured || !supabase) {
+      return { connection: null, hadError: false };
+    }
     const {
       data: { user },
     } = await getAuthUser();
@@ -49,7 +61,7 @@ class SupabaseJiraConnectionsRepository implements JiraConnectionsRepository {
       console.error(
         "[jira-connections-repository] getConnection: getUser() returned no user despite an active session",
       );
-      return null;
+      return { connection: null, hadError: true };
     }
 
     const { data, error } = await supabase
@@ -59,17 +71,25 @@ class SupabaseJiraConnectionsRepository implements JiraConnectionsRepository {
       .maybeSingle();
     if (error) {
       logFailure("getConnection", error);
-      return null;
+      return { connection: null, hadError: true };
     }
-    if (!data) return null;
+    if (!data) return { connection: null, hadError: false };
 
     return {
-      siteName: (data.site_name as string | null) ?? null,
-      siteUrl: data.site_url as string,
-      atlassianEmail: (data.atlassian_email as string | null) ?? null,
-      connectedAt: data.connected_at as string,
-      cloudId: data.cloud_id as string,
+      connection: {
+        siteName: (data.site_name as string | null) ?? null,
+        siteUrl: data.site_url as string,
+        atlassianEmail: (data.atlassian_email as string | null) ?? null,
+        connectedAt: data.connected_at as string,
+        cloudId: data.cloud_id as string,
+      },
+      hadError: false,
     };
+  }
+
+  async getConnection(): Promise<JiraConnectionStatus | null> {
+    const { connection } = await this.getConnectionWithStatus();
+    return connection;
   }
 }
 

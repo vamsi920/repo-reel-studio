@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira desconectado.",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira conectado.",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "Falha na conexão: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "Cancelar",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "A cancelar...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "Pare esta execução. Use isto se estiver a demorar muito mais do que o esperado -- por exemplo, depois de uma falha a deixar órfã.",

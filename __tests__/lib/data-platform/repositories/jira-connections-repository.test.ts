@@ -23,9 +23,8 @@ vi.mock("#/lib/data-platform/client", () => ({
   },
 }));
 
-const { jiraConnectionsRepository } = await import(
-  "#/lib/data-platform/repositories/jira-connections-repository"
-);
+const { jiraConnectionsRepository } =
+  await import("#/lib/data-platform/repositories/jira-connections-repository");
 
 describe("jiraConnectionsRepository.getConnection", () => {
   beforeEach(() => {
@@ -61,9 +60,7 @@ describe("jiraConnectionsRepository.getConnection", () => {
     state.data = null;
     state.error = null;
 
-    await expect(
-      jiraConnectionsRepository.getConnection(),
-    ).resolves.toBeNull();
+    await expect(jiraConnectionsRepository.getConnection()).resolves.toBeNull();
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
@@ -76,9 +73,7 @@ describe("jiraConnectionsRepository.getConnection", () => {
     state.data = null;
     state.error = { message: "permission denied for table jira_connections" };
 
-    await expect(
-      jiraConnectionsRepository.getConnection(),
-    ).resolves.toBeNull();
+    await expect(jiraConnectionsRepository.getConnection()).resolves.toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
       "[jira-connections-repository] getConnection failed",
       state.error,
@@ -89,11 +84,74 @@ describe("jiraConnectionsRepository.getConnection", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     state.user = null;
 
-    await expect(
-      jiraConnectionsRepository.getConnection(),
-    ).resolves.toBeNull();
+    await expect(jiraConnectionsRepository.getConnection()).resolves.toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
       "[jira-connections-repository] getConnection: getUser() returned no user despite an active session",
     );
+  });
+});
+
+// Regression (INC-8 gap): mirrors the same additive fix in
+// github-connections-repository.test.ts -- `getConnectionWithStatus()` lets
+// a caller tell a real lookup failure apart from a genuine "never
+// connected" result, unlike `getConnection()`'s "never throws" contract.
+describe("jiraConnectionsRepository.getConnectionWithStatus", () => {
+  beforeEach(() => {
+    state.user = { id: "user-1" };
+    state.data = null;
+    state.error = null;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("reports hadError: false alongside the connection when a row exists", async () => {
+    state.data = {
+      site_name: "Acme",
+      site_url: "https://acme.atlassian.net",
+      atlassian_email: "dev@acme.com",
+      connected_at: "2026-09-01T00:00:00.000Z",
+      cloud_id: "cloud-1",
+    };
+
+    await expect(
+      jiraConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({
+      connection: {
+        siteName: "Acme",
+        siteUrl: "https://acme.atlassian.net",
+        atlassianEmail: "dev@acme.com",
+        connectedAt: "2026-09-01T00:00:00.000Z",
+        cloudId: "cloud-1",
+      },
+      hadError: false,
+    });
+  });
+
+  it("reports hadError: false when there is legitimately no row", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      jiraConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: false });
+  });
+
+  it("reports hadError: true when the query errors", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    state.error = { message: "permission denied for table jira_connections" };
+
+    await expect(
+      jiraConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: true });
+  });
+
+  it("reports hadError: true when there is no authenticated user", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    state.user = null;
+
+    await expect(
+      jiraConnectionsRepository.getConnectionWithStatus(),
+    ).resolves.toEqual({ connection: null, hadError: true });
   });
 });

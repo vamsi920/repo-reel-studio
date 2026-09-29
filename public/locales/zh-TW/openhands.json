@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira 已中斷連線。",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira 已連接。",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "連線失敗：{{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "取消",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "正在取消...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "停止此次執行。當執行時間遠超預期時使用，例如當機導致執行成為孤兒程序時。",

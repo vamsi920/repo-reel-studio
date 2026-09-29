@@ -17,8 +17,18 @@ export interface GithubConnectionStatus {
   connectedAt: string;
 }
 
+export interface GithubConnectionStatusResult {
+  connection: GithubConnectionStatus | null;
+  /** True when the lookup itself failed (e.g. an INC-8-style auth-timing
+   * glitch), as opposed to a legitimate "never connected" result -- see
+   * `resolveOrgIdWithStatus` in `repository-identity.ts` for the same
+   * distinction applied to org lookups. */
+  hadError: boolean;
+}
+
 export interface GithubConnectionsRepository {
   getConnection(): Promise<GithubConnectionStatus | null>;
+  getConnectionWithStatus(): Promise<GithubConnectionStatusResult>;
 }
 
 // A real fetch failure (RLS denial, network error, bad schema) previously
@@ -32,8 +42,10 @@ function logFailure(step: string, error: unknown): void {
 }
 
 class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository {
-  async getConnection(): Promise<GithubConnectionStatus | null> {
-    if (!isSupabaseConfigured || !supabase) return null;
+  async getConnectionWithStatus(): Promise<GithubConnectionStatusResult> {
+    if (!isSupabaseConfigured || !supabase) {
+      return { connection: null, hadError: false };
+    }
     const {
       data: { user },
     } = await getAuthUser();
@@ -49,7 +61,7 @@ class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository
       console.error(
         "[github-connections-repository] getConnection: getUser() returned no user despite an active session",
       );
-      return null;
+      return { connection: null, hadError: true };
     }
 
     const { data, error } = await supabase
@@ -59,15 +71,23 @@ class SupabaseGithubConnectionsRepository implements GithubConnectionsRepository
       .maybeSingle();
     if (error) {
       logFailure("getConnection", error);
-      return null;
+      return { connection: null, hadError: true };
     }
-    if (!data) return null;
+    if (!data) return { connection: null, hadError: false };
 
     return {
-      githubUsername: data.github_username as string,
-      enterpriseHost: (data.enterprise_host as string | null) ?? null,
-      connectedAt: data.connected_at as string,
+      connection: {
+        githubUsername: data.github_username as string,
+        enterpriseHost: (data.enterprise_host as string | null) ?? null,
+        connectedAt: data.connected_at as string,
+      },
+      hadError: false,
     };
+  }
+
+  async getConnection(): Promise<GithubConnectionStatus | null> {
+    const { connection } = await this.getConnectionWithStatus();
+    return connection;
   }
 }
 

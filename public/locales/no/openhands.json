@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira frakoblet.",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira tilkoblet.",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "Tilkobling mislyktes: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "Avbryt",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "Avbryter...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "Stopp denne kjøringen. Bruk dette hvis den har kjørt mye lenger enn forventet — for eksempel etter en krasj som lot den bli foreldreløs.",

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FaGithub, FaJira } from "react-icons/fa6";
+import { RefreshCw } from "lucide-react";
 import { Typography } from "#/ui/typography";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { SettingsSwitch } from "#/components/features/settings/settings-switch";
@@ -28,7 +29,12 @@ export const handle = { hideTitle: true };
 function GithubConnectionCard() {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
-  const { data: connection, isLoading } = useGithubConnection();
+  const {
+    data: connection,
+    isLoading,
+    isError,
+    refetch,
+  } = useGithubConnection();
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
   const [showEnterpriseHost, setShowEnterpriseHost] = React.useState(false);
@@ -85,7 +91,9 @@ function GithubConnectionCard() {
       statusText={
         connection
           ? `${t(I18nKey.CONNECTIONS$CONNECTED_AS, { username: connection.githubUsername })}${connection.enterpriseHost ? ` (${connection.enterpriseHost})` : ""}`
-          : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
+          : isError
+            ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
+            : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
       }
       isBusy={connection ? isDisconnecting : isConnecting}
       busyLabel={
@@ -101,7 +109,24 @@ function GithubConnectionCard() {
       onAction={connection ? handleDisconnect : handleConnect}
       testIdPrefix="github"
     >
-      {!connection ? (
+      {isError ? (
+        <div
+          data-testid="connections-github-error"
+          role="alert"
+          className="flex flex-col items-center gap-2 border-t border-[var(--oh-border)] pt-4 text-center text-sm text-[var(--error-500)]"
+        >
+          <RefreshCw className="size-4" aria-hidden />
+          <button
+            type="button"
+            onClick={() => refetch()}
+            data-testid="connections-github-retry"
+            className="rounded-md border border-[var(--error-500)] px-3 py-1.5 text-sm font-medium text-[var(--error-500)] hover:bg-[var(--error-bg-subtle)]"
+          >
+            {t(I18nKey.ENVIRONMENT$RETRY)}
+          </button>
+        </div>
+      ) : null}
+      {!connection && !isError ? (
         <div className="flex flex-col gap-2 border-t border-[var(--oh-border)] pt-4">
           <SettingsSwitch
             testId="github-enterprise-toggle"
@@ -129,7 +154,7 @@ function GithubConnectionCard() {
 function JiraConnectionCard() {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
-  const { data: connection, isLoading } = useJiraConnection();
+  const { data: connection, isLoading, isError, refetch } = useJiraConnection();
   const { data: issues } = useJiraIssues(!!connection);
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
@@ -185,7 +210,9 @@ function JiraConnectionCard() {
           ? t(I18nKey.CONNECTIONS$CONNECTED_TO_SITE, {
               site: connection.siteName ?? connection.siteUrl,
             })
-          : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
+          : isError
+            ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
+            : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
       }
       isBusy={connection ? isDisconnecting : isConnecting}
       busyLabel={
@@ -201,6 +228,23 @@ function JiraConnectionCard() {
       onAction={connection ? handleDisconnect : handleConnect}
       testIdPrefix="jira"
     >
+      {isError ? (
+        <div
+          data-testid="connections-jira-error"
+          role="alert"
+          className="flex flex-col items-center gap-2 border-t border-[var(--oh-border)] pt-4 text-center text-sm text-[var(--error-500)]"
+        >
+          <RefreshCw className="size-4" aria-hidden />
+          <button
+            type="button"
+            onClick={() => refetch()}
+            data-testid="connections-jira-retry"
+            className="rounded-md border border-[var(--error-500)] px-3 py-1.5 text-sm font-medium text-[var(--error-500)] hover:bg-[var(--error-bg-subtle)]"
+          >
+            {t(I18nKey.ENVIRONMENT$RETRY)}
+          </button>
+        </div>
+      ) : null}
       {connection ? (
         <div className="flex flex-col gap-2 border-t border-[var(--oh-border)] pt-4">
           <p className="text-xs font-medium text-tertiary-light">

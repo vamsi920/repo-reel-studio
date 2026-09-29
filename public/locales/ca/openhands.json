@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira desconnectat.",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira connectat.",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "Ha fallat la connexió: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "Cancel·la",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "Cancel·lant...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "Atura aquesta execució. Fes-ho servir si ha estat executant-se molt més temps del previst -- per exemple, després d'una fallada que l'ha deixat òrfena.",

@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira getrennt.",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira verbunden.",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "Verbindung fehlgeschlagen: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "Abbrechen",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "Wird abgebrochen...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "Diesen Lauf stoppen. Verwenden, wenn er deutlich länger als erwartet läuft – zum Beispiel wenn ein Absturz ihn verwaist zurückgelassen hat.",

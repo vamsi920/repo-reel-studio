@@ -47276,6 +47276,23 @@
     "zh-CN": "连接失败：{{-error}}",
     "zh-TW": "連線失敗：{{-error}}"
   },
+  "CONNECTIONS$STATUS_CHECK_ERROR": {
+    "en": "We couldn't check this connection right now. Try again in a bit.",
+    "ja": "We couldn't check this connection right now. Try again in a bit.",
+    "zh-CN": "We couldn't check this connection right now. Try again in a bit.",
+    "zh-TW": "We couldn't check this connection right now. Try again in a bit.",
+    "ko-KR": "We couldn't check this connection right now. Try again in a bit.",
+    "no": "We couldn't check this connection right now. Try again in a bit.",
+    "ar": "We couldn't check this connection right now. Try again in a bit.",
+    "de": "We couldn't check this connection right now. Try again in a bit.",
+    "fr": "We couldn't check this connection right now. Try again in a bit.",
+    "it": "We couldn't check this connection right now. Try again in a bit.",
+    "pt": "We couldn't check this connection right now. Try again in a bit.",
+    "es": "We couldn't check this connection right now. Try again in a bit.",
+    "ca": "We couldn't check this connection right now. Try again in a bit.",
+    "tr": "We couldn't check this connection right now. Try again in a bit.",
+    "uk": "We couldn't check this connection right now. Try again in a bit."
+  },
   "AUTOMATIONS$DETAIL$CANCEL_RUN": {
     "en": "Cancel",
     "ja": "キャンセル",

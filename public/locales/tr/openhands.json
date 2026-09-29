@@ -2780,6 +2780,7 @@
   "CONNECTIONS$JIRA_DISCONNECTED_TOAST": "Jira bağlantısı kesildi.",
   "CONNECTIONS$JIRA_CONNECTED_TOAST": "Jira bağlandı.",
   "CONNECTIONS$OAUTH_CONNECTION_FAILED": "Bağlantı başarısız oldu: {{-error}}",
+  "CONNECTIONS$STATUS_CHECK_ERROR": "We couldn't check this connection right now. Try again in a bit.",
   "AUTOMATIONS$DETAIL$CANCEL_RUN": "İptal",
   "AUTOMATIONS$DETAIL$CANCELLING_RUN": "İptal ediliyor...",
   "AUTOMATIONS$DETAIL$CANCEL_RUN_HINT": "Bu çalıştırmayı durdurun. Beklenenden çok daha uzun süredir çalışıyorsa -- örneğin bir çökme onu sahipsiz bıraktıysa -- bunu kullanın.",

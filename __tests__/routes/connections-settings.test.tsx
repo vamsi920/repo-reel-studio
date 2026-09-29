@@ -7,6 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   invoke: vi.fn(),
   githubConnection: null as { githubUsername: string } | null,
+  githubIsError: false,
+  githubRefetch: vi.fn(),
+  jiraIsError: false,
+  jiraRefetch: vi.fn(),
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -18,11 +22,18 @@ vi.mock("#/hooks/query/use-github-connection", () => ({
   useGithubConnection: () => ({
     data: state.githubConnection,
     isLoading: false,
+    isError: state.githubIsError,
+    refetch: state.githubRefetch,
   }),
 }));
 
 vi.mock("#/hooks/query/use-jira-connection", () => ({
-  useJiraConnection: () => ({ data: null, isLoading: false }),
+  useJiraConnection: () => ({
+    data: null,
+    isLoading: false,
+    isError: state.jiraIsError,
+    refetch: state.jiraRefetch,
+  }),
 }));
 
 vi.mock("#/hooks/query/use-jira-issues", () => ({
@@ -42,9 +53,8 @@ vi.mock("#/lib/environment/invalidate-connection-caches", () => ({
 }));
 
 // Imported after the mocks so the screen picks them up.
-const { ConnectionsSettingsScreen } = await import(
-  "#/routes/connections-settings"
-);
+const { ConnectionsSettingsScreen } =
+  await import("#/routes/connections-settings");
 
 function renderConnectionsScreen() {
   return render(
@@ -64,6 +74,8 @@ describe("ConnectionsSettingsScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.githubConnection = { githubUsername: "octocat" };
+    state.githubIsError = false;
+    state.jiraIsError = false;
   });
 
   it("reports a failed GitHub disconnect instead of failing silently", async () => {
@@ -99,5 +111,35 @@ describe("ConnectionsSettingsScreen", () => {
 
     await waitFor(() => expect(displaySuccessToast).toHaveBeenCalled());
     expect(displayErrorToast).not.toHaveBeenCalled();
+  });
+
+  // Regression: an INC-8-style auth-timing glitch during the GitHub
+  // connection lookup used to be indistinguishable from "never connected" --
+  // the card silently rendered "Not connected" plus a "Connect" button with
+  // no signal anything had gone wrong.
+  it("shows a retry banner instead of a plain disconnected state when the GitHub lookup itself failed", async () => {
+    state.githubConnection = null;
+    state.githubIsError = true;
+
+    renderConnectionsScreen();
+
+    expect(screen.getByTestId("connections-github-error")).toBeVisible();
+    expect(
+      screen.queryByTestId("github-enterprise-toggle"),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("connections-github-retry"));
+    expect(state.githubRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a retry banner instead of a plain disconnected state when the Jira lookup itself failed", async () => {
+    state.jiraIsError = true;
+
+    renderConnectionsScreen();
+
+    expect(screen.getByTestId("connections-jira-error")).toBeVisible();
+
+    await userEvent.click(screen.getByTestId("connections-jira-retry"));
+    expect(state.jiraRefetch).toHaveBeenCalledTimes(1);
   });
 });
