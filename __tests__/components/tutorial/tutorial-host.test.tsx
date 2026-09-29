@@ -266,6 +266,19 @@ describe("TutorialHost", () => {
     expect(usageIndex).toBeGreaterThan(securityIndex);
     expect(usageIndex).toBeLessThan(settingsIndex);
 
+    // Stand in for the real sidebar links so this exercises the actual
+    // spotlight + mobile-drawer wiring for these two anchors specifically,
+    // rather than relying on the generic "some routed step" coverage above.
+    const securityLink = document.createElement("a");
+    securityLink.dataset.testid = "sidebar-security-link";
+    securityLink.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
+    const usageLink = document.createElement("a");
+    usageLink.dataset.testid = "sidebar-usage-link";
+    usageLink.getBoundingClientRect = () =>
+      ({ top: 260, left: 10, width: 200, height: 32 }) as DOMRect;
+    document.body.append(securityLink, usageLink);
+
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     act(() => {
       useTutorialStore.setState({ isOpen: true, stepIndex: securityIndex });
@@ -277,6 +290,14 @@ describe("TutorialHost", () => {
       "security",
     );
     expect(navigate).toHaveBeenCalledWith("/security");
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "96px",
+      left: "6px",
+      width: "208px",
+    });
 
     await user.click(screen.getByTestId("tutorial-next"));
     for (let i = securityIndex + 1; i < usageIndex; i += 1) {
@@ -288,6 +309,17 @@ describe("TutorialHost", () => {
       "usage",
     );
     expect(navigate).toHaveBeenCalledWith("/usage");
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "256px",
+      left: "6px",
+      width: "208px",
+    });
+
+    securityLink.remove();
+    usageLink.remove();
   });
 
   it("finishing the last step closes the tour and remembers it was seen", async () => {
