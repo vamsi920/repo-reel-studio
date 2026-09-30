@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "Utilitzat per ({{count}})",
   "CODEGRAPH$RELATED": "Components relacionats",
   "CODEGRAPH$RELEVANT_FILES": "Fitxers rellevants ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "+{{count}} més",
   "CODEGRAPH$SOURCE": "Font",
   "CODEGRAPH$OPEN_SOURCE": "Obre la font",
   "CODEGRAPH$LOADING_SOURCE": "Carregant la font…",

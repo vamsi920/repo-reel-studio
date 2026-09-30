@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "被使用 ({{count}})",
   "CODEGRAPH$RELATED": "相关组件",
   "CODEGRAPH$RELEVANT_FILES": "相关文件 ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "还有 {{count}} 个",
   "CODEGRAPH$SOURCE": "源代码",
   "CODEGRAPH$OPEN_SOURCE": "打开源代码",
   "CODEGRAPH$LOADING_SOURCE": "正在加载源代码…",

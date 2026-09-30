@@ -42040,6 +42040,23 @@
     "tr": "İlgili dosyalar ({{count}})",
     "uk": "Пов'язані файли ({{count}})"
   },
+  "CODEGRAPH$RELEVANT_FILES_MORE": {
+    "en": "+{{count}} more",
+    "ja": "他{{count}}件",
+    "zh-CN": "还有 {{count}} 个",
+    "zh-TW": "還有 {{count}} 個",
+    "ko-KR": "{{count}}개 더보기",
+    "no": "+{{count}} til",
+    "ar": "+{{count}} أخرى",
+    "de": "+{{count}} weitere",
+    "fr": "+{{count}} de plus",
+    "it": "+{{count}} altri",
+    "pt": "+{{count}} mais",
+    "es": "+{{count}} más",
+    "ca": "+{{count}} més",
+    "tr": "+{{count}} tane daha",
+    "uk": "ще {{count}}"
+  },
   "CODEGRAPH$SOURCE": {
     "en": "Source",
     "ja": "ソース",

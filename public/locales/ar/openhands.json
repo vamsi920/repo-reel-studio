@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "مُستخدَم من ({{count}})",
   "CODEGRAPH$RELATED": "المكونات ذات الصلة",
   "CODEGRAPH$RELEVANT_FILES": "الملفات ذات الصلة ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "+{{count}} أخرى",
   "CODEGRAPH$SOURCE": "المصدر",
   "CODEGRAPH$OPEN_SOURCE": "فتح المصدر",
   "CODEGRAPH$LOADING_SOURCE": "جارٍ تحميل المصدر…",

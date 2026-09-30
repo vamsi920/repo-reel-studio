@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "Brukt av ({{count}})",
   "CODEGRAPH$RELATED": "Relaterte komponenter",
   "CODEGRAPH$RELEVANT_FILES": "Relevante filer ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "+{{count}} til",
   "CODEGRAPH$SOURCE": "Kilde",
   "CODEGRAPH$OPEN_SOURCE": "Åpne kilde",
   "CODEGRAPH$LOADING_SOURCE": "Laster kilde…",

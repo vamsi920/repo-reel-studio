@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "Used by ({{count}})",
   "CODEGRAPH$RELATED": "Related components",
   "CODEGRAPH$RELEVANT_FILES": "Relevant files ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "+{{count}} more",
   "CODEGRAPH$SOURCE": "Source",
   "CODEGRAPH$OPEN_SOURCE": "Open source",
   "CODEGRAPH$LOADING_SOURCE": "Loading source…",

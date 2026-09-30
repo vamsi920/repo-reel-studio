@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "사용처 ({{count}})",
   "CODEGRAPH$RELATED": "관련 구성 요소",
   "CODEGRAPH$RELEVANT_FILES": "관련 파일 ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "{{count}}개 더보기",
   "CODEGRAPH$SOURCE": "소스",
   "CODEGRAPH$OPEN_SOURCE": "소스 열기",
   "CODEGRAPH$LOADING_SOURCE": "소스 로드 중…",

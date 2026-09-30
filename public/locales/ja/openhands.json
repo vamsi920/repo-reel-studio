@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "利用元 ({{count}})",
   "CODEGRAPH$RELATED": "関連コンポーネント",
   "CODEGRAPH$RELEVANT_FILES": "関連ファイル ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "他{{count}}件",
   "CODEGRAPH$SOURCE": "ソース",
   "CODEGRAPH$OPEN_SOURCE": "ソースを開く",
   "CODEGRAPH$LOADING_SOURCE": "ソースを読み込み中…",

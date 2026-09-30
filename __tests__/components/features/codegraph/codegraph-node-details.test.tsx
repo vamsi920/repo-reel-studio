@@ -272,6 +272,46 @@ describe("CodeGraphNodeDetails", () => {
     expect(screen.getByText("CODEGRAPH$OPEN_SOURCE")).toBeInTheDocument();
   });
 
+  it("copies a relevant file's path to the clipboard on click", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+      writable: true,
+    });
+
+    renderPanel();
+
+    await user.click(screen.getByTestId("codegraph-copy-path"));
+
+    expect(writeText).toHaveBeenCalledWith("src/pay/charge.ts");
+    expect(await screen.findByLabelText("BUTTON$COPIED")).toBeInTheDocument();
+
+    Reflect.deleteProperty(navigator, "clipboard");
+  });
+
+  it("says how many relevant files are hidden past the display cap", () => {
+    const manyPaths = Array.from(
+      { length: 15 },
+      (_, index) => `src/pay/file-${index}.ts`,
+    );
+    renderPanel({
+      node: node({
+        id: "subsystem:pay",
+        level: "subsystem",
+        filePath: undefined,
+        filePaths: manyPaths,
+      }),
+    });
+
+    // Only the cap's worth of rows render, plus a count of the rest.
+    expect(screen.getAllByTestId("codegraph-copy-path")).toHaveLength(12);
+    expect(
+      screen.getByText("CODEGRAPH$RELEVANT_FILES_MORE"),
+    ).toBeInTheDocument();
+  });
+
   it("has no source control for an aggregate with no file of its own", () => {
     renderPanel({
       node: node({

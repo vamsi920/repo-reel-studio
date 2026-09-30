@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, FileCode, Video, X } from "lucide-react";
+import { BookOpen, Check, Copy, FileCode, Video, X } from "lucide-react";
 import { NavigationLink } from "#/components/shared/navigation-link";
 import type {
   CodeGraphEdge,
@@ -8,6 +8,9 @@ import type {
 } from "#/lib/codegraph/codegraph-types";
 import type { KnowledgeLink } from "#/lib/codegraph/deepwiki-bridge";
 import { I18nKey } from "#/i18n/declaration";
+import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
+
+const MAX_RELEVANT_FILES_SHOWN = 12;
 
 interface Props {
   node: CodeGraphNode;
@@ -74,6 +77,18 @@ export function CodeGraphNodeDetails({
   const [sourceState, setSourceState] = React.useState<
     "idle" | "loading" | "missing"
   >("idle");
+  // Which relevant-file path was just copied, so its row can briefly show a
+  // checkmark instead of the copy icon. Cleared on a timer and whenever the
+  // selected node changes, so a stale checkmark never survives a node switch.
+  const [copiedPath, setCopiedPath] = React.useState<string | null>(null);
+  const handleCopyPath = React.useCallback(async (path: string) => {
+    if (await copyTextToClipboard(path)) setCopiedPath(path);
+  }, []);
+  React.useEffect(() => {
+    if (!copiedPath) return undefined;
+    const timeout = setTimeout(() => setCopiedPath(null), 1500);
+    return () => clearTimeout(timeout);
+  }, [copiedPath]);
 
   const byId = React.useMemo(
     () => new Map(siblings.map((sibling) => [sibling.id, sibling])),
@@ -145,6 +160,7 @@ export function CodeGraphNodeDetails({
     sourceNodeIdRef.current = node.id;
     setSource(null);
     setSourceState("idle");
+    setCopiedPath(null);
   }, [node.id]);
 
   const excerpt = React.useMemo(() => {
@@ -294,16 +310,41 @@ export function CodeGraphNodeDetails({
           })}
         >
           <ul className="flex flex-col gap-0.5">
-            {node.filePaths.slice(0, 12).map((path) => (
+            {node.filePaths.slice(0, MAX_RELEVANT_FILES_SHOWN).map((path) => (
               <li
                 key={path}
-                className="truncate font-mono text-[10px] text-[var(--oh-muted)]"
-                title={path}
+                className="group flex items-center gap-1 font-mono text-[10px] text-[var(--oh-muted)]"
               >
-                {path}
+                <span className="min-w-0 flex-1 truncate" title={path}>
+                  {path}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyPath(path)}
+                  aria-label={t(
+                    copiedPath === path
+                      ? I18nKey.BUTTON$COPIED
+                      : I18nKey.BUTTON$COPY,
+                  )}
+                  data-testid="codegraph-copy-path"
+                  className="shrink-0 rounded p-0.5 opacity-0 hover:bg-[var(--oh-interactive-hover)] focus:opacity-100 group-hover:opacity-100"
+                >
+                  {copiedPath === path ? (
+                    <Check className="size-3" aria-hidden />
+                  ) : (
+                    <Copy className="size-3" aria-hidden />
+                  )}
+                </button>
               </li>
             ))}
           </ul>
+          {node.filePaths.length > MAX_RELEVANT_FILES_SHOWN ? (
+            <p className="mt-1 text-[10px] text-[var(--oh-muted)]">
+              {t(I18nKey.CODEGRAPH$RELEVANT_FILES_MORE, {
+                count: node.filePaths.length - MAX_RELEVANT_FILES_SHOWN,
+              })}
+            </p>
+          ) : null}
         </Section>
       ) : null}
 

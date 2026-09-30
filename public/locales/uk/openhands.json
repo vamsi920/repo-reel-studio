@@ -2472,6 +2472,7 @@
   "CODEGRAPH$USED_BY": "Використовується у ({{count}})",
   "CODEGRAPH$RELATED": "Пов'язані компоненти",
   "CODEGRAPH$RELEVANT_FILES": "Пов'язані файли ({{count}})",
+  "CODEGRAPH$RELEVANT_FILES_MORE": "ще {{count}}",
   "CODEGRAPH$SOURCE": "Джерело",
   "CODEGRAPH$OPEN_SOURCE": "Відкрити джерело",
   "CODEGRAPH$LOADING_SOURCE": "Завантаження джерела…",
