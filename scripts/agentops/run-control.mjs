@@ -206,6 +206,18 @@ export async function controlRun({ client, store, runId, action, now }) {
  * actually take it. Returns what happened so the approval's audit row can say
  * so instead of implying the run is going again.
  *
+ * Never throws. By the time this runs, the caller (`/approvals/:id/approve`
+ * in scripts/agentops-server.mjs) has already raised the breached policy via
+ * `store.setPolicies` and still has to mark the approval "approved" and write
+ * its audit row afterward — resuming the run is a best-effort last step, not
+ * a precondition for either of those. Letting an unexpected failure here
+ * (the agent-server restarting mid-request, per AGENTS.md's INC-3, or any
+ * other transient network error) propagate as a thrown error used to abort
+ * the whole request before the approval was ever marked decided: the budget
+ * stayed raised, silently, while the approval sat "pending" forever with no
+ * audit trail of what happened — and, since it still looked pending, an
+ * operator retrying Approve would raise the same limit again on top of it.
+ *
  * @returns {Promise<{ resumed: boolean, status: string | null, reason: string | null }>}
  */
 export async function resumeAfterApproval({ client, runId }) {
@@ -213,17 +225,31 @@ export async function resumeAfterApproval({ client, runId }) {
   try {
     conversation = await client.getConversation(runId);
   } catch (error) {
-    if (error?.status !== 404) throw error;
+    if (error?.status === 404) {
+      return {
+        resumed: false,
+        status: null,
+        reason: "The runtime no longer has this conversation.",
+      };
+    }
     return {
       resumed: false,
       status: null,
-      reason: "The runtime no longer has this conversation.",
+      reason: `Could not reach the runtime to resume this run: ${error.message}`,
     };
   }
   const verdict = evaluateRunControl("resume", conversation?.execution_status);
   if (!verdict.ok) {
     return { resumed: false, status: verdict.status, reason: verdict.reason };
   }
-  await client.runConversation(runId);
+  try {
+    await client.runConversation(runId);
+  } catch (error) {
+    return {
+      resumed: false,
+      status: verdict.status,
+      reason: `The runtime rejected the resume request: ${error.message}`,
+    };
+  }
   return { resumed: true, status: verdict.status, reason: null };
 }

@@ -404,6 +404,60 @@ describe("createRouter", () => {
     expect(json(res)).toMatchObject({ ok: true, resumed: true });
   });
 
+  it("still records the approval and its raised budget when the runtime is unreachable for the resume step", async () => {
+    // Regression: `resumeAfterApproval` used to be able to throw (a non-404
+    // `getConversation` failure), which aborted this handler before it ever
+    // reached `store.upsertApproval`/`store.appendAudit` below — the policy
+    // had already been raised by `store.setPolicies` above that point, so the
+    // approval was left "pending" forever with the limit silently raised
+    // underneath it. This must now resolve to a 200 with `resumed: false`
+    // instead of a 500, with the approval properly marked decided.
+    const approval = {
+      id: "budget:run-1:t",
+      kind: "budget",
+      state: "pending",
+      runId: RUN.runId,
+      workspaceId: RUN.workspaceId,
+      breaches: [{ scope: "workspace", limitUsd: 5, usedUsd: 5.2 }],
+    };
+    const store = makeStore({
+      getApproval: vi.fn().mockResolvedValue(approval),
+    });
+    const client = makeClient({
+      getConversation: vi
+        .fn()
+        .mockRejectedValue(new Error("fetch failed: ECONNREFUSED")),
+    });
+    const routes = createRouter({
+      store,
+      client,
+      collector: makeCollector(),
+      storeKind: "jsonl",
+    });
+
+    const res = makeRes();
+    await routes(
+      makeReq("POST", { body: { additionalBudgetUsd: 10 } }),
+      res,
+      `/approvals/${approval.id}/approve`,
+      new URL(`http://localhost/approvals/${approval.id}/approve`),
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(json(res)).toMatchObject({ ok: true, resumed: false });
+    expect(store.setPolicies).toHaveBeenCalled();
+    expect(client.runConversation).not.toHaveBeenCalled();
+    expect(store.upsertApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "approved" }),
+    );
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "approval.granted",
+        summary: expect.stringContaining("ECONNREFUSED"),
+      }),
+    );
+  });
+
   it("rejects a policies save whose body isn't a JSON object, without saving it", async () => {
     const store = makeStore();
     const routes = createRouter({

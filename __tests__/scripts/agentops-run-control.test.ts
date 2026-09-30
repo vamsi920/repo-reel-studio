@@ -353,4 +353,38 @@ describe("resumeAfterApproval", () => {
     expect(outcome.reason).toContain("Approvals queue");
     expect(client.runConversation).not.toHaveBeenCalled();
   });
+
+  it("reports rather than throws when the runtime is unreachable while checking status", async () => {
+    // Regression: the caller (scripts/agentops-server.mjs's /approvals/:id/approve
+    // handler) has already raised the breached policy by the time this runs, and
+    // still has to mark the approval "approved" afterward — a thrown error here
+    // used to abort that, leaving the raised limit silently disconnected from an
+    // approval that still looked "pending". A transient failure (e.g. the
+    // agent-server restarting mid-request, AGENTS.md INC-3) must resolve to a
+    // reported non-resume, not propagate.
+    const client = {
+      getConversation: vi
+        .fn()
+        .mockRejectedValue(new Error("fetch failed: ECONNREFUSED")),
+      runConversation: vi.fn(),
+    };
+    const outcome = await resumeAfterApproval({ client, runId: "run-1" });
+    expect(outcome).toEqual({
+      resumed: false,
+      status: null,
+      reason: expect.stringContaining("ECONNREFUSED"),
+    });
+    expect(client.runConversation).not.toHaveBeenCalled();
+  });
+
+  it("reports rather than throws when the runtime rejects the resume request itself", async () => {
+    const client = makeClient("paused");
+    client.runConversation.mockRejectedValue(new Error("agent-server 502"));
+    const outcome = await resumeAfterApproval({ client, runId: "run-1" });
+    expect(outcome).toEqual({
+      resumed: false,
+      status: "paused",
+      reason: expect.stringContaining("agent-server 502"),
+    });
+  });
 });
