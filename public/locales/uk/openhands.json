@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Виберіть під'єднаний репозиторій…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Пошук файлів, класів і функцій…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "Натисніть / для пошуку",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Збігів немає",
   "CODEGRAPH$SEARCH_LOADING": "Завантаження пошукового індексу…",
   "CODEGRAPH$FILTERS": "Фільтри",

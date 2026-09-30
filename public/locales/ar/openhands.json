@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "اختر مستودعًا متصلاً…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "البحث في الملفات والفئات والدوال…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "اضغط / للبحث",
   "CODEGRAPH$SEARCH_NO_RESULTS": "لا توجد نتائج مطابقة",
   "CODEGRAPH$SEARCH_LOADING": "جارٍ تحميل فهرس البحث…",
   "CODEGRAPH$FILTERS": "عوامل التصفية",

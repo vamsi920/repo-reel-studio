@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "연결된 리포지토리를 선택하세요…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "파일, 클래스, 함수 검색…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "/ 키를 눌러 검색",
   "CODEGRAPH$SEARCH_NO_RESULTS": "일치하는 항목이 없습니다",
   "CODEGRAPH$SEARCH_LOADING": "검색 인덱스를 불러오는 중…",
   "CODEGRAPH$FILTERS": "필터",

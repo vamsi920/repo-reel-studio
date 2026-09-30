@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "接続済みのリポジトリを選択…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "ファイル、クラス、関数を検索…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "「/」キーで検索",
   "CODEGRAPH$SEARCH_NO_RESULTS": "一致する項目がありません",
   "CODEGRAPH$SEARCH_LOADING": "検索インデックスを読み込み中…",
   "CODEGRAPH$FILTERS": "フィルター",

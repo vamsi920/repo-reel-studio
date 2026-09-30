@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Tria un repositori connectat…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Cerca fitxers, classes i funcions…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "Prem / per cercar",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Cap coincidència",
   "CODEGRAPH$SEARCH_LOADING": "S'està carregant l'índex de cerca…",
   "CODEGRAPH$FILTERS": "Filtres",

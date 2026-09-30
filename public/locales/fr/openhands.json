@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Choisir un dépôt connecté…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Rechercher des fichiers, classes et fonctions…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "Appuyez sur / pour rechercher",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Aucun résultat",
   "CODEGRAPH$SEARCH_LOADING": "Chargement de l'index de recherche…",
   "CODEGRAPH$FILTERS": "Filtres",

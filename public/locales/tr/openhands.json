@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Bağlı bir depo seçin…",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Dosya, sınıf ve fonksiyon ara…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "Aramak için / tuşuna basın",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Eşleşme yok",
   "CODEGRAPH$SEARCH_LOADING": "Arama dizini yükleniyor…",
   "CODEGRAPH$FILTERS": "Filtreler",

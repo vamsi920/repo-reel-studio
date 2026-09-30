@@ -8,6 +8,7 @@ import {
   Maximize2,
   RefreshCw,
   Search,
+  X,
 } from "lucide-react";
 import type {
   CodeGraphCrumb,
@@ -77,6 +78,30 @@ export function CodeGraphToolbar({
     () => new Set(levelNodes.map((node) => node.id)),
     [levelNodes],
   );
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Focuses the search box on "/" so filtering a large graph doesn't require
+  // a mouse click first -- mirrors the same shortcut on the Knowledge repo
+  // list (`kt-list.tsx`). Skipped whenever the keypress already targets an
+  // editable element (another text field, a held modifier that changes the
+  // key's meaning) so it never steals a "/" the user meant to type elsewhere.
+  React.useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
+        return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      )
+        return;
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Which result row is highlighted for keyboard selection, `null` when none
   // is (the mouse is the only pointer, or the list just changed underneath).
@@ -275,6 +300,7 @@ export function CodeGraphToolbar({
           aria-hidden
         />
         <input
+          ref={searchInputRef}
           type="search"
           role="combobox"
           value={searchQuery}
@@ -290,8 +316,28 @@ export function CodeGraphToolbar({
               : undefined
           }
           data-testid="codegraph-search"
-          className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] py-1.5 pl-8 pr-3 text-xs text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-500)]"
+          className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface-raised)] py-1.5 pl-8 pr-8 text-xs text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-500)]"
         />
+
+        {searchQuery ? (
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            aria-label={t(I18nKey.COMMAND_MENU$CLEAR_SEARCH_LABEL)}
+            data-testid="codegraph-search-clear"
+            className="absolute inset-y-0 right-0 flex items-center px-2.5 text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]"
+          >
+            <X className="size-3.5" aria-hidden />
+          </button>
+        ) : (
+          <kbd
+            aria-label={t(I18nKey.CODEGRAPH$SEARCH_SHORTCUT_HINT)}
+            data-testid="codegraph-search-shortcut-hint"
+            className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-xs text-[var(--oh-muted)]"
+          >
+            /
+          </kbd>
+        )}
 
         {searchQuery && searchResults.length === 0 ? (
           <p

@@ -553,4 +553,52 @@ describe("CodeGraphToolbar", () => {
       "false",
     );
   });
+
+  it("shows a shortcut hint instead of a clear button while the search box is empty", () => {
+    renderToolbar({ searchQuery: "" });
+
+    expect(
+      screen.getByTestId("codegraph-search-shortcut-hint"),
+    ).toHaveTextContent("/");
+    expect(
+      screen.queryByTestId("codegraph-search-clear"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("swaps the shortcut hint for a clear button once there is a query", async () => {
+    const user = userEvent.setup();
+    const props = renderToolbar({ searchQuery: "charge" });
+
+    expect(
+      screen.queryByTestId("codegraph-search-shortcut-hint"),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("codegraph-search-clear"));
+
+    expect(props.onSearchChange).toHaveBeenCalledWith("");
+  });
+
+  it("focuses the search box when '/' is pressed anywhere on the page", async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+    const input = screen.getByTestId("codegraph-search");
+    input.blur();
+
+    await user.keyboard("/");
+
+    expect(input).toHaveFocus();
+  });
+
+  it("does not steal '/' when it was typed into another field", async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+    render(<input aria-label="unrelated field" />);
+    const other = screen.getByLabelText("unrelated field");
+    const input = screen.getByTestId("codegraph-search");
+
+    other.focus();
+    await user.keyboard("/");
+
+    expect(input).not.toHaveFocus();
+    expect(other).toHaveValue("/");
+  });
 });

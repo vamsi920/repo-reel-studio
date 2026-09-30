@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Velg et tilkoblet repositorium …",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Søk i filer, klasser og funksjoner…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "Trykk / for å søke",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Ingen treff",
   "CODEGRAPH$SEARCH_LOADING": "Laster søkeindeks…",
   "CODEGRAPH$FILTERS": "Filtre",

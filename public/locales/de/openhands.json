@@ -2447,6 +2447,7 @@
   "SECURITY$REPOSITORY_SELECT_PICK": "Verbundenes Repository auswählen …",
   "CODEGRAPH$VIEWS_LABEL": "Knowledge views",
   "CODEGRAPH$SEARCH_PLACEHOLDER": "Dateien, Klassen und Funktionen durchsuchen…",
+  "CODEGRAPH$SEARCH_SHORTCUT_HINT": "„/“ drücken, um zu suchen",
   "CODEGRAPH$SEARCH_NO_RESULTS": "Keine Treffer",
   "CODEGRAPH$SEARCH_LOADING": "Suchindex wird geladen…",
   "CODEGRAPH$FILTERS": "Filter",
