@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtVideoTab, { useSelectedFileContents } from "#/routes/kt-video-tab";
 import type { GitChange } from "#/api/open-hands.types";
 import { useConversationStore } from "#/stores/conversation-store";
+import { KT_NARRATION_STORAGE_KEY } from "#/lib/kt-video/narration-preference";
 
 const { fileResultsMock } = vi.hoisted(() => ({
   fileResultsMock: new Map<
@@ -378,6 +379,7 @@ describe("KtVideoTab narration toggle", () => {
   afterEach(() => {
     useConversationStore.setState({ ktVideoSelectedFiles: null });
     vi.unstubAllGlobals();
+    window.localStorage.clear();
   });
 
   it("disables the narration toggle and explains why when speech synthesis isn't available", () => {
@@ -416,5 +418,44 @@ describe("KtVideoTab narration toggle", () => {
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("remembers the narration toggle across this tab's own unmount/remount instead of resetting to off every time", async () => {
+    // This tab fully unmounts on every tab switch (see the `selected` comment
+    // in kt-video-tab.tsx), unlike kt-page.tsx's toggle which only survives
+    // route navigation -- so this is exercising a distinct remount path, not
+    // duplicating kt-page.test.tsx's own reload coverage.
+    vi.stubGlobal("speechSynthesis", {
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      speak: vi.fn(),
+      paused: false,
+      speaking: false,
+    });
+    const user = userEvent.setup();
+    const { unmount } = renderKtVideoTab(["a.ts"]);
+
+    const toggle = screen.getByTestId("kt-video-narration-toggle");
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(window.localStorage.getItem(KT_NARRATION_STORAGE_KEY)).toBe(
+      "true",
+    );
+    unmount();
+
+    renderKtVideoTab(["a.ts"]);
+    expect(
+      screen.getByTestId("kt-video-narration-toggle"),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("picks up a narration preference already saved elsewhere (e.g. kt-page.tsx's own toggle) instead of always starting off", () => {
+    window.localStorage.setItem(KT_NARRATION_STORAGE_KEY, "true");
+    renderKtVideoTab(["a.ts"]);
+
+    expect(
+      screen.getByTestId("kt-video-narration-toggle"),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });

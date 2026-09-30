@@ -11,6 +11,10 @@ import {
   isFileSceneEligible,
 } from "#/lib/kt-video/build-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
+import {
+  readStoredNarrationPreference,
+  writeStoredNarrationPreference,
+} from "#/lib/kt-video/narration-preference";
 import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
 import { FileListErrorMessage } from "#/components/features/files-tab/file-list-error";
 import { I18nKey } from "#/i18n/declaration";
@@ -190,7 +194,14 @@ function KtVideoTab() {
   const durationInFrames = Math.max(1, manifest.totalFrames);
 
   const playerRef = useRef<PlayerRef>(null);
-  const [narrationEnabled, setNarrationEnabled] = useState(false);
+  // Remembered across tab switches/reloads (see narration-preference.ts,
+  // shared with kt-page.tsx's own narration toggle) -- without this, this
+  // tab's toggle silently resets to off every time it remounts (it fully
+  // unmounts on tab switch, see the `selected` comment above), even though
+  // the user's preference is already persisted and honored elsewhere.
+  const [narrationEnabled, setNarrationEnabled] = useState(() =>
+    readStoredNarrationPreference(),
+  );
   const speechSupported =
     typeof window !== "undefined" && "speechSynthesis" in window;
   useSceneNarration(manifest, playerRef, narrationEnabled && speechSupported);
@@ -212,7 +223,13 @@ function KtVideoTab() {
         </span>
         <button
           type="button"
-          onClick={() => setNarrationEnabled((v) => !v)}
+          onClick={() =>
+            setNarrationEnabled((v) => {
+              const next = !v;
+              writeStoredNarrationPreference(next);
+              return next;
+            })
+          }
           disabled={!speechSupported}
           aria-pressed={narrationEnabled}
           title={
