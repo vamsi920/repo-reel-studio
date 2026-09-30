@@ -59,13 +59,26 @@ export function ConnectionForm({
   // still be corrected, but does not get re-shown wholesale. This used to be
   // ignored entirely (the card always rendered every manifest field), which
   // defeated the point of "narrows this sheet to a secret rotation".
-  const fields =
-    visibleFields === "all"
-      ? manifest.fields
-      : manifest.fields.filter(
-          (field) => visibleFields.includes(field.name) || !field.secret,
-        );
-  const visibleFieldNames = new Set(fields.map((field) => field.name));
+  // Memoized so `fields`/`visibleFieldNames` are stable across renders that
+  // don't actually change `manifest`/`visibleFields` -- the debounced
+  // validation effect below depends on `visibleFieldNames`, and a fresh
+  // `Set` object on every render (e.g. from `submitting` toggling while the
+  // user is still typing) used to look like a dependency change every time,
+  // cancelling and restarting the debounce timer indefinitely instead of
+  // letting it fire ~400ms after the user actually stops typing.
+  const fields = React.useMemo(
+    () =>
+      visibleFields === "all"
+        ? manifest.fields
+        : manifest.fields.filter(
+            (field) => visibleFields.includes(field.name) || !field.secret,
+          ),
+    [manifest, visibleFields],
+  );
+  const visibleFieldNames = React.useMemo(
+    () => new Set(fields.map((field) => field.name)),
+    [fields],
+  );
   const [values, setValues] = React.useState<ConnectorFormValues>(() =>
     getInitialFormValues(manifest),
   );
@@ -79,12 +92,20 @@ export function ConnectionForm({
   // unrelated re-render of `existingConnection` (e.g. a query cache refresh)
   // does not stomp on something the user has already started typing.
   const seededForRef = React.useRef<string | null>(null);
+  // Fields the user has typed into during this manifest's lifetime. Unlike
+  // `touched` (only set on blur, driving validation display), this flips the
+  // moment a keystroke lands -- the seeding effect below can otherwise fire
+  // between that keystroke and the field's blur (e.g. `existingConnection`
+  // resolving from a still-loading query right after the user starts typing)
+  // and silently overwrite what was just typed with the stored value.
+  const dirtyFieldsRef = React.useRef<Set<string>>(new Set());
 
   React.useEffect(() => {
     setValues(getInitialFormValues(manifest));
     setErrors({});
     setTouched({});
     seededForRef.current = null;
+    dirtyFieldsRef.current = new Set();
   }, [manifest]);
 
   React.useEffect(() => {
@@ -99,14 +120,16 @@ export function ConnectionForm({
     // rotate a secret -- silently overwrote a custom value the user had
     // already set, with a "success" toast and no warning. Merging the saved
     // config in here, once per manifest, fixes that without touching fields
-    // the user has already edited in this render.
+    // the user has already edited in this render -- skipping anything in
+    // `dirtyFieldsRef` so a value the user is mid-typing (this effect
+    // commonly fires once `existingConnection` resolves from an
+    // initially-loading query) is never clobbered either.
     setValues((prev) => ({
       ...prev,
       ...Object.fromEntries(
-        Object.entries(existingConnection.config).map(([name, value]) => [
-          name,
-          String(value),
-        ]),
+        Object.entries(existingConnection.config)
+          .filter(([name]) => !dirtyFieldsRef.current.has(name))
+          .map(([name, value]) => [name, String(value)]),
       ),
     }));
   }, [manifest, existingConnection]);
@@ -157,9 +180,10 @@ export function ConnectionForm({
           formValues={values}
           error={errors[field.name]}
           disabled={submitting}
-          onChange={(value) =>
-            setValues((prev) => ({ ...prev, [field.name]: value }))
-          }
+          onChange={(value) => {
+            dirtyFieldsRef.current.add(field.name);
+            setValues((prev) => ({ ...prev, [field.name]: value }));
+          }}
           onBlur={() => setTouched((prev) => ({ ...prev, [field.name]: true }))}
         />
       ))}

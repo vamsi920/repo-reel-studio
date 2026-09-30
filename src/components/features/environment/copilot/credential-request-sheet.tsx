@@ -85,19 +85,24 @@ export function CredentialRequestSheet({
   // fields from the manifest default rather than the connection's real,
   // already-saved config silently overwrote a custom host/region/etc. the
   // user never touched. This patches in the stored value once the
-  // connection record is available; it only runs once so it cannot stomp on
-  // something the user has already started typing.
+  // connection record is available; it only runs once per mount.
   const seededFromConnectionRef = React.useRef(false);
+  // Fields the user has typed into. `useConnections()` is a live, initially
+  // loading query -- this sheet commonly mounts and the user starts typing
+  // before it resolves, so the "runs once" guard above does not by itself
+  // stop the effect from landing mid-keystroke and overwriting what was just
+  // typed with the stored value. Anything the user has edited is excluded
+  // from the seed below regardless of when it fires.
+  const dirtyFieldsRef = React.useRef<Set<string>>(new Set());
   React.useEffect(() => {
     if (!existingConnection || seededFromConnectionRef.current) return;
     seededFromConnectionRef.current = true;
     setValues((prev) => ({
       ...prev,
       ...Object.fromEntries(
-        Object.entries(existingConnection.config).map(([name, value]) => [
-          name,
-          String(value),
-        ]),
+        Object.entries(existingConnection.config)
+          .filter(([name]) => !dirtyFieldsRef.current.has(name))
+          .map(([name, value]) => [name, String(value)]),
       ),
     }));
   }, [existingConnection]);
@@ -294,9 +299,10 @@ export function CredentialRequestSheet({
               formValues={values}
               error={errors[field.name]}
               disabled={submitting}
-              onChange={(value) =>
-                setValues((prev) => ({ ...prev, [field.name]: value }))
-              }
+              onChange={(value) => {
+                dirtyFieldsRef.current.add(field.name);
+                setValues((prev) => ({ ...prev, [field.name]: value }));
+              }}
             />
           ))}
         </>

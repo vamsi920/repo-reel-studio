@@ -229,6 +229,60 @@ describe("CredentialRequestSheet", () => {
     });
   });
 
+  it("does not overwrite a field the user already started typing once the saved connection resolves", async () => {
+    // Regression: `useConnections()` is a real, initially-loading query, so
+    // this sheet commonly mounts with `existingConnection` still null. If
+    // the user starts editing a non-secret field (instanceHost) before it
+    // resolves, the seeding effect used to fire the moment it did and stomp
+    // on whatever they had just typed with the stored value.
+    vi.mocked(EnvironmentService.setCredentials).mockResolvedValue(
+      receipt(true),
+    );
+    mockConnections = [];
+    const user = userEvent.setup();
+    const onResult = vi.fn();
+    renderSheet({
+      request: POSTHOG_REQUEST,
+      onDone: vi.fn(),
+      onResult,
+    });
+
+    const hostField = screen.getByTestId("connector-field-instanceHost");
+    await user.clear(hostField);
+    await user.type(hostField, "custom.example.com");
+    expect(hostField).toHaveValue("custom.example.com");
+
+    // The connections query resolves after the edit, carrying a *different*
+    // stored host. Typing into another field is what causes this component
+    // to re-render and observe the now-resolved connection.
+    mockConnections = [
+      {
+        id: "conn-1",
+        orgId: "org-1",
+        capability: "observability",
+        providerId: "posthog",
+        instanceKey: "default",
+        displayName: null,
+        config: { instanceHost: "stored.example.com" },
+        redactedSummary: {},
+        requestedScopes: [],
+        grantedScopes: [],
+        status: "ok",
+        lastProbe: null,
+        lastProbeAt: null,
+        expiresAt: null,
+        createdAt: "2026-09-01T00:00:00.000Z",
+        updatedAt: "2026-09-01T00:00:00.000Z",
+      },
+    ];
+    await user.type(
+      screen.getByTestId("connector-field-projectApiKey"),
+      "p",
+    );
+
+    await waitFor(() => expect(hostField).toHaveValue("custom.example.com"));
+  });
+
   it("settles the studio's copy of the request when the credential is saved here", async () => {
     // The same request is a card in the studio workbench. Answering it from
     // the dock left that card open, so going back to the studio presented an

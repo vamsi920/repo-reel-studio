@@ -476,6 +476,54 @@ describe("Environment setup seed forwarding", () => {
       ),
     );
   });
+
+  // Regression: `handleStart` stripped `?seed=` from the URL before knowing
+  // whether `createConversation` would succeed. The seed text only ever
+  // lived in that URL param, so a failure left nowhere for it to come back
+  // from -- clicking "Begin" again launched a generic-prompt conversation
+  // instead of retrying with the context the user (or a "Fix with agent"
+  // deep link) originally provided.
+  it("restores `?seed=` when starting the conversation fails, so retrying still uses it", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onError(new Error("network blip"));
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/environment/setup?seed=fix+my+thing"]}>
+          <EnvironmentSetupScreen />
+          <LocationSearchDisplay />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    expect(state.createConversation).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ query: "fix my thing" }),
+      expect.anything(),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("location-search").textContent).toContain(
+        "seed",
+      ),
+    );
+
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    expect(state.createConversation).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ query: "fix my thing" }),
+      expect.anything(),
+    );
+  });
 });
 
 describe("Environment setup backend-change guard", () => {

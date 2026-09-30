@@ -340,11 +340,26 @@ function EnvironmentSetupScreen() {
     // active, so the effect's guard no longer matched and it silently
     // replayed the seed as a duplicate follow-up message into the running
     // conversation.
+    let strippedParams: URLSearchParams | null = null;
     if (seed) {
-      const next = new URLSearchParams(searchParams);
-      next.delete("seed");
-      setSearchParams(next, { replace: true });
+      strippedParams = new URLSearchParams(searchParams);
+      strippedParams.delete("seed");
+      setSearchParams(strippedParams, { replace: true });
     }
+    // The seed text only ever lived in that URL param, now already stripped
+    // above. If conversation creation or session start fails, there was
+    // nowhere left for it to come back from -- clicking "Begin" again after
+    // the error toast launched a *different*, generic-prompt conversation
+    // and silently dropped whatever context ("Fix with agent" from
+    // elsewhere in the app) the user was trying to hand the agent. Put the
+    // param back on failure so a retry still carries it.
+    const restoreSeedOnFailure = () => {
+      if (!seed || !strippedParams) return;
+      consumedSeedRef.current = null;
+      const restored = new URLSearchParams(strippedParams);
+      restored.set("seed", seed);
+      setSearchParams(restored, { replace: true });
+    };
     createConversation(
       {
         query: seed || t(I18nKey.ENVIRONMENT$STUDIO_START_PROMPT),
@@ -366,6 +381,7 @@ function EnvironmentSetupScreen() {
               void AgentServerConversationService.deleteConversation(
                 response.conversation_id,
               ).catch(() => {});
+              restoreSeedOnFailure();
               displayErrorToast(
                 error instanceof Error &&
                   error.message === ONBOARDING_ORG_UNRESOLVED_ERROR
@@ -374,8 +390,10 @@ function EnvironmentSetupScreen() {
               );
             },
           }),
-        onError: () =>
-          displayErrorToast(t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR)),
+        onError: () => {
+          restoreSeedOnFailure();
+          displayErrorToast(t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR));
+        },
       },
     );
   }, [
