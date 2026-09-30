@@ -225,6 +225,27 @@ describe("TutorialHost", () => {
     );
   });
 
+  it("announces the step progress count through its own live region", async () => {
+    // The "N of M" count sits in the header row, outside the title/subtitle
+    // live region, so it needs its own aria-live or a screen reader never
+    // hears it change even though it updates on every step.
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    const progress = screen.getByTestId("tutorial-progress");
+    expect(progress).toHaveAttribute("aria-live", "polite");
+    expect(progress).toHaveAttribute("aria-atomic", "true");
+
+    await user.click(screen.getByTestId("tutorial-next"));
+    // Same node persists across the step change the count is meant to
+    // announce, rather than being torn down and replaced unannounced.
+    expect(screen.getByTestId("tutorial-progress")).toBe(progress);
+    expect(progress).toHaveAttribute("aria-live", "polite");
+    expect(progress).toHaveAttribute("aria-atomic", "true");
+  });
+
   it("resyncs the tour when a real link navigates away from the active step's page", async () => {
     // The sidebar (and any other in-app link) stays clickable while the tour
     // is open. Walking away that way, rather than via Back/Next, must not

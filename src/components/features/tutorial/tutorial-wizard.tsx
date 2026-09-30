@@ -200,8 +200,14 @@ export function TutorialWizard() {
         className="fixed inset-x-0 bottom-4 z-[60] mx-auto max-h-[calc(100vh-2rem)] w-[min(92vw,640px)] overflow-y-auto rounded-2xl border border-white/15 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
       >
         <div className="flex items-center justify-between gap-3">
+          {/* Own live region: the "N of M" count changes on every step just
+              like the title/subtitle, but it lives in the header row rather
+              than the title/subtitle wrapper below, so without its own
+              aria-live it silently updated with no announcement at all. */}
           <span
             data-testid="tutorial-progress"
+            aria-live="polite"
+            aria-atomic="true"
             className="text-xs uppercase tracking-wide text-white/60"
           >
             {t(I18nKey.TUTORIAL$STEP_PROGRESS, {
