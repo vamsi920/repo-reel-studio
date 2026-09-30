@@ -297,4 +297,94 @@ describe("useLlmProfiles", () => {
     expect(result.current.error).toBe(error);
     expect(result.current.data).toBeUndefined();
   });
+
+  it("re-reads once before trusting an empty result that follows a cached non-empty one (INC-3 restart-window race)", async () => {
+    const populated = {
+      profiles: [
+        {
+          name: "neodevex-gemini-default",
+          model: "gemini/gemini-pro-latest",
+          base_url: null,
+          api_key_set: true,
+        },
+      ],
+      active_profile: "neodevex-gemini-default",
+    };
+    const empty = { profiles: [], active_profile: null };
+
+    vi.mocked(ProfilesService.listProfiles)
+      .mockResolvedValueOnce(populated)
+      .mockResolvedValueOnce(empty)
+      .mockResolvedValueOnce(populated);
+
+    const { result, rerender } = renderHook(() => useLlmProfiles(), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data).toEqual(populated));
+    expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(1);
+
+    // Force a refetch (e.g. a post-restart re-poll) that transiently reads
+    // empty — the hook should re-read once and surface the second call's
+    // (also populated) result instead of the transient empty one.
+    act(() => {
+      queryClient.invalidateQueries({ queryKey: LLM_PROFILES_QUERY_KEYS.all });
+    });
+    rerender();
+
+    await waitFor(() => {
+      expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(3);
+    });
+    expect(result.current.data).toEqual(populated);
+  });
+
+  it("trusts an empty result on the re-read when profiles are genuinely gone", async () => {
+    const populated = {
+      profiles: [
+        {
+          name: "neodevex-gemini-default",
+          model: "gemini/gemini-pro-latest",
+          base_url: null,
+          api_key_set: true,
+        },
+      ],
+      active_profile: "neodevex-gemini-default",
+    };
+    const empty = { profiles: [], active_profile: null };
+
+    vi.mocked(ProfilesService.listProfiles)
+      .mockResolvedValueOnce(populated)
+      .mockResolvedValue(empty);
+
+    const { result, rerender } = renderHook(() => useLlmProfiles(), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data).toEqual(populated));
+
+    act(() => {
+      queryClient.invalidateQueries({ queryKey: LLM_PROFILES_QUERY_KEYS.all });
+    });
+    rerender();
+
+    await waitFor(() => {
+      expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(3);
+    });
+    expect(result.current.data).toEqual(empty);
+  });
+
+  it("does not retry an empty result on first load with no cached data", async () => {
+    vi.mocked(ProfilesService.listProfiles).mockResolvedValue({
+      profiles: [],
+      active_profile: null,
+    });
+
+    const { result } = renderHook(() => useLlmProfiles(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(ProfilesService.listProfiles).toHaveBeenCalledTimes(1);
+  });
 });
