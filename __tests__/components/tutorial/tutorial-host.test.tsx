@@ -606,6 +606,24 @@ describe("TutorialHost", () => {
     expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
   });
 
+  it("returns focus to the launcher after skipping from a routed step that opened the mobile drawer", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getByTestId("tutorial-next"));
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+
+    await user.click(screen.getByTestId("tutorial-skip"));
+
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "closed",
+    );
+    expect(screen.getByTestId(TUTORIAL_LAUNCHER_TEST_ID)).toHaveFocus();
+  });
+
   it("returns focus to the launcher after Escape closes the tour", async () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");

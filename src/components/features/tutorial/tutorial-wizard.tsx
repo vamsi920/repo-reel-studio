@@ -119,10 +119,20 @@ export function TutorialWizard() {
 
   React.useEffect(() => () => closeMobileNav(), [closeMobileNav]);
 
+  // Closing the drawer here (not just in the unmount-cleanup effect below)
+  // matters for timing: React 18 batches this with the closeTour() state
+  // update that follows in the same tick, so the mobile-nav context and the
+  // tour's own isOpen flip to their closed values in one render. Left to the
+  // unmount effect alone, TutorialLauncher would mount first with the still-
+  // stale (open) mobile-nav value, render nothing (see its own guard), and
+  // TutorialHost's focus-back-to-launcher effect would find no button to
+  // focus — silently dropping keyboard/screen-reader focus on close whenever
+  // the tour ended on a routed step that had opened the drawer.
   const finish = React.useCallback(() => {
     trackTutorialCompleted({ totalSteps: steps.length });
+    closeMobileNav();
     closeTour();
-  }, [closeTour, steps.length]);
+  }, [closeMobileNav, closeTour, steps.length]);
 
   const skip = React.useCallback(() => {
     trackTutorialSkipped({
@@ -130,8 +140,9 @@ export function TutorialWizard() {
       stepIndex,
       totalSteps: steps.length,
     });
+    closeMobileNav();
     closeTour();
-  }, [closeTour, step.id, stepIndex, steps.length]);
+  }, [closeMobileNav, closeTour, step.id, stepIndex, steps.length]);
 
   const goNext = React.useCallback(() => {
     if (isLast) finish();
