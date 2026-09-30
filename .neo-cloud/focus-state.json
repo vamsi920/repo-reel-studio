@@ -1,5 +1,5 @@
 {
-  "today": { "date": "2026-09-29", "module": "knowledge-kt", "pickedAt": "2026-09-29T03:57:00Z" },
+  "today": { "date": "2026-09-30", "module": "codegraph", "pickedAt": "2026-09-30T03:15:00Z" },
   "modules": {
     "automations": { "lastFocusDay": null, "focusCount": 0 },
     "agentops": { "lastFocusDay": null, "focusCount": 0 },
@@ -7,7 +7,7 @@
     "conversation-chat": { "lastFocusDay": null, "focusCount": 0 },
     "knowledge-kt": { "lastFocusDay": "2026-09-29", "focusCount": 1 },
     "kt-video": { "lastFocusDay": null, "focusCount": 0 },
-    "codegraph": { "lastFocusDay": null, "focusCount": 0 },
+    "codegraph": { "lastFocusDay": "2026-09-30", "focusCount": 1 },
     "settings": { "lastFocusDay": null, "focusCount": 0 },
     "skills-plugins-mcp": { "lastFocusDay": null, "focusCount": 0 },
     "files-terminal-browser": { "lastFocusDay": null, "focusCount": 0 }
