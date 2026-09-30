@@ -113,6 +113,30 @@ describe("OnboardingDock", () => {
     expect(screen.getByTestId("connector-field-apiKey")).toHaveValue("");
   });
 
+  it("outranks the tutorial's caption bar (z-[60]) when a credential request is pending", () => {
+    // The tutorial's caption bar is a fixed bottom-anchored overlay that can
+    // widen to 92vw and sits at z-[60] -- see
+    // src/components/features/tutorial/tutorial-wizard.tsx. This dock's own
+    // contract is to stay noticeable "from anywhere in the app" while the
+    // onboarding agent is blocked on a credential, so its z-index must clear
+    // the tour's rather than silently painting underneath it.
+    renderDock();
+    expect(screen.getByTestId("onboarding-dock-trigger")).toHaveClass("z-40");
+
+    act(() => {
+      useOnboardingCopilotStore.getState().requestCredentials({
+        requestId: "linear:default",
+        capability: "issue-tracker",
+        providerId: "linear",
+        instanceKey: "default",
+        fields: ["apiKey"],
+      });
+    });
+
+    expect(screen.getByTestId("onboarding-dock-trigger")).toHaveClass("z-[65]");
+    expect(screen.getByTestId("onboarding-dock")).toHaveClass("z-[65]");
+  });
+
   it("does not render the credential sheet before the onboarding session has resolved a conversation id", () => {
     // `postResult` becomes a no-op `() => undefined` whenever
     // `useOnboardingSession()` has no `conversationId` yet (still loading, or

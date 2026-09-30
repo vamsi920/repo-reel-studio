@@ -90,10 +90,19 @@ export function OnboardingDock() {
         aria-label={t(I18nKey.ENVIRONMENT$COPILOT_OPEN)}
         onClick={toggle}
         className={cn(
-          "fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full",
+          "fixed bottom-4 right-4 inline-flex items-center gap-2 rounded-full",
           "border border-[var(--border-color)] bg-[var(--background-secondary)] px-4 py-2",
           "text-sm text-[var(--text-primary)] shadow-[var(--shadow-md)]",
           "hover:bg-[var(--background-tertiary)] transition-colors",
+          // The tutorial's caption bar is a fixed, bottom-anchored, centered
+          // overlay (z-[60]) that can widen to 92vw -- on tablet/narrow
+          // desktop widths its right edge reaches close enough to this
+          // bottom-right corner to sit visually on top of this button. A
+          // blocked agent's credential request is the one thing that must
+          // stay noticeable "from anywhere in the app" per this component's
+          // own contract above, so it outranks the tour rather than getting
+          // silently hidden behind it.
+          pending ? "z-[65]" : "z-40",
         )}
       >
         <Sparkles size={14} aria-hidden className="text-[var(--primary-500)]" />
@@ -124,10 +133,12 @@ export function OnboardingDock() {
                 : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
             }
             className={cn(
-              "fixed bottom-20 right-4 z-40 flex max-h-[70vh] w-[min(420px,calc(100vw-2rem))]",
+              "fixed bottom-20 right-4 flex max-h-[70vh] w-[min(420px,calc(100vw-2rem))]",
               "flex-col gap-3 overflow-y-auto rounded-[var(--radius-lg)]",
               "border border-[var(--border-color)] bg-[var(--background-primary)] p-4",
               "shadow-[var(--shadow-lg)]",
+              // Same tour-precedence reasoning as the trigger button above.
+              pending ? "z-[65]" : "z-40",
             )}
           >
             <header className="flex items-start justify-between gap-2">
