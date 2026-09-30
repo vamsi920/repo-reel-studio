@@ -702,6 +702,24 @@ describe("TutorialHost watch mode", () => {
     );
   });
 
+  it("shows the play/pause label in a tooltip, matching the icon button's accessible name", () => {
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0, isPlaying: true });
+    });
+    renderHost();
+
+    const toggle = screen.getByTestId("tutorial-play-toggle");
+    expect(toggle).not.toHaveAttribute("title");
+    expect(screen.getByTestId("styled-tooltip-content")).toHaveTextContent(
+      toggle.getAttribute("aria-label") ?? "",
+    );
+
+    fireEvent.click(toggle);
+    expect(screen.getByTestId("styled-tooltip-content")).toHaveTextContent(
+      toggle.getAttribute("aria-label") ?? "",
+    );
+  });
+
   it("starts paused for users who prefer reduced motion", () => {
     vi.stubGlobal(
       "matchMedia",

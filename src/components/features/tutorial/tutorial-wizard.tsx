@@ -6,6 +6,7 @@ import { useNavigation } from "#/context/navigation-context";
 import { cn } from "#/utils/utils";
 import { useTracking } from "#/hooks/use-tracking";
 import { useSidebarMobileNav } from "#/components/features/sidebar/sidebar-mobile-nav-context";
+import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
 import { getTutorialSteps } from "./tutorial-steps";
 import { getCaptionDurationMs, useTutorialStore } from "./tutorial-store";
 import { TutorialSpotlight } from "./tutorial-spotlight";
@@ -213,20 +214,21 @@ export function TutorialWizard() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              data-testid="tutorial-play-toggle"
-              onClick={() => setPlaying(!isPlaying)}
-              aria-label={playToggleLabel}
-              title={playToggleLabel}
-              className="rounded-lg p-2 hover:bg-white/10"
-            >
-              {isPlaying ? (
-                <Pause width={14} height={14} aria-hidden="true" />
-              ) : (
-                <Play width={14} height={14} aria-hidden="true" />
-              )}
-            </button>
+            <StyledTooltip content={playToggleLabel} placement="top">
+              <button
+                type="button"
+                data-testid="tutorial-play-toggle"
+                onClick={() => setPlaying(!isPlaying)}
+                aria-label={playToggleLabel}
+                className="rounded-lg p-2 hover:bg-white/10"
+              >
+                {isPlaying ? (
+                  <Pause width={14} height={14} aria-hidden="true" />
+                ) : (
+                  <Play width={14} height={14} aria-hidden="true" />
+                )}
+              </button>
+            </StyledTooltip>
             {!isFirst ? (
               <button
                 type="button"
