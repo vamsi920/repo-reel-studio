@@ -2415,6 +2415,7 @@
   "SECURITY$BETA": "Beta",
   "SECURITY$SUBTITLE": "Understand and manage security risk across this Workspace.",
   "SECURITY$NO_WORKSPACE": "Connect a repository to scope Security to a Workspace.",
+  "SECURITY$GO_TO_KNOWLEDGE": "Abre Knowledge para conectar un repositorio",
   "SECURITY$LOADING_WORKSPACE": "Cargando repositorios conectados…",
   "SECURITY$CONNECTED_REPOSITORIES_ERROR": "No se pudieron cargar los repositorios conectados.",
   "SECURITY$SEVERITY_LEGEND_LABEL": "Niveles de gravedad",

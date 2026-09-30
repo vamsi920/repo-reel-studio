@@ -12,6 +12,7 @@ import {
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
 import { useConnectedRepositories } from "#/lib/knowledge/connected-repositories";
+import { NavigationLink } from "#/components/shared/navigation-link";
 import { CopyToClipboardButton } from "#/components/shared/buttons/copy-to-clipboard-button";
 import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
 import { I18nKey } from "#/i18n/declaration";
@@ -223,6 +224,8 @@ const FIX_WITH_AGENT_HINT_ID = "security-fix-with-agent-hint";
 const FUTURE_AREAS_HEADING_ID = "security-future-areas-heading";
 const EMPTY_STATE_HEADING_ID = "security-empty-state-heading";
 const REPOSITORY_NOT_CONNECTED_ID = "security-repository-not-connected-hint";
+/** Where a user with no connected repository can go to open one. */
+const KNOWLEDGE_PATH = "/kt";
 
 const SEVERITY_KEY: Record<SecuritySeverity, I18nKey> = {
   critical: I18nKey.SECURITY$SEVERITY_CRITICAL,
@@ -528,13 +531,22 @@ function SecurityScreen() {
           </p>
         )}
         {scope.state === "no-repositories" && !isError && !isLoading && (
-          <p
-            className="mt-3 text-xs text-[var(--oh-muted)]"
-            data-testid="security-no-workspace"
-            role="status"
-          >
-            {t(I18nKey.SECURITY$NO_WORKSPACE)}
-          </p>
+          <div className="mt-3 flex flex-col items-start gap-1">
+            <p
+              className="text-xs text-[var(--oh-muted)]"
+              data-testid="security-no-workspace"
+              role="status"
+            >
+              {t(I18nKey.SECURITY$NO_WORKSPACE)}
+            </p>
+            <NavigationLink
+              to={KNOWLEDGE_PATH}
+              className="text-xs underline text-[var(--oh-foreground)]"
+              data-testid="security-go-to-knowledge"
+            >
+              {t(I18nKey.SECURITY$GO_TO_KNOWLEDGE)}
+            </NavigationLink>
+          </div>
         )}
         {showRepositorySelect && (
           <RepositorySelect

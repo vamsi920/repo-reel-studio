@@ -503,6 +503,41 @@ describe("Security route", () => {
       );
     });
 
+    it("offers a shortcut to Knowledge when there is no workspace to scope to", () => {
+      // A user landing on Security straight from the sidebar with nothing
+      // connected had no way forward from this page -- only prose saying to
+      // connect a repository, with no link to where that happens.
+      renderSecurity();
+
+      const link = screen.getByTestId("security-go-to-knowledge");
+      expect(link).toHaveTextContent(I18nKey.SECURITY$GO_TO_KNOWLEDGE);
+      expect(link).toHaveAttribute("href", "/kt");
+    });
+
+    it("hides the Knowledge shortcut once a repository is connected -- there is nothing left to go do", () => {
+      seedRepository();
+      renderSecurity();
+
+      expect(
+        screen.queryByTestId("security-go-to-knowledge"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("hides the Knowledge shortcut while still loading or on a real fetch failure -- neither has concluded there is truly nothing connected", () => {
+      connectedIsLoading = true;
+      renderSecurity();
+      expect(
+        screen.queryByTestId("security-go-to-knowledge"),
+      ).not.toBeInTheDocument();
+
+      connectedIsLoading = false;
+      connectedIsError = true;
+      renderSecurity();
+      expect(
+        screen.queryByTestId("security-go-to-knowledge"),
+      ).not.toBeInTheDocument();
+    });
+
     it("says there is no workspace when ?repository= is stale and nothing is connected, rather than claiming it is unconnected", () => {
       // Regression: with zero connected repositories, "no-repositories" must
       // win over "requested-not-connected" — reporting a specific repository

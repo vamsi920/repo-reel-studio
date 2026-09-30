@@ -41071,6 +41071,23 @@
     "tr": "Connect a repository to scope Security to a Workspace.",
     "uk": "Connect a repository to scope Security to a Workspace."
   },
+  "SECURITY$GO_TO_KNOWLEDGE": {
+    "en": "Open Knowledge to connect a repository",
+    "ja": "リポジトリを接続するには Knowledge を開いてください",
+    "zh-CN": "打开 Knowledge 以连接仓库",
+    "zh-TW": "開啟 Knowledge 以連接儲存庫",
+    "ko-KR": "리포지토리를 연결하려면 Knowledge를 여세요",
+    "no": "Åpne Knowledge for å koble til et repositorium",
+    "ar": "افتح Knowledge لربط مستودع",
+    "de": "Öffnen Sie Knowledge, um ein Repository zu verbinden",
+    "fr": "Ouvrez Knowledge pour connecter un dépôt",
+    "it": "Apri Knowledge per collegare un repository",
+    "pt": "Abra o Knowledge para conectar um repositório",
+    "es": "Abre Knowledge para conectar un repositorio",
+    "ca": "Obre Knowledge per connectar un repositori",
+    "tr": "Bir depo bağlamak için Knowledge'ı açın",
+    "uk": "Відкрийте Knowledge, щоб підключити репозиторій"
+  },
   "SECURITY$LOADING_WORKSPACE": {
     "en": "Loading connected repositories…",
     "ja": "接続済みのリポジトリを読み込み中…",
