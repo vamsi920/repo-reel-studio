@@ -4,6 +4,7 @@ import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { ModalBody } from "#/components/shared/modals/modal-body";
 import { I18nKey } from "#/i18n/declaration";
 import { getAgentServerWorkingDir } from "#/api/agent-server-config";
+import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useConversationSkills } from "#/hooks/query/use-conversation-skills";
 import {
   groupSkillsByScope,
@@ -28,7 +29,6 @@ const SECTION_TITLE_KEY: Record<SkillScope, I18nKey> = {
 
 export function SkillsModal({ onClose }: SkillsModalProps) {
   const { t } = useTranslation("openhands");
-  const projectDir = getAgentServerWorkingDir();
   const [expandedAgents, setExpandedAgents] = useState<Record<string, boolean>>(
     {},
   );
@@ -41,6 +41,14 @@ export function SkillsModal({ onClose }: SkillsModalProps) {
     refetch,
     isRefetching,
   } = useConversationSkills();
+  const conversation = useActiveConversation();
+  // Must match the project dir the skills were actually requested with
+  // (`useConversationSkills` -> `SkillsService.getSkills`'s own fallback):
+  // grouping by any other directory can misclassify this conversation's own
+  // project skills as "Public" once `isProjectSkillPath` actually checks the
+  // prefix instead of ignoring it.
+  const projectDir =
+    conversation.data?.selected_workspace ?? getAgentServerWorkingDir();
 
   const groupedSkills = useMemo(
     () => (skills ? groupSkillsByScope(skills, projectDir) : null),

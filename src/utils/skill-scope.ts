@@ -62,11 +62,13 @@ function isProjectSkillPath(
     return false;
   }
 
+  // A known project dir gates the match: a marker path that lives under a
+  // *different* project (e.g. another workspace's `.agents/skills/`) is not
+  // this conversation's own project skill. Without a project dir to compare
+  // against, there is nothing to rule it out with, so default to "project".
   if (projectDir) {
     const projectNorm = normalizePath(projectDir).replace(/\/$/, "");
-    if (norm.startsWith(projectNorm)) {
-      return true;
-    }
+    return norm.startsWith(projectNorm);
   }
 
   return true;

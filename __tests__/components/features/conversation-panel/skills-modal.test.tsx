@@ -4,12 +4,23 @@ import userEvent from "@testing-library/user-event";
 import { SkillsModal } from "#/components/features/conversation-panel/skills-modal";
 import type { SkillInfo } from "#/types/settings";
 
-const { useConversationSkillsMock } = vi.hoisted(() => ({
-  useConversationSkillsMock: vi.fn(),
-}));
+const { useConversationSkillsMock, useActiveConversationMock } = vi.hoisted(
+  () => ({
+    useConversationSkillsMock: vi.fn(),
+    useActiveConversationMock: vi.fn(
+      (): { data: { selected_workspace?: string | null } | undefined } => ({
+        data: undefined,
+      }),
+    ),
+  }),
+);
 
 vi.mock("#/hooks/query/use-conversation-skills", () => ({
   useConversationSkills: () => useConversationSkillsMock(),
+}));
+
+vi.mock("#/hooks/query/use-active-conversation", () => ({
+  useActiveConversation: () => useActiveConversationMock(),
 }));
 
 vi.mock("react-i18next", async () => {
@@ -85,6 +96,50 @@ describe("SkillsModal", () => {
     expect(within(projectSection).getByText("Skill body")).toBeInTheDocument();
     expect(
       within(personalSection).getByText("Skill body"),
+    ).toBeInTheDocument();
+  });
+
+  it("groups a project skill by the conversation's own attached workspace, not the app's default working dir", () => {
+    // The skills themselves are already fetched scoped to the conversation's
+    // `selected_workspace` (useConversationSkills), so a skill path under
+    // that same workspace must render under "Project" even when it differs
+    // from the app's default working directory -- and a skill path under some
+    // other, unrelated project must NOT be misclassified as this
+    // conversation's own project skill.
+    useActiveConversationMock.mockReturnValue({
+      data: { selected_workspace: "/home/user/my-repo" },
+    });
+    const skills: SkillInfo[] = [
+      buildSkill({
+        name: "this-repo-skill",
+        source: "/home/user/my-repo/.agents/skills/this-repo-skill/SKILL.md",
+      }),
+      buildSkill({
+        name: "other-repo-skill",
+        source: "/home/user/other-repo/.agents/skills/other-repo-skill/SKILL.md",
+      }),
+    ];
+    useConversationSkillsMock.mockReturnValue({
+      data: skills,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+      isRefetching: false,
+    });
+
+    render(<SkillsModal onClose={vi.fn()} />);
+
+    const projectSection = screen.getByText("Project").closest("section")!;
+    expect(
+      within(projectSection).getByText("this-repo-skill"),
+    ).toBeInTheDocument();
+    expect(
+      within(projectSection).queryByText("other-repo-skill"),
+    ).not.toBeInTheDocument();
+
+    const publicSection = screen.getByText("Public").closest("section")!;
+    expect(
+      within(publicSection).getByText("other-repo-skill"),
     ).toBeInTheDocument();
   });
 });
