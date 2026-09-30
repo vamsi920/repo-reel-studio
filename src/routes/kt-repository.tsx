@@ -1,13 +1,22 @@
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router";
-import { AlertCircle, AlertTriangle, FileText, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  FileText,
+  Loader2,
+  Video,
+} from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
 import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
 import { KtRefreshCadence } from "#/components/features/kt-video/kt-refresh-cadence";
-import type { KnowledgeImportance } from "#/lib/knowledge/knowledge-engine";
+import type {
+  KnowledgeImportance,
+  KnowledgePage,
+} from "#/lib/knowledge/knowledge-engine";
 import { useKnowledgeRehydration } from "#/lib/knowledge/use-knowledge-rehydration";
 
 const IMPORTANCE_KEY: Record<KnowledgeImportance, string> = {
@@ -21,6 +30,61 @@ const IMPORTANCE_CLASSNAME: Record<KnowledgeImportance, string> = {
   medium: "bg-[var(--warning-bg-subtle)] text-[var(--warning-500)]",
   low: "bg-[var(--oh-surface)] text-[var(--oh-muted)]",
 };
+
+function KtPageRow({
+  page,
+  flagDetail,
+  onRead,
+  onWatch,
+}: {
+  page: KnowledgePage;
+  flagDetail: string | undefined;
+  onRead: () => void;
+  onWatch: () => void;
+}) {
+  const { t } = useTranslation("openhands");
+  return (
+    <div
+      role="group"
+      className="flex items-center gap-1 rounded-md border border-[var(--oh-border)] hover:bg-[var(--oh-interactive-hover)]"
+    >
+      <button
+        type="button"
+        onClick={onRead}
+        className="flex flex-1 items-center gap-2 px-3 py-2 text-left text-sm text-[var(--oh-foreground)]"
+      >
+        <FileText
+          className="size-3.5 shrink-0 text-[var(--oh-muted)]"
+          aria-hidden
+        />
+        <span className="flex-1 truncate">{page.title}</span>
+        {flagDetail && (
+          <span className="shrink-0" title={flagDetail}>
+            <AlertTriangle
+              className="size-3.5 text-[var(--warning-500)]"
+              aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
+            />
+          </span>
+        )}
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPORTANCE_CLASSNAME[page.importance]}`}
+        >
+          {t(IMPORTANCE_KEY[page.importance])}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onWatch}
+        title={t(I18nKey.KT$WATCH_PAGE)}
+        aria-label={t(I18nKey.KT$WATCH_PAGE)}
+        data-testid="kt-repository-page-watch"
+        className="mr-2 shrink-0 rounded-md p-1.5 text-[var(--oh-muted)] hover:bg-[var(--oh-interactive-hover)] hover:text-[var(--oh-foreground)]"
+      >
+        <Video className="size-3.5" aria-hidden />
+      </button>
+    </div>
+  );
+}
 
 function KtRepository() {
   const { t } = useTranslation("openhands");
@@ -147,39 +211,15 @@ function KtRepository() {
               {section.pageIds.map((pageId) => {
                 const page = pagesById.get(pageId);
                 if (!page) return null;
+                const pagePath = `/kt/${encodeURIComponent(state.snapshot.repositoryId)}/${encodeURIComponent(pageId)}`;
                 return (
-                  <button
+                  <KtPageRow
                     key={pageId}
-                    type="button"
-                    onClick={() =>
-                      navigate?.(
-                        `/kt/${encodeURIComponent(state.snapshot.repositoryId)}/${encodeURIComponent(pageId)}`,
-                      )
-                    }
-                    className="flex items-center gap-2 rounded-md border border-[var(--oh-border)] px-3 py-2 text-left text-sm text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"
-                  >
-                    <FileText
-                      className="size-3.5 shrink-0 text-[var(--oh-muted)]"
-                      aria-hidden
-                    />
-                    <span className="flex-1 truncate">{page.title}</span>
-                    {flagDetailsByPageId.has(pageId) && (
-                      <span
-                        className="shrink-0"
-                        title={flagDetailsByPageId.get(pageId)}
-                      >
-                        <AlertTriangle
-                          className="size-3.5 text-[var(--warning-500)]"
-                          aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
-                        />
-                      </span>
-                    )}
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPORTANCE_CLASSNAME[page.importance]}`}
-                    >
-                      {t(IMPORTANCE_KEY[page.importance])}
-                    </span>
-                  </button>
+                    page={page}
+                    flagDetail={flagDetailsByPageId.get(pageId)}
+                    onRead={() => navigate?.(pagePath)}
+                    onWatch={() => navigate?.(`${pagePath}?view=watch`)}
+                  />
                 );
               })}
             </div>
@@ -188,40 +228,18 @@ function KtRepository() {
 
         {unsectionedPages.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            {unsectionedPages.map((page) => (
-              <button
-                key={page.id}
-                type="button"
-                onClick={() =>
-                  navigate?.(
-                    `/kt/${encodeURIComponent(state.snapshot.repositoryId)}/${encodeURIComponent(page.id)}`,
-                  )
-                }
-                className="flex items-center gap-2 rounded-md border border-[var(--oh-border)] px-3 py-2 text-left text-sm text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"
-              >
-                <FileText
-                  className="size-3.5 shrink-0 text-[var(--oh-muted)]"
-                  aria-hidden
+            {unsectionedPages.map((page) => {
+              const pagePath = `/kt/${encodeURIComponent(state.snapshot.repositoryId)}/${encodeURIComponent(page.id)}`;
+              return (
+                <KtPageRow
+                  key={page.id}
+                  page={page}
+                  flagDetail={flagDetailsByPageId.get(page.id)}
+                  onRead={() => navigate?.(pagePath)}
+                  onWatch={() => navigate?.(`${pagePath}?view=watch`)}
                 />
-                <span className="flex-1 truncate">{page.title}</span>
-                {flagDetailsByPageId.has(page.id) && (
-                  <span
-                    className="shrink-0"
-                    title={flagDetailsByPageId.get(page.id)}
-                  >
-                    <AlertTriangle
-                      className="size-3.5 text-[var(--warning-500)]"
-                      aria-label={t(I18nKey.KT$QUALITY_FLAG_BADGE)}
-                    />
-                  </span>
-                )}
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPORTANCE_CLASSNAME[page.importance]}`}
-                >
-                  {t(IMPORTANCE_KEY[page.importance])}
-                </span>
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

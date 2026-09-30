@@ -1,4 +1,5 @@
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders, useParamsMock } from "test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KtRepository from "#/routes/kt-repository";
@@ -400,6 +401,67 @@ describe("KtRepository", () => {
 
     expect(await screen.findByText("API (persisted)")).toBeInTheDocument();
     expect(screen.queryByTestId("kt-repository-error")).not.toBeInTheDocument();
+  });
+
+  it("jumps straight to Watch mode from a page row without going through Read first", async () => {
+    useKnowledgeStore.setState({
+      byRepositoryId: {
+        [REPOSITORY_ID]: {
+          snapshot: {
+            repositoryId: REPOSITORY_ID,
+            owner: "acme",
+            repo: "api",
+            branch: "main",
+            commitSha: "abcdef1234567890",
+            localPath: "/workspace/api",
+          },
+          conversationUrl: null,
+          sessionApiKey: null,
+          status: "ready",
+          progress: null,
+          lastNonTerminalStatus: null,
+          knowledge: {
+            repositoryId: REPOSITORY_ID,
+            commitSha: "abcdef1234567890",
+            title: "API",
+            summary: "",
+            sections: [{ id: "s1", title: "Overview", pageIds: ["page-a"] }],
+            pages: [
+              {
+                id: "page-a",
+                title: "Page A",
+                description: "",
+                contentMarkdown: "# Page A",
+                importance: "medium",
+                relevantFiles: [],
+                diagrams: [],
+                relatedPageIds: [],
+              },
+            ],
+            generatedAt: new Date().toISOString(),
+          },
+          error: null,
+          qualityFlags: [],
+          refreshCadence: "manual",
+        },
+      },
+    });
+    const navigate = vi.fn();
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtRepository />, { navigation: { navigate } });
+    await user.click(screen.getByTestId("kt-repository-page-watch"));
+
+    expect(navigate).toHaveBeenCalledWith(
+      `/kt/${encodeURIComponent(REPOSITORY_ID)}/page-a?view=watch`,
+    );
+
+    // The main row is still a separate action that goes to plain Read.
+    navigate.mockClear();
+    await user.click(screen.getByText("Page A"));
+    expect(navigate).toHaveBeenCalledWith(
+      `/kt/${encodeURIComponent(REPOSITORY_ID)}/page-a`,
+    );
   });
 
   it("falls back to the empty state when cold rehydration rejects", async () => {

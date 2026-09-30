@@ -2345,6 +2345,7 @@
   "KT$VIEW_KNOWLEDGE": "View Knowledge",
   "KT$READ": "Read",
   "KT$WATCH_KT": "Watch KT",
+  "KT$WATCH_PAGE": "Regarder cette page",
   "KT$BACK_TO_LIST": "Back to Knowledge",
   "KT$BACK_TO_REPOSITORY": "Back",
   "KT$NOT_FOUND": "This repository hasn't been generated yet.",

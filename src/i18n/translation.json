@@ -39881,6 +39881,23 @@
     "tr": "Watch KT",
     "uk": "Watch KT"
   },
+  "KT$WATCH_PAGE": {
+    "en": "Watch this page",
+    "ja": "このページを視聴",
+    "zh-CN": "观看此页面",
+    "zh-TW": "觀看此頁面",
+    "ko-KR": "이 페이지 보기",
+    "no": "Se denne siden",
+    "ar": "مشاهدة هذه الصفحة",
+    "de": "Diese Seite ansehen",
+    "fr": "Regarder cette page",
+    "it": "Guarda questa pagina",
+    "pt": "Assistir a esta página",
+    "es": "Ver esta página",
+    "ca": "Mira aquesta pàgina",
+    "tr": "Bu sayfayı izle",
+    "uk": "Переглянути цю сторінку"
+  },
   "KT$BACK_TO_LIST": {
     "en": "Back to Knowledge",
     "ja": "Back to Knowledge",
