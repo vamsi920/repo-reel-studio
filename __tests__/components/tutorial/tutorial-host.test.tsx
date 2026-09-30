@@ -892,6 +892,91 @@ describe("TutorialHost", () => {
     menuToggle.remove();
   });
 
+  it("upgrades from the mobile menu toggle to the real sidebar link once it mounts, and keeps tracking it through a transform transition instead of freezing at either the fallback or a stale mid-transition rect", async () => {
+    // Mirrors the real Sidebar.tsx behavior this regression targets: opening
+    // the mobile drawer for the first routed step after a non-routed one is
+    // a mount-then-CSS-transition two-step (mount off-screen via
+    // `-translate-x-full`, then animate to `translate-x-0`), so the real
+    // sidebar link can exist in the DOM — with a nonzero, but still
+    // off-screen, rect — a beat after the always-visible hamburger fallback
+    // was already found. Drive the spotlight's per-frame polling manually so
+    // the test can assert each stage instead of just the end state.
+    const queuedFrames: FrameRequestCallback[] = [];
+    let nextFrameHandle = 0;
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      (callback: FrameRequestCallback) => {
+        queuedFrames.push(callback);
+        nextFrameHandle += 1;
+        return nextFrameHandle;
+      },
+    );
+    vi.stubGlobal("cancelAnimationFrame", () => {
+      queuedFrames.length = 0;
+    });
+    const runNextFrame = () => {
+      const callback = queuedFrames.shift();
+      if (callback) act(() => callback(0));
+    };
+
+    const menuToggle = document.createElement("button");
+    menuToggle.dataset.testid = MOBILE_MENU_TOGGLE_TEST_ID;
+    menuToggle.getBoundingClientRect = () =>
+      ({ top: 8, left: 8, width: 32, height: 32 }) as DOMRect;
+    document.body.appendChild(menuToggle);
+
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+    });
+    renderHost();
+    // A plain fireEvent click (not userEvent) so nothing besides the
+    // spotlight's own effect can enqueue a requestAnimationFrame call here.
+    fireEvent.click(screen.getByTestId("tutorial-next"));
+
+    // Frame 1 (synchronous, within the effect itself): only the fallback
+    // exists, so the ring settles there for now, and polling continues
+    // because the top-priority candidate hasn't been found yet.
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "4px",
+      left: "4px",
+      width: "40px",
+    });
+    expect(queuedFrames.length).toBe(1);
+
+    // The drawer's mount step: the real link now exists (nonzero rect) but
+    // is still off-screen mid-transition, e.g. `-translate-x-full`.
+    const link = document.createElement("a");
+    link.dataset.testid = "sidebar-conversations-link";
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: -292, width: 200, height: 32 }) as DOMRect;
+    document.body.appendChild(link);
+    runNextFrame();
+
+    // Upgraded to the real link, but its CURRENT (mid-transition) rect —
+    // not the fallback's, and not frozen there either: polling must keep
+    // going to ride out the rest of the transition.
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "96px",
+      left: "-296px",
+      width: "208px",
+    });
+    expect(queuedFrames.length).toBe(1);
+
+    // The transform finishes settling on screen.
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
+    runNextFrame();
+
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "96px",
+      left: "6px",
+      width: "208px",
+    });
+
+    link.remove();
+    menuToggle.remove();
+  });
+
   it("caps the caption bar's height and scrolls internally instead of clipping off-screen on short viewports", async () => {
     // The bar is `fixed`/`bottom-4` and grows upward with its content, so
     // with no height cap a long caption on a very short viewport (a

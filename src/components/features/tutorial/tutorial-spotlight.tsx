@@ -12,6 +12,34 @@ interface SpotlightRect {
   height: number;
 }
 
+interface AnchorMatch {
+  element: HTMLElement;
+  /** Index of the matching testId within the caller's priority-ordered list. */
+  index: number;
+}
+
+/**
+ * Returns the first candidate in `testIds` (in priority order) that is
+ * actually laid out on screen, along with its index. Hidden variants (for
+ * example the desktop sidebar on a phone) report an empty rect and are
+ * skipped.
+ */
+function findTutorialAnchorMatch(
+  testIds: readonly string[],
+  root: ParentNode = document,
+): AnchorMatch | null {
+  for (let index = 0; index < testIds.length; index += 1) {
+    const candidates = root.querySelectorAll<HTMLElement>(
+      `[data-testid="${CSS.escape(testIds[index])}"]`,
+    );
+    for (const element of candidates) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) return { element, index };
+    }
+  }
+  return null;
+}
+
 /**
  * Returns the first element matching one of `testIds` (in order) that is
  * actually laid out on screen, or `null`. Hidden variants (for example the
@@ -21,16 +49,7 @@ export function findTutorialAnchor(
   testIds: readonly string[],
   root: ParentNode = document,
 ): HTMLElement | null {
-  for (const testId of testIds) {
-    const candidates = root.querySelectorAll<HTMLElement>(
-      `[data-testid="${CSS.escape(testId)}"]`,
-    );
-    for (const element of candidates) {
-      const rect = element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return element;
-    }
-  }
-  return null;
+  return findTutorialAnchorMatch(testIds, root)?.element ?? null;
 }
 
 function toSpotlightRect(element: HTMLElement): SpotlightRect {
@@ -75,6 +94,7 @@ export function TutorialSpotlight({
     if (!anchorTestIds?.length) return undefined;
 
     let anchor: HTMLElement | null = null;
+    let everUpgraded = false;
     let frame = 0;
     let framesLeft = ANCHOR_LOOKUP_FRAMES;
 
@@ -91,18 +111,43 @@ export function TutorialSpotlight({
         ? null
         : new ResizeObserver(measure);
 
-    const lookup = () => {
-      anchor = findTutorialAnchor(anchorTestIds);
-      if (anchor) {
+    // A lower-priority candidate (the mobile menu toggle) can be on screen
+    // before a higher-priority one (the real sidebar link) finishes
+    // mounting: opening the mobile drawer for the first routed step after a
+    // non-routed one is a mount-then-CSS-transition two-step in Sidebar.tsx,
+    // so the real link can exist with a nonzero rect (mount) well before its
+    // slide-in transform settles. Settling for whatever is found on the
+    // very first frame would either (a) permanently miss a real anchor that
+    // mounts a beat later, spotlighting the fallback forever, or (b) lock
+    // onto the real anchor's stale mid-transition position the instant it
+    // mounts. So: keep polling every frame — upgrading to a higher-priority
+    // match as soon as it appears, and continuing to re-measure for the rest
+    // of the budget once an upgrade happens (there's no transitionend hook
+    // here; riding out the remaining frames is what catches the transform
+    // settling) — and only stop early when the top-priority candidate was
+    // already the very first thing found, matching the common, no-drawer
+    // case exactly as before.
+    const settle = () => {
+      const match = findTutorialAnchorMatch(anchorTestIds);
+      if (match && match.element !== anchor) {
+        // Swapping away from an already-found anchor (not the initial
+        // assignment from null) is the actual upgrade: it means a better
+        // candidate showed up after a worse one was already on screen.
+        if (anchor) everUpgraded = true;
+        resizeObserver?.disconnect();
+        anchor = match.element;
         anchor.scrollIntoView?.({ block: "nearest", inline: "nearest" });
-        measure();
         resizeObserver?.observe(anchor);
-        return;
       }
+      if (anchor) measure();
+
       framesLeft -= 1;
-      if (framesLeft > 0) frame = window.requestAnimationFrame(lookup);
+      const isTopPriority = match?.index === 0;
+      if ((!isTopPriority || everUpgraded) && framesLeft > 0) {
+        frame = window.requestAnimationFrame(settle);
+      }
     };
-    lookup();
+    settle();
 
     window.addEventListener("resize", measure);
     // Capture so scrolls inside the sidebar's own scroll container count.
