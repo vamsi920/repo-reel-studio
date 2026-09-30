@@ -303,9 +303,24 @@ async function readJsonFromStorage<T>(path: string): Promise<T | null> {
     const url = await artifactStore.getSignedUrl(ARTIFACT_BUCKET, path);
     if (!url) return null;
     const response = await fetch(url);
-    if (!response.ok) return null;
+    if (!response.ok) {
+      // A 404 here just means this exact path was never mirrored -- the
+      // normal, frequent case for a commit nobody has analyzed yet, so it
+      // stays silent. Any other status (401/403/500/...) means Storage
+      // rejected or failed the read for a reason other than "the object
+      // doesn't exist", which used to be silently indistinguishable from
+      // the 404 case -- a caller whose DB row confirms the mirror should
+      // exist had no diagnosable signal at all when this fired instead.
+      if (response.status !== 404) {
+        console.error(
+          `[codegraph] readJsonFromStorage(${path}) got HTTP ${response.status}`,
+        );
+      }
+      return null;
+    }
     return (await response.json()) as T;
-  } catch {
+  } catch (error) {
+    console.error(`[codegraph] readJsonFromStorage(${path}) failed`, error);
     return null;
   }
 }

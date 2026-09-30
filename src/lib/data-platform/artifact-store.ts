@@ -56,9 +56,29 @@ class SupabaseArtifactStore implements ArtifactStore {
       const { data, error } = await supabase.storage
         .from(bucket)
         .createSignedUrl(path, expiresInSeconds);
-      if (error || !data) return null;
+      if (error || !data) {
+        // Signing an object that was simply never uploaded is common and
+        // expected (e.g. a commit that hasn't been mirrored yet), but
+        // Supabase still returning `error`/no `data` here can also mean a
+        // real problem (RLS denial, expired session, Storage outage) that
+        // used to be silently indistinguishable from "not uploaded" -- a
+        // caller with a DB row confirming the object *should* exist had no
+        // way to tell the two apart. Logging the real error leaves a
+        // diagnosable trail without changing the null-on-failure contract.
+        if (error) {
+          console.error(
+            `[artifact-store] getSignedUrl(${bucket}/${path}) failed`,
+            error,
+          );
+        }
+        return null;
+      }
       return data.signedUrl;
-    } catch {
+    } catch (error) {
+      console.error(
+        `[artifact-store] getSignedUrl(${bucket}/${path}) threw`,
+        error,
+      );
       return null;
     }
   }

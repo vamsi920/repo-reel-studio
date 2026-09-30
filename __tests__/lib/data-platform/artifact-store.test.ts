@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   uploadError: null as { message: string } | null,
   signedUrlData: null as { signedUrl: string } | null,
   signedUrlError: null as { message: string } | null,
+  signedUrlThrows: null as Error | null,
   uploadCall: null as
     | { bucket: string; path: string; body: unknown; options: unknown }
     | null,
@@ -22,11 +23,13 @@ vi.mock("#/lib/data-platform/client", () => ({
           state.uploadCall = { bucket, path, body, options };
           return Promise.resolve({ error: state.uploadError });
         },
-        createSignedUrl: () =>
-          Promise.resolve({
+        createSignedUrl: () => {
+          if (state.signedUrlThrows) return Promise.reject(state.signedUrlThrows);
+          return Promise.resolve({
             data: state.signedUrlData,
             error: state.signedUrlError,
-          }),
+          });
+        },
         remove: (paths: string[]) => {
           state.removedCall = { bucket, paths };
           return Promise.resolve({ error: null });
@@ -85,6 +88,11 @@ describe("artifactStore.getSignedUrl", () => {
     state.isSupabaseConfigured = true;
     state.signedUrlData = null;
     state.signedUrlError = null;
+    state.signedUrlThrows = null;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("returns the signed URL on success", async () => {
@@ -94,11 +102,33 @@ describe("artifactStore.getSignedUrl", () => {
     ).resolves.toBe("https://example.test/signed");
   });
 
-  it("returns null when the call errors", async () => {
+  it("returns null and logs the real error when the call errors", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     state.signedUrlError = { message: "not found" };
     await expect(
       artifactStore.getSignedUrl("workspace-artifacts", "ws-1/missing.txt"),
     ).resolves.toBeNull();
+    // Regression: this used to swallow `error` into a bare `null`, making a
+    // real Storage failure (RLS denial, expired session, outage) look
+    // identical to "the object was never uploaded" with zero diagnosable
+    // trail.
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[artifact-store] getSignedUrl(workspace-artifacts/ws-1/missing.txt) failed",
+      state.signedUrlError,
+    );
+  });
+
+  it("returns null and logs when createSignedUrl itself throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const thrown = new Error("network down");
+    state.signedUrlThrows = thrown;
+    await expect(
+      artifactStore.getSignedUrl("workspace-artifacts", "ws-1/file.txt"),
+    ).resolves.toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[artifact-store] getSignedUrl(workspace-artifacts/ws-1/file.txt) threw",
+      thrown,
+    );
   });
 
   it("returns null when Supabase isn't configured", async () => {

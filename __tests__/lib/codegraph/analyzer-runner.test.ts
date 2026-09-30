@@ -319,6 +319,7 @@ describe("openExistingAnalysis", () => {
     downloadAsTextMock.mockReset();
     getSignedUrlMock.mockReset();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("prefers Storage over the sandbox once both artefacts are mirrored", async () => {
@@ -450,6 +451,72 @@ describe("openExistingAnalysis", () => {
 
     downloadAsTextMock.mockRejectedValueOnce(new Error("sandbox gone"));
     expect(await handle!.readSource("src/gone.ts")).toBeNull();
+  });
+
+  // Regression for the cold-load bug this covers: a genuine Storage-mirror
+  // read failure (as opposed to "this commit was never mirrored") used to be
+  // silently indistinguishable, leaving no trail for why a repository with a
+  // real `codegraph_snapshots` row still fell through to the misleading
+  // "needs a live workspace session" error.
+  it("logs a real Storage read failure instead of swallowing it silently", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    getSignedUrlMock.mockImplementation(
+      async (_bucket: string, path: string) => `https://signed.example/${path}`,
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 403 })),
+    );
+
+    const handle = await openExistingAnalysis(
+      baseOptions({ workspaceId: "ws-1", repositoryUuid: "repo-uuid" }),
+    );
+
+    // Fell back to the sandbox (no live session here), same as before.
+    expect(handle).toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("got HTTP 403"),
+    );
+  });
+
+  it("does not log a plain 404 (the object was simply never mirrored)", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    getSignedUrlMock.mockImplementation(
+      async (_bucket: string, path: string) => `https://signed.example/${path}`,
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404 })),
+    );
+
+    await openExistingAnalysis(
+      baseOptions({ workspaceId: "ws-1", repositoryUuid: "repo-uuid" }),
+    );
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("logs when fetching the signed URL throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    getSignedUrlMock.mockImplementation(
+      async (_bucket: string, path: string) => `https://signed.example/${path}`,
+    );
+    const thrown = new Error("network down");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw thrown;
+      }),
+    );
+
+    await openExistingAnalysis(
+      baseOptions({ workspaceId: "ws-1", repositoryUuid: "repo-uuid" }),
+    );
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("readJsonFromStorage"),
+      thrown,
+    );
   });
 });
 
