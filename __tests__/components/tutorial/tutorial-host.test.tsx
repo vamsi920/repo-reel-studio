@@ -107,15 +107,15 @@ function MobileNavTestControls() {
   );
 }
 
-function renderHost() {
+function renderHost(initialPath = "/") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const ui = (currentPath: string) => (
     <QueryClientProvider client={queryClient}>
       <NavigationProvider
         value={{
-          currentPath: "/",
+          currentPath,
           conversationId: null,
           isNavigating: false,
           navigate,
@@ -126,8 +126,14 @@ function renderHost() {
           <TutorialHost />
         </SidebarMobileNavProvider>
       </NavigationProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(ui(initialPath));
+  return {
+    ...view,
+    /** Simulates the URL changing via a real in-app link, not the wizard's own navigate(). */
+    setPath: (path: string) => view.rerender(ui(path)),
+  };
 }
 
 beforeEach(() => {
@@ -187,6 +193,105 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-back"));
     expect(wizard).toHaveAttribute("data-step", "conversations");
+  });
+
+  it("resyncs the tour when a real link navigates away from the active step's page", async () => {
+    // The sidebar (and any other in-app link) stays clickable while the tour
+    // is open. Walking away that way, rather than via Back/Next, must not
+    // leave the caption narrating a page that's no longer on screen.
+    const steps = getTutorialSteps();
+    const conversationsIndex = steps.findIndex((s) => s.id === "conversations");
+    const securityIndex = steps.findIndex((s) => s.id === "security");
+    const { setPath } = renderHost("/conversations");
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: conversationsIndex,
+      });
+    });
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+
+    act(() => {
+      setPath("/security");
+    });
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "security",
+    );
+    expect(useTutorialStore.getState().stepIndex).toBe(securityIndex);
+  });
+
+  it("does not resync for a sub-page of the active step's own section", async () => {
+    // Opening a specific conversation, or a settings sub-page, is still the
+    // same section the step is narrating — not a departure worth resyncing.
+    const steps = getTutorialSteps();
+    const conversationsIndex = steps.findIndex((s) => s.id === "conversations");
+    const { setPath } = renderHost("/conversations");
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: conversationsIndex,
+      });
+    });
+    navigate.mockClear();
+
+    act(() => {
+      setPath("/conversations/abc123");
+    });
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("does not force-navigate away from a sub-page the tour is opened on top of", () => {
+    const steps = getTutorialSteps();
+    const settingsIndex = steps.findIndex((s) => s.id === "settings");
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: settingsIndex });
+    });
+    renderHost("/settings/llm");
+
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("pauses auto-play instead of dragging the user back when they navigate somewhere the tour doesn't cover", () => {
+    vi.useFakeTimers();
+    const steps = getTutorialSteps();
+    const conversationsIndex = steps.findIndex((s) => s.id === "conversations");
+    const { setPath } = renderHost("/conversations");
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: conversationsIndex,
+        isPlaying: true,
+      });
+    });
+
+    act(() => {
+      setPath("/oauth/device/verify");
+    });
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+    expect(useTutorialStore.getState().isPlaying).toBe(false);
+
+    // The auto-advance timer that would have fired is gone with it.
+    act(() => {
+      vi.advanceTimersByTime(TUTORIAL_MAX_CAPTION_MS);
+    });
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
   });
 
   it("opens the mobile nav drawer for a routed step so the real sidebar link is on screen, not just the hamburger fallback", async () => {
@@ -301,7 +406,6 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-next"));
     for (let i = securityIndex + 1; i < usageIndex; i += 1) {
-      // eslint-disable-next-line no-await-in-loop -- steps must advance in order
       await user.click(screen.getByTestId("tutorial-next"));
     }
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
@@ -765,7 +869,11 @@ describe("TutorialHost watch mode", () => {
 
   it("shows the play/pause label in a tooltip, matching the icon button's accessible name", () => {
     act(() => {
-      useTutorialStore.setState({ isOpen: true, stepIndex: 0, isPlaying: true });
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: 0,
+        isPlaying: true,
+      });
     });
     renderHost();
 

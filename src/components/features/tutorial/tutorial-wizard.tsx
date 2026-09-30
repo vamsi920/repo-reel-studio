@@ -35,6 +35,17 @@ function isInsideBlockingModal(target: EventTarget | null): boolean {
 }
 
 /**
+ * Whether `path` is the step's own page or a sub-page of it (a specific
+ * conversation under "/conversations", "/settings/llm", a specific run
+ * under "/agentops/runs/:id", …). Used both to decide whether the tour's own
+ * navigation should force the exact route, and to detect when a user has
+ * left the current step's section entirely via some other in-app link.
+ */
+function isWithinStepRoute(path: string, route: string): boolean {
+  return path === route || path.startsWith(`${route}/`);
+}
+
+/**
  * The guided tour itself: a caption bar pinned to the bottom of the screen,
  * like video subtitles, narrating one area of the app per step. Each step
  * navigates to the page it describes so the user sees it behind the caption.
@@ -61,9 +72,37 @@ export function TutorialWizard() {
   const captionDurationMs = getCaptionDurationMs(subtitle);
 
   React.useEffect(() => {
-    if (step.route && currentPath !== step.route) navigate(step.route);
+    if (step.route && !isWithinStepRoute(currentPath, step.route)) {
+      navigate(step.route);
+    }
     // Only react to step changes: the user may browse away mid-step.
   }, [step.id]);
+
+  // Sidebar links (and any other in-app link) keep working while the tour is
+  // open, so a user can navigate away from the step's page on their own —
+  // not through Back/Next or the effect above. Left unhandled, the caption
+  // and spotlight stayed keyed to a step whose page was no longer on screen.
+  // Detect exactly that transition — the route WAS within the active step's
+  // section and now suddenly isn't — and resync: jump to whichever step (if
+  // any) actually owns the page the user landed on, so the caption always
+  // matches what's behind it. Staying inside the current step's own
+  // sub-pages isn't a departure worth resyncing for (see `isWithinStepRoute`).
+  const previousPathRef = React.useRef(currentPath);
+  React.useEffect(() => {
+    const previousPath = previousPathRef.current;
+    previousPathRef.current = currentPath;
+    if (!step.route) return; // welcome/finish narrate wherever the user is
+    const wasInSync = isWithinStepRoute(previousPath, step.route);
+    const isStillInSync = isWithinStepRoute(currentPath, step.route);
+    if (!wasInSync || isStillInSync) return;
+    const matchIndex = steps.findIndex(
+      (s) => s.route != null && isWithinStepRoute(currentPath, s.route),
+    );
+    if (matchIndex !== -1) goTo(matchIndex, steps.length);
+    // Nowhere the tour narrates: stop auto-advancing so it doesn't yank the
+    // user away from a page they just chose to look at.
+    else if (isPlaying) setPlaying(false);
+  }, [currentPath]);
 
   // On a phone the sidebar itself is off-screen until the drawer is open, so
   // every step that spotlights a real sidebar link (as opposed to a step
