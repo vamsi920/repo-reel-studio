@@ -15,6 +15,10 @@ import { useConnectedRepositories } from "#/lib/knowledge/connected-repositories
 import { NavigationLink } from "#/components/shared/navigation-link";
 import { CopyToClipboardButton } from "#/components/shared/buttons/copy-to-clipboard-button";
 import { copyTextToClipboard } from "#/utils/copy-text-to-clipboard";
+import {
+  readLastSecurityRepositoryId,
+  writeLastSecurityRepositoryId,
+} from "#/lib/security/security-last-repository";
 import { I18nKey } from "#/i18n/declaration";
 import {
   SECURITY_CATEGORIES,
@@ -103,8 +107,13 @@ export interface SecurityWorkspaceScopeState {
  * commit, strictly more than a bare open conversation does.
  *
  * With no `?repository=`, the connected repositories are ordered by id and the
- * first wins, so a reload cannot quietly re-scope the page just because the
- * store rehydrated its keys in a different order.
+ * first wins by default, so a reload cannot quietly re-scope the page just
+ * because the store rehydrated its keys in a different order. A repository
+ * the user has actually viewed before (via `?repository=` or the picker)
+ * takes priority over that default -- see `security-last-repository.ts` --
+ * so a user who always works in one particular repository lands back on it
+ * instead of re-picking it every visit; that remembered choice only ever
+ * wins when it still names a currently connected repository.
  *
  * `useConnectedRepositories`'s own contract warns that its `repositories`
  * starts empty on the very first render whether or not a live conversation
@@ -205,8 +214,10 @@ export function useSecurityWorkspaceScope(
       };
     }
 
+    const lastViewedId = readLastSecurityRepositoryId();
+    const lastViewed = lastViewedId ? byId.get(lastViewedId) : undefined;
     return {
-      scope: { state: "scoped", scope: entries[0].scope },
+      scope: { state: "scoped", scope: (lastViewed ?? entries[0]).scope },
       repositories,
       isLoading: false,
       isError: false,
@@ -422,6 +433,15 @@ function SecurityScreen() {
   const { scope, repositories, isLoading, isError } = useSecurityWorkspaceScope(
     searchParams.get("repository"),
   );
+  // Remember whatever repository the page actually settles on -- however it
+  // got picked (the URL, the dropdown, or the default fallback) -- so the
+  // next visit with no `?repository=` can land back on it instead of always
+  // re-picking the lexicographically-first connected repository.
+  useEffect(() => {
+    if (scope.state === "scoped") {
+      writeLastSecurityRepositoryId(scope.scope.repositoryId);
+    }
+  }, [scope]);
   const selectRepository = useCallback(
     (repositoryId: string) => {
       setSearchParams(

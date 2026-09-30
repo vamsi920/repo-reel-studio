@@ -22,6 +22,10 @@ import {
   buildSecurityActivityEvent,
   type SecurityMilestoneKind,
 } from "#/lib/security/security-activity";
+import {
+  SECURITY_LAST_REPOSITORY_STORAGE_KEY,
+  writeLastSecurityRepositoryId,
+} from "#/lib/security/security-last-repository";
 import type {
   SecurityAgentOpsIntegration,
   SecurityAgentRuntimeIntegration,
@@ -97,6 +101,7 @@ describe("Security route", () => {
     setConnected();
     connectedIsLoading = false;
     connectedIsError = false;
+    window.localStorage.removeItem(SECURITY_LAST_REPOSITORY_STORAGE_KEY);
   });
 
   it("is registered at /security", () => {
@@ -501,6 +506,41 @@ describe("Security route", () => {
       expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
         "acme/api",
       );
+    });
+
+    it("defaults to the repository last viewed, not the lexicographically-first one, when it is still connected", () => {
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      writeLastSecurityRepositoryId("acme/web@main");
+
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/web@abcdef1",
+      );
+    });
+
+    it("falls back to the lexicographically-first repository when the last-viewed one is no longer connected", () => {
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+      writeLastSecurityRepositoryId("acme/gone@main");
+
+      renderSecurity();
+
+      expect(screen.getByTestId("security-workspace-scope")).toHaveTextContent(
+        "acme/api@abcdef1",
+      );
+    });
+
+    it("remembers the repository the page settles on so the next visit lands back on it", () => {
+      seedRepository();
+      seedRepository({ repositoryId: "acme/web@main", repo: "web" });
+
+      renderSecurity("/security?repository=acme%2Fweb%40main");
+
+      expect(
+        window.localStorage.getItem(SECURITY_LAST_REPOSITORY_STORAGE_KEY),
+      ).toBe("acme/web@main");
     });
 
     it("offers a shortcut to Knowledge when there is no workspace to scope to", () => {
