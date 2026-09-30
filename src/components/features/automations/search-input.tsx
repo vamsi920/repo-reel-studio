@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
@@ -32,8 +33,22 @@ export function SearchInput({ value, onChange, className }: SearchInputProps) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={t(I18nKey.AUTOMATIONS$SEARCH_PLACEHOLDER)}
         aria-label={t(I18nKey.AUTOMATIONS$SEARCH_PLACEHOLDER)}
-        className="min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-white outline-none placeholder:text-tertiary-alt"
+        className={cn(
+          "min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-white outline-none placeholder:text-tertiary-alt",
+          value && "pr-8",
+        )}
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label={t(I18nKey.COMMAND_MENU$CLEAR_SEARCH_LABEL)}
+          data-testid="automations-search-clear"
+          className="absolute right-0 mr-2.5 flex items-center text-tertiary-alt hover:text-white"
+        >
+          <X className="size-3.5" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }

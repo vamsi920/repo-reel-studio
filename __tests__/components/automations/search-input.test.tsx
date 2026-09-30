@@ -21,4 +21,22 @@ describe("SearchInput", () => {
 
     expect(screen.getByRole("textbox")).toHaveValue("security");
   });
+
+  it("does not render a clear button when the value is empty", () => {
+    render(<SearchInput value="" onChange={vi.fn()} />);
+
+    expect(
+      screen.queryByTestId("automations-search-clear"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears the search when the clear button is clicked", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SearchInput value="security" onChange={onChange} />);
+
+    await user.click(screen.getByTestId("automations-search-clear"));
+
+    expect(onChange).toHaveBeenCalledWith("");
+  });
 });
