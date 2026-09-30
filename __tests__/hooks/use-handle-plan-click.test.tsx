@@ -95,6 +95,7 @@ describe("useHandlePlanClick", () => {
       draftMessage: null,
       filesTabDiffView: null,
       filesTabContentViewMode: "rich",
+      filesTabTreeVisible: null,
     });
   });
 
@@ -126,6 +127,7 @@ describe("useHandlePlanClick", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       renderHook(() => useHandlePlanClick());
@@ -166,6 +168,7 @@ describe("useHandlePlanClick", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       renderHook(() => useHandlePlanClick());

@@ -66,6 +66,7 @@ function FilesTab() {
     state: persistedState,
     setFilesTabDiffView,
     setFilesTabContentViewMode,
+    setFilesTabTreeVisible,
   } = useConversationLocalStorageState(conversationId ?? "");
 
   const diffViewDefault =
@@ -96,8 +97,10 @@ function FilesTab() {
   }, [conversationId]);
 
   // Collapsed by default — the quick-access pill row at the top is usually
-  // enough; the user can expand the tree on demand.
-  const [isTreeVisible, setIsTreeVisible] = useState(false);
+  // enough; the user can expand the tree on demand. The choice is
+  // remembered per conversation so it survives a reload instead of
+  // silently collapsing again every time.
+  const isTreeVisible = persistedState.filesTabTreeVisible ?? false;
 
   const filesQuery = useWorkspaceFiles();
   const paths = useMemo(() => filesQuery.data ?? [], [filesQuery.data]);
@@ -341,7 +344,7 @@ function FilesTab() {
                 selectedPath={selectedPath}
                 onSelectFile={handleSelectFile}
                 isTreeVisible={isTreeVisible}
-                onToggleTree={() => setIsTreeVisible((prev) => !prev)}
+                onToggleTree={() => setFilesTabTreeVisible(!isTreeVisible)}
               />
               <div className="flex h-full min-h-0 flex-1">
                 {isTreeVisible && (

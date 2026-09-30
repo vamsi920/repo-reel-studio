@@ -48,6 +48,7 @@ describe("useDraftPersistence", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       },
       setSelectedTab: vi.fn(),
       setUnpinnedTabs: vi.fn(),
@@ -55,6 +56,7 @@ describe("useDraftPersistence", () => {
       setDraftMessage: mockSetDraftMessage,
       setFilesTabDiffView: vi.fn(),
       setFilesTabContentViewMode: vi.fn(),
+      setFilesTabTreeVisible: vi.fn(),
     });
 
     // Default mock for getConversationState
@@ -66,6 +68,7 @@ describe("useDraftPersistence", () => {
       draftMessage: null,
       filesTabDiffView: null,
       filesTabContentViewMode: "rich",
+      filesTabTreeVisible: null,
     });
   });
 
@@ -89,6 +92,7 @@ describe("useDraftPersistence", () => {
         draftMessage: savedDraft,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       // Act
@@ -113,6 +117,7 @@ describe("useDraftPersistence", () => {
         draftMessage: savedDraft,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       // Act
@@ -135,6 +140,7 @@ describe("useDraftPersistence", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       // Act
@@ -224,6 +230,7 @@ describe("useDraftPersistence", () => {
           draftMessage: existingDraft,
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         },
         setSelectedTab: vi.fn(),
         setUnpinnedTabs: vi.fn(),
@@ -231,6 +238,7 @@ describe("useDraftPersistence", () => {
         setDraftMessage: mockSetDraftMessage,
         setFilesTabDiffView: vi.fn(),
         setFilesTabContentViewMode: vi.fn(),
+        setFilesTabTreeVisible: vi.fn(),
       });
 
       vi.mocked(conversationLocalStorage.getConversationState).mockReturnValue({
@@ -241,6 +249,7 @@ describe("useDraftPersistence", () => {
         draftMessage: existingDraft,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       const { result } = renderHook(() =>
@@ -327,6 +336,7 @@ describe("useDraftPersistence", () => {
           draftMessage: "Draft from conv A",
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         })
         .mockReturnValue({
           selectedTab: "files",
@@ -336,6 +346,7 @@ describe("useDraftPersistence", () => {
           draftMessage: null,
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         });
 
       const { rerender } = renderHook(
@@ -365,6 +376,7 @@ describe("useDraftPersistence", () => {
           draftMessage: null,
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         })
         .mockReturnValue({
           selectedTab: "files",
@@ -374,6 +386,7 @@ describe("useDraftPersistence", () => {
           draftMessage: draftForConvB,
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         });
 
       const { rerender } = renderHook(
@@ -434,6 +447,7 @@ describe("useDraftPersistence", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       const { rerender } = renderHook(
@@ -470,6 +484,7 @@ describe("useDraftPersistence", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       const { rerender } = renderHook(
@@ -498,6 +513,7 @@ describe("useDraftPersistence", () => {
         draftMessage: null,
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       const { rerender } = renderHook(
@@ -530,6 +546,7 @@ describe("useDraftPersistence", () => {
           draftMessage: "Existing draft",
           filesTabDiffView: null,
           filesTabContentViewMode: "rich",
+          filesTabTreeVisible: null,
         },
         setSelectedTab: vi.fn(),
         setUnpinnedTabs: vi.fn(),
@@ -537,6 +554,7 @@ describe("useDraftPersistence", () => {
         setDraftMessage: mockSetDraftMessage,
         setFilesTabDiffView: vi.fn(),
         setFilesTabContentViewMode: vi.fn(),
+        setFilesTabTreeVisible: vi.fn(),
       });
 
       // Act
@@ -575,6 +593,7 @@ describe("useDraftPersistence", () => {
         draftMessage: "Draft to restore",
         filesTabDiffView: null,
         filesTabContentViewMode: "rich",
+        filesTabTreeVisible: null,
       });
 
       // Act

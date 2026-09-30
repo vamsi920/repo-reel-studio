@@ -658,4 +658,51 @@ describe("conversation localStorage utilities", () => {
       expect(state.filesTabContentViewMode).toBe("rich");
     });
   });
+
+  describe("filesTabTreeVisible persistence", () => {
+    // The Files tab's left-hand file tree is collapsed by default; the
+    // user's choice to expand it should survive a reload instead of
+    // silently collapsing again every time.
+
+    it("defaults to null when nothing is stored", () => {
+      const state = getConversationState("files-tree-conv-1");
+      expect(state.filesTabTreeVisible).toBeNull();
+    });
+
+    it("round-trips `true` through localStorage", () => {
+      const conversationId = "files-tree-conv-2";
+      setConversationState(conversationId, { filesTabTreeVisible: true });
+
+      const state = getConversationState(conversationId);
+      expect(state.filesTabTreeVisible).toBe(true);
+
+      const raw = localStorage.getItem(
+        `${LOCAL_STORAGE_KEYS.CONVERSATION_STATE}-${conversationId}`,
+      );
+      expect(raw).not.toBeNull();
+      expect(JSON.parse(raw as string).filesTabTreeVisible).toBe(true);
+    });
+
+    it("round-trips `false` through localStorage", () => {
+      const conversationId = "files-tree-conv-3";
+      setConversationState(conversationId, { filesTabTreeVisible: false });
+
+      const state = getConversationState(conversationId);
+      expect(state.filesTabTreeVisible).toBe(false);
+    });
+
+    it("is isolated per conversation", () => {
+      setConversationState("files-tree-convA", { filesTabTreeVisible: true });
+      setConversationState("files-tree-convB", {
+        filesTabTreeVisible: false,
+      });
+
+      expect(getConversationState("files-tree-convA").filesTabTreeVisible).toBe(
+        true,
+      );
+      expect(getConversationState("files-tree-convB").filesTabTreeVisible).toBe(
+        false,
+      );
+    });
+  });
 });

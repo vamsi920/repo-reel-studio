@@ -322,6 +322,24 @@ describe("FilesTab", () => {
     expect(screen.queryByTestId("files-tab-tree")).not.toBeInTheDocument();
   });
 
+  it("remembers an expanded file tree across remounts of the same conversation", async () => {
+    useHasAttachedSourceMock.mockReturnValue({
+      hasAttachedSource: false,
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+
+    const { unmount } = renderTab("conv-tree-persist");
+    await user.click(screen.getByTestId("file-quick-row-tree-toggle"));
+    expect(screen.getByTestId("files-tab-tree")).toBeInTheDocument();
+    unmount();
+
+    // A fresh mount for the same conversation (e.g. after a reload) should
+    // restore the expanded choice instead of collapsing again.
+    renderTab("conv-tree-persist");
+    expect(screen.getByTestId("files-tab-tree")).toBeInTheDocument();
+  });
+
   it("renders markdown content via MarkdownRenderer in rich mode", async () => {
     useHasAttachedSourceMock.mockReturnValue({
       hasAttachedSource: false,

@@ -43,6 +43,12 @@ export interface ConversationState {
   filesTabDiffView: boolean | null;
   /** User's persisted choice for the Files tab Rich/Plain content toggle. */
   filesTabContentViewMode: ViewMode;
+  /**
+   * User's persisted choice for whether the Files tab's left-hand file
+   * tree is expanded. `null` means "no explicit choice yet" — the tree
+   * stays collapsed by default (the quick-access row is usually enough).
+   */
+  filesTabTreeVisible: boolean | null;
 }
 
 const DEFAULT_CONVERSATION_STATE: ConversationState = {
@@ -53,6 +59,7 @@ const DEFAULT_CONVERSATION_STATE: ConversationState = {
   draftMessage: null,
   filesTabDiffView: null,
   filesTabContentViewMode: "rich",
+  filesTabTreeVisible: null,
 };
 
 const VALID_CONVERSATION_TABS: ReadonlySet<ConversationTab> = new Set([
@@ -270,6 +277,7 @@ export function useConversationLocalStorageState(conversationId: string): {
   setDraftMessage: (message: string | null) => void;
   setFilesTabDiffView: (diffView: boolean | null) => void;
   setFilesTabContentViewMode: (mode: ViewMode) => void;
+  setFilesTabTreeVisible: (visible: boolean) => void;
 } {
   const [state, setState] = useState<ConversationState>(() =>
     getConversationState(conversationId),
@@ -339,5 +347,7 @@ export function useConversationLocalStorageState(conversationId: string): {
       updateState({ filesTabDiffView: diffView }),
     setFilesTabContentViewMode: (mode) =>
       updateState({ filesTabContentViewMode: mode }),
+    setFilesTabTreeVisible: (visible) =>
+      updateState({ filesTabTreeVisible: visible }),
   };
 }
