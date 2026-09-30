@@ -448,8 +448,13 @@ export function ChatInterface() {
     }
     // Note: We intentionally exclude autoScroll from deps because we only want
     // to scroll when message content changes, not when autoScroll state changes.
+    // We depend on the `renderableEvents` array reference (not `.length`)
+    // because an event can be replaced in place at its original index (e.g. an
+    // ACP tool call resolving running -> completed) without changing the
+    // array's length, and that in-place update still needs to re-scroll a
+    // user pinned to the bottom.
   }, [
-    renderableEvents.length,
+    renderableEvents,
     hasPendingUserMessages,
     activeGoalScrollKey,
     scrollDomToBottom,

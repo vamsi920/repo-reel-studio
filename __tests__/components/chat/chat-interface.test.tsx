@@ -1154,6 +1154,105 @@ describe("ChatInterface - Auto-scroll on submit (issue #817)", () => {
       expect(scrollWrites).toContain(10000);
     });
   });
+
+  it("re-scrolls to bottom when an event is replaced in place (renderableEvents.length unchanged)", async () => {
+    // Arrange: seed one renderable event so `handleEventForUI`'s in-place
+    // replacement (e.g. an ACP tool call resolving running -> completed) has
+    // something to replace at the same array index without growing the array.
+    const runningAction: ActionEvent = {
+      id: "action-in-place",
+      timestamp: "2026-07-27T18:00:00Z",
+      source: "agent",
+      thought: [],
+      thinking_blocks: [],
+      action: {
+        kind: "TerminalAction",
+        command: "git status",
+        is_input: false,
+        timeout: null,
+        reset: false,
+      },
+      tool_name: "terminal",
+      tool_call_id: "tool-in-place",
+      tool_call: {
+        id: "tool-in-place",
+        type: "function",
+        function: {
+          name: "terminal",
+          arguments: '{"command":"git status"}',
+        },
+      },
+      llm_response_id: "response-in-place",
+      security_risk: SecurityRisk.LOW,
+    };
+    useEventStore.setState({
+      events: [runningAction],
+      eventIds: new Set([runningAction.id]),
+      uiEvents: [runningAction],
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/test-conversation-id"]}>
+          <Routes>
+            <Route path=":conversationId" element={<ChatInterface />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const scrollContainer = document.querySelector(
+      "[data-testid='chat-scroll-container']",
+    ) as HTMLElement | null;
+    expect(scrollContainer).not.toBeNull();
+
+    // Let the mount-time auto-scroll settle; the user stays pinned to the
+    // bottom (autoScroll=true) since we never simulate a scroll-up.
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
+
+    const scrollWrites: number[] = [];
+    Object.defineProperty(scrollContainer!, "scrollTop", {
+      configurable: true,
+      get: () => 9200,
+      set: (value: number) => {
+        scrollWrites.push(value);
+      },
+    });
+    Object.defineProperty(scrollContainer!, "scrollHeight", {
+      configurable: true,
+      writable: true,
+      value: 10000,
+    });
+    Object.defineProperty(scrollContainer!, "clientHeight", {
+      configurable: true,
+      writable: true,
+      value: 800,
+    });
+    scrollWrites.length = 0;
+
+    // Act: replace the same event in place (a new object at the same index),
+    // mirroring `handleEventForUI` finalizing an action into its observation.
+    // The array length stays 1 — only the object identity changes.
+    act(() => {
+      useEventStore.setState({
+        uiEvents: [
+          {
+            ...runningAction,
+            thought: [{ type: "text" as const, text: "done" }],
+          },
+        ],
+      });
+    });
+
+    // Assert: the scroll-to-bottom effect re-ran off the new array reference.
+    // Before the fix (depending on `renderableEvents.length`), this in-place
+    // update wouldn't re-trigger the effect and scrollWrites would stay empty.
+    await waitFor(() => {
+      expect(scrollWrites).toContain(10000);
+    });
+  });
 });
 
 describe("ChatInterface - Status Indicator", () => {
