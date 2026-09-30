@@ -43,6 +43,7 @@ export function useSetPluginEnabled() {
     onError: (error) => {
       displayErrorToast(
         retrieveAxiosErrorMessage(error) || t(I18nKey.ERROR$GENERIC),
+        { error },
       );
     },
   });

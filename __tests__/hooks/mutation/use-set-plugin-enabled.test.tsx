@@ -7,6 +7,17 @@ import { SEEDED_DEFAULT_BACKEND_ID } from "#/api/backend-registry/default-backen
 import { useSetPluginEnabled } from "#/hooks/mutation/use-set-plugin-enabled";
 import { SKILLS_QUERY_KEYS } from "#/hooks/query/query-keys";
 
+const mockDisplayErrorToast = vi.fn();
+
+vi.mock("#/utils/custom-toast-handlers", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("#/utils/custom-toast-handlers")>();
+  return {
+    ...actual,
+    displayErrorToast: (...args: unknown[]) => mockDisplayErrorToast(...args),
+  };
+});
+
 const createWrapper = (
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -92,6 +103,32 @@ describe("useSetPluginEnabled", () => {
     await waitFor(() => {
       const [mutation] = queryClient.getMutationCache().getAll();
       expect(mutation.options.meta).toEqual({ disableToast: true });
+    });
+  });
+
+  // Regression test: without forwarding the original error, displayErrorToast
+  // cannot tell a real backend response (which may legitimately contain text
+  // like "Failed to fetch plugin source") from an actual network/CORS
+  // failure, and would rewrite the real backend message into a misleading
+  // "Disconnected (check URL or network)" toast.
+  it("passes the original error to displayErrorToast so a real backend message isn't misclassified as a network failure", async () => {
+    const backendError = new Error("Failed to fetch plugin source: 404");
+    vi.spyOn(PluginsManagementService, "setPluginEnabled").mockRejectedValue(
+      backendError,
+    );
+    const { result } = renderHook(() => useSetPluginEnabled(), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      result.current.mutateAsync({ name: "demo-plugin", enabled: false }),
+    ).rejects.toThrow();
+
+    await waitFor(() => {
+      expect(mockDisplayErrorToast).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ error: backendError }),
+      );
     });
   });
 });
