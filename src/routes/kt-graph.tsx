@@ -271,9 +271,23 @@ function KtGraph() {
       // Same scope boundary as Watch KT: analysis needs a live sandbox to
       // actually run in.
       if (!snapshot.localPath || !conversationUrl || !sessionApiKey) {
-        useCodeGraphStore
-          .getState()
-          .setError(targetKey, t(I18nKey.CODEGRAPH$NEEDS_CONVERSATION));
+        if (coldStorageIds) {
+          // This call came from the silent cold-load probe (a
+          // `codegraph_snapshots` row exists, but its Storage mirror missed
+          // or is now orphaned -- e.g. the row's `outputPath` points at
+          // artifacts that were never actually uploaded). The user never
+          // asked for anything here, so a dead-end "needs a live workspace
+          // session" error is misleading and unrecoverable without a live
+          // session's own "Re-analyze" button. Fall back to the same empty
+          // "Build code graph" state as a commit that was never analyzed --
+          // clicking Generate there re-runs this with a real session and
+          // gets the honest error then, if one is still missing.
+          useCodeGraphStore.getState().reset(targetKey);
+        } else {
+          useCodeGraphStore
+            .getState()
+            .setError(targetKey, t(I18nKey.CODEGRAPH$NEEDS_CONVERSATION));
+        }
         settle();
         return;
       }

@@ -433,6 +433,22 @@ describe("KtGraph search", () => {
     expect(codegraphPersistenceRepository.saveSnapshot).not.toHaveBeenCalled();
   });
 
+  it("shows the real no-session error when the user directly asks to build a graph with no live session", async () => {
+    // Unlike the silent cold-load probe (which falls back to the empty
+    // state on the same guard, see the "KtGraph cold rehydration" describe
+    // block), a user explicitly clicking "Build code graph" with no live
+    // session has no Storage-mirror pointer to fall back on and must still
+    // see the honest, actionable error.
+    renderWithProviders(<KtGraph />);
+
+    await userEvent.click(await screen.findByTestId("codegraph-generate"));
+
+    expect(
+      await screen.findByText("CODEGRAPH$NEEDS_CONVERSATION"),
+    ).toBeInTheDocument();
+    expect(runAnalysis).not.toHaveBeenCalled();
+  });
+
   it("persists a snapshot pointer once the analysis's Storage mirror lands", async () => {
     vi.mocked(resolvePersistenceIds).mockResolvedValue({
       workspaceId: "real-ws-id",
@@ -1240,12 +1256,12 @@ describe("KtGraph cold rehydration", () => {
     );
   });
 
-  it("shows the clear no-session error instead of getting stuck on \"analyzing\" when openExistingAnalysis throws", async () => {
+  it("falls back to the empty \"Build code graph\" state instead of getting stuck on \"analyzing\" when openExistingAnalysis throws", async () => {
     // `openExistingAnalysis` can throw synchronously (no live backend/session
     // and the Storage fast path missed) instead of resolving null. Before
     // this was guarded, the auto-check effect's unhandled rejection left the
-    // store on "analyzing" forever instead of falling through to the
-    // existing "open a live session" guard below it.
+    // store on "analyzing" forever instead of falling through to the guard
+    // below it.
     vi.mocked(resolveOrgIdWithStatus).mockResolvedValue({
       orgId: "org-1",
       hadError: false,
@@ -1260,9 +1276,18 @@ describe("KtGraph cold rehydration", () => {
 
     renderWithProviders(<KtGraph />);
 
+    // A `codegraph_snapshots` row exists for this commit (that's why the
+    // cold-load probe fired at all), but its Storage mirror is unreadable
+    // (e.g. an orphaned pointer to artifacts that were never uploaded) and
+    // there is no live session to fall back to. This is a silent background
+    // probe, not a user action, so it must not land on the dead-end "needs a
+    // live workspace session" error -- it should look exactly like a commit
+    // that was never analyzed, offering "Build code graph" again.
+    await waitFor(() => expect(openExistingAnalysis).toHaveBeenCalled());
+    expect(await screen.findByTestId("codegraph-generate")).toBeInTheDocument();
     expect(
-      await screen.findByText("CODEGRAPH$NEEDS_CONVERSATION"),
-    ).toBeInTheDocument();
+      screen.queryByText("CODEGRAPH$NEEDS_CONVERSATION"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps showing the empty state, not an error, when no prior snapshot exists for this commit", async () => {
