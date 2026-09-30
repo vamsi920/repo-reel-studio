@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Loader2, Plus, RefreshCw, X } from "lucide-react";
 import { useCreateConversation } from "#/hooks/mutation/use-create-conversation";
@@ -532,10 +532,34 @@ function KtList() {
     useConnectedRepositories(),
   );
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const knownRepositoryIds = useMemo(
     () => new Set(repositories.map((candidate) => candidate.repositoryId)),
     [repositories],
   );
+
+  // Focuses the search box on "/" so a repo list with many entries doesn't
+  // require a mouse click just to start filtering -- skipped whenever the
+  // keypress already targets an editable element (another text field, or a
+  // held modifier that changes the key's meaning) so normal typing/shortcuts
+  // elsewhere on the page are never intercepted.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
+        return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      )
+        return;
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -611,6 +635,7 @@ function KtList() {
           <>
             <div className="relative mb-4">
               <input
+                ref={searchInputRef}
                 type="text"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -619,7 +644,7 @@ function KtList() {
                 data-testid="kt-search-input"
                 className="w-full rounded-md border border-[var(--oh-border)] bg-transparent px-3 py-2 pr-9 text-sm text-[var(--oh-foreground)] placeholder:text-[var(--oh-muted)]"
               />
-              {search && (
+              {search ? (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
@@ -629,6 +654,14 @@ function KtList() {
                 >
                   <X className="size-3.5" aria-hidden />
                 </button>
+              ) : (
+                <kbd
+                  aria-label={t(I18nKey.KT$SEARCH_SHORTCUT_HINT)}
+                  data-testid="kt-search-shortcut-hint"
+                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-xs text-[var(--oh-muted)]"
+                >
+                  /
+                </kbd>
               )}
             </div>
             {filtered.length === 0 ? (

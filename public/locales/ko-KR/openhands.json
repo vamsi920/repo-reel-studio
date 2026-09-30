@@ -2371,6 +2371,7 @@
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
   "KT$SEARCH_NO_RESULTS": "\"{{query}}\"과 일치하는 리포지토리가 없습니다.",
+  "KT$SEARCH_SHORTCUT_HINT": "/ 키를 눌러 검색",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",

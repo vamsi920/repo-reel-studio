@@ -2371,6 +2371,7 @@
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
   "KT$SEARCH_NO_RESULTS": "No repositories match \"{{query}}\".",
+  "KT$SEARCH_SHORTCUT_HINT": "Press / to search",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",

@@ -2371,6 +2371,7 @@
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
   "KT$SEARCH_NO_RESULTS": "Ingen depoter samsvarer med «{{query}}».",
+  "KT$SEARCH_SHORTCUT_HINT": "Trykk / for å søke",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",

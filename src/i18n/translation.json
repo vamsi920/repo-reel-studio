@@ -40323,6 +40323,23 @@
     "tr": "\"{{query}}\" ile eşleşen depo yok.",
     "uk": "Немає репозиторіїв, що відповідають «{{query}}»."
   },
+  "KT$SEARCH_SHORTCUT_HINT": {
+    "en": "Press / to search",
+    "ja": "「/」キーで検索",
+    "zh-CN": "按 / 键搜索",
+    "zh-TW": "按 / 鍵搜尋",
+    "ko-KR": "/ 키를 눌러 검색",
+    "no": "Trykk / for å søke",
+    "ar": "اضغط / للبحث",
+    "de": "„/“ drücken, um zu suchen",
+    "fr": "Appuyez sur / pour rechercher",
+    "it": "Premi / per cercare",
+    "pt": "Pressione / para pesquisar",
+    "es": "Pulsa / para buscar",
+    "ca": "Prem / per cercar",
+    "tr": "Aramak için / tuşuna basın",
+    "uk": "Натисніть / для пошуку"
+  },
   "KT$TAB_DOCS": {
     "en": "Docs",
     "ja": "Docs",

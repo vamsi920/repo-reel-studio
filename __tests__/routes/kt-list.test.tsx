@@ -510,4 +510,44 @@ describe("KtList", () => {
     expect(await screen.findByTestId("kt-repo-card")).toBeVisible();
     expect(screen.queryByTestId("kt-search-clear")).toBeNull();
   });
+
+  // Regression: with many repositories, filtering required a mouse click
+  // into the search box first -- "/" should jump straight to it, matching
+  // the shortcut hint rendered next to the field.
+  it("focuses the search input when the user presses / outside any text field", async () => {
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtList />);
+    await screen.findByTestId("kt-repo-card");
+
+    expect(screen.getByTestId("kt-search-shortcut-hint")).toBeVisible();
+    expect(screen.getByTestId("kt-search-input")).not.toHaveFocus();
+
+    await user.keyboard("/");
+
+    expect(screen.getByTestId("kt-search-input")).toHaveFocus();
+  });
+
+  // "/" is a normal character everywhere else -- typing it while already
+  // inside the search field must add it to the query, not re-trigger focus
+  // (which would be a no-op) or eat the keystroke.
+  it("types a literal / into the search field instead of treating it as the shortcut while already focused", async () => {
+    listGeneratedRepositories.mockResolvedValue({
+      summaries: [{ owner: "vamsi920", repo: "layman", branch: "main" }],
+      error: false,
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<KtList />);
+    await screen.findByTestId("kt-repo-card");
+
+    await user.click(screen.getByTestId("kt-search-input"));
+    await user.keyboard("/");
+
+    expect(screen.getByTestId("kt-search-input")).toHaveValue("/");
+  });
 });

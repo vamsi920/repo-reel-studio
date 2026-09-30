@@ -2371,6 +2371,7 @@
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
   "KT$SEARCH_NO_RESULTS": "Немає репозиторіїв, що відповідають «{{query}}».",
+  "KT$SEARCH_SHORTCUT_HINT": "Натисніть / для пошуку",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",

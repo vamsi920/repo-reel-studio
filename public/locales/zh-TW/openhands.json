@@ -2371,6 +2371,7 @@
   "KT$REGENERATE": "Regenerate",
   "KT$SEARCH_PLACEHOLDER": "Search projects",
   "KT$SEARCH_NO_RESULTS": "沒有與「{{query}}」相符的儲存庫。",
+  "KT$SEARCH_SHORTCUT_HINT": "按 / 鍵搜尋",
   "KT$TAB_DOCS": "Docs",
   "KT$TAB_VIDEO": "Video KT",
   "KT$TAB_CODEGRAPH": "CodeGraph",
