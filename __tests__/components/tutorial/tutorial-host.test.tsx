@@ -763,6 +763,25 @@ describe("TutorialHost", () => {
     expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "44px" });
     link.remove();
   });
+
+  it("caps the caption bar's height and scrolls internally instead of clipping off-screen on short viewports", async () => {
+    // The bar is `fixed`/`bottom-4` and grows upward with its content, so
+    // with no height cap a long caption on a very short viewport (a
+    // landscape phone, or heavy browser zoom) could push the progress/skip
+    // row above `y=0` — a fixed element that tall doesn't scroll with the
+    // page, so that content would be genuinely unreachable, not just
+    // scrolled off. Capping height + internal scroll keeps every control
+    // reachable regardless of viewport height.
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    const user = userEvent.setup();
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+
+    const wizard = screen.getByTestId("tutorial-wizard");
+    expect(wizard.className).toContain("max-h-[calc(100vh-2rem)]");
+    expect(wizard.className).toContain("overflow-y-auto");
+  });
 });
 
 describe("TutorialHost on a Cloud backend that skips onboarding", () => {

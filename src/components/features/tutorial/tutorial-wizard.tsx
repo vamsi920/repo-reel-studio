@@ -187,7 +187,17 @@ export function TutorialWizard() {
         // resolve to dark colors meant for light surfaces, not this black
         // bar. Every color inside it must stay a fixed white-based utility
         // rather than an --oh-* theme token, or it becomes unreadable.
-        className="fixed inset-x-0 bottom-4 z-[60] mx-auto w-[min(92vw,640px)] rounded-2xl border border-white/15 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
+        //
+        // `max-h-[calc(100vh-2rem)] overflow-y-auto` is the short-viewport /
+        // high-zoom safety net: the bar is anchored to `bottom-4` and grows
+        // upward with its content, so with no height cap a long caption plus
+        // the timer bar could push the progress/skip row above `y=0` on a
+        // very short viewport (landscape phone, heavy browser zoom) — a
+        // `fixed` element that tall doesn't scroll with the page, so that
+        // content would be genuinely unreachable rather than just scrolled
+        // off. Capping the height and letting the bar scroll internally
+        // keeps every control reachable instead.
+        className="fixed inset-x-0 bottom-4 z-[60] mx-auto max-h-[calc(100vh-2rem)] w-[min(92vw,640px)] overflow-y-auto rounded-2xl border border-white/15 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
       >
         <div className="flex items-center justify-between gap-3">
           <span
