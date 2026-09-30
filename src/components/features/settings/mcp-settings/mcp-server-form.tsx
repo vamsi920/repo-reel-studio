@@ -335,6 +335,23 @@ export function MCPServerForm({
   const oauthState =
     server?.auth?.strategy === "oauth2" ? server.auth.state : undefined;
 
+  // The auth-specific fields rendered below are uncontrolled and only
+  // mounted while their auth mode is selected, so switching the
+  // "Authentication" dropdown away and back unmounts/remounts them. Without
+  // this ref, a remounted field's `defaultValue` would re-read the original
+  // `server` prop and silently discard whatever the user had just typed.
+  // The ref survives the unmount, so each field re-seeds from the last
+  // value the user actually entered instead of the stale prop value.
+  const authFieldValuesRef = React.useRef({
+    apiKey: editableAuthValue(server?.auth),
+    headers: editableHeaderValue(server?.auth),
+    oauthClientId: oauthAuthentication?.client_id || "",
+    oauthClientSecret: oauthAuthentication?.client_secret || "",
+    oauthScopes: Array.isArray(oauthAuthentication?.scopes)
+      ? oauthAuthentication.scopes.join(" ")
+      : oauthAuthentication?.scopes || "",
+  });
+
   const authFromFormData = (
     formData: FormData,
   ): MCPAuthCredential | undefined => {
@@ -548,7 +565,10 @@ export function MCPServerForm({
               label={t(I18nKey.SETTINGS$MCP_API_KEY)}
               className="w-full min-w-0"
               required
-              defaultValue={editableAuthValue(server?.auth)}
+              defaultValue={authFieldValuesRef.current.apiKey}
+              onChange={(v) => {
+                authFieldValuesRef.current.apiKey = v;
+              }}
               placeholder={t(I18nKey.SETTINGS$MCP_API_KEY_PLACEHOLDER)}
             />
           )}
@@ -560,7 +580,10 @@ export function MCPServerForm({
                 data-testid="headers-input"
                 name="headers"
                 rows={4}
-                defaultValue={editableHeaderValue(server?.auth)}
+                defaultValue={authFieldValuesRef.current.headers}
+                onChange={(e) => {
+                  authFieldValuesRef.current.headers = e.target.value;
+                }}
                 placeholder={t(I18nKey.SETTINGS$MCP_HEADERS_PLACEHOLDER)}
                 className={cn(
                   formControlMultilineFieldClassName,
@@ -595,7 +618,10 @@ export function MCPServerForm({
                 label={t(I18nKey.SETTINGS$MCP_OAUTH_CLIENT_ID)}
                 className="w-full min-w-0"
                 showOptionalTag
-                defaultValue={oauthAuthentication?.client_id || ""}
+                defaultValue={authFieldValuesRef.current.oauthClientId}
+                onChange={(v) => {
+                  authFieldValuesRef.current.oauthClientId = v;
+                }}
                 placeholder={t(
                   I18nKey.SETTINGS$MCP_OAUTH_CLIENT_ID_PLACEHOLDER,
                 )}
@@ -607,7 +633,10 @@ export function MCPServerForm({
                 label={t(I18nKey.SETTINGS$MCP_OAUTH_CLIENT_SECRET)}
                 className="w-full min-w-0"
                 showOptionalTag
-                defaultValue={oauthAuthentication?.client_secret || ""}
+                defaultValue={authFieldValuesRef.current.oauthClientSecret}
+                onChange={(v) => {
+                  authFieldValuesRef.current.oauthClientSecret = v;
+                }}
                 placeholder={t(
                   I18nKey.SETTINGS$MCP_OAUTH_CLIENT_SECRET_PLACEHOLDER,
                 )}
@@ -619,11 +648,10 @@ export function MCPServerForm({
                 label={t(I18nKey.SETTINGS$MCP_OAUTH_SCOPES)}
                 className="w-full min-w-0"
                 showOptionalTag
-                defaultValue={
-                  Array.isArray(oauthAuthentication?.scopes)
-                    ? oauthAuthentication.scopes.join(" ")
-                    : oauthAuthentication?.scopes || ""
-                }
+                defaultValue={authFieldValuesRef.current.oauthScopes}
+                onChange={(v) => {
+                  authFieldValuesRef.current.oauthScopes = v;
+                }}
                 placeholder={t(I18nKey.SETTINGS$MCP_OAUTH_SCOPES_PLACEHOLDER)}
               />
             </>

@@ -29,6 +29,51 @@ const renderEditForm = async (
   return { updateSecret, onCancel };
 };
 
+describe("SecretForm in add mode", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("rejects a duplicate name even when a stale selectedSecret matches it", async () => {
+    // Arrange - selectedSecret can be left over from a cancelled delete/edit
+    // on the list screen; it must not exempt that name from the add-mode
+    // duplicate check.
+    vi.spyOn(SecretsService, "getSecrets").mockResolvedValue([
+      { name: "OPENAI_KEY", description: "Existing secret" },
+    ]);
+    const createSecretSpy = vi
+      .spyOn(SecretsService, "createSecret")
+      .mockResolvedValue(undefined);
+    const onCancel = vi.fn();
+
+    renderWithProviders(
+      <SecretForm
+        mode="add"
+        selectedSecret="OPENAI_KEY"
+        onCancel={onCancel}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(SecretsService.getSecrets).toHaveBeenCalled(),
+    );
+
+    // Act
+    await userEvent.type(screen.getByTestId("name-input"), "OPENAI_KEY");
+    await userEvent.type(screen.getByTestId("value-input"), "sk-new-value");
+    await userEvent.click(screen.getByTestId("submit-button"));
+
+    // Assert - the duplicate error must block the overwrite.
+    await waitFor(() =>
+      expect(
+        screen.getByText("SECRETS$SECRET_ALREADY_EXISTS"),
+      ).toBeInTheDocument(),
+    );
+    expect(createSecretSpy).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+});
+
 describe("SecretForm in edit mode", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

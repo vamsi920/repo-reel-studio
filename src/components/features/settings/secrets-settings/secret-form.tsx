@@ -94,7 +94,9 @@ export function SecretForm({
       setError(null);
 
       const isNameAlreadyUsed = secrets?.some(
-        (secret) => secret.name === name && secret.name !== selectedSecret,
+        (secret) =>
+          secret.name === name &&
+          !(mode === "edit" && secret.name === selectedSecret),
       );
       if (isNameAlreadyUsed) {
         setError(t(I18nKey.SECRETS$SECRET_ALREADY_EXISTS));

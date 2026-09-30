@@ -9,6 +9,32 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+// The real dropdown is a HeroUI Autocomplete; swap it for plain buttons so
+// tests can trigger `onSelectionChange` directly without driving its popover.
+vi.mock("#/components/features/settings/settings-dropdown-input", () => ({
+  SettingsDropdownInput: ({
+    testId,
+    items,
+    onSelectionChange,
+  }: {
+    testId: string;
+    items: { key: React.Key; label: string }[];
+    onSelectionChange?: (key: React.Key | null) => void;
+  }) => (
+    <div data-testid={testId}>
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => onSelectionChange?.(item.key)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
 describe("MCPServerForm validation", () => {
   const noop = () => {};
 
@@ -523,6 +549,49 @@ describe("MCPServerForm validation", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       auth: { strategy: "bearer", value: "new-secret" },
+    });
+  });
+
+  it("keeps a freshly typed API key after the auth mode is switched away and back", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <MCPServerForm
+        mode="edit"
+        server={{
+          id: "shttp-0",
+          type: "shttp",
+          name: "datadog",
+          url: "https://api.example.com/mcp",
+          auth: { strategy: "bearer", value: "old-secret" },
+        }}
+        existingServers={[]}
+        onSubmit={onSubmit}
+        onCancel={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("api-key-input"), {
+      target: { value: "rotated-secret" },
+    });
+
+    // Toggle the Authentication dropdown away from "bearer" and back, which
+    // unmounts and remounts the API key field.
+    fireEvent.click(
+      screen.getByRole("button", { name: "SETTINGS$MCP_AUTH_MODE_HEADER" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "SETTINGS$MCP_AUTH_MODE_BEARER" }),
+    );
+
+    // The remounted field must not have reverted to the original stored value.
+    expect(screen.getByTestId("api-key-input")).toHaveValue("rotated-secret");
+
+    fireEvent.click(screen.getByTestId("submit-button"));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      auth: { strategy: "bearer", value: "rotated-secret" },
     });
   });
 
