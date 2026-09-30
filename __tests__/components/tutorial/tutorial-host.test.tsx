@@ -598,6 +598,67 @@ describe("TutorialHost", () => {
     expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "208px" });
     link.remove();
   });
+
+  it("re-measures the spotlight when the anchor's own box resizes, e.g. a sidebar collapse toggle", async () => {
+    // Regression test: toggling the sidebar between expanded/collapsed
+    // resizes the anchored nav row itself without firing a window `resize`
+    // event, since it's a CSS/layout change scoped to the sidebar, not the
+    // viewport. Only a ResizeObserver on the anchor element catches that.
+    class ControllableResizeObserver {
+      static callbacks: ResizeObserverCallback[] = [];
+
+      private cb: ResizeObserverCallback;
+
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb;
+      }
+
+      observe = () => {
+        ControllableResizeObserver.callbacks.push(this.cb);
+      };
+
+      unobserve = () => {};
+
+      disconnect = () => {
+        ControllableResizeObserver.callbacks =
+          ControllableResizeObserver.callbacks.filter((cb) => cb !== this.cb);
+      };
+
+      static fireAll() {
+        ControllableResizeObserver.callbacks.forEach((cb) =>
+          cb([], {} as ResizeObserver),
+        );
+      }
+    }
+    ControllableResizeObserver.callbacks = [];
+    vi.stubGlobal("ResizeObserver", ControllableResizeObserver);
+
+    const user = userEvent.setup();
+    const link = document.createElement("a");
+    link.dataset.testid = "sidebar-conversations-link";
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
+    document.body.appendChild(link);
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+    });
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    const spotlight = screen.getByTestId("tutorial-spotlight");
+    expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "208px" });
+
+    // Simulate the sidebar collapsing: the same row shrinks to an icon-only
+    // width, with no window resize/scroll event involved.
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 36, height: 32 }) as DOMRect;
+    act(() => {
+      ControllableResizeObserver.fireAll();
+    });
+
+    expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "44px" });
+    link.remove();
+  });
 });
 
 describe("TutorialHost on a Cloud backend that skips onboarding", () => {

@@ -68,11 +68,21 @@ export function TutorialSpotlight({
       if (anchor?.isConnected) setRect(toSpotlightRect(anchor));
     };
 
+    // Tracks the anchor's own box, not just the viewport: a sidebar collapse
+    // toggle (or any other layout shift that resizes the row itself without
+    // firing a window `resize` event) would otherwise leave the ring stuck at
+    // a stale rect until the next scroll/resize/step change.
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(measure);
+
     const lookup = () => {
       anchor = findTutorialAnchor(anchorTestIds);
       if (anchor) {
         anchor.scrollIntoView?.({ block: "nearest", inline: "nearest" });
         measure();
+        resizeObserver?.observe(anchor);
         return;
       }
       framesLeft -= 1;
@@ -87,6 +97,7 @@ export function TutorialSpotlight({
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
+      resizeObserver?.disconnect();
     };
     // anchorKey stands in for the array identity.
   }, [anchorKey]);
