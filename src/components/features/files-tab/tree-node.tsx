@@ -48,6 +48,7 @@ export function TreeNode({
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
+          title={node.path}
           data-testid={`file-tree-dir-${node.path}`}
           className={cn(
             "flex w-full items-center gap-1.5 py-1 pr-2 text-left text-sm text-white",
@@ -92,6 +93,7 @@ export function TreeNode({
         type="button"
         onClick={() => onSelectFile(node.path)}
         aria-current={isSelected ? "true" : undefined}
+        title={node.path}
         data-testid={`file-tree-file-${node.path}`}
         className={cn(
           "flex w-full items-center gap-1.5 py-1 pr-2 text-left text-sm",

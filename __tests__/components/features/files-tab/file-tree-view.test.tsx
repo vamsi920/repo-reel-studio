@@ -189,6 +189,35 @@ describe("FileTreeView", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
+  it("shows the full path as a hover tooltip on both file and directory rows", () => {
+    // Arrange + Act: a name long enough to truncate in the narrow tree
+    // panel still needs its full path discoverable without expanding the
+    // panel — mirrors the `title={path}` pattern FileQuickRow already uses.
+    // Selecting the file auto-expands its ancestors (see the dedicated
+    // auto-expand test above) so both rows are present to assert on.
+    render(
+      <FileTreeView
+        paths={["src/features/some-very-long-component-name.tsx"]}
+        selectedPath="src/features/some-very-long-component-name.tsx"
+        onSelectFile={vi.fn()}
+      />,
+    );
+
+    // Assert
+    expect(screen.getByTestId("file-tree-dir-src")).toHaveAttribute(
+      "title",
+      "src",
+    );
+    expect(
+      screen.getByTestId("file-tree-dir-src/features"),
+    ).toHaveAttribute("title", "src/features");
+    expect(
+      screen.getByTestId(
+        "file-tree-file-src/features/some-very-long-component-name.tsx",
+      ),
+    ).toHaveAttribute("title", "src/features/some-very-long-component-name.tsx");
+  });
+
   it("does not force a directory back open after the user collapses it", async () => {
     // Arrange
     const user = userEvent.setup();
