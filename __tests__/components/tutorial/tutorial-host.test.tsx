@@ -833,6 +833,65 @@ describe("TutorialHost", () => {
     link.remove();
   });
 
+  it("re-syncs the spotlight to the mobile menu toggle if the drawer is dismissed by something other than the tour (its own backdrop tap or close button)", async () => {
+    // The tour opens the mobile drawer itself for a routed step, but the
+    // drawer's own backdrop/close button can still dismiss it directly —
+    // that's a real Sidebar.tsx affordance, independent of the tour. Once
+    // that happens the real sidebar link is unmounted along with the
+    // drawer, and neither a window resize/scroll nor the anchor's own
+    // ResizeObserver fires for an element that's gone, so without a forced
+    // re-lookup the ring would stay frozen over nothing instead of falling
+    // back to the always-visible mobile menu toggle.
+    const user = userEvent.setup();
+    const link = document.createElement("a");
+    link.dataset.testid = "sidebar-conversations-link";
+    link.getBoundingClientRect = () =>
+      ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
+    document.body.appendChild(link);
+    const menuToggle = document.createElement("button");
+    menuToggle.dataset.testid = MOBILE_MENU_TOGGLE_TEST_ID;
+    menuToggle.getBoundingClientRect = () =>
+      ({ top: 8, left: 8, width: 32, height: 32 }) as DOMRect;
+    document.body.appendChild(menuToggle);
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+    });
+    renderHost();
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "open",
+    );
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "96px",
+      left: "6px",
+      width: "208px",
+    });
+
+    // The real Sidebar unmounts the routed link along with the drawer once
+    // it's closed; simulate that, then dismiss the drawer the same way its
+    // own backdrop/close button would — not through Skip/Next/Escape.
+    link.remove();
+    await user.click(screen.getByTestId("test-close-mobile-nav"));
+
+    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
+      "closed",
+    );
+    // Still mid-tour on the same step throughout.
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
+      top: "4px",
+      left: "4px",
+      width: "40px",
+    });
+
+    link.remove();
+    menuToggle.remove();
+  });
+
   it("caps the caption bar's height and scrolls internally instead of clipping off-screen on short viewports", async () => {
     // The bar is `fixed`/`bottom-4` and grows upward with its content, so
     // with no height cap a long caption on a very short viewport (a

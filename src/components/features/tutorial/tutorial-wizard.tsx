@@ -63,7 +63,11 @@ export function TutorialWizard() {
   const { trackTutorialCompleted, trackTutorialSkipped } = useTracking();
   const isPlaying = useTutorialStore((state) => state.isPlaying);
   const setPlaying = useTutorialStore((state) => state.setPlaying);
-  const { open: openMobileNav, close: closeMobileNav } = useSidebarMobileNav();
+  const {
+    isOpen: isMobileNavOpen,
+    open: openMobileNav,
+    close: closeMobileNav,
+  } = useSidebarMobileNav();
 
   const step = steps[stepIndex];
   const isFirst = stepIndex === 0;
@@ -184,7 +188,15 @@ export function TutorialWizard() {
 
   return (
     <>
-      <TutorialSpotlight anchorTestIds={step.anchorTestIds} />
+      <TutorialSpotlight
+        anchorTestIds={step.anchorTestIds}
+        // The mobile drawer's own backdrop tap / close button can dismiss it
+        // independent of the tour (see the comment on TutorialSpotlight's
+        // `remeasureKey` prop); bumping this on every open/closed flip makes
+        // the spotlight re-search instead of staying stuck on the anchor
+        // that just disappeared.
+        remeasureKey={isMobileNavOpen}
+      />
       <section
         role="dialog"
         aria-modal="false"

@@ -50,8 +50,22 @@ function toSpotlightRect(element: HTMLElement): SpotlightRect {
  */
 export function TutorialSpotlight({
   anchorTestIds,
+  remeasureKey,
 }: {
   anchorTestIds?: readonly string[];
+  /**
+   * Bump this (e.g. with the mobile nav drawer's open/closed state) to force
+   * a fresh `findTutorialAnchor` search rather than just re-measuring the
+   * anchor already found. Needed because a user can dismiss the mobile
+   * drawer out from under a routed step (backdrop tap, its own close
+   * button) independent of the tour: the previously-found anchor gets
+   * unmounted, and neither a window resize/scroll nor its own
+   * ResizeObserver fires for an element that's gone, so without this the
+   * ring would stay frozen at the anchor's last position instead of
+   * falling back to the next candidate in `anchorTestIds` (typically the
+   * mobile menu toggle).
+   */
+  remeasureKey?: unknown;
 }) {
   const [rect, setRect] = React.useState<SpotlightRect | null>(null);
   const anchorKey = anchorTestIds?.join("|") ?? "";
@@ -99,8 +113,11 @@ export function TutorialSpotlight({
       window.removeEventListener("scroll", measure, true);
       resizeObserver?.disconnect();
     };
-    // anchorKey stands in for the array identity.
-  }, [anchorKey]);
+    // anchorKey stands in for the array identity; remeasureKey forces a
+    // fresh lookup (not just a re-measure of the same, possibly now-gone,
+    // anchor) when something outside the tour's own step change could have
+    // swapped which candidate is actually on screen.
+  }, [anchorKey, remeasureKey]);
 
   if (!rect) return null;
 
