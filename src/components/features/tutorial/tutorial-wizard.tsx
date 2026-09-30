@@ -221,17 +221,27 @@ export function TutorialWizard() {
           </button>
         </div>
 
-        <h2 id={titleId} className="mt-2 text-lg font-semibold">
-          {t(step.titleKey)}
-        </h2>
-        <p
-          id={subtitleId}
-          data-testid="tutorial-subtitle"
+        {/* A single atomic live region around both title and subtitle: only
+            the subtitle used to be aria-live, so screen readers announced
+            the narration but silently dropped the step's title on every
+            Back/Next/auto-advance. Atomic so a step change reads as one
+            utterance instead of two overlapping ones. */}
+        <div
+          data-testid="tutorial-step-live-region"
           aria-live="polite"
-          className="mt-1 text-base leading-relaxed text-white/90"
+          aria-atomic="true"
         >
-          {subtitle}
-        </p>
+          <h2 id={titleId} className="mt-2 text-lg font-semibold">
+            {t(step.titleKey)}
+          </h2>
+          <p
+            id={subtitleId}
+            data-testid="tutorial-subtitle"
+            className="mt-1 text-base leading-relaxed text-white/90"
+          >
+            {subtitle}
+          </p>
+        </div>
 
         {isPlaying ? (
           <div

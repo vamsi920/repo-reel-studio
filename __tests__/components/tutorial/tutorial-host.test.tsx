@@ -195,6 +195,36 @@ describe("TutorialHost", () => {
     expect(wizard).toHaveAttribute("data-step", "conversations");
   });
 
+  it("announces both the title and subtitle through one atomic live region on every step change", async () => {
+    // Only the subtitle carried aria-live before this fix, so a screen
+    // reader announced the narration on Back/Next but silently dropped the
+    // step's own title every time.
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    const liveRegion = screen.getByTestId("tutorial-step-live-region");
+    expect(liveRegion).toHaveAttribute("aria-live", "polite");
+    expect(liveRegion).toHaveAttribute("aria-atomic", "true");
+    expect(liveRegion).toContainElement(
+      screen.getByRole("heading", { level: 2 }),
+    );
+    expect(liveRegion).toContainElement(
+      screen.getByTestId("tutorial-subtitle"),
+    );
+
+    await user.click(screen.getByTestId("tutorial-next"));
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "conversations",
+    );
+    // Same live region instance keeps wrapping the now-updated content.
+    expect(screen.getByTestId("tutorial-step-live-region")).toContainElement(
+      screen.getByTestId("tutorial-subtitle"),
+    );
+  });
+
   it("resyncs the tour when a real link navigates away from the active step's page", async () => {
     // The sidebar (and any other in-app link) stays clickable while the tour
     // is open. Walking away that way, rather than via Back/Next, must not
