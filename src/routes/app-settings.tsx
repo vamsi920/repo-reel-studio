@@ -48,6 +48,17 @@ export function AppSettingsScreen() {
     React.useState(false);
   const [gitUserEmailHasChanged, setGitUserEmailHasChanged] =
     React.useState(false);
+  // Controlled instead of `defaultValue`: React resets a form's uncontrolled
+  // fields once its `action` settles, on failure as well as success (there's
+  // no user-visible distinction at the DOM level), which silently discarded
+  // an edit still in flight the moment a save request failed. `undefined`
+  // means "untouched this session, mirror the persisted setting".
+  const [gitUserNameInput, setGitUserNameInput] = React.useState<
+    string | undefined
+  >(undefined);
+  const [gitUserEmailInput, setGitUserEmailInput] = React.useState<
+    string | undefined
+  >(undefined);
   const [titleLlmProfileInput, setTitleLlmProfileInput] = React.useState<
     string | null | undefined
   >(undefined);
@@ -124,10 +135,10 @@ export function AppSettingsScreen() {
     const enableSoundNotifications = soundNotificationsEnabled;
 
     const gitUserName =
-      formData.get("git-user-name-input")?.toString() ||
+      (gitUserNameInput ?? settings?.git_user_name) ||
       DEFAULT_SETTINGS.git_user_name;
     const gitUserEmail =
-      formData.get("git-user-email-input")?.toString() ||
+      (gitUserEmailInput ?? settings?.git_user_email) ||
       DEFAULT_SETTINGS.git_user_email;
 
     saveSettings(
@@ -143,18 +154,18 @@ export function AppSettingsScreen() {
         onSuccess: () => {
           analyticsTouchedRef.current = false;
           soundNotificationsTouchedRef.current = false;
+          setLanguageInputHasChanged(false);
+          setGitUserNameHasChanged(false);
+          setGitUserEmailHasChanged(false);
+          setGitUserNameInput(undefined);
+          setGitUserEmailInput(undefined);
+          setTitleLlmProfileInput(undefined);
           void setTelemetryConsent(enableAnalytics ? "granted" : "denied");
           displaySuccessToast(t(I18nKey.SETTINGS$SAVED));
         },
         onError: (error) => {
           const errorMessage = retrieveAxiosErrorMessage(error);
           displayErrorToast(errorMessage || t(I18nKey.ERROR$GENERIC));
-        },
-        onSettled: () => {
-          setLanguageInputHasChanged(false);
-          setGitUserNameHasChanged(false);
-          setGitUserEmailHasChanged(false);
-          setTitleLlmProfileInput(undefined);
         },
       },
     );
@@ -182,11 +193,13 @@ export function AppSettingsScreen() {
   };
 
   const checkIfGitUserNameHasChanged = (value: string) => {
+    setGitUserNameInput(value);
     const currentValue = settings?.git_user_name;
     setGitUserNameHasChanged(value !== currentValue);
   };
 
   const checkIfGitUserEmailHasChanged = (value: string) => {
+    setGitUserEmailInput(value);
     const currentValue = settings?.git_user_email;
     setGitUserEmailHasChanged(value !== currentValue);
   };
@@ -201,8 +214,13 @@ export function AppSettingsScreen() {
     !gitUserNameHasChanged &&
     !gitUserEmailHasChanged;
 
-  const shouldBeLoading =
-    !settings || isLoading || areLlmProfilesLoading || isPending;
+  // Deliberately excludes `isPending`: swapping to the skeleton mid-save
+  // would unmount the uncontrolled inputs below (git username/email,
+  // language), discarding any edit that hasn't round-tripped to the server
+  // yet -- most visibly when the save request fails and the remounted
+  // inputs fall back to the last-saved `settings` values. The Save button
+  // already disables itself via `isPending` to prevent a duplicate submit.
+  const shouldBeLoading = !settings || isLoading || areLlmProfilesLoading;
 
   return (
     <form
@@ -295,7 +313,7 @@ export function AppSettingsScreen() {
                 name="git-user-name-input"
                 type="text"
                 label={t(I18nKey.SETTINGS$GIT_USERNAME)}
-                defaultValue={settings.git_user_name || ""}
+                value={gitUserNameInput ?? settings.git_user_name ?? ""}
                 onChange={checkIfGitUserNameHasChanged}
                 placeholder={t(I18nKey.SETTINGS$GIT_USERNAME_PLACEHOLDER)}
                 className="w-full min-w-0"
@@ -305,7 +323,7 @@ export function AppSettingsScreen() {
                 name="git-user-email-input"
                 type="email"
                 label={t(I18nKey.SETTINGS$GIT_EMAIL)}
-                defaultValue={settings.git_user_email || ""}
+                value={gitUserEmailInput ?? settings.git_user_email ?? ""}
                 onChange={checkIfGitUserEmailHasChanged}
                 placeholder={t(I18nKey.SETTINGS$GIT_EMAIL_PLACEHOLDER)}
                 className="w-full min-w-0"

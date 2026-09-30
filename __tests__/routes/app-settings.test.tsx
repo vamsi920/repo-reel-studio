@@ -325,6 +325,48 @@ describe("AppSettingsScreen", () => {
     });
   });
 
+  it("keeps the unsaved-changes notice and the edited value when the save request fails", async () => {
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockRejectedValue(new Error("network error"));
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
+      buildSettings({ git_user_name: "original-name" }),
+    );
+
+    renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    const gitUserNameInput = await screen.findByTestId("git-user-name-input");
+
+    expect(
+      screen.queryByTestId("app-settings-unsaved-changes-notice"),
+    ).not.toBeInTheDocument();
+
+    await user.clear(gitUserNameInput);
+    await user.type(gitUserNameInput, "edited-name");
+
+    expect(
+      screen.getByTestId("app-settings-unsaved-changes-notice"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("submit-button"));
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ git_user_name: "edited-name" }),
+      );
+    });
+
+    // The save failed -- the notice must stay so the user knows their edit
+    // was NOT persisted, and the input must still show the unsaved edit
+    // rather than being silently reverted to the last-saved value.
+    expect(
+      screen.getByTestId("app-settings-unsaved-changes-notice"),
+    ).toBeInTheDocument();
+    expect(gitUserNameInput).toHaveValue("edited-name");
+    expect(screen.getByTestId("submit-button")).not.toBeDisabled();
+  });
+
   it("saves a dedicated title generation profile", async () => {
     vi.spyOn(ProfilesService, "listProfiles").mockResolvedValue({
       profiles: [
