@@ -2348,6 +2348,7 @@
   "KT$BACK_TO_LIST": "Back to Knowledge",
   "KT$BACK_TO_REPOSITORY": "Back",
   "KT$NOT_FOUND": "This repository hasn't been generated yet.",
+  "KT$VIDEO_LIST_EMPTY": "لا تحتوي معرفة هذا المستودع على صفحات لمشاهدتها حتى الآن.",
   "KT$PAGE_NOT_FOUND": "Page not found.",
   "KT$GENERATING_VIDEO": "Generating video…",
   "KT$IMPORTANCE_HIGH": "High",

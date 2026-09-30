@@ -2348,6 +2348,7 @@
   "KT$BACK_TO_LIST": "Back to Knowledge",
   "KT$BACK_TO_REPOSITORY": "Back",
   "KT$NOT_FOUND": "This repository hasn't been generated yet.",
+  "KT$VIDEO_LIST_EMPTY": "该仓库的知识库暂时没有可观看的页面。",
   "KT$PAGE_NOT_FOUND": "Page not found.",
   "KT$GENERATING_VIDEO": "Generating video…",
   "KT$IMPORTANCE_HIGH": "High",

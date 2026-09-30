@@ -39932,6 +39932,23 @@
     "tr": "This repository hasn't been generated yet.",
     "uk": "This repository hasn't been generated yet."
   },
+  "KT$VIDEO_LIST_EMPTY": {
+    "en": "This repository's knowledge has no pages to watch yet.",
+    "ja": "このリポジトリのナレッジには、まだ視聴できるページがありません。",
+    "zh-CN": "该仓库的知识库暂时没有可观看的页面。",
+    "zh-TW": "此儲存庫的知識庫目前沒有可觀看的頁面。",
+    "ko-KR": "이 저장소의 지식에는 아직 시청할 페이지가 없습니다.",
+    "no": "Denne kodebasens kunnskap har ingen sider å se på ennå.",
+    "ar": "لا تحتوي معرفة هذا المستودع على صفحات لمشاهدتها حتى الآن.",
+    "de": "Das Wissen dieses Repositorys enthält noch keine Seiten zum Ansehen.",
+    "fr": "Les connaissances de ce dépôt ne contiennent encore aucune page à regarder.",
+    "it": "La conoscenza di questo repository non ha ancora pagine da guardare.",
+    "pt": "O conhecimento deste repositório ainda não tem páginas para assistir.",
+    "es": "El conocimiento de este repositorio aún no tiene páginas para ver.",
+    "ca": "El coneixement d'aquest repositori encara no té pàgines per veure.",
+    "tr": "Bu deponun bilgi tabanında henüz izlenecek sayfa yok.",
+    "uk": "У знаннях цього репозиторію ще немає сторінок для перегляду."
+  },
   "KT$PAGE_NOT_FOUND": {
     "en": "Page not found.",
     "ja": "Page not found.",

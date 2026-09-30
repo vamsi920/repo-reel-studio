@@ -74,6 +74,10 @@ function KtVideoList() {
           <p className="pt-6 text-sm text-[var(--oh-muted)]">
             {t(I18nKey.KT$NOT_FOUND)}
           </p>
+        ) : state.knowledge.pages.length === 0 ? (
+          <p className="pt-6 text-sm text-[var(--oh-muted)]">
+            {t(I18nKey.KT$VIDEO_LIST_EMPTY)}
+          </p>
         ) : (
           <div className="flex flex-col gap-1.5 pt-6">
             {state.knowledge.pages.map((page) => (

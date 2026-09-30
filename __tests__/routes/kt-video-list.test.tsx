@@ -119,6 +119,16 @@ describe("KtVideoList", () => {
     expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
   });
 
+  it("shows an empty state when the knowledge has no pages at all", () => {
+    seedKnowledge([]);
+
+    renderWithProviders(<KtVideoList />);
+
+    expect(screen.getByText(I18nKey.KT$VIDEO_LIST_EMPTY)).toBeInTheDocument();
+    expect(screen.queryByTestId("kt-video-list-item")).not.toBeInTheDocument();
+    expect(screen.queryByText(I18nKey.KT$NOT_FOUND)).not.toBeInTheDocument();
+  });
+
   it("lists every page that has generated knowledge", () => {
     seedKnowledge([
       {
