@@ -63,8 +63,55 @@ function useElementSize(
 
 const ARROW_SIZE_PX = 10;
 
+/**
+ * Bubble colors per step `tone`, as fixed literal colors rather than theme
+ * tokens: the light theme remaps Tailwind's `white` to dark ink
+ * (src/styles/neo-tokens.css) and --oh-* tokens flip between themes, so
+ * neither may be used in here or the card's contrast changes with the theme
+ * behind it. "light" is a pale-blue card matching the app's own light canvas
+ * and brand blue (#0b81b7, --primary-500); "dark" marks the Security step.
+ */
+const BUBBLE_PALETTES = {
+  light: {
+    card: "border-[#d4e4f3] bg-[#f6faff] text-[#0f172a] shadow-[0_12px_40px_rgba(11,129,183,0.18)]",
+    arrow: "border-[#d4e4f3] bg-[#f6faff]",
+    progress: "text-[#0b81b7]",
+    muted: "text-[#64748b] hover:bg-[#e6f0fa] hover:text-[#0f172a]",
+    subtitle: "text-[#334155]",
+    point: "text-[#475569]",
+    bullet: "bg-[#0b81b7]",
+    track: "bg-[#d4e4f3]",
+    fill: "bg-[#0b81b7]",
+    dotActive: "bg-[#0b81b7]",
+    dot: "bg-[#c3d6ea]",
+    ghost: "text-[#334155] hover:bg-[#e6f0fa]",
+    primary: "bg-[#0b81b7] text-[#ffffff] hover:bg-[#096a97]",
+  },
+  dark: {
+    card: "border-[#1e293b] bg-[#0b1220] text-[#f8fafc] shadow-[0_12px_40px_rgba(2,6,23,0.55)]",
+    arrow: "border-[#1e293b] bg-[#0b1220]",
+    progress: "text-[#7dd3fc]",
+    muted: "text-[#94a3b8] hover:bg-[#1e293b] hover:text-[#f8fafc]",
+    subtitle: "text-[#e2e8f0]",
+    point: "text-[#cbd5e1]",
+    bullet: "bg-[#f87171]",
+    track: "bg-[#1e293b]",
+    fill: "bg-[#7dd3fc]",
+    dotActive: "bg-[#7dd3fc]",
+    dot: "bg-[#334155]",
+    ghost: "text-[#e2e8f0] hover:bg-[#1e293b]",
+    primary: "bg-[#0ea5e9] text-[#0b1220] hover:bg-[#38bdf8]",
+  },
+} as const;
+
 /** Small diamond on the bubble edge that faces the spotlight. */
-function BubbleArrow({ placement }: { placement: TutorialBubblePlacement }) {
+function BubbleArrow({
+  placement,
+  className,
+}: {
+  placement: TutorialBubblePlacement;
+  className: string;
+}) {
   const { side, arrowOffset } = placement;
   if (arrowOffset === null) return null;
   const half = ARROW_SIZE_PX / 2;
@@ -80,7 +127,10 @@ function BubbleArrow({ placement }: { placement: TutorialBubblePlacement }) {
     <span
       aria-hidden="true"
       data-testid="tutorial-bubble-arrow"
-      className="absolute rotate-45 border border-white/15 bg-black transition-all duration-300 ease-out motion-reduce:transition-none"
+      className={cn(
+        "absolute rotate-45 border transition-all duration-300 ease-out motion-reduce:transition-none",
+        className,
+      )}
       style={{ ...edge, width: ARROW_SIZE_PX, height: ARROW_SIZE_PX }}
     />
   );
@@ -150,7 +200,13 @@ export function TutorialWizard() {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
   const subtitle = t(step.subtitleKey);
-  const captionDurationMs = getCaptionDurationMs(subtitle);
+  const points = (step.pointKeys ?? []).map((key) => t(key));
+  const tone = step.tone ?? "light";
+  const palette = BUBBLE_PALETTES[tone];
+  // Watch mode holds each step long enough to read the points too.
+  const captionDurationMs = getCaptionDurationMs(
+    [subtitle, ...points].join(" "),
+  );
 
   React.useEffect(() => {
     if (step.route && !isWithinStepRoute(currentPath, step.route)) {
@@ -292,29 +348,24 @@ export function TutorialWizard() {
         data-testid="tutorial-wizard"
         data-step={step.id}
         data-placement={placement?.side ?? "measuring"}
-        // This bubble is a fixed overlay (black/white) independent of the
-        // active app color theme — including the default light "deepsea"
-        // theme where --oh-muted/--oh-border resolve to dark colors meant
-        // for light surfaces, not this black bubble. Every color inside it
-        // must stay a fixed white-based utility rather than an --oh-* theme
-        // token, or it becomes unreadable.
+        data-tone={tone}
+        // Fixed literal colors per tone; see BUBBLE_PALETTES.
         className={cn(
-          "fixed z-[60] w-[min(calc(100vw-24px),360px)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-white/15 bg-black px-5 py-4 text-white shadow-2xl",
-          "transition-[top,left,opacity] duration-300 ease-out motion-reduce:transition-none",
+          "fixed z-[60] w-[min(calc(100vw-24px),380px)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border px-5 py-4",
+          "transition-[top,left,opacity,background-color,color] duration-300 ease-out motion-reduce:transition-none",
+          palette.card,
           placement ? "opacity-100" : "opacity-0",
         )}
         style={
           {
             top: placement?.top ?? 0,
             left: placement?.left ?? 0,
-            // The light theme remaps `--color-white` to dark ink app-wide
-            // (src/styles/neo-tokens.css); restore real white inside this
-            // always-black bubble so its white utilities stay readable.
-            "--color-white": "#ffffff",
           } as React.CSSProperties
         }
       >
-        {placement ? <BubbleArrow placement={placement} /> : null}
+        {placement ? (
+          <BubbleArrow placement={placement} className={palette.arrow} />
+        ) : null}
         <div className="flex items-center justify-between gap-3">
           {/* Own live region: the "N of M" count changes on every step just
               like the title/subtitle, but it lives in the header row rather
@@ -324,7 +375,10 @@ export function TutorialWizard() {
             data-testid="tutorial-progress"
             aria-live="polite"
             aria-atomic="true"
-            className="text-xs uppercase tracking-wide text-white/60"
+            className={cn(
+              "text-xs font-medium uppercase tracking-wide",
+              palette.progress,
+            )}
           >
             {t(I18nKey.TUTORIAL$STEP_PROGRESS, {
               current: stepIndex + 1,
@@ -336,7 +390,10 @@ export function TutorialWizard() {
             data-testid="tutorial-skip"
             onClick={skip}
             aria-label={t(I18nKey.TUTORIAL$SKIP)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs",
+              palette.muted,
+            )}
           >
             {t(I18nKey.TUTORIAL$SKIP)}
             <X width={12} height={12} aria-hidden="true" />
@@ -359,21 +416,52 @@ export function TutorialWizard() {
           <p
             id={subtitleId}
             data-testid="tutorial-subtitle"
-            className="mt-1 text-sm leading-relaxed text-white/85"
+            className={cn("mt-1 text-sm leading-relaxed", palette.subtitle)}
           >
             {subtitle}
           </p>
+          {points.length ? (
+            <ul
+              data-testid="tutorial-points"
+              className="mt-2 flex flex-col gap-1.5"
+            >
+              {points.map((point) => (
+                <li
+                  key={point}
+                  className={cn(
+                    "flex gap-2 text-[13px] leading-snug",
+                    palette.point,
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full",
+                      palette.bullet,
+                    )}
+                  />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {isPlaying ? (
           <div
             aria-hidden="true"
-            className="mt-3 h-0.5 overflow-hidden rounded-full bg-white/15"
+            className={cn(
+              "mt-3 h-0.5 overflow-hidden rounded-full",
+              palette.track,
+            )}
           >
             <div
               key={step.id}
               data-testid="tutorial-caption-timer"
-              className="h-full origin-left bg-white/70 motion-reduce:hidden"
+              className={cn(
+                "h-full origin-left motion-reduce:hidden",
+                palette.fill,
+              )}
               style={{
                 animation: `tutorial-caption-progress ${captionDurationMs}ms linear forwards`,
               }}
@@ -389,7 +477,9 @@ export function TutorialWizard() {
                 data-testid="tutorial-progress-dot"
                 className={cn(
                   "h-1.5 rounded-full transition-all motion-reduce:transition-none",
-                  index === stepIndex ? "w-5 bg-white" : "w-1.5 bg-white/30",
+                  index === stepIndex
+                    ? cn("w-4", palette.dotActive)
+                    : cn("w-1.5", palette.dot),
                 )}
               />
             ))}
@@ -401,7 +491,7 @@ export function TutorialWizard() {
                 data-testid="tutorial-play-toggle"
                 onClick={() => setPlaying(!isPlaying)}
                 aria-label={playToggleLabel}
-                className="rounded-lg p-2 hover:bg-white/10"
+                className={cn("rounded-lg p-2", palette.ghost)}
               >
                 {isPlaying ? (
                   <Pause width={14} height={14} aria-hidden="true" />
@@ -415,7 +505,7 @@ export function TutorialWizard() {
                 type="button"
                 data-testid="tutorial-back"
                 onClick={goBack}
-                className="rounded-lg px-3 py-1.5 text-sm hover:bg-white/10"
+                className={cn("rounded-lg px-3 py-1.5 text-sm", palette.ghost)}
               >
                 {t(I18nKey.TUTORIAL$BACK)}
               </button>
@@ -426,7 +516,10 @@ export function TutorialWizard() {
               onClick={goNext}
               // eslint-disable-next-line jsx-a11y/no-autofocus -- the tour is user-initiated; focus the primary action so Enter advances.
               autoFocus
-              className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black hover:bg-white/90"
+              className={cn(
+                "rounded-lg px-4 py-1.5 text-sm font-medium",
+                palette.primary,
+              )}
             >
               {t(isLast ? I18nKey.TUTORIAL$FINISH : I18nKey.TUTORIAL$NEXT)}
             </button>

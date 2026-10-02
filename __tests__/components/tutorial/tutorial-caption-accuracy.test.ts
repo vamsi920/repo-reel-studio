@@ -38,9 +38,16 @@ describe("tutorial caption accuracy", () => {
       expect.arrayContaining(["/mcp", "/skills", "/plugins"]),
     );
 
-    const subtitle = en(I18nKey.TUTORIAL$STEP_CUSTOMIZE_SUBTITLE);
-    expect(subtitle).toMatch(/skills/i);
-    expect(subtitle).toMatch(/plugins/i);
-    expect(subtitle).toMatch(/mcp servers/i);
+    // The claims now live across the subtitle and its bullet points.
+    const copy = [
+      I18nKey.TUTORIAL$STEP_CUSTOMIZE_SUBTITLE,
+      I18nKey.TUTORIAL$STEP_CUSTOMIZE_POINT_1,
+      I18nKey.TUTORIAL$STEP_CUSTOMIZE_POINT_2,
+    ]
+      .map(en)
+      .join(" ");
+    expect(copy).toMatch(/skills/i);
+    expect(copy).toMatch(/plugins/i);
+    expect(copy).toMatch(/mcp servers/i);
   });
 });

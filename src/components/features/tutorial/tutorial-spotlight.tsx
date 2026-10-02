@@ -179,7 +179,7 @@ export function TutorialSpotlight({ rect }: { rect: SpotlightRect | null }) {
       <div
         data-testid="tutorial-backdrop"
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[55] bg-black/55"
+        className="pointer-events-none fixed inset-0 z-[55] bg-[rgba(15,23,42,0.28)]"
       />
     );
   }
@@ -188,7 +188,7 @@ export function TutorialSpotlight({ rect }: { rect: SpotlightRect | null }) {
     <div
       data-testid="tutorial-spotlight"
       aria-hidden="true"
-      className="pointer-events-none fixed z-[55] rounded-lg ring-2 ring-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] transition-all duration-300 ease-out motion-reduce:transition-none"
+      className="pointer-events-none fixed z-[55] rounded-lg ring-2 ring-[#0b81b7] shadow-[0_0_0_9999px_rgba(15,23,42,0.28)] transition-all duration-300 ease-out motion-reduce:transition-none"
       style={{
         top: rect.top,
         left: rect.left,

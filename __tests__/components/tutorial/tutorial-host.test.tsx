@@ -696,28 +696,61 @@ describe("TutorialHost", () => {
     );
   });
 
-  it("keeps caption-bar text on fixed white-based colors instead of theme tokens", async () => {
-    // The caption bar is a fixed black/white video-caption overlay,
-    // independent of the active app color theme (default "deepsea" theme
-    // resolves --oh-muted/--oh-border to dark colors meant for light
-    // surfaces, which are unreadable against this bar's always-black
-    // background). Regression test for that contrast bug.
+  it("keeps the tip bubble on fixed literal colors instead of theme tokens or remapped white", async () => {
+    // The light theme remaps Tailwind's `white` to dark ink and --oh-*
+    // tokens flip between themes, so the bubble must use literal colors or
+    // its contrast changes with the theme behind it.
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
     await user.click(screen.getByTestId("tutorial-launcher"));
 
     const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard.className).not.toMatch(/--oh-border/);
-    expect(wizard.className).toMatch(/border-white\/15/);
+    for (const element of [
+      wizard,
+      screen.getByTestId("tutorial-progress"),
+      screen.getByTestId("tutorial-skip"),
+      screen.getByTestId("tutorial-next"),
+    ]) {
+      expect(element.className).not.toMatch(/--oh-|\b(bg|text|border)-white\b/);
+    }
+  });
 
-    const progress = screen.getByTestId("tutorial-progress");
-    expect(progress.className).not.toMatch(/--oh-muted/);
-    expect(progress.className).toMatch(/text-white\/60/);
+  it("explains each module with a couple of points, in a light bubble except a dark one for Security", () => {
+    const steps = getTutorialSteps();
+    const moduleSteps = steps.filter(
+      (s) => s.anchorTestIds?.length && s.id !== "finish",
+    );
+    moduleSteps.forEach((s) =>
+      expect(s.pointKeys?.length).toBeGreaterThanOrEqual(2),
+    );
+    expect(steps.map((s) => s.id)).toEqual(
+      expect.arrayContaining([
+        "customize",
+        "automations",
+        "security",
+        "environment",
+        "agentops",
+        "knowledge",
+        "usage",
+        "settings",
+      ]),
+    );
 
-    const skip = screen.getByTestId("tutorial-skip");
-    expect(skip.className).not.toMatch(/--oh-muted/);
-    expect(skip.className).toMatch(/text-white\/60/);
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: stepBefore("security"),
+      });
+    });
+    renderHost();
+    const wizard = screen.getByTestId("tutorial-wizard");
+    expect(wizard).toHaveAttribute("data-tone", "light");
+    expect(screen.getByTestId("tutorial-points").children).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId("tutorial-next"));
+    expect(wizard).toHaveAttribute("data-step", "security");
+    expect(wizard).toHaveAttribute("data-tone", "dark");
   });
 
   it("does not animate progress dots for users who prefer reduced motion", async () => {
