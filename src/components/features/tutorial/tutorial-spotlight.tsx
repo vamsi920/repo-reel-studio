@@ -5,7 +5,7 @@ const SPOTLIGHT_PADDING_PX = 4;
 /** Lazy UI may mount a few frames after navigation; keep looking briefly. */
 const ANCHOR_LOOKUP_FRAMES = 30;
 
-interface SpotlightRect {
+export interface SpotlightRect {
   top: number;
   left: number;
   width: number;
@@ -44,15 +44,14 @@ function toSpotlightRect(element: HTMLElement): SpotlightRect {
 }
 
 /**
- * Dims the page and rings the element the current tutorial step is talking
- * about. Purely visual: it never intercepts clicks, and renders nothing when
- * no anchor is on screen (the caption still carries the narration).
+ * Viewport rect (padded) of the first on-screen element in `anchorTestIds`,
+ * kept current as the element, window or any scroll container moves. `null`
+ * while nothing matching is on screen. Lazy UI may mount a few frames after
+ * the step navigates, so the lookup keeps retrying briefly.
  */
-export function TutorialSpotlight({
-  anchorTestIds,
-}: {
-  anchorTestIds?: readonly string[];
-}) {
+export function useTutorialAnchorRect(
+  anchorTestIds?: readonly string[],
+): SpotlightRect | null {
   const [rect, setRect] = React.useState<SpotlightRect | null>(null);
   const anchorKey = anchorTestIds?.join("|") ?? "";
 
@@ -102,13 +101,30 @@ export function TutorialSpotlight({
     // anchorKey stands in for the array identity.
   }, [anchorKey]);
 
-  if (!rect) return null;
+  return rect;
+}
+
+/**
+ * Dims the page and rings the element the current tutorial step is talking
+ * about. Purely visual: it never intercepts clicks. With no anchor on screen
+ * it still dims the page, so a centered tip (welcome) reads as a dialog.
+ */
+export function TutorialSpotlight({ rect }: { rect: SpotlightRect | null }) {
+  if (!rect) {
+    return (
+      <div
+        data-testid="tutorial-backdrop"
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[55] bg-black/55"
+      />
+    );
+  }
 
   return (
     <div
       data-testid="tutorial-spotlight"
       aria-hidden="true"
-      className="pointer-events-none fixed z-[55] rounded-lg ring-2 ring-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] transition-all duration-200 motion-reduce:transition-none"
+      className="pointer-events-none fixed z-[55] rounded-lg ring-2 ring-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] transition-all duration-300 ease-out motion-reduce:transition-none"
       style={{
         top: rect.top,
         left: rect.left,

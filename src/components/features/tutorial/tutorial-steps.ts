@@ -3,15 +3,13 @@ import { automationListPath } from "#/manifests/automation-interface";
 
 export type TutorialStepId =
   | "welcome"
-  | "conversations"
+  | "ask"
+  | "attach"
+  | "model"
   | "customize"
   | "automations"
-  | "security"
-  | "environment"
   | "agentops"
   | "knowledge"
-  | "usage"
-  | "settings"
   | "finish";
 
 export interface TutorialStep {
@@ -41,8 +39,20 @@ export interface TutorialStep {
 export const MOBILE_MENU_TOGGLE_TEST_ID = "sidebar-mobile-menu-toggle";
 
 /**
- * The guided tour, in order. Each step that owns a `route` takes the user to
- * that page so the caption narrates what they are actually looking at.
+ * `data-testid` of the left-edge launcher (see `tutorial-launcher.tsx`),
+ * repeated here so the steps module stays free of component imports.
+ */
+const TUTORIAL_LAUNCHER_ANCHOR_TEST_ID = "tutorial-launcher";
+
+/** The page the in-page "ask / attach / model" steps walk through. */
+const HOME_ROUTE = "/conversations";
+
+/**
+ * The guided tour, in order. Kept short on purpose: the first steps
+ * spotlight the controls on the home page a new user needs first, the rest
+ * give a one-line tour of the main areas in the sidebar. Each step that owns
+ * a `route` takes the user to that page so the tip narrates what they are
+ * actually looking at.
  */
 export function getTutorialSteps(): TutorialStep[] {
   return [
@@ -52,11 +62,28 @@ export function getTutorialSteps(): TutorialStep[] {
       subtitleKey: I18nKey.TUTORIAL$STEP_WELCOME_SUBTITLE,
     },
     {
-      id: "conversations",
-      titleKey: I18nKey.TUTORIAL$STEP_CONVERSATIONS_TITLE,
-      subtitleKey: I18nKey.TUTORIAL$STEP_CONVERSATIONS_SUBTITLE,
-      route: "/conversations",
-      anchorTestIds: ["sidebar-conversations-link", MOBILE_MENU_TOGGLE_TEST_ID],
+      id: "ask",
+      titleKey: I18nKey.TUTORIAL$STEP_ASK_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_ASK_SUBTITLE,
+      route: HOME_ROUTE,
+      anchorTestIds: ["chat-input"],
+    },
+    {
+      id: "attach",
+      titleKey: I18nKey.TUTORIAL$STEP_ATTACH_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_ATTACH_SUBTITLE,
+      route: HOME_ROUTE,
+      // The home launcher only offers repositories; once one is picked the
+      // button is replaced by its git control bar preview.
+      anchorTestIds: ["open-repository-button", "home-git-control-bar-preview"],
+    },
+    {
+      id: "model",
+      titleKey: I18nKey.TUTORIAL$STEP_MODEL_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_MODEL_SUBTITLE,
+      route: HOME_ROUTE,
+      // Cloud backends show a model picker, local ones an LLM profile picker.
+      anchorTestIds: ["chat-input-llm-model", "chat-input-llm-profile"],
     },
     {
       id: "customize",
@@ -73,20 +100,6 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["sidebar-automations-link", MOBILE_MENU_TOGGLE_TEST_ID],
     },
     {
-      id: "security",
-      titleKey: I18nKey.TUTORIAL$STEP_SECURITY_TITLE,
-      subtitleKey: I18nKey.TUTORIAL$STEP_SECURITY_SUBTITLE,
-      route: "/security",
-      anchorTestIds: ["sidebar-security-link", MOBILE_MENU_TOGGLE_TEST_ID],
-    },
-    {
-      id: "environment",
-      titleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_TITLE,
-      subtitleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_SUBTITLE,
-      route: "/environment",
-      anchorTestIds: ["sidebar-environment-link", MOBILE_MENU_TOGGLE_TEST_ID],
-    },
-    {
       id: "agentops",
       titleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_SUBTITLE,
@@ -101,27 +114,10 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["sidebar-kt-link", MOBILE_MENU_TOGGLE_TEST_ID],
     },
     {
-      id: "usage",
-      titleKey: I18nKey.TUTORIAL$STEP_USAGE_TITLE,
-      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_SUBTITLE,
-      route: "/usage",
-      anchorTestIds: ["sidebar-usage-link", MOBILE_MENU_TOGGLE_TEST_ID],
-    },
-    {
-      id: "settings",
-      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_TITLE,
-      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_SUBTITLE,
-      route: "/settings",
-      anchorTestIds: [
-        "collapsed-settings-link",
-        "user-menu-trigger",
-        MOBILE_MENU_TOGGLE_TEST_ID,
-      ],
-    },
-    {
       id: "finish",
       titleKey: I18nKey.TUTORIAL$STEP_FINISH_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_FINISH_SUBTITLE,
+      anchorTestIds: [TUTORIAL_LAUNCHER_ANCHOR_TEST_ID],
     },
   ];
 }

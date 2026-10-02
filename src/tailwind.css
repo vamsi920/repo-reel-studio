@@ -677,6 +677,18 @@ button.extension-module-card-interactive {
   }
 }
 
+/* Guided tutorial: each step's tip fades in as the bubble glides to it. */
+@keyframes tutorial-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* CTA card gradient and shadow */
 .cta-card-gradient {
   background:

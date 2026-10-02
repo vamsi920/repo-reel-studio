@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
@@ -52,13 +53,44 @@ import {
   useSidebarMobileNav,
 } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 
-const { trackEvent, activeBackend, getSettings, searchConversations } =
-  vi.hoisted(() => ({
-    trackEvent: vi.fn(),
-    activeBackend: { current: null as null | { backend: unknown } },
-    getSettings: vi.fn(),
-    searchConversations: vi.fn(),
-  }));
+const {
+  trackEvent,
+  activeBackend,
+  getSettings,
+  searchConversations,
+  supabaseUser,
+  updateUser,
+} = vi.hoisted(() => ({
+  trackEvent: vi.fn(),
+  activeBackend: { current: null as null | { backend: unknown } },
+  getSettings: vi.fn(),
+  searchConversations: vi.fn(),
+  supabaseUser: {
+    current: null as null | {
+      id: string;
+      is_anonymous: boolean;
+      user_metadata: Record<string, unknown>;
+    },
+  },
+  updateUser: vi.fn(),
+}));
+
+vi.mock("#/lib/data-platform/client", () => ({
+  isSupabaseConfigured: true,
+  supabase: {
+    auth: {
+      getSession: async () => ({
+        data: {
+          session: supabaseUser.current ? { user: supabaseUser.current } : null,
+        },
+      }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+      updateUser,
+    },
+  },
+}));
 
 vi.mock("#/contexts/active-backend-context", async (importOriginal) => {
   const actual =
@@ -130,12 +162,22 @@ function renderHost() {
   );
 }
 
+/** Clicks Next until the open tour reaches step `id`. */
+async function advanceTo(id: string, user: ReturnType<typeof userEvent.setup>) {
+  const target = getTutorialSteps().findIndex((s) => s.id === id);
+  while (useTutorialStore.getState().stepIndex < target) {
+    await user.click(screen.getByTestId("tutorial-next"));
+  }
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   useTutorialStore.setState({ isOpen: false, stepIndex: 0, isPlaying: false });
   navigate.mockClear();
   trackEvent.mockClear();
   activeBackend.current = null;
+  supabaseUser.current = null;
+  updateUser.mockReset().mockResolvedValue({ data: {}, error: null });
 });
 
 afterEach(() => {
@@ -179,14 +221,14 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-next"));
     const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard).toHaveAttribute("data-step", "conversations");
+    expect(wizard).toHaveAttribute("data-step", "ask");
     expect(navigate).toHaveBeenCalledWith("/conversations");
 
     await user.keyboard("{ArrowRight}");
-    expect(wizard).toHaveAttribute("data-step", "customize");
+    expect(wizard).toHaveAttribute("data-step", "attach");
 
     await user.click(screen.getByTestId("tutorial-back"));
-    expect(wizard).toHaveAttribute("data-step", "conversations");
+    expect(wizard).toHaveAttribute("data-step", "ask");
   });
 
   it("opens the mobile nav drawer for a routed step so the real sidebar link is on screen, not just the hamburger fallback", async () => {
@@ -207,20 +249,17 @@ describe("TutorialHost", () => {
       "closed",
     );
 
+    // In-page steps point at the home page itself, so the drawer stays shut.
     await user.click(screen.getByTestId("tutorial-next"));
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "conversations",
+      "ask",
     );
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
-      "open",
+      "closed",
     );
 
-    await user.click(screen.getByTestId("tutorial-next"));
-    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
-      "data-step",
-      "customize",
-    );
+    await advanceTo("customize", user);
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
       "open",
     );
@@ -232,7 +271,7 @@ describe("TutorialHost", () => {
     renderHost();
 
     await user.click(screen.getByTestId("tutorial-launcher"));
-    await user.click(screen.getByTestId("tutorial-next"));
+    await advanceTo("customize", user);
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
       "open",
     );
@@ -244,82 +283,51 @@ describe("TutorialHost", () => {
     );
   });
 
-  it("covers the Security and Usage sidebar links added after the tour shipped", async () => {
-    const user = userEvent.setup();
-    const steps = getTutorialSteps();
-    const securityIndex = steps.findIndex((s) => s.id === "security");
-    const usageIndex = steps.findIndex((s) => s.id === "usage");
-
-    expect(steps[securityIndex]).toMatchObject({
-      route: "/security",
-      anchorTestIds: ["sidebar-security-link", MOBILE_MENU_TOGGLE_TEST_ID],
-    });
-    expect(steps[usageIndex]).toMatchObject({
-      route: "/usage",
-      anchorTestIds: ["sidebar-usage-link", MOBILE_MENU_TOGGLE_TEST_ID],
-    });
-    // Security sits with the other top-level sidebar links, before the
-    // Settings step; Usage sits with them too, still before Settings.
-    const settingsIndex = steps.findIndex((s) => s.id === "settings");
-    expect(securityIndex).toBeGreaterThan(0);
-    expect(securityIndex).toBeLessThan(settingsIndex);
-    expect(usageIndex).toBeGreaterThan(securityIndex);
-    expect(usageIndex).toBeLessThan(settingsIndex);
-
-    // Stand in for the real sidebar links so this exercises the actual
-    // spotlight + mobile-drawer wiring for these two anchors specifically,
-    // rather than relying on the generic "some routed step" coverage above.
-    const securityLink = document.createElement("a");
-    securityLink.dataset.testid = "sidebar-security-link";
-    securityLink.getBoundingClientRect = () =>
+  it("points the tip bubble at the in-page element the step is about", () => {
+    const chatInput = document.createElement("div");
+    chatInput.dataset.testid = "chat-input";
+    chatInput.getBoundingClientRect = () =>
       ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
-    const usageLink = document.createElement("a");
-    usageLink.dataset.testid = "sidebar-usage-link";
-    usageLink.getBoundingClientRect = () =>
-      ({ top: 260, left: 10, width: 200, height: 32 }) as DOMRect;
-    document.body.append(securityLink, usageLink);
-
-    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    document.body.append(chatInput);
+    const askIndex = getTutorialSteps().findIndex((s) => s.id === "ask");
     act(() => {
-      useTutorialStore.setState({ isOpen: true, stepIndex: securityIndex });
+      useTutorialStore.setState({ isOpen: true, stepIndex: askIndex });
     });
+
     renderHost();
 
-    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
-      "data-step",
-      "security",
-    );
-    expect(navigate).toHaveBeenCalledWith("/security");
-    expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
-      "open",
-    );
+    expect(navigate).toHaveBeenCalledWith("/conversations");
     expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
       top: "96px",
       left: "6px",
       width: "208px",
     });
-
-    await user.click(screen.getByTestId("tutorial-next"));
-    for (let i = securityIndex + 1; i < usageIndex; i += 1) {
-      // eslint-disable-next-line no-await-in-loop -- steps must advance in order
-      await user.click(screen.getByTestId("tutorial-next"));
-    }
-    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
-      "data-step",
-      "usage",
-    );
-    expect(navigate).toHaveBeenCalledWith("/usage");
+    // Beside the ring (padded right edge 214px + 14px gap), not docked.
+    const wizard = screen.getByTestId("tutorial-wizard");
+    expect(wizard).toHaveAttribute("data-placement", "right");
+    expect(wizard).toHaveStyle({ left: "228px" });
+    expect(screen.getByTestId("tutorial-bubble-arrow")).toBeInTheDocument();
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
-      "open",
+      "closed",
     );
-    expect(screen.getByTestId("tutorial-spotlight")).toHaveStyle({
-      top: "256px",
-      left: "6px",
-      width: "208px",
+    chatInput.remove();
+  });
+
+  it("centers the tip over a dimmed page when the step has nothing to point at", () => {
+    act(() => {
+      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
     });
 
-    securityLink.remove();
-    usageLink.remove();
+    renderHost();
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-placement",
+      "center",
+    );
+    expect(screen.getByTestId("tutorial-backdrop")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("tutorial-bubble-arrow"),
+    ).not.toBeInTheDocument();
   });
 
   it("finishing the last step closes the tour and remembers it was seen", async () => {
@@ -381,9 +389,9 @@ describe("TutorialHost", () => {
 
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "customize",
+      "attach",
     );
-    expect(navigate).toHaveBeenCalledWith("/customize");
+    expect(navigate).toHaveBeenCalledWith("/conversations");
     expect(useTutorialStore.getState().isPlaying).toBe(false);
     expect(trackEvent).toHaveBeenCalledWith(
       "tutorial_started",
@@ -407,7 +415,7 @@ describe("TutorialHost", () => {
     expect(trackEvent).toHaveBeenCalledWith(
       "tutorial_skipped",
       expect.objectContaining({
-        step: "conversations",
+        step: "ask",
         step_index: 1,
         total_steps: getTutorialSteps().length,
       }),
@@ -475,7 +483,7 @@ describe("TutorialHost", () => {
     await user.click(screen.getByTestId("tutorial-launcher"));
     await user.click(screen.getByTestId("tutorial-next"));
     const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard).toHaveAttribute("data-step", "conversations");
+    expect(wizard).toHaveAttribute("data-step", "ask");
 
     const modal = document.createElement("div");
     modal.setAttribute("role", "dialog");
@@ -489,13 +497,13 @@ describe("TutorialHost", () => {
     fireEvent.keyDown(modalButton, { key: "Escape" });
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "conversations",
+      "ask",
     );
 
     fireEvent.keyDown(modalButton, { key: "ArrowRight" });
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "conversations",
+      "ask",
     );
 
     modal.remove();
@@ -505,7 +513,7 @@ describe("TutorialHost", () => {
     await user.keyboard("{ArrowRight}");
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "customize",
+      "attach",
     );
   });
 
@@ -566,8 +574,14 @@ describe("TutorialHost", () => {
     menuToggle.getBoundingClientRect = () =>
       ({ top: 8, left: 8, width: 32, height: 32 }) as DOMRect;
     document.body.appendChild(menuToggle);
+    const customizeIndex = getTutorialSteps().findIndex(
+      (s) => s.id === "customize",
+    );
     act(() => {
-      useTutorialStore.setState({ isOpen: true, stepIndex: 0 });
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: customizeIndex - 1,
+      });
     });
     renderHost();
 
@@ -579,10 +593,10 @@ describe("TutorialHost", () => {
     menuToggle.remove();
   });
 
-  it("spotlights the on-screen sidebar item for the current step", async () => {
+  it("spotlights the on-screen element for the current step", async () => {
     const user = userEvent.setup();
     const link = document.createElement("a");
-    link.dataset.testid = "sidebar-conversations-link";
+    link.dataset.testid = "chat-input";
     link.getBoundingClientRect = () =>
       ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
     document.body.appendChild(link);
@@ -635,7 +649,7 @@ describe("TutorialHost", () => {
 
     const user = userEvent.setup();
     const link = document.createElement("a");
-    link.dataset.testid = "sidebar-conversations-link";
+    link.dataset.testid = "chat-input";
     link.getBoundingClientRect = () =>
       ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
     document.body.appendChild(link);
@@ -658,6 +672,60 @@ describe("TutorialHost", () => {
 
     expect(spotlight).toHaveStyle({ top: "96px", left: "6px", width: "44px" });
     link.remove();
+  });
+});
+
+describe("TutorialHost for a signed-in account", () => {
+  function signIn(userMetadata: Record<string, unknown> = {}) {
+    supabaseUser.current = {
+      id: "user-1",
+      is_anonymous: false,
+      user_metadata: userMetadata,
+    };
+  }
+
+  it("auto-starts on a first real sign-in, even on a browser that already saw the tour", async () => {
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    window.localStorage.setItem(TUTORIAL_SEEN_STORAGE_KEY, "1");
+    signIn();
+
+    renderHost();
+
+    expect(await screen.findByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "welcome",
+    );
+    expect(trackEvent).toHaveBeenCalledWith(
+      "tutorial_started",
+      expect.objectContaining({ trigger: "sign_in" }),
+    );
+  });
+
+  it("remembers on the account once the user skips it", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    signIn();
+    renderHost();
+    await screen.findByTestId("tutorial-wizard");
+
+    await user.keyboard("{Escape}");
+
+    expect(updateUser).toHaveBeenCalledWith({
+      data: { neo_tour_completed_at: expect.any(String) },
+    });
+    expect(window.localStorage.getItem("neo-tutorial-seen:user-1")).toBe("1");
+  });
+
+  it("does not start for an account that already saw it on another browser", async () => {
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+    signIn({ neo_tour_completed_at: "2026-10-01T00:00:00.000Z" });
+
+    renderHost();
+
+    await waitFor(() =>
+      expect(window.localStorage.getItem(TUTORIAL_SEEN_STORAGE_KEY)).toBe("1"),
+    );
+    expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
   });
 });
 
@@ -765,20 +833,28 @@ describe("TutorialHost watch mode", () => {
 
   it("shows the play/pause label in a tooltip, matching the icon button's accessible name", () => {
     act(() => {
-      useTutorialStore.setState({ isOpen: true, stepIndex: 0, isPlaying: true });
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: 0,
+        isPlaying: true,
+      });
     });
     renderHost();
 
     const toggle = screen.getByTestId("tutorial-play-toggle");
     expect(toggle).not.toHaveAttribute("title");
-    expect(screen.getByTestId("styled-tooltip-content")).toHaveTextContent(
-      toggle.getAttribute("aria-label") ?? "",
-    );
+    expect(
+      within(screen.getByTestId("tutorial-wizard")).getByTestId(
+        "styled-tooltip-content",
+      ),
+    ).toHaveTextContent(toggle.getAttribute("aria-label") ?? "");
 
     fireEvent.click(toggle);
-    expect(screen.getByTestId("styled-tooltip-content")).toHaveTextContent(
-      toggle.getAttribute("aria-label") ?? "",
-    );
+    expect(
+      within(screen.getByTestId("tutorial-wizard")).getByTestId(
+        "styled-tooltip-content",
+      ),
+    ).toHaveTextContent(toggle.getAttribute("aria-label") ?? "");
   });
 
   it("starts paused for users who prefer reduced motion", () => {

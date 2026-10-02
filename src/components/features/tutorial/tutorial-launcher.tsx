@@ -16,7 +16,14 @@ export const TUTORIAL_LAUNCHER_TEST_ID = "tutorial-launcher";
  * centered. It hides itself while the mobile nav drawer is open so it
  * doesn't peek out from behind it.
  */
-export function TutorialLauncher({ onStart }: { onStart: () => void }) {
+export function TutorialLauncher({
+  onStart,
+  inert = false,
+}: {
+  onStart: () => void;
+  /** While the tour runs the launcher is shown (the last step points at it) but not clickable. */
+  inert?: boolean;
+}) {
   const { t } = useTranslation("openhands");
   const { isOpen: isMobileNavOpen } = useSidebarMobileNav();
   const label = t(I18nKey.TUTORIAL$START);
@@ -30,6 +37,8 @@ export function TutorialLauncher({ onStart }: { onStart: () => void }) {
         data-testid={TUTORIAL_LAUNCHER_TEST_ID}
         onClick={onStart}
         aria-label={label}
+        disabled={inert}
+        tabIndex={inert ? -1 : undefined}
         className="fixed left-0 top-16 z-[45] translate-y-0 md:top-1/2 md:-translate-y-1/2 rounded-r-lg border border-l-0 border-[var(--oh-border)] bg-base-secondary px-1.5 py-2 text-[var(--oh-muted)] shadow-md hover:text-white focus-visible:text-white"
       >
         <GraduationCap width={16} height={16} aria-hidden="true" />
