@@ -14,13 +14,16 @@ import {
 } from "./tutorial-launcher";
 import { TutorialWizard } from "./tutorial-wizard";
 import { TutorialCloudAutoStart } from "./tutorial-cloud-auto-start";
+import { TutorialSignInAutoStart } from "./tutorial-sign-in-auto-start";
 
 /**
  * Mounts the guided tutorial. A new user — one who finishes the onboarding
  * flow in this session and has never finished or skipped the tour — gets it
  * automatically, once. So does a brand-new Cloud account whose ready LLM
- * skips onboarding (see `TutorialCloudAutoStart`). Returning users (onboarding already done when the app
- * loaded) are never interrupted; they start it from the left-edge launcher.
+ * skips onboarding (see `TutorialCloudAutoStart`), and so does a real user
+ * signing in for the first time, on any browser (see
+ * `TutorialSignInAutoStart`). Returning users are never interrupted; they
+ * start it from the left-edge launcher.
  */
 export function TutorialHost() {
   const isOpen = useTutorialStore((state) => state.isOpen);
@@ -69,6 +72,15 @@ export function TutorialHost() {
     if (onboardingCompleted) autoStart();
   }, [onboardingCompleted, autoStart]);
 
+  // A first real sign-in is new-user evidence on its own, even on a browser
+  // that was already onboarded or saw the tour under another account.
+  const autoStartForSignedInUser = React.useCallback(() => {
+    if (autoStartedRef.current || useTutorialStore.getState().isOpen) return;
+    autoStartedRef.current = true;
+    start();
+    trackTutorialStarted({ trigger: "sign_in" });
+  }, [start]);
+
   const startFromLauncher = React.useCallback(() => {
     start();
     trackTutorialStarted({ trigger: "launcher" });
@@ -82,12 +94,12 @@ export function TutorialHost() {
 
   return (
     <>
+      <TutorialSignInAutoStart onNewUser={autoStartForSignedInUser} />
       {watchForNewCloudUser && <TutorialCloudAutoStart onNewUser={autoStart} />}
-      {isOpen ? (
-        <TutorialWizard />
-      ) : (
-        <TutorialLauncher onStart={startFromLauncher} />
-      )}
+      {/* The launcher stays mounted (inert) during the tour so the last step
+          can point at it. */}
+      <TutorialLauncher onStart={startFromLauncher} inert={isOpen} />
+      {isOpen ? <TutorialWizard /> : null}
     </>
   );
 }

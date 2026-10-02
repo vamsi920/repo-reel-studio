@@ -7,9 +7,84 @@ import { cn } from "#/utils/utils";
 import { useTracking } from "#/hooks/use-tracking";
 import { useSidebarMobileNav } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
-import { getTutorialSteps } from "./tutorial-steps";
+import { getTutorialSteps, MOBILE_MENU_TOGGLE_TEST_ID } from "./tutorial-steps";
 import { getCaptionDurationMs, useTutorialStore } from "./tutorial-store";
-import { TutorialSpotlight } from "./tutorial-spotlight";
+import { TutorialSpotlight, useTutorialAnchorRect } from "./tutorial-spotlight";
+import {
+  placeTutorialBubble,
+  type TutorialBubblePlacement,
+} from "./tutorial-placement";
+
+interface Size {
+  width: number;
+  height: number;
+}
+
+function readViewport(): Size {
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+/**
+ * Current viewport size. Re-renders on `resize`, but reads the window live
+ * on every render so placement is never computed against a stale size.
+ */
+function useViewportSize(): Size {
+  const [, rerender] = React.useReducer((n: number) => n + 1, 0);
+  React.useEffect(() => {
+    window.addEventListener("resize", rerender);
+    return () => window.removeEventListener("resize", rerender);
+  }, []);
+  return readViewport();
+}
+
+/**
+ * Live border-box size of `ref`'s element, `null` until first measured.
+ * Re-measured whenever `contentKey` changes (new tip text) as well as on
+ * ResizeObserver callbacks.
+ */
+function useElementSize(
+  ref: React.RefObject<HTMLElement | null>,
+  contentKey: string,
+): Size | null {
+  const [size, setSize] = React.useState<Size | null>(null);
+  React.useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+    const measure = () =>
+      setSize({ width: element.offsetWidth, height: element.offsetHeight });
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, contentKey]);
+  return size;
+}
+
+const ARROW_SIZE_PX = 10;
+
+/** Small diamond on the bubble edge that faces the spotlight. */
+function BubbleArrow({ placement }: { placement: TutorialBubblePlacement }) {
+  const { side, arrowOffset } = placement;
+  if (arrowOffset === null) return null;
+  const half = ARROW_SIZE_PX / 2;
+  const edge: React.CSSProperties =
+    side === "right"
+      ? { left: -half, top: arrowOffset - half }
+      : side === "left"
+        ? { right: -half, top: arrowOffset - half }
+        : side === "bottom"
+          ? { top: -half, left: arrowOffset - half }
+          : { bottom: -half, left: arrowOffset - half };
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="tutorial-bubble-arrow"
+      className="absolute rotate-45 border border-white/15 bg-black transition-all duration-300 ease-out motion-reduce:transition-none"
+      style={{ ...edge, width: ARROW_SIZE_PX, height: ARROW_SIZE_PX }}
+    />
+  );
+}
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -46,9 +121,11 @@ function isWithinStepRoute(path: string, route: string): boolean {
 }
 
 /**
- * The guided tour itself: a caption bar pinned to the bottom of the screen,
- * like video subtitles, narrating one area of the app per step. Each step
- * navigates to the page it describes so the user sees it behind the caption.
+ * The guided tour itself: a spotlight ring around the element a step talks
+ * about, plus a tip bubble beside it (centered when the step has nothing to
+ * point at, docked to an edge on phones) with a title and a one-line tip.
+ * Both glide from target to target. Each step navigates to the page it
+ * describes so the user sees it behind the tip.
  * Arrow keys move between steps; Escape skips the tour. In "watch" mode the
  * captions advance on their own, each held long enough to read, and stop on
  * the last step so the user finishes deliberately.
@@ -109,16 +186,17 @@ export function TutorialWizard() {
   }, [currentPath]);
 
   // On a phone the sidebar itself is off-screen until the drawer is open, so
-  // every step that spotlights a real sidebar link (as opposed to a step
-  // like "welcome"/"finish" with nothing to highlight) opens the drawer for
+  // every step that spotlights a real sidebar link (marked by its hamburger
+  // fallback — unlike in-page steps or "welcome"/"finish") opens the drawer for
   // the duration of that step — letting the spotlight ring the actual link
   // instead of falling back to the hamburger button. Sidebar.tsx's own
   // close-on-navigate effect steps aside while the tour is open (see the
   // comment there) so this doesn't get undone the instant the tour
   // navigates. Closed again on the last cleanup when the tour itself ends.
   React.useEffect(() => {
-    if (step.anchorTestIds?.length) openMobileNav();
-    else closeMobileNav();
+    if (step.anchorTestIds?.includes(MOBILE_MENU_TOGGLE_TEST_ID)) {
+      openMobileNav();
+    } else closeMobileNav();
   }, [step.id, openMobileNav, closeMobileNav]);
 
   React.useEffect(() => () => closeMobileNav(), [closeMobileNav]);
@@ -183,45 +261,60 @@ export function TutorialWizard() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goNext, goBack, skip]);
 
+  const anchorRect = useTutorialAnchorRect({
+    anchorTestIds: step.anchorTestIds,
+    // The mobile drawer's own backdrop tap / close button can dismiss it
+    // independent of the tour (see the comment on `remeasureKey` in
+    // tutorial-spotlight.tsx); bumping this on every open/closed flip makes
+    // the spotlight re-search instead of staying stuck on the anchor that
+    // just disappeared.
+    remeasureKey: isMobileNavOpen,
+  });
+  const bubbleRef = React.useRef<HTMLElement>(null);
+  const bubbleSize = useElementSize(bubbleRef, step.id);
+  const viewport = useViewportSize();
+  const placement = bubbleSize
+    ? placeTutorialBubble(anchorRect, bubbleSize, viewport)
+    : null;
+
   const titleId = "tutorial-wizard-title";
   const subtitleId = "tutorial-wizard-subtitle";
 
   return (
     <>
-      <TutorialSpotlight
-        anchorTestIds={step.anchorTestIds}
-        // The mobile drawer's own backdrop tap / close button can dismiss it
-        // independent of the tour (see the comment on TutorialSpotlight's
-        // `remeasureKey` prop); bumping this on every open/closed flip makes
-        // the spotlight re-search instead of staying stuck on the anchor
-        // that just disappeared.
-        remeasureKey={isMobileNavOpen}
-      />
+      <TutorialSpotlight rect={anchorRect} />
       <section
+        ref={bubbleRef}
         role="dialog"
         aria-modal="false"
         aria-labelledby={titleId}
         aria-describedby={subtitleId}
         data-testid="tutorial-wizard"
         data-step={step.id}
-        // This bar is a fixed video-caption overlay (black/white, like real
-        // subtitles) independent of the active app color theme — including
-        // the default light "deepsea" theme where --oh-muted/--oh-border
-        // resolve to dark colors meant for light surfaces, not this black
-        // bar. Every color inside it must stay a fixed white-based utility
-        // rather than an --oh-* theme token, or it becomes unreadable.
-        //
-        // `max-h-[calc(100vh-2rem)] overflow-y-auto` is the short-viewport /
-        // high-zoom safety net: the bar is anchored to `bottom-4` and grows
-        // upward with its content, so with no height cap a long caption plus
-        // the timer bar could push the progress/skip row above `y=0` on a
-        // very short viewport (landscape phone, heavy browser zoom) — a
-        // `fixed` element that tall doesn't scroll with the page, so that
-        // content would be genuinely unreachable rather than just scrolled
-        // off. Capping the height and letting the bar scroll internally
-        // keeps every control reachable instead.
-        className="fixed inset-x-0 bottom-4 z-[60] mx-auto max-h-[calc(100vh-2rem)] w-[min(92vw,640px)] overflow-y-auto rounded-2xl border border-white/15 bg-black/85 px-5 py-4 text-white shadow-2xl backdrop-blur"
+        data-placement={placement?.side ?? "measuring"}
+        // This bubble is a fixed overlay (black/white) independent of the
+        // active app color theme — including the default light "deepsea"
+        // theme where --oh-muted/--oh-border resolve to dark colors meant
+        // for light surfaces, not this black bubble. Every color inside it
+        // must stay a fixed white-based utility rather than an --oh-* theme
+        // token, or it becomes unreadable.
+        className={cn(
+          "fixed z-[60] w-[min(calc(100vw-24px),360px)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-white/15 bg-black px-5 py-4 text-white shadow-2xl",
+          "transition-[top,left,opacity] duration-300 ease-out motion-reduce:transition-none",
+          placement ? "opacity-100" : "opacity-0",
+        )}
+        style={
+          {
+            top: placement?.top ?? 0,
+            left: placement?.left ?? 0,
+            // The light theme remaps `--color-white` to dark ink app-wide
+            // (src/styles/neo-tokens.css); restore real white inside this
+            // always-black bubble so its white utilities stay readable.
+            "--color-white": "#ffffff",
+          } as React.CSSProperties
+        }
       >
+        {placement ? <BubbleArrow placement={placement} /> : null}
         <div className="flex items-center justify-between gap-3">
           {/* Own live region: the "N of M" count changes on every step just
               like the title/subtitle, but it lives in the header row rather
@@ -260,13 +353,13 @@ export function TutorialWizard() {
           aria-live="polite"
           aria-atomic="true"
         >
-          <h2 id={titleId} className="mt-2 text-lg font-semibold">
+          <h2 id={titleId} className="mt-2 text-base font-semibold">
             {t(step.titleKey)}
           </h2>
           <p
             id={subtitleId}
             data-testid="tutorial-subtitle"
-            className="mt-1 text-base leading-relaxed text-white/90"
+            className="mt-1 text-sm leading-relaxed text-white/85"
           >
             {subtitle}
           </p>
