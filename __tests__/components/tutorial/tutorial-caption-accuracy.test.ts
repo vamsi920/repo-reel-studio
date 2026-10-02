@@ -38,11 +38,11 @@ describe("tutorial caption accuracy", () => {
       expect.arrayContaining(["/mcp", "/skills", "/plugins"]),
     );
 
-    // The claims now live across the subtitle and its bullet points.
+    // Customize now has one step per tab (MCP, Skills, Plugins).
     const copy = [
       I18nKey.TUTORIAL$STEP_CUSTOMIZE_SUBTITLE,
-      I18nKey.TUTORIAL$STEP_CUSTOMIZE_POINT_1,
-      I18nKey.TUTORIAL$STEP_CUSTOMIZE_POINT_2,
+      I18nKey.TUTORIAL$STEP_SKILLS_SUBTITLE,
+      I18nKey.TUTORIAL$STEP_PLUGINS_SUBTITLE,
     ]
       .map(en)
       .join(" ");

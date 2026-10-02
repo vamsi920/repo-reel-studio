@@ -232,14 +232,14 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-next"));
     const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard).toHaveAttribute("data-step", "ask");
+    expect(wizard).toHaveAttribute("data-step", "commands");
     expect(navigate).toHaveBeenCalledWith("/conversations");
 
     await user.keyboard("{ArrowRight}");
-    expect(wizard).toHaveAttribute("data-step", "attach");
+    expect(wizard).toHaveAttribute("data-step", "ask");
 
     await user.click(screen.getByTestId("tutorial-back"));
-    expect(wizard).toHaveAttribute("data-step", "ask");
+    expect(wizard).toHaveAttribute("data-step", "commands");
   });
 
   it("announces both the title and subtitle through one atomic live region on every step change", async () => {
@@ -264,7 +264,7 @@ describe("TutorialHost", () => {
     await user.click(screen.getByTestId("tutorial-next"));
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "ask",
+      "commands",
     );
     // Same live region instance keeps wrapping the now-updated content.
     expect(screen.getByTestId("tutorial-step-live-region")).toContainElement(
@@ -414,7 +414,7 @@ describe("TutorialHost", () => {
     await user.click(screen.getByTestId("tutorial-next"));
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "ask",
+      "commands",
     );
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
       "closed",
@@ -550,7 +550,7 @@ describe("TutorialHost", () => {
 
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "attach",
+      "ask",
     );
     expect(navigate).toHaveBeenCalledWith("/conversations");
     expect(useTutorialStore.getState().isPlaying).toBe(false);
@@ -576,7 +576,7 @@ describe("TutorialHost", () => {
     expect(trackEvent).toHaveBeenCalledWith(
       "tutorial_skipped",
       expect.objectContaining({
-        step: "ask",
+        step: "commands",
         step_index: 1,
         total_steps: getTutorialSteps().length,
       }),
@@ -662,7 +662,7 @@ describe("TutorialHost", () => {
     await user.click(screen.getByTestId("tutorial-launcher"));
     await user.click(screen.getByTestId("tutorial-next"));
     const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard).toHaveAttribute("data-step", "ask");
+    expect(wizard).toHaveAttribute("data-step", "commands");
 
     const modal = document.createElement("div");
     modal.setAttribute("role", "dialog");
@@ -676,13 +676,13 @@ describe("TutorialHost", () => {
     fireEvent.keyDown(modalButton, { key: "Escape" });
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "ask",
+      "commands",
     );
 
     fireEvent.keyDown(modalButton, { key: "ArrowRight" });
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "ask",
+      "commands",
     );
 
     modal.remove();
@@ -692,7 +692,7 @@ describe("TutorialHost", () => {
     await user.keyboard("{ArrowRight}");
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
-      "attach",
+      "ask",
     );
   });
 
@@ -718,6 +718,7 @@ describe("TutorialHost", () => {
 
   it("explains each module with a couple of points, in a light bubble except a dark one for Security", () => {
     const steps = getTutorialSteps();
+    expect(steps).toHaveLength(25);
     const moduleSteps = steps.filter(
       (s) => s.anchorTestIds?.length && s.id !== "finish",
     );
@@ -808,7 +809,7 @@ describe("TutorialHost", () => {
   it("spotlights the on-screen element for the current step", async () => {
     const user = userEvent.setup();
     const link = document.createElement("a");
-    link.dataset.testid = "chat-input";
+    link.dataset.testid = "command-menu-trigger";
     link.getBoundingClientRect = () =>
       ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
     document.body.appendChild(link);
@@ -861,7 +862,7 @@ describe("TutorialHost", () => {
 
     const user = userEvent.setup();
     const link = document.createElement("a");
-    link.dataset.testid = "chat-input";
+    link.dataset.testid = "command-menu-trigger";
     link.getBoundingClientRect = () =>
       ({ top: 100, left: 10, width: 200, height: 32 }) as DOMRect;
     document.body.appendChild(link);
