@@ -130,4 +130,4 @@ The Agent Server is often paired with an [Automation Server](https://github.com/
 - [Architecture overview](./docs/architecture.md)
 - [Development guide](./docs/DEVELOPMENT.md)
 - [Self-hosting guide](./docs/SELF_HOSTING.md)
-- [Fork notes: what Neo changed from upstream OpenHands](./UPSTREAM.md)
+- [Fork notes: what Neo changed from upstream OpenHands](../UPSTREAM.md)
