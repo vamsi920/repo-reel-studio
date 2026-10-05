@@ -718,7 +718,7 @@ describe("TutorialHost", () => {
 
   it("explains each module with a couple of points, in a light bubble except a dark one for Security", () => {
     const steps = getTutorialSteps();
-    expect(steps).toHaveLength(25);
+    expect(steps).toHaveLength(38);
     const moduleSteps = steps.filter(
       (s) => s.anchorTestIds?.length && s.id !== "finish",
     );

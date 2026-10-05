@@ -7,25 +7,38 @@ export type TutorialStepId =
   | "ask"
   | "attach"
   | "model"
+  | "backend"
+  | "onboarding-agent"
   | "conversations"
   | "customize"
+  | "mcp-installed"
   | "skills"
   | "plugins"
   | "automations"
   | "pull-requests"
   | "templates"
   | "security"
+  | "security-areas"
   | "environment"
   | "environment-connections"
   | "environment-network"
+  | "environment-requirements"
   | "environment-runbook"
   | "agentops"
+  | "agentops-live"
   | "agentops-approvals"
+  | "agentops-history"
   | "agentops-budgets"
   | "knowledge"
   | "knowledge-tabs"
   | "usage"
+  | "usage-workspace"
+  | "usage-memory"
   | "settings"
+  | "settings-llm"
+  | "settings-agent"
+  | "settings-connections"
+  | "settings-secrets"
   | "finish";
 
 export interface TutorialStep {
@@ -133,6 +146,33 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["chat-input-llm-model", "chat-input-llm-profile"],
     },
     {
+      id: "backend",
+      titleKey: I18nKey.TUTORIAL$STEP_BACKEND_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_BACKEND_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_BACKEND_POINT_1,
+        I18nKey.TUTORIAL$STEP_BACKEND_POINT_2,
+      ],
+      route: HOME_ROUTE,
+      anchorTestIds: [
+        "backend-selector",
+        "collapsed-backend-selector-link",
+        MOBILE_MENU_TOGGLE_TEST_ID,
+      ],
+    },
+    {
+      // The dock is hidden on /environment/setup, never on the home page.
+      id: "onboarding-agent",
+      titleKey: I18nKey.TUTORIAL$STEP_ONBOARDING_AGENT_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_ONBOARDING_AGENT_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_ONBOARDING_AGENT_POINT_1,
+        I18nKey.TUTORIAL$STEP_ONBOARDING_AGENT_POINT_2,
+      ],
+      route: HOME_ROUTE,
+      anchorTestIds: ["onboarding-dock-trigger"],
+    },
+    {
       // The list only renders in the expanded sidebar.
       id: "conversations",
       titleKey: I18nKey.TUTORIAL$STEP_CONVERSATIONS_TITLE,
@@ -163,6 +203,21 @@ export function getTutorialSteps(): TutorialStep[] {
         "sidebar-extensions-/mcp",
         "sidebar-skills-link",
         MOBILE_MENU_TOGGLE_TEST_ID,
+      ],
+    },
+    {
+      id: "mcp-installed",
+      titleKey: I18nKey.TUTORIAL$STEP_MCP_INSTALLED_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_MCP_INSTALLED_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_MCP_INSTALLED_POINT_1,
+        I18nKey.TUTORIAL$STEP_MCP_INSTALLED_POINT_2,
+      ],
+      route: "/mcp",
+      anchorTestIds: [
+        "mcp-installed-list",
+        "mcp-installed-empty",
+        "mcp-toolbar",
       ],
     },
     {
@@ -250,6 +305,18 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
     },
     {
+      id: "security-areas",
+      titleKey: I18nKey.TUTORIAL$STEP_SECURITY_AREAS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SECURITY_AREAS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SECURITY_AREAS_POINT_1,
+        I18nKey.TUTORIAL$STEP_SECURITY_AREAS_POINT_2,
+      ],
+      tone: "dark",
+      route: "/security",
+      anchorTestIds: ["security-future-areas"],
+    },
+    {
       id: "environment",
       titleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_ENVIRONMENT_SUBTITLE,
@@ -287,6 +354,17 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["environment-tab-network"],
     },
     {
+      id: "environment-requirements",
+      titleKey: I18nKey.TUTORIAL$STEP_ENV_REQUIREMENTS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_ENV_REQUIREMENTS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_ENV_REQUIREMENTS_POINT_1,
+        I18nKey.TUTORIAL$STEP_ENV_REQUIREMENTS_POINT_2,
+      ],
+      route: "/environment/requirements",
+      anchorTestIds: ["environment-tab-requirements"],
+    },
+    {
       id: "environment-runbook",
       titleKey: I18nKey.TUTORIAL$STEP_ENV_RUNBOOK_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_ENV_RUNBOOK_SUBTITLE,
@@ -313,6 +391,17 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
     },
     {
+      id: "agentops-live",
+      titleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_LIVE_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_LIVE_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_AGENTOPS_LIVE_POINT_1,
+        I18nKey.TUTORIAL$STEP_AGENTOPS_LIVE_POINT_2,
+      ],
+      route: "/agentops/live",
+      anchorTestIds: ["agentops-tab-live-runs"],
+    },
+    {
       id: "agentops-approvals",
       titleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_APPROVALS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_APPROVALS_SUBTITLE,
@@ -322,6 +411,17 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
       route: "/agentops/approvals",
       anchorTestIds: ["agentops-tab-approvals"],
+    },
+    {
+      id: "agentops-history",
+      titleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_HISTORY_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_AGENTOPS_HISTORY_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_AGENTOPS_HISTORY_POINT_1,
+        I18nKey.TUTORIAL$STEP_AGENTOPS_HISTORY_POINT_2,
+      ],
+      route: "/agentops/history",
+      anchorTestIds: ["agentops-tab-history"],
     },
     {
       id: "agentops-budgets",
@@ -378,6 +478,28 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
     },
     {
+      id: "usage-workspace",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_WORKSPACE_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_WORKSPACE_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_USAGE_WORKSPACE_POINT_1,
+        I18nKey.TUTORIAL$STEP_USAGE_WORKSPACE_POINT_2,
+      ],
+      route: "/usage",
+      anchorTestIds: ["usage-workspace-select"],
+    },
+    {
+      id: "usage-memory",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_MEMORY_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_MEMORY_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_USAGE_MEMORY_POINT_1,
+        I18nKey.TUTORIAL$STEP_USAGE_MEMORY_POINT_2,
+      ],
+      route: "/usage",
+      anchorTestIds: ["usage-tab-memory-health"],
+    },
+    {
       id: "settings",
       titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_SUBTITLE,
@@ -393,6 +515,51 @@ export function getTutorialSteps(): TutorialStep[] {
         "user-menu-trigger",
         MOBILE_MENU_TOGGLE_TEST_ID,
       ],
+    },
+    {
+      id: "settings-llm",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_LLM_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_LLM_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_LLM_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_LLM_POINT_2,
+      ],
+      route: "/settings/llm",
+      anchorTestIds: ["sidebar-settings-/settings/llm"],
+    },
+    {
+      // Listed after LLM: an agent profile needs an LLM profile first.
+      id: "settings-agent",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_POINT_2,
+      ],
+      route: "/settings/agents",
+      anchorTestIds: ["sidebar-settings-/settings/agents"],
+    },
+    {
+      id: "settings-connections",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_POINT_2,
+      ],
+      route: "/settings/connections",
+      anchorTestIds: ["sidebar-settings-/settings/connections"],
+    },
+    {
+      id: "settings-secrets",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_SECRETS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_SECRETS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_SECRETS_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_SECRETS_POINT_2,
+      ],
+      route: "/settings/secrets",
+      anchorTestIds: ["sidebar-settings-/settings/secrets"],
     },
     {
       id: "finish",
