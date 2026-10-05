@@ -12,12 +12,16 @@ export type TutorialStepId =
   | "conversations"
   | "customize"
   | "mcp-installed"
+  | "mcp-marketplace"
   | "skills"
   | "plugins"
   | "automations"
+  | "automations-proactive"
+  | "automations-import"
   | "pull-requests"
   | "templates"
   | "security"
+  | "security-severity"
   | "security-areas"
   | "environment"
   | "environment-connections"
@@ -33,12 +37,20 @@ export type TutorialStepId =
   | "knowledge-tabs"
   | "usage"
   | "usage-workspace"
+  | "usage-tokens"
+  | "usage-costs"
+  | "usage-savings"
   | "usage-memory"
   | "settings"
   | "settings-llm"
   | "settings-agent"
+  | "settings-condenser"
+  | "settings-agent-context"
+  | "settings-verification"
+  | "settings-app"
   | "settings-connections"
   | "settings-secrets"
+  | "account"
   | "finish";
 
 export interface TutorialStep {
@@ -221,6 +233,17 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
     },
     {
+      id: "mcp-marketplace",
+      titleKey: I18nKey.TUTORIAL$STEP_MCP_MARKETPLACE_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_MCP_MARKETPLACE_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_MCP_MARKETPLACE_POINT_1,
+        I18nKey.TUTORIAL$STEP_MCP_MARKETPLACE_POINT_2,
+      ],
+      route: "/mcp",
+      anchorTestIds: ["mcp-marketplace-section", "mcp-marketplace-grid"],
+    },
+    {
       id: "skills",
       titleKey: I18nKey.TUTORIAL$STEP_SKILLS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_SKILLS_SUBTITLE,
@@ -256,6 +279,35 @@ export function getTutorialSteps(): TutorialStep[] {
         "automations-add-automation",
         "sidebar-automations-link",
         MOBILE_MENU_TOGGLE_TEST_ID,
+      ],
+    },
+    {
+      id: "automations-proactive",
+      titleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_PROACTIVE_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_PROACTIVE_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_AUTOMATIONS_PROACTIVE_POINT_1,
+        I18nKey.TUTORIAL$STEP_AUTOMATIONS_PROACTIVE_POINT_2,
+      ],
+      route: automationListPath(),
+      anchorTestIds: [
+        "proactivation-enable",
+        "proactivation-status",
+        "automations-add-automation",
+      ],
+    },
+    {
+      id: "automations-import",
+      titleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_IMPORT_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_AUTOMATIONS_IMPORT_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_AUTOMATIONS_IMPORT_POINT_1,
+        I18nKey.TUTORIAL$STEP_AUTOMATIONS_IMPORT_POINT_2,
+      ],
+      route: automationListPath(),
+      anchorTestIds: [
+        "automations-import-automation",
+        "automations-add-automation",
       ],
     },
     {
@@ -303,6 +355,18 @@ export function getTutorialSteps(): TutorialStep[] {
         "sidebar-security-link",
         MOBILE_MENU_TOGGLE_TEST_ID,
       ],
+    },
+    {
+      id: "security-severity",
+      titleKey: I18nKey.TUTORIAL$STEP_SECURITY_SEVERITY_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SECURITY_SEVERITY_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SECURITY_SEVERITY_POINT_1,
+        I18nKey.TUTORIAL$STEP_SECURITY_SEVERITY_POINT_2,
+      ],
+      tone: "dark",
+      route: "/security",
+      anchorTestIds: ["security-severity-legend", "security-empty-state"],
     },
     {
       id: "security-areas",
@@ -489,6 +553,39 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["usage-workspace-select"],
     },
     {
+      id: "usage-tokens",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_TOKENS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_TOKENS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_USAGE_TOKENS_POINT_1,
+        I18nKey.TUTORIAL$STEP_USAGE_TOKENS_POINT_2,
+      ],
+      route: "/usage",
+      anchorTestIds: ["usage-tab-tokens"],
+    },
+    {
+      id: "usage-costs",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_COSTS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_COSTS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_USAGE_COSTS_POINT_1,
+        I18nKey.TUTORIAL$STEP_USAGE_COSTS_POINT_2,
+      ],
+      route: "/usage",
+      anchorTestIds: ["usage-tab-costs"],
+    },
+    {
+      id: "usage-savings",
+      titleKey: I18nKey.TUTORIAL$STEP_USAGE_SAVINGS_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_SAVINGS_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_USAGE_SAVINGS_POINT_1,
+        I18nKey.TUTORIAL$STEP_USAGE_SAVINGS_POINT_2,
+      ],
+      route: "/usage",
+      anchorTestIds: ["usage-tab-savings"],
+    },
+    {
       id: "usage-memory",
       titleKey: I18nKey.TUTORIAL$STEP_USAGE_MEMORY_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_USAGE_MEMORY_SUBTITLE,
@@ -540,6 +637,50 @@ export function getTutorialSteps(): TutorialStep[] {
       anchorTestIds: ["sidebar-settings-/settings/agents"],
     },
     {
+      id: "settings-condenser",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONDENSER_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONDENSER_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_CONDENSER_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_CONDENSER_POINT_2,
+      ],
+      route: "/settings/condenser",
+      anchorTestIds: ["sidebar-settings-/settings/condenser"],
+    },
+    {
+      id: "settings-agent-context",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_CONTEXT_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_CONTEXT_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_CONTEXT_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_AGENT_CONTEXT_POINT_2,
+      ],
+      route: "/settings/agent-context",
+      anchorTestIds: ["sidebar-settings-/settings/agent-context"],
+    },
+    {
+      id: "settings-verification",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_VERIFICATION_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_VERIFICATION_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_VERIFICATION_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_VERIFICATION_POINT_2,
+      ],
+      route: "/settings/verification",
+      anchorTestIds: ["sidebar-settings-/settings/verification"],
+    },
+    {
+      id: "settings-app",
+      titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_APP_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_APP_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_SETTINGS_APP_POINT_1,
+        I18nKey.TUTORIAL$STEP_SETTINGS_APP_POINT_2,
+      ],
+      route: "/settings/app",
+      anchorTestIds: ["sidebar-settings-/settings/app"],
+    },
+    {
       id: "settings-connections",
       titleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_TITLE,
       subtitleKey: I18nKey.TUTORIAL$STEP_SETTINGS_CONNECTIONS_SUBTITLE,
@@ -560,6 +701,18 @@ export function getTutorialSteps(): TutorialStep[] {
       ],
       route: "/settings/secrets",
       anchorTestIds: ["sidebar-settings-/settings/secrets"],
+    },
+    {
+      // Stays on the last Settings page; the account menu is in every sidebar.
+      id: "account",
+      titleKey: I18nKey.TUTORIAL$STEP_ACCOUNT_TITLE,
+      subtitleKey: I18nKey.TUTORIAL$STEP_ACCOUNT_SUBTITLE,
+      pointKeys: [
+        I18nKey.TUTORIAL$STEP_ACCOUNT_POINT_1,
+        I18nKey.TUTORIAL$STEP_ACCOUNT_POINT_2,
+      ],
+      route: "/settings/secrets",
+      anchorTestIds: ["user-menu-trigger", "collapsed-user-menu-trigger"],
     },
     {
       id: "finish",
