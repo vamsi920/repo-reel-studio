@@ -75,7 +75,7 @@ describe("buildThinkingGraph", () => {
     expect(done.edges[0].active).toBe(false);
   });
 
-  it("lifts an action's thought above the line and threads the path through it", () => {
+  it("puts an action's thought on the line just before the step it led to", () => {
     const events = [
       userMessage("u1", "go"),
       action(
@@ -90,7 +90,6 @@ describe("buildThinkingGraph", () => {
 
     const thought = graph.nodes.find((n) => n.kind === "thought")!;
     expect(thought.label).toBe("First, look around");
-    expect(thought.y).toBeLessThan(0);
     expect(graph.edges.map((e) => [e.source, e.target])).toEqual([
       ["u1", "a1:thought"],
       ["a1:thought", "a1"],

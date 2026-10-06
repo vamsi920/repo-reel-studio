@@ -13,7 +13,7 @@
 .tg-node {
   --tg-accent: #3b6cf6;
   position: relative;
-  border-radius: 6px;
+  border-radius: 3px;
   border: 1px solid color-mix(in srgb, var(--tg-accent) 35%, #d9dee8);
   background-color: #ffffff;
   box-shadow:
@@ -55,7 +55,18 @@
 .tg-node--fork,
 .tg-node--agent,
 .tg-node--result {
-  border-radius: 4px;
+  border-radius: 3px;
+}
+
+/* Visible connection ports on each card, like a workflow editor. */
+.tg-canvas .react-flow__handle.tg-port {
+  width: 9px;
+  height: 9px;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 50%;
+  border: 2px solid;
+  background-color: #ffffff;
 }
 
 .tg-node--finish {
@@ -65,8 +76,8 @@
 
 .tg-node--finish .tg-burst {
   position: absolute;
-  inset: -7px;
-  border-radius: 9px;
+  inset: -6px;
+  border-radius: 5px;
   border: 2px dotted var(--tg-accent);
   animation: tg-burst 700ms ease-out both;
   pointer-events: none;
@@ -81,7 +92,7 @@
 .tg-node--running .tg-orbit {
   position: absolute;
   inset: -5px;
-  border-radius: 9px;
+  border-radius: 5px;
   border: 1px dashed color-mix(in srgb, var(--tg-accent) 55%, transparent);
   pointer-events: none;
 }
@@ -107,8 +118,9 @@
 
 .tg-edge-path {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 1.75;
   stroke-linecap: round;
+  stroke-linejoin: round;
   stroke-dasharray: 1400;
   stroke-dashoffset: 1400;
   animation: tg-draw 800ms ease-out forwards;
@@ -116,8 +128,8 @@
 
 .tg-edge-glow {
   fill: none;
-  stroke-width: 7;
-  opacity: 0.1;
+  stroke-width: 6;
+  opacity: 0.08;
 }
 
 .tg-seed {

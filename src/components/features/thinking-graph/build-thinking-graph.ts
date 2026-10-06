@@ -41,8 +41,6 @@ const ROW_HEIGHT = 230;
 const FORK_SPAN = 3;
 /** Vertical distance between agent lanes. */
 export const LANE_HEIGHT = 170;
-/** Thoughts float above the main line so the path "waves" while thinking. */
-const THOUGHT_RISE = -80;
 /** Runs of at least this many finished same-kind tool steps fold into one. */
 export const CLUSTER_MIN = 5;
 const LABEL_MAX = 90;
@@ -520,12 +518,7 @@ function layout({
     { x: number; y: number; flow: FlowDirection }
   >();
   for (const [id, atSlot] of slotOf) {
-    const base = position(atSlot);
-    const node = nodes.get(id);
-    placed.set(id, {
-      ...base,
-      y: base.y + (node?.kind === "thought" ? THOUGHT_RISE : 0),
-    });
+    placed.set(id, position(atSlot));
   }
   // Sub-agent lanes hang below their fork's row, continuing its direction.
   for (const node of nodes.values()) {

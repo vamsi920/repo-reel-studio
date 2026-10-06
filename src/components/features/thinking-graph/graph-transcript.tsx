@@ -84,7 +84,7 @@ function ThinkingPanel({
   return (
     <section
       data-testid="thinking-panel"
-      className="overflow-hidden rounded-md border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)]"
+      className="overflow-hidden rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)]"
     >
       <button
         type="button"
@@ -96,7 +96,7 @@ function ThinkingPanel({
         }}
         className="flex w-full items-center gap-2 px-3 py-2 text-left"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded bg-[#ede9fe] text-[#7c3aed]">
+        <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#ede9fe] text-[#7c3aed]">
           <Brain size={14} />
         </span>
         <span className="font-mono text-xs font-semibold tracking-wide text-[var(--oh-foreground,#0f172a)]">

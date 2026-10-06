@@ -88,7 +88,7 @@ function NodeDrawer({
   return (
     <aside
       data-testid="thinking-graph-drawer"
-      className="absolute bottom-3 right-3 top-12 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-md border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] shadow-xl"
+      className="absolute bottom-3 right-3 top-12 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] shadow-xl"
     >
       <header
         className="flex items-center gap-2 border-b border-[var(--oh-border-subtle,#d9dee8)] px-4 py-2.5"
@@ -292,7 +292,7 @@ function ThinkingGraphCanvas({
             <span
               // Lane index is the agent's identity in this graph.
               key={lane}
-              className="flex items-center gap-1.5 rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm"
+              className="flex items-center gap-1.5 rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm"
             >
               <span
                 className="h-2 w-2 rounded-[2px]"
@@ -303,7 +303,7 @@ function ThinkingGraphCanvas({
           ),
         )}
         {runningCount > 0 && (
-          <span className="rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] text-[var(--oh-muted,#64748b)] shadow-sm">
+          <span className="rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] text-[var(--oh-muted,#64748b)] shadow-sm">
             {runningCount} {t(I18nKey.THINKING_GRAPH$RUNNING)}
           </span>
         )}
@@ -369,7 +369,7 @@ function HudButton({
       type="button"
       onClick={onClick}
       data-testid={testId}
-      className="flex items-center gap-1 rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm transition hover:border-[#3b6cf6] hover:text-[#3b6cf6]"
+      className="flex items-center gap-1 rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm transition hover:border-[#3b6cf6] hover:text-[#3b6cf6]"
     >
       {icon}
       {label}

@@ -119,14 +119,15 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
       <Handle
         type="target"
         position={data.flow === "rtl" ? Position.Right : Position.Left}
-        className="!h-2 !w-2 !border-0 !bg-transparent"
+        className="tg-port"
+        style={{ borderColor: accent }}
       />
       {data.status === "running" && <span className="tg-orbit" />}
       {data.kind === "finish" && <span className="tg-burst" />}
 
       <div className="flex items-center gap-2">
         <span
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm"
           style={{
             backgroundColor:
               data.kind === "goal"
@@ -172,7 +173,7 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
             >
               <span
                 className={cn(
-                  "h-2 w-2 shrink-0 rounded-[2px]",
+                  "h-2 w-2 shrink-0 rounded-[1px]",
                   item.status === "in_progress" && "animate-pulse",
                 )}
                 style={{
@@ -196,7 +197,8 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
       <Handle
         type="source"
         position={data.flow === "rtl" ? Position.Left : Position.Right}
-        className="!h-2 !w-2 !border-0 !bg-transparent"
+        className="tg-port"
+        style={{ borderColor: accent }}
       />
     </div>
   );

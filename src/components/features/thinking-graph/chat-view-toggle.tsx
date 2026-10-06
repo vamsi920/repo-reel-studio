@@ -66,7 +66,7 @@ export function ChatViewToggle({
     <div
       role="radiogroup"
       aria-label={t(I18nKey.THINKING_GRAPH$VIEW_TOGGLE_LABEL)}
-      className="flex items-center gap-0.5 rounded-full border border-[var(--oh-border-subtle)] bg-[var(--oh-surface)] p-0.5"
+      className="flex items-center gap-0.5 rounded-md border border-[var(--oh-border-subtle)] bg-[var(--oh-surface)] p-0.5"
     >
       {OPTIONS.map(({ mode, labelKey, Icon }) => {
         const isActive = value === mode;
@@ -79,7 +79,7 @@ export function ChatViewToggle({
             data-testid={`chat-view-${mode}`}
             onClick={() => onChange(mode)}
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition",
               isActive
                 ? "bg-[#3b6cf6] text-[#ffffff] shadow-sm"
                 : "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]",
