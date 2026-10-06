@@ -45,12 +45,20 @@ import { useTaskPolling } from "#/hooks/query/use-task-polling";
 import { matchesPendingConversationId } from "#/utils/pending-task-message-link";
 import { useConversationWebSocket } from "#/contexts/conversation-websocket-context";
 import ChatStatusIndicator from "./chat-status-indicator";
-import { getStatusColor, getStatusText } from "#/utils/utils";
+import { cn, getStatusColor, getStatusText } from "#/utils/utils";
 import { useNewConversationCommand } from "#/hooks/mutation/use-new-conversation-command";
 import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { I18nKey } from "#/i18n/declaration";
 import { hasConversationStarted } from "./components/resolve-picker-kind";
+import {
+  ChatViewToggle,
+  useChatViewMode,
+} from "#/components/features/thinking-graph/chat-view-toggle";
+
+const ThinkingGraphView = React.lazy(
+  () => import("#/components/features/thinking-graph/thinking-graph-view"),
+);
 
 function getEntryPoint(
   hasRepository: boolean | null,
@@ -93,6 +101,8 @@ export function ChatInterface() {
     (state) => state.pendingMessages,
   );
   const { t } = useTranslation("openhands");
+  const [chatViewMode, setChatViewMode] = useChatViewMode();
+  const isGraphView = chatViewMode === "graph";
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const {
     scrollDomToBottom,
@@ -541,6 +551,20 @@ export function ChatInterface() {
           )}
         {/* Note: We only hide chat suggestions when there's a user message */}
 
+        {totalEvents > 0 && (
+          <div className="flex shrink-0 justify-center pt-3">
+            <ChatViewToggle value={chatViewMode} onChange={setChatViewMode} />
+          </div>
+        )}
+
+        {isGraphView && totalEvents > 0 && (
+          <div className="min-h-0 grow py-3">
+            <React.Suspense fallback={null}>
+              <ThinkingGraphView />
+            </React.Suspense>
+          </div>
+        )}
+
         <div
           ref={scrollRef}
           data-testid="chat-scroll-container"
@@ -549,7 +573,10 @@ export function ChatInterface() {
             maybeLoadOlder(e.currentTarget);
           }}
           onWheel={handleWheelForPagination}
-          className="custom-scrollbar-always flex min-h-0 grow flex-col gap-2 overflow-x-hidden overflow-y-auto px-0 pt-4 pb-8 md:px-4"
+          className={cn(
+            "custom-scrollbar-always min-h-0 grow flex-col gap-2 overflow-x-hidden overflow-y-auto px-0 pt-4 pb-8 md:px-4",
+            isGraphView && totalEvents > 0 ? "hidden" : "flex",
+          )}
         >
           {isChatLoading && isReturningToConversation && (
             <ChatMessagesSkeleton />

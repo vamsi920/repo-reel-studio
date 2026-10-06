@@ -49,6 +49,7 @@ import {
 } from "./conversation-panel-list-helpers";
 import { useArchivedConversationsStore } from "#/stores/archived-conversations-store";
 import { usePinnedConversationsStore } from "#/stores/pinned-conversations-store";
+import { isPerConversationWorkingDir } from "#/api/agent-server-config";
 
 interface ConversationPanelProps {
   onClose?: () => void;
@@ -87,6 +88,17 @@ const partitionByCutoff = <T extends { updated_at: string }>(
   }
   return { recent, older };
 };
+
+// The agent-server's default per-conversation folder is a 32-hex name that
+// means nothing to users; never surface it as a workspace label.
+function visibleWorkspaceDir(conversation: {
+  selected_workspace?: string | null;
+  workspace?: { working_dir?: string | null } | null;
+}): string | undefined {
+  const dir =
+    conversation.selected_workspace ?? conversation.workspace?.working_dir;
+  return dir && !isPerConversationWorkingDir(dir) ? dir : undefined;
+}
 
 export function ConversationPanel({
   onClose,
@@ -846,10 +858,7 @@ export function ConversationPanel({
             sandboxStatus={conversation.sandbox_status}
             lastUpdatedAt={conversation.updated_at}
             createdAt={conversation.created_at}
-            workspaceWorkingDir={
-              conversation.selected_workspace ??
-              conversation.workspace?.working_dir
-            }
+            workspaceWorkingDir={visibleWorkspaceDir(conversation)}
             isActive={conversation.id === currentConversationId}
             onClose={onClose}
             showRepositoryMetadata={showRepoBranchMetadata}
@@ -883,10 +892,7 @@ export function ConversationPanel({
                 selected_branch: conversation.selected_branch,
                 git_provider: conversation.git_provider as Provider,
               }}
-              workspaceWorkingDir={
-                conversation.selected_workspace ??
-                conversation.workspace?.working_dir
-              }
+              workspaceWorkingDir={visibleWorkspaceDir(conversation)}
               llmModel={conversation.llm_model}
               agentKind={conversation.agent_kind}
               acpServer={conversation.acp_server}
@@ -947,10 +953,7 @@ export function ConversationPanel({
                 setOpenContextMenuId(isOpen ? conversation.id : null)
               }
               isActive={conversation.id === currentConversationId}
-              workspaceWorkingDir={
-                conversation.selected_workspace ??
-                conversation.workspace?.working_dir
-              }
+              workspaceWorkingDir={visibleWorkspaceDir(conversation)}
               showRepositoryMetadata={showRepoBranchMetadata}
               llmModel={conversation.llm_model}
               showLlmProfiles={showLlmProfiles}

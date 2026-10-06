@@ -22,10 +22,14 @@ import PluginsManagementService, {
 import {
   PLUGINS_QUERY_KEYS,
   LLM_PROFILES_QUERY_KEYS,
+  LOCAL_WORKSPACES_QUERY_KEYS,
   AGENT_PROFILES_QUERY_KEYS,
   AGENT_PROFILES_RETRY_OPTIONS,
 } from "#/hooks/query/query-keys";
 import { pluginReferenceKey } from "#/utils/plugin-display";
+import { buildRepoWorkingDir } from "#/api/agent-server-config";
+import { resolveAbsoluteAgentServerPath } from "#/api/agent-server-home";
+import WorkspacesService from "#/api/workspaces-service/workspaces-service.api";
 import {
   getStoredConversationMetadata,
   setStoredConversationMetadata,
@@ -54,10 +58,37 @@ async function buildLocalGithubCloneInstructions(repository: {
   const checkout = repository.branch
     ? ` && git checkout ${repository.branch}`
     : "";
+  // The working dir is a stable per-repo folder (`buildRepoWorkingDir`), so a
+  // second conversation on the same repo finds the checkout already there --
+  // update it instead of failing `git clone` into a non-empty directory.
   return (
     `Before doing anything else, run: ` +
-    `git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}`
+    `if [ -d .git ]; then git fetch origin${checkout} && git pull --ff-only || true; ` +
+    `else git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}; fi`
   );
+}
+
+/**
+ * Best-effort: save the repo's checkout folder as a workspace so it shows up
+ * in the workspace picker and the sidebar groups the conversation under it.
+ * Never blocks conversation creation.
+ */
+async function registerRepoWorkspace(
+  repoFullName: string,
+  path: string,
+): Promise<void> {
+  try {
+    const { workspaces } = await WorkspacesService.listWorkspaces();
+    if (workspaces.some((workspace) => workspace.path === path)) return;
+    const name = repoFullName.split("/").pop() || repoFullName;
+    await WorkspacesService.addWorkspaces([{ id: path, name, path }]);
+  } catch (error) {
+    console.warn(
+      "[create-conversation] could not register repo workspace",
+      repoFullName,
+      error,
+    );
+  }
 }
 
 export interface CreateConversationVariables {
@@ -355,6 +386,19 @@ export const useCreateConversation = () => {
             .join("\n\n")
         : conversationInstructions;
 
+      // A repo launch on a local backend gets a stable per-repo folder and
+      // becomes a saved workspace. Without this the clone landed in a
+      // throwaway `workspace/project/<hex>` dir, `selected_workspace` stayed
+      // null, and the conversation showed up under "No workspace".
+      let effectiveWorkingDir = workingDir;
+      let effectiveWorkspaceMode = workspaceMode;
+      if (repository && !workingDir && !isCloud) {
+        effectiveWorkingDir = await resolveAbsoluteAgentServerPath(
+          buildRepoWorkingDir(repository.name),
+        );
+        effectiveWorkspaceMode = workspaceMode ?? "local_repo";
+      }
+
       // Only extend the call with the profile fields when launching from a
       // profile, so a plain create stays byte-identical to the legacy
       // agent_settings path (#3727). sandboxId is unused here.
@@ -371,8 +415,8 @@ export const useCreateConversation = () => {
                 git_provider: repository.gitProvider,
               }
             : null,
-          workingDirOverride: workingDir,
-          workspaceMode,
+          workingDirOverride: effectiveWorkingDir,
+          workspaceMode: effectiveWorkspaceMode,
           parentConversationId,
           agentType,
           ...(effectiveAgentProfileId
@@ -448,6 +492,13 @@ export const useCreateConversation = () => {
           plugins: attachedPlugins.length
             ? attachedPlugins
             : (prev?.plugins ?? null),
+        });
+      }
+
+      if (repository && effectiveWorkingDir && !workingDir) {
+        await registerRepoWorkspace(repository.name, effectiveWorkingDir);
+        queryClient.invalidateQueries({
+          queryKey: LOCAL_WORKSPACES_QUERY_KEYS.all,
         });
       }
 

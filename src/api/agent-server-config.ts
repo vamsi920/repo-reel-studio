@@ -206,6 +206,38 @@ export function buildConversationWorkingDir(conversationId: string): string {
   return `${base}/${hex}`;
 }
 
+const REPO_WORKSPACES_SUBDIR = "repos";
+
+/**
+ * Stable per-repository checkout folder (`<base>/repos/<owner>/<repo>`).
+ * Unlike `buildConversationWorkingDir`, every conversation on the same repo
+ * lands in the same folder, so the repo becomes a real, reusable workspace
+ * instead of a throwaway `<hex>` directory per conversation.
+ */
+export function buildRepoWorkingDir(repoFullName: string): string {
+  const base = getAgentServerWorkingDir().replace(/\/+$/, "");
+  const segments = repoFullName
+    .split("/")
+    .map((segment) => segment.trim().replace(/[^A-Za-z0-9._-]/g, "-"))
+    .filter((segment) => segment && segment !== "." && segment !== "..");
+  return [base, REPO_WORKSPACES_SUBDIR, ...segments].join("/");
+}
+
+/** Matches the `<32-hex>` folder name `buildConversationWorkingDir` creates. */
+const CONVERSATION_DIR_NAME_PATTERN = /^[0-9a-f]{32}$/i;
+
+export function isPerConversationWorkingDir(
+  path: string | null | undefined,
+): boolean {
+  if (!path) return false;
+  const name =
+    path
+      .replace(/[/\\]+$/, "")
+      .split(/[/\\]/)
+      .pop() ?? "";
+  return CONVERSATION_DIR_NAME_PATTERN.test(name);
+}
+
 export function getAgentServerHeaders(): Record<string, string> {
   const sessionApiKey = getAgentServerSessionApiKey();
   return sessionApiKey ? { "X-Session-API-Key": sessionApiKey } : {};

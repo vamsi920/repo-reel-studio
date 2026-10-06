@@ -17,6 +17,25 @@ vi.mock("#/hooks/use-tracking", () => ({
   }),
 }));
 
+// Repo launches resolve a stable per-repo folder against the agent-server's
+// home dir and register it as a workspace; mock both service boundaries.
+vi.mock("#/api/agent-server-home", () => ({
+  resolveAbsoluteAgentServerPath: async (path: string) => `/home/u/${path}`,
+}));
+const { listWorkspacesMock, addWorkspacesMock } = vi.hoisted(() => ({
+  listWorkspacesMock: vi.fn(),
+  addWorkspacesMock: vi.fn(),
+}));
+vi.mock("#/api/workspaces-service/workspaces-service.api", () => ({
+  __esModule: true,
+  default: {
+    listWorkspaces: (...args: unknown[]) => listWorkspacesMock(...args),
+    addWorkspaces: (...args: unknown[]) => addWorkspacesMock(...args),
+  },
+}));
+listWorkspacesMock.mockResolvedValue({ workspaces: [], workspaceParents: [] });
+addWorkspacesMock.mockResolvedValue({ workspaces: [], workspaceParents: [] });
+
 // The default→agent_settings downgrade is local-only (#1571 review); default
 // to local so the existing (pre-review) assertions below are unaffected, and
 // override per-test to exercise the cloud path.
@@ -193,12 +212,44 @@ describe("useCreateConversation", () => {
           selected_branch: "main",
           git_provider: "github",
         },
-        workingDirOverride: undefined,
-        workspaceMode: undefined,
+        workingDirOverride: "/home/u/workspace/project/repos/owner/repo",
+        workspaceMode: "local_repo",
         parentConversationId: undefined,
         agentType: undefined,
       });
     });
+  });
+
+  it("saves a launched repo as a workspace named after the repo", async () => {
+    // Arrange
+    vi.spyOn(
+      AgentServerConversationService,
+      "createConversation",
+    ).mockResolvedValue({
+      id: "task-id",
+      app_conversation_id: "conv-repo-ws",
+      agent_server_url: "http://agent-server.local",
+    } as never);
+    addWorkspacesMock.mockClear();
+    const { result } = renderHook(() => useCreateConversation(), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={new QueryClient()}>
+          {children}
+        </QueryClientProvider>
+      ),
+    });
+
+    // Act
+    await result.current.mutateAsync({
+      query: "hi",
+      repository: { name: "acme/app", gitProvider: "github" },
+    });
+
+    // Assert
+    const path = "/home/u/workspace/project/repos/acme/app";
+    expect(addWorkspacesMock).toHaveBeenCalledWith([
+      { id: path, name: "app", path },
+    ]);
   });
 
   it("warns when a GitHub repo is attached to a local conversation but no clone instruction could be built", async () => {

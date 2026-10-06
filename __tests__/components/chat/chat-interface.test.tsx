@@ -5,12 +5,14 @@ import {
   screen,
   waitFor,
   within,
+  act,
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderWithProviders, useParamsMock } from "test-utils";
 import { SUGGESTIONS } from "#/utils/suggestions";
 import { ChatInterface } from "#/components/features/chat/chat-interface";
+import { THINKING_GRAPH_VIEW_KEY } from "#/components/features/thinking-graph/chat-view-toggle";
 import {
   useConversationId,
   useOptionalConversationId,
@@ -31,7 +33,6 @@ import { useTaskPolling } from "#/hooks/query/use-task-polling";
 import { AgentState } from "#/types/agent-state";
 import { useConversationStore } from "#/stores/conversation-store";
 import { useGoalStore } from "#/stores/goal-store";
-import { act } from "@testing-library/react";
 
 const mockSend = vi.fn();
 vi.mock("#/hooks/use-send-message", () => ({
@@ -603,6 +604,42 @@ describe("ChatInterface - Scroll-up loads older events", () => {
     expect(scrollContainer!.children.length).toBeGreaterThan(0);
   });
 
+  it("shows the live thinking graph by default and remembers a switch to the transcript", async () => {
+    // Arrange
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const agentAction: any = {
+      id: "act-graph",
+      timestamp: "2025-07-01T00:00:10Z",
+      source: "agent",
+      action: { kind: "ExecuteBashAction", command: "ls" },
+      tool_name: "terminal",
+      tool_call_id: "call-graph",
+      llm_response_id: "resp-graph",
+      thought: [],
+    };
+    window.localStorage.removeItem(THINKING_GRAPH_VIEW_KEY);
+    useEventStore.setState({
+      events: [agentAction],
+      eventIds: new Set(["act-graph"]),
+      uiEvents: [agentAction],
+    });
+    renderWithQueryClient(<ChatInterface />, queryClient);
+    expect(await screen.findByTestId("thinking-graph")).toBeInTheDocument();
+    expect(screen.getByTestId("chat-scroll-container")).toHaveClass("hidden");
+
+    // Act
+    fireEvent.click(screen.getByTestId("chat-view-transcript"));
+
+    // Assert
+    expect(screen.queryByTestId("thinking-graph")).not.toBeInTheDocument();
+    expect(screen.getByTestId("chat-scroll-container")).not.toHaveClass(
+      "hidden",
+    );
+    expect(window.localStorage.getItem(THINKING_GRAPH_VIEW_KEY)).toBe(
+      "transcript",
+    );
+  });
+
   it("clears a stale scroll-restore snapshot when the conversation changes before loadOlder resolves", async () => {
     // ChatInterface stays mounted across a conversation switch (same route,
     // new :conversationId), so a "load older" triggered just before
@@ -901,8 +938,7 @@ describe("ChatInterface - Pending message queue", () => {
     // thinking they can still cancel, risking a duplicate resend).
     await waitFor(() => {
       expect(
-        useOptimisticUserMessageStore.getState().pendingMessages[0]
-          ?.dispatched,
+        useOptimisticUserMessageStore.getState().pendingMessages[0]?.dispatched,
       ).toBe(true);
     });
     expect(screen.queryByTestId("chat-message-stop")).not.toBeInTheDocument();

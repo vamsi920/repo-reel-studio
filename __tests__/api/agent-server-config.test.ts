@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_WORKING_DIR,
   buildConversationWorkingDir,
+  buildRepoWorkingDir,
+  isPerConversationWorkingDir,
   getAgentServerBaseUrl,
   getAgentServerFormDefaults,
   getAgentServerSessionApiKey,
@@ -79,6 +81,26 @@ describe("agent server config", () => {
     expect(
       buildConversationWorkingDir("4a8dca37-3bf0-48de-a0af-949d711c3d48"),
     ).toBe("/srv/workspaces/4a8dca373bf048dea0af949d711c3d48");
+  });
+
+  it("gives every conversation on a repo the same sanitized repo folder", () => {
+    vi.stubEnv("VITE_WORKING_DIR", "/srv/workspaces/");
+
+    expect(buildRepoWorkingDir("acme/my repo")).toBe(
+      "/srv/workspaces/repos/acme/my-repo",
+    );
+    expect(buildRepoWorkingDir("../evil/./x")).toBe(
+      "/srv/workspaces/repos/evil/x",
+    );
+  });
+
+  it("recognises only the per-conversation hex folder as throwaway", () => {
+    expect(
+      isPerConversationWorkingDir(
+        "/home/u/workspace/project/4a8dca373bf048dea0af949d711c3d48",
+      ),
+    ).toBe(true);
+    expect(isPerConversationWorkingDir("/home/u/repos/acme/app")).toBe(false);
   });
 });
 

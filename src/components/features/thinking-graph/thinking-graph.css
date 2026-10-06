@@ -1,0 +1,256 @@
+/* Thinking Graph — birth, growth and "alive" animations. */
+
+.tg-canvas {
+  background:
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(79, 140, 255, 0.16),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      rgba(168, 85, 247, 0.14),
+      transparent 45%
+    ),
+    radial-gradient(circle at 50% 50%, #111735, #070a16 75%);
+}
+
+.tg-canvas .react-flow__node {
+  cursor: pointer;
+}
+
+.tg-node {
+  --tg-accent: #4f8cff;
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--tg-accent) 55%, transparent);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--tg-accent) 22%, transparent),
+      color-mix(in srgb, var(--tg-accent) 6%, transparent)
+    ),
+    rgba(14, 17, 25, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 8px 24px -10px color-mix(in srgb, var(--tg-accent) 70%, transparent);
+  color: #e8ecf5;
+  backdrop-filter: blur(6px);
+  animation: tg-born 620ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  transform-origin: center;
+}
+
+.tg-node::after {
+  /* one-shot shockwave ring when a node is born */
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--tg-accent);
+  opacity: 0;
+  animation: tg-ring 900ms ease-out 120ms 1 both;
+  pointer-events: none;
+}
+
+.tg-node--goal {
+  border-radius: 999px;
+  background: linear-gradient(120deg, #4f8cff, #a855f7 60%, #ec4899);
+  border: none;
+  color: #fff;
+  box-shadow: 0 10px 40px -8px rgba(124, 92, 255, 0.75);
+}
+
+.tg-node--thought {
+  border-radius: 22px 22px 22px 6px;
+  border-style: dashed;
+  font-style: italic;
+}
+
+.tg-node--fork,
+.tg-node--agent,
+.tg-node--result {
+  border-radius: 999px;
+}
+
+.tg-node--finish {
+  border-radius: 18px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(250, 204, 21, 0.35),
+    rgba(14, 17, 25, 0.92) 70%
+  );
+}
+
+.tg-node--finish .tg-burst {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 8%,
+    rgba(250, 204, 21, 0.55) 9% 10%,
+    transparent 11% 24%,
+    rgba(250, 204, 21, 0.4) 25% 26%,
+    transparent 27% 41%,
+    rgba(250, 204, 21, 0.55) 42% 43%,
+    transparent 44% 58%,
+    rgba(250, 204, 21, 0.4) 59% 60%,
+    transparent 61% 76%,
+    rgba(250, 204, 21, 0.55) 77% 78%,
+    transparent 79% 100%
+  );
+  mask: radial-gradient(circle, transparent 40%, #000 42%, transparent 72%);
+  animation:
+    tg-spin 14s linear infinite,
+    tg-burst 900ms ease-out both;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.tg-node--running {
+  animation:
+    tg-born 620ms cubic-bezier(0.2, 1.4, 0.4, 1) both,
+    tg-breathe 1.8s ease-in-out 620ms infinite;
+}
+
+.tg-node--running .tg-orbit {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  animation: tg-spin 1.6s linear infinite;
+  pointer-events: none;
+}
+
+.tg-node--running .tg-orbit::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tg-accent);
+  box-shadow: 0 0 10px 3px var(--tg-accent);
+}
+
+.tg-node--error {
+  --tg-accent: #ef4444 !important;
+  animation:
+    tg-born 620ms cubic-bezier(0.2, 1.4, 0.4, 1) both,
+    tg-shake 420ms ease-in-out 620ms 1;
+}
+
+.tg-edge-path {
+  fill: none;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: tg-draw 900ms ease-out forwards;
+}
+
+.tg-edge-glow {
+  fill: none;
+  stroke-width: 8;
+  opacity: 0.12;
+}
+
+.tg-seed {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, #4f8cff 45%, transparent 70%);
+  box-shadow: 0 0 30px 10px rgba(79, 140, 255, 0.45);
+  animation: tg-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes tg-born {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tg-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes tg-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--tg-accent) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 26px 4px
+      color-mix(in srgb, var(--tg-accent) 55%, transparent);
+  }
+}
+
+@keyframes tg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tg-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tg-shake {
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes tg-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-node,
+  .tg-node::after,
+  .tg-node--running,
+  .tg-node--running .tg-orbit,
+  .tg-node--finish .tg-burst,
+  .tg-edge-path,
+  .tg-seed {
+    animation: none !important;
+  }
+  .tg-edge-path {
+    stroke-dashoffset: 0;
+  }
+  .tg-particle {
+    display: none;
+  }
+}
