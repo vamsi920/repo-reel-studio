@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { holdsAdvisoryLock } from "./advisory-lock.ts";
+import { classifyRefreshFailure, readJsonSafely } from "./connection-health.ts";
+import {
+  JIRA_PROVIDER_IDS,
+  jiraRefreshLockKey,
+  markUserConnectionsStatus,
+  writeJiraRotationToConnections,
+} from "./connection-sync.ts";
 
 export const JIRA_AUTHORIZE_URL = "https://auth.atlassian.com/authorize";
 export const JIRA_TOKEN_URL = "https://auth.atlassian.com/oauth/token";
@@ -224,7 +231,7 @@ export async function refreshJiraAccessTokenLocked(
     return null;
   }
 
-  const lockKey = `jira:${userId}`;
+  const lockKey = jiraRefreshLockKey(userId);
   const { data: gotLock, error: lockError } = await admin.rpc(
     "environment_try_advisory_lock",
     { lock_key: lockKey },
@@ -272,7 +279,22 @@ export async function refreshJiraAccessTokenLocked(
         refresh_token: refreshToken,
       }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      // A dead refresh token is the one Jira failure the user has to fix by
+      // reconnecting; say so on the connection instead of just returning
+      // null to a caller that can only answer 401.
+      const verdict = classifyRefreshFailure(
+        response.status,
+        await readJsonSafely(response),
+      );
+      if (verdict) {
+        await markUserConnectionsStatus(admin, userId, JIRA_PROVIDER_IDS, verdict, {
+          reason: "refresh_rejected",
+          httpStatus: response.status,
+        });
+      }
+      return null;
+    }
     const json = await response.json();
     const accessToken: string | undefined = json.access_token;
     const newRefreshToken: string | undefined = json.refresh_token;
@@ -294,6 +316,14 @@ export async function refreshJiraAccessTokenLocked(
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
+
+    // Same rotated pair into the generic row, or the next
+    // `connections-proxy` call would redeem the refresh token just spent.
+    await writeJiraRotationToConnections(admin, userId, {
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: typeof json.expires_in === "number" ? json.expires_in : undefined,
+    });
 
     return accessToken;
   } finally {
@@ -317,45 +347,17 @@ export async function refreshJiraAccessToken(
   fallbackAccessToken: string,
   encryptionKey: string,
 ): Promise<string> {
+  // Goes through the locked path: an unlocked refresh here raced
+  // `jira-api-proxy` and `connections-proxy` for the same rotating refresh
+  // token, and whichever lost was left holding a dead pair.
   try {
-    const { clientId, clientSecret } = jiraOAuthCredentials();
-    const response = await fetch(JIRA_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        grant_type: "refresh_token",
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-      }),
-    });
-    if (!response.ok) return fallbackAccessToken;
-    const json = await response.json();
-    const accessToken: string | undefined = json.access_token;
-    const newRefreshToken: string | undefined = json.refresh_token;
-    if (!accessToken) return fallbackAccessToken;
-
-    const encryptedAccessToken = await encryptJiraToken(
+    const refreshed = await refreshJiraAccessTokenLocked(
       admin,
-      accessToken,
+      userId,
+      refreshToken,
       encryptionKey,
     );
-    const encryptedRefreshToken = newRefreshToken
-      ? await encryptJiraToken(admin, newRefreshToken, encryptionKey)
-      : null;
-    if (encryptedAccessToken) {
-      await admin
-        .from("jira_connections")
-        .update({
-          encrypted_access_token: encryptedAccessToken,
-          ...(encryptedRefreshToken
-            ? { encrypted_refresh_token: encryptedRefreshToken }
-            : {}),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
-    }
-    return accessToken;
+    return refreshed ?? fallbackAccessToken;
   } catch {
     return fallbackAccessToken;
   }

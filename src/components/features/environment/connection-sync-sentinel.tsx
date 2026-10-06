@@ -1,5 +1,6 @@
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useConnectionsRealtimeSync } from "#/hooks/use-connections-realtime-sync";
+import { useGlobalOAuthReceipt } from "#/hooks/use-global-oauth-receipt";
 
 /**
  * Renders nothing; exists so two pieces of global state are always correct.
@@ -12,11 +13,13 @@ import { useConnectionsRealtimeSync } from "#/hooks/use-connections-realtime-syn
  * a screen other than Settings appeared to do nothing.
  *
  * Mounting this once in the root layout makes the flag correct on every route,
- * and starts the Realtime subscription that keeps connection state fresh
- * across tabs and teammates.
+ * starts the Realtime subscription that keeps connection state fresh across
+ * tabs and teammates, and consumes the OAuth receipt on routes that do not
+ * parse it themselves.
  */
 export function ConnectionSyncSentinel() {
   useUserProviders();
   useConnectionsRealtimeSync();
+  useGlobalOAuthReceipt();
   return null;
 }

@@ -15,6 +15,24 @@ export function encryptionKey(): string {
   return key;
 }
 
+/**
+ * Key for the legacy per-user tables (`github_connections`,
+ * `jira_connections`). Every reader of those tables -- `github-api-proxy`,
+ * `github-mint-clone-credential`, `jira-api-proxy`, the webhook paths --
+ * decrypts with `GITHUB_TOKEN_ENCRYPTION_KEY`, so every writer must encrypt
+ * with it too. `encryptionKey()` above prefers the newer key name, and using
+ * it for a legacy write produced rows nothing could decrypt as soon as the
+ * two secrets differed: "connected" in the UI, an empty repo picker in
+ * practice.
+ */
+export function legacyEncryptionKey(): string {
+  const key =
+    Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY") ??
+    Deno.env.get("CONNECTION_SECRET_ENCRYPTION_KEY");
+  if (!key) throw new Error("encryption_not_configured");
+  return key;
+}
+
 export async function encryptJson(
   admin: SupabaseClient,
   value: Record<string, string>,

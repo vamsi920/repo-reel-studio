@@ -58,21 +58,26 @@ export function useEnvironmentReadiness(profile: EnvironmentProfile | null) {
     ): CapabilityStatus => {
       if (!isSupabaseConfigured) return "unknown";
       if (isPending) return "unknown";
-      if (!connected) return "missing";
-      if (capability) {
-        // An org can have more than one connection for the same capability
-        // (e.g. a second GitHub Enterprise instance) -- match the specific
-        // "default" instance this readiness check's `connected` flag
-        // actually reflects, the same way `environment-connections.tsx`
-        // resolves "the" connection for a manifest. Matching on capability
-        // alone let an unrelated second instance's probe status (arbitrary
-        // array order from an unordered query) override or mask this one's.
-        const record = connections.data?.find(
-          (candidate) =>
-            candidate.capability === capability &&
-            candidate.instanceKey === "default",
-        );
-        const probeStatus = statusFromProbe(record?.status);
+      // An org can have more than one connection for the same capability
+      // (e.g. a second GitHub Enterprise instance) -- match the specific
+      // "default" instance, the same way `environment-connections.tsx`
+      // resolves "the" connection for a manifest. Matching on capability
+      // alone let an unrelated second instance's probe status override this
+      // one's.
+      const record = capability
+        ? connections.data?.find(
+            (candidate) =>
+              candidate.capability === capability &&
+              candidate.instanceKey === "default",
+          )
+        : undefined;
+      // The org-wide `connections` row is the source of truth; the legacy
+      // per-user row is only a fallback. Requiring the legacy row alone
+      // reported "missing" for a provider connected from onboarding whose
+      // legacy copy had not been mirrored (or had been deleted).
+      if (!connected && !record) return "missing";
+      if (record) {
+        const probeStatus = statusFromProbe(record.status);
         if (probeStatus) return probeStatus;
       }
       return "ok";

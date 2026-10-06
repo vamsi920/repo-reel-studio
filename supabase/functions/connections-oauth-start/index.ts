@@ -1,3 +1,9 @@
+import {
+  DEFAULT_APP_ORIGIN,
+  isAllowedAppOrigin,
+  parseAppOriginAllowlist,
+  safeReturnPath,
+} from "../_shared/connection-health.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
@@ -28,6 +34,8 @@ Deno.serve(async (req: Request) => {
     instanceKey?: string;
     config?: Record<string, string>;
     returnTo?: string;
+    /** `window.location.origin` of the page that started the flow. */
+    appOrigin?: string;
   };
   try {
     payload = await req.json();
@@ -97,6 +105,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "missing_host_config" }, { status: 400 });
   }
 
+  const appOriginAllowlist = parseAppOriginAllowlist(
+    Deno.env.get("APP_ORIGIN_ALLOWLIST"),
+    Deno.env.get("APP_ORIGIN") ?? DEFAULT_APP_ORIGIN,
+  );
+
   const state = randomToken();
   const verifier = randomToken(64);
 
@@ -109,7 +122,14 @@ Deno.serve(async (req: Request) => {
     instance_key: payload.instanceKey || "default",
     code_verifier: verifier,
     config,
-    return_to: payload.returnTo ?? "/environment/connections",
+    return_to: safeReturnPath(payload.returnTo, "/environment/connections"),
+    // Only stored when it is an origin this deployment will redirect to; the
+    // callback re-checks, so this is belt and braces. Null means "use the
+    // deployment default", which keeps old clients working unchanged.
+    app_origin:
+      payload.appOrigin && isAllowedAppOrigin(payload.appOrigin, appOriginAllowlist)
+        ? payload.appOrigin.replace(/\/$/, "")
+        : null,
   });
   if (stateError) {
     return jsonResponse({ error: "state_insert_failed" }, { status: 500 });

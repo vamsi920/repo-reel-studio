@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { originToStore } from "../_shared/legacy-redirect.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import {
   assertEnterpriseHostAllowed,
@@ -57,6 +58,7 @@ Deno.serve(async (req) => {
     user_id: userId,
     enterprise_host: enterpriseHost,
     code_verifier: codeVerifier,
+    app_origin: originToStore(body.appOrigin),
   });
   if (insertError) {
     return jsonResponse({ error: "failed_to_start_oauth" }, { status: 500 });

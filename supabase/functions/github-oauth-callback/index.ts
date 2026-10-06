@@ -1,4 +1,6 @@
 import { completeConnectionsOAuth } from "../_shared/connections-oauth-complete.ts";
+import { mirrorLegacyToGeneric } from "../_shared/connection-sync.ts";
+import { originForRedirect, storedOriginFor } from "../_shared/legacy-redirect.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import {
   assertEnterpriseHostAllowed,
@@ -9,8 +11,8 @@ import {
 
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-function redirectTo(path: string): Response {
-  const appOrigin = Deno.env.get("APP_ORIGIN");
+function redirectTo(path: string, origin?: string): Response {
+  const appOrigin = origin ?? originForRedirect(null);
   return new Response(null, {
     status: 302,
     headers: { Location: `${appOrigin}${path}` },
@@ -23,23 +25,28 @@ Deno.serve(async (req) => {
   const state = url.searchParams.get("state");
   const oauthError = url.searchParams.get("error");
 
+  // Offered to the generic flow FIRST, including provider errors: a user who
+  // denies consent on a generic flow comes back with `?error=` and the same
+  // `state`, and only the generic completer knows where they started.
+  if (state) {
+    const generic = await completeConnectionsOAuth(req);
+    if (generic) return generic;
+  }
+
+  const admin = createAdminClient();
+  const origin = originForRedirect(
+    await storedOriginFor(admin, "github_oauth_state", state),
+  );
+
   if (oauthError) {
     return redirectTo(
       `/settings/connections?error=${encodeURIComponent(oauthError)}`,
+      origin,
     );
   }
   if (!code || !state) {
-    return redirectTo("/settings/connections?error=missing_code_or_state");
+    return redirectTo("/settings/connections?error=missing_code_or_state", origin);
   }
-
-  // This URL is the one registered with the OAuth application, so it is also
-  // the only URL the generic connections flow can use for this provider. If
-  // the state belongs to `oauth_states`, the generic completer owns it;
-  // otherwise it returns null and the legacy path below runs unchanged.
-  const generic = await completeConnectionsOAuth(req);
-  if (generic) return generic;
-
-  const admin = createAdminClient();
 
   const { data: stateRow, error: stateError } = await admin
     .from("github_oauth_state")
@@ -48,7 +55,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (stateError || !stateRow) {
-    return redirectTo("/settings/connections?error=invalid_state");
+    return redirectTo("/settings/connections?error=invalid_state", origin);
   }
 
   // Always delete on first use, even if something below fails -- a state
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
 
   const stateAgeMs = Date.now() - new Date(stateRow.created_at).getTime();
   if (stateAgeMs > STATE_TTL_MS) {
-    return redirectTo("/settings/connections?error=state_expired");
+    return redirectTo("/settings/connections?error=state_expired", origin);
   }
 
   const enterpriseHost: string | null = stateRow.enterprise_host;
@@ -70,7 +77,7 @@ Deno.serve(async (req) => {
   try {
     assertEnterpriseHostAllowed(enterpriseHost);
   } catch {
-    return redirectTo("/settings/connections?error=invalid_enterprise_host");
+    return redirectTo("/settings/connections?error=invalid_enterprise_host", origin);
   }
 
   let clientId: string;
@@ -78,7 +85,7 @@ Deno.serve(async (req) => {
   try {
     ({ clientId, clientSecret } = githubOAuthCredentials(enterpriseHost));
   } catch {
-    return redirectTo("/settings/connections?error=oauth_not_configured");
+    return redirectTo("/settings/connections?error=oauth_not_configured", origin);
   }
 
   const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/github-oauth-callback`;
@@ -99,12 +106,12 @@ Deno.serve(async (req) => {
   });
 
   if (!tokenResponse.ok) {
-    return redirectTo("/settings/connections?error=token_exchange_failed");
+    return redirectTo("/settings/connections?error=token_exchange_failed", origin);
   }
   const tokenJson = await tokenResponse.json();
   const accessToken: string | undefined = tokenJson.access_token;
   if (!accessToken) {
-    return redirectTo("/settings/connections?error=token_exchange_failed");
+    return redirectTo("/settings/connections?error=token_exchange_failed", origin);
   }
   const scopes: string[] =
     typeof tokenJson.scope === "string" && tokenJson.scope.length > 0
@@ -119,13 +126,13 @@ Deno.serve(async (req) => {
     },
   });
   if (!userResponse.ok) {
-    return redirectTo("/settings/connections?error=github_user_lookup_failed");
+    return redirectTo("/settings/connections?error=github_user_lookup_failed", origin);
   }
   const githubUser = await userResponse.json();
 
   const encryptionKey = Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY");
   if (!encryptionKey) {
-    return redirectTo("/settings/connections?error=encryption_not_configured");
+    return redirectTo("/settings/connections?error=encryption_not_configured", origin);
   }
 
   const { data: encrypted, error: encryptError } = await admin.rpc(
@@ -133,7 +140,7 @@ Deno.serve(async (req) => {
     { token: accessToken, encryption_key: encryptionKey },
   );
   if (encryptError || !encrypted) {
-    return redirectTo("/settings/connections?error=encryption_failed");
+    return redirectTo("/settings/connections?error=encryption_failed", origin);
   }
 
   const { error: upsertError } = await admin.from("github_connections").upsert({
@@ -146,8 +153,21 @@ Deno.serve(async (req) => {
     updated_at: new Date().toISOString(),
   });
   if (upsertError) {
-    return redirectTo("/settings/connections?error=save_failed");
+    return redirectTo("/settings/connections?error=save_failed", origin);
   }
 
-  return redirectTo("/settings/connections?connected=github");
+  // Publish to the org-wide table too (org admins only; see
+  // `mirrorLegacyToGeneric`), so the Environment page and onboarding agent
+  // see what was just connected here.
+  const published = await mirrorLegacyToGeneric(admin, {
+    userId: stateRow.user_id as string,
+    providerId: enterpriseHost ? "github-enterprise" : "github",
+    config: enterpriseHost ? { enterpriseHost } : {},
+    credentials: { accessToken },
+    scopes,
+    displayName: githubUser.login as string,
+  });
+  void published;
+
+  return redirectTo("/settings/connections?connected=github", origin);
 });

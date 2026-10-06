@@ -6,6 +6,14 @@ import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { assertHostAllowed, interpolatePath, resolveBaseUrl } from "../_shared/template.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
 import { mirrorToLegacy } from "../_shared/legacy-mirror.ts";
+import {
+  DEFAULT_APP_ORIGIN,
+  parseAppOriginAllowlist,
+  resolveAppOrigin,
+  safeReturnPath,
+} from "../_shared/connection-health.ts";
+
+const FALLBACK_RETURN_PATH = "/environment/connections";
 
 /**
  * Completes an OAuth authorization for any registry provider, replacing
@@ -50,42 +58,68 @@ export async function completeConnectionsOAuth(
 
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const appOrigin = Deno.env.get("APP_ORIGIN") ?? "https://neo.neodevex.com";
+  const defaultOrigin = Deno.env.get("APP_ORIGIN") ?? DEFAULT_APP_ORIGIN;
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
   const state = requestUrl.searchParams.get("state");
   const providerError = requestUrl.searchParams.get("error");
 
-  if (providerError) {
-    return redirect(appOrigin, "/environment/connections", { error: providerError });
-  }
-  if (!code || !state) {
-    return redirect(appOrigin, "/environment/connections", { error: "missing_code" });
+  if (!state) {
+    if (providerError) {
+      return redirect(defaultOrigin, FALLBACK_RETURN_PATH, { error: providerError });
+    }
+    return redirect(defaultOrigin, FALLBACK_RETURN_PATH, { error: "missing_code" });
   }
 
   const admin = createAdminClient();
 
-  // Read and delete in one step: an authorization code replayed against a
-  // state that still exists is the classic way this flow gets abused.
+  // The state row is read BEFORE looking at the provider's answer. A user
+  // who clicks "Deny" comes back with `?error=access_denied&state=...`; the
+  // row is the only record of which origin and page they started from, so
+  // reading it last used to send every denial to production's
+  // /environment/connections no matter where the flow began -- and the
+  // onboarding agent's pending tool call never saw the result.
   const { data: stateRow } = await admin
     .from("oauth_states")
     .select("*")
     .eq("state", state)
     .maybeSingle();
-  // Deleted only once we know the row is ours. Deleting first would be
-  // harmless for generic states but this function now also runs for legacy
-  // ones, and an unconditional delete on a shared URL is how you end up
-  // destroying state you do not own.
+  // Deleted only once we know the row is ours. This function also runs for
+  // legacy states, and an unconditional delete on a shared URL is how you
+  // end up destroying state you do not own.
   if (stateRow) await admin.from("oauth_states").delete().eq("state", state);
 
   if (!stateRow) {
     // Not a generic state. Returning null rather than an error redirect is
     // what lets the legacy callbacks share this URL: they try here first, and
-    // fall through to their own state table when this says "not mine".
+    // fall through to their own state table (and their own error handling)
+    // when this says "not mine".
     return null;
   }
 
-  const returnTo = (stateRow.return_to as string) ?? "/environment/connections";
+  const allowlist = parseAppOriginAllowlist(
+    Deno.env.get("APP_ORIGIN_ALLOWLIST"),
+    defaultOrigin,
+  );
+  // Where the user started: dev server, Docker, the desktop app's local
+  // ingress, a preview deploy or production. Re-validated here, not just at
+  // start, so a tampered or stale row can never redirect off the allowlist.
+  const appOrigin = resolveAppOrigin(
+    stateRow.app_origin as string | null,
+    allowlist,
+    defaultOrigin,
+  );
+  const returnTo = safeReturnPath(
+    stateRow.return_to as string | null,
+    FALLBACK_RETURN_PATH,
+  );
+
+  if (providerError) {
+    return redirect(appOrigin, returnTo, { error: providerError });
+  }
+  if (!code) {
+    return redirect(appOrigin, returnTo, { error: "missing_code" });
+  }
 
   if (Date.now() - new Date(stateRow.created_at as string).getTime() > OAUTH_STATE_TTL_MS) {
     return redirect(appOrigin, returnTo, { error: "state_expired" });

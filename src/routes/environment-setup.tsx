@@ -248,7 +248,16 @@ function EnvironmentSetupScreen() {
   // change must wipe the workbench, not just repoint its id.
   const previousConversationIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    const previous = previousConversationIdRef.current;
+    const fromRef = previousConversationIdRef.current;
+    // On the first run after a reload the ref is empty, but the persisted
+    // store still remembers which conversation its facts belong to. Compare
+    // against that only once the real id is known (it is null while the
+    // session loads), or a new session would inherit a finished one's facts.
+    const previous =
+      fromRef ??
+      (conversationId !== null
+        ? useOnboardingStudioStore.getState().conversationId
+        : null);
     if (previous !== null && previous !== conversationId) {
       useOnboardingStudioStore.getState().reset();
     }

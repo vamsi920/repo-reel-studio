@@ -6,7 +6,7 @@ import { useEnvironmentOrgId } from "./use-environment-org";
 export function useConnections() {
   const { data: orgId, isError: isOrgError } = useEnvironmentOrgId();
 
-  const { data, isPending, isLoading } = useQuery({
+  const { data, isPending, isLoading, isError } = useQuery({
     queryKey: ENVIRONMENT_QUERY_KEYS.connections(orgId ?? undefined),
     queryFn: () => connectionsRepository.list(orgId as string),
     enabled: Boolean(orgId),
@@ -21,5 +21,5 @@ export function useConnections() {
   // permanently pending rather than erroring -- callers need this to tell
   // "the org lookup itself failed" apart from "still loading" or
   // "genuinely has nothing connected".
-  return { data, isPending, isLoading, isOrgError };
+  return { data, isPending, isLoading, isError, isOrgError };
 }

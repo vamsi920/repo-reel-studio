@@ -1,6 +1,10 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import {
+  JIRA_PROVIDER_IDS,
+  markUserConnectionsStatus,
+} from "../_shared/connection-sync.ts";
+import {
   decryptJiraToken,
   jiraApiBaseUrl,
   refreshJiraAccessTokenLocked,
@@ -95,6 +99,15 @@ Deno.serve(async (req) => {
           response = await searchIssues(connection.cloud_id, accessToken, jql);
         }
       }
+    }
+    if (response.status === 401) {
+      // Still 401 after a refresh attempt: the grant is gone. Record it so
+      // the app offers a reconnect rather than an endless "try again".
+      await markUserConnectionsStatus(admin, userId, JIRA_PROVIDER_IDS, "expired", {
+        reason: "api_rejected",
+        httpStatus: 401,
+      });
+      return jsonResponse({ error: "jira_auth_error" }, { status: 502 });
     }
     if (!response.ok) {
       return jsonResponse(

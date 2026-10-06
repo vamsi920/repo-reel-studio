@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { Capability } from "#/lib/environment/types/capability";
 import type { ProbeResult } from "#/lib/environment/types/probe";
 import type { ReadinessReport } from "#/lib/environment/types/requirements";
@@ -140,59 +141,88 @@ function replaceOrAppend(
   return [...cards, card];
 }
 
+/**
+ * Discovery facts and the setup plan survive a page reload.
+ *
+ * Connecting a provider by OAuth leaves the app and comes back as a fresh page
+ * load, which used to wipe everything the agent had learned mid-interview --
+ * the brief promises "what you already learned in earlier sessions", and this
+ * was where it quietly broke. Only `facts`, `steps`, `currentStepId` and the
+ * owning `conversationId` are kept. Cards are deliberately NOT persisted: a
+ * form card carries live submit state, and a restored "submitting" form would
+ * be a lie. Nothing credential-shaped can be in what is kept -- facts pass
+ * `scanForSecrets` before they are recorded.
+ */
+const STUDIO_STORAGE_KEY = "openhands-onboarding-studio";
+
 export const useOnboardingStudioStore = create<OnboardingStudioStore>()(
-  (set) => ({
-    ...EMPTY_STATE,
+  persist(
+    (set) => ({
+      ...EMPTY_STATE,
 
-    setConversationId: (id) => set({ conversationId: id }),
+      setConversationId: (id) => set({ conversationId: id }),
 
-    pushCard: (card) =>
-      set((state) => ({ cards: replaceOrAppend(state.cards, card) })),
+      pushCard: (card) =>
+        set((state) => ({ cards: replaceOrAppend(state.cards, card) })),
 
-    updateCard: (id, patch) =>
-      set((state) => ({
-        cards: state.cards.map((card) =>
-          card.id === id ? ({ ...card, ...patch } as WorkbenchCard) : card,
-        ),
-      })),
+      updateCard: (id, patch) =>
+        set((state) => ({
+          cards: state.cards.map((card) =>
+            card.id === id ? ({ ...card, ...patch } as WorkbenchCard) : card,
+          ),
+        })),
 
-    removeCard: (id) =>
-      set((state) => ({ cards: state.cards.filter((card) => card.id !== id) })),
+      removeCard: (id) =>
+        set((state) => ({
+          cards: state.cards.filter((card) => card.id !== id),
+        })),
 
-    mergeFacts: (incoming) =>
-      set((state) => {
-        // Keyed merge, so the agent correcting itself updates the fact in
-        // place instead of leaving the contradiction on screen.
-        const byKey = new Map(state.facts.map((fact) => [fact.key, fact]));
-        for (const fact of incoming) byKey.set(fact.key, fact);
-        return { facts: [...byKey.values()] };
+      mergeFacts: (incoming) =>
+        set((state) => {
+          // Keyed merge, so the agent correcting itself updates the fact in
+          // place instead of leaving the contradiction on screen.
+          const byKey = new Map(state.facts.map((fact) => [fact.key, fact]));
+          for (const fact of incoming) byKey.set(fact.key, fact);
+          return { facts: [...byKey.values()] };
+        }),
+
+      setPlan: (steps, currentStepId) => set({ steps, currentStepId }),
+
+      advancePlan: (stepId, status) =>
+        set((state) => {
+          const steps = state.steps.map((step) =>
+            step.id === stepId ? { ...step, status } : step,
+          );
+          // The agent just told us this step is the one it's working on now --
+          // trust that directly rather than falling back to array order, which
+          // would point at an earlier, untouched step whenever the agent
+          // revisits or reorders work.
+          if (status === "active") {
+            return { steps, currentStepId: stepId };
+          }
+          // Move the pointer to the first step that still needs doing, so the
+          // plan card always shows where the user actually is.
+          const next = steps.find((step) => step.status === "pending");
+          return {
+            steps,
+            currentStepId: next?.id ?? null,
+          };
+        }),
+
+      setView: (view) => set({ view }),
+
+      reset: () => set({ ...EMPTY_STATE }),
+    }),
+    {
+      name: STUDIO_STORAGE_KEY,
+      storage: createJSONStorage(() => localStorage),
+      version: 1,
+      partialize: (state) => ({
+        conversationId: state.conversationId,
+        facts: state.facts,
+        steps: state.steps,
+        currentStepId: state.currentStepId,
       }),
-
-    setPlan: (steps, currentStepId) => set({ steps, currentStepId }),
-
-    advancePlan: (stepId, status) =>
-      set((state) => {
-        const steps = state.steps.map((step) =>
-          step.id === stepId ? { ...step, status } : step,
-        );
-        // The agent just told us this step is the one it's working on now --
-        // trust that directly rather than falling back to array order, which
-        // would point at an earlier, untouched step whenever the agent
-        // revisits or reorders work.
-        if (status === "active") {
-          return { steps, currentStepId: stepId };
-        }
-        // Move the pointer to the first step that still needs doing, so the
-        // plan card always shows where the user actually is.
-        const next = steps.find((step) => step.status === "pending");
-        return {
-          steps,
-          currentStepId: next?.id ?? null,
-        };
-      }),
-
-    setView: (view) => set({ view }),
-
-    reset: () => set({ ...EMPTY_STATE }),
-  }),
+    },
+  ),
 );

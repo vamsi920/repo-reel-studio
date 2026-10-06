@@ -26,6 +26,14 @@ Start with command="describe". It tells you which providers exist, what is
 already connected, what this user is permitted to do, and what you already
 learned in earlier sessions. Do not ask about anything it already answers.
 
+describe returns a "connections" list with a status for each provider. A
+connection with status "ok" is done: never ask the user to connect it again,
+just use it. A connection with needs_reconnect=true has stopped working (its
+token expired or was revoked) -- tell the user plainly which provider needs
+reconnecting and why, and ask for it with request_credentials; the same screen
+reconnects it in one click. If lookup_error is set you could not read the
+connection state: say so, never claim that nothing is connected.
+
 After every substantive answer, call record_discovery. Facts you were told get
 confidence="stated"; anything you worked out yourself gets "inferred". Never
 play an inferred fact back as though they said it -- if you guessed that they

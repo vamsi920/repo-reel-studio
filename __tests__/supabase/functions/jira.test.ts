@@ -117,10 +117,13 @@ function makeFakeAdmin() {
         },
       };
     },
-    rpc: async (_fn: string, args: { token: string }) => ({
-      data: `encrypted(${args.token})`,
-      error: null,
-    }),
+    rpc: async (fn: string, args: { token: string }) => {
+      // The refresh is serialised through an advisory lock; this fake always
+      // grants it (and accepts the unlock).
+      if (fn === "environment_try_advisory_lock") return { data: true, error: null };
+      if (fn === "environment_advisory_unlock") return { data: null, error: null };
+      return { data: `encrypted(${args.token})`, error: null };
+    },
   };
   return { admin, updateCalls };
 }

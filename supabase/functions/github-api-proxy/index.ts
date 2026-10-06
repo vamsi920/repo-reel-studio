@@ -1,6 +1,10 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { githubApiBaseUrl } from "../_shared/github.ts";
+import {
+  GITHUB_PROVIDER_IDS,
+  markUserConnectionsStatus,
+} from "../_shared/connection-sync.ts";
 
 interface GithubConnectionRow {
   enterprise_host: string | null;
@@ -338,6 +342,15 @@ Deno.serve(async (req) => {
       // distinctly from a genuine GitHub outage so the client can tell the
       // user to reconnect instead of just "try again".
       if (error.status === 401 || error.status === 403) {
+        // Only a 401 is a verdict on the token: GitHub also answers 403 for
+        // rate limits and SSO-unauthorised orgs, which reconnecting would not
+        // fix. GitHub OAuth tokens never expire, so a 401 means revoked.
+        if (error.status === 401) {
+          await markUserConnectionsStatus(admin, userId, GITHUB_PROVIDER_IDS, "revoked", {
+            reason: "api_rejected",
+            httpStatus: 401,
+          });
+        }
         return jsonResponse({ error: "github_auth_error" }, { status: 401 });
       }
       return jsonResponse({ error: "github_api_error" }, { status: 502 });

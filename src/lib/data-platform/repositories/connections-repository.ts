@@ -98,8 +98,12 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       .eq("org_id", orgId)
       .order("capability", { ascending: true });
     if (error) {
+      // Thrown, not swallowed: an empty list used to be indistinguishable
+      // from "nothing connected", so a failed read made every connector look
+      // disconnected -- and the Reconnect banner could never tell a dead
+      // token from a dead network.
       logFailure("list", error);
-      return [];
+      throw new Error("Failed to load connections");
     }
     if (!data) return [];
     return (data as unknown as Record<string, unknown>[]).map(toRecord);

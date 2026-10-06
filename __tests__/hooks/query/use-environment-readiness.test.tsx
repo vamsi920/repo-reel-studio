@@ -7,8 +7,15 @@ const state = vi.hoisted(() => ({
   supabaseConfigured: true,
   github: { isLoading: false, isPending: false, data: null as unknown },
   jira: { isLoading: false, isPending: false, data: null as unknown },
-  settings: { isLoading: false, data: undefined as { llm_model?: string } | undefined },
-  connections: { isLoading: false, isPending: false, data: [] as ConnectionRecord[] },
+  settings: {
+    isLoading: false,
+    data: undefined as { llm_model?: string } | undefined,
+  },
+  connections: {
+    isLoading: false,
+    isPending: false,
+    data: [] as ConnectionRecord[],
+  },
 }));
 
 vi.mock("#/lib/data-platform/client", () => ({
@@ -176,6 +183,19 @@ describe("useEnvironmentReadiness", () => {
           status: "error",
         }),
       ],
+    };
+
+    const { result } = renderHook(() => useEnvironmentReadiness(null));
+
+    expect(result.current.byCapability["source-control"]).toBe("ok");
+  });
+
+  it("trusts the org-wide connection when the legacy per-user row is missing", () => {
+    state.github = { isLoading: false, isPending: false, data: null };
+    state.connections = {
+      isLoading: false,
+      isPending: false,
+      data: [githubConnectionRecord({ status: "ok" })],
     };
 
     const { result } = renderHook(() => useEnvironmentReadiness(null));

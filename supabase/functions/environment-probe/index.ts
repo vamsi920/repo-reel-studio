@@ -5,6 +5,8 @@ import { decryptJson } from "../_shared/secrets.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { runConnectorProbe, type ProbeResult } from "../_shared/probe-runner.ts";
 import { assertHostAllowed } from "../_shared/template.ts";
+import { refreshIfNeeded } from "../_shared/connection-refresh.ts";
+import { statusFromProbe } from "../_shared/connection-health.ts";
 
 /**
  * Environment checks that can be answered from the platform's own runtime.
@@ -314,6 +316,11 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Refresh first: a token that merely lapsed is not a broken
+      // connection, and probing with it used to report `error` for every
+      // Jira/GitLab/Bitbucket connection an hour after it was made.
+      credentials = await refreshIfNeeded(admin, connection, manifest, credentials);
+
       result = await runConnectorProbe(
         manifest,
         (connection.config as Record<string, string>) ?? {},
@@ -321,11 +328,13 @@ Deno.serve(async (req: Request) => {
       );
       target = `${connection.provider_id}:${connection.instance_key}`;
 
-      const missing = result.missingScopes ?? [];
       await admin
         .from("connections")
         .update({
-          status: !result.ok ? "error" : missing.length > 0 ? "degraded" : "ok",
+          status: statusFromProbe(
+            result,
+            Boolean((manifest.oauth as { refreshable?: boolean } | undefined)?.refreshable),
+          ),
           granted_scopes: result.grantedScopes ?? connection.granted_scopes,
           last_probe: result,
           last_probe_at: result.probedAt,

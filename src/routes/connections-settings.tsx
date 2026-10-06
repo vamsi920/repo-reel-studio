@@ -13,6 +13,8 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { useGithubConnection } from "#/hooks/query/use-github-connection";
 import { useJiraConnection } from "#/hooks/query/use-jira-connection";
 import { useJiraIssues } from "#/hooks/query/use-jira-issues";
+import { useConnections } from "#/hooks/query/use-connections";
+import { needsReconnect } from "#/lib/environment/connection-health";
 import { supabase, isSupabaseConfigured } from "#/lib/data-platform/client";
 import { I18nKey } from "#/i18n/declaration";
 import {
@@ -39,15 +41,33 @@ function GithubConnectionCard() {
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
   const [showEnterpriseHost, setShowEnterpriseHost] = React.useState(false);
   const [enterpriseHost, setEnterpriseHost] = React.useState("");
+  // The org-wide record carries the health verdict (revoked / expired) the
+  // per-user row cannot: GitHub reports a dead token only when it is used.
+  const { data: orgConnections } = useConnections();
+  const reconnectNeeded = needsReconnect(
+    orgConnections?.find(
+      (record) =>
+        record.providerId === "github" ||
+        record.providerId === "github-enterprise",
+    ),
+  );
 
   const handleConnect = async () => {
     if (!isSupabaseConfigured || !supabase) return;
     setIsConnecting(true);
     try {
+      // Reconnecting an Enterprise connection must go back to the same host.
+      const host =
+        connection?.enterpriseHost ??
+        (showEnterpriseHost && enterpriseHost ? enterpriseHost : null);
       const { data, error } = await supabase.functions.invoke<{
         authorizeUrl: string;
       }>("github-oauth-start", {
-        body: showEnterpriseHost && enterpriseHost ? { enterpriseHost } : {},
+        body: {
+          ...(host ? { enterpriseHost: host } : {}),
+          // So the callback returns here, not to production.
+          appOrigin: window.location.origin,
+        },
       });
       if (error || !data?.authorizeUrl) {
         displayErrorToast(t(I18nKey.CONNECTIONS$GITHUB_CONNECT_ERROR));
@@ -87,26 +107,32 @@ function GithubConnectionCard() {
     <ConnectionProviderCard
       icon={<FaGithub size={24} />}
       label={t(I18nKey.CONNECTIONS$GITHUB_LABEL)}
-      isConnected={!!connection}
+      isConnected={!!connection && !reconnectNeeded}
       statusText={
-        connection
-          ? `${t(I18nKey.CONNECTIONS$CONNECTED_AS, { username: connection.githubUsername })}${connection.enterpriseHost ? ` (${connection.enterpriseHost})` : ""}`
-          : isError
-            ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
-            : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
+        connection && reconnectNeeded
+          ? t(I18nKey.ENVIRONMENT$NEEDS_RECONNECT_HINT)
+          : connection
+            ? `${t(I18nKey.CONNECTIONS$CONNECTED_AS, { username: connection.githubUsername })}${connection.enterpriseHost ? ` (${connection.enterpriseHost})` : ""}`
+            : isError
+              ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
+              : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
       }
-      isBusy={connection ? isDisconnecting : isConnecting}
+      isBusy={connection && !reconnectNeeded ? isDisconnecting : isConnecting}
       busyLabel={
-        connection
+        connection && !reconnectNeeded
           ? t(I18nKey.CONNECTIONS$DISCONNECTING)
           : t(I18nKey.CONNECTIONS$REDIRECTING)
       }
       actionLabel={
-        connection
-          ? t(I18nKey.CONNECTIONS$DISCONNECT)
-          : t(I18nKey.CONNECTIONS$CONNECT_GITHUB)
+        reconnectNeeded
+          ? t(I18nKey.ENVIRONMENT$RECONNECT)
+          : connection
+            ? t(I18nKey.CONNECTIONS$DISCONNECT)
+            : t(I18nKey.CONNECTIONS$CONNECT_GITHUB)
       }
-      onAction={connection ? handleDisconnect : handleConnect}
+      onAction={
+        connection && !reconnectNeeded ? handleDisconnect : handleConnect
+      }
       testIdPrefix="github"
     >
       {isError ? (
@@ -158,6 +184,10 @@ function JiraConnectionCard() {
   const { data: issues } = useJiraIssues(!!connection);
   const [isConnecting, setIsConnecting] = React.useState(false);
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
+  const { data: orgConnections } = useConnections();
+  const reconnectNeeded = needsReconnect(
+    orgConnections?.find((record) => record.providerId === "jira-cloud"),
+  );
 
   const handleConnect = async () => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -165,7 +195,7 @@ function JiraConnectionCard() {
     try {
       const { data, error } = await supabase.functions.invoke<{
         authorizeUrl: string;
-      }>("jira-oauth-start", { body: {} });
+      }>("jira-oauth-start", { body: { appOrigin: window.location.origin } });
       if (error || !data?.authorizeUrl) {
         displayErrorToast(t(I18nKey.CONNECTIONS$JIRA_CONNECT_ERROR));
         setIsConnecting(false);
@@ -204,28 +234,34 @@ function JiraConnectionCard() {
     <ConnectionProviderCard
       icon={<FaJira size={24} />}
       label={t(I18nKey.CONNECTIONS$JIRA_LABEL)}
-      isConnected={!!connection}
+      isConnected={!!connection && !reconnectNeeded}
       statusText={
-        connection
-          ? t(I18nKey.CONNECTIONS$CONNECTED_TO_SITE, {
-              site: connection.siteName ?? connection.siteUrl,
-            })
-          : isError
-            ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
-            : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
+        connection && reconnectNeeded
+          ? t(I18nKey.ENVIRONMENT$NEEDS_RECONNECT_HINT)
+          : connection
+            ? t(I18nKey.CONNECTIONS$CONNECTED_TO_SITE, {
+                site: connection.siteName ?? connection.siteUrl,
+              })
+            : isError
+              ? t(I18nKey.CONNECTIONS$STATUS_CHECK_ERROR)
+              : t(I18nKey.CONNECTIONS$NOT_CONNECTED)
       }
-      isBusy={connection ? isDisconnecting : isConnecting}
+      isBusy={connection && !reconnectNeeded ? isDisconnecting : isConnecting}
       busyLabel={
-        connection
+        connection && !reconnectNeeded
           ? t(I18nKey.CONNECTIONS$DISCONNECTING)
           : t(I18nKey.CONNECTIONS$REDIRECTING)
       }
       actionLabel={
-        connection
-          ? t(I18nKey.CONNECTIONS$DISCONNECT)
-          : t(I18nKey.CONNECTIONS$CONNECT_JIRA)
+        reconnectNeeded
+          ? t(I18nKey.ENVIRONMENT$RECONNECT)
+          : connection
+            ? t(I18nKey.CONNECTIONS$DISCONNECT)
+            : t(I18nKey.CONNECTIONS$CONNECT_JIRA)
       }
-      onAction={connection ? handleDisconnect : handleConnect}
+      onAction={
+        connection && !reconnectNeeded ? handleDisconnect : handleConnect
+      }
       testIdPrefix="jira"
     >
       {isError ? (

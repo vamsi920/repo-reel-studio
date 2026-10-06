@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { originToStore } from "../_shared/legacy-redirect.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import {
   JIRA_AUTHORIZE_URL,
@@ -20,6 +21,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "unauthorized" }, { status: 401 });
   }
 
+  const body = await req.json().catch(() => ({}));
+
   let clientId: string;
   try {
     ({ clientId } = jiraOAuthCredentials());
@@ -39,6 +42,7 @@ Deno.serve(async (req) => {
     state,
     user_id: userId,
     code_verifier: codeVerifier,
+    app_origin: originToStore(body.appOrigin),
   });
   if (insertError) {
     return jsonResponse({ error: "failed_to_start_oauth" }, { status: 500 });

@@ -1,4 +1,6 @@
 import { completeConnectionsOAuth } from "../_shared/connections-oauth-complete.ts";
+import { mirrorLegacyToGeneric } from "../_shared/connection-sync.ts";
+import { originForRedirect, storedOriginFor } from "../_shared/legacy-redirect.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import {
   JIRA_TOKEN_URL,
@@ -8,8 +10,8 @@ import {
 
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-function redirectTo(path: string): Response {
-  const appOrigin = Deno.env.get("APP_ORIGIN");
+function redirectTo(path: string, origin?: string): Response {
+  const appOrigin = origin ?? originForRedirect(null);
   return new Response(null, {
     status: 302,
     headers: { Location: `${appOrigin}${path}` },
@@ -22,23 +24,27 @@ Deno.serve(async (req) => {
   const state = url.searchParams.get("state");
   const oauthError = url.searchParams.get("error");
 
+  // Offered to the generic flow FIRST, including provider errors; see the
+  // matching comment in github-oauth-callback.
+  if (state) {
+    const generic = await completeConnectionsOAuth(req);
+    if (generic) return generic;
+  }
+
+  const admin = createAdminClient();
+  const origin = originForRedirect(
+    await storedOriginFor(admin, "jira_oauth_state", state),
+  );
+
   if (oauthError) {
     return redirectTo(
       `/settings/connections?error=${encodeURIComponent(oauthError)}`,
+      origin,
     );
   }
   if (!code || !state) {
-    return redirectTo("/settings/connections?error=missing_code_or_state");
+    return redirectTo("/settings/connections?error=missing_code_or_state", origin);
   }
-
-  // This URL is the one registered with the OAuth application, so it is also
-  // the only URL the generic connections flow can use for this provider. If
-  // the state belongs to `oauth_states`, the generic completer owns it;
-  // otherwise it returns null and the legacy path below runs unchanged.
-  const generic = await completeConnectionsOAuth(req);
-  if (generic) return generic;
-
-  const admin = createAdminClient();
 
   const { data: stateRow, error: stateError } = await admin
     .from("jira_oauth_state")
@@ -47,7 +53,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (stateError || !stateRow) {
-    return redirectTo("/settings/connections?error=invalid_state");
+    return redirectTo("/settings/connections?error=invalid_state", origin);
   }
 
   // Single-use, delete on first read regardless of what happens below.
@@ -55,7 +61,7 @@ Deno.serve(async (req) => {
 
   const stateAgeMs = Date.now() - new Date(stateRow.created_at).getTime();
   if (stateAgeMs > STATE_TTL_MS) {
-    return redirectTo("/settings/connections?error=state_expired");
+    return redirectTo("/settings/connections?error=state_expired", origin);
   }
 
   let clientId: string;
@@ -63,7 +69,7 @@ Deno.serve(async (req) => {
   try {
     ({ clientId, clientSecret } = jiraOAuthCredentials());
   } catch {
-    return redirectTo("/settings/connections?error=oauth_not_configured");
+    return redirectTo("/settings/connections?error=oauth_not_configured", origin);
   }
 
   const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/jira-oauth-callback`;
@@ -84,13 +90,13 @@ Deno.serve(async (req) => {
     }),
   });
   if (!tokenResponse.ok) {
-    return redirectTo("/settings/connections?error=token_exchange_failed");
+    return redirectTo("/settings/connections?error=token_exchange_failed", origin);
   }
   const tokenJson = await tokenResponse.json();
   const accessToken: string | undefined = tokenJson.access_token;
   const refreshToken: string | undefined = tokenJson.refresh_token;
   if (!accessToken) {
-    return redirectTo("/settings/connections?error=token_exchange_failed");
+    return redirectTo("/settings/connections?error=token_exchange_failed", origin);
   }
   const scopes: string[] =
     typeof tokenJson.scope === "string" && tokenJson.scope.length > 0
@@ -103,7 +109,7 @@ Deno.serve(async (req) => {
   // already established.
   const resource = await resolveFirstAccessibleResource(accessToken);
   if (!resource) {
-    return redirectTo("/settings/connections?error=no_accessible_jira_site");
+    return redirectTo("/settings/connections?error=no_accessible_jira_site", origin);
   }
 
   const meResponse = await fetch("https://api.atlassian.com/me", {
@@ -123,12 +129,12 @@ Deno.serve(async (req) => {
   // to its write; this direct legacy path used to do the opposite.
   const atlassianAccountId = me?.account_id as string | undefined;
   if (!atlassianAccountId) {
-    return redirectTo("/settings/connections?error=jira_identity_unavailable");
+    return redirectTo("/settings/connections?error=jira_identity_unavailable", origin);
   }
 
   const encryptionKey = Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY");
   if (!encryptionKey) {
-    return redirectTo("/settings/connections?error=encryption_not_configured");
+    return redirectTo("/settings/connections?error=encryption_not_configured", origin);
   }
 
   const { data: encryptedAccessToken, error: encryptAccessError } =
@@ -137,7 +143,7 @@ Deno.serve(async (req) => {
       encryption_key: encryptionKey,
     });
   if (encryptAccessError || !encryptedAccessToken) {
-    return redirectTo("/settings/connections?error=encryption_failed");
+    return redirectTo("/settings/connections?error=encryption_failed", origin);
   }
 
   let encryptedRefreshToken: string | null = null;
@@ -162,8 +168,25 @@ Deno.serve(async (req) => {
     updated_at: new Date().toISOString(),
   });
   if (upsertError) {
-    return redirectTo("/settings/connections?error=save_failed");
+    return redirectTo("/settings/connections?error=save_failed", origin);
   }
 
-  return redirectTo("/settings/connections?connected=jira");
+  const published = await mirrorLegacyToGeneric(admin, {
+    userId: stateRow.user_id as string,
+    providerId: "jira-cloud",
+    config: { cloudId: resource.id, siteUrl: resource.url },
+    credentials: {
+      accessToken,
+      ...(refreshToken ? { refreshToken } : {}),
+    },
+    scopes,
+    displayName: resource.name ?? null,
+    // Atlassian access tokens last an hour; `connections.expires_at` is what
+    // tells the sweep and `connections-proxy` when to refresh.
+    expiresInSeconds:
+      typeof tokenJson.expires_in === "number" ? tokenJson.expires_in : 3600,
+  });
+  void published;
+
+  return redirectTo("/settings/connections?connected=jira", origin);
 });

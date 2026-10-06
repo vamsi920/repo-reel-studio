@@ -42,6 +42,12 @@ const OnboardingDock = React.lazy(() =>
   ),
 );
 
+const ConnectionHealthBanner = React.lazy(() =>
+  import("#/components/features/environment/connection-health-banner").then(
+    (m) => ({ default: m.ConnectionHealthBanner }),
+  ),
+);
+
 const CommandMenu = React.lazy(() =>
   import("#/components/features/command-menu/command-menu").then((m) => ({
     default: m.CommandMenu,
@@ -142,6 +148,9 @@ export default function MainApp() {
                   />
                 </React.Suspense>
               )}
+            <React.Suspense fallback={null}>
+              <ConnectionHealthBanner />
+            </React.Suspense>
             <div
               id="root-outlet"
               className="relative flex-1 overflow-auto px-0 custom-scrollbar"

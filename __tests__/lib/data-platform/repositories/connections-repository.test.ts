@@ -72,16 +72,17 @@ describe("connectionsRepository.list", () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  // Regression: a genuine fetch failure (RLS denial, network error) used to
-  // return [] identically to "no connections configured", with no logging
-  // at all -- the same silent-swallow bug already fixed in
-  // github-connections-repository.ts and jira-connections-repository.ts.
-  it("logs and returns [] when the query errors", async () => {
+  // A genuine fetch failure (RLS denial, network error) must not look like
+  // "no connections configured": it is logged and rejected so callers can
+  // show a load error instead of a wall of "Connect" buttons.
+  it("logs and rejects when the query errors", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     state.data = null;
     state.error = { message: "permission denied for table connections" };
 
-    await expect(connectionsRepository.list("org-1")).resolves.toEqual([]);
+    await expect(connectionsRepository.list("org-1")).rejects.toThrow(
+      "Failed to load connections",
+    );
     expect(errorSpy).toHaveBeenCalledWith(
       "[connections-repository] list failed",
       state.error,

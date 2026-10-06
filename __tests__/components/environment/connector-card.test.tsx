@@ -156,4 +156,57 @@ describe("ConnectorCard", () => {
 
     expect(screen.getByTestId("connector-connect-linear")).toBeDisabled();
   });
+
+  it("offers Reconnect only for a connection that stopped working", async () => {
+    const onReconnect = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <ConnectorCard
+        manifest={manifest}
+        connection={connectionWith({ status: "ok" })}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+        onReconnect={onReconnect}
+      />,
+    );
+    expect(
+      screen.queryByTestId("connector-reconnect-linear"),
+    ).not.toBeInTheDocument();
+
+    const revoked = connectionWith({ status: "revoked" });
+    rerender(
+      <ConnectorCard
+        manifest={manifest}
+        connection={revoked}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+        onReconnect={onReconnect}
+      />,
+    );
+    await user.click(screen.getByTestId("connector-reconnect-linear"));
+    expect(onReconnect).toHaveBeenCalledWith(revoked);
+    expect(
+      screen.getByTestId("connector-needs-reconnect-linear"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders no Reconnect control when no handler can act on it", () => {
+    render(
+      <ConnectorCard
+        manifest={manifest}
+        connection={connectionWith({ status: "expired" })}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByTestId("connector-reconnect-linear"),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -31,6 +31,7 @@ import { EnvironmentService } from "#/api/environment-service/environment-servic
 import { completeOnboardingSessionForConversation } from "#/hooks/query/use-onboarding-session";
 import type { ProbeKind } from "#/lib/environment/types/probe";
 import { scanForSecrets } from "#/lib/environment/discovery-guard";
+import { snapshotConnections } from "#/lib/environment/connection-snapshot";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 
 /**
@@ -158,9 +159,13 @@ function isConfidence(value: unknown): value is DiscoveryConfidence {
  * grows every time a connector is added, and baking it into the tool contract
  * would freeze it for the lifetime of every running agent-server.
  */
-function describeEnvironment(): Record<string, unknown> {
+async function describeEnvironment(): Promise<Record<string, unknown>> {
   const studio = useOnboardingStudioStore.getState();
+  const connectionState = await snapshotConnections();
   return {
+    // What is ALREADY connected, with health. Check this before asking the
+    // user for anything, and offer a reconnect for any `needs_reconnect`.
+    ...connectionState,
     commands: ONBOARDING_CONTROL_COMMANDS,
     capabilities: CAPABILITIES,
     probe_kinds: ONBOARDING_PROBE_KINDS,
@@ -224,7 +229,7 @@ export async function handleOnboardingControlAction(
 
   switch (action.command) {
     case "describe": {
-      postReceipt(context, { status: "ok", ...describeEnvironment() });
+      postReceipt(context, { status: "ok", ...(await describeEnvironment()) });
       return;
     }
 
@@ -352,7 +357,7 @@ export async function handleOnboardingControlAction(
     }
 
     case "get_environment_state": {
-      postReceipt(context, { status: "ok", ...describeEnvironment() });
+      postReceipt(context, { status: "ok", ...(await describeEnvironment()) });
       return;
     }
 

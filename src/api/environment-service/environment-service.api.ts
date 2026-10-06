@@ -6,6 +6,10 @@ import type {
   ProbeResult,
 } from "#/lib/environment/types/probe";
 import type { ConnectorFormValues } from "#/lib/environment/validation";
+import {
+  markOAuthPending,
+  resolveOAuthReturnPath,
+} from "#/lib/environment/oauth-origin";
 
 /**
  * Thrown when an Environment Edge Function call fails. Mirrors
@@ -116,14 +120,27 @@ export interface SetCredentialsInput {
 
 export const EnvironmentService = {
   async startOAuth(input: StartOAuthInput): Promise<{ authorizeUrl: string }> {
-    return invoke<{ authorizeUrl: string }>("connections-oauth-start", {
-      action: "start",
-      capability: input.capability,
-      providerId: input.providerId,
-      instanceKey: input.instanceKey ?? "default",
-      config: input.config ?? {},
-      returnTo: input.returnTo,
-    });
+    const returnTo = resolveOAuthReturnPath(input.returnTo);
+    const result = await invoke<{ authorizeUrl: string }>(
+      "connections-oauth-start",
+      {
+        action: "start",
+        capability: input.capability,
+        providerId: input.providerId,
+        instanceKey: input.instanceKey ?? "default",
+        config: input.config ?? {},
+        returnTo,
+        // The callback runs on Supabase and has to be told which site the
+        // user is on, or every flow ends on production -- wrong for
+        // localhost, Docker, the desktop app and preview deploys.
+        appOrigin:
+          typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    );
+    // Lets any route recognise the receipt that comes back (see
+    // `useGlobalOAuthReceipt`) instead of only the three that parse it.
+    markOAuthPending(input.providerId);
+    return result;
   },
 
   async setCredentials(input: SetCredentialsInput): Promise<ConnectionReceipt> {

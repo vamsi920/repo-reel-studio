@@ -1,16 +1,7 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
-import { JIRA_WEBHOOK_REGISTER_URL_TEMPLATE } from "../_shared/jira.ts";
-
-interface JiraConnectionRow {
-  cloud_id: string;
-  encrypted_access_token: string;
-}
-
-interface RegistrationRow {
-  cloud_id: string;
-  atlassian_webhook_id: string;
-}
+import { cleanupJiraUserArtifacts } from "../_shared/jira-cleanup.ts";
+import { deleteUserConnections, JIRA_PROVIDER_IDS } from "../_shared/connection-sync.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -27,58 +18,11 @@ Deno.serve(async (req) => {
 
   const admin = createAdminClient();
 
-  // Best-effort Atlassian-side cleanup, done BEFORE deleting the connection
-  // (that's where the access token needed to authenticate the delete call
-  // lives). Not fatal if it fails -- an orphaned dynamic webhook just
-  // expires naturally after 30 days with nothing to call, and by then the
-  // registration row (and the receiver's lookup) is already gone.
-  //
   // Note: this does not delete the automation-service's custom webhook
   // (source "jira") -- that would need the deployment's real automation
-  // session key, which this function doesn't hold (only the narrower
-  // agent-server bridge key used for pushing JIRA_TOKEN). It stays
-  // registered but inert once nothing points at it.
-  const encryptionKey = Deno.env.get("GITHUB_TOKEN_ENCRYPTION_KEY");
-  const { data: registration } = await admin
-    .from("jira_webhook_registrations")
-    .select("cloud_id, atlassian_webhook_id")
-    .eq("user_id", userId)
-    .maybeSingle<RegistrationRow>();
-  if (registration && encryptionKey) {
-    const { data: connection } = await admin
-      .from("jira_connections")
-      .select("cloud_id, encrypted_access_token")
-      .eq("user_id", userId)
-      .maybeSingle<JiraConnectionRow>();
-    if (connection) {
-      const { data: accessToken } = await admin.rpc("decrypt_github_token", {
-        ciphertext: connection.encrypted_access_token,
-        encryption_key: encryptionKey,
-      });
-      if (accessToken) {
-        try {
-          await fetch(
-            JIRA_WEBHOOK_REGISTER_URL_TEMPLATE.replace("{cloudId}", connection.cloud_id),
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                webhookIds: [Number(registration.atlassian_webhook_id)],
-              }),
-            },
-          );
-        } catch {
-          // Best-effort -- see comment above.
-        }
-      }
-    }
-  }
-
-  await admin.from("jira_automation_triggers").delete().eq("user_id", userId);
-  await admin.from("jira_webhook_registrations").delete().eq("user_id", userId);
+  // session key, which this function doesn't hold. It stays registered but
+  // inert once nothing points at it.
+  await cleanupJiraUserArtifacts(admin, userId);
 
   const { error } = await admin
     .from("jira_connections")
@@ -87,6 +31,11 @@ Deno.serve(async (req) => {
   if (error) {
     return jsonResponse({ error: "disconnect_failed" }, { status: 500 });
   }
+
+  // The generic row this user authorised goes too, or the Environment page
+  // and the onboarding agent keep showing (and `connections-proxy` keeps
+  // using) a Jira connection the user just removed.
+  await deleteUserConnections(admin, userId, JIRA_PROVIDER_IDS);
 
   return jsonResponse({ ok: true });
 });

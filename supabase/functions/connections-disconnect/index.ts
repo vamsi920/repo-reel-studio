@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts";
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
 import { unmirrorFromLegacy } from "../_shared/legacy-mirror.ts";
+import { cleanupJiraUserArtifacts } from "../_shared/jira-cleanup.ts";
 
 /**
  * Removes a connection.
@@ -76,6 +77,14 @@ Deno.serve(async (req: Request) => {
   // null if that user's account was since deleted, in which case the legacy
   // row was already removed by the same cascade and there's nothing to do.
   if (connection.created_by) {
+    // Jira also left a webhook and automation triggers behind; tear those
+    // down the way the Settings page's disconnect does. Runs while the
+    // legacy row (and its access token) still exists.
+    if (connection.provider_id === "jira-cloud") {
+      await cleanupJiraUserArtifacts(admin, connection.created_by as string).catch(
+        () => undefined,
+      );
+    }
     await unmirrorFromLegacy(
       admin,
       connection.provider_id as string,

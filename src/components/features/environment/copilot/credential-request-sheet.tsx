@@ -1,6 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import { I18nKey } from "#/i18n/declaration";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { ConnectorFieldInput } from "#/components/features/environment/connections/connector-field-input";
@@ -62,6 +64,7 @@ export function CredentialRequestSheet({
   onResult,
 }: CredentialRequestSheetProps) {
   const { t } = useTranslation("openhands");
+  const queryClient = useQueryClient();
   const manifest = getConnectorManifest(request.providerId);
   const { data: connections } = useConnections();
   const existingConnection = React.useMemo(
@@ -177,6 +180,10 @@ export function CredentialRequestSheet({
         config,
         credentials,
       });
+
+      // Without this the sheet relied on Realtime alone, so with Realtime
+      // off the GitHub "connected" flag and the repo picker stayed stale.
+      void invalidateConnectionCaches(queryClient);
 
       useOnboardingStudioStore.getState().updateCard(studioCardIdFor(request), {
         status: receipt.probe?.ok ? "ok" : "failed",

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { encryptionKey } from "./secrets.ts";
+import { legacyEncryptionKey } from "./secrets.ts";
 
 /**
  * Mirrors a generic `connections` row into the per-vendor legacy table.
@@ -39,7 +39,7 @@ async function encryptBare(
 ): Promise<string> {
   const { data, error } = await admin.rpc("encrypt_github_token", {
     token,
-    encryption_key: encryptionKey(),
+    encryption_key: legacyEncryptionKey(),
   });
   if (error || !data) throw new Error("legacy_encrypt_failed");
   return data as string;

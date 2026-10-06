@@ -14,6 +14,7 @@ import {
   filterByResidency,
   filterForAirGap,
   secretFieldNames,
+  getConnectorManifest,
 } from "#/lib/environment/registry";
 import { CAPABILITY_LABEL_KEY } from "#/lib/environment/display";
 import { useConnections } from "#/hooks/query/use-connections";
@@ -21,6 +22,10 @@ import { ENVIRONMENT_QUERY_KEYS } from "#/hooks/query/query-keys";
 import { useEnvironmentProfile } from "#/hooks/query/use-environment-profile";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import { consumeOAuthReceiptOnce } from "#/lib/environment/oauth-receipt-guard";
+import {
+  oauthConfigFor,
+  reconnectKind,
+} from "#/lib/environment/connection-health";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import {
   EnvironmentService,
@@ -150,6 +155,39 @@ function EnvironmentConnectionsScreen() {
       }
       setActiveManifest(manifest);
       setLastProbe(null);
+    },
+    [t],
+  );
+
+  const handleReconnect = React.useCallback(
+    async (connection: ConnectionRecord) => {
+      const manifest = getConnectorManifest(connection.providerId);
+      if (!manifest) return;
+      if (reconnectKind(manifest) === "form") {
+        // Token-based connectors: the old secret is dead, so ask for a new
+        // one through the same form used to connect.
+        setActiveManifest(manifest);
+        setLastProbe(null);
+        return;
+      }
+      setBusyProvider(manifest.id);
+      try {
+        const { authorizeUrl } = await EnvironmentService.startOAuth({
+          capability: manifest.capability,
+          providerId: manifest.id,
+          instanceKey: connection.instanceKey,
+          config: oauthConfigFor(connection),
+          returnTo: "/environment/connections",
+        });
+        window.location.href = authorizeUrl;
+      } catch (error) {
+        displayErrorToast(
+          error instanceof EnvironmentServiceError
+            ? error.message
+            : t(I18nKey.ENVIRONMENT$ERROR_SAVE),
+        );
+        setBusyProvider(null);
+      }
     },
     [t],
   );
@@ -373,6 +411,7 @@ function EnvironmentConnectionsScreen() {
                   onConnect={handleConnect}
                   onDisconnect={handleDisconnect}
                   onTest={handleTest}
+                  onReconnect={handleReconnect}
                 />
               ))}
             </div>

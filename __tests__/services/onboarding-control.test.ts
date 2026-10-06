@@ -35,6 +35,16 @@ vi.mock(
   () => ({ default: { sendMessage: vi.fn(async () => undefined) } }),
 );
 
+const snapshot = vi.hoisted(() => ({
+  value: {
+    connections: [] as Record<string, unknown>[],
+    can_write_connections: true as boolean | null,
+  },
+}));
+vi.mock("#/lib/environment/connection-snapshot", () => ({
+  snapshotConnections: vi.fn(async () => snapshot.value),
+}));
+
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
   completeOnboardingSessionForConversation: vi.fn(async () => undefined),
 }));
@@ -259,7 +269,10 @@ describe("handleOnboardingControlAction", () => {
     // complete_setup, and the partial unique index on "one active session
     // per org" permanently pinned every future visit to this same finished
     // conversation.
-    await handleOnboardingControlAction(action({ command: "complete_setup" }), context);
+    await handleOnboardingControlAction(
+      action({ command: "complete_setup" }),
+      context,
+    );
     expect(completeOnboardingSessionForConversation).toHaveBeenCalledWith(
       "conv-1",
     );
@@ -296,7 +309,10 @@ describe("handleOnboardingControlAction", () => {
         return originalPushCard(card);
       });
 
-    await handleOnboardingControlAction(action({ command: "complete_setup" }), context);
+    await handleOnboardingControlAction(
+      action({ command: "complete_setup" }),
+      context,
+    );
 
     expect(order).toEqual(["session-completed", "summary-card-pushed"]);
     pushCardSpy.mockRestore();
@@ -404,6 +420,29 @@ describe("the interview loop", () => {
     expect(payload.providers.length).toBeGreaterThan(30);
     expect(payload.providers[0]).toHaveProperty("secret_fields");
     expect(payload.commands).toContain("record_discovery");
+  });
+
+  it("tells the agent what is already connected and what needs reconnecting", async () => {
+    snapshot.value = {
+      connections: [
+        { provider: "github", status: "ok", needs_reconnect: false },
+        { provider: "jira-cloud", status: "expired", needs_reconnect: true },
+      ],
+      can_write_connections: false,
+    };
+
+    await handleOnboardingControlAction(
+      action({ command: "describe" }),
+      context,
+    );
+
+    const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
+    expect(payload.connections).toHaveLength(2);
+    expect(payload.connections[1]).toMatchObject({
+      provider: "jira-cloud",
+      needs_reconnect: true,
+    });
+    expect(payload.can_write_connections).toBe(false);
   });
 
   it("plans, then advances to the next outstanding step", async () => {

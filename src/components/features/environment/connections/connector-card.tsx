@@ -9,6 +9,7 @@ import {
   CONNECTION_STATUS_LABEL_KEY,
   MATURITY_LABEL_KEY,
 } from "#/lib/environment/display";
+import { needsReconnect } from "#/lib/environment/connection-health";
 import { ConnectorLogo } from "../shared/connector-logo";
 
 export interface ConnectorCardProps {
@@ -28,6 +29,12 @@ export interface ConnectorCardProps {
   onConnect: (manifest: ConnectorManifest) => void;
   onDisconnect: (connection: ConnectionRecord) => void;
   onTest: (connection: ConnectionRecord) => void;
+  /**
+   * Starts the reconnect flow for a connection that stopped working. The
+   * button is rendered only when this is provided AND the connection needs
+   * it, so the card never shows a control that does nothing.
+   */
+  onReconnect?: (connection: ConnectionRecord) => void;
 }
 
 export function ConnectorCard({
@@ -39,10 +46,12 @@ export function ConnectorCard({
   onConnect,
   onDisconnect,
   onTest,
+  onReconnect,
 }: ConnectorCardProps) {
   const { t } = useTranslation("openhands");
   const reduceMotion = useReducedMotion();
   const connected = Boolean(connection);
+  const reconnectNeeded = needsReconnect(connection);
   const missingScopes = connection
     ? connection.requestedScopes.filter(
         (scope) => !connection.grantedScopes.includes(scope),
@@ -102,6 +111,14 @@ export function ConnectorCard({
               {connection.displayName}
             </span>
           ) : null}
+          {reconnectNeeded ? (
+            <span
+              data-testid={`connector-needs-reconnect-${manifest.id}`}
+              className="text-xs text-[var(--error-500)]"
+            >
+              {t(I18nKey.ENVIRONMENT$NEEDS_RECONNECT_HINT)}
+            </span>
+          ) : null}
           {/* Scope downgrade is the difference between "connected" and
               "connected, and something will 403 next week". It gets its own
               line rather than hiding inside the probe detail. */}
@@ -121,6 +138,20 @@ export function ConnectorCard({
       <div className="mt-auto flex flex-wrap items-center gap-2">
         {connection ? (
           <>
+            {reconnectNeeded && onReconnect ? (
+              <button
+                type="button"
+                data-testid={`connector-reconnect-${manifest.id}`}
+                disabled={busy}
+                onClick={() => onReconnect(connection)}
+                aria-label={t(I18nKey.ENVIRONMENT$RECONNECT_PROVIDER, {
+                  provider: t(manifest.nameKey),
+                })}
+                className={cn("ame-btn-primary ame-btn-sm", busy && "loading")}
+              >
+                {t(I18nKey.ENVIRONMENT$RECONNECT)}
+              </button>
+            ) : null}
             <button
               type="button"
               data-testid={`connector-test-${manifest.id}`}
