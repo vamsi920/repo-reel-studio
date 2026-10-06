@@ -350,8 +350,11 @@ export function TutorialWizard() {
         data-placement={placement?.side ?? "measuring"}
         data-tone={tone}
         // Fixed literal colors per tone; see BUBBLE_PALETTES.
+        // The section only frames and positions the bubble; it never scrolls.
+        // Scrolling lives on the inner body (see below) so the arrow, which
+        // pokes out past the edge, can't make the bubble scrollable.
         className={cn(
-          "fixed z-[60] w-[min(calc(100vw-24px),380px)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border px-5 py-4",
+          "fixed z-[60] w-[min(calc(100vw-24px),380px)] rounded-2xl border",
           "transition-[top,left,opacity,background-color,color] duration-300 ease-out motion-reduce:transition-none",
           palette.card,
           placement ? "opacity-100" : "opacity-0",
@@ -366,163 +369,180 @@ export function TutorialWizard() {
         {placement ? (
           <BubbleArrow placement={placement} className={palette.arrow} />
         ) : null}
-        <div className="flex items-center justify-between gap-3">
-          {/* Own live region: the "N of M" count changes on every step just
+        {/* Vertical scroll only, for short viewports or heavy zoom. Horizontal
+            overflow is clipped: a scrollable x-axis once let the autofocused
+            Next button scroll every line of text out of sight, leaving an
+            empty-looking box. */}
+        <div
+          data-testid="tutorial-bubble-body"
+          className="max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden px-5 py-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            {/* Own live region: the "N of M" count changes on every step just
               like the title/subtitle, but it lives in the header row rather
               than the title/subtitle wrapper below, so without its own
               aria-live it silently updated with no announcement at all. */}
-          <span
-            data-testid="tutorial-progress"
-            aria-live="polite"
-            aria-atomic="true"
-            className={cn(
-              "text-xs font-medium uppercase tracking-wide",
-              palette.progress,
-            )}
-          >
-            {t(I18nKey.TUTORIAL$STEP_PROGRESS, {
-              current: stepIndex + 1,
-              total: steps.length,
-            })}
-          </span>
-          <button
-            type="button"
-            data-testid="tutorial-skip"
-            onClick={skip}
-            aria-label={t(I18nKey.TUTORIAL$SKIP)}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs",
-              palette.muted,
-            )}
-          >
-            {t(I18nKey.TUTORIAL$SKIP)}
-            <X width={12} height={12} aria-hidden="true" />
-          </button>
-        </div>
+            <span
+              data-testid="tutorial-progress"
+              aria-live="polite"
+              aria-atomic="true"
+              className={cn(
+                "text-xs font-medium uppercase tracking-wide",
+                palette.progress,
+              )}
+            >
+              {t(I18nKey.TUTORIAL$STEP_PROGRESS, {
+                current: stepIndex + 1,
+                total: steps.length,
+              })}
+            </span>
+            <button
+              type="button"
+              data-testid="tutorial-skip"
+              onClick={skip}
+              aria-label={t(I18nKey.TUTORIAL$SKIP)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs",
+                palette.muted,
+              )}
+            >
+              {t(I18nKey.TUTORIAL$SKIP)}
+              <X width={12} height={12} aria-hidden="true" />
+            </button>
+          </div>
 
-        {/* A single atomic live region around both title and subtitle: only
+          {/* A single atomic live region around both title and subtitle: only
             the subtitle used to be aria-live, so screen readers announced
             the narration but silently dropped the step's title on every
             Back/Next/auto-advance. Atomic so a step change reads as one
             utterance instead of two overlapping ones. */}
-        <div
-          data-testid="tutorial-step-live-region"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <h2 id={titleId} className="mt-2 text-base font-semibold">
-            {t(step.titleKey)}
-          </h2>
-          <p
-            id={subtitleId}
-            data-testid="tutorial-subtitle"
-            className={cn("mt-1 text-sm leading-relaxed", palette.subtitle)}
+          <div
+            data-testid="tutorial-step-live-region"
+            aria-live="polite"
+            aria-atomic="true"
           >
-            {subtitle}
-          </p>
-          {points.length ? (
-            <ul
-              data-testid="tutorial-points"
-              className="mt-2 flex flex-col gap-1.5"
+            <h2 id={titleId} className="mt-2 text-base font-semibold">
+              {t(step.titleKey)}
+            </h2>
+            <p
+              id={subtitleId}
+              data-testid="tutorial-subtitle"
+              className={cn("mt-1 text-sm leading-relaxed", palette.subtitle)}
             >
-              {points.map((point) => (
-                <li
-                  key={point}
+              {subtitle}
+            </p>
+            {points.length ? (
+              <ul
+                data-testid="tutorial-points"
+                className="mt-2 flex flex-col gap-1.5"
+              >
+                {points.map((point) => (
+                  <li
+                    key={point}
+                    className={cn(
+                      "flex gap-2 text-[13px] leading-snug",
+                      palette.point,
+                    )}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full",
+                        palette.bullet,
+                      )}
+                    />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
+          {isPlaying ? (
+            <div
+              aria-hidden="true"
+              className={cn(
+                "mt-3 h-0.5 overflow-hidden rounded-full",
+                palette.track,
+              )}
+            >
+              <div
+                key={step.id}
+                data-testid="tutorial-caption-timer"
+                className={cn(
+                  "h-full origin-left motion-reduce:hidden",
+                  palette.fill,
+                )}
+                style={{
+                  animation: `tutorial-caption-progress ${captionDurationMs}ms linear forwards`,
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            {/* One thin bar rather than a dot per step: with dozens of steps a
+              dot row is wider than the bubble. */}
+            <div
+              aria-hidden="true"
+              data-testid="tutorial-progress-bar"
+              className={cn(
+                "h-1.5 min-w-0 flex-1 overflow-hidden rounded-full",
+                palette.dot,
+              )}
+            >
+              <div
+                data-testid="tutorial-progress-fill"
+                className={cn(
+                  "h-full rounded-full transition-[width] duration-300 ease-out motion-reduce:transition-none",
+                  palette.dotActive,
+                )}
+                style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <StyledTooltip content={playToggleLabel} placement="top">
+                <button
+                  type="button"
+                  data-testid="tutorial-play-toggle"
+                  onClick={() => setPlaying(!isPlaying)}
+                  aria-label={playToggleLabel}
+                  className={cn("rounded-lg p-2", palette.ghost)}
+                >
+                  {isPlaying ? (
+                    <Pause width={14} height={14} aria-hidden="true" />
+                  ) : (
+                    <Play width={14} height={14} aria-hidden="true" />
+                  )}
+                </button>
+              </StyledTooltip>
+              {!isFirst ? (
+                <button
+                  type="button"
+                  data-testid="tutorial-back"
+                  onClick={goBack}
                   className={cn(
-                    "flex gap-2 text-[13px] leading-snug",
-                    palette.point,
+                    "rounded-lg px-3 py-1.5 text-sm",
+                    palette.ghost,
                   )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full",
-                      palette.bullet,
-                    )}
-                  />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-
-        {isPlaying ? (
-          <div
-            aria-hidden="true"
-            className={cn(
-              "mt-3 h-0.5 overflow-hidden rounded-full",
-              palette.track,
-            )}
-          >
-            <div
-              key={step.id}
-              data-testid="tutorial-caption-timer"
-              className={cn(
-                "h-full origin-left motion-reduce:hidden",
-                palette.fill,
-              )}
-              style={{
-                animation: `tutorial-caption-progress ${captionDurationMs}ms linear forwards`,
-              }}
-            />
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {steps.map((s, index) => (
-              <span
-                key={s.id}
-                data-testid="tutorial-progress-dot"
+                  {t(I18nKey.TUTORIAL$BACK)}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                data-testid="tutorial-next"
+                onClick={goNext}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- the tour is user-initiated; focus the primary action so Enter advances.
+                autoFocus
                 className={cn(
-                  "h-1.5 rounded-full transition-all motion-reduce:transition-none",
-                  index === stepIndex
-                    ? cn("w-4", palette.dotActive)
-                    : cn("w-1.5", palette.dot),
+                  "rounded-lg px-4 py-1.5 text-sm font-medium",
+                  palette.primary,
                 )}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <StyledTooltip content={playToggleLabel} placement="top">
-              <button
-                type="button"
-                data-testid="tutorial-play-toggle"
-                onClick={() => setPlaying(!isPlaying)}
-                aria-label={playToggleLabel}
-                className={cn("rounded-lg p-2", palette.ghost)}
               >
-                {isPlaying ? (
-                  <Pause width={14} height={14} aria-hidden="true" />
-                ) : (
-                  <Play width={14} height={14} aria-hidden="true" />
-                )}
+                {t(isLast ? I18nKey.TUTORIAL$FINISH : I18nKey.TUTORIAL$NEXT)}
               </button>
-            </StyledTooltip>
-            {!isFirst ? (
-              <button
-                type="button"
-                data-testid="tutorial-back"
-                onClick={goBack}
-                className={cn("rounded-lg px-3 py-1.5 text-sm", palette.ghost)}
-              >
-                {t(I18nKey.TUTORIAL$BACK)}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              data-testid="tutorial-next"
-              onClick={goNext}
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- the tour is user-initiated; focus the primary action so Enter advances.
-              autoFocus
-              className={cn(
-                "rounded-lg px-4 py-1.5 text-sm font-medium",
-                palette.primary,
-              )}
-            >
-              {t(isLast ? I18nKey.TUTORIAL$FINISH : I18nKey.TUTORIAL$NEXT)}
-            </button>
+            </div>
           </div>
         </div>
       </section>

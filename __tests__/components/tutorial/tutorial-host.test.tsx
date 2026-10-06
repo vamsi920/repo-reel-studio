@@ -754,17 +754,22 @@ describe("TutorialHost", () => {
     expect(wizard).toHaveAttribute("data-tone", "dark");
   });
 
-  it("does not animate progress dots for users who prefer reduced motion", async () => {
+  it("shows progress as one bar that fills with each step, not a dot per step", async () => {
+    // Regression: with dozens of steps, a row of dots was wider than the
+    // bubble, made it scroll sideways, and the autofocused Next button
+    // scrolled every line of text out of view — an empty-looking box.
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
     await user.click(screen.getByTestId("tutorial-launcher"));
+    const total = getTutorialSteps().length;
 
-    const dots = screen.getAllByTestId("tutorial-progress-dot");
-    expect(dots.length).toBeGreaterThan(0);
-    dots.forEach((dot) => {
-      expect(dot.className).toMatch(/motion-reduce:transition-none/);
-    });
+    await user.click(screen.getByTestId("tutorial-next"));
+
+    expect(screen.queryAllByTestId("tutorial-progress-dot")).toHaveLength(0);
+    const fill = screen.getByTestId("tutorial-progress-fill");
+    expect(fill).toHaveStyle({ width: `${(2 / total) * 100}%` });
+    expect(fill.className).toMatch(/motion-reduce:transition-none/);
   });
 
   it("hides the launcher while the mobile nav drawer is open", async () => {
@@ -1048,9 +1053,15 @@ describe("TutorialHost", () => {
 
     await user.click(screen.getByTestId("tutorial-launcher"));
 
-    const wizard = screen.getByTestId("tutorial-wizard");
-    expect(wizard.className).toContain("max-h-[calc(100vh-2rem)]");
-    expect(wizard.className).toContain("overflow-y-auto");
+    // Only the inner body scrolls, and only vertically; the positioned
+    // bubble itself (which holds the arrow) never becomes scrollable.
+    const body = screen.getByTestId("tutorial-bubble-body");
+    expect(body.className).toContain("max-h-[calc(100vh-2rem)]");
+    expect(body.className).toContain("overflow-y-auto");
+    expect(body.className).toContain("overflow-x-hidden");
+    expect(screen.getByTestId("tutorial-wizard").className).not.toMatch(
+      /overflow-/,
+    );
   });
 });
 
