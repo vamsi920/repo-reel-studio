@@ -24,6 +24,7 @@ import {
   MOBILE_MENU_TOGGLE_TEST_ID,
 } from "#/components/features/tutorial/tutorial-steps";
 import { TUTORIAL_LAUNCHER_TEST_ID } from "#/components/features/tutorial/tutorial-launcher";
+import { useAiGuideStore } from "#/components/features/tutorial/ai-guide/ai-guide-store";
 
 // HeroUI's Tooltip (the real engine behind StyledTooltip) only mounts its
 // content on real-DOM hover, which jsdom doesn't fire reliably, so stub it
@@ -115,6 +116,12 @@ vi.mock("#/services/telemetry", () => ({
   setTelemetryBackendContext: vi.fn(),
 }));
 
+const { runAiGuide } = vi.hoisted(() => ({ runAiGuide: vi.fn() }));
+
+vi.mock("#/components/features/tutorial/ai-guide/ai-guide-agent", () => ({
+  runAiGuide,
+}));
+
 vi.mock("#/api/automation-service/automation-service.api", () => ({
   default: { getSdkVersion: vi.fn().mockResolvedValue(null) },
 }));
@@ -166,6 +173,12 @@ function renderHost(initialPath = "/") {
     /** Simulates the URL changing via a real in-app link, not the wizard's own navigate(). */
     setPath: (path: string) => view.rerender(ui(path)),
   };
+}
+
+/** Opens the launcher menu and picks the static product tour. */
+async function startProductTour(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("tutorial-launcher"));
+  await user.click(screen.getByTestId("tutorial-launch-product-tour"));
 }
 
 /** Index of the step just before step `id`. */
@@ -227,7 +240,7 @@ describe("TutorialHost", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     expect(screen.queryByTestId("tutorial-back")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("tutorial-next"));
@@ -250,7 +263,7 @@ describe("TutorialHost", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     const liveRegion = screen.getByTestId("tutorial-step-live-region");
     expect(liveRegion).toHaveAttribute("aria-live", "polite");
     expect(liveRegion).toHaveAttribute("aria-atomic", "true");
@@ -280,7 +293,7 @@ describe("TutorialHost", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     const progress = screen.getByTestId("tutorial-progress");
     expect(progress).toHaveAttribute("aria-live", "polite");
     expect(progress).toHaveAttribute("aria-atomic", "true");
@@ -400,7 +413,7 @@ describe("TutorialHost", () => {
       "closed",
     );
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
       "data-step",
       "welcome",
@@ -431,7 +444,7 @@ describe("TutorialHost", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     await advanceTo("customize", user);
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
       "open",
@@ -537,7 +550,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     const first = renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     await user.click(screen.getByTestId("tutorial-next"));
     await user.click(screen.getByTestId("tutorial-next"));
     first.unmount();
@@ -564,7 +577,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     await user.click(screen.getByTestId("tutorial-next"));
 
     await user.click(screen.getByTestId("tutorial-skip"));
@@ -613,7 +626,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
 
     await user.click(screen.getByTestId("tutorial-skip"));
 
@@ -624,7 +637,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     await advanceTo("customize", user);
     expect(screen.getByTestId("test-mobile-nav-state")).toHaveTextContent(
       "open",
@@ -642,7 +655,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
 
     await user.keyboard("{Escape}");
 
@@ -659,7 +672,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     await user.click(screen.getByTestId("tutorial-next"));
     const wizard = screen.getByTestId("tutorial-wizard");
     expect(wizard).toHaveAttribute("data-step", "commands");
@@ -703,7 +716,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
 
     const wizard = screen.getByTestId("tutorial-wizard");
     for (const element of [
@@ -761,7 +774,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     renderHost();
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
     const total = getTutorialSteps().length;
 
     await user.click(screen.getByTestId("tutorial-next"));
@@ -1051,7 +1064,7 @@ describe("TutorialHost", () => {
     const user = userEvent.setup();
     renderHost();
 
-    await user.click(screen.getByTestId("tutorial-launcher"));
+    await startProductTour(user);
 
     // Only the inner body scrolls, and only vertically; the positioned
     // bubble itself (which holds the arrow) never becomes scrollable.
@@ -1290,5 +1303,132 @@ describe("findTutorialAnchor", () => {
         root,
       ),
     ).toBe(visible);
+  });
+});
+
+describe("TutorialHost launch menu and AI guide", () => {
+  type RunOptions = {
+    query: string;
+    presentStep: (step: {
+      kind: "click" | "explain";
+      title: string;
+      tip: string;
+      element: HTMLElement | null;
+    }) => Promise<void>;
+    registerStop: (stop: () => void) => void;
+  };
+
+  beforeEach(() => {
+    runAiGuide.mockReset();
+    window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
+  });
+
+  afterEach(() => {
+    act(() => useAiGuideStore.getState().close());
+  });
+
+  it("opens a menu with an ask box, suggestions and the product tour instead of starting the tour", async () => {
+    const user = userEvent.setup();
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+
+    expect(screen.getByTestId("tutorial-launch-menu")).toBeInTheDocument();
+    expect(screen.getByTestId("ai-guide-input")).toBeInTheDocument();
+    expect(screen.getAllByTestId("ai-guide-suggestion")).toHaveLength(3);
+    expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
+  });
+
+  it("asks the AI guide what the user typed and points at the element it picks", async () => {
+    const user = userEvent.setup();
+    const target = document.createElement("button");
+    document.body.append(target);
+    let finishStep: Promise<void> | undefined;
+    runAiGuide.mockImplementation(async (options: RunOptions) => {
+      finishStep = options.presentStep({
+        kind: "click",
+        title: "Open Automate",
+        tip: "Your automations live here.",
+        element: target,
+      });
+      await finishStep;
+      return { outcome: "completed", steps: 1 };
+    });
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.type(
+      screen.getByTestId("ai-guide-input"),
+      "build an automation{Enter}",
+    );
+
+    const bubble = await screen.findByTestId("tutorial-wizard");
+    expect(runAiGuide).toHaveBeenCalledWith(
+      expect.objectContaining({ query: "build an automation" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText("Open Automate")).toBeInTheDocument(),
+    );
+    expect(bubble).toHaveAttribute("data-mode", "ai");
+    expect(
+      screen.queryByTestId("tutorial-launch-menu"),
+    ).not.toBeInTheDocument();
+    expect(trackEvent).toHaveBeenCalledWith(
+      "ai_guide_started",
+      expect.objectContaining({ source: "typed" }),
+    );
+    // Sent only how it started, never what the user typed.
+    expect(JSON.stringify(trackEvent.mock.calls)).not.toContain(
+      "build an automation",
+    );
+
+    await user.click(screen.getByTestId("ai-guide-did-it"));
+    await expect(finishStep).resolves.toBeUndefined();
+    target.remove();
+  });
+
+  it("Skip stops the agent and leaves the product tour's own progress alone", async () => {
+    const user = userEvent.setup();
+    const stop = vi.fn();
+    runAiGuide.mockImplementation(async (options: RunOptions) => {
+      options.registerStop(stop);
+      await options
+        .presentStep({
+          kind: "explain",
+          title: "Hi",
+          tip: "Let's go",
+          element: null,
+        })
+        .catch(() => undefined);
+      return { outcome: "closed" };
+    });
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getAllByTestId("ai-guide-suggestion")[0]);
+    await screen.findByText("Let's go");
+    await user.click(screen.getByTestId("tutorial-skip"));
+
+    expect(stop).toHaveBeenCalled();
+    expect(screen.queryByTestId("tutorial-wizard")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(TUTORIAL_SEEN_STORAGE_KEY)).toBeNull();
+    expect(
+      window.localStorage.getItem(TUTORIAL_PROGRESS_STORAGE_KEY),
+    ).toBeNull();
+  });
+
+  it("explains a failure and offers the product tour instead", async () => {
+    const user = userEvent.setup();
+    runAiGuide.mockResolvedValue({ outcome: "error", kind: "signed_out" });
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.click(screen.getAllByTestId("ai-guide-suggestion")[0]);
+    await user.click(await screen.findByTestId("ai-guide-product-tour"));
+
+    expect(screen.getByTestId("tutorial-wizard")).toHaveAttribute(
+      "data-step",
+      "welcome",
+    );
   });
 });

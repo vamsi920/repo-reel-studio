@@ -17,6 +17,8 @@
     "@monaco-editor/react": "4.7.0",
     "@openhands/extensions": "0.16.0",
     "@openhands/typescript-client": "1.38.0",
+    "@page-agent/core": "1.12.4",
+    "@page-agent/page-controller": "1.12.4",
     "@react-router/node": "7.18.2",
     "@react-router/serve": "7.18.2",
     "@remotion/player": "4.0.512",

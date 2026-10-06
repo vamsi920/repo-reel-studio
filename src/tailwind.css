@@ -677,6 +677,17 @@ button.extension-module-card-interactive {
   }
 }
 
+/* Tutorial launch menu: fades in (opacity only, so it never fights the
+   menu's own translate used for vertical centring). */
+@keyframes tutorial-launch-menu-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* CTA card gradient and shadow */
 .cta-card-gradient {
   background:

@@ -183,3 +183,22 @@ per its license terms.
 - **How to update**: re-read upstream `layman-compress/scripts/` for rule
   changes, mirror them into `compression-core.ts`, run
   `npx vitest run src/lib/layman`, then update the commit SHA above.
+
+## PageAgent (npm `@page-agent/core`, `@page-agent/page-controller`)
+
+- **Upstream repository**: https://github.com/alibaba/page-agent
+- **Version**: `1.12.4`, pinned exactly in `package.json`
+- **License**: MIT (shipped in each package's `LICENSE`)
+- **Copyright**: (c) 2026 SimonLuvRamen; (c) 2026 Alibaba Group Holding Limited
+- **Not vendored**: installed from npm and loaded lazily, only when a user asks
+  the AI guide for help (`src/components/features/tutorial/ai-guide/`).
+- **How it is used**: page-agent reads the live page and plans one step at a
+  time. NeoDevEx runs it in "guide mode": its tools that act on the page
+  (click, type, select, run script) are removed and replaced with tools that
+  only point and explain, so the user does every click. Its own UI package is
+  not used; steps render in the existing tour bubble.
+- **Private detail relied on**: `resolveIndexedElement` reads the
+  PageController's private `selectorMap` field (the same map its own click
+  tool uses). That is why the version is pinned exactly;
+  `__tests__/components/tutorial/ai-guide-tools.test.ts` fails if an upgrade
+  moves it.

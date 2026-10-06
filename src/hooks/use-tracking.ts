@@ -406,6 +406,25 @@ export const useTracking = () => {
     track("tutorial_started", { trigger });
   };
 
+  /** The query text itself is never sent, only how the guide was started. */
+  const trackAiGuideStarted = ({
+    source,
+  }: {
+    source: "suggestion" | "typed";
+  }) => {
+    track("ai_guide_started", { source });
+  };
+
+  const trackAiGuideEnded = ({
+    outcome,
+    steps,
+  }: {
+    outcome: "completed" | "closed" | "error";
+    steps: number;
+  }) => {
+    track("ai_guide_ended", { outcome, steps });
+  };
+
   const trackTutorialCompleted = ({ totalSteps }: { totalSteps: number }) => {
     track("tutorial_completed", { total_steps: totalSteps });
   };
@@ -459,6 +478,8 @@ export const useTracking = () => {
     trackOnboardingCompleted,
     trackOnboardingSkipped,
     trackTutorialStarted,
+    trackAiGuideStarted,
+    trackAiGuideEnded,
     trackTutorialCompleted,
     trackTutorialSkipped,
   };

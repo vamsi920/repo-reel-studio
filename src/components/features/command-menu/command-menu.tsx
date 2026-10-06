@@ -8,6 +8,7 @@ import { useCommandMenuStore } from "#/stores/command-menu-store";
 import { useSidebarStore } from "#/stores/sidebar-store";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 import { useTutorialStore } from "#/components/features/tutorial/tutorial-store";
+import { useAiGuideStore } from "#/components/features/tutorial/ai-guide/ai-guide-store";
 import { useTracking } from "#/hooks/use-tracking";
 import { cn } from "#/utils/utils";
 import {
@@ -107,6 +108,7 @@ export function CommandMenu() {
           useTutorialStore.getState().start();
           trackTutorialStarted({ trigger: "command-menu" });
         },
+        openAiGuide: () => useAiGuideStore.getState().openMenu(),
       }),
     [],
   );

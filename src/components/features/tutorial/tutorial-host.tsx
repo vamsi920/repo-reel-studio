@@ -15,6 +15,9 @@ import {
 import { TutorialWizard } from "./tutorial-wizard";
 import { TutorialCloudAutoStart } from "./tutorial-cloud-auto-start";
 import { TutorialSignInAutoStart } from "./tutorial-sign-in-auto-start";
+import { TutorialLaunchMenu } from "./tutorial-launch-menu";
+import { useAiGuideStore } from "./ai-guide/ai-guide-store";
+import { AiGuideHost } from "./ai-guide/ai-guide-host";
 
 /**
  * Mounts the guided tutorial. A new user — one who finishes the onboarding
@@ -29,7 +32,12 @@ export function TutorialHost() {
   const isOpen = useTutorialStore((state) => state.isOpen);
   const start = useTutorialStore((state) => state.start);
   const resume = useTutorialStore((state) => state.resume);
-  const { trackTutorialStarted } = useTracking();
+  const { trackTutorialStarted, trackAiGuideStarted } = useTracking();
+  const isMenuOpen = useAiGuideStore((state) => state.isMenuOpen);
+  const isAiGuideOpen = useAiGuideStore((state) => state.isOpen);
+  const openMenu = useAiGuideStore((state) => state.openMenu);
+  const closeMenu = useAiGuideStore((state) => state.closeMenu);
+  const openAiGuide = useAiGuideStore((state) => state.open);
   const { isCompleted: onboardingCompleted } = useOnboardingCompletion();
   const isCloudBackend = useActiveBackend().backend.kind === "cloud";
   const wasOnboardedAtMountRef = React.useRef(onboardingCompleted);
@@ -82,9 +90,25 @@ export function TutorialHost() {
   }, [start]);
 
   const startFromLauncher = React.useCallback(() => {
+    closeMenu();
     start();
     trackTutorialStarted({ trigger: "launcher" });
-  }, [start]);
+  }, [start, closeMenu]);
+
+  // The launcher now opens a small menu: ask the AI guide, or take the
+  // static product tour.
+  const toggleMenu = React.useCallback(() => {
+    if (useAiGuideStore.getState().isMenuOpen) closeMenu();
+    else openMenu();
+  }, [openMenu, closeMenu]);
+
+  const askAiGuide = React.useCallback(
+    (query: string, source: "suggestion" | "typed") => {
+      openAiGuide(query);
+      trackAiGuideStarted({ source });
+    },
+    [openAiGuide],
+  );
 
   const watchForNewCloudUser =
     isCloudBackend &&
@@ -98,8 +122,16 @@ export function TutorialHost() {
       {watchForNewCloudUser && <TutorialCloudAutoStart onNewUser={autoStart} />}
       {/* The launcher stays mounted (inert) during the tour so the last step
           can point at it. */}
-      <TutorialLauncher onStart={startFromLauncher} inert={isOpen} />
+      <TutorialLauncher onStart={toggleMenu} inert={isOpen || isAiGuideOpen} />
+      {isMenuOpen && !isOpen && !isAiGuideOpen ? (
+        <TutorialLaunchMenu
+          onAsk={askAiGuide}
+          onProductTour={startFromLauncher}
+          onClose={closeMenu}
+        />
+      ) : null}
       {isOpen ? <TutorialWizard /> : null}
+      <AiGuideHost onProductTour={startFromLauncher} />
     </>
   );
 }

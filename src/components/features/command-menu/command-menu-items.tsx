@@ -54,6 +54,7 @@ export type CommandMenuItemId =
   | "environment"
   | "onboarding-agent"
   | "start-tutorial"
+  | "ai-guide"
   | "toggle-sidebar";
 
 export interface CommandMenuItemDefinition {
@@ -87,10 +88,13 @@ export const createCommandMenuItems = ({
   toggleSidebar,
   openOnboardingAgent,
   startTutorial,
+  openAiGuide,
 }: {
   toggleSidebar: () => void;
   openOnboardingAgent: () => void;
   startTutorial: () => void;
+  /** Opens the "What do you want to do today?" AI guide menu. */
+  openAiGuide: () => void;
 }): CommandMenuItemDefinition[] => [
   {
     id: "environment",
@@ -229,5 +233,14 @@ export const createCommandMenuItems = ({
     keywordsKey: I18nKey.COMMAND_MENU$START_TUTORIAL_KEYWORDS,
     icon: <GraduationCap size={ICON_SIZE} />,
     perform: startTutorial,
+  },
+  {
+    id: "ai-guide",
+    group: "actions",
+    titleKey: I18nKey.COMMAND_MENU$AI_GUIDE_TITLE,
+    descriptionKey: I18nKey.COMMAND_MENU$AI_GUIDE_DESCRIPTION,
+    keywordsKey: I18nKey.COMMAND_MENU$AI_GUIDE_KEYWORDS,
+    icon: <Sparkles size={ICON_SIZE} />,
+    perform: openAiGuide,
   },
 ];

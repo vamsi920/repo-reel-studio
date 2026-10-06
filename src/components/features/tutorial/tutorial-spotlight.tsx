@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "#/utils/utils";
 
 /** Breathing room between the anchor's edges and the spotlight ring. */
 const SPOTLIGHT_PADDING_PX = 4;
@@ -169,17 +170,63 @@ export function useTutorialAnchorRect({
 }
 
 /**
+ * Same as `useTutorialAnchorRect`, but for a live element the caller already
+ * holds (the AI guide points at elements it found on the page, which have no
+ * stable test id). `null` while there is no element or it has left the DOM.
+ */
+export function useTutorialElementRect(
+  element: HTMLElement | null,
+): SpotlightRect | null {
+  const [rect, setRect] = React.useState<SpotlightRect | null>(null);
+
+  React.useEffect(() => {
+    setRect(null);
+    if (!element) return undefined;
+    const measure = () => {
+      setRect(element.isConnected ? toSpotlightRect(element) : null);
+    };
+    element.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    measure();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(measure);
+    resizeObserver?.observe(element);
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [element]);
+
+  return rect;
+}
+
+/**
  * Dims the page and rings the element the current tutorial step is talking
  * about. Purely visual: it never intercepts clicks. With no anchor on screen
  * it still dims the page, so a centered tip (welcome) reads as a dialog.
  */
-export function TutorialSpotlight({ rect }: { rect: SpotlightRect | null }) {
+export function TutorialSpotlight({
+  rect,
+  elevated = false,
+}: {
+  rect: SpotlightRect | null;
+  /** Sit above dialogs too (the AI guide points inside them). */
+  elevated?: boolean;
+}) {
+  const layer = elevated ? "z-[75]" : "z-[55]";
   if (!rect) {
     return (
       <div
         data-testid="tutorial-backdrop"
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[55] bg-[rgba(15,23,42,0.28)]"
+        className={cn(
+          "pointer-events-none fixed inset-0 bg-[rgba(15,23,42,0.28)]",
+          layer,
+        )}
       />
     );
   }
@@ -188,7 +235,10 @@ export function TutorialSpotlight({ rect }: { rect: SpotlightRect | null }) {
     <div
       data-testid="tutorial-spotlight"
       aria-hidden="true"
-      className="pointer-events-none fixed z-[55] rounded-lg ring-2 ring-[#0b81b7] shadow-[0_0_0_9999px_rgba(15,23,42,0.28)] transition-all duration-300 ease-out motion-reduce:transition-none"
+      className={cn(
+        "pointer-events-none fixed rounded-lg ring-2 ring-[#0b81b7] shadow-[0_0_0_9999px_rgba(15,23,42,0.28)] transition-all duration-300 ease-out motion-reduce:transition-none",
+        layer,
+      )}
       style={{
         top: rect.top,
         left: rect.left,
