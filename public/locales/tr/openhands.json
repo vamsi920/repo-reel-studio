@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Ana ajan",
   "THINKING_GRAPH$RUNNING": "çalışıyor",
   "THINKING_GRAPH$CLOSE": "Kapat",
-  "THINKING_GRAPH$EXPAND_HINT": "Genişletmek için tıklayın"
+  "THINKING_GRAPH$EXPAND_HINT": "Genişletmek için tıklayın",
+  "THINKING_GRAPH$PANEL_RUNNING": "Düşünüyor…",
+  "THINKING_GRAPH$PANEL_DONE": "{{count}} adımda düşündü",
+  "THINKING_GRAPH$PANEL_SHOW": "Düşünmeyi göster",
+  "THINKING_GRAPH$PANEL_HIDE": "Düşünmeyi gizle"
 }

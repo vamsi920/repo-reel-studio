@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Hovedagent",
   "THINKING_GRAPH$RUNNING": "kjører",
   "THINKING_GRAPH$CLOSE": "Lukk",
-  "THINKING_GRAPH$EXPAND_HINT": "Klikk for å utvide"
+  "THINKING_GRAPH$EXPAND_HINT": "Klikk for å utvide",
+  "THINKING_GRAPH$PANEL_RUNNING": "Tenker…",
+  "THINKING_GRAPH$PANEL_DONE": "Tenkte gjennom {{count}} steg",
+  "THINKING_GRAPH$PANEL_SHOW": "Vis tenkning",
+  "THINKING_GRAPH$PANEL_HIDE": "Skjul tenkning"
 }

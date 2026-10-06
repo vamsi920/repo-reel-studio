@@ -604,7 +604,7 @@ describe("ChatInterface - Scroll-up loads older events", () => {
     expect(scrollContainer!.children.length).toBeGreaterThan(0);
   });
 
-  it("shows the live thinking graph by default and remembers a switch to the transcript", async () => {
+  it("plays the agent's work in a thinking panel by default and remembers a switch to the transcript", () => {
     // Arrange
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const agentAction: any = {
@@ -624,17 +624,13 @@ describe("ChatInterface - Scroll-up loads older events", () => {
       uiEvents: [agentAction],
     });
     renderWithQueryClient(<ChatInterface />, queryClient);
-    expect(await screen.findByTestId("thinking-graph")).toBeInTheDocument();
-    expect(screen.getByTestId("chat-scroll-container")).toHaveClass("hidden");
+    expect(screen.getByTestId("thinking-panel")).toBeInTheDocument();
 
     // Act
     fireEvent.click(screen.getByTestId("chat-view-transcript"));
 
     // Assert
-    expect(screen.queryByTestId("thinking-graph")).not.toBeInTheDocument();
-    expect(screen.getByTestId("chat-scroll-container")).not.toHaveClass(
-      "hidden",
-    );
+    expect(screen.queryByTestId("thinking-panel")).not.toBeInTheDocument();
     expect(window.localStorage.getItem(THINKING_GRAPH_VIEW_KEY)).toBe(
       "transcript",
     );

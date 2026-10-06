@@ -66,13 +66,21 @@ test("a conversation renders as a live thinking graph with a transcript toggle",
     // Project-intake prompt didn't appear -- fine.
   }
 
-  const graph = page.getByTestId("thinking-graph");
+  // A finished turn's thinking panel is folded away under the answer; open it.
+  const panelToggle = page.getByTestId("thinking-panel-toggle").last();
+  await expect(panelToggle).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(2_000);
+  await page.screenshot({ path: "test-results-auth/thinking-collapsed.png" });
+  if ((await panelToggle.getAttribute("aria-expanded")) !== "true") {
+    await panelToggle.click();
+  }
+  const graph = page.getByTestId("thinking-graph").last();
   await expect(graph).toBeVisible({ timeout: 30_000 });
   await expect(graph.locator(".tg-node").first()).toBeVisible({
     timeout: 20_000,
   });
   await page.waitForTimeout(2_500);
-  await page.screenshot({ path: "test-results-auth/thinking-graph.png" });
+  await graph.screenshot({ path: "test-results-auth/thinking-graph.png" });
 
   await graph.locator(".tg-node").last().click();
   await expect(page.getByTestId("thinking-graph-drawer")).toBeVisible();
@@ -80,13 +88,12 @@ test("a conversation renders as a live thinking graph with a transcript toggle",
     path: "test-results-auth/thinking-graph-drawer.png",
   });
 
-  await page.getByTestId("thinking-graph-replay").click();
+  await graph.getByTestId("thinking-graph-replay").click();
   await page.waitForTimeout(1_800);
   await page.screenshot({
     path: "test-results-auth/thinking-graph-replay.png",
   });
 
   await page.getByTestId("chat-view-transcript").click();
-  await expect(graph).toHaveCount(0);
-  await expect(page.getByTestId("chat-scroll-container")).toBeVisible();
+  await expect(page.getByTestId("thinking-panel")).toHaveCount(0);
 });

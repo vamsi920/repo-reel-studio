@@ -9,7 +9,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Crosshair, Maximize2, Play, X } from "lucide-react";
-import { useEventStore } from "#/stores/use-event-store";
 import { I18nKey } from "#/i18n/declaration";
 import type { OpenHandsEvent } from "#/types/agent-server/core";
 import {
@@ -89,29 +88,31 @@ function NodeDrawer({
   return (
     <aside
       data-testid="thinking-graph-drawer"
-      className="absolute bottom-3 right-3 top-12 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(12,14,20,0.94)] shadow-2xl backdrop-blur"
-      style={{ boxShadow: `0 20px 60px -20px ${accent}` }}
+      className="absolute bottom-3 right-3 top-12 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-md border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] shadow-xl"
     >
       <header
-        className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.1)] px-4 py-3"
+        className="flex items-center gap-2 border-b border-[var(--oh-border-subtle,#d9dee8)] px-4 py-2.5"
         style={{ borderTop: `3px solid ${accent}` }}
       >
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.72)]">
+        <span
+          className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em]"
+          style={{ color: accent }}
+        >
           {heading}
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label={t(I18nKey.THINKING_GRAPH$CLOSE)}
-          className="ml-auto rounded-md p-1 text-[rgba(255,255,255,0.62)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#ffffff]"
+          className="ml-auto rounded p-1 text-[var(--oh-muted,#64748b)] hover:bg-[var(--oh-background,#f1f5f9)]"
         >
           <X size={14} />
         </button>
       </header>
-      <div className="custom-scrollbar-always min-h-0 grow overflow-y-auto px-4 py-3 text-xs leading-relaxed text-[#d7deec]">
-        {body && <p className="mb-3 font-medium text-[#ffffff]">{body}</p>}
+      <div className="custom-scrollbar-always min-h-0 grow overflow-y-auto px-4 py-3 text-xs leading-relaxed text-[var(--oh-foreground,#0f172a)]">
+        {body && <p className="mb-3 font-medium">{body}</p>}
         {typeof details === "string" ? (
-          <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-[#c2cadb]">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-[var(--oh-muted,#475569)]">
             {details}
           </pre>
         ) : (
@@ -122,9 +123,12 @@ function NodeDrawer({
   );
 }
 
-function ThinkingGraphCanvas() {
+function ThinkingGraphCanvas({
+  events,
+}: {
+  events: readonly OpenHandsEvent[];
+}) {
   const { t } = useTranslation("openhands");
-  const events = useEventStore((state) => state.events);
   const { setCenter, fitView, getZoom } = useReactFlow();
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -136,10 +140,13 @@ function ThinkingGraphCanvas() {
     [events, expanded],
   );
   const eventsById = React.useMemo(
-    () => new Map(events.map((event) => [event.id, event])),
+    () => new Map(events.map((event) => [event.id, event] as const)),
     [events],
   );
-  const actionsById = React.useMemo(() => buildActionsById(events), [events]);
+  const actionsById = React.useMemo(
+    () => buildActionsById([...events]),
+    [events],
+  );
 
   const visibleNodes = React.useMemo(
     () =>
@@ -235,13 +242,13 @@ function ThinkingGraphCanvas() {
 
   return (
     <div
-      className="tg-canvas relative h-full w-full overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.05)]"
+      className="tg-canvas relative h-full w-full overflow-hidden"
       data-testid="thinking-graph"
     >
       {graph.nodes.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center gap-4">
           <span className="tg-seed" />
-          <p className="text-xs text-[rgba(255,255,255,0.62)]">
+          <p className="font-mono text-xs text-[var(--oh-muted,#64748b)]">
             {t(I18nKey.THINKING_GRAPH$EMPTY)}
           </p>
         </div>
@@ -285,21 +292,18 @@ function ThinkingGraphCanvas() {
             <span
               // Lane index is the agent's identity in this graph.
               key={lane}
-              className="flex items-center gap-1.5 rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.42)] px-2.5 py-1 text-[10px] font-medium text-[rgba(255,255,255,0.88)] backdrop-blur"
+              className="flex items-center gap-1.5 rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm"
             >
               <span
-                className="h-2 w-2 rounded-full"
-                style={{
-                  background: laneColor(lane),
-                  boxShadow: `0 0 8px ${laneColor(lane)}`,
-                }}
+                className="h-2 w-2 rounded-[2px]"
+                style={{ backgroundColor: laneColor(lane) }}
               />
               {name}
             </span>
           ),
         )}
         {runningCount > 0 && (
-          <span className="rounded-full bg-[rgba(255,255,255,0.1)] px-2 py-1 text-[10px] text-[rgba(255,255,255,0.72)] backdrop-blur">
+          <span className="rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] text-[var(--oh-muted,#64748b)] shadow-sm">
             {runningCount} {t(I18nKey.THINKING_GRAPH$RUNNING)}
           </span>
         )}
@@ -365,7 +369,7 @@ function HudButton({
       type="button"
       onClick={onClick}
       data-testid={testId}
-      className="flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.45)] px-2.5 py-1 text-[10px] font-medium text-[rgba(255,255,255,0.88)] backdrop-blur transition hover:border-[rgba(255,255,255,0.3)] hover:text-[#ffffff]"
+      className="flex items-center gap-1 rounded border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm transition hover:border-[#3b6cf6] hover:text-[#3b6cf6]"
     >
       {icon}
       {label}
@@ -373,10 +377,14 @@ function HudButton({
   );
 }
 
-export default function ThinkingGraphView() {
+export default function ThinkingGraphView({
+  events,
+}: {
+  events: readonly OpenHandsEvent[];
+}) {
   return (
     <ReactFlowProvider>
-      <ThinkingGraphCanvas />
+      <ThinkingGraphCanvas events={events} />
     </ReactFlowProvider>
   );
 }

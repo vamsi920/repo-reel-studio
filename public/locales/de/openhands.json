@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Hauptagent",
   "THINKING_GRAPH$RUNNING": "läuft",
   "THINKING_GRAPH$CLOSE": "Schließen",
-  "THINKING_GRAPH$EXPAND_HINT": "Zum Aufklappen klicken"
+  "THINKING_GRAPH$EXPAND_HINT": "Zum Aufklappen klicken",
+  "THINKING_GRAPH$PANEL_RUNNING": "Denkt nach…",
+  "THINKING_GRAPH$PANEL_DONE": "In {{count}} Schritten durchdacht",
+  "THINKING_GRAPH$PANEL_SHOW": "Denken anzeigen",
+  "THINKING_GRAPH$PANEL_HIDE": "Denken ausblenden"
 }

@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Головний агент",
   "THINKING_GRAPH$RUNNING": "виконується",
   "THINKING_GRAPH$CLOSE": "Закрити",
-  "THINKING_GRAPH$EXPAND_HINT": "Натисніть, щоб розгорнути"
+  "THINKING_GRAPH$EXPAND_HINT": "Натисніть, щоб розгорнути",
+  "THINKING_GRAPH$PANEL_RUNNING": "Думає…",
+  "THINKING_GRAPH$PANEL_DONE": "Обміркував за {{count}} кроків",
+  "THINKING_GRAPH$PANEL_SHOW": "Показати міркування",
+  "THINKING_GRAPH$PANEL_HIDE": "Сховати міркування"
 }

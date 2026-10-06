@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "الوكيل الرئيسي",
   "THINKING_GRAPH$RUNNING": "قيد التشغيل",
   "THINKING_GRAPH$CLOSE": "إغلاق",
-  "THINKING_GRAPH$EXPAND_HINT": "انقر للتوسيع"
+  "THINKING_GRAPH$EXPAND_HINT": "انقر للتوسيع",
+  "THINKING_GRAPH$PANEL_RUNNING": "يفكر…",
+  "THINKING_GRAPH$PANEL_DONE": "فكّر خلال {{count}} خطوات",
+  "THINKING_GRAPH$PANEL_SHOW": "إظهار التفكير",
+  "THINKING_GRAPH$PANEL_HIDE": "إخفاء التفكير"
 }

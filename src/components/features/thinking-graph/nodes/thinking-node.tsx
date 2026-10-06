@@ -101,8 +101,6 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
       ? TOOL_ICONS[data.toolCategory]
       : (KIND_ICONS[data.kind] ?? Sparkles);
   const { heading, body } = useNodeText(data);
-  const isRound =
-    data.kind === "fork" || data.kind === "agent" || data.kind === "result";
   const style = { "--tg-accent": accent } as React.CSSProperties;
 
   return (
@@ -113,8 +111,8 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
         `tg-node--${data.kind}`,
         data.status === "running" && "tg-node--running",
         data.status === "error" && "tg-node--error",
-        isRound ? "px-3 py-2" : "px-3.5 py-2.5",
-        data.kind === "goal" ? "max-w-[260px]" : "w-[210px]",
+        "py-2 pl-3.5 pr-3",
+        "w-[210px]",
       )}
       style={style}
     >
@@ -128,18 +126,18 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
 
       <div className="flex items-center gap-2">
         <span
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded"
           style={{
-            background:
+            backgroundColor:
               data.kind === "goal"
-                ? "rgba(255,255,255,0.22)"
-                : `color-mix(in srgb, ${accent} 28%, transparent)`,
-            color: data.kind === "goal" ? "#fff" : accent,
+                ? "#ffffff"
+                : `color-mix(in srgb, ${accent} 14%, #ffffff)`,
+            color: accent,
           }}
         >
           <Icon size={14} strokeWidth={2.25} />
         </span>
-        <span className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] opacity-80">
+        <span className="truncate font-mono text-[10px] font-semibold uppercase tracking-[0.1em] opacity-75">
           {data.laneLabel ?? heading}
         </span>
         {data.status === "done" &&
@@ -157,7 +155,7 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
         <p
           className={cn(
             "mt-1.5 line-clamp-3 break-words text-xs leading-snug",
-            data.kind === "goal" ? "font-medium" : "text-[#c9d1e3]",
+            data.kind === "goal" ? "font-medium" : "text-[#475569]",
           )}
         >
           {body}
@@ -170,11 +168,11 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
             <li
               // Plan items have no ids; position is their identity.
               key={index}
-              className="flex items-center gap-1.5 text-[11px] text-[#c9d1e3]"
+              className="flex items-center gap-1.5 text-[11px] text-[#475569]"
             >
               <span
                 className={cn(
-                  "h-2 w-2 shrink-0 rounded-full",
+                  "h-2 w-2 shrink-0 rounded-[2px]",
                   item.status === "in_progress" && "animate-pulse",
                 )}
                 style={{

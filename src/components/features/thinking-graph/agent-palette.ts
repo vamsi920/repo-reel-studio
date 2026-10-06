@@ -2,7 +2,7 @@ import type { ThinkingNodeKind, ToolCategory } from "./thinking-graph-types";
 
 /** Lane 0 is the main agent; each delegated sub-agent gets the next color. */
 const LANE_COLORS = [
-  "#4f8cff", // main agent — brand blue
+  "#3b6cf6", // main agent — brand blue
   "#a855f7", // violet
   "#14b8a6", // teal
   "#f59e0b", // amber
@@ -16,21 +16,21 @@ export function laneColor(lane: number): string {
 }
 
 const TOOL_COLORS: Record<ToolCategory, string> = {
-  terminal: "#22d3ee",
-  file: "#fbbf24",
-  search: "#a3e635",
-  browser: "#60a5fa",
-  mcp: "#f472b6",
-  other: "#94a3b8",
+  terminal: "#0891b2",
+  file: "#d97706",
+  search: "#65a30d",
+  browser: "#2563eb",
+  mcp: "#db2777",
+  other: "#64748b",
 };
 
 const KIND_COLORS: Partial<Record<ThinkingNodeKind, string>> = {
-  goal: "#6d8bff",
-  thought: "#c084fc",
-  plan: "#38bdf8",
-  fork: "#e879f9",
-  reply: "#34d399",
-  finish: "#facc15",
+  goal: "#3b6cf6",
+  thought: "#8b5cf6",
+  plan: "#0ea5e9",
+  fork: "#d946ef",
+  reply: "#10b981",
+  finish: "#f59e0b",
   error: "#ef4444",
 };
 

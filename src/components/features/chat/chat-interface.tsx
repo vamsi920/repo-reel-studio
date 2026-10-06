@@ -45,7 +45,7 @@ import { useTaskPolling } from "#/hooks/query/use-task-polling";
 import { matchesPendingConversationId } from "#/utils/pending-task-message-link";
 import { useConversationWebSocket } from "#/contexts/conversation-websocket-context";
 import ChatStatusIndicator from "./chat-status-indicator";
-import { cn, getStatusColor, getStatusText } from "#/utils/utils";
+import { getStatusColor, getStatusText } from "#/utils/utils";
 import { useNewConversationCommand } from "#/hooks/mutation/use-new-conversation-command";
 import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
@@ -55,10 +55,7 @@ import {
   ChatViewToggle,
   useChatViewMode,
 } from "#/components/features/thinking-graph/chat-view-toggle";
-
-const ThinkingGraphView = React.lazy(
-  () => import("#/components/features/thinking-graph/thinking-graph-view"),
-);
+import { GraphTranscript } from "#/components/features/thinking-graph/graph-transcript";
 
 function getEntryPoint(
   hasRepository: boolean | null,
@@ -557,14 +554,6 @@ export function ChatInterface() {
           </div>
         )}
 
-        {isGraphView && totalEvents > 0 && (
-          <div className="min-h-0 grow py-3">
-            <React.Suspense fallback={null}>
-              <ThinkingGraphView />
-            </React.Suspense>
-          </div>
-        )}
-
         <div
           ref={scrollRef}
           data-testid="chat-scroll-container"
@@ -573,10 +562,7 @@ export function ChatInterface() {
             maybeLoadOlder(e.currentTarget);
           }}
           onWheel={handleWheelForPagination}
-          className={cn(
-            "custom-scrollbar-always min-h-0 grow flex-col gap-2 overflow-x-hidden overflow-y-auto px-0 pt-4 pb-8 md:px-4",
-            isGraphView && totalEvents > 0 ? "hidden" : "flex",
-          )}
+          className="custom-scrollbar-always flex min-h-0 grow flex-col gap-2 overflow-x-hidden overflow-y-auto px-0 pt-4 pb-8 md:px-4"
         >
           {isChatLoading && isReturningToConversation && (
             <ChatMessagesSkeleton />
@@ -613,12 +599,20 @@ export function ChatInterface() {
               anchored to `null` and live above the message list. */}
           <ModelMessages conversationId={conversationId} anchorEventId={null} />
 
-          {showConversationMessages && renderableEvents.length > 0 && (
-            <Messages
-              messages={renderableEvents}
-              allEvents={allConversationEvents}
-            />
-          )}
+          {showConversationMessages &&
+            renderableEvents.length > 0 &&
+            (isGraphView ? (
+              <GraphTranscript
+                renderableEvents={renderableEvents}
+                allEvents={allConversationEvents}
+                isAgentRunning={curAgentState === AgentState.RUNNING}
+              />
+            ) : (
+              <Messages
+                messages={renderableEvents}
+                allEvents={allConversationEvents}
+              />
+            ))}
 
           {/*
             Render the local pending-message queue independently so messages

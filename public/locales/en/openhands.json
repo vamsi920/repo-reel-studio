@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Main agent",
   "THINKING_GRAPH$RUNNING": "running",
   "THINKING_GRAPH$CLOSE": "Close",
-  "THINKING_GRAPH$EXPAND_HINT": "Click to expand"
+  "THINKING_GRAPH$EXPAND_HINT": "Click to expand",
+  "THINKING_GRAPH$PANEL_RUNNING": "Thinking…",
+  "THINKING_GRAPH$PANEL_DONE": "Thought through {{count}} steps",
+  "THINKING_GRAPH$PANEL_SHOW": "Show thinking",
+  "THINKING_GRAPH$PANEL_HIDE": "Hide thinking"
 }

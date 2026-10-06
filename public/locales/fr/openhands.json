@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Agent principal",
   "THINKING_GRAPH$RUNNING": "en cours",
   "THINKING_GRAPH$CLOSE": "Fermer",
-  "THINKING_GRAPH$EXPAND_HINT": "Cliquez pour développer"
+  "THINKING_GRAPH$EXPAND_HINT": "Cliquez pour développer",
+  "THINKING_GRAPH$PANEL_RUNNING": "Réflexion…",
+  "THINKING_GRAPH$PANEL_DONE": "Réflexion en {{count}} étapes",
+  "THINKING_GRAPH$PANEL_SHOW": "Afficher la réflexion",
+  "THINKING_GRAPH$PANEL_HIDE": "Masquer la réflexion"
 }

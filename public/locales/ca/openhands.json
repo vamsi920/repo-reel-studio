@@ -3566,5 +3566,9 @@
   "THINKING_GRAPH$MAIN_AGENT": "Agent principal",
   "THINKING_GRAPH$RUNNING": "en curs",
   "THINKING_GRAPH$CLOSE": "Tanca",
-  "THINKING_GRAPH$EXPAND_HINT": "Fes clic per desplegar"
+  "THINKING_GRAPH$EXPAND_HINT": "Fes clic per desplegar",
+  "THINKING_GRAPH$PANEL_RUNNING": "Pensant…",
+  "THINKING_GRAPH$PANEL_DONE": "Ha pensat en {{count}} passos",
+  "THINKING_GRAPH$PANEL_SHOW": "Mostra el raonament",
+  "THINKING_GRAPH$PANEL_HIDE": "Amaga el raonament"
 }

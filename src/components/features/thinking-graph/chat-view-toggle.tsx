@@ -81,7 +81,7 @@ export function ChatViewToggle({
             className={cn(
               "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
               isActive
-                ? "bg-gradient-to-r from-[#4f8cff] to-[#a855f7] text-white shadow-[0_4px_14px_-4px_rgba(124,92,255,0.8)]"
+                ? "bg-[#3b6cf6] text-[#ffffff] shadow-sm"
                 : "text-[var(--oh-muted)] hover:text-[var(--oh-foreground)]",
             )}
           >
