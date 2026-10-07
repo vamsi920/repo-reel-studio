@@ -12,6 +12,12 @@ import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
  *   pick a pricier model or ask for a huge completion.
  * - A small in-memory per-user limit stops a runaway client loop. It is per
  *   function instance, not global, which is enough for that purpose.
+ *
+ * `mode: "route_classify"` serves the frontend's model router ("Auto"): it
+ * labels one user message LIGHT / STANDARD / HEAVY. The prompt, model and an
+ * 8-token cap are fixed here; only the last user message is forwarded,
+ * truncated, and the browser never sees a key. It has its own rate bucket so
+ * routing can't starve the guide (or vice versa).
  */
 
 const GEMINI_OPENAI_URL =
@@ -22,15 +28,50 @@ const MAX_REQUEST_BYTES = 200_000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_CALLS = 40;
 
+const ROUTE_CLASSIFY_MODE = "route_classify";
+const ROUTE_CLASSIFY_MODEL = "gemini-2.5-flash-lite";
+const ROUTE_CLASSIFY_MAX_TOKENS = 8;
+const ROUTE_CLASSIFY_MAX_INPUT_CHARS = 4000;
+const ROUTE_CLASSIFY_MAX_CALLS = 30;
+const ROUTE_CLASSIFY_PROMPT = [
+  "You route requests to an AI coding agent between model tiers.",
+  "Reply with exactly one word:",
+  "LIGHT - chit-chat, short questions, trivial edits, summaries.",
+  "STANDARD - ordinary coding tasks touching one area.",
+  "HEAVY - multi-file refactors, architecture, hard debugging, security,",
+  "performance or anything needing deep multi-step reasoning.",
+].join("\n");
+
+/**
+ * `mode: "plan_guide"` asks for a whole guide as one JSON plan (no tools),
+ * so the browser can show every step after the first without another call.
+ */
+const PLAN_GUIDE_MODE = "plan_guide";
+const PLAN_GUIDE_MAX_TOKENS = 2048;
+
 const recentCalls = new Map<string, number[]>();
 
-function isRateLimited(userId: string, now: number): boolean {
-  const calls = (recentCalls.get(userId) ?? []).filter(
+function isRateLimited(
+  key: string,
+  now: number,
+  maxCalls = RATE_LIMIT_MAX_CALLS,
+): boolean {
+  const calls = (recentCalls.get(key) ?? []).filter(
     (t) => now - t < RATE_LIMIT_WINDOW_MS,
   );
   calls.push(now);
-  recentCalls.set(userId, calls);
-  return calls.length > RATE_LIMIT_MAX_CALLS;
+  recentCalls.set(key, calls);
+  return calls.length > maxCalls;
+}
+
+function lastUserText(messages: unknown[]): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const m = messages[i] as { role?: unknown; content?: unknown };
+    if (m?.role === "user" && typeof m.content === "string") {
+      return m.content.slice(0, ROUTE_CLASSIFY_MAX_INPUT_CHARS);
+    }
+  }
+  return "";
 }
 
 async function getRealUserId(req: Request): Promise<string | null> {
@@ -60,9 +101,6 @@ Deno.serve(async (req) => {
   if (!userId) {
     return jsonResponse({ error: "unauthorized" }, { status: 401 });
   }
-  if (isRateLimited(userId, Date.now())) {
-    return jsonResponse({ error: "rate_limited" }, { status: 429 });
-  }
 
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
@@ -84,17 +122,54 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "messages_required" }, { status: 400 });
   }
 
-  const upstreamBody = {
-    model: Deno.env.get("AI_GUIDE_MODEL") ?? DEFAULT_MODEL,
-    messages: body.messages,
-    tools: body.tools,
-    tool_choice: body.tools ? "required" : undefined,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    // A small thinking budget: the default pass roughly doubled each
-    // step's latency, but none at all made the picks sloppy (empty tips,
-    // hidden elements). "low" keeps steps quick and the picks sound.
-    reasoning_effort: "low",
-  };
+  const isClassify = body.mode === ROUTE_CLASSIFY_MODE;
+  const rateKey = isClassify ? `${userId}:${ROUTE_CLASSIFY_MODE}` : userId;
+  if (
+    isRateLimited(
+      rateKey,
+      Date.now(),
+      isClassify ? ROUTE_CLASSIFY_MAX_CALLS : RATE_LIMIT_MAX_CALLS,
+    )
+  ) {
+    return jsonResponse({ error: "rate_limited" }, { status: 429 });
+  }
+
+  let upstreamBody: Record<string, unknown>;
+  if (isClassify) {
+    const text = lastUserText(body.messages);
+    if (!text) {
+      return jsonResponse({ error: "messages_required" }, { status: 400 });
+    }
+    upstreamBody = {
+      model: ROUTE_CLASSIFY_MODEL,
+      messages: [
+        { role: "system", content: ROUTE_CLASSIFY_PROMPT },
+        { role: "user", content: text },
+      ],
+      max_tokens: ROUTE_CLASSIFY_MAX_TOKENS,
+      temperature: 0,
+    };
+  } else if (body.mode === PLAN_GUIDE_MODE) {
+    upstreamBody = {
+      model: Deno.env.get("AI_GUIDE_MODEL") ?? DEFAULT_MODEL,
+      messages: body.messages,
+      max_tokens: PLAN_GUIDE_MAX_TOKENS,
+      response_format: { type: "json_object" },
+      reasoning_effort: "low",
+    };
+  } else {
+    upstreamBody = {
+      model: Deno.env.get("AI_GUIDE_MODEL") ?? DEFAULT_MODEL,
+      messages: body.messages,
+      tools: body.tools,
+      tool_choice: body.tools ? "required" : undefined,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      // A small thinking budget: the default pass roughly doubled each
+      // step's latency, but none at all made the picks sloppy (empty tips,
+      // hidden elements). "low" keeps steps quick and the picks sound.
+      reasoning_effort: "low",
+    };
+  }
 
   const upstream = await fetch(GEMINI_OPENAI_URL, {
     method: "POST",

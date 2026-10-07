@@ -90,6 +90,9 @@ vi.mock("#/lib/data-platform/client", () => ({
       }),
       updateUser,
     },
+    functions: {
+      invoke: (...args: unknown[]) => invokeFunction(...args),
+    },
   },
 }));
 
@@ -116,7 +119,10 @@ vi.mock("#/services/telemetry", () => ({
   setTelemetryBackendContext: vi.fn(),
 }));
 
-const { runAiGuide } = vi.hoisted(() => ({ runAiGuide: vi.fn() }));
+const { runAiGuide, invokeFunction } = vi.hoisted(() => ({
+  runAiGuide: vi.fn(),
+  invokeFunction: vi.fn(),
+}));
 
 vi.mock("#/components/features/tutorial/ai-guide/ai-guide-agent", () => ({
   runAiGuide,
@@ -1318,8 +1324,30 @@ describe("TutorialHost launch menu and AI guide", () => {
     registerStop: (stop: () => void) => void;
   };
 
+  function onScreen(testId: string, tag = "button") {
+    const element = document.createElement(tag);
+    element.dataset.testid = testId;
+    element.getBoundingClientRect = () =>
+      ({ top: 10, left: 10, width: 120, height: 32 }) as DOMRect;
+    document.body.append(element);
+    return element;
+  }
+
+  function planReply(plan: unknown) {
+    return {
+      data: { choices: [{ message: { content: JSON.stringify(plan) } }] },
+      error: null,
+    };
+  }
+
   beforeEach(() => {
     runAiGuide.mockReset();
+    invokeFunction.mockReset();
+    // No plan by default: the guide falls back to the live agent.
+    invokeFunction.mockResolvedValue({
+      data: null,
+      error: { context: { status: 500 } },
+    });
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
   });
 
@@ -1385,6 +1413,52 @@ describe("TutorialHost launch menu and AI guide", () => {
     await user.click(screen.getByTestId("ai-guide-did-it"));
     await expect(finishStep).resolves.toBeUndefined();
     target.remove();
+  });
+
+  it("plans the whole guide in one call, so each next step appears without asking the AI again", async () => {
+    const user = userEvent.setup();
+    const addButton = onScreen("automations-add-automation");
+    const nameField = onScreen("create-automation-name", "input");
+    invokeFunction.mockResolvedValue(
+      planReply({
+        steps: [
+          {
+            uiId: "automations.add",
+            kind: "click",
+            title: "Add an automation",
+            tip: "Opens the form for a new automation.",
+          },
+          {
+            uiId: "automation_form.name",
+            kind: "type",
+            title: "Name it",
+            tip: "Give it a name you will recognise.",
+          },
+        ],
+        done: { title: "Ready", tip: "Press Create when you are happy." },
+      }),
+    );
+    renderHost();
+
+    await user.click(screen.getByTestId("tutorial-launcher"));
+    await user.type(
+      screen.getByTestId("ai-guide-input"),
+      "build an automation{Enter}",
+    );
+    await screen.findByText("Opens the form for a new automation.");
+    await user.click(addButton);
+    await screen.findByText("Give it a name you will recognise.");
+    fireEvent.change(nameField, { target: { value: "Nightly fixes" } });
+
+    await screen.findByText("Press Create when you are happy.");
+    expect(invokeFunction).toHaveBeenCalledTimes(1);
+    expect(invokeFunction).toHaveBeenCalledWith(
+      "ai-guide",
+      expect.objectContaining({
+        body: expect.objectContaining({ mode: "plan_guide" }),
+      }),
+    );
+    expect(runAiGuide).not.toHaveBeenCalled();
   });
 
   it("Skip stops the agent and leaves the product tour's own progress alone", async () => {

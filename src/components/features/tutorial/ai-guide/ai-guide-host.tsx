@@ -6,6 +6,7 @@ import { useTracking } from "#/hooks/use-tracking";
 import { useAiGuideStore } from "./ai-guide-store";
 import { buildAiGuideAppMap, getAiGuideAllowedRoutes } from "./app-map";
 import { AiGuideWizard } from "./ai-guide-wizard";
+import { getUiMap } from "./ui-map";
 
 /**
  * Runs an AI guide whenever one is opened (`useAiGuideStore.open`) and shows
@@ -28,19 +29,33 @@ export function AiGuideHost({ onProductTour }: { onProductTour: () => void }) {
     if (!isOpen || !query) return undefined;
     let cancelled = false;
     const store = useAiGuideStore.getState();
-    import("./ai-guide-agent")
-      .then(({ runAiGuide }) =>
-        runAiGuide({
+    const translate = (key: I18nKey) => tRef.current(key);
+    const shared = {
+      language: i18n.language,
+      allowedRoutes: getAiGuideAllowedRoutes(),
+      doneTitle: tRef.current(I18nKey.AI_GUIDE$DONE_TITLE),
+      navigate: (route: string) => navigateRef.current(route),
+      presentStep: store.presentStep,
+      advance: store.advance,
+      setPlanning: store.setPlanning,
+      registerStop: store.setStopper,
+    };
+    // Plan first (one quick call, then every step is instant); the
+    // page-reading agent only loads if the plan can't cover something.
+    import("./plan-guide")
+      .then(({ runPlannedGuide }) =>
+        runPlannedGuide({
+          ...shared,
           query,
-          language: i18n.language,
-          appMap: buildAiGuideAppMap((key) => tRef.current(key)),
-          allowedRoutes: getAiGuideAllowedRoutes(),
-          doneTitle: tRef.current(I18nKey.AI_GUIDE$DONE_TITLE),
-          navigate: (route) => navigateRef.current(route),
-          presentStep: store.presentStep,
-          advance: store.advance,
-          setPlanning: store.setPlanning,
-          registerStop: store.setStopper,
+          uiMap: getUiMap(translate),
+          runLive: (liveQuery) =>
+            import("./ai-guide-agent").then(({ runAiGuide }) =>
+              runAiGuide({
+                ...shared,
+                query: liveQuery,
+                appMap: buildAiGuideAppMap(translate),
+              }),
+            ),
         }),
       )
       .then((result) => {

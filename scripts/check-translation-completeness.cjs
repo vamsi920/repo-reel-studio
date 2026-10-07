@@ -14,6 +14,8 @@ const path = require("path");
 // only when the English value is genuinely correct for all languages.
 const IDENTICAL_VALUE_ALLOWLIST = new Set([
   "SIDEBAR$ENVIRONMENT_SETUP",
+  // "Ask Neo" is the feature's product name, kept in English like "Neo".
+  "COMMAND_MENU$AI_GUIDE_TITLE",
   "COMMAND_MENU$ENVIRONMENT_TITLE",
   "COMMAND_MENU$ENVIRONMENT_DESCRIPTION",
   "COMMAND_MENU$ENVIRONMENT_KEYWORDS",

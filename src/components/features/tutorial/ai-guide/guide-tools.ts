@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { tool, type PageAgentTool } from "@page-agent/core";
 import { getElementByIndex } from "@page-agent/page-controller";
-import type { AiGuideStep, AiGuideStepKind } from "./ai-guide-store";
-
-/** Time for the page to react (open a panel, render) after the user acts. */
-const SETTLE_AFTER_ACTION_MS = 700;
-/** Longest wait for a link click to actually change the page. */
-const MAX_NAVIGATION_WAIT_MS = 3000;
-const NAVIGATION_POLL_MS = 100;
+import type { AiGuideStep } from "./ai-guide-store";
+import {
+  completeOnUserAction,
+  isVisibleTarget,
+  linkTargetPath,
+  settleAfterAction,
+  SETTLE_AFTER_ACTION_MS,
+  waitFor,
+} from "./guide-dom";
 
 /**
  * Everything the guide tools need from the outside world, injected so the
@@ -47,72 +49,6 @@ export function resolveIndexedElement(
   }
 }
 
-function waitFor(ms: number, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const timer = window.setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      window.clearTimeout(timer);
-      reject(signal.reason);
-    });
-  });
-}
-
-/** The in-app path a link would open, if clicking `element` navigates. */
-function linkTargetPath(element: HTMLElement): string | null {
-  const anchor = element.closest("a[href]");
-  if (!(anchor instanceof HTMLAnchorElement)) return null;
-  const url = new URL(anchor.href, window.location.href);
-  if (url.origin !== window.location.origin) return null;
-  return url.pathname === window.location.pathname ? null : url.pathname;
-}
-
-/**
- * Lets the page catch up before the agent reads it again. A link to another
- * page can take a moment (lazy routes), and reading too early makes the
- * agent see the old page and repeat itself, so wait for the URL to change
- * first, then for the new page to render.
- */
-async function settleAfterAction(
-  pathBefore: string,
-  expectsNavigation: boolean,
-  signal: AbortSignal,
-) {
-  if (expectsNavigation) {
-    // Measured by the clock, not by counting polls: browsers slow timers in
-    // background tabs (to once a second or even once a minute), and a
-    // poll-count budget then stretched a 3-second wait into minutes.
-    const deadline = Date.now() + MAX_NAVIGATION_WAIT_MS;
-    while (window.location.pathname === pathBefore && Date.now() < deadline) {
-      await waitFor(NAVIGATION_POLL_MS, signal);
-    }
-  }
-  await waitFor(SETTLE_AFTER_ACTION_MS, signal);
-}
-
-/**
- * Marks the step done as soon as the user does the thing it points at: a
- * click inside `element`, or (for a field) a change or leaving it. Listens in
- * the capture phase and never blocks the event, so the app reacts normally.
- */
-function completeOnUserAction(
-  element: HTMLElement,
-  kind: AiGuideStepKind,
-  advance: () => void,
-) {
-  const events = kind === "type" ? ["change", "focusout"] : ["click"];
-  const onEvent = (event: Event) => {
-    if (event.target instanceof Node && element.contains(event.target)) {
-      advance();
-    }
-  };
-  for (const name of events) document.addEventListener(name, onEvent, true);
-  return () => {
-    for (const name of events) {
-      document.removeEventListener(name, onEvent, true);
-    }
-  };
-}
-
 const pointerSchema = z.object({
   index: z.int().min(0),
   title: z.string(),
@@ -124,8 +60,6 @@ const explainSchema = z.object({ title: z.string(), tip: z.string() });
 /** Shortest tip worth showing; anything less reads as an empty bubble. */
 const MIN_TIP_CHARS = 12;
 const MIN_TITLE_CHARS = 3;
-/** Smallest box we will spotlight; smaller is usually a hidden duplicate. */
-const MIN_TARGET_PX = 4;
 
 /**
  * Why a step can't be shown as written, or null if it can. Returned to the
@@ -140,17 +74,6 @@ function rejectCopy(title: string, tip: string): string | null {
     return "Rejected: every step needs a short title and a one-sentence tip that says what this does and why. Call the tool again with both.";
   }
   return null;
-}
-
-function isVisibleTarget(element: HTMLElement): boolean {
-  const rect = element.getBoundingClientRect();
-  if (rect.width < MIN_TARGET_PX || rect.height < MIN_TARGET_PX) return false;
-  const style = window.getComputedStyle(element);
-  return (
-    style.visibility !== "hidden" &&
-    style.display !== "none" &&
-    Number(style.opacity) !== 0
-  );
 }
 
 /**

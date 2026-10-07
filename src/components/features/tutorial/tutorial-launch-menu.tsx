@@ -38,6 +38,7 @@ export function TutorialLaunchMenu({
   // Start downloading the AI guide (page-agent is ~170 KB) as soon as the
   // menu opens, so the first step isn't held up by the download.
   React.useEffect(() => {
+    import("./ai-guide/plan-guide").catch(() => undefined);
     import("./ai-guide/ai-guide-agent").catch(() => undefined);
   }, []);
 

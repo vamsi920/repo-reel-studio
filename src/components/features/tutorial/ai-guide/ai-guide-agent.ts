@@ -1,13 +1,13 @@
-import { supabase } from "#/lib/data-platform/client";
 import {
   AiGuideClosedError,
   type AiGuideErrorKind,
   type AiGuideStep,
 } from "./ai-guide-store";
 import { createGuideTools, redactPageContent } from "./guide-tools";
+import { AiGuideRequestError, proxyLlmFetch } from "./ai-guide-proxy";
 
-/** Supabase Edge Function holding the model key (supabase/functions/ai-guide). */
-export const AI_GUIDE_FUNCTION_NAME = "ai-guide";
+export { AiGuideRequestError, proxyLlmFetch } from "./ai-guide-proxy";
+
 /** Steps the agent may take in one guide; each user action is one step. */
 const AI_GUIDE_MAX_STEPS = 30;
 /**
@@ -34,46 +34,6 @@ function markOwnUiNotInteractive() {
       element.setAttribute(NOT_INTERACTIVE_ATTRIBUTE, "");
     }
   }
-}
-
-export class AiGuideRequestError extends Error {
-  constructor(readonly kind: AiGuideErrorKind) {
-    super(`AI guide request failed: ${kind}`);
-    this.name = "AiGuideRequestError";
-  }
-}
-
-function errorKindForStatus(status: number): AiGuideErrorKind {
-  if (status === 401) return "signed_out";
-  if (status === 429) return "rate_limited";
-  if (status === 503 || status === 404) return "unavailable";
-  return "failed";
-}
-
-/**
- * page-agent's `customFetch`: forwards its OpenAI-style request body to the
- * `ai-guide` Edge Function with the signed-in user's session (added by
- * `functions.invoke`) and hands the JSON answer back as a Response.
- */
-export async function proxyLlmFetch(
-  _url: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<Response> {
-  if (!supabase) throw new AiGuideRequestError("unavailable");
-  const body =
-    typeof init?.body === "string" ? JSON.parse(init.body) : init?.body;
-  const { data, error } = await supabase.functions.invoke(
-    AI_GUIDE_FUNCTION_NAME,
-    { body, signal: init?.signal ?? undefined },
-  );
-  if (error) {
-    const status = (error as { context?: Response }).context?.status ?? 0;
-    throw new AiGuideRequestError(errorKindForStatus(status));
-  }
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 function buildSystemInstructions(appMap: string, language: string) {
