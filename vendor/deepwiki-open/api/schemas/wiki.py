@@ -57,6 +57,9 @@ class WikiCacheData(BaseModel):
     repo: RepoInfo | None = None
     provider: str | None = None
     model: str | None = None
+    # Measured LLM usage for the generation that produced this cache entry:
+    # {total_cost_usd, has_unpriced_calls, duration_ms, models: {...}}.
+    usage: dict | None = None
 
 
 class WikiCacheRequest(BaseModel):
@@ -126,3 +129,4 @@ class WikiTaskSummary(BaseModel):
 
 class WikiTaskStatus(WikiTaskSummary):
     wiki_structure: WikiStructureModel | None = None
+    usage: dict | None = None

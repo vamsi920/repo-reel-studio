@@ -10,6 +10,8 @@ into real repository links, and normalizes the "Relevant source files"
 import re
 from dataclasses import dataclass
 
+from api.services.wiki.mermaid_sanitize import sanitize_mermaid_blocks
+
 
 @dataclass
 class RepoUrlContext:
@@ -93,6 +95,7 @@ def post_process_wiki_content(
 ) -> str:
     """Normalize the <details> block and resolve the citation forms into links."""
     processed = _DEGENERATE_WHITESPACE_RE.sub(" ", content)
+    processed = sanitize_mermaid_blocks(processed)
 
     # 1. Rebuild the <details> block from the known file list.
     if file_paths:

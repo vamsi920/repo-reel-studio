@@ -1,0 +1,102 @@
+{
+ "hono-01": {
+  "answer": "A request to `app.fetch(request)` initiates the following flow:\n\n1.  The `fetch` method calls the private `#dispatch` method within `HonoBase` (`src/hono-base.ts`).\n2.  `#dispatch` extracts the URL path using `this.getPath()`.\n3.  The configured `router`'s (`src/router.ts`) `.match()` method finds all matching handlers.\n4.  A new `Context` object (`src/context.ts`) is created, encapsulating the request.\n5.  Handlers are executed: if multiple, the `compose` function (`src/compose.ts`) chains them sequentially.\n6.  Any errors are caught and passed to the `errorHandler`.\n7.  The final `Response` object is returned.",
+  "seconds": 5.4
+ },
+ "hono-02": {
+  "answer": "Hono's runtime adapters provide a compatibility layer, binding the Hono application's standard API to platform-specific request/response objects.\n\n*   **Cloudflare Workers**: Hono adheres to Web Standards, implying its `fetch` method directly handles the platform's `fetch` event. The `src/adapter/cloudflare-workers/index.ts` module provides features like `serveStatic`.\n*   **AWS Lambda**: The `src/adapter/aws-lambda/index.ts` adapter provides `handle` and `streamHandle` functions. These convert Lambda events into standard `Request` objects that the Hono app can process.\n*   **Vercel**: The documentation identifies the runtime as 'edge-light' via `global.EdgeRuntime` (src/helper/adapter/index.ts). However, it does not describe how a Hono app's entry point connects to Vercel's platform entry point.\n*   **Cloudflare Pages**: NOT COVERED",
+  "seconds": 10.5
+ },
+ "hono-03": {
+  "answer": "The documentation distinguishes 'hono' and 'hono/tiny' entry points.\n- `hono` is the main entry point for the Hono framework.\n- `hono/tiny` is a lightweight preset with minimal features, designed for the smallest bundle size (under 12kB).\n\nThe documentation does not contain information about a 'hono/quick' entry point.\n\nSources:\n- `hono`: [package.json:39-43](https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43)\n- `hono/tiny`: [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), [README.md:44](https://github.com/honojs/hono/blob/HEAD/README.md#L44)",
+  "seconds": 2.8
+ },
+ "hono-04": {
+  "answer": "NOT COVERED",
+  "seconds": 2.2
+ },
+ "hono-05": {
+  "answer": "The `Context` object (`c`) is passed to every handler and middleware, acting as the primary interface for interacting with the response. Middleware and handlers use methods like `c.json()`, `c.text()`, `c.html()`, `c.redirect()`, `c.header()`, and `c.status()` to construct and modify the `Response` object.\n\nA middleware can return a `Response` directly, terminating the request-response cycle, or call `await next()` to pass control. If no response has been generated (`context.finalized` is false) by the end of the middleware chain, the `onNotFound` handler is invoked. The `compose` function orchestrates this sequential execution.\n\nFile paths: `src/context.ts`, `src/compose.ts`.",
+  "seconds": 34.8
+ },
+ "hono-06": {
+  "answer": "By default, `new Hono()` uses `SmartRouter`. (src/hono.ts)\n\n`SmartRouter` decides which inner router to use on its first `match` invocation. It iterates through its configured routers (e.g., `RegExpRouter`, `TrieRouter`), adding all buffered routes to each. It then attempts to perform a match. If a router throws an `UnsupportedPathError`, it is skipped. The first router that successfully returns a match is selected as the `activeRouter`. All subsequent calls are then delegated directly to this chosen router. (src/router/smart-router/router.ts)",
+  "seconds": 34.6
+ },
+ "hono-07": {
+  "answer": "Hono's `compose()` function processes an array of middleware and handlers sequentially. It takes handlers, an optional error handler, and an optional not-found handler.\n\nKey semantics:\n1.  It maintains an `index` to track the current position in the chain.\n2.  `dispatch(i)` is called recursively, executing the handler at `index i`.\n3.  Each handler receives the `Context` object and a `next` function.\n4.  Calling `await next()` passes control to the next middleware (`dispatch(i + 1)`).\n5.  Middleware can perform actions before and after `next()` resolves.\n6.  Calling `next()` multiple times within a single handler throws an error.\n7.  Errors thrown by handlers are caught and passed to the `onError` function.\n8.  If the chain ends without a response, the `onNotFound` handler is invoked.\n\nSource: [src/compose.ts:15-73](https://github.com/honojs/hono/blob/HEAD/src/compose.ts#L15-L73)",
+  "seconds": 33.2
+ },
+ "hono-08": {
+  "answer": "The `cors()` middleware has the following default options:\n*   `origin`: `*`\n*   `allowMethods`: `['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH']`\n*   `allowHeaders`: `[]`\n*   `maxAge`: `undefined`\n*   `credentials`: `undefined`\n*   `exposeHeaders`: `[]`\n\nFor preflight (`OPTIONS`) requests, the middleware sets the appropriate `Access-Control-*` headers and immediately returns a `204 No Content` response. For other requests, it sets `Access-Control-Allow-Origin` and then calls `next()`.\n\nSources: [src/middleware/cors/index.ts:9-22](https://github.com/honojs/hono/blob/HEAD/src/middleware/cors/index.ts#L9-L22), [src/middleware/cors/index.ts:96-156](https://github.com/honojs/hono/blob/HEAD/src/middleware/cors/index.ts#L96-L156)",
+  "seconds": 2.6
+ },
+ "hono-09": {
+  "answer": "NOT COVERED",
+  "seconds": 1.4
+ },
+ "hono-10": {
+  "answer": "NOT COVERED",
+  "seconds": 2.0
+ },
+ "hono-11": {
+  "answer": "NOT COVERED",
+  "seconds": 1.1
+ },
+ "hono-12": {
+  "answer": "The `notFound()` method \"Invokes the not-found handler to generate a 404 response\" (src/context.ts). The default body content is not specified.\n\nErrors thrown during handler execution are caught and passed to the registered `errorHandler`. The documentation does not specify what the default `errorHandler` returns.\n\n`HTTPException`s are caught by Hono and result in a `Response` with the status code specified in the exception, as shown in the Basic Auth middleware example (e.g., \"401 Unauthorized Response\" for a `HTTPException` with a 401 status).",
+  "seconds": 7.6
+ },
+ "hono-13": {
+  "answer": "*   **`c.redirect(location, status?)`**: Creates a redirect response with a `Location` header. The default status is NOT COVERED.\n*   **`c.text(text, status?, headers?)`**: Creates a plain text response. The default status and headers are NOT COVERED.\n*   **`c.json(object, status?, headers?)`**: Creates a JSON response with `Content-Type: application/json`. The default status is NOT COVERED.\n*   **`c.notFound()`**: Invokes the not-found handler to generate a 404 response.\n\n(Sources: [src/context.ts](https://github.com/honojs/hono/blob/HEAD/src/context.ts))",
+  "seconds": 7.1
+ },
+ "hono-14": {
+  "answer": "The URL path is extracted from a request by the `#dispatch` method within `HonoBase`, which calls `this.getPath()` to get the URL pathname. (Source: `src/hono-base.ts:406-485`)\n\nThe strict/non-strict trailing-slash behavior is selected via the `strict` option in the `HonoOptions` object passed to the `Hono` class constructor. By default, `strict` is `true`. (Source: `src/hono-base.ts:46-87`)",
+  "seconds": 2.7
+ },
+ "hono-15": {
+  "answer": "The `RegExpRouter` builds its matchers within the private `buildAllMatchers` method, which orchestrates the compilation by calling `#buildMatcher` for each HTTP method. This process converts route paths into a trie and then builds a single regular expression.\n\nThe build process is triggered on the first invocation of the `match(method, path)` method.\n\nSources: [src/router/reg-exp-router/router.ts](https://github.com/honojs/hono/blob/HEAD/src/router/reg-exp-router/router.ts)",
+  "seconds": 2.4
+ },
+ "hono-16": {
+  "answer": "NOT COVERED",
+  "seconds": 2.8
+ },
+ "hono-17": {
+  "answer": "The `app.get()`, `app.post()`, `app.on()`, and `app.use()` methods are defined in the `HonoBase` class.\nSource: [src/hono-base.ts:98-543](https://github.com/honojs/hono/blob/HEAD/src/hono-base.ts#L98-L543)\n\nThe HTTP methods that explicitly get shortcut methods on the `Hono` application instance are `GET` and `POST`.",
+  "seconds": 8.2
+ },
+ "hono-18": {
+  "answer": "NOT COVERED",
+  "seconds": 15.3
+ },
+ "hono-19": {
+  "answer": "The custom `getPath` is used. The `strict` option (default `true`) distinguishes between paths with and without a trailing slash, but it is a separate configuration from `getPath` and does not override a custom `getPath` function provided in `HonoOptions`. The default `getPath` is the `getPath` function from `url.ts`.",
+  "seconds": 64.6
+ },
+ "hono-20": {
+  "answer": "NOT COVERED",
+  "seconds": 34.1
+ },
+ "hono-21": {
+  "answer": "NOT COVERED",
+  "seconds": 33.5
+ },
+ "hono-22": {
+  "answer": "Tests are organized into `runtime-tests/` directories, with specific suites for each runtime. For example, Bun tests are in `runtime-tests/bun/index.test.tsx`, and Deno tests are in `runtime-tests/deno/middleware.test.tsx`.\n\nThe documentation does not explicitly state how tests are run, but code examples use `vitest` for assertions.",
+  "seconds": 3.5
+ },
+ "hono-23": {
+  "answer": "NOT COVERED",
+  "seconds": 2.4
+ },
+ "hono-24": {
+  "answer": "NOT COVERED",
+  "seconds": 2.4
+ },
+ "hono-25": {
+  "answer": "NOT COVERED",
+  "seconds": 2.3
+ }
+}

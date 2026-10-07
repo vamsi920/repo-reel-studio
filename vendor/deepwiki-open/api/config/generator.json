@@ -27,7 +27,7 @@
           "temperature": 0.3,
           "top_p": 0.8,
           "top_k": 20,
-          "max_output_tokens": 8192
+          "max_output_tokens": 16384
         },
         "gemini-2.5-flash-lite": {
           "temperature": 0.3,
@@ -39,7 +39,7 @@
           "temperature": 0.3,
           "top_p": 0.8,
           "top_k": 20,
-          "max_output_tokens": 8192
+          "max_output_tokens": 32768
         }
       }
     },
@@ -199,4 +199,3 @@
     }
   }
 }
-

@@ -1,0 +1,312 @@
+[
+ {
+  "n": 0,
+  "claim": "se | Large Blob | Small String | Progress is calculated based on the new, smaller string size and completes correctly. | [test/stream.ts:292-332](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L292-L332) |\n| Monotonicity | Tiny String | Large Blob | Progress `percent` and `transferredBytes` remain monotonic despite the initial size being smaller. |",
+  "cited": "test/stream.ts:334-372"
+ },
+ {
+  "n": 1,
+  "claim": "hooks.ts:123]() |\n| **afterResponse** | `(state)` | `RetryMarker` | Force retry (throws `ForceRetryError`), bypasses `shouldRetry` [source/types/hooks.ts:86]() |\n|  |  | `Response` | Replace response [source/types/hooks.ts:86]() |\n|  |  | `undefined` | Continue with current response [source/types/hooks.ts:86]() |\n| **beforeError** | `(state)` | `Error` | Modify error before it's thrown or retried",
+  "cited": "source/types/hooks.ts:71-71"
+ },
+ {
+  "n": 2,
+  "claim": "1.  **Creates main function** ([source/index.ts:12]()): The core function that accepts `(input, options)` and calls `Ky.create()` with merged defaults.\n2.  **Attaches HTTP methods** (",
+  "cited": "source/index.ts:14-17"
+ },
+ {
+  "n": 3,
+  "claim": "d | Description | Implementation |\n|---------|-------------|---------------|\n| `npm test` | Runs linter (xo) + build + tests | `xo && npm run build && ava` [package.json:25]() |\n| `npm run debug` | Runs tests with Playwright debugger | `PWDEBUG=1 ava --timeout=2m` [package.json:26]() |\n| `npm run build` | Compiles source to distribution | `del-cli distribution && tsc --project tsconfig.dist.json`",
+  "cited": "package.json:28-28"
+ },
+ {
+  "n": 4,
+  "claim": "**Key behaviors:**\n1.  **Collection**: Signals from all option sources are collected into an array [source/utils/merge.ts:225]().\n2.  **AbortSignal.any()**: If the environment supports it, all signals are combined. The request aborts if *any* signal triggers [source/utils/merge.ts:262-264]().\n3.  **Fallback**: If `AbortSignal.any` is unavailable, the last provided signal is used",
+  "cited": "source/utils/merge.ts:266-266"
+ },
+ {
+  "n": 5,
+  "claim": "| Function | File | Purpose |\n|----------|------|---------|\n| `browserTest()` | [test/helpers/with-page.ts:39-78]() | Run tests on specific browser engines |\n| `defaultBrowsersTest()` | [test/helpers/with-page.ts:80-82]() | Run tests on Chromium, Firefox, and WebKit |\n| `createEsmTestServer()` |",
+  "cited": "test/browser.ts:24-32"
+ },
+ {
+  "n": 6,
+  "claim": "y.ts:767-784](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784)`                                            |\n| `afterResponse`   | After a response is received, before it's processed for errors.          | Modify the `Response`. Can trigger a forced retry by returning `ky.retry()`. Runs in a loop until all hooks are processed. `Sources:",
+  "cited": "source/core/Ky.ts:786-842"
+ },
+ {
+  "n": 7,
+  "claim": "| Option | Value | Description | Source |\n| --- | --- | --- | --- |\n| `exactOptionalPropertyTypes` | `true` | Enforces a strict distinction between properties that are `undefined` and properties that are not present on an object. |",
+  "cited": "tsconfig.json:4-4"
+ },
+ {
+  "n": 8,
+  "claim": "ntil all hooks are processed. `Sources: [source/core/Ky.ts:786-842](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842)` |\n| `beforeRetry`     | Before a retry attempt is made after a delay.                            | Modify the `Request` for the next attempt, inspect the error, or stop the retry process by returning `ky.stop`. `Sources:",
+  "cited": "source/core/Ky.ts:886-922"
+ },
+ {
+  "n": 9,
+  "claim": "Hook Type | State Object | Key Properties |\n|-----------|--------------|----------------|\n| `InitHook` | `Options` | Mutable options before request construction [source/types/hooks.ts:28]() |\n| `BeforeRequestHook` | `BeforeRequestState` | `request`, `options`, `retryCount` (0) [source/types/hooks.ts:30-40]() |\n| `BeforeRetryHook` | `BeforeRetryState` | `request`, `options`, `error`, `retryCount`",
+  "cited": "source/types/hooks.ts:42-53"
+ },
+ {
+  "n": 10,
+  "claim": "[source/utils/merge.ts:148-204](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L148-L204), [source/utils/merge.ts:252-262](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L252-L262)` |\n| `context` | A shallow merge is performed. The property is always a new object to prevent mutation. | `",
+  "cited": "source/utils/merge.ts:234-249"
+ },
+ {
+  "n": 11,
+  "claim": "### Option Merging\nWhen extending a Ky instance, hooks are merged by concatenating the arrays. If a hook type is set to `undefined` in the new options, it clears the hooks for that specific lifecycle stage",
+  "cited": "source/utils/merge.ts:21-39"
+ },
+ {
+  "n": 12,
+  "claim": "Ky throws an `HTTPError` for non-2xx status codes (after redirects)",
+  "cited": "readme.md:118-120"
+ },
+ {
+  "n": 13,
+  "claim": "- **HTTPError** [source/errors/HTTPError.ts]() - Non-2xx responses\n- **TimeoutError** [source/errors/TimeoutError.ts]() - Request timeouts\n- **ForceRetryError** [source/errors/ForceRetryError.ts]() - Internal signal for forced retries",
+  "cited": "source/core/Ky.ts:4-4"
+ },
+ {
+  "n": 14,
+  "claim": "| Tool | Purpose |\n|------|---------|\n| **XO** | Lints the codebase using opinionated rules defined in `package.json`.",
+  "cited": "package.json:73-89"
+ },
+ {
+  "n": 15,
+  "claim": "nstances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `[source/utils/merge.ts:64-78](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L64-L78), [source/utils/merge.ts:122-128](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L122-L128),",
+  "cited": "source/utils/merge.ts:283-290"
+ },
+ {
+  "n": 16,
+  "claim": "ource |\n| --- | --- | --- | --- | --- |\n| Size Preservation | Large Blob | Same Blob (new `Request`) | Progress is calculated based on the original blob size. | [test/stream.ts:165-210](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L165-L210) |\n| Size Increase | Small JSON | Large Blob | Progress is calculated based on the new, larger blob size. |",
+  "cited": "test/stream.ts:212-248"
+ },
+ {
+  "n": 17,
+  "claim": "b.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L274-L281)` |\n| `headers` | Header objects or `Headers` instances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `[source/utils/merge.ts:64-78](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L64-L78),",
+  "cited": "source/utils/merge.ts:122-128"
+ },
+ {
+  "n": 18,
+  "claim": "s and then waits using the `delay` utility before recursively calling itself [source/core/Ky.ts:273-301]().\n- **`_calculateRetryDelay`**: Evaluates the error, checks limits, parses headers, and applies the backoff/jitter logic [source/core/Ky.ts:227-263]().\n- **`stop` Symbol**: If a `beforeRetry` hook returns the `stop` symbol, the retry loop is terminated immediately without throwing a new error",
+  "cited": "source/core/constants.ts:66-66"
+ },
+ {
+  "n": 19,
+  "claim": "------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n| `init`            | Before the `Ky` instance is created.                                     | Modify options for a single request. Executed only once. `Sources:",
+  "cited": "source/core/Ky.ts:144-149"
+ },
+ {
+  "n": 20,
+  "claim": "rhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L234-L249)` |\n| `signal` | Multiple `AbortSignal` instances are collected. If `AbortSignal.any` is supported, they are combined; otherwise, the last signal provided is used. | `[source/utils/merge.ts:224-227](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L224-L227),",
+  "cited": "source/utils/merge.ts:298-309"
+ },
+ {
+  "n": 21,
+  "claim": "The `json` option provides a convenient shortcut for sending JSON data. Ky automatically handles serialization and sets the correct `Content-Type` header to `application/json`",
+  "cited": "test/main.ts:116-132"
+ },
+ {
+  "n": 22,
+  "claim": "| Hook | Arguments | Can Return | Effect |\n|------|-----------|------------|--------|\n| **beforeRequest** | `(state)` | `Response` | Skip fetch, use returned Response",
+  "cited": "source/types/hooks.ts:123-123"
+ },
+ {
+  "n": 23,
+  "claim": "m/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L130-L144), [source/utils/merge.ts:274-281](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L274-L281)` |\n| `headers` | Header objects or `Headers` instances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `",
+  "cited": "source/utils/merge.ts:64-78"
+ },
+ {
+  "n": 24,
+  "claim": "- **beforeRequest**: Intercept before the fetch call [source/core/Ky.ts:646-684]().\n- **afterResponse**: Process the response before returning [source/core/Ky.ts:179]().\n- **beforeRetry**: Logic to run before a retry attempt [source/core/Ky.ts:595-644]().\n- **beforeError**: Transform errors before they are thrown",
+  "cited": "source/core/Ky.ts:686-704"
+ },
+ {
+  "n": 25,
+  "claim": "-348]() |\n| **JSON Body** | Stringifies `options.json` and sets `content-type` header | [source/core/Ky.ts:355-358]() |\n| **Request Creation** | Creates native `Request` object with all options | [source/core/Ky.ts:371]() |\n| **searchParams** | Appends to URL, recreates Request if needed | [source/core/Ky.ts:373-384]() |\n| **Upload Progress** | Wraps Request body in stream for progress tracking |",
+  "cited": "source/core/Ky.ts:387-397"
+ },
+ {
+  "n": 26,
+  "claim": "The compiled output is placed in the `distribution` folder, which is the only directory included in the published npm package (",
+  "cited": "package.json:31-33"
+ },
+ {
+  "n": 27,
+  "claim": ": [source/core/Ky.ts:144-149](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L144-L149)`                                                                    |\n| `beforeRequest`   | Before the request is sent.                                              | Modify the `Request` object. Can return a `Response` to bypass the fetch entirely. `Sources:",
+  "cited": "source/core/Ky.ts:767-784"
+ },
+ {
+  "n": 28,
+  "claim": "- `Options`: The main options interface that extends both `KyOptions` and `RequestInit`",
+  "cited": "source/types/options.ts:246-290"
+ },
+ {
+  "n": 29,
+  "claim": "[source/types/standard-schema.ts:1-20]().\n*   **Hooks:** Functions that tap into the request lifecycle.\n    *   `init`: Runs before the `Ky` instance is even created [source/types/hooks.ts:28-28]().\n    *   `beforeRequest`: Runs immediately before the native `fetch` [source/types/hooks.ts:167-167]().\n    *   `afterResponse`: Runs after a response is received but before it is returned to the user",
+  "cited": "source/types/hooks.ts:86-86"
+ },
+ {
+  "n": 30,
+  "claim": "shallow merge is performed. The property is always a new object to prevent mutation. | `[source/utils/merge.ts:234-249](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L234-L249)` |\n| `signal` | Multiple `AbortSignal` instances are collected. If `AbortSignal.any` is supported, they are combined; otherwise, the last signal provided is used. | `",
+  "cited": "source/utils/merge.ts:224-227"
+ },
+ {
+  "n": 31,
+  "claim": "| Test Case | Description | Source |\n|-----------|-------------|--------|\n| `parseJson` | Verifies custom parser receives text and context |",
+  "cited": "test/main.ts:1071-1121"
+ },
+ {
+  "n": 32,
+  "claim": "---|---------|\n| `npm run build` | `del-cli distribution && tsc --project tsconfig.dist.json` | Cleans the output directory and compiles source files. [package.json:28]() |\n| `npm test` | `xo && npm run build && ava` | Lints code, builds it, and runs the test suite. [package.json:25]() |\n| `npm run prepare` | `npm run build` | Ensures the project is built before publication or local installation.",
+  "cited": "package.json:29-29"
+ },
+ {
+  "n": 33,
+  "claim": "| Method | Purpose | Location |\n|--------|---------|----------|\n| `Ky.create()` | Static factory method that creates a `ResponsePromise` | [source/core/Ky.ts:143-314]() |\n| `#fetch()` | Executes the HTTP request with hooks | [source/core/Ky.ts:646-684]() |\n| `#retry()` | Implements retry logic with exponential backoff |",
+  "cited": "source/core/Ky.ts:595-644"
+ },
+ {
+  "n": 34,
+  "claim": "| Option | Type | Default | Description |\n|--------|------|---------|-------------|\n| `retry` | `RetryOptions | number` | `{limit: 2}` | Retry configuration",
+  "cited": "source/types/options.ts:170-176"
+ },
+ {
+  "n": 35,
+  "claim": "arge Blob | Progress `percent` and `transferredBytes` remain monotonic despite the initial size being smaller. | [test/stream.ts:334-372](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L334-L372) |\n| Header Modification | Large Blob | Same Blob (new `Request`) | A subsequent hook can modify headers without affecting the body or progress tracking. |",
+  "cited": "test/stream.ts:374-416"
+ },
+ {
+  "n": 36,
+  "claim": "d Normalization** | Standardizes HTTP method to uppercase | [source/core/Ky.ts:318]() |\n| **Retry Normalization** | Processes retry options with defaults | [source/core/Ky.ts:321]() |\n| **prefixUrl Handling** | Prepends base URL to input, validates no leading slash | [source/core/Ky.ts:332-342]() |\n| **Signal Management** | Creates `AbortController` and combines signals with `AbortSignal.any()` |",
+  "cited": "source/core/Ky.ts:344-348"
+ },
+ {
+  "n": 37,
+  "claim": "est/stream.ts#L165-L210) |\n| Size Increase | Small JSON | Large Blob | Progress is calculated based on the new, larger blob size. | [test/stream.ts:212-248](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L212-L248) |\n| Size Decrease | Large Blob | Small String | Progress is calculated based on the new, smaller string size and completes correctly. |",
+  "cited": "test/stream.ts:292-332"
+ },
+ {
+  "n": 38,
+  "claim": "1. Checks if `onUploadProgress` is a function [source/core/Ky.ts:387]()\n2. Ensures request streams are supported in the environment [source/core/Ky.ts:388]()\n3. Transforms the request to enable progress tracking via `streamRequest()`",
+  "cited": "source/core/Ky.ts:391-391"
+ },
+ {
+  "n": 39,
+  "claim": "| Direction | Option | Implementation | Requirements |\n|-----------|--------|----------------|--------------|\n| Upload | `onUploadProgress` | `streamRequest()` | `supportsRequestStreams` [source/core/Ky.ts:41]() |\n| Download | `onDownloadProgress` | `streamResponse()` | `supportsResponseStreams`",
+  "cited": "source/core/Ky.ts:40-40"
+ },
+ {
+  "n": 40,
+  "claim": "Retry behavior is configurable via `RetryOptions`. The `#calculateRetryDelay()` method [source/core/Ky.ts:499-571]() implements the retry decision logic, checking method eligibility, retry limits, status codes, and `Retry-After` headers. Ky also supports forced retries via `ky.retry()`",
+  "cited": "source/core/constants.ts:162-230"
+ },
+ {
+  "n": 41,
+  "claim": "| Option | Merging Behavior | Source |\n| --- | --- | --- |\n| `hooks` | Arrays of hooks are concatenated. `undefined` in a source clears the array. | `",
+  "cited": "source/utils/merge.ts:130-144"
+ },
+ {
+  "n": 42,
+  "claim": "- **`_retry`**: Wraps the request execution. If a failure occurs, it calls `_calculateRetryDelay`. If a delay is returned, it executes `beforeRetry` hooks and then waits using the `delay` utility before recursively calling itself",
+  "cited": "source/core/Ky.ts:273-301"
+ },
+ {
+  "n": 43,
+  "claim": "The `#cancelBody()` [source/core/Ky.ts:581-588]() and `#cancelResponseBody()`",
+  "cited": "source/core/Ky.ts:590-593"
+ },
+ {
+  "n": 44,
+  "claim": "| Scenario | Original Body | Replacement Body | Expected Outcome | Source |\n| --- | --- | --- | --- | --- |\n| Size Preservation | Large Blob | Same Blob (new `Request`) | Progress is calculated based on the original blob size. |",
+  "cited": "test/stream.ts:165-210"
+ },
+ {
+  "n": 45,
+  "claim": "om/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L283-L290)` |\n| `searchParams` | Values are appended. Supports `URLSearchParams`, objects, arrays of tuples, and strings. `undefined` values delete the parameter. | `[source/utils/merge.ts:148-204](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L148-L204),",
+  "cited": "source/utils/merge.ts:252-262"
+ },
+ {
+  "n": 46,
+  "claim": "The `validateAndMerge` function ensures all option sources are valid objects. It throws a `TypeError` if a source is not an object or is an array",
+  "cited": "source/utils/merge.ts:7-11"
+ },
+ {
+  "n": 47,
+  "claim": "- **Option merging** [source/utils/merge.ts]() - `validateAndMerge()` handles complex option inheritance\n- **Body processing** [source/utils/body.ts]() - Stream handling for upload/download progress\n- **Timeout handling** [source/utils/timeout.ts]() - AbortController-based timeout implementation\n- **Type guards** [source/utils/type-guards.ts]() - Runtime type checking for errors",
+  "cited": "source/index.ts:77-83"
+ },
+ {
+  "n": 48,
+  "claim": "- **Main Config**: `tsconfig.json` - Used for IDE and development, includes the `source` directory (",
+  "cited": "tsconfig.json:1-9"
+ },
+ {
+  "n": 49,
+  "claim": "the error, or stop the retry process by returning `ky.stop`. `Sources: [source/core/Ky.ts:886-922](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L886-L922)`              |\n| `beforeError`     | After all retries are exhausted and just before an error is thrown.      | Modify the final `Error` object that will be thrown to the caller. `Sources:",
+  "cited": "source/core/Ky.ts:270-285"
+ },
+ {
+  "n": 50,
+  "claim": "- **Entry Point**: [source/index.ts:19]() - `ky.create` property definition.\n- **Factory Function**: [source/index.ts:10-32]() - `createInstance()` implementation.\n- **Main Function**:",
+  "cited": "source/index.ts:12-12"
+ },
+ {
+  "n": 51,
+  "claim": "- **Headers**: Merge additively; `undefined` values remove headers via `deletedParametersSymbol` [source/utils/merge.ts:22]().\n- **Hooks**: Concatenate arrays using `mergeHooks`",
+  "cited": "source/utils/merge.ts:21-21"
+ },
+ {
+  "n": 52,
+  "claim": "**Method Creation Process**: Each HTTP method shortcut is dynamically created by iterating over the `requestMethods` array",
+  "cited": "source/core/constants.ts:4-4"
+ },
+ {
+  "n": 53,
+  "claim": "wise, the last signal provided is used. | `[source/utils/merge.ts:224-227](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L224-L227), [source/utils/merge.ts:298-309](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L298-L309)` |\n| Other properties | A recursive deep merge is performed. | `",
+  "cited": "source/utils/merge.ts:267-269"
+ },
+ {
+  "n": 54,
+  "claim": "HTTP headers for the request. Accepts a `Headers` instance or plain object",
+  "cited": "source/types/options.ts:34-34"
+ },
+ {
+  "n": 55,
+  "claim": "om/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L122-L128), [source/utils/merge.ts:283-290](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L283-L290)` |\n| `searchParams` | Values are appended. Supports `URLSearchParams`, objects, arrays of tuples, and strings. `undefined` values delete the parameter. | `",
+  "cited": "source/utils/merge.ts:148-204"
+ },
+ {
+  "n": 56,
+  "claim": "Retry behavior is configurable via `RetryOptions`. The `#calculateRetryDelay()` method",
+  "cited": "source/core/Ky.ts:499-571"
+ },
+ {
+  "n": 57,
+  "claim": "| Operation | Description | Code Reference |\n|-----------|-------------|----------------|\n| **Input Validation** | Ensures input is `string`, `URL`, or `Request` | [source/core/Ky.ts:328-330]() |\n| **Header Merging** | Combines headers from input Request and options using `mergeHeaders()` | [source/core/Ky.ts:308]() |\n| **Hook Merging** | Concatenates hook arrays using `mergeHooks()` |",
+  "cited": "source/core/Ky.ts:309-317"
+ },
+ {
+  "n": 58,
+  "claim": "The constructor [source/core/Ky.ts:335-430]() performs initialization including:\n- Merging headers and hooks [source/core/Ky.ts:338-358]().\n- Constructing the final URL using `prefixUrl` [source/core/Ky.ts:364-374]().\n- Initializing the `AbortController` and merging signals",
+  "cited": "source/core/Ky.ts:376-380"
+ },
+ {
+  "n": 59,
+  "claim": "| Command | Steps | Purpose |\n|---------|-------|---------|\n| `npm run build` | `del-cli distribution && tsc --project tsconfig.dist.json` | Cleans the output directory and compiles source files. [package.json:28]() |\n| `npm test` | `xo && npm run build && ava` | Lints code, builds it, and runs the test suite.",
+  "cited": "package.json:25-25"
+ },
+ {
+  "n": 60,
+  "claim": "| Option | Merging Behavior | Source |\n| --- | --- | --- |\n| `hooks` | Arrays of hooks are concatenated. `undefined` in a source clears the array. | `[source/utils/merge.ts:130-144](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L130-L144),",
+  "cited": "source/utils/merge.ts:274-281"
+ },
+ {
+  "n": 61,
+  "claim": "The `Ky.create()` method [source/core/Ky.ts:143-311]() is the entry point that:\n1. Orchestrates `init` hooks [source/core/Ky.ts:144-149]().\n2. Instantiates the `Ky` class [source/core/Ky.ts:151]().\n3. Returns a `ResponsePromise` that wraps the request lifecycle, including `beforeRequest` hooks and retries",
+  "cited": "source/core/Ky.ts:164-165"
+ }
+]

@@ -1,0 +1,352 @@
+[
+ {
+  "id": "ky-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Omits init/afterResponse hooks; fabricated fetch call `fetch(this.request,{signal})` (actually passes findUnknownOptions result)."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Covers full pipeline; minor false claim constructor handles `prefixUrl` (renamed; constructor throws)."
+  }
+ },
+ {
+  "id": "ky-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "All key facts; examples use removed `prefixUrl` option which now throws."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "create vs extend merging correct; omits extend accepting a function of parent defaults."
+  }
+ },
+ {
+  "id": "ky-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Says beforeError runs every attempt before retry and steps incl. beforeRequest repeat; beforeError only on final error."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Falsely claims afterResponse hooks don't run on HTTP errors; they run before the HTTPError check."
+  }
+ },
+ {
+  "id": "ky-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "AbortSignal.any merge, #createManagedSignal, timeout abort, controller recreation; omits delay-uses-user-signal detail."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "AbortSignal.any merge right; fabricated event-listener fallback (no controller at all without support); misses recreation."
+  }
+ },
+ {
+  "id": "ky-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "findUnknownOptions with both registries correct; wrongly says #getNormalizedOptions builds RequestInit for fetch."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Accurate code and tests."
+  }
+ },
+ {
+  "id": "ky-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults exact."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults exact."
+  }
+ },
+ {
+  "id": "ky-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "10000, false, RangeError."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "10000, false, RangeError via maxSafeTimeout."
+  }
+ },
+ {
+  "id": "ky-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "TimeoutError, retryOnTimeout false; shouldRetry override not mentioned but not contradicted."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct; shouldRetry override not mentioned."
+  }
+ },
+ {
+  "id": "ky-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Order matches #calculateRetryDelay; ForceRetry noted separately; 413 nuance correct."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Lists Network before HTTP check (code: Timeout, HTTP, Network); otherwise correct order."
+  }
+ },
+ {
+  "id": "ky-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Only two headers; claims RateLimit-Reset numeric is a Unix timestamp (it's seconds unless >= 2024 epoch ms)."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Header order, seconds*1000, timestamp threshold, maxRetryAfter, no jitter; omits HTTP-date parsing."
+  }
+ },
+ {
+  "id": "ky-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Exact message format and data parsing right; omits 10 MiB and read-timeout undefined cases."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Format, JSON/text data, undefined cases, 10 MiB and timeout bound covered."
+  }
+ },
+ {
+  "id": "ky-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accept header and empty-body throw correct; no schema/SchemaValidationError coverage."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accept and empty-body/schema-undefined right; doesn't state SchemaValidationError on failure."
+  }
+ },
+ {
+  "id": "ky-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Sequential chaining, Error-only replacement, beforeRetry and non-Error bypass, init."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Chaining, non-Error, init, beforeRetry bypass covered with tests."
+  }
+ },
+ {
+  "id": "ky-14",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "isRawNetworkError in is-network-error.ts, TypeError + messages, NetworkError wrap."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Names isRawNetworkError and NetworkError wrapping in #fetch but not file or TypeError/message rules."
+  }
+ },
+ {
+  "id": "ky-15",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "timeout.ts, abort+TimeoutError, effectiveTimeout min in #fetch."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Locates in #fetch with effectiveTimeout; doesn't name timeout.ts or TimeoutError/abort mechanics."
+  }
+ },
+ {
+  "id": "ky-16",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "deepMerge/validateAndMerge, all special cases, replaceOption."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "deepMerge with signal/context/searchParams/hooks/headers and replaceOption."
+  }
+ },
+ {
+  "id": "ky-17",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "withProgress, streamResponse, streamRequest, getBodySize in body.ts."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Same functions and call sites; epsilon cap noted."
+  }
+ },
+ {
+  "id": "ky-18",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "POST not in methods; not retried."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "POST not in methods; not retried."
+  }
+ },
+ {
+  "id": "ky-19",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Not retried without header; retried only with header."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Explicit 413 throw without header; correct."
+  }
+ },
+ {
+  "id": "ky-20",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "3 attempts; limit 0 skips clone/tee."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "3 attempts; limit 0 skips clone/tee."
+  }
+ },
+ {
+  "id": "ky-21",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Not retried and skips fetch; doesn't say HTTPError is thrown."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Skips fetch, HTTPError thrown, no retry; cites test."
+  }
+ },
+ {
+  "id": "ky-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "xo, build, ava with tsx/esm and workerThreads false."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "xo/build/ava and tsx; omits workerThreads false."
+  }
+ },
+ {
+  "id": "ky-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "distribution/index.js import; chromium/firefox/webkit."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "distribution served/imported; three browsers."
+  }
+ },
+ {
+  "id": "ky-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Node versions and steps right; omits macos-latest."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "macos-latest and Node versions; omits Playwright install / npm test steps."
+  }
+ },
+ {
+  "id": "ky-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Node>=22, ESM, distribution via tsconfig.dist.json."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Node>=22, ESM, distribution; main field claim is true."
+  }
+ }
+]

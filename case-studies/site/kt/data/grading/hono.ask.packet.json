@@ -1,0 +1,678 @@
+[
+ {
+  "id": "hono-01",
+  "category": "architecture",
+  "question": "Trace a request through Hono: what happens between app.fetch(request) and the returned Response?",
+  "reference_answer": "app.fetch(request, env, ctx) calls the private HonoBase#dispatch(request, executionCtx, env, method). #dispatch computes the path with this.getPath, calls this.router.match(method, path), and builds a new Context holding the match result, env, executionCtx and the app's notFound handler. If exactly one handler matched, it is called directly with no compose, and its result (or the notFound handler's result) is returned. Otherwise compose(matchResult[0], errorHandler, notFoundHandler) runs the chain, and if the context is not finalized at the end it throws 'Context is not finalized. Did you forget to return a Response object or `await next()`?'. That error, like any other thrown Error, goes to the error handler.",
+  "key_facts": [
+   "fetch delegates to private #dispatch in src/hono-base.ts",
+   "#dispatch calls getPath then router.match(method, path) and constructs a Context",
+   "a single matched handler is invoked directly without compose (fast path)",
+   "with multiple handlers, compose runs them and a non-finalized context throws 'Context is not finalized...'"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "406-485"
+   }
+  ],
+  "X": "A request to a Hono application initiates a dispatch process that involves routing, context creation, middleware execution, and finally, response generation.\n\n### 1. Entry Point: `app.fetch()`\n\nThe process begins when `app.fetch()` is called. This method is the primary entry point for handling requests in any environment. It takes a standard `Request` object and optional environment and execution context objects.\n\nThe `fetch` method is a lightweight wrapper that immediately calls the internal `#dispatch` method, passing along the request and its details.\n\n```typescript\n// src/hono-base.ts:486-488\n  fetch: (\n    request: Request,\n    Env?: E['Bindings'] | {},\n    executionCtx?: ExecutionContext\n  ) => Response | Promise<Response> = (request, ...rest) => {\n    return this.#dispatch(request, rest[1], rest[0], request.method)\n  }\n```\n\nThis method is used directly in adapters for various runtimes, such as Deno, Netlify, and Service Workers.\n\n*   **Deno:** `Deno.serve(app.fetch)`\n    *   `benchmarks/deno/hono.ts:20`\n*   **Netlify:** `return app.fetch(req, { context })`\n    *   `src/adapter/netlify/handler.ts:9`\n*   **Service Worker:** `const res = await app.fetch(evt.request, {}, evt)`\n    *   `src/adapter/service-worker/handler.ts:31`\n\nThe `app.request()` method, often used for testing, is a convenience wrapper that constructs a `Request` object from a string or URL and then calls `app.fetch()`.\n\n```typescript\n// src/hono-base.ts:503-514\n  request = (\n    input: Request | string | URL,\n    // ...\n  ): Response | Promise<Response> => {\n    if (input instanceof Request) {\n      return this.fetch(/*...*/)\n    }\n    // ...\n    return this.fetch(\n      new Request(/*...*/),\n      // ...\n    )\n  }\n```\n\n### 2. Internal Dispatch: `#dispatch()`\n\nThe `#dispatch` method is the core of Hono's request handling.\n\n1.  **HEAD Method Handling:** It first checks if the request method is `HEAD`. If so, it re-dispatches the request as `GET` and returns a new `Response` with the same headers but a `null` body.\n    ```typescript\n    // src/hono-base.ts:413-415\n    if (method === 'HEAD') {\n      return (async () =>\n        new Response(null, await this.#dispatch(request, executionCtx, env, 'GET')))()\n    }\n    ```\n\n2.  **Routing:** It gets the request path and uses the configured router to find all matching handlers for the given method and path.\n    ```typescript\n    // src/hono-base.ts:418-419\n    const path = this.getPath(request, { env })\n    const matchResult = this.router.match(method, path)\n    ```\n\n3.  **Context Creation:** A new `Context` object (`c`) is instantiated. This object holds the request, environment variables, execution context, matched route results, and a reference to the `notFoundHandler`. It serves as the primary interface for handlers to interact with the request and response.\n    ```typescript\n    // src/hono-base.ts:421-428\n    const c = new Context(request, {\n      path,\n      matchResult,\n      env,\n      executionCtx,\n      notFoundHandler: this.#notFoundHandler,\n    })\n    ```\n\n### 3. Handler Execution\n\nHono optimizes handler execution based on the number of matches found by the router.\n\n*   **Single Handler (Optimized Path):** If only one handler matches the route, Hono calls it directly without the overhead of the middleware composer. The handler is invoked with the `Context` and a `next` function that defaults to calling the `notFoundHandler`.\n    ```typescript\n    // src/hono-base.ts:431-446\n    if (matchResult[0].length === 1) {\n      let res: ReturnType<H>\n      try {\n        res = matchResult[0][0][0][0](c, async () => {\n          c.res = await this.#notFoundHandler(c)\n        })\n      } catch (err) {\n        return this.#handleError(err, c)\n      }\n\n      return res instanceof Promise\n        ? res\n            .then(/*...*/)\n            .catch((err: Error) => this.#handleError(err, c))\n        : (res ?? this.#notFoundHandler(c))\n    }\n    ```\n\n*   **Multiple Handlers (Middleware Chain):** If multiple handlers (i.e., middleware) match, they are passed to a `compose` function. This function creates a single executable function that chains the handlers together. Each handler receives the `context` and a `next` function to pass control to the next handler in the chain. The application's `errorHandler` and `notFoundHandler` are included in this composition to handle errors and fall-through cases.\n    ```typescript\n    // src/hono-base.ts:448-459\n    const composed = compose(matchResult[0], this.errorHandler, this.#notFoundHandler)\n\n    return (async () => {\n      try {\n        const context = await composed(c)\n        if (!context.finalized) {\n          throw new Error(\n            'Context is not finalized. Did you forget to return a Response object or `await next()`?'\n          )\n        }\n\n        return context.res\n      } catch (err) {\n        return this.#handleError(err, c)\n      }\n    })()\n    ```\n\n### 4. Response Generation\n\nThe final handler in the chain is responsible for returning a `Response` object. When a handler returns a `Response`, the context is marked as `finalized`, and the middleware chain is effectively terminated. This `Response` object propagates back up the call stack.\n\n*   If no handler returns a response, the `notFoundHandler` is invoked.\n*   If any handler throws an `Error` or `HTTPException`, the `errorHandler` is invoked to generate an appropriate error `Response`.\n\nThe final `Response` object is then returned from the initial `app.fetch()` call, completing the request lifecycle.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-02",
+  "category": "architecture",
+  "question": "How do runtime adapters connect a platform's entry point to a Hono app? Compare Vercel, Cloudflare Workers, Cloudflare Pages and AWS Lambda.",
+  "reference_answer": "Adapters are thin wrappers around app.fetch. hono/vercel's handle(app) returns req => app.fetch(req). The Cloudflare Workers adapter exports no handle at all, only serveStatic, upgradeWebSocket and getConnInfo, because the app's own fetch(request, env, executionCtx) already matches the Workers module signature. The Cloudflare Pages handle passes eventContext.request, {...eventContext.env, eventContext} as env, and an executionCtx built from waitUntil and passThroughOnException. The AWS Lambda handle picks an EventProcessor for the event type (API Gateway v1/v2, ALB, Lattice) to build a Request. It calls app.fetch(req, {event, requestContext, lambdaContext}) and converts the Response back with processor.createResult, base64-encoding binary bodies. Request-conversion errors return 400 for a TypeError and 500 otherwise.",
+  "key_facts": [
+   "vercel handle is just req => app.fetch(req)",
+   "cloudflare-workers adapter has no handle; the app's fetch signature is used directly",
+   "aws-lambda passes {event, requestContext, lambdaContext} as the env (Bindings) argument to app.fetch",
+   "aws-lambda converts the Response into a Lambda result via the EventProcessor's createResult (base64 for binary content types)"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/adapter/vercel/handler.ts",
+    "lines": "4-8"
+   },
+   {
+    "path": "src/adapter/cloudflare-workers/index.ts",
+    "lines": "1-8"
+   },
+   {
+    "path": "src/adapter/cloudflare-pages/handler.ts",
+    "lines": "32-46"
+   },
+   {
+    "path": "src/adapter/aws-lambda/handler.ts",
+    "lines": "239-276"
+   },
+   {
+    "path": "src/adapter/aws-lambda/handler.ts",
+    "lines": "345-355"
+   },
+   {
+    "path": "src/adapter/aws-lambda/handler.ts",
+    "lines": "625-637"
+   }
+  ],
+  "X": "Hono adapters connect a platform's entry point to the Hono application's `app.fetch()` method. The primary role of an adapter is to translate the platform-specific request format into a standard `Request` object that Hono can process, and then format Hono's standard `Response` object back into the structure the platform expects.\n\n### Core Concept\n\nAll adapters ultimately call `app.fetch(request, env, executionContext)`, which is Hono's core request handler. The differences lie in how they construct the `request` object and handle the return value.\n\n### Cloudflare Workers\n\nCloudflare Workers have the most direct integration as their native `fetch` handler signature is compatible with Hono's.\n\n*   **Platform Entry Point**: An exported object with a `fetch` method: `(request: Request, env: Env, ctx: ExecutionContext) => Promise<Response>`.\n*   **Adapter's Role**: No special `handle` function is required. The Hono application instance itself can be directly exported.\n*   **Implementation**: The `app.fetch` method on the Hono instance perfectly matches the required signature.\n\n```typescript:runtime-tests/workerd/index.ts\nimport { Hono } from '../../src/hono'\nconst app = new Hono()\n\napp.get('/', (c) => c.text(`Hello from Cloudflare`))\n\nexport default app // The 'app' object itself is the entry point.\n```\n\n### Vercel\n\nVercel Edge Functions also use a standards-based `Request` object, making the adapter very simple.\n\n*   **Platform Entry Point**: An exported default function: `(request: Request, event: Event) => Response | Promise<Response>`.\n*   **Adapter's Role**: A `handle(app)` function is provided which returns a handler that Vercel can execute.\n*   **Implementation**: The adapter's handler receives the `Request` object from Vercel and passes it directly to `app.fetch(request)`.\n\n```typescript\n// In hono/vercel adapter\nimport type { Hono } from 'hono'\n\nexport const handle = (app: Hono) => (req: Request) => {\n  return app.fetch(req)\n}\n```\n\n### Cloudflare Pages\n\nCloudflare Pages Functions pass a single `context` object to their handler.\n\n*   **Platform Entry Point**: An `onRequest` function: `(context) => Response | Promise<Response>`. The `context` object contains the `request`, `env`, and other metadata.\n*   **Adapter's Role**: A `handle(app)` function returns the `onRequest` handler.\n*   **Implementation**: The adapter extracts the `request` and `env` from the `context` object and passes them to `app.fetch(context.request, context.env, context)`.\n\n```typescript\n// In hono/cloudflare-pages adapter\nimport type { Hono } from 'hono'\n\nexport const handle = (app: Hono) => (context) => {\n  return app.fetch(context.request, context.env, context)\n}\n```\n\n### AWS Lambda\n\nAWS Lambda is the most complex case because it does not use the standard `Request` and `Response` objects.\n\n*   **Platform Entry Point**: A handler function: `(event, context) => Promise<response>`. The `event` is a JSON object from API Gateway or a Lambda Function URL, not a `Request` object. The return value must also be a specific JSON object.\n*   **Adapter's Role**: The `handle(app)` function returns a handler that performs a two-way translation.\n*   **Implementation**:\n    1.  **Request Translation**: The adapter constructs a new standard `Request` object from the incoming Lambda `event` JSON (parsing headers, body, method, URL, etc.).\n    2.  **Context Passing**: The original `event` and Lambda `context` are passed into `app.fetch` via the `env` parameter, making them accessible inside Hono handlers (e.g., `c.env.event`).\n    3.  **Response Translation**: It takes the standard `Response` object returned by `app.fetch` and converts it into the JSON format required by API Gateway (e.g., `{ statusCode, headers, body, isBase64Encoded }`).\n\nThe tests for the Lambda adapter demonstrate this interaction with the `event` and `lambdaContext`.\n\n```typescript:runtime-tests/lambda/index.test.ts\n// ...\n  app.get('/lambda-event', (c) => {\n    const event = c.env.event // Accessing the original Lambda event\n    return c.json(event)\n  })\n\n  app.get('/lambda-context', (c) => {\n    const fnctx = c.env.lambdaContext // Accessing the original Lambda context\n    return c.json(fnctx)\n  })\n// ...\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-03",
+  "category": "architecture",
+  "question": "What distinguishes the 'hono', 'hono/quick' and 'hono/tiny' entry points?",
+  "reference_answer": "All three export a Hono class that extends HonoBase and differ only in the router they set up. 'hono' uses options.router if one is given, and otherwise new SmartRouter({ routers: [new RegExpRouter(), new TrieRouter()] }). 'hono/quick' always uses SmartRouter with [LinearRouter, TrieRouter]. 'hono/tiny' always uses PatternRouter. The two presets assign this.router unconditionally after super(options), so a router passed in options is overwritten.",
+  "key_facts": [
+   "default hono = SmartRouter over [RegExpRouter, TrieRouter]",
+   "hono/quick = SmartRouter over [LinearRouter, TrieRouter]",
+   "hono/tiny = PatternRouter",
+   "presets ignore options.router (they overwrite it); only the default Hono honors it"
+  ],
+  "wrong_but_plausible": "hono/tiny uses LinearRouter / quick uses RegExpRouter",
+  "evidence": [
+   {
+    "path": "src/hono.ts",
+    "lines": "26-33"
+   },
+   {
+    "path": "src/preset/quick.ts",
+    "lines": "18-23"
+   },
+   {
+    "path": "src/preset/tiny.ts",
+    "lines": "16-19"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "170-172"
+   }
+  ],
+  "X": "The primary distinction between the `hono`, `hono/quick`, and `hono/tiny` entry points is the default router they use, which affects performance and bundle size.\n\n### `hono` (main entry)\nThis is the standard, full-featured entry point. It is functionally identical to the `hono/quick` preset.\n-   **Router**: `SmartRouter` (which combines `LinearRouter` and `TrieRouter`).\n-   **Description**: Provides the best performance out-of-the-box by dynamically choosing between two different routers. This is the recommended import for most use cases.\n\n### `hono/quick`\nA preset that explicitly uses the `SmartRouter`.\n-   **Router**: `SmartRouter` (which combines `LinearRouter` and `TrieRouter`).\n-   **Code Reference**:\n    ```typescript\n    // src/preset/quick.ts:19-22\n    this.router = new SmartRouter({\n      routers: [new LinearRouter(), new TrieRouter()],\n    })\n    ```\n-   **Test Confirmation**:\n    ```typescript\n    // src/preset/quick.test.ts:5-8\n    describe('hono/quick preset', () => {\n      it('Should have SmartRouter + LinearRouter', async () => {\n        const app = new Hono()\n        expect(getRouterName(app)).toBe('SmartRouter + LinearRouter')\n      })\n    })\n    ```\n\n### `hono/tiny`\nA lightweight preset designed for the smallest possible bundle size, ideal for environments like Cloudflare Workers where size is critical.\n-   **Router**: `PatternRouter`.\n-   **Description**: This router is less performant than the `SmartRouter` but results in a smaller overall package size.\n-   **Test Confirmation**:\n    ```typescript\n    // src/preset/tiny.test.ts:5-8\n    describe('hono/tiny preset', () => {\n      it('Should have PatternRouter', async () => {\n        const app = new Hono()\n        expect(getRouterName(app)).toBe('PatternRouter')\n      })\n    })\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-04",
+  "category": "architecture",
+  "question": "How do app.route() and app.basePath() compose sub-applications internally?",
+  "reference_answer": "basePath(path) clones the app with #clone, which shares the same router, getPath, errorHandler, notFound handler and routes array, and sets _basePath to mergePath(old, path). route(path, subApp) calls this.basePath(path) and re-registers every entry in subApp.routes into the parent's router with #addRoute, so routes are copied at the moment route() is called rather than delegated at request time. If the sub-app set a custom onError, each of its handlers is wrapped as compose([], subApp.errorHandler), so that error handler still applies to those routes.",
+  "key_facts": [
+   "basePath returns a clone sharing the same router and routes array with a merged _basePath",
+   "route() copies the sub-app's routes into the parent router at call time",
+   "sub-app handlers are wrapped with compose([], subApp.errorHandler) only when the sub-app has a non-default error handler"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "175-184"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "208-253"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "385-397"
+   }
+  ],
+  "X": "`app.basePath()` and `app.route()` work together to compose applications by prefixing routes. `app.route()` is the primary method for mounting a sub-application, and it uses `app.basePath()` internally.\n\n### `app.basePath(path)`\n\nThe `basePath()` method creates a new, cloned Hono instance with a specified base path. This new instance will prepend the given path to all subsequently defined routes.\n\n*   **Implementation**: It clones the current Hono instance and merges the new path with any existing base path.\n\n    ```typescript\n    // File: src/hono-base.ts:246-251\n    basePath<SubPath extends string>(\n      path: SubPath\n    ): Hono<E, S, MergePath<BasePath, SubPath>, MergePath<BasePath, SubPath>> {\n      const subApp = this.#clone()\n      subApp._basePath = mergePath(this._basePath, path)\n      return subApp\n    }\n    ```\n\n*   **Example**: A sub-application created with `basePath()` will have its routes automatically prefixed when used in `app.route()`.\n\n    ```typescript\n    // File: src/hono.test.ts:523-526\n    const app = new Hono()\n    const sub = new Hono().basePath('/book')\n    sub.get('/:id', (c) => c.text('book'))\n    app.route('/api', sub)\n    ```\n    The resulting route path will be `/api/book/:id`.\n\n### `app.route(path, app)`\n\nThe `route()` method mounts an existing Hono instance (a sub-application) onto a specific path of the main application.\n\n*   **Internal Composition**:\n    1.  It first calls `this.basePath(path)` to create a temporary routing context with the specified prefix path.\n    2.  It then iterates through all the routes (`app.routes`) of the provided sub-application.\n    3.  For each route from the sub-application, it adds it to the main application using the temporary context. This process ensures the path prefix is correctly applied.\n    4.  It also preserves the sub-application's specific error handler by wrapping the original route handler if a custom one exists.\n\n*   **Implementation**:\n\n    ```typescript\n    // File: src/hono-base.ts:216-229\n    route<\n      // ...\n    >(\n      path: SubPath,\n      app: Hono<SubEnv, SubSchema, SubBasePath, SubCurrentPath>\n    ): Hono<E, MergeSchemaPath<SubSchema, MergePath<BasePath, SubPath>> | S, BasePath, CurrentPath> {\n      const subApp = this.basePath(path)\n      app.routes.map((r) => {\n        let handler\n        if (app.errorHandler === errorHandler) {\n          handler = r.handler\n        } else {\n          // ... (error handler wrapping logic)\n        }\n        subApp.#addRoute(r.method, r.path, handler, r.basePath)\n      })\n      return this\n    }\n    ```\n\n*   **Nesting**: This composition is recursive. When nesting `route()` calls, the `basePath` is accumulated at each level.\n\n    ```typescript\n    // File: src/hono.test.ts:505-518\n    it('Should accumulate basePath through nested route() calls', () => {\n      const app = new Hono()\n      const sub1 = new Hono()\n      const sub2 = new Hono()\n      sub2.get('/posts/:id', (c) => c.text('post'))\n      sub1.route('/:sub2', sub2)\n      app.route('/:sub1', sub1)\n\n      expect(app.routes).toEqual([\n        {\n          basePath: '/:sub1/:sub2',\n          method: 'GET',\n          path: '/:sub1/:sub2/posts/:id',\n          handler: expect.any(Function),\n        },\n      ])\n    })\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-05",
+  "category": "architecture",
+  "question": "How does Context manage the response object as middleware and handlers run?",
+  "reference_answer": "c.res is created lazily: the getter makes a Response(null) using any headers already prepared by c.header(). Assigning to c.res when a response already exists creates a new Response and copies the old response's headers onto it, skipping content-type and re-appending set-cookie values, then sets finalized = true. In compose, a handler's returned value is assigned to context.res only if the context is not finalized yet, or if it came from the error handler. c.header() called after finalization clones the response first so its headers can be changed.",
+  "key_facts": [
+   "c.res getter lazily creates an empty Response with prepared headers",
+   "setting c.res copies existing headers (except content-type, set-cookie appended) onto the new Response and sets finalized=true",
+   "compose assigns a returned response only if not finalized or it came from onError"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/context.ts",
+    "lines": "403-434"
+   },
+   {
+    "path": "src/context.ts",
+    "lines": "515-527"
+   },
+   {
+    "path": "src/compose.ts",
+    "lines": "67-70"
+   }
+  ],
+  "X": "The Hono `Context` object manages the response via its `.res` property, which uses a getter and a setter to control the lifecycle of the `Response` object.\n\n### 1. Lazy Initialization (Getter)\n\nThe `c.res` property is lazily initialized. A default `Response` object is created only when `.res` is first accessed, for example, when a middleware calls `c.header()`. This allows middleware to modify headers before a final response body is determined.\n\n```typescript\n// File: src/context.ts:401-405\n  get res(): Response {\n    return (this.#res ||= createResponseInstance(null, {\n      headers: (this.#preparedHeaders ??= new Headers()),\n    }))\n  }\n```\n\n### 2. Setting the Response (Setter)\n\nWhen a handler or middleware returns a `Response` object, the `compose` function assigns this object to `c.res`, which invokes the setter.\n\nThe setter performs several key actions:\n1.  Sets `this.finalized = true` to indicate that a definitive response has been generated.\n2.  If a response already exists on the context (e.g., from headers being set earlier), it merges the headers from the old response into the new one. This preserves headers set by preceding middleware. It has special handling for `set-cookie` to append multiple values correctly.\n3.  Assigns the new `Response` object to the context's internal `#res` property.\n\n```typescript\n// File: src/context.ts:412-432\n  set res(_res: Response | undefined) {\n    if (this.#res && _res) {\n      _res = createResponseInstance(_res.body, _res)\n      for (const [k, v] of this.#res.headers.entries()) {\n        if (k === 'content-type') {\n          continue\n        }\n        if (k === 'set-cookie') {\n          const cookies = this.#res.headers.getSetCookie()\n          _res.headers.delete('set-cookie')\n          for (const cookie of cookies) {\n            _res.headers.append('set-cookie', cookie)\n          }\n        } else {\n          _res.headers.set(k, v)\n        }\n      }\n    }\n    this.#res = _res\n    this.finalized = true\n  }\n```\n\n### 3. The `compose` Function and `finalized` Flag\n\nThe `compose` function, which executes the middleware stack, checks the `context.finalized` flag. After a handler returns a `Response`, `compose` assigns it to `context.res` only if the context has not already been finalized. This prevents middleware that executes after a response is returned from overwriting it.\n\n```typescript\n// File: src/compose.ts:68-70\n      if (res && (context.finalized === false || isError)) {\n        context.res = res\n      }\n```\n\n### 4. Response Helper Methods\n\nContext methods like `c.json()`, `c.text()`, and `c.html()` are shortcuts that create a `Response` object and immediately assign it to `c.res`, triggering the setter and setting the `finalized` flag to `true`. This is why they are typically the final action in a handler.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-06",
+  "category": "behavior",
+  "question": "Which router does `new Hono()` use, and how does SmartRouter decide which inner router to use?",
+  "reference_answer": "SmartRouter wrapping [RegExpRouter, TrieRouter]. SmartRouter.add() only stores routes. On the first match() it tries each router in order: it adds every stored route, then calls match. If that router throws UnsupportedPathError it moves to the next one. The first router that succeeds becomes permanent: this.match is rebound to its match, the stored routes are dropped, and name becomes 'SmartRouter + <Name>'. Calling add() after that first match throws 'Can not add a route since the matcher is already built.'",
+  "key_facts": [
+   "default is SmartRouter([RegExpRouter, TrieRouter])",
+   "the choice is made lazily on the first match(), not at add() time",
+   "a router is skipped if it throws UnsupportedPathError; the first that succeeds is locked in",
+   "after the first match, adding routes throws MESSAGE_MATCHER_IS_ALREADY_BUILT"
+  ],
+  "wrong_but_plausible": "SmartRouter benchmarks routers or picks per request",
+  "evidence": [
+   {
+    "path": "src/hono.ts",
+    "lines": "28-32"
+   },
+   {
+    "path": "src/router/smart-router/router.ts",
+    "lines": "13-61"
+   },
+   {
+    "path": "src/router.ts",
+    "lines": "21-22"
+   }
+  ],
+  "X": "The default `new Hono()` constructor, as defined in `src/hono.ts`, uses `SmartRouter`.\n\n```typescript\n// src/hono.ts:28-34\n  constructor(options: HonoOptions<E> = {}) {\n    super(options)\n    this.router =\n      options.router ??\n      new SmartRouter({\n        routers: [new RegExpRouter(), new TrieRouter()],\n      })\n  }\n```\n\nThe `hono/quick` preset also uses `SmartRouter`, but with a different set of inner routers: `LinearRouter` and `TrieRouter`.\n\n```typescript\n// src/preset/quick.ts:16-21\n  constructor(options: HonoOptions<E> = {}) {\n    super(options)\n    this.router = new SmartRouter({\n      routers: [new LinearRouter(), new TrieRouter()],\n    })\n  }\n```\n\n### SmartRouter Decision Logic\n\n`SmartRouter` decides which inner router to use on the very first request. This decision is made only once.\n\n1.  **Iteration**: On the first `match` call, `SmartRouter` iterates through its configured list of routers (e.g., `[new RegExpRouter(), new TrieRouter()]`).\n2.  **Route Registration Test**: For each router in the list, it attempts to add all the application's defined routes.\n3.  **Selection**: The first router that successfully adds all routes without throwing an `UnsupportedPathError` is selected as the active router. If a router cannot handle a specific path pattern, it throws this error, and `SmartRouter` proceeds to the next router in the list.\n4.  **Delegation**: Once a router is selected, `SmartRouter` replaces its own `match` method with the selected router's `match` method. All subsequent routing requests are handled directly by the chosen router, bypassing the selection logic.\n\nThis logic is implemented in the `match` method of `SmartRouter`.\n\n```typescript\n// src/router/smart-router/router.ts:29-45\n    for (; i < len; i++) {\n      const router = routers[i]\n      try {\n        for (let i = 0, len = routes.length; i < len; i++) {\n          router.add(...routes[i])\n        }\n        res = router.match(method, path)\n      } catch (e) {\n        if (e instanceof UnsupportedPathError) {\n          continue\n        }\n        throw e\n      }\n\n      this.match = router.match.bind(router)\n      this.#routers = [router]\n      this.#routes = undefined\n      break\n    }\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-07",
+  "category": "behavior",
+  "question": "What are the exact semantics of Hono's compose() for middleware chains?",
+  "reference_answer": "compose is based on koa-compose. dispatch(i) throws Error('next() called multiple times') if i <= the last index already dispatched. Before running each handler it sets context.req.routeIndex = i, so c.req.param() reads that route's params. If a handler throws an Error and onError is provided, context.error is set and onError's response is used. A thrown value that is not an Error, or any error when there is no onError, is rethrown. When the chain runs out and the context is not finalized, onNotFound runs. A returned response is assigned only when the context is not finalized yet or the response came from onError.",
+  "key_facts": [
+   "calling next() twice throws 'next() called multiple times'",
+   "only Error instances go to onError; non-Error throws are rethrown",
+   "onNotFound is called when the chain ends with an unfinalized context",
+   "context.req.routeIndex is set per handler so params resolve per route"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/compose.ts",
+    "lines": "15-73"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Hono's `compose()` function implements the \"onion model\" for middleware execution, where requests flow \"downstream\" through layers of middleware and responses flow \"upstream\" in reverse order.\n\n### Core Execution Model\n\nMiddleware functions are executed sequentially. Each middleware receives the `context` and a `next` function. The code before `await next()` is executed during the request phase (downstream), and the code after `await next()` is executed during the response phase (upstream).\n\nThis execution order is demonstrated in the following test:\n\n*   **File:** `src/compose.test.ts`\n*   **Lines:** 370-403\n\n```typescript\n// src/compose.test.ts:375-403\nit('should get executed order one by one', async () => {\n  const arr: number[] = []\n  const stack = []\n\n  stack.push(\n    buildMiddlewareTuple(async (_context: Context, next: Next) => {\n      arr.push(1)\n      await next()\n      arr.push(6)\n    })\n  )\n\n  stack.push(\n    buildMiddlewareTuple(async (_context: Context, next: Next) => {\n      arr.push(2)\n      await next()\n      arr.push(5)\n    })\n  )\n\n  stack.push(\n    buildMiddlewareTuple(async (_context: Context, next: Next) => {\n      arr.push(3)\n      await next()\n      arr.push(4)\n    })\n  )\n\n  await compose(stack)(new Context(new Request('http://localhost/')))\n  expect(arr).toEqual([1, 2, 3, 4, 5, 6])\n})\n```\n\nThe final array `[1, 2, 3, 4, 5, 6]` confirms that the middleware executes downstream (1, 2, 3) and then unwinds upstream (4, 5, 6).\n\n### The `next()` Function\n\nThe `next()` function passes control to the next middleware in the chain.\n\n-   **Single Call Enforcement**: `next()` can only be called **once** within a middleware function. Attempting to call it multiple times will result in a runtime error.\n\n    *   **File:** `src/compose.ts`\n    *   **Lines:** 30-32\n\n    ```typescript\n    // src/compose.ts:30-32\n    async function dispatch(i: number): Promise<Context> {\n      if (i <= index) {\n        throw new Error('next() called multiple times')\n      }\n    ```\n\n    This is verified by a test case:\n\n    *   **File:** `src/compose.test.ts`\n    *   **Lines:** 341-360\n\n    ```typescript\n    // src/compose.test.ts:341-360\n    it('Should be thrown an error if next() is called multiple times', async () => {\n      // ...\n      const mHandler2 = async (_c: Context, next: Next) => {\n        await next()\n        await next() // Second call\n      }\n      // ...\n      try {\n        await composed(c)\n      } catch (err) {\n        expect(err).toStrictEqual(new Error('next() called multiple times'))\n      }\n    })\n    ```\n\n### Flow Control and Short-Circuiting\n\nIf a middleware returns a `Response` object (or a `Promise` that resolves to one), the middleware chain is immediately terminated at that point. No subsequent middleware in the chain will be executed.\n\n*   **File:** `src/compose.test.ts`\n*   **Lines:** 67-83\n\n```typescript\n// src/compose.test.ts:67-83\ndescribe('compose with returning a promise, non-async function', () => {\n  const handlers: MiddlewareTuple[] = [\n    buildMiddlewareTuple(() => {\n      return new Promise((resolve) =>\n        setTimeout(() => {\n          resolve(\n            new Response(JSON.stringify({ message: 'new response' }), {\n              headers: {\n                'Content-Type': 'application/json',\n              },\n            })\n          )\n        }, 1)\n      )\n    }),\n    buildMiddlewareTuple(async (c: Context) => {\n      c.res = new Response('never return')\n    }),\n  ]\n  // ...\n})\n```\n\nIn this example, the first middleware returns a `Response`. The second middleware, which would set the response to \"never return\", is never executed."
+ },
+ {
+  "id": "hono-08",
+  "category": "behavior",
+  "question": "What are the default options of the cors() middleware and how does it handle preflight?",
+  "reference_answer": "Defaults: origin '*', allowMethods ['GET','HEAD','PUT','POST','DELETE','PATCH'], allowHeaders [] and exposeHeaders []. maxAge and credentials are unset. For an OPTIONS request it returns its own 204 'No Content' response without calling next(). That response carries Access-Control-Allow-Methods and Access-Control-Max-Age when maxAge is set. If allowHeaders is empty, the request's Access-Control-Request-Headers are echoed back. Content-Length and Content-Type are removed. Vary: Origin is set when origin is not '*'. For other requests, Vary: Origin is appended after next(), again only when origin is not '*'.",
+  "key_facts": [
+   "default origin is '*'",
+   "default allowMethods are GET, HEAD, PUT, POST, DELETE, PATCH (no OPTIONS)",
+   "preflight (OPTIONS) short-circuits with a 204 response",
+   "with empty allowHeaders, Access-Control-Request-Headers is reflected"
+  ],
+  "wrong_but_plausible": "default allowMethods include OPTIONS, or preflight returns 200",
+  "evidence": [
+   {
+    "path": "src/middleware/cors/index.ts",
+    "lines": "63-157"
+   }
+  ],
+  "X": "### Default Options\n\nThe default options for the `cors()` middleware are:\n\n*   **`origin`**: `*` (Allows any origin)\n*   **`allowMethods`**: `['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH']`\n*   **`allowHeaders`**: `[]` (An empty array)\n*   **`exposeHeaders`**: `[]` (An empty array)\n*   **`maxAge`**: Not set by default.\n*   **`credentials`**: `false` (Not set by default).\n\n### Preflight (OPTIONS) Request Handling\n\nThe `cors` middleware handles preflight `OPTIONS` requests with the following logic:\n\n1.  **Check for `Origin` Header**: It first checks if the incoming request has an `Origin` header. If not, the middleware skips its logic and passes the request to the next handler.\n\n2.  **Identify Preflight Request**: It identifies a preflight request by checking if the method is `OPTIONS` and if the `Access-Control-Request-Method` header is present.\n\n3.  **Origin Validation**: It validates the request's `Origin` against the configured `origin` option.\n    *   If the origin is not allowed, the middleware does not add any CORS headers and passes the request to the next handler.\n    *   If the origin is allowed, it proceeds to build the preflight response.\n\n4.  **Set Response Headers**: For a valid preflight request from an allowed origin, it sets the following response headers:\n    *   `Access-Control-Allow-Origin`: Set to the value of the request's `Origin` header (if allowed).\n    *   `Vary`: The `Origin` value is appended to the `Vary` header.\n    *   `Access-Control-Allow-Methods`: Set to a comma-separated list of methods from the `allowMethods` option.\n    *   `Access-Control-Allow-Headers`: If the `allowHeaders` option is configured, its value is used. If `allowHeaders` is empty, the middleware reflects the headers requested in the `Access-Control-Request-Headers` request header.\n    *   `Access-Control-Allow-Credentials`: Set to `'true'` only if the `credentials` option is `true`.\n    *   `Access-Control-Max-Age`: Set only if the `maxAge` option is provided.\n\n5.  **Send Response**: After setting the headers, the middleware immediately sends an empty response with a `204 No Content` status code, terminating the request-response cycle. It also removes any `Content-Length` and `Content-Type` headers before responding.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-09",
+  "category": "behavior",
+  "question": "How does the etag() middleware generate and compare ETags by default?",
+  "reference_answer": "After next() runs, if the response has no ETag header, the middleware hashes a clone of the body with crypto.subtle.digest SHA-1 (unless a custom generateDigest is given). The value is a strong ETag '\"<hash>\"' by default, or 'W/\"<hash>\"' when weak: true. If-None-Match is compared with the W/ prefix stripped, so the comparison is weak. On a match it replaces the response with a 304 'Not Modified' that keeps only the retained headers: cache-control, content-location, date, etag, expires and vary. If crypto.subtle is not available and no generator is given, it leaves the response unchanged.",
+  "key_facts": [
+   "default digest is SHA-1 via crypto.subtle",
+   "weak defaults to false (strong ETag)",
+   "If-None-Match matching strips W/ (weak comparison)",
+   "304 retains only cache-control, content-location, date, etag, expires, vary by default"
+  ],
+  "wrong_but_plausible": "default hash is SHA-256 or MD5",
+  "evidence": [
+   {
+    "path": "src/middleware/etag/index.ts",
+    "lines": "21-36"
+   },
+   {
+    "path": "src/middleware/etag/index.ts",
+    "lines": "38-54"
+   },
+   {
+    "path": "src/middleware/etag/index.ts",
+    "lines": "79-124"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The `etag()` middleware generates and compares ETags based on the response body content.\n\n### ETag Generation\n\nBy default, the middleware generates a **strong ETag**.\n\n1.  After the response body is generated by subsequent middleware or handlers, the `etag` middleware reads the entire body into an `ArrayBuffer`.\n2.  It calculates a SHA-1 hash of the `ArrayBuffer` using the Web Crypto API (`crypto.subtle.digest`).\n3.  The resulting hash is formatted as a string enclosed in double-quotes, which signifies a strong ETag. For example: `\"33a64df551425fcc55e4d42a148795d9f25f89d4\"`.\n\nThis process is handled by an internal `createETag` function.\n\n```typescript\n// src/middleware/etag/index.ts\nconst createETag = async (body: ArrayBuffer): Promise<string> => {\n  const hash = await crypto.subtle.digest('SHA-1', body)\n  const hex = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('')\n  return `\"${hex}\"`\n}\n```\n\n### ETag Comparison\n\nThe comparison logic is triggered by the presence of an `If-None-Match` header in the request.\n\n1.  The middleware retrieves the value of the `If-None-Match` request header.\n2.  It generates a new ETag from the response body as described above.\n3.  It parses the `If-None-Match` header, splitting it by commas to handle lists of ETags.\n4.  It performs a direct string comparison to check if the newly generated ETag is present in the list from the `If-None-Match` header, or if the header contains the wildcard (`*`).\n5.  **If a match is found**:\n    *   The middleware intercepts the response.\n    *   It sets the HTTP status code to `304 Not Modified`.\n    *   It removes the response body and headers like `Content-Type` and `Content-Length`.\n    *   It returns the modified, empty response.\n6.  **If no match is found**:\n    *   The middleware adds the newly generated `ETag` header to the original response.\n    *   The full response (with headers and body) is sent to the client."
+ },
+ {
+  "id": "hono-10",
+  "category": "behavior",
+  "question": "What headers does secureHeaders() set by default, and with what values?",
+  "reference_answer": "Defaults set: Cross-Origin-Resource-Policy: same-origin; Cross-Origin-Opener-Policy: same-origin; Origin-Agent-Cluster: ?1; Referrer-Policy: no-referrer; Strict-Transport-Security: max-age=15552000; includeSubDomains; X-Content-Type-Options: nosniff; X-DNS-Prefetch-Control: off; X-Download-Options: noopen; X-Frame-Options: SAMEORIGIN; X-Permitted-Cross-Domain-Policies: none; X-XSS-Protection: 0. X-Powered-By is removed (removePoweredBy: true). Cross-Origin-Embedder-Policy is off by default (false, require-corp when enabled). No Content-Security-Policy is sent unless it is configured.",
+  "key_facts": [
+   "crossOriginEmbedderPolicy is disabled by default",
+   "X-Frame-Options defaults to SAMEORIGIN and X-XSS-Protection to 0",
+   "Strict-Transport-Security defaults to 'max-age=15552000; includeSubDomains'",
+   "removePoweredBy defaults to true; CSP is not set unless configured"
+  ],
+  "wrong_but_plausible": "X-Frame-Options DENY, or X-XSS-Protection '1; mode=block'",
+  "evidence": [
+   {
+    "path": "src/middleware/secure-headers/secure-headers.ts",
+    "lines": "94-124"
+   },
+   {
+    "path": "src/middleware/secure-headers/secure-headers.ts",
+    "lines": "179-198"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "By default, the `secureHeaders()` middleware sets the following headers with their corresponding values. This behavior is defined in `src/middleware/secure-headers/secure-headers.ts` and confirmed in the test suite `src/middleware/secure-headers/index.test.ts`.\n\n### Default Headers and Values\n\n*   **`Cross-Origin-Opener-Policy`**: `same-origin`\n*   **`Cross-Origin-Resource-Policy`**: `same-origin`\n*   **`Origin-Agent-Cluster`**: `?1`\n*   **`Referrer-Policy`**: `no-referrer`\n*   **`Strict-Transport-Security`**: `max-age=15552000; includeSubDomains`\n*   **`X-Content-Type-Options`**: `nosniff`\n*   **`X-DNS-Prefetch-Control`**: `off`\n*   **`X-Download-Options`**: `noopen`\n*   **`X-Frame-Options`**: `SAMEORIGIN`\n*   **`X-Permitted-Cross-Domain-Policies`**: `none`\n*   **`X-XSS-Protection`**: `0`\n\n### Removed Headers\n\n*   **`X-Powered-By`**: This header is removed by default.\n\n### Headers Not Set by Default\n\nThe following headers are available but not enabled by default:\n*   `Content-Security-Policy`\n*   `Content-Security-Policy-ReportOnly`\n*   `Cross-Origin-Embedder-Policy`\n*   `Permissions-Policy`\n*   `Reporting-Endpoints`\n*   `Report-To`"
+ },
+ {
+  "id": "hono-11",
+  "category": "behavior",
+  "question": "How does bodyLimit() enforce the limit, and what is its default response?",
+  "reference_answer": "maxSize is required and has no default. Requests without a body (for example GET or HEAD) go straight to next(). If Content-Length is present and Transfer-Encoding is not, the header is trusted: a value over maxSize calls onError, and otherwise next() runs. Otherwise (chunked, or no length header) the middleware reads the whole body up front, counting bytes and failing as soon as the size exceeds maxSize. It then rebuilds c.req.raw from the buffered chunks. The default onError throws HTTPException(413) wrapping a Response 'Payload Too Large' with status 413.",
+  "key_facts": [
+   "maxSize is a required option with no default",
+   "Content-Length is trusted only when Transfer-Encoding is absent",
+   "otherwise the body is fully read up front and c.req.raw is replaced with the buffered body",
+   "default error throws HTTPException 413 'Payload Too Large'"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/middleware/body-limit/index.ts",
+    "lines": "10-16"
+   },
+   {
+    "path": "src/middleware/body-limit/index.ts",
+    "lines": "50-111"
+   }
+  ],
+  "X": "The `bodyLimit()` middleware enforces its limit in two stages and provides a default HTTP 413 response if the limit is exceeded.\n\n### Enforcement Mechanism\n\nThe middleware first inspects the `Content-Length` request header. If the value of this header is greater than the configured `maxSize`, it immediately rejects the request without processing the body.\n\nIf the `Content-Length` header is not present or its value is within the limit, the middleware proceeds to read the request body as a stream. It consumes the stream chunk by chunk, keeping a running total of the bytes received. If the total size of the received bytes exceeds `maxSize` at any point, it stops processing and returns an error response.\n\nTo ensure the body can be read by subsequent middleware or the route handler, `bodyLimit` clones the request before consuming the stream.\n\n### Default Response\n\nWhen the request body size exceeds the configured limit, `bodyLimit()` returns a `Response` with:\n*   **Status Code**: `413 Payload Too Large`\n*   **Body**: The plain text string `Payload Too Large`\n\nThis behavior can be customized by providing an `onError` function in the options.\n\n```typescript\n// src/middleware/body-limit/index.ts\n\nexport const bodyLimit = (options: BodyLimitOptions): MiddlewareHandler =>\n  async function bodyLimit(c, next) {\n    // ...\n    const contentLength = c.req.header('content-length')\n    if (contentLength && parseInt(contentLength, 10) > options.maxSize) {\n      if (options.onError) {\n        return options.onError(c)\n      }\n      return new Response('Payload Too Large', { status: 413 })\n    }\n\n    let size = 0\n    const raw = c.req.raw.clone()\n    // ...\n    while (true) {\n        // ...\n        size += value.length\n        if (size > options.maxSize) {\n          if (options.onError) {\n            return options.onError(c)\n          }\n          return new Response('Payload Too Large', { status: 413 })\n        }\n      }\n    // ...\n    await next()\n  }\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-12",
+  "category": "behavior",
+  "question": "What do the default notFound and error handlers return, and how are HTTPExceptions handled?",
+  "reference_answer": "The default notFound handler returns c.text('404 Not Found', 404). The default error handler checks 'getResponse' in err, which is duck typing rather than an instanceof HTTPException check. If present, it returns c.newResponse(res.body, res) from err.getResponse(). Otherwise it calls console.error(err) and returns c.text('Internal Server Error', 500). app.onError() and app.notFound() replace these handlers. A thrown value that is not an Error is rethrown by #handleError instead of being handled.",
+  "key_facts": [
+   "default 404 body is '404 Not Found' with status 404",
+   "default error handler uses err.getResponse() when present (duck-typed)",
+   "otherwise it logs with console.error and returns 'Internal Server Error' 500",
+   "non-Error throws are rethrown, not handled"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "31-42"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "271-294"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "399-404"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### Default Handlers\n\n#### `notFound`\nThe default `notFound` handler returns a `Response` object with a status code of `404` and a plain text body of \"404 Not Found\".\n\nThis is demonstrated in a test where middleware appends to the default response body:\n```typescript\n// src/hono.test.ts:1329-1334\n      res = await app.request('http://localhost/foo')\n      expect(res.status).toBe(404)\n      expect(await res.text()).toBe('404 Not Found + Middleware')\n```\n\n#### `onError`\nThe default `onError` handler catches thrown `Error` objects and returns a `Response` with a status code of `500` and a plain text body of \"Internal Server Error\". If a non-`Error` object (like a string) is thrown, it is not handled by the default `onError` handler and will likely crash the process.\n\nA custom `onError` handler can be used to override this behavior:\n```typescript\n// src/hono.test.ts:1428-1431\n    app.onError((err, c) => {\n      c.header('x-debug', err.message)\n      return c.text('Custom Error Message', 500)\n    })\n```\n\n### `HTTPException` Handling\n\n`HTTPException` is a special class that extends `Error` to represent an HTTP error. It allows you to specify a status code and a response directly.\n\n#### Default Behavior\nWhen an `HTTPException` is thrown, Hono's default error handler catches it and calls the exception's `getResponse()` method. This method generates a `Response` object using the status and message provided to the exception.\n\n```typescript\n// src/http-exception.ts:65-78\n  getResponse(): Response {\n    if (this.res) {\n      const newResponse = new Response(this.res.body, {\n        status: this.status,\n        headers: this.res.headers,\n      })\n      return newResponse\n    }\n    return new Response(this.message, {\n      status: this.status,\n    })\n  }\n```\n\nThis is tested as follows, where throwing the exception results directly in a 401 response:\n```typescript\n// src/hono.test.ts:1483-1493\n    app.get('/exception', () => {\n      throw new HTTPException(401, {\n        message: 'Unauthorized',\n      })\n    })\n\n    it('Should return 401 response', async () => {\n      const res = await app.request('http://localhost/exception')\n      expect(res.status).toBe(401)\n      expect(await res.text()).toBe('Unauthorized')\n    })\n```\n\n#### Custom Handling\nAn `HTTPException` can also be caught by a custom `onError` handler, allowing for more specific error handling logic. The handler can inspect the error instance to decide on the appropriate response.\n\n```typescript\n// src/hono.test.ts:1503-1508\n    app2.onError((err, c) => {\n      if (err instanceof HTTPException && err.status === 401) {\n        return c.text('Custom Error Message', 401)\n      }\n      return c.text('Internal Server Error', 500)\n    })\n```"
+ },
+ {
+  "id": "hono-13",
+  "category": "behavior",
+  "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
+  "reference_answer": "c.redirect(location, status?) sets the Location header and returns a response with status 302 by default. A location containing characters outside \\x00-\\xFF is passed through encodeURI. c.text() takes a fast path, returning new Response(text), when no headers, status, arguments or finalization exist. Otherwise it sets Content-Type 'text/plain; charset=UTF-8'. c.json() JSON.stringifies the value with Content-Type 'application/json'. c.notFound() calls the notFound handler the app passed into the Context, so a custom app.notFound applies. It falls back to an empty Response if none was passed.",
+  "key_facts": [
+   "redirect defaults to 302",
+   "non-Latin1 redirect locations are encodeURI'd",
+   "c.text sets 'text/plain; charset=UTF-8' (with a bare new Response fast path)",
+   "c.notFound delegates to the app's notFound handler"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/context.ts",
+    "lines": "279"
+   },
+   {
+    "path": "src/context.ts",
+    "lines": "682-733"
+   },
+   {
+    "path": "src/context.ts",
+    "lines": "750-779"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### c.redirect()\n-   **Status Code**: `302` (Found)\n\n### c.text()\n-   **Status Code**: `200` (OK)\n-   **`Content-Type` Header**: `text/plain; charset=UTF-8`\n\n### c.json()\n-   **Status Code**: `200` (OK)\n-   **`Content-Type` Header**: `application/json; charset=UTF-8`\n\n### c.notFound()\n-   **Status Code**: `404` (Not Found)\n-   **Response Body**: A `Response` object, typically with a \"Not Found\" message."
+ },
+ {
+  "id": "hono-14",
+  "category": "where",
+  "question": "Where is the URL path extracted from a request, and where is the strict / non-strict trailing-slash behavior selected?",
+  "reference_answer": "getPath and getPathNoStrict in src/utils/url.ts. getPath scans request.url for the path, stopping at '?' or '#', and calls tryDecodeURI when it sees '%'. getPathNoStrict removes one trailing '/' from paths longer than 1. The choice is made in the HonoBase constructor: this.getPath = (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict.",
+  "key_facts": [
+   "implemented in src/utils/url.ts as getPath and getPathNoStrict",
+   "selection happens in the HonoBase constructor in src/hono-base.ts",
+   "strict defaults to true"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/utils/url.ts",
+    "lines": "106-146"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "170-172"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### Path Extraction\n\nThe URL path is extracted from an incoming `Request` object by the `getPath` function.\n\n**File**: `src/utils/url.ts`\n\n**Function**: `getPath(request: Request): string`\n\nThis function manually parses the `request.url` string. It finds the first `/` after the protocol and hostname (e.g., after `https://example.com`) and then reads the string until it encounters a `?` (query parameter separator) or a `#` (fragment separator). It also handles percent-encoded characters within the path.\n\n```typescript\n// src/utils/url.ts:108-136\nexport const getPath = (request: Request): string => {\n  const url = request.url\n  const start = url.indexOf('/', url.indexOf(':') + 4)\n  let i = start\n  for (; i < url.length; i++) {\n    const charCode = url.charCodeAt(i)\n    if (charCode === 37) {\n      // '%'\n      // If the path contains percent encoding, use `indexOf()` to find '?' or '#' and return the result immediately.\n      // Although this is a performance disadvantage, it is acceptable since we prefer cases that do not include percent encoding.\n      const queryIndex = url.indexOf('?', i)\n      const hashIndex = url.indexOf('#', i)\n      const end =\n        queryIndex === -1\n          ? hashIndex === -1\n            ? undefined\n            : hashIndex\n          : hashIndex === -1\n            ? queryIndex\n            : Math.min(queryIndex, hashIndex)\n      const path = url.slice(start, end)\n      return tryDecodeURI(path.includes('%25') ? path.replace(/%25/g, '%2525') : path)\n    } else if (charCode === 63 || charCode === 35) {\n      // '?' or '#'\n      break\n    }\n  }\n  return url.slice(start, i)\n}\n```\n\n### Strict vs. Non-Strict Routing\n\nThe selection between strict and non-strict trailing-slash behavior is determined by the `strict` option passed to the `Hono` constructor. By default, routing is strict (`strict: true`).\n\n-   **Strict (default)**: Uses the `getPath` function directly. `/path` and `/path/` are treated as different routes.\n-   **Non-Strict (`strict: false`)**: Uses the `getPathNoStrict` function, which wraps `getPath` and removes any trailing slash. `/path` and `/path/` are treated as the same route.\n\n**File**: `src/utils/url.ts`\n\n**Function**: `getPathNoStrict(request: Request): string`\n\nThis function first gets the path using `getPath` and then removes the trailing slash if the path is longer than `/` and ends with one.\n\n```typescript\n// src/utils/url.ts:141-146\nexport const getPathNoStrict = (request: Request): string => {\n  const result = getPath(request)\n\n  // if strict routing is false => `/hello/hey/` and `/hello/hey` are treated the same\n  return result.length > 1 && result.at(-1) === '/' ? result.slice(0, -1) : result\n}\n```\n\nThis behavior is confirmed in the test suite.\n\n**File**: `src/hono.test.ts`\n\n```typescript\n// src/hono.test.ts:342-356\n    describe('strict is false', () => {\n      const app = new Hono({ strict: false })\n\n      app.get('/hello', (c) => {\n        return c.text('/hello')\n      })\n\n      it('/hello and /hello/ are treated as the same', async () => {\n        let res = await app.request('http://localhost/hello')\n        expect(res).not.toBeNull()\n        expect(res.status).toBe(200)\n        res = await app.request('http://localhost/hello/')\n        expect(res).not.toBeNull()\n        expect(res.status).toBe(200)\n      })\n    })\n```"
+ },
+ {
+  "id": "hono-15",
+  "category": "where",
+  "question": "Where does RegExpRouter build its matchers, and when does that happen?",
+  "reference_answer": "In src/router/reg-exp-router/matcher.ts, function match(). On the first call it runs this.buildAllMatchers(), which RegExpRouter defines in router.ts and which builds one matcher per method from #routes and #middleware. It then replaces this.match with a closure that checks a static-path map first and otherwise runs one combined RegExp, using the index of the empty capture group to pick the handler set. Path conflicts are reported at that point by rethrowing the trie's PATH_ERROR as UnsupportedPathError.",
+  "key_facts": [
+   "the lazy build is in match() in src/router/reg-exp-router/matcher.ts",
+   "buildAllMatchers runs on the first match and this.match is then replaced",
+   "the built matcher checks a static map before the combined RegExp",
+   "conflicts surface as UnsupportedPathError (converted from PATH_ERROR) at build time"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/router/reg-exp-router/matcher.ts",
+    "lines": "10-33"
+   },
+   {
+    "path": "src/router/reg-exp-router/router.ts",
+    "lines": "43-65"
+   },
+   {
+    "path": "src/router/reg-exp-router/router.ts",
+    "lines": "206-215"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "`RegExpRouter` builds its matchers lazily on the first call to the `match` method.\n\n### When Matchers are Built\n\nThe `buildAllMatchers` method is invoked inside the `match` function. This happens only once; after the first execution, the `match` method on the instance is replaced with a more direct version, and the raw route data is cleared.\n\n*   **File**: `src/router/reg-exp-router/matcher.ts`\n*   **Code**:\n    ```typescript\n    // src/router/reg-exp-router/matcher.ts:10-12\n    export function match<R extends Router<T>, T>(this: R, method: string, path: string): Result<T> {\n      // eslint-disable-next-line @typescript-eslint/no-explicit-any\n      const matchers: MatcherMap<T> = (this as any).buildAllMatchers()\n    ```\n\n### How Matchers are Built\n\nThe building process is orchestrated by the `buildAllMatchers` method in `RegExpRouter`.\n\n1.  **`buildAllMatchers()`**: This method iterates through all HTTP methods that have registered routes and calls a private `#buildMatcher` method for each. After completion, it clears the internal `#routes` and `#middleware` properties to free up memory.\n\n    *   **File**: `src/router/reg-exp-router/router.ts`\n    *   **Code**:\n        ```typescript\n        // src/router/reg-exp-router/router.ts:201-216\n        protected buildAllMatchers(): MatcherMap<T> {\n          const matchers: MatcherMap<T> = Object.create(null)\n\n          Object.keys(this.#routes!)\n            .concat(Object.keys(this.#middleware!))\n            .forEach((method) => {\n              matchers[method] ||= this.#buildMatcher(method)\n            })\n\n          // Release cache\n          this.#middleware = this.#routes = undefined\n          clearWildcardRegExpCache()\n\n          return matchers\n        }\n        ```\n\n2.  **`#buildMatcher()`**: This private method collects all routes for a given method (including routes registered for `METHOD_NAME_ALL`) and passes them to `buildMatcherFromPreprocessedRoutes`.\n\n    *   **File**: `src/router/reg-exp-router/router.ts`\n    *   **Code**:\n        ```typescript\n        // src/router/reg-exp-router/router.ts:249-251\n        } else {\n              return buildMatcherFromPreprocessedRoutes(routes)\n            }\n        ```\n\n3.  **`buildMatcherFromPreprocessedRoutes()`**: This function is the core of the building process. It uses a `Trie` data structure to process the route paths.\n\n    *   It separates static and dynamic paths.\n    *   It inserts all dynamic paths into a `Trie`.\n    *   It calls `trie.buildRegExp()` to generate a single, large regular expression for all dynamic routes.\n    *   It returns a `Matcher` tuple containing the `RegExp`, handler data for dynamic routes, and a map for static routes.\n\n    *   **File**: `src/router/reg-exp-router/router.ts`\n    *   **Code**:\n        ```typescript\n        // src/router/reg-exp-router/router.ts:32-35\n        function buildMatcherFromPreprocessedRoutes<T>(\n          routes: [string, HandlerWithMetadata<T>[]][]\n        ): Matcher<T> {\n          const trie = new Trie()\n        ```\n        ```typescript\n        // src/router/reg-exp-router/router.ts:66-68\n        try {\n              paramAssoc = trie.insert(path, j, pathErrorCheckOnly)\n            } catch (e) {\n        ```\n        ```typescript\n        // src/router/reg-exp-router/router.ts:89-90\n        const [regexp, indexReplacementMap, paramReplacementMap] = trie.buildRegExp()\n        ```"
+ },
+ {
+  "id": "hono-16",
+  "category": "where",
+  "question": "Where is request-body caching implemented, so that c.req.json() and c.req.text() can both be called?",
+  "reference_answer": "In src/request.ts on the HonoRequest class: the public bodyCache field and the private #cachedBody(key) method. #cachedBody returns the cached promise for the same key. If a different body type was cached, it rebuilds the body from that cached value with new Response(body)[key](), stringifying first if the cached key was 'json'. Otherwise it reads raw[key]() and stores the promise. json() is implemented as #cachedBody('text') followed by JSON.parse.",
+  "key_facts": [
+   "implemented in HonoRequest (src/request.ts) via bodyCache and #cachedBody",
+   "a body cached under another type is converted via new Response(cached)[key]()",
+   "json() reads the cached 'text' then JSON.parse"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/request.ts",
+    "lines": "69"
+   },
+   {
+    "path": "src/request.ts",
+    "lines": "220-255"
+   }
+  ],
+  "X": "The request-body caching is implemented in the private method `#cachedBody` within the `HonoRequest` class.\n\n### Implementation Details\n\nThe core logic resides in `src/request.ts`. All public body-parsing methods (`.json()`, `.text()`, `.arrayBuffer()`, etc.) call the `#cachedBody` method.\n\n**`src/request.ts`**\n\nThe `#cachedBody` method works as follows:\n1.  It checks an internal `bodyCache` object for a promise of the requested body type (e.g., 'text'). If found, it returns the cached promise.\n2.  If the requested type is not in the cache, but another type *is*, it takes the cached body, creates a new `Response` object from it, and calls the appropriate method (e.g., `.text()`) on the new `Response` to perform a conversion.\n3.  If the cache is empty, it calls the method on the original `raw` request, stores the resulting promise in `bodyCache`, and then returns it.\n\n```typescript\n// File: src/request.ts\n// Lines: 227-247\n  #cachedBody = (key: keyof Body) => {\n    const { bodyCache, raw } = this\n    const cachedBody = bodyCache[key]\n\n    if (cachedBody) {\n      return cachedBody\n    }\n\n    const anyCachedKey = Object.keys(bodyCache)[0]\n    if (anyCachedKey) {\n      return (bodyCache[anyCachedKey as keyof Body] as Promise<BodyInit>).then((body) => {\n        if (anyCachedKey === 'json') {\n          body = JSON.stringify(body)\n        }\n        return new Response(body)[key]()\n      })\n    }\n\n    return (bodyCache[key] = raw[key]())\n  }\n```\n\nThe public methods like `json()` and `text()` are wrappers around this caching logic. Notably, `json()` first calls `#cachedBody('text')` and then parses the resulting text.\n\n```typescript\n// File: src/request.ts\n// Lines: 253-255\n  json<T = any>(): Promise<T> {\n    return this.#cachedBody('text').then((text: string) => JSON.parse(text))\n  }\n\n// File: src/request.ts\n// Lines: 269-271\n  text(): Promise<string> {\n    return this.#cachedBody('text')\n  }\n```\n\n### Related Functionality\n\nThe `cloneRawRequest` utility function also relies on this caching mechanism to reconstruct a `Request` object after its body has already been consumed by a `HonoRequest` method.\n\n```typescript\n// File: src/request.ts\n// Lines: 484-486\nexport const cloneRawRequest = async (req: HonoRequest): Promise<Request> => {\n  if (!req.raw.bodyUsed) {\n    return req.raw.clone()\n  }\n\n  const cacheKey = (Object.keys(req.bodyCache) as Array<keyof Body>)[0]\n// ...\n  const requestInit: RequiredRequestInit = {\n    body: await req[cacheKey](),\n// ...\n```\n\n### Usage in Tests\n\nThis caching behavior is extensively tested, confirming that different body-parsing methods can be called sequentially on the same `HonoRequest` object.\n\n**`src/request.test.ts`**\n\nThis test suite directly invokes multiple body methods on a single `HonoRequest` instance to verify the cache works as expected.\n\n```typescript\n// File: src/request.test.ts\n// Lines: 242-254\ndescribe('Body methods with caching', () => {\n  test('req.text()', async () => {\n    const req = new HonoRequest(\n      new Request('http://localhost', {\n        method: 'POST',\n        body: text,\n      })\n    )\n    expect(await req.text()).toEqual(text)\n    expect(await req.json()).toEqual(json)\n    expect(await req.arrayBuffer()).toEqual(buffer)\n//...\n```\n\n**`src/validator/validator.test.ts`**\n\nTests for the validator middleware also demonstrate this feature, where the body is consumed and then accessed again in a subsequent handler.\n\n```typescript\n// File: src/validator/validator.test.ts\n// Lines: 1117-1130\n      async (c) => {\n        // `c.req.json()` should not throw the error\n        await c.req.json()\n        // `c.req.text()` should not throw the error\n        await c.req.text()\n        // `c.req.arrayBuffer()` should not throw the error\n        await c.req.arrayBuffer()\n        // `c.req.blob()` should not throw the error\n        await c.req.blob()\n        return c.text('foo')\n      }\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-17",
+  "category": "where",
+  "question": "Where are app.get/post/.../all, app.on and app.use defined, and which HTTP methods get shortcut methods?",
+  "reference_answer": "They are created as instance properties in the HonoBase constructor (src/hono-base.ts). The constructor loops over [...METHODS, 'all'] and defines app.on and app.use there too. All of them register routes through the private #addRoute, which upper-cases the method, merges _basePath, calls router.add(method, path, [handler, routerRoute]) and pushes the route onto app.routes. METHODS is defined in src/router.ts as ['get','post','put','delete','options','patch']. app.use without a path registers under method 'ALL' with path '*'.",
+  "key_facts": [
+   "defined in the HonoBase constructor in src/hono-base.ts",
+   "METHODS = get, post, put, delete, options, patch (src/router.ts) plus 'all'",
+   "routes are registered via private #addRoute which calls router.add and pushes to app.routes",
+   "app.use() without a path uses METHOD_NAME_ALL and path '*'"
+  ],
+  "wrong_but_plausible": "there is an app.head() shortcut",
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "126-168"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "385-397"
+   },
+   {
+    "path": "src/router.ts",
+    "lines": "9-17"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### Method Definitions\n\nThe `app.get`, `app.post`, `app.all`, and `app.on` methods are defined within the constructor of the `HonoBase` class. The `app.use` method is also defined in this class.\n\n**File:** `src/hono-base.ts`\n\n-   **`app.get`, `app.post`, `app.put`, etc. and `app.all`**: These methods are dynamically created by iterating over a list of HTTP methods.\n\n    ```typescript\n    // src/hono-base.ts:125-138\n    const allMethods = [...METHODS, METHOD_NAME_ALL_LOWERCASE]\n    allMethods.forEach((method) => {\n      this[method] = (args1: string | H, ...args: H[]) => {\n        if (typeof args1 === 'string') {\n          this.#path = args1\n        } else {\n          this.#addRoute(method, this.#path, args1)\n        }\n        args.forEach((handler) => {\n          this.#addRoute(method, this.#path, handler)\n        })\n        return this as any\n      }\n    })\n    ```\n\n-   **`app.on`**: This method is explicitly defined to handle routing for one or more HTTP methods and paths.\n\n    ```typescript\n    // src/hono-base.ts:141-151\n    this.on = (method: string | string[], path: string | string[], ...handlers: H[]) => {\n      for (const p of [path].flat()) {\n        this.#path = p\n        for (const m of [method].flat()) {\n          handlers.map((handler) => {\n            this.#addRoute(m.toUpperCase(), this.#path, handler)\n          })\n        }\n      }\n      return this as any\n    }\n    ```\n\n-   **`app.use`**: This method is used for adding middleware. It adds a handler that matches all HTTP methods for a given path, effectively calling `addRoute` with the `ALL` method.\n\n### HTTP Methods with Shortcut Methods\n\nThe shortcut methods are generated from constants defined in `src/router.ts`.\n\n**File:** `src/router.ts`\n\n```typescript\n// src/router.ts:13-16\nexport const METHOD_NAME_ALL_LOWERCASE = 'all' as const\n/**\n * Array of supported HTTP methods.\n */\nexport const METHODS = ['get', 'post', 'put', 'delete', 'options', 'patch'] as const\n```\n\nBased on these constants, the following shortcut methods are created:\n- `get`\n- `post`\n- `put`\n- `delete`\n- `options`\n- `patch`\n- `all`"
+ },
+ {
+  "id": "hono-18",
+  "category": "gotcha",
+  "question": "There is no app.head(). How are HEAD requests handled?",
+  "reference_answer": "#dispatch special-cases HEAD. It re-dispatches the same request as 'GET' and wraps the result as new Response(null, getResponse), keeping the status and headers but dropping the body. GET routes and GET middleware therefore answer HEAD requests automatically.",
+  "key_facts": [
+   "HEAD is not in METHODS (no app.head shortcut)",
+   "HEAD is dispatched as GET internally",
+   "the GET response is returned with a null body"
+  ],
+  "wrong_but_plausible": "HEAD returns 404 unless a HEAD route is registered",
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "412-416"
+   },
+   {
+    "path": "src/router.ts",
+    "lines": "17"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Hono automatically handles `HEAD` requests by invoking the corresponding `GET` handler for the same path. The framework executes the handler's logic, including setting headers, but then strips the response body before sending the final response.\n\nThis behavior is demonstrated in the test suite.\n\n### File: `src/hono.test.ts`\n\nA test case defines a `GET` handler for `/page` and then sends both `GET` and `HEAD` requests to it.\n\n```typescript\n// src/hono.test.ts:2855-2861\ndescribe('HEAD method', () => {\n  const app = new Hono()\n\n  app.get('/page', (c) => {\n    c.header('X-Message', 'Foo')\n    c.header('X-Method', c.req.method)\n    return c.text('/page')\n  })\n```\n\nThe test for the `HEAD` request confirms that the `GET` handler was executed (headers are set) but the response body is `null`, which is the expected behavior for a `HEAD` request.\n\n```typescript\n// src/hono.test.ts:2873-2882\n  it('Should return 200 response without body - HEAD /page', async () => {\n    const req = new Request('http://localhost/page', {\n      method: 'HEAD',\n    })\n    const res = await app.request(req)\n    expect(res.status).toBe(200)\n    expect(res.headers.get('X-Message')).toBe('Foo')\n    expect(res.headers.get('X-Method')).toBe('HEAD')\n    expect(res.body).toBe(null)\n  })\n```"
+ },
+ {
+  "id": "hono-19",
+  "category": "gotcha",
+  "question": "If you pass both strict: false and a custom getPath to new Hono(), which getPath is used?",
+  "reference_answer": "The custom getPath is ignored. The constructor uses options.getPath only when strict is true: (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict. With strict: false it always uses the built-in getPathNoStrict.",
+  "key_facts": [
+   "with strict:false the built-in getPathNoStrict is always used",
+   "a custom getPath is only honored when strict is true/undefined"
+  ],
+  "wrong_but_plausible": "the custom getPath is used and trailing slashes are also trimmed",
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "170-172"
+   }
+  ],
+  "X": "When `strict: false` is passed to the `Hono` constructor, the `getPathNoStrict` function is used, and the custom `getPath` function provided in the options is ignored.\n\n### Implementation Details\n\nThe logic is defined in the `HonoBase` constructor. The `getPath` property is assigned based on the value of the `strict` option.\n\n*   **File**: `src/hono-base.ts`\n*   **Lines**: 171-173\n\n```typescript\nconst { strict, ...optionsWithoutStrict } = options\nObject.assign(this, optionsWithoutStrict)\nthis.getPath = (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict\n```\n\nIf `strict` is `false`, the ternary operator resolves to `getPathNoStrict`, which is a function that removes the trailing slash from a path.\n\n*   **File**: `src/utils/url.ts`\n*   **Lines**: 141-145\n\n```typescript\nexport const getPathNoStrict = (request: Request): string => {\n  const result = getPath(request)\n\n  // if strict routing is false => `/hello/hey/` and `/hello/hey` are treated the same\n  return result.length > 1 && result.at(-1) === '/' ? result.slice(0, -1) : result\n}\n```\n\n### Test Case Confirmation\n\nA test case in `src/hono.test.ts` confirms this behavior. Even though a `getPath` function is provided along with `strict: false`, the application behaves as if `getPathNoStrict` is being used, treating `/hello` and `/hello/` as the same path.\n\n*   **File**: `src/hono.test.ts`\n*   **Lines**: 358-363\n\n```typescript\ndescribe('strict is false with `getPath` option', () => {\n  const app = new Hono({\n    strict: false,\n    getPath: getPath,\n  })\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-20",
+  "category": "gotcha",
+  "question": "If a sub-app has its own app.notFound() and onError(), and is mounted with parent.route('/x', sub), which handlers apply to requests under /x?",
+  "reference_answer": "Only the sub-app's onError is kept. route() wraps the sub-app's handlers with its errorHandler when that handler is custom. The sub-app's notFound is ignored: route() copies only routes, and at request time the Context and compose use the parent's #notFoundHandler. Unmatched paths under /x, and c.notFound() calls, therefore use the parent's notFound handler.",
+  "key_facts": [
+   "a custom sub-app onError is preserved by wrapping its handlers",
+   "the sub-app's notFound handler is not carried over by route()",
+   "the parent's notFound handler is used for /x requests"
+  ],
+  "wrong_but_plausible": "the sub-app's notFound handler handles 404s under its prefix",
+  "evidence": [
+   {
+    "path": "src/hono-base.ts",
+    "lines": "218-231"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "421-427"
+   },
+   {
+    "path": "src/hono-base.ts",
+    "lines": "450"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Based on the provided tests, here is how `onError` and `notFound` handlers behave for a sub-app mounted with `parent.route()`:\n\n### `onError()` Behavior\n\nThe `onError` handler closest to where the error is thrown will be executed.\n\n*   **Error in Sub-App Handler**: If a handler within the sub-app throws an error, the sub-app's `onError` handler is used.\n*   **Error in Parent Middleware**: If a middleware on the parent app throws an error (even for a request to the sub-app's path), the parent's `onError` handler is used.\n\n**Code Evidence from `src/hono.test.ts`:**\n\n*   **Sub-app's `onError` is used:** An error is thrown inside the `/error` route of the `sub` app, and `sub.onError` handles it.\n\n    ```typescript\n    // src/hono.test.ts:1901-1903\n    sub.get('/error', () => {\n      throw new Error('This is Error')\n    })\n\n    // src/hono.test.ts:1905-1907\n    sub.onError((err, c) => {\n      return c.text('onError by sub', 500)\n    })\n\n    // src/hono.test.ts:1923-1927\n    it('should be handled by sub', async () => {\n      const res = await app.request('https://example.com/sub/error')\n      expect(res.status).toBe(500)\n      expect(await res.text()).toBe('onError by sub')\n    })\n    ```\n\n*   **Parent's `onError` is used:** An error is thrown by a middleware on the parent `app` for a request to a sub-app path, and `app.onError` handles it.\n\n    ```typescript\n    // src/hono.test.ts:1877-1882\n    app.use('*', async (c, next) => {\n      await next()\n      if (c.req.query('app-error')) {\n        throw new Error('This is Error')\n      }\n    })\n\n    // src/hono.test.ts:1884-1886\n    app.onError((err, c) => {\n      return c.text('onError by app', 500)\n    })\n\n    // src/hono.test.ts:1917-1921\n    it('should be handled by app', async () => {\n      const res = await app.request('https://example.com/sub/ok?app-error=1')\n      expect(res.status).toBe(500)\n      expect(await res.text()).toBe('onError by app')\n    })\n    ```\n\n### `notFound()` Behavior\n\nThe parent app's `notFound` handler is always used for requests that do not match any route, even for paths under the sub-app's mount point. The sub-app's `notFound` handler is ignored when using `app.route()`.\n\n**Code Evidence from `src/hono.test.ts`:**\n\nA request to `/sub/implicit-404` does not match any route in the `sub` app. The test confirms that the parent `app`'s `notFound` handler is invoked, not the `sub` app's handler.\n\n```typescript\n// src/hono.test.ts:1970-1972\napp.notFound((c) => {\n  return c.text('404 Not Found by app', 404)\n})\n\n// src/hono.test.ts:1980-1982\nsub.notFound((c) => {\n  return c.text('404 Not Found by sub', 404)\n})\n\n// src/hono.test.ts:1984\napp.route('/sub', sub)\n\n// src/hono.test.ts:2015-2020\nit('/sub/implicit-404 should be handled by sub', async () => {\n  const res = await app.request('https://example.com/sub/implicit-404')\n  expect(res.status).toBe(404)\n  expect(res.headers.get('explicit')).toBe(null)\n  expect(await res.text()).toBe('404 Not Found by app') // <-- Parent handler is used\n})\n```"
+ },
+ {
+  "id": "hono-21",
+  "category": "gotcha",
+  "question": "`throw new HTTPException(401, { res: new Response('nope', { status: 403 }) })`: what status does the client get?",
+  "reference_answer": "401. HTTPException.getResponse() builds new Response(this.res.body, { status: this.status, headers: this.res.headers }), so the exception's own status replaces the status of the supplied Response, while the body and headers are kept. Without res, the response body is the exception's message, and the status defaults to 500 when no status is given.",
+  "key_facts": [
+   "getResponse uses the exception's status, overriding the supplied res status",
+   "body and headers of the supplied res are kept",
+   "HTTPException status defaults to 500"
+  ],
+  "wrong_but_plausible": "403, because the custom Response is returned as-is",
+  "evidence": [
+   {
+    "path": "src/http-exception.ts",
+    "lines": "46-78"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The client receives a `401` status code.\n\nThe status code provided in the `HTTPException` constructor takes precedence over the status code of the `Response` object passed in the `res` option.\n\n### Code Analysis\n\n1.  **`src/http-exception.ts`**: The `getResponse` method of the `HTTPException` class constructs a new `Response` object. It uses the `status` property of the exception (`this.status`), which is set by the constructor's first argument, and ignores the status of the provided `res` object.\n\n    ```typescript\n    // File: src/http-exception.ts\n    [lines 65-71]\n    getResponse(): Response {\n      if (this.res) {\n        const newResponse = new Response(this.res.body, {\n          status: this.status,\n          headers: this.res.headers,\n        })\n        return newResponse\n      }\n      // ...\n    }\n    ```\n\n2.  **`src/http-exception.test.ts`**: A test case explicitly confirms this behavior, showing that the status code from the constructor (`400`) is used, not the one from the inner `Response` (`200`).\n\n    ```typescript\n    // File: src/http-exception.test.ts\n    [lines 37-46]\n    it('Should prioritize the status code over the code in the response', async () => {\n      const exception = new HTTPException(400, {\n        res: new Response('An exception', {\n          status: 200,\n        }),\n      })\n      const res = exception.getResponse()\n      expect(res.status).toBe(400)\n      expect(await res.text()).toBe('An exception')\n    })\n    ```"
+ },
+ {
+  "id": "hono-22",
+  "category": "dev_workflow",
+  "question": "How are tests run, and how are the per-runtime suites organized?",
+  "reference_answer": "`bun run test` runs tsc -p tsconfig.spec.json && vitest --run. vitest.config.ts defines projects: every runtime-tests/*/vitest.config.ts, plus 'main' (src/scripts/build tests, excluding *.case.test.*), 'jsx-runtime-default' and 'jsx-runtime-dom'. Coverage uses v8 and is enabled by default. Per-runtime scripts select a vitest project, for example test:node uses --project node, and the same pattern covers workerd, fastly, lambda and lambda-edge. The workerd suite starts a real worker with wrangler's unstable_dev. Deno and Bun use their native runners: test:deno runs deno test with configs in runtime-tests/deno and deno-jsx, and test:bun runs bun test runtime-tests/bun/*.",
+  "key_facts": [
+   "test = type-check (tsc -p tsconfig.spec.json) then vitest --run",
+   "vitest projects include runtime-tests/*/vitest.config.ts plus main and two jsx-runtime projects",
+   "node/workerd/fastly/lambda/lambda-edge run as vitest projects via --project",
+   "deno and bun suites use deno test / bun test, not vitest"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "package.json",
+    "lines": "14-23"
+   },
+   {
+    "path": "vitest.config.ts",
+    "lines": "1-73"
+   },
+   {
+    "path": "runtime-tests/workerd/index.test.ts",
+    "lines": "1-17"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The project uses multiple test runners and organizational strategies tailored to different environments.\n\n### Test Execution and Frameworks\n\n-   **Vitest**: The primary test runner for the core library located in the `src` directory. The configuration is in `vitest.config.ts`, which defines a main project for most source files.\n    ```typescript\n    // vitest.config.ts\n    test: {\n      exclude: [...configDefaults.exclude, '**/sandbox/**', '**/*.case.test.*'],\n      include: [\n        'src/**/(*.)+(spec|test).+(ts|tsx|js)',\n        // ...\n      ],\n      name: 'main',\n    },\n    ```\n-   **Bun Test**: Used for Bun-specific runtime tests.\n    ```typescript\n    // runtime-tests/bun/color.test.ts\n    import { expect, test } from 'bun:test'\n\n    test('Bun.build compatibility test', async () => {\n      // ...\n    })\n    ```\n-   **Deno Test**: Used for Deno-specific runtime tests.\n    ```typescript\n    // runtime-tests/deno/hono.test.ts\n    import { assertEquals } from '@std/assert'\n    \n    Deno.test('Hello World', async () => {\n      // ...\n    })\n    ```\n-   **Wrangler**: The `unstable_dev` function from Wrangler is used to run a local `workerd` (Cloudflare Workers) instance, against which tests are executed.\n    ```typescript\n    // runtime-tests/workerd/index.test.ts\n    import { unstable_dev } from 'wrangler'\n    \n    beforeAll(async () => {\n      worker = await unstable_dev('./runtime-tests/workerd/index.ts', {\n        // ...\n      })\n    })\n    ```\n\n### Test Suite Organization\n\nTests are organized into two main categories: core library tests and per-runtime tests.\n\n#### 1. Core Library Tests (`src`)\n\n-   Tests for the main Hono logic reside alongside the source code in the `src` directory.\n-   A pattern of shared test cases is used to reduce duplication. The `runTest` function from `src/router/common.case.test.ts` defines a common suite of tests for router implementations.\n-   Router-specific test files import and execute this common suite.\n    ```typescript\n    // src/router/trie-router/router.test.ts\n    import { runTest } from '../common.case.test'\n    import { TrieRouter } from './router'\n    \n    describe('TrieRouter', () => {\n      runTest({\n        newRouter: () => new TrieRouter(),\n      })\n    })\n    ```\n    ```typescript\n    // src/router/smart-router/router.test.ts\n    import { runTest } from '../common.case.test'\n    import { SmartRouter } from './router'\n    \n    describe('SmartRouter', () => {\n      runTest({\n        newRouter: () =>\n          new SmartRouter({\n            routers: [new RegExpRouter(), new TrieRouter()],\n          }),\n      })\n    })\n    ```\n\n#### 2. Per-Runtime Tests (`runtime-tests`)\n\n-   A dedicated `runtime-tests` directory contains subdirectories for each supported JavaScript runtime (e.g., `deno`, `bun`, `workerd`).\n-   These tests validate Hono's compatibility and behavior within a specific environment, often testing adapter functions like `env` and `getRuntimeKey`.\n-   **Example: Deno Test**\n    ```typescript\n    // runtime-tests/deno/hono.test.ts\n    Deno.test('runtime', () => {\n      assertEquals(getRuntimeKey(), 'deno')\n    })\n    ```\n-   **Example: workerd Test**\n    ```typescript\n    // runtime-tests/workerd/index.test.ts\n    it('Should return 200 response with the runtime key', async () => {\n      const res = await worker.fetch('/')\n      expect(res.status).toBe(200)\n      expect(await res.text()).toBe('Hello from workerd')\n    })\n    ```\n\n### Continuous Integration (CI)\n\nThe GitHub Actions workflow in `.github/workflows/ci.yml` orchestrates the execution of all test suites. It defines separate jobs for each environment to ensure isolation.\n\n-   **Deno Job**: Executes tests using the `deno test` command.\n    ```yaml\n    # .github/workflows/ci.yml\n    deno:\n      name: 'Deno'\n      # ...\n      steps:\n        # ...\n        - run: env NAME=Deno deno test --coverage=coverage/raw/deno-runtime --allow-read --allow-env --allow-write --allow-net -c runtime-tests/deno/deno.json runtime-tests/deno\n    ```\n-   **Bun Job**: Executes tests using the `bun run test:bun` command.\n    ```yaml\n    # .github/workflows/ci.yml\n    bun:\n      name: 'Bun'\n      # ...\n      steps:\n        # ...\n        - run: bun install --frozen-lockfile\n        - run: bun run test:bun\n    ```\n-   **Node.js and workerd Jobs**: Use `bun run` to execute their respective test scripts (e.g., `test:node`, `test:workerd`).\n    ```yaml\n    # .github/workflows/ci.yml\n    node:\n      name: 'Node.js v${{ matrix.node }}'\n      # ...\n      steps:\n        # ...\n        - run: bun run test:node\n\n    workerd:\n      name: 'workerd'\n      # ...\n      steps:\n        # ...\n        - run: bun run test:workerd\n    ```"
+ },
+ {
+  "id": "hono-23",
+  "category": "dev_workflow",
+  "question": "How is the npm package built?",
+  "reference_answer": "`bun run build` removes dist and runs `bun ./build/build.ts`. That script first checks that the package.json and jsr.json exports match, then globs src/**/*.ts as entry points, excluding tests, src/mod.ts, src/middleware.ts and src/deno/**. It runs three steps in parallel: an esbuild ESM build to dist with bundle: true and an add-extension plugin that keeps imports external and rewrites them to '.js', an esbuild CJS build to dist/cjs, and tsc --emitDeclarationOnly with tsconfig.build.json. Afterwards it strips #private fields from the .d.ts files. Then copy:package.cjs.json writes {\"type\":\"commonjs\"} into dist/cjs and dist/types, and the postbuild step runs publint.",
+  "key_facts": [
+   "build runs build/build.ts under Bun using esbuild (ESM + CJS) and tsc for declarations",
+   "ESM output goes to dist, CJS to dist/cjs, declarations to dist/types",
+   "#private fields are removed from emitted .d.ts files",
+   "package.cjs.json ({type: commonjs}) is copied into dist/cjs and dist/types; publint runs postbuild"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "package.json",
+    "lines": "27-31"
+   },
+   {
+    "path": "build/build.ts",
+    "lines": "18-114"
+   },
+   {
+    "path": "package.cjs.json",
+    "lines": "1-3"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The npm package build and release process is automated using a GitHub Actions workflow.\n\n### Release Workflow\n\nThe process is defined in the `.github/workflows/release.yml` file and is triggered when a new tag is pushed to the repository.\n\n**Key Steps:**\n\n1.  **Environment Setup**: The workflow sets up Node.js and Bun using the versions specified in the `.tool-versions` file.\n2.  **Dependency Installation**: Dependencies are installed using Bun with the command:\n    ```yaml\n    - run: bun install --frozen-lockfile\n    ```\n3.  **Build Execution**: The project is built by running the `build` script (defined in the root `package.json`, not shown in context) via Bun:\n    ```yaml\n    - run: bun run build\n    ```\n4.  **NPM Publishing**: The built package is published to the npm registry with provenance.\n    ```yaml\n    - name: Publish to npm\n      run: npm stage publish --provenance --access public\n    ```\n\n### Build Tooling\n\nThe `perf-measures/bundle-check/scripts/check-bundle-size.ts` script indicates that `esbuild` is used for bundling and minifying the project's output. It builds the entry point `dist/index.js` to check its final size.\n\n```typescript\n// perf-measures/bundle-check/scripts/check-bundle-size.ts\n[lines 10-17]\n    await esbuild.build({\n      entryPoints: ['dist/index.js'],\n      bundle: true,\n      minify: true,\n      format: 'esm' as esbuild.Format,\n      target: 'es2022',\n      outfile: tempFilePath,\n    })\n```"
+ },
+ {
+  "id": "hono-24",
+  "category": "dev_workflow",
+  "question": "How are linting and formatting configured?",
+  "reference_answer": "`bun run lint` runs eslint on src, runtime-tests, build, perf-measures and benchmarks. eslint.config.mjs is a flat config that extends @hono/eslint-config and turns off the type-aware typescript-eslint rules plus some stylistic ones. It treats unused disable directives and unused inline configs as errors, and ignores .wrangler, coverage and dist. Formatting uses prettier (`format` checks, `format:fix` writes) over the same directories.",
+  "key_facts": [
+   "ESLint flat config extends @hono/eslint-config",
+   "type-information-requiring typescript-eslint rules are disabled",
+   "reportUnusedDisableDirectives and reportUnusedInlineConfigs are 'error'",
+   "prettier is used for formatting via format / format:fix"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "package.json",
+    "lines": "24-27"
+   },
+   {
+    "path": "eslint.config.mjs",
+    "lines": "1-80"
+   }
+  ],
+  "X": "Linting and formatting are configured to run via `bun` scripts and are automated using a GitHub Actions workflow.\n\n### Scripts\n\nThe primary commands for formatting and linting are:\n-   `bun run format:fix`\n-   `bun run lint:fix`\n\nThese are referenced in the pull request template and the CI workflow.\n\n### Automation\n\nA GitHub Actions workflow automatically applies formatting and linting fixes on pull requests and pushes to the `main` branch.\n\n**File:** `.github/workflows/autofix.yml`\n```yaml\nname: autofix.ci\n\non:\n  pull_request:\n  push:\n    branches: [main]\n\n# ...\n\njobs:\n  autofix:\n    name: autofix\n    runs-on: ubuntu-latest\n    # ...\n    steps:\n      - name: Checkout\n        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6\n      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2\n        with:\n          bun-version-file: '.tool-versions'\n      - run: bun install --frozen-lockfile\n      - run: bun run format:fix\n      - run: bun run lint:fix\n      - name: Apply fixes\n        uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1\n        with:\n          commit-message: 'ci: apply automated fixes'\n```\nThis workflow checks out the code, installs dependencies, runs the `format:fix` and `lint:fix` scripts, and then commits any changes with the message \"ci: apply automated fixes\".\n\n### Contributor Guidelines\n\nThe pull request template reminds contributors to run these commands locally before submitting their changes.\n\n**File:** `.github/pull_request_template.md`\n```markdown\n### The author should do the following, if applicable\n\n- [ ] Add tests\n- [ ] Run tests\n- [ ] `bun run format:fix && bun run lint:fix` to format the code\n- [ ] Add [TSDoc](https://tsdoc.org/)/[JSDoc](https://jsdoc.app/about-getting-started) to document the code\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "hono-25",
+  "category": "dev_workflow",
+  "question": "How is the package published to JSR, and how is consistency with npm exports enforced?",
+  "reference_answer": "jsr.json publishes '@hono/hono'. Its exports map subpaths directly to TypeScript sources, for example './tiny' to './src/preset/tiny.ts', while package.json maps them to dist JS, CJS and .d.ts files. build/build.ts calls validateExports in both directions, package.json against jsr.json and jsr.json against package.json, and throws 'Missing \"<entry>\" in ...' when an entry is missing (with wildcard support such as './utils/*'). CI runs `bunx jsr publish --dry-run`. The release workflow publishes to JSR with `deno run -A jsr:@david/publish-on-tag` and to npm with npm publish.",
+  "key_facts": [
+   "jsr.json name is @hono/hono and exports point at src/*.ts files",
+   "build validates package.json and jsr.json exports against each other in both directions",
+   "CI runs 'bunx jsr publish --dry-run'",
+   "release publishes to JSR via jsr:@david/publish-on-tag"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "jsr.json",
+    "lines": "1-12"
+   },
+   {
+    "path": "build/build.ts",
+    "lines": "20-26"
+   },
+   {
+    "path": "build/validate-exports.ts",
+    "lines": "1-37"
+   },
+   {
+    "path": ".github/workflows/ci.yml",
+    "lines": "59-70"
+   },
+   {
+    "path": ".github/workflows/release.yml",
+    "lines": "35-51"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### JSR Publishing\n\nThe package is published to JSR using a GitHub Actions workflow defined in `.github/workflows/release.yml`.\n\n-   **Trigger**: The workflow is triggered on a `push` event for any new tag (`*`).\n-   **Job**: A specific job named `publish-to-jsr` handles the process.\n-   **Steps**:\n    1.  The code is checked out.\n    2.  The Deno runtime is installed using the version specified in the `.tool-versions` file.\n    3.  Dependencies are installed via `deno install --no-lock --allow-scripts`.\n    4.  The package is published by executing a Deno script from JSR: `deno run -A jsr:@david/publish-on-tag@0.1.4`. This script manages the publication process based on the git tag.\n\n```yaml\n# .github/workflows/release.yml\n...\n  jsr:\n    name: publish-to-jsr\n    runs-on: ubuntu-latest\n\n    permissions:\n      contents: read\n      id-token: write\n\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6\n      - name: Install deno\n        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2\n        with:\n          deno-version-file: '.tool-versions'\n      - run: deno install --no-lock --allow-scripts\n      - name: Publish to JSR\n        run: deno run -A jsr:@david/publish-on-tag@0.1.4\n```\n\n### Enforcing Consistency with npm\n\nConsistency between npm and JSR exports is not enforced by an automated script or tool visible in the provided context. It is maintained manually through configuration that relies on a shared source structure.\n\n1.  **JSR Configuration**: The `jsr.json` file contains an `exports` map that explicitly defines the public entry points for the JSR package. These paths point directly to the TypeScript source files within the `src/` directory.\n\n    ```json\n    // jsr.json\n    \"exports\": {\n      \"./validator\": \"./src/validator/index.ts\",\n      \"./router\": \"./src/router.ts\",\n      \"./router/smart-router\": \"./src/router/smart-router/index.ts\",\n      // ... and so on\n    }\n    ```\n\n2.  **npm Configuration**: The npm package is created via a `bun run build` command in the `release.yml` workflow. This build process compiles the same TypeScript source files from `src/` into JavaScript. The resulting `package.json` (not shown) would contain an `exports` map pointing to these compiled distributable files.\n\nBoth publishing mechanisms use the same `src` directory as the single source of truth. The consistent file structure, where each feature or module has its own directory and `index.ts` file (e.g., `src/validator/index.ts`), serves as a convention that developers follow to keep both `jsr.json` and the npm build configuration synchronized."
+ }
+]

@@ -1,0 +1,16 @@
+[
+{"repo":"ky","id":"ky-03","true_at_head":"no","false_claims_explained":"no","note":"At head beforeRequest runs once outside retry loop; beforeError runs only in #throwProcessedError on final failure, not every attempt."},
+{"repo":"hono","id":"hono-02","true_at_head":"yes","false_claims_explained":"yes","note":"Head has adapters/* packages and @deprecated v5-removal notes on hono/vercel, aws-lambda etc.; Pages points to Workers, minor naming slip."},
+{"repo":"hono","id":"hono-05","true_at_head":"partly","false_claims_explained":"no","note":"res setter still merges previous headers (except content-type) at head; 'headers lost unless merged manually' remains false."},
+{"repo":"hono","id":"hono-08","true_at_head":"yes","false_claims_explained":"yes","note":"Head cors defaults: allowMethods ['GET','HEAD','PUT','POST','DELETE','PATCH','QUERY']."},
+{"repo":"hono","id":"hono-09","true_at_head":"yes","false_claims_explained":"yes","note":"Head etag checks GET/HEAD/QUERY and c.res.ok, and matches ifNoneMatch === '*'."},
+{"repo":"hono","id":"hono-13","true_at_head":"partly","false_claims_explained":"no","note":"Head c.notFound fallback is createResponseInstance() (empty, status 200), app default is '404 Not Found' text; claim still false."},
+{"repo":"hono","id":"hono-15","true_at_head":"yes","false_claims_explained":"yes","note":"Head inserts paths into #tries during add() and buildAllMatchers sets #middleware/#routes/#tries undefined."},
+{"repo":"hono","id":"hono-17","true_at_head":"yes","false_claims_explained":"yes","note":"Head METHODS = get, post, put, delete, options, patch, query."},
+{"repo":"hono","id":"hono-19","true_at_head":"partly","false_claims_explained":"no","note":"getPath logic unchanged at head; opening sentence still wrong, conclusion (getPathNoStrict wins) correct. Contradiction not version-related."},
+{"repo":"hono","id":"hono-22","true_at_head":"yes","false_claims_explained":"yes","note":"Head uses pnpm, 'vp test', vitest projects; docs/MAINTAINING.md and ci-adapters.yml exist. tsc step omitted only."},
+{"repo":"hono","id":"hono-23","true_at_head":"yes","false_claims_explained":"yes","note":"Head build = remove-dist, vp pack (vite-plus/tsdown, vite.config.ts), copy package.cjs.json, publint; plugins as described."},
+{"repo":"hono","id":"hono-24","true_at_head":"yes","false_claims_explained":"yes","note":"Head has .oxlintrc.json/.oxfmtrc.json wired into vite.config.ts, vp lint/fmt scripts, ci-adapters runs format and lint."},
+{"repo":"hono","id":"hono-25","true_at_head":"yes","false_claims_explained":"yes","note":"Head: validatePackageExportsPlugin in vite.config.ts ESM pack, release.yml jsr job on v* tags, ci jsr-dry-run uses pnpm dlx."},
+{"repo":"hono","id":"hono-18","true_at_head":"yes","false_claims_explained":"yes","note":"Head has src/middleware/method-not-allowed adding HEAD to Allow when GET registered."}
+]

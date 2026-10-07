@@ -1,0 +1,27 @@
+{
+ "v2_cost": 2.17,
+ "v2_minutes": 6.5,
+ "base_cost": null,
+ "base_cost_undercounted": 0.73,
+ "base_minutes": 4.3,
+ "ask_base_cost": null,
+ "ask_v2_cost": 0.12,
+ "per_repo": {
+  "ky": {
+   "v2_cost_usd": 1.581,
+   "v2_minutes": 4.2,
+   "embedding_cost_usd_estimated": 0.027
+  },
+  "flask": {
+   "v2_cost_usd": 1.96,
+   "v2_minutes": 6.4,
+   "embedding_cost_usd_estimated": 0.033
+  },
+  "hono": {
+   "v2_cost_usd": 2.984,
+   "v2_minutes": 8.9,
+   "embedding_cost_usd_estimated": 0.116
+  }
+ },
+ "notes": "Generation cost = provider-reported prompt/output/thinking tokens priced at Gemini list prices (2.5 Pro .25/ per 1M, >200k prompt .50/) + estimated embedding tokens at /bin/zsh.15/1M. Baseline runs predate thinking-token metering, so their cost is undercounted and not compared. All three repos ran concurrently with 4 pages in parallel per repo."
+}

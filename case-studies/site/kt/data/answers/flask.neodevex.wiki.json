@@ -1,0 +1,102 @@
+{
+ "flask-01": {
+  "answer": "When a WSGI server calls a Flask app:\n1.  `Flask.__call__(environ, start_response)` is invoked.\n2.  It calls `Flask.wsgi_app(environ, start_response)` (src/flask/app.py:1566-1617).\n3.  `wsgi_app` creates and pushes an `AppContext` (request context).\n4.  `wsgi_app` then calls `Flask.full_dispatch_request()` (src/flask/app.py:992-1020).\n5.  `full_dispatch_request` calls `Flask.preprocess_request()` (running `@before_request` handlers).\n6.  Finally, `full_dispatch_request` calls `Flask.dispatch_request()` (src/flask/app.py:966-991), which matches the URL rule and calls the associated view function.",
+  "seconds": 34.7
+ },
+ "flask-02": {
+  "answer": "When a request context (now an `AppContext`) is pushed, its `_push_count` is incremented. If it's the first push, it becomes the active context, the `appcontext_pushed` signal is sent, and the session is opened/URL rule matched. (src/flask/ctx.py:416-445)\n\nWhen popped, `_push_count` is decremented. If it reaches zero, teardown functions (`teardown_request`, `teardown_appcontext`) are executed, the `appcontext_popped` signal is sent, and the context is deactivated. (src/flask/ctx.py:446-505)\n\nNested pushes are handled by this `_push_count`; the context remains active until the count returns to zero.",
+  "seconds": 36.7
+ },
+ "flask-03": {
+  "answer": "When `app.register_blueprint(bp, **options)` is called, the `Blueprint.register()` method orchestrates the process.\n\n1.  A `BlueprintSetupState` object is created, holding the application instance, the blueprint, and registration options.\n2.  The blueprint iterates through its \"deferred functions\" (recorded by decorators like `@bp.route()`) and executes each one, passing the `BlueprintSetupState`. These functions configure the application with the blueprint's routes, error handlers, etc., applying the blueprint's `url_prefix` and other settings.\n3.  Blueprint-specific functions (e.g., `before_request_funcs`) are merged into the application.\n4.  Any nested blueprints are recursively registered.\n5.  A `ValueError` is raised if the blueprint is registered with a name already in use.\n\nSources: [src/flask/sansio/blueprints.py:273-378](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L273-L378), [src/flask/sansio/blueprints.py:34-86](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L34-L86)",
+  "seconds": 34.8
+ },
+ "flask-04": {
+  "answer": "The code is split such that `src/flask/sansio/` modules contain the core, I/O-independent logic, while top-level `src/flask/` modules extend these to add WSGI/ASGI-specific functionality.\n\nKey classes and their collaboration:\n-   `Scaffold` (base class) provides routing and callback registration.\n-   `App` (`src/flask/sansio/app.py`) inherits from `Scaffold`, managing configuration, URL rules, and blueprints, without I/O.\n-   `Flask` (`src/flask/app.py`) inherits from `App`, adding WSGI-specific methods like `wsgi_app` and `run`.\n-   `SansioBlueprint` (`src/flask/sansio/blueprints.py`) inherits from `Scaffold`, containing core blueprint logic.\n-   `Blueprint` (`src/flask/blueprints.py`) inherits from `SansioBlueprint`, adding WSGI/ASGI features like static file serving.",
+  "seconds": 65.0
+ },
+ "flask-05": {
+  "answer": "`current_app`, `g`, `request`, and `session` are implemented as `werkzeug.local.LocalProxy` instances, defined in `flask.globals`. These proxies dynamically resolve to attributes on the currently active `AppContext` object.\n\nThey are backed by a single `contextvars.ContextVar` named `_cv_app`, which stores the active `AppContext`. Accessing any of these proxies triggers a lookup via `_cv_app` to retrieve the `AppContext` and then the specific object (e.g., `request` from `current_app_context.request`).\n\nSources: [src/flask/globals.py:6](https://github.com/pallets/flask/blob/HEAD/src/flask/globals.py#L6), [src/flask/globals.py:40-43](https://github.com/pallets/flask/blob/HEAD/src/flask/globals.py#L40-L43), [src/flask/globals.py:57-59](https://github.com/pallets/flask/blob/HEAD/src/flask/globals.py#L57-L59)",
+  "seconds": 65.8
+ },
+ "flask-06": {
+  "answer": "The default session cookie related config values are:\n- `SECRET_KEY`: `None` (used for signing session cookies)\n- `PERMANENT_SESSION_LIFETIME`: `timedelta(days=31)`\n- `SESSION_COOKIE_NAME`: `session`\n\nSource: [src/flask/app.py:206-238](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L206-L238)",
+  "seconds": 63.1
+ },
+ "flask-07": {
+  "answer": "The default configuration values are:\n*   `MAX_CONTENT_LENGTH`: `None` (Source: Welcome to Flask)\n\nThe documentation does not contain the default values for `MAX_FORM_MEMORY_SIZE`, `MAX_FORM_PARTS`, or `MAX_COOKIE_SIZE`.\n\nNOT COVERED",
+  "seconds": 3.7
+ },
+ "flask-08": {
+  "answer": "`before_request` functions are executed in order from the application down to the most deeply nested blueprint.\n\nThe order in which `after_request` functions are run when a blueprint (possibly nested) handles the request is NOT COVERED.\n\nSources: [Page: Modular Applications with Blueprints: Request Hooks and Error Handlers](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L613-L692)",
+  "seconds": 5.2
+ },
+ "flask-09": {
+  "answer": "`teardown_request` handlers are executed first, followed by `teardown_appcontext` handlers. These functions are guaranteed to run when their respective contexts are popped, even if exceptions occurred earlier in the request or if a teardown handler itself raises. This ensures cleanup tasks are always performed.\n\nSources:\n- [src/flask/ctx.py:446-505](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L446-L505)\n- [tests/test_appctx.py:46-137](https://github.com/pallets/flask/blob/HEAD/tests/test_appctx.py#L46-L137)",
+  "seconds": 7.9
+ },
+ "flask-10": {
+  "answer": "When an exception is raised, Flask first determines if it's an `HTTPException`. It then uses `_find_error_handler` to search for a registered handler, checking **blueprint-specific handlers before application-wide ones**. If no handler is found, `handle_exception` is the final fallback, which logs the error and attempts to find a handler for `InternalServerError` (500).\n\nSources:\n- [src/flask/app.py:830-949](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L830-L949)\n- [src/flask/sansio/app.py:865-888](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L865-L888)",
+  "seconds": 5.3
+ },
+ "flask-11": {
+  "answer": "For an unhandled non-HTTP exception, `handle_exception` logs the exception. If `PROPAGATE_EXCEPTIONS` is true (e.g., in debug or testing mode), it re-raises the exception. Otherwise, it creates a generic `InternalServerError` (500) and attempts to find an error handler for it; if no handler is found, a default 500 error page is returned.\n\nSources: [src/flask/app.py:897-949](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L897-L949)",
+  "seconds": 2.7
+ },
+ "flask-12": {
+  "answer": "NOT COVERED",
+  "seconds": 2.7
+ },
+ "flask-13": {
+  "answer": "NOT COVERED",
+  "seconds": 2.5
+ },
+ "flask-14": {
+  "answer": "NOT COVERED",
+  "seconds": 2.0
+ },
+ "flask-15": {
+  "answer": "No, since Flask 3.2, the `RequestContext` class has been merged into `AppContext`. A single `AppContext` object is now pushed for every request and CLI command, which acts as a \"request context\" if it contains request information.\n\nWhen handling a request, a new `AppContext` (which will be a request context) is created and pushed. It does not reuse an already pushed application context. The `_push_count` mechanism handles nested pushes of the *same* context, not the reuse of an existing app context for a new request.\n\nSources:\n- `src/flask/ctx.py:260-266`\n- `src/flask/ctx.py:416-445`\n- `src/flask/app.py:1566-1617`",
+  "seconds": 5.3
+ },
+ "flask-16": {
+  "answer": "NOT COVERED",
+  "seconds": 5.2
+ },
+ "flask-17": {
+  "answer": "With a default app, `app.config['DEBUG']` is `None`. This value comes from Flask's set of default configuration values, which are defined in `Flask.default_config`.\n\nSources:\n- [src/flask/app.py:206-238](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L206-L238)\n- [src/flask/sansio/app.py:479-494](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L479-L494)",
+  "seconds": 33.0
+ },
+ "flask-18": {
+  "answer": "The documentation states that the `SECRET_KEY` is used for signing session cookies. The default `session_interface` is `SecureCookieSessionInterface` (src/flask/app.py:252).\n\nHowever, the documentation does not cover:\n*   Where the session cookie signer within `SecureCookieSessionInterface` is created.\n*   The specific salt, digest, or key derivation methods it uses.\n*   How `SECRET_KEY_FALLBACKS` is handled.\n\nNOT COVERED",
+  "seconds": 34.6
+ },
+ "flask-19": {
+  "answer": "The `flask` CLI locates the application through the `ScriptInfo.load_app` method. It follows this sequence:\n\n1.  **`create_app` factory**: If a factory function is explicitly provided.\n2.  **`app_import_path`**: Specified via the `FLASK_APP` environment variable or `--app` command-line option (e.g., `mymodule:app`, `mymodule:create_app`).\n3.  **Default files**: If no explicit path or factory, it searches for `wsgi.py` then `app.py` in the current directory.\n\nWithin a module, it prioritizes:\n-   Variables named `app` or `application`.\n-   A unique `Flask` instance.\n-   Factory functions named `create_app` or `make_app`.\n\nSources: [src/flask/cli.py:333-364](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L333-L364), [src/flask/cli.py:41-91](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L41-L91)",
+  "seconds": 33.4
+ },
+ "flask-20": {
+  "answer": "Error handlers are registered using `@app.errorhandler()` or blueprint-specific `@bp.errorhandler()` and application-wide `@bp.app_errorhandler()`.\n\nThe documentation does not explicitly cover validation at registration time for unknown status codes or exception instances. However, it describes the runtime behavior:\n- If an `HTTPException` occurs and no specific handler is found, the exception itself is returned as the response.\n- If a non-`HTTPException` occurs, or an `HTTPException` is not handled, Flask logs it and attempts to find a handler for `InternalServerError` (500). If no 500 handler is found, a default 500 error page is shown.\n\nSources:\n- `src/flask/app.py:830-864`\n- `src/flask/app.py:897-949`\n- `src/flask/sansio/blueprints.py:613-692`",
+  "seconds": 5.3
+ },
+ "flask-21": {
+  "answer": "A route's default HTTP methods and automatic OPTIONS handling are decided during URL rule registration via `App.add_url_rule()`. The `methods` parameter defaults to `(\"GET\",)`, and `provide_automatic_options` (defaulting to `True`) automatically adds and handles the `OPTIONS` method. These are also configurable as attributes on class-based `View`s.\n(Sources: [src/flask/sansio/app.py:602-659](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L602-L659), [src/flask/views.py:16-77](https://github.com/pallets/flask/blob/HEAD/src/flask/views.py#L16-L77))\n\nThe documentation states that Flask \"handles\" the `OPTIONS` method automatically when `provide_automatic_options` is `True`, but does not specify where the `OPTIONS` response is produced.",
+  "seconds": 8.3
+ },
+ "flask-22": {
+  "answer": "NOT COVERED",
+  "seconds": 2.2
+ },
+ "flask-23": {
+  "answer": "NOT COVERED",
+  "seconds": 3.0
+ },
+ "flask-24": {
+  "answer": "NOT COVERED",
+  "seconds": 3.2
+ },
+ "flask-25": {
+  "answer": "NOT COVERED",
+  "seconds": 1.8
+ }
+}

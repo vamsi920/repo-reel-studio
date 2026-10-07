@@ -259,6 +259,7 @@ class GoogleEmbedderClient(ModelClient):
             else:
                 raise ValueError("Either 'content' or 'contents' must be provided")
 
+            _record_embedding_usage(api_kwargs)
             return response
 
         except Exception as e:
@@ -275,3 +276,15 @@ class GoogleEmbedderClient(ModelClient):
         """
         # Google AI client doesn't have async support yet
         return self.call(api_kwargs, model_type)
+
+
+def _record_embedding_usage(api_kwargs: Dict) -> None:
+    """Gemini's embed API reports no usage, so estimate input tokens."""
+    from api.rag import count_tokens
+    from api.usage import record_usage
+
+    texts = api_kwargs.get("contents") or [api_kwargs.get("content") or ""]
+    tokens = sum(count_tokens(str(t)) for t in texts)
+    record_usage(
+        api_kwargs.get("model", "gemini-embedding-001"), tokens, 0, estimated=True
+    )

@@ -1,0 +1,102 @@
+{
+ "ky-01": {
+  "answer": "A `ky.get(url, opts)` call, a method shortcut (readme.md:170-177), first invokes the main `ky(input, options?)` function (readme.md:115-122).\n\nThis main function internally calls the static `Ky.create(input, mergedOptions)` method (source/core/Ky.ts:143-253). `Ky.create` then instantiates `new Ky(input, options)`, which normalizes options and creates a `Request` object (source/core/Ky.ts:372-476).\n\nBefore the request is sent, the `Ky` instance executes `#runBeforeRequestHooks()` (source/core/Ky.ts:767-784). Finally, the request is dispatched via the internal `#retry()` method, which ultimately calls `#fetch()` (source/core/Ky.ts:143-253), utilizing the configured `fetch` function (default `globalThis.fetch`, source/types/options.ts:297-304).",
+  "seconds": 9.3
+ },
+ "ky-02": {
+  "answer": "`ky.create()` creates a new, independent Ky instance with its own set of default options, explicitly *not* inheriting any configuration from the parent instance.\n\n`ky.extend()` creates a new Ky instance that *inherits and deep-merges* its configuration with the parent instance's defaults.\n\nSources:\n- `ky.create()`: [source/index.ts:19](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L19)\n- `ky.extend()`: [source/index.ts:20-26](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L20-L26)",
+  "seconds": 3.5
+ },
+ "ky-03": {
+  "answer": "During a request lifecycle that ends in a retried HTTP error and eventual failure, the hook types run in the following order:\n\n1.  **`init`** (synchronous): Before the `Request` object is created.\n2.  **`beforeRequest`** (asynchronous): Before the initial request is sent.\n3.  (Initial request fails with an HTTP error)\n4.  **`afterResponse`** (asynchronous): After the initial HTTP error response is received.\n5.  **`beforeRetry`** (asynchronous): Before the retry attempt is sent.\n6.  (Retried request fails)\n7.  **`afterResponse`** (asynchronous): After the error response from the retry is received.\n8.  **`beforeError`** (asynchronous): Just before the final error is thrown to the caller.\n\nSources: [Introduction to Ky: Request Lifecycle Hooks](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L442-L718), [Request Lifecycle and Architecture: Hooks System](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L143-L298)",
+  "seconds": 7.9
+ },
+ "ky-04": {
+  "answer": "Ky collects multiple `AbortSignal` instances, including any user-provided signal and its own internal signals for `timeout` and `totalTimeout`. If `AbortSignal.any` is supported, these are combined; otherwise, the last provided signal is used ([source/utils/merge.ts:298-309](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L298-L309)).\n\nWhen a `timeout` occurs, Ky's internal `timeout` utility function uses an `AbortController` to abort the `fetch` request. This causes the promise to reject with a `TimeoutError` ([source/utils/timeout.ts:9-32](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/timeout.ts#L9-L32)).",
+  "seconds": 6.7
+ },
+ "ky-05": {
+  "answer": "Ky-specific options (`KyOptions`) are initially merged with standard `fetch` options (`RequestInit`) into a single `Options` object.\n\nDuring \"Option Merging and Normalization\" within the `Ky` class constructor, Ky processes its custom options. For example, the `json` option is serialized into the request `body` and sets the `Content-Type` header. Other Ky-specific options like `retry` or `hooks` are handled internally.\n\nThe final `NormalizedOptions`, which include these transformations, are then passed to the underlying `fetch` call.\n\nSources:\n- [Page: Options and Configuration](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/options.ts#L399-L443)\n- [Page: Request Lifecycle and Architecture](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L372-L422)",
+  "seconds": 8.2
+ },
+ "ky-06": {
+  "answer": "The default retry settings are:\n*   **limit**: `2`\n*   **methods**: `['get', 'put', 'head', 'delete', 'options', 'trace']`\n*   **statusCodes**: `[408, 413, 429, 500, 502, 503, 504]`\n*   **afterStatusCodes**: `[413, 429, 503]`\n*   **delay**: `attemptCount => 0.3 * (2 ** (attemptCount - 1)) * 1000` (Exponential backoff)\n\nSources: [readme.md:275-322](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L275-L322), [source/types/retry.ts:15-175](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/retry.ts#L15-L175)",
+  "seconds": 2.1
+ },
+ "ky-07": {
+  "answer": "The default per-attempt `timeout` is `10000` milliseconds (10 seconds) ([readme.md:410-418](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L410-L418)).\n\nThe default `totalTimeout` is `false`, meaning it is disabled by default ([readme.md:419-427](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L419-L427)).\n\nThe documentation states the maximum value for both `timeout` and `totalTimeout` is `2147483647`, but it does not specify what happens if a provided timeout value exceeds this maximum.",
+  "seconds": 4.2
+ },
+ "ky-08": {
+  "answer": "By default, a timed-out request is **not** retried. This behavior can be enabled by setting `retryOnTimeout: true` in the `retry` option.\n\nThe error type thrown on timeout is `TimeoutError`.\n\nSources:\n- `readme.md:310-311`\n- `readme.md:410-418`\n- `readme.md:1306-1320`",
+  "seconds": 3.5
+ },
+ "ky-09": {
+  "answer": "When deciding whether to retry a non-forced error, Ky performs checks in the following order:\n\n1.  **Retry limit exceeded?** (`source/core/Ky.ts:505-507`)\n2.  **Request method is retriable?** (`source/core/Ky.ts:518-520`)\n3.  **`shouldRetry` hook defined?** If it returns `true`, retry; if `false`, stop; if `undefined`, proceed to default checks. (`source/core/Ky.ts:523-537`)\n4.  **Default checks**:\n    *   Is it a `TimeoutError` and `retryOnTimeout` is `true`? (`source/core/Ky.ts:540-546`)\n    *   Is it an `HTTPError` with a status code in `retry.statusCodes` (excluding 413)? (`source/core/Ky.ts:548-551`)\n    *   Is it a `NetworkError`? (`source/core/Ky.ts:585-589`)",
+  "seconds": 3.3
+ },
+ "ky-10": {
+  "answer": "Ky consults the `Retry-After` response header for retry delay. If a response has a status code listed in `retry.afterStatusCodes` (default: `[413, 429, 503]`) and includes this header, Ky uses its value instead of exponential backoff.\n\nA numeric value in the `Retry-After` header is interpreted as a number of seconds. This delay is capped by `retry.maxRetryAfter` (default: `Infinity`). Jitter is not applied when `Retry-After` is used.\n\nSources: [Introduction to Ky: Request Options](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L275-L322), [Retry Mechanism: Delay Calculation](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L553-L575)",
+  "seconds": 3.9
+ },
+ "ky-11": {
+  "answer": "An `HTTPError`'s message format is: `Request failed with status code <STATUS_CODE> <STATUS_TEXT>: <METHOD> <URL>`. For example: `Request failed with status code 404 Not Found: GET https://example.com/foo`.\n\n`error.data` contains the pre-parsed response body. Ky attempts to parse it as JSON; otherwise, it's plain text. It will be `undefined` if the body is empty or parsing fails. This property's population is limited by the request timeout and a 10 MiB size limit.\n\nSources:\n- `readme.md:1239-1249`\n- `source/errors/HTTPError.ts:22-28`",
+  "seconds": 3.4
+ },
+ "ky-12": {
+  "answer": "When `.json()` is called, Ky automatically sets the `Accept` header on the original request to `application/json`.\n\nThe documentation does not explicitly state what the `.json()` shortcut does with an empty body for a successful (2xx) response.",
+  "seconds": 4.2
+ },
+ "ky-13": {
+  "answer": "The `beforeError` hooks receive the error about to be thrown, including `HTTPError`, `NetworkError`, and `TimeoutError`. Each hook can modify the error in place or return a new `Error` instance, which then becomes the `processedError` for subsequent hooks. The final `Error` instance returned by the last hook is what gets thrown.\n\nThe `SchemaValidationError` bypasses `beforeError` hooks. This is because it does not extend `KyError` and represents a data validation failure after a successful HTTP request, not a failure in the HTTP transaction itself.\n\nSources:\n*   [Introduction to Ky: Request Options](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L1218-L1342)\n*   [Request Lifecycle and Architecture: Hooks System](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L270-L285)\n*   [Hooks System: Hook Types](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/hooks.ts#L71)\n*   [Error Handling Overview: The `KyError` Hierarchy](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L1218-L1226)\n*   [Error Handling Overview: Specific Error Types](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.com#L1284-L1304)",
+  "seconds": 5.7
+ },
+ "ky-14": {
+  "answer": "Network-error detection is implemented within Ky's core request lifecycle, primarily handled in `source/core/Ky.ts` (e.g., `source/core/Ky.ts:978-980`).\n\nKy decides something is a network error when \"a network-level error occurs (e.g., DNS failure, connection refused)\" during the `fetch` operation. It wraps \"the original error thrown by the underlying fetch implementation\" in a `NetworkError` instance, which is defined in `source/errors/NetworkError.ts`. This `NetworkError` is then used in retry logic.",
+  "seconds": 15.6
+ },
+ "ky-15": {
+  "answer": "The per-attempt timeout is implemented in the `timeout` utility function.\nFile path: `source/utils/timeout.ts`",
+  "seconds": 12.3
+ },
+ "ky-16": {
+  "answer": "The deep-merging of options (headers, hooks, searchParams, context, signal) for `ky.extend()` and instances is implemented in the `deepMerge` function.\n\nFile path: `source/utils/merge.ts`\nRelevant lines: `source/utils/merge.ts:207-312` (for `deepMerge` function) and `source/utils/merge.ts:64-204` (for specific merging logic of headers, hooks, searchParams).",
+  "seconds": 2.5
+ },
+ "ky-17": {
+  "answer": "Upload and download progress are implemented in the `source/utils/body.ts` file.\n\nSpecifically:\n- Download progress is handled by the `streamResponse` function, which wraps the response body stream with a progress-reporting stream. (source/utils/body.ts:79-96)\n- Upload progress is handled by the `streamRequest` function, which wraps the request body stream. (source/utils/body.ts:99-112)\n- Both rely on a shared `withProgress` utility function. (source/utils/body.ts:46-77)",
+  "seconds": 2.4
+ },
+ "ky-18": {
+  "answer": "No, Ky does not retry a POST request by default, even if it receives a 503 status code. While 503 is a default retriable status code, POST is not included in the default `retry.methods` list. The retry logic first checks if the method is retriable.\n\nSources:\n- `readme.md:275-322`\n- `source/types/retry.ts:15-175`",
+  "seconds": 3.6
+ },
+ "ky-19": {
+  "answer": "No, a GET request receiving a 413 status code is never retried. Although 413 is listed in the default `retry.statusCodes`, the documentation explicitly states that \"Status code 413 is an exception and is never retried.\"\n\nSource: [source/core/Ky.ts:577-579](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L577-L579)",
+  "seconds": 4.5
+ },
+ "ky-20": {
+  "answer": "With `retry: 2` (the default limit), a total of **3** HTTP attempts can happen: 1 initial request plus 2 retries.\n(Sources: [Introduction to Ky](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L34-L57), [Retry Mechanism](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L275-L322))\n\nThe documentation does not state that `retry: {limit: 0}` changes body handling. It only specifies that `limit` defines the maximum number of retries. If `limit` is 0, no retries will occur.\n(Sources: [Retry Mechanism](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L504-L590), [Options and Configuration](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/options.ts#L194))",
+  "seconds": 8.7
+ },
+ "ky-21": {
+  "answer": "No, Ky will not retry it.\n\nIf a `beforeRequest` hook returns a `Response` (even with a 500 status), it bypasses the network call entirely. The request lifecycle then proceeds directly to the `afterResponse` hooks, treating it as a received response rather than a failed request that would trigger the retry mechanism.\n\nSources:\n- [Introduction to Ky: Request Lifecycle Hooks](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L449-L718)\n- [Request Lifecycle and Architecture: Hooks System](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784)\n- [Hooks System: beforeRequest](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/hooks.ts#L40)",
+  "seconds": 5.0
+ },
+ "ky-22": {
+  "answer": "`npm test` runs the linter (`xo`), builds the project (`npm run build`), and then executes the test suite (`ava`). This command serves as the main validation step for the project.\n\nSource: [package.json:25](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/package.json#L25)",
+  "seconds": 1.7
+ },
+ "ky-23": {
+  "answer": "The project must be built before tests run because the `npm test` script (`package.json:25`) explicitly includes the `npm run build` command, ensuring tests are executed against the compiled output.\n\nBrowser tests use Chromium, Firefox, and WebKit, facilitated by Playwright.",
+  "seconds": 3.4
+ },
+ "ky-24": {
+  "answer": "The CI matrix runs the test job against Node.js versions `latest`, `24`, and `22`.\nSource: [.github/workflows/main.yml:12-15](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/.github/workflows/main.yml#L12-L15)",
+  "seconds": 62.6
+ },
+ "ky-25": {
+  "answer": "The package supports Node.js version 22 and later. It is distributed as an ES Module. The build output is placed in the `distribution` folder.\n\nSources:\n- Node.js version: [Introduction to Ky](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/package.json#L21-L23), [package.json:21-23](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/package.json#L21-L23)\n- Module format: [Introduction to Ky](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/readme.md#L34-L57)\n- Build output: [package.json:24-30](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/package.json#L24-L30)",
+  "seconds": 64.1
+ }
+}

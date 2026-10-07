@@ -1,0 +1,3320 @@
+{
+ "module": "kt",
+ "title": "KT docs vs Devin Wiki",
+ "lede": "On three open-source repositories, NeoDevEx's KT engine now answers repository questions about as well as Devin (79.7% vs 70.3%, or 78.3% if Devin gets credit for answering from newer code) and makes a false claim in 4% of answers against Devin's 21%. Reading the generated docs alone, the two are even (51.3% vs 52.3%). Devin's wiki still covers more of each codebase. Before this study our docs scored 36.3%; every gap we found is listed below with the fix and the re-measured result.",
+ "modeNotes": {
+  "wiki": "Reading the docs: a neutral reader model (Gemini 2.5 Flash, temperature 0, the same prompt for both) answers each question using only the generated wiki. This measures how much a new engineer can learn from the docs alone.",
+  "ask": "Asking the repo: each product's own question-answering over the repository. Devin through Ask Devin (DeepWiki MCP), NeoDevEx through the KT service's /chat/completions endpoint."
+ },
+ "gaps": [
+  {
+   "title": "The docs covered too little of each codebase",
+   "finding": "Our wikis had 9 to 11 pages and cited 19 to 33 files per repository; Devin's had 35 to 46 pages and cited 55 to 183. A reader of our docs found no answer to 26 of the 75 questions, against 2 for Devin.",
+   "fix": "Page count now scales with the repository's file count instead of a flat 8 to 12. A deterministic coverage pass attaches every source file no page claimed to the page documenting the same module, and groups the rest into module reference pages.",
+   "effect": "Pages 30 \u2192 74. Files cited 78 \u2192 214. Uncovered questions 26 \u2192 7. Docs accuracy 36.3% \u2192 51.3%. Devin still leads on breadth: 118 pages, 339 files, 2 uncovered."
+  },
+  {
+   "title": "The index skipped the files that answer workflow questions",
+   "finding": "pyproject.toml was excluded by name, .toml, .mjs and .mts files were never indexed, build/ and bin/ were skipped even when they hold real source (hono's build script), and exclusions matched every folder in the absolute path, so a repo under a folder named tmp or build lost all of its files.",
+   "fix": "Files tracked by git are treated as source. Manifests, CI workflows and tool configs are indexed. Exclusions match the repo-relative path only.",
+   "effect": "hono indexed files 409 \u2192 452. Dev-workflow questions: docs 8% \u2192 42%, Q&A 44% \u2192 75%."
+  },
+  {
+   "title": "Repository Q&A answered from fragments and from memory",
+   "finding": "Answers were built from 350-word retrieved fragments, so the model filled the gaps from what it remembered about Flask or Hono: Python 3.8 support, DEBUG defaulting to None, invented fetch calls. 29% of answers contained a false claim.",
+   "fix": "A cheap planning step picks the files the question needs from the file tree; those and the most-retrieved files are given in full with line numbers. The prompt now says the checked-out code overrides memory and every claim needs a file:line citation.",
+   "effect": "Q&A accuracy 63.7% \u2192 79.7%. Answers with a false claim 29.3% \u2192 4.0%. Measured cost $0.12 per answer."
+  },
+  {
+   "title": "A third of our diagrams did not render",
+   "finding": "28 of 77 Mermaid diagrams failed to parse, almost all from unquoted labels containing parentheses and from unbalanced activation markers in sequence diagrams. Devin's failed 8% of the time.",
+   "fix": "A deterministic sanitizer quotes such labels and removes unbalanced activations before any LLM repair. It was checked against Devin's 417 diagrams to make sure it never breaks a valid one.",
+   "effect": "Diagrams that render 63.6% \u2192 95.3% (Devin 91.6%)."
+  },
+  {
+   "title": "Docs could describe a different commit than they claimed",
+   "finding": "When cloning from GitHub the service always took the latest commit, even when asked for a specific one, and every source link pointed at HEAD, so links drifted as the repository changed.",
+   "fix": "The clone is checked out at the requested commit, an index built from another commit is rebuilt, and links point at the commit.",
+   "effect": "Links pinned to the documented commit 0 \u2192 1,282 of 1,282."
+  },
+  {
+   "title": "Cost was not measured",
+   "finding": "The KT service tracked no tokens or spend. The first meter we added also missed Gemini's thinking tokens, which the legacy SDK does not report separately.",
+   "fix": "Every generation and answer is metered from provider-reported usage, including thinking tokens derived from the total, and priced at list price. Unknown models are flagged, never counted as free.",
+   "effect": "Measured: $2.17 and 6.5 minutes per wiki on average, $0.12 per answer."
+  },
+  {
+   "title": "A dropped model stream could be published as documentation",
+   "finding": "When the Gemini stream broke mid-page, the error text was saved as the page's content. One page in the after-fixes run was affected before the fix landed.",
+   "fix": "Wiki generation now raises on a stream error so the page is retried; interactive chat still shows the error to the user.",
+   "effect": "Covered by two regression tests. That one affected page (ky: test module reference) is left in the published data as found."
+  },
+  {
+   "title": "Different local repositories could share one index",
+   "finding": "Local repositories were indexed under their folder name, and every agent workspace defaults to a folder called project.",
+   "fix": "Local repositories are keyed by folder name plus a hash of the absolute path.",
+   "effect": "Covered by a regression test."
+  },
+  {
+   "title": "No way to ask the docs a question",
+   "finding": "Devin shows an Ask box on every wiki. Our KT pages had none, although the service could already answer.",
+   "fix": "KT repository pages now have an Ask panel that answers from the code at the documented commit, with file and line references.",
+   "effect": "Shipped in the KT UI with tests."
+  }
+ ],
+ "method": [
+  "Three public repositories of different shapes: a small TypeScript library, a mid-size Python framework and a large multi-runtime TypeScript framework.",
+  "NeoDevEx was pinned to the commit Devin's wiki was built from. ky shows its exact commit; for flask and hono, which show only a date, we used the last commit on main on or before that date (marked *).",
+  "75 questions (25 per repo) were written by reading only the source code at the pinned commit, before either wiki was opened. Each has a verified answer, atomic key facts and file:line evidence. Mix per repo: 5 architecture, 8 precise behaviour, 4 where-is-it, 4 edge cases, 4 dev workflow.",
+  "Answers were shuffled and labelled X / Y per question. Two independent graders scored every answer without knowing which tool wrote it, checking disputed claims against the code. A question scores 1 for correct, 0.5 for partly right, 0 otherwise, averaged across the two graders.",
+  "Citations were checked two ways: every citation mechanically (the file exists at the commit and the line range is inside it), and a random sample of up to 40 inline citations per wiki by a blind grader reading the cited lines.",
+  "Diagrams were parsed with mermaid 11. Cost comes from provider-reported token counts priced at Gemini list prices; NeoDevEx ran Gemini 2.5 Pro for pages and answers and Gemini 2.5 Flash for file planning."
+ ],
+ "caveats": [
+  "The after-fixes numbers were measured on the same 75 questions that exposed the gaps. The fixes are general (coverage, indexing, retrieval, rendering) and none targets a specific question, but a held-out repository would be a stronger test; it is the first thing we will run next.",
+  "Devin's wiki for flask and hono shows only an index date, so those two commits are the last commit on or before that date. Line drift may explain part of Devin's unsupported citations there. On ky, where the commit matches exactly, 38% of Devin's sampled inline citations did not support their claim.",
+  "Devin's Ask answers from newer code than its wiki shows: 10 of its hono answers graded wrong are correct for hono's latest commit. The scorecard shows Devin's Q&A both ways.",
+  "Graders were two independent AI agents with repository access, not humans. They agreed on 95.8% of 600 verdicts.",
+  "The neutral reader for the docs test is Gemini 2.5 Flash, from the same model family NeoDevEx generates with.",
+  "Devin does not publish per-wiki cost or generation time. Its public DeepWiki is free to read; private repositories need a paid plan. Our times come from three repositories generating at once with four pages in parallel each.",
+  "Baseline generation cost is not compared because the baseline meter missed thinking tokens."
+ ],
+ "downloads": [
+  {
+   "href": "data/case.json",
+   "label": "Everything on this page",
+   "help": "Metrics, ledger and per-question verdicts as JSON."
+  },
+  {
+   "href": "data/kt-benchmark-data.zip",
+   "label": "Full benchmark bundle (zip)",
+   "help": "Questions, blind packets, keys, both graders' verdicts, metrics, our answers and our generated wikis."
+  },
+  {
+   "href": "data/groundtruth/ky.json",
+   "label": "Questions: ky",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/groundtruth/flask.json",
+   "label": "Questions: flask",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/groundtruth/hono.json",
+   "label": "Questions: hono",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/usage.json",
+   "label": "Measured cost and time",
+   "help": "Per-repo token spend and wall-clock time."
+  }
+ ],
+ "date": "6 October 2026",
+ "questionCount": "75",
+ "labels": {
+  "neodevex": "NeoDevEx",
+  "devin": "Devin"
+ },
+ "repos": [
+  {
+   "id": "ky",
+   "name": "sindresorhus/ky",
+   "commit": "e0fcf780de2bd69af2528e4b7b87ccae6bb727b1",
+   "commitExact": true,
+   "files": 67,
+   "loc": 17461
+  },
+  {
+   "id": "flask",
+   "name": "pallets/flask",
+   "commit": "258d68b6ff5e2244386540f48b48bab90d6ab827",
+   "commitExact": false,
+   "files": 236,
+   "loc": 18362
+  },
+  {
+   "id": "hono",
+   "name": "honojs/hono",
+   "commit": "24547a6ed5e175f9326063efb657540162287973",
+   "commitExact": false,
+   "files": 490,
+   "loc": 81367
+  }
+ ],
+ "metrics": [
+  {
+   "label": "Answer accuracy from the docs",
+   "help": "A reader that sees only the wiki answers all 75 questions.",
+   "base": 36.3,
+   "ours": 51.3,
+   "devin": 52.3,
+   "call": "tie",
+   "callText": "About even",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Answer accuracy, asking the repo",
+   "help": "Each product's own Q&A over the repository.",
+   "base": 63.7,
+   "ours": 79.7,
+   "devin": 70.3,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Answers with a false claim",
+   "help": "Share of Q&A answers stating a file, value or behaviour the code contradicts.",
+   "base": 29.3,
+   "ours": 4.0,
+   "devin": 21.3,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Asking the repo, Devin credited for newer code",
+   "help": "Devin's Ask answers from the latest code, not the commit its wiki shows; answers that are right for the latest code count as correct here.",
+   "base": null,
+   "ours": 79.7,
+   "devin": 78.3,
+   "call": "tie",
+   "callText": "About even",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Questions the docs don't cover",
+   "help": "Out of 75, the reader found no answer in the wiki.",
+   "base": 26,
+   "ours": 7,
+   "devin": 2,
+   "call": "lose",
+   "callText": "Devin ahead",
+   "fmt": "{}",
+   "bars": true
+  },
+  {
+   "label": "Citations that resolve",
+   "help": "Cited file exists at the commit and the line range is inside it.",
+   "base": 99.8,
+   "ours": 99.8,
+   "devin": 95.3,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Citations that support the claim",
+   "help": "Random sample of up to 40 inline citations per wiki, read against the cited lines by a blind grader.",
+   "base": null,
+   "ours": 68.6,
+   "devin": 55.0,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Diagrams that render",
+   "help": "Mermaid blocks that parse with mermaid 11.",
+   "base": 63.6,
+   "ours": 95.3,
+   "devin": 91.6,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
+   "fmt": "{}%",
+   "bars": true
+  },
+  {
+   "label": "Source files cited",
+   "help": "Distinct files referenced across the three wikis.",
+   "base": 78,
+   "ours": 214,
+   "devin": 339,
+   "call": "lose",
+   "callText": "Devin ahead",
+   "fmt": "{}",
+   "bars": true
+  },
+  {
+   "label": "Wiki pages",
+   "help": "Across the three repositories.",
+   "base": 30,
+   "ours": 74,
+   "devin": 118,
+   "call": "lose",
+   "callText": "Devin ahead",
+   "fmt": "{}",
+   "bars": true
+  },
+  {
+   "label": "Source links pinned to the commit",
+   "help": "Links that open the exact code a page was written from. Devin's export carries line references without links, so there is nothing to compare.",
+   "base": 0,
+   "ours": 1282,
+   "devin": null,
+   "call": "tie",
+   "callText": "Devin doesn't publish this",
+   "fmt": "{}",
+   "bars": false
+  },
+  {
+   "label": "Cost to generate a wiki",
+   "help": "Mean across the three repos, measured from provider-reported tokens at list price.",
+   "base": null,
+   "ours": 2.17,
+   "devin": null,
+   "call": "tie",
+   "callText": "Devin doesn't publish this",
+   "fmt": "${}",
+   "bars": true
+  },
+  {
+   "label": "Time to generate a wiki",
+   "help": "Mean wall-clock minutes from submit to finished wiki.",
+   "base": 4.3,
+   "ours": 6.5,
+   "devin": null,
+   "call": "tie",
+   "callText": "Devin doesn't publish this",
+   "fmt": "{} min",
+   "bars": true
+  },
+  {
+   "label": "Cost per answered question",
+   "help": "Measured mean for our Q&A.",
+   "base": null,
+   "ours": 0.12,
+   "devin": null,
+   "call": "tie",
+   "callText": "Devin doesn't publish this",
+   "fmt": "${}",
+   "bars": true
+  }
+ ],
+ "ledger": {
+  "wiki": {
+   "ky": [
+    {
+     "id": "ky-01",
+     "category": "architecture",
+     "question": "How does a call like `ky.get(url, opts)` get from the public entry point to an actual fetch? Name the functions/classes involved.",
+     "reference": "source/index.ts createInstance() builds the `ky` function and per-method shortcuts; each merges instance defaults with call options via validateAndMerge() and calls the static Ky.create(input, options). Ky.create runs init hooks, constructs a Ky instance (which normalizes options and builds a Request), then an async pipeline runs beforeRequest hooks, #retry(() => #fetch()), afterResponse hooks, HTTPError/retry handling, and returns a ResponsePromise decorated with body shortcuts.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Ky.create, constructor, beforeRequest, #retry/#fetch; no createInstance/validateAndMerge. / Ky.create/#retry/#fetch right; falsely says ky.get calls main ky() function."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "validateAndMerge, Ky.create, #retry/#fetch, timeout; no createInstance, hooks, ResponsePromise. / validateAndMerge, Ky.create, #retry, #fetch, timeout; omits createInstance, hooks, ResponsePromise."
+     }
+    },
+    {
+     "id": "ky-02",
+     "category": "architecture",
+     "question": "How do `ky.create()` and `ky.extend()` differ in how they treat the parent instance's defaults?",
+     "reference": "`create(newDefaults)` builds a fresh instance from only newDefaults (validateAndMerge(newDefaults)), ignoring the parent; `extend(newDefaults)` merges parent defaults with newDefaults (validateAndMerge(defaults, newDefaults)), and also accepts a function receiving the parent defaults.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "create vs extend right; omits function form of extend. / create ignores, extend merges; omits function form."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "create vs extend right; omits function form of extend. / create ignores, extend merges; omits function form."
+     }
+    },
+    {
+     "id": "ky-03",
+     "category": "architecture",
+     "question": "Describe the order in which hook types run during a request lifecycle that ends in a retried HTTP error and eventual failure.",
+     "reference": "init (synchronous, in Ky.create before the Ky constructor) -> beforeRequest (once, retryCount 0) -> fetch -> afterResponse (runs before the throwHttpErrors check) -> HTTPError built and data populated -> beforeRetry (before each retry, after the delay) -> fetch -> afterResponse ... -> when retries are exhausted, beforeError hooks run on the final error before it is thrown.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Correct order; beforeError only at final failure. / init, single beforeRequest, afterResponse, beforeRetry, final beforeError."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "beforeError after each attempt and beforeRequest rerun on retry; both false. / Claims beforeError after first error and beforeRequest before retry."
+     }
+    },
+    {
+     "id": "ky-04",
+     "category": "architecture",
+     "question": "How does Ky combine a user-provided AbortSignal with its own timeout cancellation?",
+     "reference": "If AbortController and AbortSignal.any exist, the constructor stores the user signal (options.signal or the input Request's signal), creates an internal AbortController, and sets options.signal = AbortSignal.any([userSignal, internal.signal]) (or just the internal signal). The timeout() helper aborts the internal controller; on the next attempt #fetch replaces an aborted controller and recreates the Request with a new managed signal. Retry delays listen only to the user signal.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Timeout abort right; wrongly says timeout signals are combined in merge.ts. / TimeoutError via controller right; falsely says merge collects internal timeout/totalTimeout signals."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "AbortSignal.any correct; misapplies merge.ts last-signal fallback to timeout combining. / AbortSignal.any combination; cites merge path; omits timeout abort/recreation/delay."
+     }
+    },
+    {
+     "id": "ky-05",
+     "category": "architecture",
+     "question": "How do Ky-specific options get separated from options passed through to the underlying fetch call?",
+     "reference": "In #fetch, findUnknownOptions(this.#options) (source/utils/options.ts) collects every own key that is in neither requestOptionsRegistry (standard RequestInit keys already applied to the Request) nor kyOptionKeys (Ky's own options), and passes that object as fetch's second argument. This forwards fetch-only extensions like `dispatcher`, `priority`, or Next.js `next`.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims NormalizedOptions go to fetch; misses findUnknownOptions passthrough. / Claims NormalizedOptions are passed to fetch; misses findUnknownOptions."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Registries and unknown-option passthrough in options.ts. / Registries and unknown-key passthrough in options.ts."
+     }
+    },
+    {
+     "id": "ky-06",
+     "category": "behavior",
+     "question": "What are the default retry settings (limit, methods, status codes, afterStatusCodes, delay formula)?",
+     "reference": "limit 2; methods get, put, head, delete, options, trace; statusCodes 408, 413, 429, 500, 502, 503, 504; afterStatusCodes 413, 429, 503; maxRetryAfter and backoffLimit Infinity; delay = 0.3 * 2^(attemptCount-1) * 1000 ms (300, 600, ...); jitter undefined; retryOnTimeout false.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All defaults correct."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All defaults correct."
+     }
+    },
+    {
+     "id": "ky-07",
+     "category": "behavior",
+     "question": "What is the default per-attempt `timeout`, the default `totalTimeout`, and what happens if timeout exceeds the max?",
+     "reference": "timeout defaults to 10000 ms per attempt; totalTimeout defaults to false (disabled). If either is a number greater than 2147483647, the request promise rejects with a RangeError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Both defaults right; RangeError behavior not known. / timeout and totalTimeout right; RangeError not covered."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "timeout default and RangeError; totalTimeout default unknown. / timeout and RangeError right; totalTimeout not covered."
+     }
+    },
+    {
+     "id": "ky-08",
+     "category": "behavior",
+     "question": "When is a timed-out request retried by default, and what error type is thrown on timeout?",
+     "reference": "A timeout throws TimeoutError (extends KyError). By default it is NOT retried because retryOnTimeout is false; it is retried only if retry.retryOnTimeout is true or a shouldRetry function returns true.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Not retried, TimeoutError; omits shouldRetry override. / Not retried by default, TimeoutError; omits shouldRetry."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Not retried, TimeoutError; omits shouldRetry override. / TimeoutError, retryOnTimeout false; omits shouldRetry."
+     }
+    },
+    {
+     "id": "ky-09",
+     "category": "behavior",
+     "question": "In what order are checks performed when deciding whether to retry a non-forced error?",
+     "reference": "#calculateRetryDelay: (1) if retryCount >= limit, throw; (2) ForceRetryError short-circuits with custom/computed delay; (3) if request method not in retry.methods, throw; (4) user shouldRetry: false -> throw, true -> retry, other -> fall through; (5) TimeoutError retried only if retryOnTimeout; (6) HTTPError retried only if status in statusCodes, honoring Retry-After for afterStatusCodes; (7) otherwise only NetworkError is retried, all other errors thrown.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Correct order incl. shouldRetry semantics and NetworkError. / Order and shouldRetry semantics right; no ForceRetry; 413 simplified."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Top order right; 413 check placed before Retry-After handling, omits network errors. / Top order right; wrongly puts 413 check before afterStatusCodes/Retry-After; no ForceRetry."
+     }
+    },
+    {
+     "id": "ky-10",
+     "category": "behavior",
+     "question": "Which response headers does Ky consult for the retry delay, in what order, and how is a numeric value interpreted?",
+     "reference": "For statuses in afterStatusCodes it checks Retry-After, then RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset. A numeric value is seconds (multiplied by 1000); if that product is >= Date.parse('2024-01-01') it is treated as an epoch timestamp and Date.now() is subtracted. Non-numeric values are parsed as HTTP dates. The result is clamped at >= 0 and capped by maxRetryAfter, with no jitter applied.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Only Retry-After named; seconds, cap, no jitter right."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Header order right; omits date parsing and cap. / Header order and seconds/threshold right; omits date parse and cap."
+     }
+    },
+    {
+     "id": "ky-11",
+     "category": "behavior",
+     "question": "What is the exact message format of an HTTPError, and what is `error.data`?",
+     "reference": "Message: `Request failed with status code <status> <statusText>: <METHOD> <url>` (falls back to 'an unknown error' if no status). error.data is the pre-read response body: parsed JSON (via parseJson or JSON.parse) when Content-Type is a JSON subtype, otherwise text; undefined if empty, parse failure, over 10 MiB, or the read times out.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Format and data semantics correct. / Exact format and data semantics."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Message format NOT COVERED; data description mostly right. / Message not covered; data JSON/text and 10 MiB right."
+     }
+    },
+    {
+     "id": "ky-12",
+     "category": "behavior",
+     "question": "What does the `.json()` shortcut on the response promise do with headers and with an empty body?",
+     "reference": "It sets the Accept header to 'application/json' unless an Accept header is already set (the fetch is deferred by `await Promise.resolve()` so this happens first). On an empty body without a schema it calls JSON.parse('') which throws a SyntaxError; with a schema it validates `undefined`. A schema failure throws SchemaValidationError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Accept header right; empty-body behavior not covered. / Accept header right; empty body not covered."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims empty body returns empty string; it throws. / Accept right; claims empty body returns empty string (actually throws)."
+     }
+    },
+    {
+     "id": "ky-13",
+     "category": "behavior",
+     "question": "How is the final error passed through `beforeError` hooks, and which errors bypass them?",
+     "reference": "Each beforeError hook is awaited in order with {request, options, error, retryCount}; if a hook returns an Error instance it replaces the error for subsequent hooks and the final throw, otherwise the previous error is kept. Non-Error thrown values and errors thrown by beforeRetry hooks bypass beforeError entirely. init hook errors are synchronous and not caught either.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Replacement semantics right; misses beforeRetry and non-Error bypasses. / Sequential replace right; SchemaValidationError bypass true; omits non-Error/beforeRetry."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims Timeout/Network/ForceRetry errors bypass beforeError; false. / Falsely says Timeout/Network/ForceRetry errors bypass beforeError and #retry catches it."
+     }
+    },
+    {
+     "id": "ky-14",
+     "category": "where",
+     "question": "Where is network-error detection implemented and how does it decide something is a network error?",
+     "reference": "source/utils/is-network-error.ts, isRawNetworkError() (inlined from is-network-error v1.3.1). It requires a TypeError and matches runtime-specific messages (e.g. 'Failed to fetch', 'fetch failed', 'terminated', 'NetworkError when attempting to fetch resource.', Deno 'error sending request for url', Safari 'Load failed' with no stack). Ky#fetch wraps matches in NetworkError with the original as cause.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "NetworkError wrapping in Ky.ts; omits is-network-error.ts logic. / NetworkError wrap in Ky.ts right; no isRawNetworkError or heuristics."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Right file; wrongly says checks error.cause messages, omits TypeError rule. / File right; falsely says checks error cause; omits TypeError/NetworkError wrap."
+     }
+    },
+    {
+     "id": "ky-15",
+     "category": "where",
+     "question": "Where is the per-attempt timeout implemented?",
+     "reference": "source/utils/timeout.ts default export timeout(request, init, abortController, options): a Promise wrapper (Promise.race workaround) that sets a setTimeout to abort the controller and reject with TimeoutError, clearing it when fetch settles. It is called from Ky#fetch with effectiveTimeout = min(timeout, remaining totalTimeout).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Right file/function only. / timeout.ts location only."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Right file and race; omits TimeoutError/abort and call site. / timeout.ts and race right; no TimeoutError or totalTimeout cap."
+     }
+    },
+    {
+     "id": "ky-16",
+     "category": "where",
+     "question": "Where is the deep-merging of options (headers, hooks, searchParams, context, signal) for extend/instances implemented?",
+     "reference": "source/utils/merge.ts: validateAndMerge() validates sources then calls deepMerge(); deepMerge special-cases signal (combined via AbortSignal.any), context (shallow merge), searchParams (appendSearchParameters), hooks (mergeHooks, concatenating arrays), and headers (mergeHeaderContainers/mergeHeaders). replaceOption() marks a value to replace instead of merge.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "deepMerge in merge.ts; no specifics or validateAndMerge. / deepMerge in merge.ts only."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "deepMerge/validateAndMerge and helpers; omits replaceOption. / validateAndMerge/deepMerge, hooks, context, signal; no replaceOption; line ranges off."
+     }
+    },
+    {
+     "id": "ky-17",
+     "category": "where",
+     "question": "Where are upload and download progress implemented?",
+     "reference": "source/utils/body.ts: streamResponse() (download, used in Ky.create when onDownloadProgress is set) and streamRequest() (upload, used by Ky#wrapRequestWithUploadProgress), both piping through withProgress() TransformStream; getBodySize() estimates upload size. Progress reports percent capped below 1 until the stream flushes.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Functions and withProgress; omits getBodySize. / body.ts functions and withProgress; no getBodySize."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "streamRequest/streamResponse in body.ts; no withProgress/getBodySize."
+     }
+    },
+    {
+     "id": "ky-18",
+     "category": "edge_case",
+     "question": "A POST request gets a 503. Does Ky retry it by default?",
+     "reference": "No. 'post' is not in the default retry.methods (get, put, head, delete, options, trace), so the method check throws the HTTPError without retrying, even though 503 is a retriable status.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "POST not in methods; method checked first."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "POST not in default methods."
+     }
+    },
+    {
+     "id": "ky-19",
+     "category": "edge_case",
+     "question": "A GET receives 413 without any Retry-After-style header. Is it retried?",
+     "reference": "No. 413 is in statusCodes, but without a retry-after header Ky explicitly throws for 413; it is only retried when a Retry-After (or equivalent) header is present, since 413 is also in afterStatusCodes.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Answer no, but claims 413 is never retried; retried with Retry-After. / Correct 'No' but claims 413 is never retried (retried with header)."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Not retried without header. / Not retried without header; throw path described."
+     }
+    },
+    {
+     "id": "ky-20",
+     "category": "edge_case",
+     "question": "With `retry: 2` (default limit), how many total HTTP attempts can happen, and does `retry: {limit: 0}` change body handling?",
+     "reference": "Up to 3 attempts (1 initial + 2 retries), since retry stops when retryCount >= limit. With limit 0, Ky skips request.clone() before fetching, avoiding ReadableStream tee() buffering of streaming bodies.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "3 attempts right; body cloning not covered."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "3 attempts right; body cloning not covered. / 3 attempts right; misses clone/tee skip."
+     }
+    },
+    {
+     "id": "ky-21",
+     "category": "edge_case",
+     "question": "If a beforeRequest hook returns a Response with status 500, will Ky retry it?",
+     "reference": "No. Ky skips fetch and the retry loop; because the response came from a hook (responseFromHook), a non-OK response still goes through afterResponse hooks and then throws HTTPError immediately without retrying (same for a Response returned from beforeRetry).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "No retry, goes to afterResponse; omits HTTPError thrown. / No retry, skips fetch; HTTPError throw not stated."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "No retry right; wrongly says Response returned as success. / No retry right; falsely says 500 Response returned as success."
+     }
+    },
+    {
+     "id": "ky-22",
+     "category": "dev_workflow",
+     "question": "What does `npm test` run?",
+     "reference": "`xo && npm run build && ava`: lint with xo, build (del-cli distribution && tsc --project tsconfig.dist.json), then AVA tests. AVA loads .ts files as modules via `--import=tsx/esm`, with workerThreads disabled.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "xo/build/ava; omits tsx loader and workerThreads. / xo/build/ava only."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "xo/build/ava; omits tsx loader and workerThreads. / xo/build/ava only."
+     }
+    },
+    {
+     "id": "ky-23",
+     "category": "dev_workflow",
+     "question": "Why must the project be built before tests run, and which browsers do browser tests use?",
+     "reference": "Browser tests (test/browser.ts) serve the compiled `distribution/` directory via express and import '/distribution/index.js' in Playwright pages, so `npm run build` must run first. defaultBrowsersTest runs on chromium, firefox and webkit (some tests target only chromium).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Browsers right; build reason generic. / Browsers right; build reason vague."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Browsers right; build reason generic, no distribution import. / Browsers right; build reason not tied to browser.ts import."
+     }
+    },
+    {
+     "id": "ky-24",
+     "category": "dev_workflow",
+     "question": "What is the CI matrix?",
+     "reference": "GitHub Actions workflow .github/workflows/main.yml runs on push and pull_request, on macos-latest, with Node.js latest, 24 and 22 (fail-fast false); steps: npm install, npx playwright install --with-deps, npm test.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Node versions only."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "macOS and Node versions; omits steps. / macOS and node versions; no Playwright/test steps."
+     }
+    },
+    {
+     "id": "ky-25",
+     "category": "dev_workflow",
+     "question": "What Node.js version and module format does the package support, and where does the build output go?",
+     "reference": "engines.node >=22; package is ESM-only (`type: module`, exports default ./distribution/index.js with types ./distribution/index.d.ts). tsc compiles source/ to distribution/ per tsconfig.dist.json (rootDir ./source, outDir ./distribution, sourcemaps).",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Node 22+, ESM, distribution."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Node 22+, ESM, distribution via tsconfig.dist. / Node 22+, ESM, distribution via tsconfig.dist.json."
+     }
+    }
+   ],
+   "flask": [
+    {
+     "id": "flask-01",
+     "category": "architecture",
+     "question": "Trace the call chain when a WSGI server calls a Flask app for one request, from Flask.__call__ to the view function.",
+     "reference": "Flask.__call__ calls wsgi_app, which creates an AppContext with request_context(environ) and pushes it. It then calls full_dispatch_request(ctx). That sends request_started, runs preprocess_request (url_value_preprocessors, then before_request funcs), then dispatch_request (raises any stored routing exception, answers automatic OPTIONS, otherwise calls view_functions[rule.endpoint](**view_args) through ensure_sync). Any exception goes to handle_user_exception. finalize_request then runs make_response and process_response and sends request_finished. If an exception escapes, wsgi_app calls handle_exception. Finally it calls ctx.pop(error).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "wsgi_app, push, full_dispatch, dispatch; omits finalize, handle_exception, pop. / Covers call/wsgi_app/push/dispatch; omits finalize, handle_exception, ctx.pop."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Chain through push/match/dispatch; omits finalize, error handling, pop. / Chain to view correct incl. push/match; omits finalize, exceptions, pop."
+     }
+    },
+    {
+     "id": "flask-02",
+     "category": "architecture",
+     "question": "What happens when a request context is pushed and popped in this checkout, and how are nested pushes handled?",
+     "reference": "There is one AppContext class; a request context is just an AppContext that has a request. push() bumps _push_count. If the context is already active it returns there. Otherwise it sets the _cv_app ContextVar, sends appcontext_pushed, and, if it has a request, opens the session via _get_session() and then runs match_request() for URL routing. pop() checks that the context is the active one and decrements the count. Cleanup only runs when the count reaches 0, in this order: do_teardown_request, request.close(), do_teardown_appcontext, reset the ContextVar, send appcontext_popped. Errors from these steps are collected and raised together at the end.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Push count and nested handling right; pop order incomplete. / Push count, session before routing correct; pop order detail incomplete."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Merged class and ContextVar; no push count or pop order. / Merged class and teardown mentioned; misses push counting and pop order."
+     }
+    },
+    {
+     "id": "flask-03",
+     "category": "architecture",
+     "question": "Walk through what app.register_blueprint(bp, **options) does internally.",
+     "reference": "App.register_blueprint (a setupmethod) calls blueprint.register(app, options). Blueprint.register works out the dotted name from name_prefix and the name option, and raises ValueError if that name is already in app.blueprints. It stores the blueprint in app.blueprints[name] and builds a BlueprintSetupState with make_setup_state. It adds the blueprint's static route if it has one. On first registration of the blueprint or the name, it merges the blueprint's handler dicts into the app with keys prefixed by the blueprint name (_merge_blueprint_funcs). It then replays every deferred_functions callback, recorded by record() from things like add_url_rule, against the state. Next it attaches CLI commands. Last, it recursively registers nested blueprints, joining url_prefix/subdomain and passing name_prefix=name.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Setup state, deferred replay, nesting; omits duplicate-name ValueError. / Deferred replay, prefixes, nested recursion; misses duplicate-name ValueError."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Deferred replay right; claims blueprints stored last (stored first); no ValueError/nesting. / Setup state and deferred replay; misses ValueError and nested recursion."
+     }
+    },
+    {
+     "id": "flask-04",
+     "category": "architecture",
+     "question": "How is the code split between src/flask/sansio/ and the top-level modules, and which classes collaborate?",
+     "reference": "The sansio package holds framework logic with no WSGI or I/O: sansio/scaffold.py defines Scaffold (route and handler registration dicts plus decorators), sansio/app.py defines App(Scaffold) (config, url_map, add_url_rule, error-handler lookup, redirect, register_blueprint), and sansio/blueprints.py defines Blueprint(Scaffold) and BlueprintSetupState. The top-level modules add WSGI and runtime: app.py has Flask(App) (wsgi_app, the dispatch methods, contexts, sessions, test client) and blueprints.py has Blueprint(SansioBlueprint) (adds cli/send_static_file and similar). ctx.py (AppContext), globals.py (proxies), sessions.py, json/provider.py and wrappers.py (Request/Response) work alongside them.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Scaffold/App/Flask right; omits Blueprint subclasses. / Scaffold/App/Flask right; omits Blueprint subclass split."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All inheritance relationships correct. / All three inheritance relationships stated."
+     }
+    },
+    {
+     "id": "flask-05",
+     "category": "architecture",
+     "question": "How are current_app, g, request and session implemented, and how many ContextVars back them?",
+     "reference": "All of them, plus app_ctx, are werkzeug LocalProxy objects over one ContextVar, _cv_app = ContextVar('flask.app_ctx'), which holds the active AppContext. current_app proxies the context's .app attribute, g proxies .g, request proxies .request and session proxies .session. request and session use the 'outside of request context' unbound message. The old request_ctx name is a deprecated alias of app_ctx, served through a module __getattr__.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Single ContextVar flask.app_ctx right; omits request_ctx alias. / Single flask.app_ctx ContextVar; omits request_ctx alias."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Single ContextVar and proxies right; omits request_ctx alias. / Single _cv_app ContextVar and proxies; omits request_ctx alias."
+     }
+    },
+    {
+     "id": "flask-06",
+     "category": "behavior",
+     "question": "What are the default session cookie related config values?",
+     "reference": "SESSION_COOKIE_NAME='session', SESSION_COOKIE_DOMAIN=None, SESSION_COOKIE_PATH=None (falls back to APPLICATION_ROOT, '/'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=False, SESSION_COOKIE_PARTITIONED=False, SESSION_COOKIE_SAMESITE=None, SESSION_REFRESH_EACH_REQUEST=True, PERMANENT_SESSION_LIFETIME=timedelta(days=31).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Only name and lifetime; rest not covered. / Only name and lifetime; rest NOT COVERED."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "All defaults right; omits APPLICATION_ROOT path fallback."
+     }
+    },
+    {
+     "id": "flask-07",
+     "category": "behavior",
+     "question": "What are the default request size/limit config values (MAX_CONTENT_LENGTH, MAX_FORM_MEMORY_SIZE, MAX_FORM_PARTS, MAX_COOKIE_SIZE)?",
+     "reference": "MAX_CONTENT_LENGTH=None (no limit), MAX_FORM_MEMORY_SIZE=500_000 bytes, MAX_FORM_PARTS=1_000, MAX_COOKIE_SIZE=4093. Request properties read them from current_app.config when an app is active, and a per-request override is possible.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All four defaults correct."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Three correct; MAX_COOKIE_SIZE not covered."
+     }
+    },
+    {
+     "id": "flask-08",
+     "category": "behavior",
+     "question": "In what order are before_request and after_request functions run when a blueprint (possibly nested) handles the request?",
+     "reference": "preprocess_request first runs url_value_preprocessors and then before_request funcs. Each set goes over names (None, *reversed(request.blueprints)): app first, then outer to inner blueprint, each list in registration order. The first non-None return value short-circuits. process_response first runs the after_this_request functions in registration order. It then goes over chain(request.blueprints, (None,)), innermost blueprint first and the app last, and calls each after_request list in reverse registration order. Last it saves the session unless it is a NullSession.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "Explicitly says ordering not covered. / States ordering not covered."
+     },
+     "devin": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     }
+    },
+    {
+     "id": "flask-09",
+     "category": "behavior",
+     "question": "How are teardown_request / teardown_appcontext handlers ordered, and what happens if one of them raises?",
+     "reference": "do_teardown_request goes over the blueprints innermost-first and then the app, calling each list in reverse registration order. It then sends request_tearing_down. do_teardown_appcontext calls teardown_appcontext_funcs in reverse order and then sends appcontext_tearing_down. Each callback runs inside _CollectErrors, so all of them run even when one raises. The collected errors are raised at the end as a BaseExceptionGroup on Python 3.11+, or only the first error on 3.10. This 'all callbacks run' behavior is new in 3.2.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Order and all-run collection right; no reverse order or ExceptionGroup detail. / Order and all-run/collected errors; misses reverse order, ExceptionGroup."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Request before appcontext, all run; no reverse order or exception group."
+     }
+    },
+    {
+     "id": "flask-10",
+     "category": "behavior",
+     "question": "When an exception is raised, in what order does Flask search for a registered error handler?",
+     "reference": "App._find_error_handler looks up the HTTP code first and the exception class second (code=None). Inside each pass it checks the request's blueprints from innermost to outermost and then the app. For each handler map it walks the exception's MRO, so a handler for a base class matches. The order is therefore: blueprint handler by code, app handler by code, blueprint handler by class, app handler by class. RoutingException (for example RequestRedirect) and HTTPExceptions with code None are returned directly and are never passed to handlers.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Correct four-step order with MRO; omits RoutingException exclusion."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Says blueprint-then-app with class before code; code lookup precedes class. / Says class before code within scope; code checked first across scopes."
+     }
+    },
+    {
+     "id": "flask-11",
+     "category": "behavior",
+     "question": "What does handle_exception do for an unhandled non-HTTP exception, and when does it re-raise instead of returning a 500?",
+     "reference": "It always sends got_request_exception first. PROPAGATE_EXCEPTIONS defaults to None, which means propagate when app.testing or app.debug is true. When propagating, it re-raises the exception. Otherwise it logs the exception with log_exception and creates InternalServerError(original_exception=e). If a 500/InternalServerError handler exists, that handler receives the InternalServerError (not the original exception). The result goes through finalize_request(from_error_handler=True), so after_request still runs and finalization errors are only logged.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Propagation rule right; omits original_exception and finalize details. / Signal, 500, propagate in debug/testing; misses handler arg and finalize."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Signal, wrap, propagate rule right; omits handler gets ISE, finalize. / Signal, wrap, propagate rules right; omits finalize_request from_error_handler."
+     }
+    },
+    {
+     "id": "flask-12",
+     "category": "behavior",
+     "question": "What are DefaultJSONProvider's defaults (ensure_ascii, sort_keys, compact, extra types) and how does jsonify format output?",
+     "reference": "ensure_ascii=True, sort_keys=True, compact=None, mimetype='application/json'. The default hook converts date/datetime to HTTP-date (RFC 822) strings via http_date, Decimal and UUID to str, dataclasses via dataclasses.asdict, and objects with __html__ to str(o.__html__()). Anything else raises TypeError. response(), used by jsonify, uses indent=2 when compact is False or when compact is None and debug is on. Otherwise it uses the compact separators (',', ':'). It always appends a trailing newline.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults and types right; formatting details vague, no newline. / Defaults and types right; no indent=2, date format, newline."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults, types, indent logic right; omits trailing newline, date format. / Defaults, types, indent/compact correct; omits trailing newline and HTTP date."
+     }
+    },
+    {
+     "id": "flask-13",
+     "category": "behavior",
+     "question": "When does SecureCookieSessionInterface.save_session set, delete, or skip the session cookie, and when is Vary: Cookie added?",
+     "reference": "If session.accessed, it adds Vary: Cookie. If the session is empty and was modified, it deletes the cookie and adds Vary. If it is empty and unmodified, it returns without setting a cookie. Otherwise it sets the cookie only when should_set_cookie is true, meaning session.modified or (session.permanent and SESSION_REFRESH_EACH_REQUEST). expires is now + PERMANENT_SESSION_LIFETIME only for permanent sessions, and None (a browser-session cookie) otherwise. With no SECRET_KEY, open_session returns None and a NullSession is used. A bad signature yields a new empty session.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Vary, delete, set right; omits should_set_cookie criteria and NullSession. / Vary/delete/set correct; misses should_set_cookie condition and NullSession."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Vary and set conditions right; omits delete of emptied session. / Vary and set rules; misses delete-on-empty and should_set_cookie meaning."
+     }
+    },
+    {
+     "id": "flask-14",
+     "category": "edge_case",
+     "question": "What status code does flask.redirect() / app.redirect() use by default in this checkout?",
+     "reference": "303 See Other. Both flask.helpers.redirect and App.redirect default to code=303, a change from 302 in 3.2.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Says 302; default is 303. / Claims 302; code defaults to 303."
+     }
+    },
+    {
+     "id": "flask-15",
+     "category": "edge_case",
+     "question": "Is there a separate RequestContext class, and if an app context is already pushed (e.g. in a test), does handling a request reuse it?",
+     "reference": "No. RequestContext was merged into AppContext in 3.2, and flask.ctx.RequestContext is only a deprecated alias served by a module __getattr__ with a DeprecationWarning. wsgi_app always creates and pushes a new combined AppContext with request_context(environ), so an app context that is already pushed is not reused. That means g is not shared between them.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Fresh context right; does not mention deprecated alias. / Merged class, fresh context per request stated."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Deprecated alias and fresh context per request. / Deprecated alias and no reuse stated."
+     }
+    },
+    {
+     "id": "flask-16",
+     "category": "edge_case",
+     "question": "If you subclass Flask and override dispatch methods like full_dispatch_request(self) or handle_exception(self, e) with their old signatures, what happens?",
+     "reference": "These dispatch methods now take ctx: AppContext as their first parameter. Flask.__init_subclass__ inspects 12 overridable methods: handle_http_exception, handle_user_exception, handle_exception, log_exception, dispatch_request, full_dispatch_request, finalize_request, make_default_options_response, preprocess_request, process_response, do_teardown_request and do_teardown_appcontext. If an override's second parameter is not named ctx and is not annotated as AppContext, it emits a DeprecationWarning ('will not be supported in Flask 4.0'). It then wraps the override with remove_ctx and the base method with add_ctx, so old-style code keeps working.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Notes ctx param; omits DeprecationWarning and compatibility wrapping. / Ctx-first change noted; misses deprecation warning and wrapping compatibility."
+     }
+    },
+    {
+     "id": "flask-17",
+     "category": "edge_case",
+     "question": "With a default app, what is app.config['DEBUG'] and where does that value come from? Is it the None from default_config?",
+     "reference": "It is False unless FLASK_DEBUG is set, not None. default_config lists DEBUG as None, but App.make_config copies the defaults and overwrites DEBUG with get_debug_flag(). That function returns True only when FLASK_DEBUG is set to something other than '0', 'false' or 'no'. Setting app.debug also updates jinja_env.auto_reload when TEMPLATES_AUTO_RELOAD is None.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims DEBUG is None; make_config sets it via get_debug_flag (False). / Claims DEBUG is None; make_config sets get_debug_flag() False."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "False is right but attributes it to defaults, not FLASK_DEBUG/get_debug_flag. / False correct; misses make_config/get_debug_flag source."
+     }
+    },
+    {
+     "id": "flask-18",
+     "category": "where",
+     "question": "Where is the session cookie signer created, and what salt/digest/key derivation does it use? How is SECRET_KEY_FALLBACKS handled?",
+     "reference": "In src/flask/sessions.py, SecureCookieSessionInterface.get_signing_serializer. It returns None when there is no secret_key. Otherwise it builds an itsdangerous URLSafeTimedSerializer with salt='cookie-session', key_derivation='hmac', digest_method SHA-1 (looked up lazily through _lazy_sha1 so FIPS builds can import it), and a TaggedJSONSerializer payload serializer. The key list is SECRET_KEY_FALLBACKS followed by SECRET_KEY, with the current key last.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "get_signing_serializer and params right; fallback handling vague. / Location, salt, digest right; fallback key order and serializer missing."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Salt/digest/hmac right; fallbacks wrongly said tried in open_session. / Salt/digest/hmac right; fallbacks wrongly attributed to open_session looping."
+     }
+    },
+    {
+     "id": "flask-19",
+     "category": "where",
+     "question": "Where does the `flask` CLI locate the application, and what names/files does it try?",
+     "reference": "In src/flask/cli.py. ScriptInfo.load_app uses the --app/FLASK_APP value, or tries wsgi.py and then app.py in the current directory. locate_app imports the module and calls find_best_app. find_best_app checks the attributes 'app' and then 'application', then looks for exactly one Flask instance in the module (more than one raises NoAppException), then calls the factory 'create_app' or 'make_app' with no arguments.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full correct discovery order. / All discovery steps and order correct."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All names/files covered; filename step misordered slightly. / load_app, wsgi.py/app.py, find_best_app order all stated."
+     }
+    },
+    {
+     "id": "flask-20",
+     "category": "where",
+     "question": "Where are error handlers registered and validated, and what happens if you register a handler for an unknown status code or an exception instance?",
+     "reference": "In src/flask/sansio/scaffold.py. Scaffold.errorhandler / register_error_handler call _get_exc_class_and_code and store the handler in error_handler_spec[None][code][exc_class]. An int that is not in werkzeug's default_exceptions raises ValueError. An exception instance raises TypeError. A non-Exception class raises ValueError. HTTPException subclasses are keyed by their code, and other classes are keyed under code None. Lookup happens in App._find_error_handler in sansio/app.py.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Validation rules vague; no file, no error types or storage. / Validation errors noted; no scaffold location or exception types."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Unknown code rejection right; instance behavior not covered. / Unknown code rejected; no location; instance case not covered."
+     }
+    },
+    {
+     "id": "flask-21",
+     "category": "where",
+     "question": "Where are a route's default HTTP methods and automatic OPTIONS handling decided, and where is the OPTIONS response produced?",
+     "reference": "App.add_url_rule in src/flask/sansio/app.py decides this. methods come from the argument, else view_func.methods, else ('GET',). A plain string raises TypeError. The values are upper-cased and view_func.required_methods are added. provide_automatic_options comes from the argument, else the view_func attribute, else ('OPTIONS' not in methods and config PROVIDE_AUTOMATIC_OPTIONS, which defaults to True). When it is enabled, OPTIONS is added. At request time Flask.dispatch_request answers OPTIONS through make_default_options_response, which fills Allow from url_adapter.allowed_methods(). Registering a different function for an existing endpoint raises AssertionError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "add_url_rule and GET default right; OPTIONS response location not covered. / add_url_rule, GET default, auto OPTIONS; response location not covered."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims Werkzeug implements OPTIONS; Flask make_default_options_response does. / Says Werkzeug produces OPTIONS; Flask make_default_options_response does."
+     }
+    },
+    {
+     "id": "flask-22",
+     "category": "dev_workflow",
+     "question": "Which Python versions are supported and tested?",
+     "reference": "pyproject has requires-python '>=3.10'. The tox env_list includes py3.14, py3.14t (free-threaded), py3.13, py3.12, py3.11, py3.10 and pypy3.11. CI also runs 3.14 on Windows and macOS. mypy and pyright both target Python 3.10.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "3.10+, 3.10-3.14, pypy; omits 3.14t, type checker targets. / >=3.10 and 3.10-3.14, pypy; misses 3.14t and type-checker targets."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Versions incl 3.14t right; omits mypy/pyright target. / Versions incl. 3.14t correct; misses mypy/pyright targets."
+     }
+    },
+    {
+     "id": "flask-23",
+     "category": "dev_workflow",
+     "question": "How are the tests run locally and in CI?",
+     "reference": "With tox, using tox-uv (runner uv-venv-lock-runner, frozen lockfile constraints) and the 'tests' dependency group (asgiref, greenlet, pytest, python-dotenv). Each env runs 'pytest -v --tb=short --basetemp={env_tmp_dir}'. CI runs 'uv run --locked --no-default-groups --group dev tox run' with TOX_ENV set per matrix entry. pytest's testpaths is ['tests'] and filterwarnings = ['error'], so any warning fails a test.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "tox and pytest command right; omits uv runner, CI command, warnings-as-errors. / tox and pytest command right; misses uv runner, CI command, filterwarnings."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "CI command misstated as tox run -e TOX_ENV; omits pytest config. / tox+uv, CI uv run tox; misses filterwarnings error and testpaths."
+     }
+    },
+    {
+     "id": "flask-24",
+     "category": "dev_workflow",
+     "question": "How is static type checking configured and run?",
+     "reference": "The tox env 'typing' installs the 'typing' dependency group and runs mypy and then pyright. CI runs it as 'tox run -e typing'. mypy is strict = true over files ['src', 'tests/type_check'], with python_version 3.10, and ignores missing imports for asgiref, dotenv, cryptography and importlib_metadata. pyright includes src and tests/type_check with typeCheckingMode 'basic'.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All key config and execution correct. / Strict mypy, basic pyright, typing tox env."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "mypy strict, pyright basic, typing tox env. / typing env runs mypy+pyright, strict, basic."
+     }
+    },
+    {
+     "id": "flask-25",
+     "category": "dev_workflow",
+     "question": "What do the tox envs tests-min, tests-dev and style do?",
+     "reference": "tests-min runs on Python 3.14 and pins the minimum dependencies before pytest: blinker==1.9.0, click==8.1.3, itsdangerous==2.2.0, jinja2==3.1.2, markupsafe==2.1.1, werkzeug==3.1.0. tests-dev runs on Python 3.10 and installs main-branch tarballs of those six Pallets projects. style runs 'pre-commit run --all-files', whose hooks are ruff-check, ruff-format, uv-lock, codespell and the basic pre-commit-hooks.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Purpose right; omits specifics. / Purposes right; no versions or hooks."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Purpose right; omits python versions and pre-commit hooks. / Purposes right; misses Python versions and pre-commit hook list."
+     }
+    }
+   ],
+   "hono": [
+    {
+     "id": "hono-01",
+     "category": "architecture",
+     "question": "Trace a request through Hono: what happens between app.fetch(request) and the returned Response?",
+     "reference": "app.fetch(request, env, ctx) calls the private HonoBase#dispatch(request, executionCtx, env, method). #dispatch computes the path with this.getPath, calls this.router.match(method, path), and builds a new Context holding the match result, env, executionCtx and the app's notFound handler. If exactly one handler matched, it is called directly with no compose, and its result (or the notFound handler's result) is returned. Otherwise compose(matchResult[0], errorHandler, notFoundHandler) runs the chain, and if the context is not finalized at the end it throws 'Context is not finalized. Did you forget to return a Response object or `await next()`?'. That error, like any other thrown Error, goes to the error handler.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "dispatch, getPath, match, Context, compose; omits single-handler fast path and not-finalized error. / dispatch/getPath/match/Context/compose; misses single-handler fast path and finalized error."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Covers dispatch, fast path, compose, not-finalized error. / Fast path, compose, not-finalized error all covered."
+     }
+    },
+    {
+     "id": "hono-02",
+     "category": "architecture",
+     "question": "How do runtime adapters connect a platform's entry point to a Hono app? Compare Vercel, Cloudflare Workers, Cloudflare Pages and AWS Lambda.",
+     "reference": "Adapters are thin wrappers around app.fetch. hono/vercel's handle(app) returns req => app.fetch(req). The Cloudflare Workers adapter exports no handle at all, only serveStatic, upgradeWebSocket and getConnInfo, because the app's own fetch(request, env, executionCtx) already matches the Workers module signature. The Cloudflare Pages handle passes eventContext.request, {...eventContext.env, eventContext} as env, and an executionCtx built from waitUntil and passThroughOnException. The AWS Lambda handle picks an EventProcessor for the event type (API Gateway v1/v2, ALB, Lattice) to build a Request. It calls app.fetch(req, {event, requestContext, lambdaContext}) and converts the Response back with processor.createResult, base64-encoding binary bodies. Request-conversion errors return 400 for a TypeError and 500 otherwise.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Vercel right; Pages args misstated (env merges eventContext, ctx built). / Vercel/Workers right; Pages mapping wrong (env merges eventContext, ctx built)."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Lambda, Workers, Pages right; invents Vercel_handle_fn instead of req => app.fetch(req). / Lambda/Workers/Pages right; Vercel Vercel_handle_fn entry point is invented."
+     }
+    },
+    {
+     "id": "hono-03",
+     "category": "architecture",
+     "question": "What distinguishes the 'hono', 'hono/quick' and 'hono/tiny' entry points?",
+     "reference": "All three export a Hono class that extends HonoBase and differ only in the router they set up. 'hono' uses options.router if one is given, and otherwise new SmartRouter({ routers: [new RegExpRouter(), new TrieRouter()] }). 'hono/quick' always uses SmartRouter with [LinearRouter, TrieRouter]. 'hono/tiny' always uses PatternRouter. The two presets assign this.router unconditionally after super(options), so a router passed in options is overwritten.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Routers right; omits presets overwriting options.router. / Routers correct; omits presets overwriting options.router."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Routers right; omits router-override behavior. / Routers correct; omits presets ignoring options.router."
+     }
+    },
+    {
+     "id": "hono-04",
+     "category": "architecture",
+     "question": "How do app.route() and app.basePath() compose sub-applications internally?",
+     "reference": "basePath(path) clones the app with #clone, which shares the same router, getPath, errorHandler, notFound handler and routes array, and sets _basePath to mergePath(old, path). route(path, subApp) calls this.basePath(path) and re-registers every entry in subApp.routes into the parent's router with #addRoute, so routes are copied at the moment route() is called rather than delegated at request time. If the sub-app set a custom onError, each of its handlers is wrapped as compose([], subApp.errorHandler), so that error handler still applies to those routes.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "basePath clone and route copying right; omits errorHandler wrapping. / Clone and route copying right; omits sub-app errorHandler wrapping."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Clone sharing router, route copying, error handler wrapping. / Clone sharing router, copying, conditional compose wrapping."
+     }
+    },
+    {
+     "id": "hono-05",
+     "category": "architecture",
+     "question": "How does Context manage the response object as middleware and handlers run?",
+     "reference": "c.res is created lazily: the getter makes a Response(null) using any headers already prepared by c.header(). Assigning to c.res when a response already exists creates a new Response and copies the old response's headers onto it, skipping content-type and re-appending set-cookie values, then sets finalized = true. In compose, a handler's returned value is assigned to context.res only if the context is not finalized yet, or if it came from the error handler. c.header() called after finalization clones the response first so its headers can be changed.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy res and post-finalize clone right; omits setter header copy and compose rule. / Lazy res, header clone; misses setter copy semantics and compose rule."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Finalized on set, header merging; omits lazy getter and compose assignment rule. / Setter merging and finalized noted; misses lazy getter and compose assignment rule."
+     }
+    },
+    {
+     "id": "hono-06",
+     "category": "behavior",
+     "question": "Which router does `new Hono()` use, and how does SmartRouter decide which inner router to use?",
+     "reference": "SmartRouter wrapping [RegExpRouter, TrieRouter]. SmartRouter.add() only stores routes. On the first match() it tries each router in order: it adds every stored route, then calls match. If that router throws UnsupportedPathError it moves to the next one. The first router that succeeds becomes permanent: this.match is rebound to its match, the stored routes are dropped, and name becomes 'SmartRouter + <Name>'. Calling add() after that first match throws 'Can not add a route since the matcher is already built.'",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy first-match choice right; omits inner routers and add-after-build error. / Lazy first-match selection right; omits inner routers and add-after-build error."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Default routers and lazy choice right; omits add-after-build error. / Default routers, lazy selection; omits add-after-build error."
+     }
+    },
+    {
+     "id": "hono-07",
+     "category": "behavior",
+     "question": "What are the exact semantics of Hono's compose() for middleware chains?",
+     "reference": "compose is based on koa-compose. dispatch(i) throws Error('next() called multiple times') if i <= the last index already dispatched. Before running each handler it sets context.req.routeIndex = i, so c.req.param() reads that route's params. If a handler throws an Error and onError is provided, context.error is set and onError's response is used. A thrown value that is not an Error, or any error when there is no onError, is rethrown. When the chain runs out and the context is not finalized, onNotFound runs. A returned response is assigned only when the context is not finalized yet or the response came from onError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "next() twice, onError, onNotFound; omits routeIndex and Error-only rule. / next-twice, onError, notFound; misses routeIndex and non-Error rethrow."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "routeIndex, onError, onNotFound; omits next() twice error and Error-only. / routeIndex, onError, notFound; misses next-twice error and non-Error rethrow."
+     }
+    },
+    {
+     "id": "hono-08",
+     "category": "behavior",
+     "question": "What are the default options of the cors() middleware and how does it handle preflight?",
+     "reference": "Defaults: origin '*', allowMethods ['GET','HEAD','PUT','POST','DELETE','PATCH'], allowHeaders [] and exposeHeaders []. maxAge and credentials are unset. For an OPTIONS request it returns its own 204 'No Content' response without calling next(). That response carries Access-Control-Allow-Methods and Access-Control-Max-Age when maxAge is set. If allowHeaders is empty, the request's Access-Control-Request-Headers are echoed back. Content-Length and Content-Type are removed. Vary: Origin is set when origin is not '*'. For other requests, Vary: Origin is appended after next(), again only when origin is not '*'.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Defaults, header reflection, 204 preflight correct. / Defaults, header reflection, 204 preflight all correct."
+     },
+     "devin": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     }
+    },
+    {
+     "id": "hono-09",
+     "category": "behavior",
+     "question": "How does the etag() middleware generate and compare ETags by default?",
+     "reference": "After next() runs, if the response has no ETag header, the middleware hashes a clone of the body with crypto.subtle.digest SHA-1 (unless a custom generateDigest is given). The value is a strong ETag '\"<hash>\"' by default, or 'W/\"<hash>\"' when weak: true. If-None-Match is compared with the W/ prefix stripped, so the comparison is weak. On a match it replaces the response with a 304 'Not Modified' that keeps only the retained headers: cache-control, content-location, date, etag, expires and vary. If crypto.subtle is not available and no generator is given, it leaves the response unchanged.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "SHA-1 and 304 right; omits weak handling and retained headers. / SHA-1 and 304; misses weak default, W/ stripping, retained headers."
+     }
+    },
+    {
+     "id": "hono-10",
+     "category": "behavior",
+     "question": "What headers does secureHeaders() set by default, and with what values?",
+     "reference": "Defaults set: Cross-Origin-Resource-Policy: same-origin; Cross-Origin-Opener-Policy: same-origin; Origin-Agent-Cluster: ?1; Referrer-Policy: no-referrer; Strict-Transport-Security: max-age=15552000; includeSubDomains; X-Content-Type-Options: nosniff; X-DNS-Prefetch-Control: off; X-Download-Options: noopen; X-Frame-Options: SAMEORIGIN; X-Permitted-Cross-Domain-Policies: none; X-XSS-Protection: 0. X-Powered-By is removed (removePoweredBy: true). Cross-Origin-Embedder-Policy is off by default (false, require-corp when enabled). No Content-Security-Policy is sent unless it is configured.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full exact default header list and removePoweredBy. / Full default header list and X-Powered-By removal correct."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Only four headers listed; correct values. / Subset of headers correct; incomplete list."
+     }
+    },
+    {
+     "id": "hono-11",
+     "category": "behavior",
+     "question": "How does bodyLimit() enforce the limit, and what is its default response?",
+     "reference": "maxSize is required and has no default. Requests without a body (for example GET or HEAD) go straight to next(). If Content-Length is present and Transfer-Encoding is not, the header is trusted: a value over maxSize calls onError, and otherwise next() runs. Otherwise (chunked, or no length header) the middleware reads the whole body up front, counting bytes and failing as soon as the size exceeds maxSize. It then rebuilds c.req.raw from the buffered chunks. The default onError throws HTTPException(413) wrapping a Response 'Payload Too Large' with status 413.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Content-Length vs stream and 413 right; omits buffering/raw replacement. / Length vs stream and 413; misses required maxSize and raw rebuild."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Header/stream checking; default 413 response not covered. / Content-Length/stream check; misses 413 default and Transfer-Encoding rule."
+     }
+    },
+    {
+     "id": "hono-12",
+     "category": "behavior",
+     "question": "What do the default notFound and error handlers return, and how are HTTPExceptions handled?",
+     "reference": "The default notFound handler returns c.text('404 Not Found', 404). The default error handler checks 'getResponse' in err, which is duck typing rather than an instanceof HTTPException check. If present, it returns c.newResponse(res.body, res) from err.getResponse(). Otherwise it calls console.error(err) and returns c.text('Internal Server Error', 500). app.onError() and app.notFound() replace these handlers. A thrown value that is not an Error is rethrown by #handleError instead of being handled.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults right; omits non-Error rethrow and duck typing. / Defaults correct; misses duck typing and non-Error rethrow."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults and getResponse duck check; omits non-Error rethrow. / getResponse duck check, 500; misses non-Error rethrow."
+     }
+    },
+    {
+     "id": "hono-13",
+     "category": "behavior",
+     "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
+     "reference": "c.redirect(location, status?) sets the Location header and returns a response with status 302 by default. A location containing characters outside \\x00-\\xFF is passed through encodeURI. c.text() takes a fast path, returning new Response(text), when no headers, status, arguments or finalization exist. Otherwise it sets Content-Type 'text/plain; charset=UTF-8'. c.json() JSON.stringifies the value with Content-Type 'application/json'. c.notFound() calls the notFound handler the app passed into the Context, so a custom app.notFound applies. It falls back to an empty Response if none was passed.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "302, encoding, text/json content types, notFound delegation. / 302, encodeURI, text/plain charset, notFound delegation."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "302 and json type right; c.notFound simplified, no encoding or text type. / 302 right; misses encodeURI, text content-type, notFound delegation."
+     }
+    },
+    {
+     "id": "hono-14",
+     "category": "where",
+     "question": "Where is the URL path extracted from a request, and where is the strict / non-strict trailing-slash behavior selected?",
+     "reference": "getPath and getPathNoStrict in src/utils/url.ts. getPath scans request.url for the path, stopping at '?' or '#', and calls tryDecodeURI when it sees '%'. getPathNoStrict removes one trailing '/' from paths longer than 1. The choice is made in the HonoBase constructor: this.getPath = (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Strict default and getPath selection; no url.ts location. / Strict selection right; does not locate url.ts functions."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "getPath/getPathNoStrict in url.ts and strict option; strict default not stated. / url.ts getPath/getPathNoStrict right; strict default not stated."
+     }
+    },
+    {
+     "id": "hono-15",
+     "category": "where",
+     "question": "Where does RegExpRouter build its matchers, and when does that happen?",
+     "reference": "In src/router/reg-exp-router/matcher.ts, function match(). On the first call it runs this.buildAllMatchers(), which RegExpRouter defines in router.ts and which builds one matcher per method from #routes and #middleware. It then replaces this.match with a closure that checks a static-path map first and otherwise runs one combined RegExp, using the index of the empty capture group to pick the handler set. Path conflicts are reported at that point by rethrowing the trie's PATH_ERROR as UnsupportedPathError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy build and builder function right; misses matcher.ts lazy match and static map. / Lazy, discarded routes; misses matcher.ts, static map, conflicts."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy build on first match via buildAllMatchers; no static map or conflict errors. / Lazy build on first match; misses matcher.ts, static map, UnsupportedPathError."
+     }
+    },
+    {
+     "id": "hono-16",
+     "category": "where",
+     "question": "Where is request-body caching implemented, so that c.req.json() and c.req.text() can both be called?",
+     "reference": "In src/request.ts on the HonoRequest class: the public bodyCache field and the private #cachedBody(key) method. #cachedBody returns the cached promise for the same key. If a different body type was cached, it rebuilds the body from that cached value with new Response(body)[key](), stringifying first if the cached key was 'json'. Otherwise it reads raw[key]() and stores the promise. json() is implemented as #cachedBody('text') followed by JSON.parse.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "#cachedBody in HonoRequest; no conversion mechanism details. / Location and conversion right; misses json via text detail."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "HonoRequest bodyCache/#cachedBody and conversion; omits json via text+parse. / HonoRequest bodyCache/#cachedBody and conversion described."
+     }
+    },
+    {
+     "id": "hono-17",
+     "category": "where",
+     "question": "Where are app.get/post/.../all, app.on and app.use defined, and which HTTP methods get shortcut methods?",
+     "reference": "They are created as instance properties in the HonoBase constructor (src/hono-base.ts). The constructor loops over [...METHODS, 'all'] and defines app.on and app.use there too. All of them register routes through the private #addRoute, which upper-cases the method, merges _basePath, calls router.add(method, path, [handler, routerRoute]) and pushes the route onto app.routes. METHODS is defined in src/router.ts as ['get','post','put','delete','options','patch']. app.use without a path registers under method 'ALL' with path '*'.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims HEAD shortcut exists; METHODS excludes head. / Claims HEAD shortcut exists; METHODS has no head."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Constructor and method list right; omits #addRoute and use '*' default. / Constructor and method list right; omits #addRoute and use default."
+     }
+    },
+    {
+     "id": "hono-18",
+     "category": "edge_case",
+     "question": "There is no app.head(). How are HEAD requests handled?",
+     "reference": "#dispatch special-cases HEAD. It re-dispatches the same request as 'GET' and wraps the result as new Response(null, getResponse), keeping the status and headers but dropping the body. GET routes and GET middleware therefore answer HEAD requests automatically.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "HEAD dispatched as GET, null body. / HEAD dispatched as GET with null body."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "HEAD dispatched as GET, null body. / HEAD converted to GET, null body."
+     }
+    },
+    {
+     "id": "hono-19",
+     "category": "edge_case",
+     "question": "If you pass both strict: false and a custom getPath to new Hono(), which getPath is used?",
+     "reference": "The custom getPath is ignored. The constructor uses options.getPath only when strict is true: (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict. With strict: false it always uses the built-in getPathNoStrict.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims custom getPath used; strict:false forces getPathNoStrict. / Claims custom getPath used; strict:false ignores it."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims custom getPath used; strict:false forces getPathNoStrict."
+     }
+    },
+    {
+     "id": "hono-20",
+     "category": "edge_case",
+     "question": "If a sub-app has its own app.notFound() and onError(), and is mounted with parent.route('/x', sub), which handlers apply to requests under /x?",
+     "reference": "Only the sub-app's onError is kept. route() wraps the sub-app's handlers with its errorHandler when that handler is custom. The sub-app's notFound is ignored: route() copies only routes, and at request time the Context and compose use the parent's #notFoundHandler. Unmatched paths under /x, and c.notFound() calls, therefore use the parent's notFound handler.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Sub onError kept, parent notFound used."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims sub-app notFound applies; parent notFound used. / Claims sub-app notFound applies and is copied; parent notFound used."
+     }
+    },
+    {
+     "id": "hono-21",
+     "category": "edge_case",
+     "question": "`throw new HTTPException(401, { res: new Response('nope', { status: 403 }) })`: what status does the client get?",
+     "reference": "401. HTTPException.getResponse() builds new Response(this.res.body, { status: this.status, headers: this.res.headers }), so the exception's own status replaces the status of the supplied Response, while the body and headers are kept. Without res, the response body is the exception's message, and the status defaults to 500 when no status is given.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "401 and body/headers kept; omits 500 default. / 401 with body/headers kept; omits 500 default."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "401 and body/headers kept; omits 500 default. / 401 with body/headers kept; omits 500 default."
+     }
+    },
+    {
+     "id": "hono-22",
+     "category": "dev_workflow",
+     "question": "How are tests run, and how are the per-runtime suites organized?",
+     "reference": "`bun run test` runs tsc -p tsconfig.spec.json && vitest --run. vitest.config.ts defines projects: every runtime-tests/*/vitest.config.ts, plus 'main' (src/scripts/build tests, excluding *.case.test.*), 'jsx-runtime-default' and 'jsx-runtime-dom'. Coverage uses v8 and is enabled by default. Per-runtime scripts select a vitest project, for example test:node uses --project node, and the same pattern covers workerd, fastly, lambda and lambda-edge. The workerd suite starts a real worker with wrangler's unstable_dev. Deno and Bun use their native runners: test:deno runs deno test with configs in runtime-tests/deno and deno-jsx, and test:bun runs bun test runtime-tests/bun/*.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Describes benchmarks as tests; real tests use vitest projects. / Describes benchmarks, not test runner; misrepresents test setup."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Vitest and runtime scripts listed; omits tsc step and project config. / Runtime script layout right; misses tsc+vitest projects and native deno/bun detail."
+     }
+    },
+    {
+     "id": "hono-23",
+     "category": "dev_workflow",
+     "question": "How is the npm package built?",
+     "reference": "`bun run build` removes dist and runs `bun ./build/build.ts`. That script first checks that the package.json and jsr.json exports match, then globs src/**/*.ts as entry points, excluding tests, src/mod.ts, src/middleware.ts and src/deno/**. It runs three steps in parallel: an esbuild ESM build to dist with bundle: true and an add-extension plugin that keeps imports external and rewrites them to '.js', an esbuild CJS build to dist/cjs, and tsc --emitDeclarationOnly with tsconfig.build.json. Afterwards it strips #private fields from the .d.ts files. Then copy:package.cjs.json writes {\"type\":\"commonjs\"} into dist/cjs and dist/types, and the postbuild step runs publint.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "esbuild ESM/CJS, tsc decls, private strip, marker copy, publint. / esbuild ESM/CJS, tsc d.ts, private strip, cjs markers, publint."
+     }
+    },
+    {
+     "id": "hono-24",
+     "category": "dev_workflow",
+     "question": "How are linting and formatting configured?",
+     "reference": "`bun run lint` runs eslint on src, runtime-tests, build, perf-measures and benchmarks. eslint.config.mjs is a flat config that extends @hono/eslint-config and turns off the type-aware typescript-eslint rules plus some stylistic ones. It treats unused disable directives and unused inline configs as errors, and ignores .wrangler, coverage and dist. Formatting uses prettier (`format` checks, `format:fix` writes) over the same directories.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "ESLint/Prettier commands; omits config extends and error settings. / ESLint/Prettier commands; misses config extends and directive error settings."
+     }
+    },
+    {
+     "id": "hono-25",
+     "category": "dev_workflow",
+     "question": "How is the package published to JSR, and how is consistency with npm exports enforced?",
+     "reference": "jsr.json publishes '@hono/hono'. Its exports map subpaths directly to TypeScript sources, for example './tiny' to './src/preset/tiny.ts', while package.json maps them to dist JS, CJS and .d.ts files. build/build.ts calls validateExports in both directions, package.json against jsr.json and jsr.json against package.json, and throws 'Missing \"<entry>\" in ...' when an entry is missing (with wildcard support such as './utils/*'). CI runs `bunx jsr publish --dry-run`. The release workflow publishes to JSR with `deno run -A jsr:@david/publish-on-tag` and to npm with npm publish.",
+     "neodevex": {
+      "verdict": "not_covered",
+      "hallucination": false,
+      "score": 0.0,
+      "split": false,
+      "note": "NOT COVERED."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Publish-on-tag, validateExports, dry-run; omits jsr.json name/src exports. / publish-on-tag, validateExports, dry-run; misses @hono/hono and bidirectional check."
+     }
+    }
+   ]
+  },
+  "ask": {
+   "ky": [
+    {
+     "id": "ky-01",
+     "category": "architecture",
+     "question": "How does a call like `ky.get(url, opts)` get from the public entry point to an actual fetch? Name the functions/classes involved.",
+     "reference": "source/index.ts createInstance() builds the `ky` function and per-method shortcuts; each merges instance defaults with call options via validateAndMerge() and calls the static Ky.create(input, options). Ky.create runs init hooks, constructs a Ky instance (which normalizes options and builds a Request), then an async pipeline runs beforeRequest hooks, #retry(() => #fetch()), afterResponse hooks, HTTPError/retry handling, and returns a ResponsePromise decorated with body shortcuts.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Detailed accurate chain with correct line refs. / Accurate end-to-end trace with correct line refs."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": true,
+      "score": 1.0,
+      "split": false,
+      "note": "Full chain createInstance, validateAndMerge, Ky.create, hooks, retry/fetch, ResponsePromise. / Full pipeline right; but claims constructor handles prefixUrl (renamed prefix, now throws)."
+     }
+    },
+    {
+     "id": "ky-02",
+     "category": "architecture",
+     "question": "How do `ky.create()` and `ky.extend()` differ in how they treat the parent instance's defaults?",
+     "reference": "`create(newDefaults)` builds a fresh instance from only newDefaults (validateAndMerge(newDefaults)), ignoring the parent; `extend(newDefaults)` merges parent defaults with newDefaults (validateAndMerge(defaults, newDefaults)), and also accepts a function receiving the parent defaults.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Code-quoted create vs extend incl. function form. / create ignores parent, extend merges, function form; code quoted."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": true,
+      "score": 1.0,
+      "split": false,
+      "note": "All three facts, plus replaceOption. / Key facts right; examples use prefixUrl, which now throws (renamed prefix)."
+     }
+    },
+    {
+     "id": "ky-03",
+     "category": "architecture",
+     "question": "Describe the order in which hook types run during a request lifecycle that ends in a retried HTTP error and eventual failure.",
+     "reference": "init (synchronous, in Ky.create before the Ky constructor) -> beforeRequest (once, retryCount 0) -> fetch -> afterResponse (runs before the throwHttpErrors check) -> HTTPError built and data populated -> beforeRetry (before each retry, after the delay) -> fetch -> afterResponse ... -> when retries are exhausted, beforeError hooks run on the final error before it is thrown.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Correct order; beforeError only at final failure. / Correct order incl. init, single beforeRequest, beforeError only final."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Puts beforeError before each retry; diagram reruns beforeRequest per attempt. / Claims beforeError runs before each retry and beforeRequest repeats per attempt."
+     }
+    },
+    {
+     "id": "ky-04",
+     "category": "architecture",
+     "question": "How does Ky combine a user-provided AbortSignal with its own timeout cancellation?",
+     "reference": "If AbortController and AbortSignal.any exist, the constructor stores the user signal (options.signal or the input Request's signal), creates an internal AbortController, and sets options.signal = AbortSignal.any([userSignal, internal.signal]) (or just the internal signal). The timeout() helper aborts the internal controller; on the next attempt #fetch replaces an aborted controller and recreates the Request with a new managed signal. Retry delays listen only to the user signal.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "AbortSignal.any and timeout abort correct; truncated by tool error, no retry-delay signal. / AbortSignal.any and timeout abort right; truncated, misses retry recreation and delay signal."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Merge, timeout, recreate covered; misses delay using only user signal. / Merge, timeout, controller recreation right; omits delay uses only user signal."
+     }
+    },
+    {
+     "id": "ky-05",
+     "category": "architecture",
+     "question": "How do Ky-specific options get separated from options passed through to the underlying fetch call?",
+     "reference": "In #fetch, findUnknownOptions(this.#options) (source/utils/options.ts) collects every own key that is in neither requestOptionsRegistry (standard RequestInit keys already applied to the Request) nor kyOptionKeys (Ky's own options), and passes that object as fetch's second argument. This forwards fetch-only extensions like `dispatcher`, `priority`, or Next.js `next`.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "findUnknownOptions with both registries, passed as fetch init. / findUnknownOptions, both registries, passed as fetch init."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Core right; wrongly says NormalizedOptions builds RequestInit for fetch. / Core right; falsely says normalized options build fetch RequestInit; no file named."
+     }
+    },
+    {
+     "id": "ky-06",
+     "category": "behavior",
+     "question": "What are the default retry settings (limit, methods, status codes, afterStatusCodes, delay formula)?",
+     "reference": "limit 2; methods get, put, head, delete, options, trace; statusCodes 408, 413, 429, 500, 502, 503, 504; afterStatusCodes 413, 429, 503; maxRetryAfter and backoffLimit Infinity; delay = 0.3 * 2^(attemptCount-1) * 1000 ms (300, 600, ...); jitter undefined; retryOnTimeout false.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All defaults correct. / All defaults and formula correct."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All defaults correct. / All defaults and formula correct."
+     }
+    },
+    {
+     "id": "ky-07",
+     "category": "behavior",
+     "question": "What is the default per-attempt `timeout`, the default `totalTimeout`, and what happens if timeout exceeds the max?",
+     "reference": "timeout defaults to 10000 ms per attempt; totalTimeout defaults to false (disabled). If either is a number greater than 2147483647, the request promise rejects with a RangeError.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All facts with code. / All three facts with code."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "10000, false, RangeError above 2147483647."
+     }
+    },
+    {
+     "id": "ky-08",
+     "category": "behavior",
+     "question": "When is a timed-out request retried by default, and what error type is thrown on timeout?",
+     "reference": "A timeout throws TimeoutError (extends KyError). By default it is NOT retried because retryOnTimeout is false; it is retried only if retry.retryOnTimeout is true or a shouldRetry function returns true.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "TimeoutError, retryOnTimeout false; omits shouldRetry override. / TimeoutError and retryOnTimeout false; omits shouldRetry override."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "TimeoutError, not retried by default; omits shouldRetry override. / TimeoutError and retryOnTimeout false; omits shouldRetry override."
+     }
+    },
+    {
+     "id": "ky-09",
+     "category": "behavior",
+     "question": "In what order are checks performed when deciding whether to retry a non-forced error?",
+     "reference": "#calculateRetryDelay: (1) if retryCount >= limit, throw; (2) ForceRetryError short-circuits with custom/computed delay; (3) if request method not in retry.methods, throw; (4) user shouldRetry: false -> throw, true -> retry, other -> fall through; (5) TimeoutError retried only if retryOnTimeout; (6) HTTPError retried only if status in statusCodes, honoring Retry-After for afterStatusCodes; (7) otherwise only NetworkError is retried, all other errors thrown.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Correct order limit, method, shouldRetry, timeout, HTTP, network. / Order right, but omits ForceRetryError bypass position."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Correct order; mentions ForceRetryError handled separately. / Full order; notes ForceRetry precedence; '_calculateRetryDelay' naming slip."
+     }
+    },
+    {
+     "id": "ky-10",
+     "category": "behavior",
+     "question": "Which response headers does Ky consult for the retry delay, in what order, and how is a numeric value interpreted?",
+     "reference": "For statuses in afterStatusCodes it checks Retry-After, then RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset. A numeric value is seconds (multiplied by 1000); if that product is >= Date.parse('2024-01-01') it is treated as an epoch timestamp and Date.now() is subtracted. Non-numeric values are parsed as HTTP dates. The result is clamped at >= 0 and capped by maxRetryAfter, with no jitter applied.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Headers, numeric, date parse, cap; omits no-jitter. / Order, numeric/timestamp, date parse, cap right; omits no-jitter."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Headers order, numeric/timestamp, jitter; omits date parsing of non-numeric. / Header order, seconds/timestamp, no jitter, cap right; omits date parsing."
+     }
+    },
+    {
+     "id": "ky-11",
+     "category": "behavior",
+     "question": "What is the exact message format of an HTTPError, and what is `error.data`?",
+     "reference": "Message: `Request failed with status code <status> <statusText>: <METHOD> <url>` (falls back to 'an unknown error' if no status). error.data is the pre-read response body: parsed JSON (via parseJson or JSON.parse) when Content-Type is a JSON subtype, otherwise text; undefined if empty, parse failure, over 10 MiB, or the read times out.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Exact format and data semantics incl. 10 MiB, timeout. / Exact format and data semantics incl. 10 MiB and timeout."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Format described with example; data semantics correct. / Format described not exact; data semantics mostly right."
+     }
+    },
+    {
+     "id": "ky-12",
+     "category": "behavior",
+     "question": "What does the `.json()` shortcut on the response promise do with headers and with an empty body?",
+     "reference": "It sets the Accept header to 'application/json' unless an Accept header is already set (the fetch is deferred by `await Promise.resolve()` so this happens first). On an empty body without a schema it calls JSON.parse('') which throws a SyntaxError; with a schema it validates `undefined`. A schema failure throws SchemaValidationError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Accept and empty-body correct; no SchemaValidationError mention. / Accept and empty-body throw right; SchemaValidationError not named."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Accept and empty-body correct; no SchemaValidationError mention. / Accept and empty-body throw right; SchemaValidationError not named."
+     }
+    },
+    {
+     "id": "ky-13",
+     "category": "behavior",
+     "question": "How is the final error passed through `beforeError` hooks, and which errors bypass them?",
+     "reference": "Each beforeError hook is awaited in order with {request, options, error, retryCount}; if a hook returns an Error instance it replaces the error for subsequent hooks and the final throw, otherwise the previous error is kept. Non-Error thrown values and errors thrown by beforeRetry hooks bypass beforeError entirely. init hook errors are synchronous and not caught either.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Sequential replacement; non-Error and beforeRetry errors bypass. / Sequential replace, non-Error and beforeRetry bypass."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All bypass cases including init and beforeRetry. / All bypasses incl. init and beforeRetry; accurate."
+     }
+    },
+    {
+     "id": "ky-14",
+     "category": "where",
+     "question": "Where is network-error detection implemented and how does it decide something is a network error?",
+     "reference": "source/utils/is-network-error.ts, isRawNetworkError() (inlined from is-network-error v1.3.1). It requires a TypeError and matches runtime-specific messages (e.g. 'Failed to fetch', 'fetch failed', 'terminated', 'NetworkError when attempting to fetch resource.', Deno 'error sending request for url', Safari 'Load failed' with no stack). Ky#fetch wraps matches in NetworkError with the original as cause.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "File, TypeError check, message list, NetworkError wrap. / File, TypeError requirement, messages, wrap all correct."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Names isRawNetworkError and wrapping; omits file and TypeError/message rules. / isRawNetworkError and NetworkError wrap; no file, vague heuristics."
+     }
+    },
+    {
+     "id": "ky-15",
+     "category": "where",
+     "question": "Where is the per-attempt timeout implemented?",
+     "reference": "source/utils/timeout.ts default export timeout(request, init, abortController, options): a Promise wrapper (Promise.race workaround) that sets a setTimeout to abort the controller and reject with TimeoutError, clearing it when fetch settles. It is called from Ky#fetch with effectiveTimeout = min(timeout, remaining totalTimeout).",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "timeout.ts, abort+TimeoutError, called from #fetch with min. / timeout.ts, abort+TimeoutError, effectiveTimeout min."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Describes #fetch effective timeout; omits timeout.ts, TimeoutError, abort. / Describes #fetch effectiveTimeout; no timeout.ts file or TimeoutError/abort."
+     }
+    },
+    {
+     "id": "ky-16",
+     "category": "where",
+     "question": "Where is the deep-merging of options (headers, hooks, searchParams, context, signal) for extend/instances implemented?",
+     "reference": "source/utils/merge.ts: validateAndMerge() validates sources then calls deepMerge(); deepMerge special-cases signal (combined via AbortSignal.any), context (shallow merge), searchParams (appendSearchParameters), hooks (mergeHooks, concatenating arrays), and headers (mergeHeaderContainers/mergeHeaders). replaceOption() marks a value to replace instead of merge.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "deepMerge details accurate; validateAndMerge not named. / deepMerge special cases and replace handling covered."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "deepMerge, validateAndMerge, all special cases, replaceOption. / validateAndMerge/deepMerge, hooks, context, signal, replaceOption."
+     }
+    },
+    {
+     "id": "ky-17",
+     "category": "where",
+     "question": "Where are upload and download progress implemented?",
+     "reference": "source/utils/body.ts: streamResponse() (download, used in Ky.create when onDownloadProgress is set) and streamRequest() (upload, used by Ky#wrapRequestWithUploadProgress), both piping through withProgress() TransformStream; getBodySize() estimates upload size. Progress reports percent capped below 1 until the stream flushes.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All functions with accurate line refs. / Detailed and accurate with correct line refs."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "streamRequest/streamResponse, withProgress, getBodySize. / streamRequest/streamResponse, withProgress, getBodySize in body.ts."
+     }
+    },
+    {
+     "id": "ky-18",
+     "category": "edge_case",
+     "question": "A POST request gets a 503. Does Ky retry it by default?",
+     "reference": "No. 'post' is not in the default retry.methods (get, put, head, delete, options, trace), so the method check throws the HTTPError without retrying, even though 503 is a retriable status.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Method check precedes status. / POST not in methods; method check precedes."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "POST not in methods so no retry. / POST not in methods; not retried."
+     }
+    },
+    {
+     "id": "ky-19",
+     "category": "edge_case",
+     "question": "A GET receives 413 without any Retry-After-style header. Is it retried?",
+     "reference": "No. 413 is in statusCodes, but without a retry-after header Ky explicitly throws for 413; it is only retried when a Retry-After (or equivalent) header is present, since 413 is also in afterStatusCodes.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Cites explicit 413 throw. / Correct with exact code reference."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "413 without header throws. / 413 without header thrown; retried only with header."
+     }
+    },
+    {
+     "id": "ky-20",
+     "category": "edge_case",
+     "question": "With `retry: 2` (default limit), how many total HTTP attempts can happen, and does `retry: {limit: 0}` change body handling?",
+     "reference": "Up to 3 attempts (1 initial + 2 retries), since retry stops when retryCount >= limit. With limit 0, Ky skips request.clone() before fetching, avoiding ReadableStream tee() buffering of streaming bodies.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "3 attempts; conditional clone code quoted. / 3 attempts; limit 0 skips clone, code cited."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "3 attempts; limit 0 skips clone/tee."
+     }
+    },
+    {
+     "id": "ky-21",
+     "category": "edge_case",
+     "question": "If a beforeRequest hook returns a Response with status 500, will Ky retry it?",
+     "reference": "No. Ky skips fetch and the retry loop; because the response came from a hook (responseFromHook), a non-OK response still goes through afterResponse hooks and then throws HTTPError immediately without retrying (same for a Response returned from beforeRetry).",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "responseFromHook path throws HTTPError without retry. / responseFromHook path to immediate HTTPError explained."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Says no retry since fetch bypassed; omits HTTPError thrown via responseFromHook. / No retry, skips fetch; omits HTTPError thrown immediately."
+     }
+    },
+    {
+     "id": "ky-22",
+     "category": "dev_workflow",
+     "question": "What does `npm test` run?",
+     "reference": "`xo && npm run build && ava`: lint with xo, build (del-cli distribution && tsc --project tsconfig.dist.json), then AVA tests. AVA loads .ts files as modules via `--import=tsx/esm`, with workerThreads disabled.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "xo/build/ava and tsx; omits workerThreads false. / xo/build/ava and tsx right; omits workerThreads false."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "xo, build, ava with tsx/esm and workerThreads off. / xo, build, ava with tsx/esm, workerThreads false."
+     }
+    },
+    {
+     "id": "ky-23",
+     "category": "dev_workflow",
+     "question": "Why must the project be built before tests run, and which browsers do browser tests use?",
+     "reference": "Browser tests (test/browser.ts) serve the compiled `distribution/` directory via express and import '/distribution/index.js' in Playwright pages, so `npm run build` must run first. defaultBrowsersTest runs on chromium, firefox and webkit (some tests target only chromium).",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Distribution import and three browsers. / Browser tests import distribution; chromium/firefox/webkit."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "addKyScriptToPage imports distribution; three browsers."
+     }
+    },
+    {
+     "id": "ky-24",
+     "category": "dev_workflow",
+     "question": "What is the CI matrix?",
+     "reference": "GitHub Actions workflow .github/workflows/main.yml runs on push and pull_request, on macos-latest, with Node.js latest, 24 and 22 (fail-fast false); steps: npm install, npx playwright install --with-deps, npm test.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "macos-latest and node versions; omits Playwright/npm test steps. / macOS and node versions right; omits Playwright install/npm test steps."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Node versions and steps; omits macos-latest. / Node versions and steps right; omits macos-latest."
+     }
+    },
+    {
+     "id": "ky-25",
+     "category": "dev_workflow",
+     "question": "What Node.js version and module format does the package support, and where does the build output go?",
+     "reference": "engines.node >=22; package is ESM-only (`type: module`, exports default ./distribution/index.js with types ./distribution/index.d.ts). tsc compiles source/ to distribution/ per tsconfig.dist.json (rootDir ./source, outDir ./distribution, sourcemaps).",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Node>=22, ESM, distribution via tsconfig.dist. / Node>=22, ESM, distribution via tsconfig.dist.json."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All facts. / Node>=22, type module, distribution output."
+     }
+    }
+   ],
+   "flask": [
+    {
+     "id": "flask-01",
+     "category": "architecture",
+     "question": "Trace the call chain when a WSGI server calls a Flask app for one request, from Flask.__call__ to the view function.",
+     "reference": "Flask.__call__ calls wsgi_app, which creates an AppContext with request_context(environ) and pushes it. It then calls full_dispatch_request(ctx). That sends request_started, runs preprocess_request (url_value_preprocessors, then before_request funcs), then dispatch_request (raises any stored routing exception, answers automatic OPTIONS, otherwise calls view_functions[rule.endpoint](**view_args) through ensure_sync). Any exception goes to handle_user_exception. finalize_request then runs make_response and process_response and sends request_finished. If an exception escapes, wsgi_app calls handle_exception. Finally it calls ctx.pop(error).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Accurate chain; finalize_request internals (make_response/process_response/request_finished) not described. / Detailed accurate chain; finalize_request internals (make_response/process_response/request_finished) not described."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Chain right; omits handle_exception and handle_user_exception naming. / Main chain right; omits handle_user_exception/handle_exception specifics."
+     }
+    },
+    {
+     "id": "flask-02",
+     "category": "architecture",
+     "question": "What happens when a request context is pushed and popped in this checkout, and how are nested pushes handled?",
+     "reference": "There is one AppContext class; a request context is just an AppContext that has a request. push() bumps _push_count. If the context is already active it returns there. Otherwise it sets the _cv_app ContextVar, sends appcontext_pushed, and, if it has a request, opens the session via _get_session() and then runs match_request() for URL routing. pop() checks that the context is the active one and decrements the count. Cleanup only runs when the count reaches 0, in this order: do_teardown_request, request.close(), do_teardown_appcontext, reset the ContextVar, send appcontext_popped. Errors from these steps are collected and raised together at the end.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Push/pop, nesting count, full pop order shown in code. / Push/pop, push count, session before match, teardown order with code."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Push/pop and nesting right; omits request.close and pop order detail. / Push count, session then match, teardown order; omits request.close."
+     }
+    },
+    {
+     "id": "flask-03",
+     "category": "architecture",
+     "question": "Walk through what app.register_blueprint(bp, **options) does internally.",
+     "reference": "App.register_blueprint (a setupmethod) calls blueprint.register(app, options). Blueprint.register works out the dotted name from name_prefix and the name option, and raises ValueError if that name is already in app.blueprints. It stores the blueprint in app.blueprints[name] and builds a BlueprintSetupState with make_setup_state. It adds the blueprint's static route if it has one. On first registration of the blueprint or the name, it merges the blueprint's handler dicts into the app with keys prefixed by the blueprint name (_merge_blueprint_funcs). It then replays every deferred_functions callback, recorded by record() from things like add_url_rule, against the state. Next it attaches CLI commands. Last, it recursively registers nested blueprints, joining url_prefix/subdomain and passing name_prefix=name.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All steps incl. ValueError, deferred replay, nested recursion. / Full accurate walkthrough incl. ValueError, deferred replay, nesting."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All steps incl. first-registration merge condition. / All steps right incl. first-registration merge and nesting."
+     }
+    },
+    {
+     "id": "flask-04",
+     "category": "architecture",
+     "question": "How is the code split between src/flask/sansio/ and the top-level modules, and which classes collaborate?",
+     "reference": "The sansio package holds framework logic with no WSGI or I/O: sansio/scaffold.py defines Scaffold (route and handler registration dicts plus decorators), sansio/app.py defines App(Scaffold) (config, url_map, add_url_rule, error-handler lookup, redirect, register_blueprint), and sansio/blueprints.py defines Blueprint(Scaffold) and BlueprintSetupState. The top-level modules add WSGI and runtime: app.py has Flask(App) (wsgi_app, the dispatch methods, contexts, sessions, test client) and blueprints.py has Blueprint(SansioBlueprint) (adds cli/send_static_file and similar). ctx.py (AppContext), globals.py (proxies), sessions.py, json/provider.py and wrappers.py (Request/Response) work alongside them.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Scaffold, App/Flask, sansio/flask Blueprint inheritance. / Scaffold base, Flask(App), Blueprint(SansioBlueprint) with accurate refs."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "Scaffold, App/Flask, Blueprint from SansioBlueprint. / App/Flask split right; Scaffold as shared base only implied."
+     }
+    },
+    {
+     "id": "flask-05",
+     "category": "architecture",
+     "question": "How are current_app, g, request and session implemented, and how many ContextVars back them?",
+     "reference": "All of them, plus app_ctx, are werkzeug LocalProxy objects over one ContextVar, _cv_app = ContextVar('flask.app_ctx'), which holds the active AppContext. current_app proxies the context's .app attribute, g proxies .g, request proxies .request and session proxies .session. request and session use the 'outside of request context' unbound message. The old request_ctx name is a deprecated alias of app_ctx, served through a module __getattr__.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "One ContextVar and proxies with code; omits request_ctx alias. / ContextVar and proxies right; omits request_ctx deprecated alias."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "One ContextVar and proxies correct; omits request_ctx alias. / Single _cv_app and proxies right; no 'flask.app_ctx' name or request_ctx alias."
+     }
+    },
+    {
+     "id": "flask-06",
+     "category": "behavior",
+     "question": "What are the default session cookie related config values?",
+     "reference": "SESSION_COOKIE_NAME='session', SESSION_COOKIE_DOMAIN=None, SESSION_COOKIE_PATH=None (falls back to APPLICATION_ROOT, '/'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=False, SESSION_COOKIE_PARTITIONED=False, SESSION_COOKIE_SAMESITE=None, SESSION_REFRESH_EACH_REQUEST=True, PERMANENT_SESSION_LIFETIME=timedelta(days=31).",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "All values right; omits APPLICATION_ROOT path fallback. / All defaults right; omits APPLICATION_ROOT path fallback."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All values plus path fallback. / All defaults incl. path fallback."
+     }
+    },
+    {
+     "id": "flask-07",
+     "category": "behavior",
+     "question": "What are the default request size/limit config values (MAX_CONTENT_LENGTH, MAX_FORM_MEMORY_SIZE, MAX_FORM_PARTS, MAX_COOKIE_SIZE)?",
+     "reference": "MAX_CONTENT_LENGTH=None (no limit), MAX_FORM_MEMORY_SIZE=500_000 bytes, MAX_FORM_PARTS=1_000, MAX_COOKIE_SIZE=4093. Request properties read them from current_app.config when an app is active, and a per-request override is possible.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All four defaults. / All four defaults correct."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All four defaults. / All four defaults correct."
+     }
+    },
+    {
+     "id": "flask-08",
+     "category": "behavior",
+     "question": "In what order are before_request and after_request functions run when a blueprint (possibly nested) handles the request?",
+     "reference": "preprocess_request first runs url_value_preprocessors and then before_request funcs. Each set goes over names (None, *reversed(request.blueprints)): app first, then outer to inner blueprint, each list in registration order. The first non-None return value short-circuits. process_response first runs the after_this_request functions in registration order. It then goes over chain(request.blueprints, (None,)), innermost blueprint first and the app last, and calls each after_request list in reverse registration order. Last it saves the session unless it is a NullSession.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Before/after order, short-circuit, session save via code. / Orders, short-circuit, after_this_request, session save via code."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Order and short-circuit right; session save not mentioned. / Orders and short-circuit right; session save not mentioned."
+     }
+    },
+    {
+     "id": "flask-09",
+     "category": "behavior",
+     "question": "How are teardown_request / teardown_appcontext handlers ordered, and what happens if one of them raises?",
+     "reference": "do_teardown_request goes over the blueprints innermost-first and then the app, calling each list in reverse registration order. It then sends request_tearing_down. do_teardown_appcontext calls teardown_appcontext_funcs in reverse order and then sends appcontext_tearing_down. Each callback runs inside _CollectErrors, so all of them run even when one raises. The collected errors are raised at the end as a BaseExceptionGroup on Python 3.11+, or only the first error on 3.10. This 'all callbacks run' behavior is new in 3.2.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Reverse order, blueprint first, collect errors, exception group. / Reverse order, bp before app, collect errors, group/first error."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All facts incl. 3.2 change. / All facts incl. 3.2 change and 3.10 fallback."
+     }
+    },
+    {
+     "id": "flask-10",
+     "category": "behavior",
+     "question": "When an exception is raised, in what order does Flask search for a registered error handler?",
+     "reference": "App._find_error_handler looks up the HTTP code first and the exception class second (code=None). Inside each pass it checks the request's blueprints from innermost to outermost and then the app. For each handler map it walks the exception's MRO, so a handler for a base class matches. The order is therefore: blueprint handler by code, app handler by code, blueprint handler by class, app handler by class. RoutingException (for example RequestRedirect) and HTTPExceptions with code None are returned directly and are never passed to handlers.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Code-then-class, blueprint-first, MRO; omits RoutingException bypass. / Code-then-class, bp-then-app, MRO right; RoutingException not mentioned."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Order and MRO right; omits RoutingException bypass. / Order and MRO right; RoutingException exclusion omitted."
+     }
+    },
+    {
+     "id": "flask-11",
+     "category": "behavior",
+     "question": "What does handle_exception do for an unhandled non-HTTP exception, and when does it re-raise instead of returning a 500?",
+     "reference": "It always sends got_request_exception first. PROPAGATE_EXCEPTIONS defaults to None, which means propagate when app.testing or app.debug is true. When propagating, it re-raises the exception. Otherwise it logs the exception with log_exception and creates InternalServerError(original_exception=e). If a 500/InternalServerError handler exists, that handler receives the InternalServerError (not the original exception). The result goes through finalize_request(from_error_handler=True), so after_request still runs and finalization errors are only logged.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Signal, propagate, ISE to handler; omits from_error_handler=True. / Signal, propagate, 500 handler right; no from_error_handler=True."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Signal, propagate rule, ISE original_exception; omits from_error_handler. / Signal, propagate, InternalServerError right; no from_error_handler=True."
+     }
+    },
+    {
+     "id": "flask-12",
+     "category": "behavior",
+     "question": "What are DefaultJSONProvider's defaults (ensure_ascii, sort_keys, compact, extra types) and how does jsonify format output?",
+     "reference": "ensure_ascii=True, sort_keys=True, compact=None, mimetype='application/json'. The default hook converts date/datetime to HTTP-date (RFC 822) strings via http_date, Decimal and UUID to str, dataclasses via dataclasses.asdict, and objects with __html__ to str(o.__html__()). Anything else raises TypeError. response(), used by jsonify, uses indent=2 when compact is False or when compact is None and debug is on. Otherwise it uses the compact separators (',', ':'). It always appends a trailing newline.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Defaults, types, formatting, trailing newline. / All defaults, types, indent logic, trailing newline."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults, types, indent logic right; omits trailing newline. / Defaults and types right; trailing newline not mentioned."
+     }
+    },
+    {
+     "id": "flask-13",
+     "category": "behavior",
+     "question": "When does SecureCookieSessionInterface.save_session set, delete, or skip the session cookie, and when is Vary: Cookie added?",
+     "reference": "If session.accessed, it adds Vary: Cookie. If the session is empty and was modified, it deletes the cookie and adds Vary. If it is empty and unmodified, it returns without setting a cookie. Otherwise it sets the cookie only when should_set_cookie is true, meaning session.modified or (session.permanent and SESSION_REFRESH_EACH_REQUEST). expires is now + PERMANENT_SESSION_LIFETIME only for permanent sessions, and None (a browser-session cookie) otherwise. With no SECRET_KEY, open_session returns None and a NullSession is used. A bad signature yields a new empty session.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior. / Vary/delete/set logic right; no NullSession/bad-signature behavior."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior. / Vary/delete/set logic right; no NullSession/bad-signature behavior."
+     }
+    },
+    {
+     "id": "flask-14",
+     "category": "edge_case",
+     "question": "What status code does flask.redirect() / app.redirect() use by default in this checkout?",
+     "reference": "303 See Other. Both flask.helpers.redirect and App.redirect default to code=303, a change from 302 in 3.2.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "303 and 3.2 change; misleading on app.redirect, not confirmed. / 303 and 3.2 right; falsely says Flask defines no redirect method."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "303 for both, changed from 302 in 3.2. / 303 default, changed from 302 in 3.2."
+     }
+    },
+    {
+     "id": "flask-15",
+     "category": "edge_case",
+     "question": "Is there a separate RequestContext class, and if an app context is already pushed (e.g. in a test), does handling a request reuse it?",
+     "reference": "No. RequestContext was merged into AppContext in 3.2, and flask.ctx.RequestContext is only a deprecated alias served by a module __getattr__ with a DeprecationWarning. wsgi_app always creates and pushes a new combined AppContext with request_context(environ), so an app context that is already pushed is not reused. That means g is not shared between them.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Deprecated alias; fresh context each request."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Deprecated alias; no reuse of pushed context. / Deprecated alias; no reuse of existing context."
+     }
+    },
+    {
+     "id": "flask-16",
+     "category": "edge_case",
+     "question": "If you subclass Flask and override dispatch methods like full_dispatch_request(self) or handle_exception(self, e) with their old signatures, what happens?",
+     "reference": "These dispatch methods now take ctx: AppContext as their first parameter. Flask.__init_subclass__ inspects 12 overridable methods: handle_http_exception, handle_user_exception, handle_exception, log_exception, dispatch_request, full_dispatch_request, finalize_request, make_default_options_response, preprocess_request, process_response, do_teardown_request and do_teardown_appcontext. If an override's second parameter is not named ctx and is not annotated as AppContext, it emits a DeprecationWarning ('will not be supported in Flask 4.0'). It then wraps the override with remove_ctx and the base method with add_ctx, so old-style code keeps working.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Detection, warning text, remove_ctx wrapper, method list. / Detection, exact warning, remove_ctx wrapping, method list."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "ctx param, __init_subclass__ warning, remove_ctx/add_ctx. / ctx param, __init_subclass__ warning, remove_ctx/add_ctx, 12 methods."
+     }
+    },
+    {
+     "id": "flask-17",
+     "category": "edge_case",
+     "question": "With a default app, what is app.config['DEBUG'] and where does that value come from? Is it the None from default_config?",
+     "reference": "It is False unless FLASK_DEBUG is set, not None. default_config lists DEBUG as None, but App.make_config copies the defaults and overwrites DEBUG with get_debug_flag(). That function returns True only when FLASK_DEBUG is set to something other than '0', 'false' or 'no'. Setting app.debug also updates jinja_env.auto_reload when TEMPLATES_AUTO_RELOAD is None.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "False via get_debug_flag; wrongly lists off as falsy, omits no. / False via get_debug_flag right; wrongly lists 'off' as falsy (only 0/false/no)."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "None overwritten by get_debug_flag; correct falsy values."
+     }
+    },
+    {
+     "id": "flask-18",
+     "category": "where",
+     "question": "Where is the session cookie signer created, and what salt/digest/key derivation does it use? How is SECRET_KEY_FALLBACKS handled?",
+     "reference": "In src/flask/sessions.py, SecureCookieSessionInterface.get_signing_serializer. It returns None when there is no secret_key. Otherwise it builds an itsdangerous URLSafeTimedSerializer with salt='cookie-session', key_derivation='hmac', digest_method SHA-1 (looked up lazily through _lazy_sha1 so FIPS builds can import it), and a TaggedJSONSerializer payload serializer. The key list is SECRET_KEY_FALLBACKS followed by SECRET_KEY, with the current key last.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.75,
+      "split": true,
+      "note": "All details except TaggedJSONSerializer payload serializer. / All facts with code incl. None without secret key."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "salt, hmac, lazy sha1, TaggedJSONSerializer, key order. / Salt, hmac, lazy sha1, TaggedJSON, fallback ordering."
+     }
+    },
+    {
+     "id": "flask-19",
+     "category": "where",
+     "question": "Where does the `flask` CLI locate the application, and what names/files does it try?",
+     "reference": "In src/flask/cli.py. ScriptInfo.load_app uses the --app/FLASK_APP value, or tries wsgi.py and then app.py in the current directory. locate_app imports the module and calls find_best_app. find_best_app checks the attributes 'app' and then 'application', then looks for exactly one Flask instance in the module (more than one raises NoAppException), then calls the factory 'create_app' or 'make_app' with no arguments.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full order with code. / Accurate with code: --app/FLASK_APP, files, find_best_app order."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "load_app, wsgi.py/app.py, find_best_app order."
+     }
+    },
+    {
+     "id": "flask-20",
+     "category": "where",
+     "question": "Where are error handlers registered and validated, and what happens if you register a handler for an unknown status code or an exception instance?",
+     "reference": "In src/flask/sansio/scaffold.py. Scaffold.errorhandler / register_error_handler call _get_exc_class_and_code and store the handler in error_handler_spec[None][code][exc_class]. An int that is not in werkzeug's default_exceptions raises ValueError. An exception instance raises TypeError. A non-Exception class raises ValueError. HTTPException subclasses are keyed by their code, and other classes are keyed under code None. Lookup happens in App._find_error_handler in sansio/app.py.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "scaffold.py with validation code and storage. / scaffold.py registration, validation, errors with code."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Scaffold registration, ValueError/TypeError, spec structure. / _get_exc_class_and_code; ValueError/TypeError; spec structure."
+     }
+    },
+    {
+     "id": "flask-21",
+     "category": "where",
+     "question": "Where are a route's default HTTP methods and automatic OPTIONS handling decided, and where is the OPTIONS response produced?",
+     "reference": "App.add_url_rule in src/flask/sansio/app.py decides this. methods come from the argument, else view_func.methods, else ('GET',). A plain string raises TypeError. The values are upper-cased and view_func.required_methods are added. provide_automatic_options comes from the argument, else the view_func attribute, else ('OPTIONS' not in methods and config PROVIDE_AUTOMATIC_OPTIONS, which defaults to True). When it is enabled, OPTIONS is added. At request time Flask.dispatch_request answers OPTIONS through make_default_options_response, which fills Allow from url_adapter.allowed_methods(). Registering a different function for an existing endpoint raises AssertionError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "add_url_rule and OPTIONS flow right; omits str TypeError. / add_url_rule, OPTIONS logic, dispatch right; omits str TypeError."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Logic right; omits str TypeError. / Methods/OPTIONS/dispatch right; omits str TypeError."
+     }
+    },
+    {
+     "id": "flask-22",
+     "category": "dev_workflow",
+     "question": "Which Python versions are supported and tested?",
+     "reference": "pyproject has requires-python '>=3.10'. The tox env_list includes py3.14, py3.14t (free-threaded), py3.13, py3.12, py3.11, py3.10 and pypy3.11. CI also runs 3.14 on Windows and macOS. mypy and pyright both target Python 3.10.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": ">=3.10 and matrix; omits mypy/pyright 3.10. / requires-python and matrix right; omits mypy/pyright 3.10."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All facts incl. type checker baseline. / Requires 3.10, matrix incl 3.14t/PyPy, type checkers 3.10."
+     }
+    },
+    {
+     "id": "flask-23",
+     "category": "dev_workflow",
+     "question": "How are the tests run locally and in CI?",
+     "reference": "With tox, using tox-uv (runner uv-venv-lock-runner, frozen lockfile constraints) and the 'tests' dependency group (asgiref, greenlet, pytest, python-dotenv). Each env runs 'pytest -v --tb=short --basetemp={env_tmp_dir}'. CI runs 'uv run --locked --no-default-groups --group dev tox run' with TOX_ENV set per matrix entry. pytest's testpaths is ['tests'] and filterwarnings = ['error'], so any warning fails a test.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "tox and CI command right; omits filterwarnings error and lock runner. / tox, CI uv command, testpaths right; omits filterwarnings error."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "tox/pytest general; omits CI command, uv runner, filterwarnings. / tox and pytest described; no CI command, uv runner, filterwarnings."
+     }
+    },
+    {
+     "id": "flask-24",
+     "category": "dev_workflow",
+     "question": "How is static type checking configured and run?",
+     "reference": "The tox env 'typing' installs the 'typing' dependency group and runs mypy and then pyright. CI runs it as 'tox run -e typing'. mypy is strict = true over files ['src', 'tests/type_check'], with python_version 3.10, and ignores missing imports for asgiref, dotenv, cryptography and importlib_metadata. pyright includes src and tests/type_check with typeCheckingMode 'basic'.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Typing env, strict mypy, basic pyright, CI. / mypy strict, pyright basic, tox typing env, CI."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "All key facts. / All facts; CI command quoted without some flags."
+     }
+    },
+    {
+     "id": "flask-25",
+     "category": "dev_workflow",
+     "question": "What do the tox envs tests-min, tests-dev and style do?",
+     "reference": "tests-min runs on Python 3.14 and pins the minimum dependencies before pytest: blinker==1.9.0, click==8.1.3, itsdangerous==2.2.0, jinja2==3.1.2, markupsafe==2.1.1, werkzeug==3.1.0. tests-dev runs on Python 3.10 and installs main-branch tarballs of those six Pallets projects. style runs 'pre-commit run --all-files', whose hooks are ruff-check, ruff-format, uv-lock, codespell and the basic pre-commit-hooks.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Pins and main branches right; omits Python versions and hooks. / Pins, git main, pre-commit right; omits base Python versions and hooks."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Versions 3.14/3.10 right; omits pins and hook list. / Purposes and Python versions right; no pins or hook names."
+     }
+    }
+   ],
+   "hono": [
+    {
+     "id": "hono-01",
+     "category": "architecture",
+     "question": "Trace a request through Hono: what happens between app.fetch(request) and the returned Response?",
+     "reference": "app.fetch(request, env, ctx) calls the private HonoBase#dispatch(request, executionCtx, env, method). #dispatch computes the path with this.getPath, calls this.router.match(method, path), and builds a new Context holding the match result, env, executionCtx and the app's notFound handler. If exactly one handler matched, it is called directly with no compose, and its result (or the notFound handler's result) is returned. Otherwise compose(matchResult[0], errorHandler, notFoundHandler) runs the chain, and if the context is not finalized at the end it throws 'Context is not finalized. Did you forget to return a Response object or `await next()`?'. That error, like any other thrown Error, goes to the error handler.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full trace with fast path and not-finalized error. / All steps incl. fast path and not-finalized throw."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "dispatch, getPath, match, Context, fast path, compose, not-finalized error. / dispatch, getPath/match, Context, fast path, compose, finalized error."
+     }
+    },
+    {
+     "id": "hono-02",
+     "category": "architecture",
+     "question": "How do runtime adapters connect a platform's entry point to a Hono app? Compare Vercel, Cloudflare Workers, Cloudflare Pages and AWS Lambda.",
+     "reference": "Adapters are thin wrappers around app.fetch. hono/vercel's handle(app) returns req => app.fetch(req). The Cloudflare Workers adapter exports no handle at all, only serveStatic, upgradeWebSocket and getConnInfo, because the app's own fetch(request, env, executionCtx) already matches the Workers module signature. The Cloudflare Pages handle passes eventContext.request, {...eventContext.env, eventContext} as env, and an executionCtx built from waitUntil and passThroughOnException. The AWS Lambda handle picks an EventProcessor for the event type (API Gateway v1/v2, ALB, Lattice) to build a Request. It calls app.fetch(req, {event, requestContext, lambdaContext}) and converts the Response back with processor.createResult, base64-encoding binary bodies. Request-conversion errors return 400 for a TypeError and 500 otherwise.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Workers no-handle right; Vercel fetch and Lambda env/createResult not detailed. / Workers no handle, Lambda processors; misses env arg and createResult/base64."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Vercel/Pages right; invents deprecation of adapters for v5; Lambda env contents omitted. / Adapters roughly right; invented deprecation of hono/vercel etc. for v5."
+     }
+    },
+    {
+     "id": "hono-03",
+     "category": "architecture",
+     "question": "What distinguishes the 'hono', 'hono/quick' and 'hono/tiny' entry points?",
+     "reference": "All three export a Hono class that extends HonoBase and differ only in the router they set up. 'hono' uses options.router if one is given, and otherwise new SmartRouter({ routers: [new RegExpRouter(), new TrieRouter()] }). 'hono/quick' always uses SmartRouter with [LinearRouter, TrieRouter]. 'hono/tiny' always uses PatternRouter. The two presets assign this.router unconditionally after super(options), so a router passed in options is overwritten.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "quick/tiny right; says default router not defined in context. / quick/tiny right; default hono router not covered."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "All routers right; omits presets overwriting options.router. / Routers correct; omits presets overwriting options.router."
+     }
+    },
+    {
+     "id": "hono-04",
+     "category": "architecture",
+     "question": "How do app.route() and app.basePath() compose sub-applications internally?",
+     "reference": "basePath(path) clones the app with #clone, which shares the same router, getPath, errorHandler, notFound handler and routes array, and sets _basePath to mergePath(old, path). route(path, subApp) calls this.basePath(path) and re-registers every entry in subApp.routes into the parent's router with #addRoute, so routes are copied at the moment route() is called rather than delegated at request time. If the sub-app set a custom onError, each of its handlers is wrapped as compose([], subApp.errorHandler), so that error handler still applies to those routes.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Clone, route copying via #addRoute, error handler wrapping. / Clone, copy via #addRoute, conditional compose wrap with code."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Clone and route copying right; omits errorHandler wrapping. / Clone and route copying; omits errorHandler compose wrapping."
+     }
+    },
+    {
+     "id": "hono-05",
+     "category": "architecture",
+     "question": "How does Context manage the response object as middleware and handlers run?",
+     "reference": "c.res is created lazily: the getter makes a Response(null) using any headers already prepared by c.header(). Assigning to c.res when a response already exists creates a new Response and copies the old response's headers onto it, skipping content-type and re-appending set-cookie values, then sets finalized = true. In compose, a handler's returned value is assigned to context.res only if the context is not finalized yet, or if it came from the error handler. c.header() called after finalization clones the response first so its headers can be changed.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Getter/setter right; compose assignment condition omitted. / Lazy getter, setter merge; compose condition and content-type skip missing."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy getter and setter header merge right; omits compose assignment rule. / Lazy getter and setter merge correct; misses compose assignment rule."
+     }
+    },
+    {
+     "id": "hono-06",
+     "category": "behavior",
+     "question": "Which router does `new Hono()` use, and how does SmartRouter decide which inner router to use?",
+     "reference": "SmartRouter wrapping [RegExpRouter, TrieRouter]. SmartRouter.add() only stores routes. On the first match() it tries each router in order: it adds every stored route, then calls match. If that router throws UnsupportedPathError it moves to the next one. The first router that succeeds becomes permanent: this.match is rebound to its match, the stored routes are dropped, and name becomes 'SmartRouter + <Name>'. Calling add() after that first match throws 'Can not add a route since the matcher is already built.'",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Default routers, lazy UnsupportedPathError selection; omits add-after-build error. / Default routers, lazy lock-in; omits add-after-build error."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Lazy selection and name update; omits add-after-build error. / Lazy selection, name update; omits add-after-build error."
+     }
+    },
+    {
+     "id": "hono-07",
+     "category": "behavior",
+     "question": "What are the exact semantics of Hono's compose() for middleware chains?",
+     "reference": "compose is based on koa-compose. dispatch(i) throws Error('next() called multiple times') if i <= the last index already dispatched. Before running each handler it sets context.req.routeIndex = i, so c.req.param() reads that route's params. If a handler throws an Error and onError is provided, context.error is set and onError's response is used. A thrown value that is not an Error, or any error when there is no onError, is rethrown. When the chain runs out and the context is not finalized, onNotFound runs. A returned response is assigned only when the context is not finalized yet or the response came from onError.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "next() twice, Error-only, onNotFound; omits routeIndex. / next-twice, Error-only onError, notFound; misses routeIndex."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "next() twice, routeIndex, onNotFound; omits Error-only onError rule. / next-twice, routeIndex, onError, notFound; misses Error-only onError."
+     }
+    },
+    {
+     "id": "hono-08",
+     "category": "behavior",
+     "question": "What are the default options of the cors() middleware and how does it handle preflight?",
+     "reference": "Defaults: origin '*', allowMethods ['GET','HEAD','PUT','POST','DELETE','PATCH'], allowHeaders [] and exposeHeaders []. maxAge and credentials are unset. For an OPTIONS request it returns its own 204 'No Content' response without calling next(). That response carries Access-Control-Allow-Methods and Access-Control-Max-Age when maxAge is set. If allowHeaders is empty, the request's Access-Control-Request-Headers are echoed back. Content-Length and Content-Type are removed. Vary: Origin is set when origin is not '*'. For other requests, Vary: Origin is appended after next(), again only when origin is not '*'.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Exact defaults and preflight handling. / Defaults and preflight 204/reflection exactly match code."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Adds QUERY to default allowMethods; otherwise preflight details right. / Preflight correct; default allowMethods wrongly includes QUERY."
+     }
+    },
+    {
+     "id": "hono-09",
+     "category": "behavior",
+     "question": "How does the etag() middleware generate and compare ETags by default?",
+     "reference": "After next() runs, if the response has no ETag header, the middleware hashes a clone of the body with crypto.subtle.digest SHA-1 (unless a custom generateDigest is given). The value is a strong ETag '\"<hash>\"' by default, or 'W/\"<hash>\"' when weak: true. If-None-Match is compared with the W/ prefix stripped, so the comparison is weak. On a match it replaces the response with a 304 'Not Modified' that keeps only the retained headers: cache-control, content-location, date, etag, expires and vary. If crypto.subtle is not available and no generator is given, it leaves the response unchanged.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "SHA-1, strong default, W/ stripping; omits retained 304 headers. / SHA-1, strong default, W/ stripping; misses retained 304 headers."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Invents '*' match and GET/HEAD/QUERY 2xx conditions. / Invents If-None-Match * and GET/HEAD/QUERY, 2xx checks."
+     }
+    },
+    {
+     "id": "hono-10",
+     "category": "behavior",
+     "question": "What headers does secureHeaders() set by default, and with what values?",
+     "reference": "Defaults set: Cross-Origin-Resource-Policy: same-origin; Cross-Origin-Opener-Policy: same-origin; Origin-Agent-Cluster: ?1; Referrer-Policy: no-referrer; Strict-Transport-Security: max-age=15552000; includeSubDomains; X-Content-Type-Options: nosniff; X-DNS-Prefetch-Control: off; X-Download-Options: noopen; X-Frame-Options: SAMEORIGIN; X-Permitted-Cross-Domain-Policies: none; X-XSS-Protection: 0. X-Powered-By is removed (removePoweredBy: true). Cross-Origin-Embedder-Policy is off by default (false, require-corp when enabled). No Content-Security-Policy is sent unless it is configured.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full list, COEP false, CSP unset, removePoweredBy. / All defaults, COEP false, CSP unset, removePoweredBy."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Full default list, X-Powered-By removal, CSP unset. / Full default list, CSP not set, X-Powered-By removed."
+     }
+    },
+    {
+     "id": "hono-11",
+     "category": "behavior",
+     "question": "How does bodyLimit() enforce the limit, and what is its default response?",
+     "reference": "maxSize is required and has no default. Requests without a body (for example GET or HEAD) go straight to next(). If Content-Length is present and Transfer-Encoding is not, the header is trusted: a value over maxSize calls onError, and otherwise next() runs. Otherwise (chunked, or no length header) the middleware reads the whole body up front, counting bytes and failing as soon as the size exceeds maxSize. It then rebuilds c.req.raw from the buffered chunks. The default onError throws HTTPException(413) wrapping a Response 'Payload Too Large' with status 413.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Enforcement and 413 default exact; omits maxSize required. / Length/stream logic and 413 default correct; maxSize required not stated."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Enforcement and 413 right; omits HTTPException and maxSize required. / Logic and 413 correct; omits required maxSize, HTTPException throw."
+     }
+    },
+    {
+     "id": "hono-12",
+     "category": "behavior",
+     "question": "What do the default notFound and error handlers return, and how are HTTPExceptions handled?",
+     "reference": "The default notFound handler returns c.text('404 Not Found', 404). The default error handler checks 'getResponse' in err, which is duck typing rather than an instanceof HTTPException check. If present, it returns c.newResponse(res.body, res) from err.getResponse(). Otherwise it calls console.error(err) and returns c.text('Internal Server Error', 500). app.onError() and app.notFound() replace these handlers. A thrown value that is not an Error is rethrown by #handleError instead of being handled.",
+     "neodevex": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims no default error handler; default returns 500 and uses getResponse."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "Defaults and getResponse right; omits non-Error rethrow. / 404/500/getResponse correct; misses non-Error rethrow."
+     }
+    },
+    {
+     "id": "hono-13",
+     "category": "behavior",
+     "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
+     "reference": "c.redirect(location, status?) sets the Location header and returns a response with status 302 by default. A location containing characters outside \\x00-\\xFF is passed through encodeURI. c.text() takes a fast path, returning new Response(text), when no headers, status, arguments or finalization exist. Otherwise it sets Content-Type 'text/plain; charset=UTF-8'. c.json() JSON.stringifies the value with Content-Type 'application/json'. c.notFound() calls the notFound handler the app passed into the Context, so a custom app.notFound applies. It falls back to an empty Response if none was passed.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "302, encodeURI, text fast path, notFound delegation. / 302, encodeURI, text fast path/charset, notFound delegation."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "302 and content types right; c.notFound default wrongly empty 404. / 302 and text type right; c.notFound empty 404 claim false."
+     }
+    },
+    {
+     "id": "hono-14",
+     "category": "where",
+     "question": "Where is the URL path extracted from a request, and where is the strict / non-strict trailing-slash behavior selected?",
+     "reference": "getPath and getPathNoStrict in src/utils/url.ts. getPath scans request.url for the path, stopping at '?' or '#', and calls tryDecodeURI when it sees '%'. getPathNoStrict removes one trailing '/' from paths longer than 1. The choice is made in the HonoBase constructor: this.getPath = (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "getPath/getPathNoStrict in url.ts, strict default true. / url.ts getPath/getPathNoStrict, strict default true, HonoBase selection."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "url.ts functions and constructor selection with default true. / url.ts functions, strict default, constructor ternary."
+     }
+    },
+    {
+     "id": "hono-15",
+     "category": "where",
+     "question": "Where does RegExpRouter build its matchers, and when does that happen?",
+     "reference": "In src/router/reg-exp-router/matcher.ts, function match(). On the first call it runs this.buildAllMatchers(), which RegExpRouter defines in router.ts and which builds one matcher per method from #routes and #middleware. It then replaces this.match with a closure that checks a static-path map first and otherwise runs one combined RegExp, using the index of the empty capture group to pick the handler set. Path conflicts are reported at that point by rethrowing the trie's PATH_ERROR as UnsupportedPathError.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "matcher.ts lazy match, buildAllMatchers, static map, UnsupportedPathError. / matcher.ts lazy build, match replaced, static map, UnsupportedPathError."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Claims routes inserted into trie at add and #tries field; neither exist. / Lazy buildAllMatchers, static map; misses matcher.ts and conflict errors."
+     }
+    },
+    {
+     "id": "hono-16",
+     "category": "where",
+     "question": "Where is request-body caching implemented, so that c.req.json() and c.req.text() can both be called?",
+     "reference": "In src/request.ts on the HonoRequest class: the public bodyCache field and the private #cachedBody(key) method. #cachedBody returns the cached promise for the same key. If a different body type was cached, it rebuilds the body from that cached value with new Response(body)[key](), stringifying first if the cached key was 'json'. Otherwise it reads raw[key]() and stores the promise. json() is implemented as #cachedBody('text') followed by JSON.parse.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "bodyCache, conversion code, json via text+parse. / Exact #cachedBody logic and json via text."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "bodyCache, #cachedBody conversion, json via text. / bodyCache/#cachedBody, Response conversion, json via text."
+     }
+    },
+    {
+     "id": "hono-17",
+     "category": "where",
+     "question": "Where are app.get/post/.../all, app.on and app.use defined, and which HTTP methods get shortcut methods?",
+     "reference": "They are created as instance properties in the HonoBase constructor (src/hono-base.ts). The constructor loops over [...METHODS, 'all'] and defines app.on and app.use there too. All of them register routes through the private #addRoute, which upper-cases the method, merges _basePath, calls router.add(method, path, [handler, routerRoute]) and pushes the route onto app.routes. METHODS is defined in src/router.ts as ['get','post','put','delete','options','patch']. app.use without a path registers under method 'ALL' with path '*'.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Constructor, METHODS list, #addRoute, use '*'. / Constructor, METHODS list, #addRoute, use with * and ALL."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.25,
+      "split": true,
+      "note": "Lists nonexistent query shortcut. / Claims a query shortcut; METHODS has no query."
+     }
+    },
+    {
+     "id": "hono-18",
+     "category": "edge_case",
+     "question": "There is no app.head(). How are HEAD requests handled?",
+     "reference": "#dispatch special-cases HEAD. It re-dispatches the same request as 'GET' and wraps the result as new Response(null, getResponse), keeping the status and headers but dropping the body. GET routes and GET middleware therefore answer HEAD requests automatically.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "HEAD dispatched as GET with null body. / HEAD re-dispatched as GET with null body."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.75,
+      "split": true,
+      "note": "Correct core; invents methodNotAllowed middleware. / Core correct; methodNotAllowed middleware does not exist at commit."
+     }
+    },
+    {
+     "id": "hono-19",
+     "category": "edge_case",
+     "question": "If you pass both strict: false and a custom getPath to new Hono(), which getPath is used?",
+     "reference": "The custom getPath is ignored. The constructor uses options.getPath only when strict is true: (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict. With strict: false it always uses the built-in getPathNoStrict.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "getPathNoStrict always used with strict:false. / getPathNoStrict always used; custom ignored."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Opens claiming custom getPath used, then correctly says getPathNoStrict. / Opens claiming custom getPath used, then correctly concludes getPathNoStrict."
+     }
+    },
+    {
+     "id": "hono-20",
+     "category": "edge_case",
+     "question": "If a sub-app has its own app.notFound() and onError(), and is mounted with parent.route('/x', sub), which handlers apply to requests under /x?",
+     "reference": "Only the sub-app's onError is kept. route() wraps the sub-app's handlers with its errorHandler when that handler is custom. The sub-app's notFound is ignored: route() copies only routes, and at request time the Context and compose use the parent's #notFoundHandler. Unmatched paths under /x, and c.notFound() calls, therefore use the parent's notFound handler.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Sub onError wrapped, parent notFound used. / Sub onError wrapped, parent notFound, code cited."
+     },
+     "devin": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Sub onError kept, parent notFound used. / Sub onError wrapped, parent notFound used."
+     }
+    },
+    {
+     "id": "hono-21",
+     "category": "edge_case",
+     "question": "`throw new HTTPException(401, { res: new Response('nope', { status: 403 }) })`: what status does the client get?",
+     "reference": "401. HTTPException.getResponse() builds new Response(this.res.body, { status: this.status, headers: this.res.headers }), so the exception's own status replaces the status of the supplied Response, while the body and headers are kept. Without res, the response body is the exception's message, and the status defaults to 500 when no status is given.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "401, body/headers kept; omits 500 default."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "401, body/headers kept; omits 500 default."
+     }
+    },
+    {
+     "id": "hono-22",
+     "category": "dev_workflow",
+     "question": "How are tests run, and how are the per-runtime suites organized?",
+     "reference": "`bun run test` runs tsc -p tsconfig.spec.json && vitest --run. vitest.config.ts defines projects: every runtime-tests/*/vitest.config.ts, plus 'main' (src/scripts/build tests, excluding *.case.test.*), 'jsx-runtime-default' and 'jsx-runtime-dom'. Coverage uses v8 and is enabled by default. Per-runtime scripts select a vitest project, for example test:node uses --project node, and the same pattern covers workerd, fastly, lambda and lambda-edge. The workerd suite starts a real worker with wrangler's unstable_dev. Deno and Bun use their native runners: test:deno runs deno test with configs in runtime-tests/deno and deno-jsx, and test:bun runs bun test runtime-tests/bun/*.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "tsc+vitest, projects, --project scripts, deno/bun native. / tsc+vitest, projects, --project scripts, native deno/bun."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Vitest projects right; invents pnpm and vp test commands. / Structure ok; pnpm and vp test commands not in this checkout."
+     }
+    },
+    {
+     "id": "hono-23",
+     "category": "dev_workflow",
+     "question": "How is the npm package built?",
+     "reference": "`bun run build` removes dist and runs `bun ./build/build.ts`. That script first checks that the package.json and jsr.json exports match, then globs src/**/*.ts as entry points, excluding tests, src/mod.ts, src/middleware.ts and src/deno/**. It runs three steps in parallel: an esbuild ESM build to dist with bundle: true and an add-extension plugin that keeps imports external and rewrites them to '.js', an esbuild CJS build to dist/cjs, and tsc --emitDeclarationOnly with tsconfig.build.json. Afterwards it strips #private fields from the .d.ts files. Then copy:package.cjs.json writes {\"type\":\"commonjs\"} into dist/cjs and dist/types, and the postbuild step runs publint.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "Exact build steps incl private strip, cjs marker, publint. / build.ts esbuild ESM/CJS, tsc types, private strip, cjs json, publint."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims vite-plus/tsdown build; uses build.ts with esbuild. / Claims vite-plus/tsdown/vp pack; build uses build/build.ts esbuild."
+     }
+    },
+    {
+     "id": "hono-24",
+     "category": "dev_workflow",
+     "question": "How are linting and formatting configured?",
+     "reference": "`bun run lint` runs eslint on src, runtime-tests, build, perf-measures and benchmarks. eslint.config.mjs is a flat config that extends @hono/eslint-config and turns off the type-aware typescript-eslint rules plus some stylistic ones. It treats unused disable directives and unused inline configs as errors, and ignores .wrangler, coverage and dist. Formatting uses prettier (`format` checks, `format:fix` writes) over the same directories.",
+     "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "ESLint config extends, type rules off, Prettier scripts. / ESLint config extends, type rules off, directives error, Prettier."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
+      "split": false,
+      "note": "Claims oxlint/oxfmt; repo uses ESLint and Prettier."
+     }
+    },
+    {
+     "id": "hono-25",
+     "category": "dev_workflow",
+     "question": "How is the package published to JSR, and how is consistency with npm exports enforced?",
+     "reference": "jsr.json publishes '@hono/hono'. Its exports map subpaths directly to TypeScript sources, for example './tiny' to './src/preset/tiny.ts', while package.json maps them to dist JS, CJS and .d.ts files. build/build.ts calls validateExports in both directions, package.json against jsr.json and jsr.json against package.json, and throws 'Missing \"<entry>\" in ...' when an entry is missing (with wildcard support such as './utils/*'). CI runs `bunx jsr publish --dry-run`. The release workflow publishes to JSR with `deno run -A jsr:@david/publish-on-tag` and to npm with npm publish.",
+     "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "JSR publish, jsr.json, validateExports; omits CI dry-run. / publish-on-tag, @hono/hono, validateExports; misses CI dry-run and bidirectional."
+     },
+     "devin": {
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Invents validatePackageExportsPlugin in vite.config.ts and pnpm dlx. / Bidirectional check right; invented vite plugin and pnpm dlx dry-run."
+     }
+    }
+   ]
+  }
+ }
+}

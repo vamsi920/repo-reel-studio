@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "claim": "Sources: [src/flask/ctx.py:446-505](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L446-L505), [tests/test_appctx.py:46-57](https://github.com/pallets/flask/blob/HEAD/tests/test_appctx.py#L46-L57),",
+  "cited": "tests/test_reqctx.py:16-28"
+ },
+ {
+  "n": 1,
+  "claim": "ExtClass --> InitAppMethod\n    InitAppMethod --> FlaskClass\n    InitAppMethod --> ExtensionsDict\n    InitAppMethod --> BeforeReq\n    InitAppMethod --> TeardownReq\n    InitAppMethod --> TeardownApp\n    InitAppMethod --> RegisterBP\n    ExtClass --> ExtStateObj\n    ExtStateObj --> ExtensionsDict\n    FlaskClass --> CurrentApp\n```\nSources:",
+  "cited": "docs/extensions.rst:4-7"
+ },
+ {
+  "n": 2,
+  "claim": "Sources: [src/flask/cli.py:1110-1119](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L1110-L1119),",
+  "cited": "src/flask/__main__.py:1-3"
+ },
+ {
+  "n": 3,
+  "claim": "Using a factory allows for:\n1.  **Testing**: Creating multiple instances with different configurations [docs/patterns/appfactories.rst:12-13]().\n2.  **Multiple Instances**: Running different versions or configurations of the same app in one process",
+  "cited": "docs/patterns/appfactories.rst:14-18"
+ },
+ {
+  "n": 4,
+  "claim": "```mermaid\ngraph TD\n    A[\"Flask App\"]\n    A --> B[\"app.app_context()\"]\n    A --> C[\"app.test_request_context()\"]\n    subgraph \"Application Context\"\n        B\n        D[\"g (globals)\"]\n        E[\"current_app\"]\n    end\n    subgraph \"Request Context\"\n        C\n        F[\"request\"]\n        G[\"session\"]\n    end\n    C --> B\n```\nSources:",
+  "cited": "tests/test_appctx.py:34-44"
+ },
+ {
+  "n": 5,
+  "claim": "return wrapped_view\n```\nSources: [examples/tutorial/flaskr/auth.py:19-29](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/flaskr/auth.py#L19-L29), [examples/tutorial/flaskr/blog.py:61](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/flaskr/blog.py#L61), [examples/tutorial/flaskr/blog.py:87](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/flaskr/blog.py#L87),",
+  "cited": "examples/tutorial/flaskr/blog.py:114-114"
+ },
+ {
+  "n": 6,
+  "claim": "Sources: [docs/deploying/gunicorn.rst:96-115](), [docs/deploying/uwsgi.rst:119-143](),",
+  "cited": "docs/deploying/waitress.rst:7-12"
+ },
+ {
+  "n": 7,
+  "claim": "Sources: [src/flask/cli.py:531](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L531), [src/flask/cli.py:405](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L405), [src/flask/cli.py:293](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L293),",
+  "cited": "src/flask/cli.py:37-37"
+ },
+ {
+  "n": 8,
+  "claim": "Sources: [src/flask/globals.py:44-62](https://github.com/pallets/flask/blob/HEAD/src/flask/globals.py#L44-L62), [src/flask/ctx.py:307-313](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L307-L313), [src/flask/ctx.py:371-379](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L371-L379),",
+  "cited": "src/flask/ctx.py:396-403"
+ },
+ {
+  "n": 9,
+  "claim": "**Debug Mode Features**:\n*   **Interactive Debugger**: Triggered on unhandled exceptions; allows code execution in-browser via a PIN-protected console",
+  "cited": "docs/quickstart.rst:87-105"
+ },
+ {
+  "n": 10,
+  "claim": "Sources: [src/flask/ctx.py:416-445](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L416-L445),",
+  "cited": "tests/test_appctx.py:172-195"
+ },
+ {
+  "n": 11,
+  "claim": "Sources: [src/flask/testing.py:135-184](), [docs/testing.rst:222-241](),",
+  "cited": "tests/test_testing.py:157-198"
+ },
+ {
+  "n": 12,
+  "claim": "Extensions that provide decorators for views must call `ensure_sync` before invoking the wrapped function to ensure compatibility with `async def` views",
+  "cited": "docs/async-await.rst:95-97"
+ },
+ {
+  "n": 13,
+  "claim": "### Secure Upload Workflow\n1.  **Form Config**: Set `enctype=\"multipart/form-data\"` on the HTML form [docs/patterns/fileuploads.rst:7-8]().\n2.  **Access**: Use `request.files` to access the `FileStorage` object",
+  "cited": "docs/patterns/fileuploads.rst:9-10"
+ },
+ {
+  "n": 14,
+  "claim": "- `open_session(app, request)` \u2014 Loads or creates the session [src/flask/sessions.py:249-251]().\n- `save_session(app, session, response)` \u2014 Persists the session state",
+  "cited": "src/flask/sessions.py:261-263"
+ },
+ {
+  "n": 15,
+  "claim": "Sources: [src/flask/templating.py:60-87](https://github.com/pallets/flask/blob/HEAD/src/flask/templating.py#L60-L87),",
+  "cited": "tests/test_templating.py:488-522"
+ },
+ {
+  "n": 16,
+  "claim": "quest \"/path\"\n    F->>+V: V(**kwargs)\n    alt init_every_request is True\n        V->>+I: __init__(*class_args)\n        I-->>-V: self\n    else init_every_request is False\n        Note over V: Instance was pre-created\n    end\n    V->>+I: dispatch_request(**kwargs)\n    I-->>-V: Response\n    V-->>-F: Response\n    F-->>-C: Response\n```\n*Sequence diagram for a request to a class-based `View`.*\nSources:",
+  "cited": "src/flask/views.py:86-135"
+ },
+ {
+  "n": 17,
+  "claim": "Sources: [src/flask/sessions.py:100-270](), [CHANGES.rst:36-37](),",
+  "cited": "CHANGES.rst:163-165"
+ },
+ {
+  "n": 18,
+  "claim": "Database-->>FlaskApp: User record\n        Note over FlaskApp: g.user = user record\n    else user_id is None\n        Note over FlaskApp: g.user = None\n    end\n    Note over FlaskApp: Proceed to requested view function\n    FlaskApp-->>-Client: Render page\n```\nSources: [examples/tutorial/flaskr/auth.py:32-44](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/flaskr/auth.py#L32-L44),",
+  "cited": "examples/tutorial/flaskr/auth.py:84-105"
+ },
+ {
+  "n": 19,
+  "claim": "| Signal | Sender | Keyword arguments | When fired |\n|---|---|---|---|\n| `request_started` | `app` | _(none)_ | Before view function is called, after context is pushed [src/flask/signals.py:10]() |\n| `request_finished` | `app` | `response` | After the response is fully formed [src/flask/signals.py:11]() |\n| `request_tearing_down` | `app` | `exc` | During request context teardown",
+  "cited": "src/flask/signals.py:12-12"
+ },
+ {
+  "n": 20,
+  "claim": "app = CustomFlask(__name__)\nassert isinstance(app.jinja_env, CustomEnvironment)\n```\nSources: [src/flask/templating.py:36-47](https://github.com/pallets/flask/blob/HEAD/src/flask/templating.py#L36-L47),",
+  "cited": "tests/test_templating.py:443-473"
+ },
+ {
+  "n": 21,
+  "claim": "ession: user_id = session.get(\"user_id\")\n    alt user_id exists\n        FlaskApp->>Database: SELECT * FROM user WHERE id = ?\n        Database-->>FlaskApp: User record\n        Note over FlaskApp: g.user = user record\n    else user_id is None\n        Note over FlaskApp: g.user = None\n    end\n    Note over FlaskApp: Proceed to requested view function\n    FlaskApp-->>-Client: Render page\n```\nSources:",
+  "cited": "examples/tutorial/flaskr/auth.py:32-44"
+ },
+ {
+  "n": 22,
+  "claim": "Sources: [examples/tutorial/flaskr/blog.py:28-57](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/flaskr/blog.py#L28-L57),",
+  "cited": "examples/tutorial/flaskr/blog.py:90-90"
+ },
+ {
+  "n": 23,
+  "claim": "| Tool | Config Path | Strictness |\n|------|-------------|------------|\n| `mypy` | `[tool.mypy]` | `strict = true` [pyproject.toml:132]() |\n| `pyright` | `[tool.pyright]` | `typeCheckingMode = \"basic\"`",
+  "cited": "pyproject.toml:146-146"
+ },
+ {
+  "n": 24,
+  "claim": "| Component | Role | File Path |\n|-----------|------|-----------|\n| `Scaffold` | Common logic for routes/handlers | [src/flask/sansio/scaffold.py:52-82]() |\n| `App` | Base application logic (Sans-IO) |",
+  "cited": "src/flask/sansio/app.py:59-154"
+ },
+ {
+  "n": 25,
+  "claim": "Flask's built-in development server (invoked via `flask run`) is provided by Werkzeug and is designed for local iteration only. It is not designed to be secure, stable, or efficient under real load. Do not use it when deploying to production.",
+  "cited": "docs/deploying/index.rst:4-15"
+ },
+ {
+  "n": 26,
+  "claim": "Sources: [src/flask/sansio/blueprints.py:413-441](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L413-L441), [src/flask/sansio/blueprints.py:87-116](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L87-L116),",
+  "cited": "tests/test_blueprints.py:286-316"
+ },
+ {
+  "n": 27,
+  "claim": "### Discovery Logic Table\n| Priority | Search Target | Code Reference |\n|----------|---------------|----------------|\n| 1 | Attributes named `app` or `application` |",
+  "cited": "src/flask/cli.py:48-52"
+ },
+ {
+  "n": 28,
+  "claim": "| Component | Role | File Path |\n|-----------|------|-----------|\n| `Scaffold` | Common logic for routes/handlers | [src/flask/sansio/scaffold.py:52-82]() |\n| `App` | Base application logic (Sans-IO) | [src/flask/sansio/app.py:59-154]() |\n| `Flask` | Concrete WSGI implementation |",
+  "cited": "src/flask/app.py:102-102"
+ },
+ {
+  "n": 29,
+  "claim": "Sources: [src/flask/app.py:1481-1500](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L1481-L1500),",
+  "cited": "src/flask/app.py:1517-1565"
+ },
+ {
+  "n": 30,
+  "claim": "Flask integrates with the [Blinker](https://pypi.org/project/blinker/) library for signals",
+  "cited": "docs/signals.rst:8-9"
+ },
+ {
+  "n": 31,
+  "claim": "AC --> CV_APP\n    CV_APP --> C_APP_P\n    CV_APP --> G_P\n    CV_APP --> REQ_P\n    CV_APP --> SESS_P\n```\nSources: [src/flask/ctx.py:30-116](), [src/flask/globals.py:24-52](),",
+  "cited": "CHANGES.rst:8-11"
+ },
+ {
+  "n": 32,
+  "claim": ". It creates a `RequestContext` and pushes it [src/flask/app.py:1138-1153]().\n2.  **`full_dispatch_request`**: Orchestrates the request. It handles the first request setup, triggers `preprocess_request`, dispatches to the view, and finalizes the response [src/flask/app.py:904-922]().\n3.  **`dispatch_request`**: Performs URL matching via `url_adapter.match()` and calls the associated view function",
+  "cited": "src/flask/app.py:931-945"
+ },
+ {
+  "n": 33,
+  "claim": "### Waitress\nWaitress is a pure Python WSGI server that supports Windows and UNIX directly",
+  "cited": "docs/deploying/waitress.rst:4-7"
+ },
+ {
+  "n": 34,
+  "claim": "Sources: [examples/tutorial/README.rst:4](https://github.com/pallets/flask/blob/HEAD/examples/tutorial/README.rst#L4),",
+  "cited": "examples/tutorial/flaskr/__init__.py:6-8"
+ },
+ {
+  "n": 35,
+  "claim": "Scaffold <|-- App\n    App <|-- Flask\n```\n*   **Scaffold**: Provides the basic functionality for routing and registering callbacks (e.g., `before_request`, `after_request`). Both `App` and `Blueprint` are scaffolds.\n*   **App**: The Sans-IO application class. It manages configuration, URL rules via a `url_map`, blueprints, and the Jinja2 environment. It does not handle I/O. Sources:",
+  "cited": "src/flask/sansio/app.py:59-1010"
+ },
+ {
+  "n": 36,
+  "claim": "Sources: [src/flask/signals.py:1-17](), [docs/signals.rst:1-10](),",
+  "cited": "tests/test_signals.py:50-93"
+ },
+ {
+  "n": 37,
+  "claim": "Sources: [src/flask/ctx.py:446-505](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L446-L505),",
+  "cited": "tests/test_appctx.py:46-57"
+ },
+ {
+  "n": 38,
+  "claim": "Sources: [src/flask/json/provider.py:124-215](), [tests/test_json.py:223-257](),",
+  "cited": "src/flask/config.py:126-151"
+ },
+ {
+  "n": 39,
+  "claim": "Sources: [src/flask/app.py:830-864](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L830-L864), [src/flask/app.py:865-896](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L865-L896),",
+  "cited": "src/flask/app.py:897-949"
+ },
+ {
+  "n": 40,
+  "claim": "Sources: [src/flask/config.py:323-364](https://github.com/pallets/flask/blob/HEAD/src/flask/config.py#L323-L364),",
+  "cited": "tests/test_config.py:217-241"
+ },
+ {
+  "n": 41,
+  "claim": "Sources: [src/flask/app.py:830-864](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L830-L864),",
+  "cited": "src/flask/app.py:865-896"
+ },
+ {
+  "n": 42,
+  "claim": "**Execution Commands:**\n*   **macOS/Linux**: `python3 -m venv .venv` followed by `. .venv/bin/activate`",
+  "cited": "docs/installation.rst:94-120"
+ },
+ {
+  "n": 43,
+  "claim": "**Code Reference for get_application:**\nThe core logic resides in `get_application(self, host)`, which parses the host string and performs the cache lookup.",
+  "cited": "docs/patterns/appdispatch.rst:94-103"
+ },
+ {
+  "n": 44,
+  "claim": "This page documents the deployment of Flask applications using production-grade WSGI servers. Flask is a WSGI *application*",
+  "cited": "docs/deploying/index.rst:20-20"
+ },
+ {
+  "n": 45,
+  "claim": "```python\n@app.context_processor\ndef inject_user():\n    return dict(user=g.user)\n```\nIn a test case, this is demonstrated by injecting a static value:\n```python\n# tests/test_templating.py:12-15\n@app.context_processor\ndef context_processor():\n    return {\"injected_value\": 42}\n```\nSources:",
+  "cited": "tests/test_templating.py:11-22"
+ },
+ {
+  "n": 46,
+  "claim": "- **Worker Blocking:** Each request still ties up **one WSGI worker** for its full duration",
+  "cited": "docs/async-await.rst:35-35"
+ },
+ {
+  "n": 47,
+  "claim": "- Registers routes, error handlers, and template filters under its own namespace.\n- Can define its own `template_folder` and `static_folder` [src/flask/blueprints.py:23-25]().\n- Provides a `cli` attribute (an `AppGroup`) for registering CLI commands",
+  "cited": "src/flask/blueprints.py:49-53"
+ },
+ {
+  "n": 48,
+  "claim": "### What Flask Provides\n- WSGI application interface and request dispatching. [src/flask/app.py:102]()\n- URL routing via Werkzeug. [src/flask/sansio/app.py:13-15]()\n- Template rendering with Jinja2.",
+  "cited": "docs/templating.rst:4-7"
+ },
+ {
+  "n": 49,
+  "claim": "_map`, blueprints, and the Jinja2 environment. It does not handle I/O. Sources: [src/flask/sansio/app.py:59-1010](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L59-L1010)\n*   **Flask**: The main application class that developers instantiate. It inherits all the setup logic from `App` and adds WSGI-specific methods like `wsgi_app` and `run` for the development server. Sources:",
+  "cited": "src/flask/app.py:109-1625"
+ },
+ {
+  "n": 50,
+  "claim": "Sources: [src/flask/sansio/blueprints.py:273-378](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L273-L378),",
+  "cited": "src/flask/sansio/blueprints.py:34-86"
+ },
+ {
+  "n": 51,
+  "claim": "Sources: [src/flask/sansio/blueprints.py:413-441](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/blueprints.py#L413-L441),",
+  "cited": "src/flask/sansio/blueprints.py:87-116"
+ },
+ {
+  "n": 52,
+  "claim": "Sources: [src/flask/app.py:1566-1625](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L1566-L1625), [src/flask/app.py:992-1020](https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L992-L1020),",
+  "cited": "src/flask/app.py:1021-1052"
+ },
+ {
+  "n": 53,
+  "claim": "Sources: [src/flask/ctx.py:68-109](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L68-L109),",
+  "cited": "tests/test_appctx.py:139-160"
+ },
+ {
+  "n": 54,
+  "claim": "### What Flask Delegates\n- **Databases**: No built-in ORM; delegates to extensions like Flask-SQLAlchemy.",
+  "cited": "docs/design.rst:133-151"
+ },
+ {
+  "n": 55,
+  "claim": "| Name | Kind | Description |\n|---|---|---|\n| `instance_path` | `Flask.__init__` parameter | Absolute path to the instance folder [tests/test_instance_config.py:12](). |\n| `instance_relative_config` | `Flask.__init__` parameter | If `True`, paths passed to `from_pyfile()` resolve from `instance_path`",
+  "cited": "docs/tutorial/factory.rst:45-45"
+ },
+ {
+  "n": 56,
+  "claim": "Sources: [src/flask/cli.py:120-197](https://github.com/pallets/flask/blob/HEAD/src/flask/cli.py#L120-L197),",
+  "cited": "tests/test_cli.py:181-193"
+ },
+ {
+  "n": 57,
+  "claim": "*   **`flask.wrappers.Request`**: This class adds attributes like `url_rule`, `view_args`, `endpoint`, and `blueprint` which become available after the URL routing has been resolved. It also sources configuration for `max_content_length` from the application config.\n    Sources:",
+  "cited": "src/flask/wrappers.py:18-220"
+ },
+ {
+  "n": 58,
+  "claim": "Sources: [src/flask/ctx.py:260-298](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L260-L298), [src/flask/ctx.py:416-427](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L416-L427), [src/flask/ctx.py:446-464](https://github.com/pallets/flask/blob/HEAD/src/flask/ctx.py#L446-L464),",
+  "cited": "src/flask/ctx.py:506-517"
+ },
+ {
+  "n": 59,
+  "claim": "- **Deprecated Aliases**: `request_ctx` is now a deprecated alias for `app_ctx` and will be removed in Flask 4.0.",
+  "cited": "src/flask/globals.py:65-77"
+ }
+]

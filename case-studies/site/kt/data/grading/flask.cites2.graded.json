@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "verdict": "partial",
+  "note": "dispatch_request shown; ctx.pop in finally not in these lines"
+ },
+ {
+  "n": 1,
+  "verdict": "unsupported",
+  "note": "Line 186 is host_matching default, not template_folder"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "Docs: app_-prefixed blueprint methods are app-wide"
+ },
+ {
+  "n": 3,
+  "verdict": "partial",
+  "note": "Async route shown; MethodView branch not covered"
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "AppGroup.command wraps with with_appcontext"
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "Test loads wsgi.py then app.py"
+ },
+ {
+  "n": 6,
+  "verdict": "unsupported",
+  "note": "Cited get/post/put shortcuts, not errorhandler"
+ },
+ {
+  "n": 7,
+  "verdict": "partial",
+  "note": "Defines signal only; timing/args not shown"
+ },
+ {
+  "n": 8,
+  "verdict": "supported",
+  "note": "DEBUG doc, default False"
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "hello returns Hello, World!"
+ },
+ {
+  "n": 10,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; lines show schedule trigger"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "run(): dotenv, debug, host, port, banner, run_simple"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "preprocess_request then dispatch_request"
+ },
+ {
+  "n": 13,
+  "verdict": "unsupported",
+  "note": "Cited FileSystemLoader import, not Scaffold"
+ },
+ {
+  "n": 14,
+  "verdict": "supported",
+  "note": "python 3.13 set"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "Shows async before_request; final block is teardown"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "route decorator on hello"
+ },
+ {
+  "n": 17,
+  "verdict": "supported",
+  "note": "Docs recommend custom blinker Namespace"
+ },
+ {
+  "n": 18,
+  "verdict": "supported",
+  "note": "SECRET_KEY doc with secrets.token_hex"
+ },
+ {
+  "n": 19,
+  "verdict": "supported",
+  "note": "Line calls matched view function"
+ },
+ {
+  "n": 20,
+  "verdict": "unsupported",
+  "note": "Cited run() lines, not test_request_context"
+ },
+ {
+  "n": 21,
+  "verdict": "partial",
+  "note": "Class definition only; config not shown"
+ },
+ {
+  "n": 22,
+  "verdict": "partial",
+  "note": "Class defined; registration line not cited"
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "find_best_app checks instances then factories"
+ },
+ {
+  "n": 24,
+  "verdict": "partial",
+  "note": "make_response shown; ctx.pop not in these lines"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "Test registers CustomException handler"
+ },
+ {
+  "n": 26,
+  "verdict": "supported",
+  "note": "_render sends signals around render"
+ },
+ {
+  "n": 27,
+  "verdict": "partial",
+  "note": "Signature only; root_path use not shown"
+ },
+ {
+  "n": 28,
+  "verdict": "unsupported",
+  "note": "Cited handle_exception, not dispatch_request"
+ },
+ {
+  "n": 29,
+  "verdict": "partial",
+  "note": "AppError class; raising route elsewhere"
+ },
+ {
+  "n": 30,
+  "verdict": "unsupported",
+  "note": "Cited blank lines/_no_app_msg, not current_app"
+ },
+ {
+  "n": 31,
+  "verdict": "supported",
+  "note": "uv-lock pre-commit hook configured"
+ },
+ {
+  "n": 32,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; lines show tag trigger"
+ },
+ {
+  "n": 33,
+  "verdict": "partial",
+  "note": "open_session stub; save_session behavior not shown"
+ },
+ {
+  "n": 34,
+  "verdict": "supported",
+  "note": "README flask run output"
+ },
+ {
+  "n": 35,
+  "verdict": "partial",
+  "note": "Extends Jinja env; autoescaping not in these lines"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "cached_property, created on first access"
+ },
+ {
+  "n": 37,
+  "verdict": "partial",
+  "note": "Default None; derivation from static_folder not shown"
+ },
+ {
+  "n": 38,
+  "verdict": "supported",
+  "note": "FlaskGroup pushes app context before command"
+ },
+ {
+  "n": 39,
+  "verdict": "partial",
+  "note": "Imports MapAdapter, not Map usage"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "template_folder defaults to templates"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "version: 2"
+ },
+ {
+  "n": 42,
+  "verdict": "unsupported",
+  "note": "CLI option env vars, not from_prefixed_env config"
+ },
+ {
+  "n": 43,
+  "verdict": "supported",
+  "note": "session proxy on _cv_app session"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "env-file option is_eager"
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "_get_source_explained logs attempts"
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "Docs: app or application first"
+ },
+ {
+  "n": 47,
+  "verdict": "unsupported",
+  "note": "Cited url_for code, not __call__/wsgi_app"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "RuntimeError if session not opened"
+ },
+ {
+  "n": 49,
+  "verdict": "unsupported",
+  "note": "Cited teardown/context processor dicts"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "from_prefixed_env loads FLASK_ vars"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "g proxy on _cv_app g"
+ },
+ {
+  "n": 52,
+  "verdict": "partial",
+  "note": "Section heading only; with-block guidance follows"
+ },
+ {
+  "n": 53,
+  "verdict": "partial",
+  "note": "load_app shown; app_name branching is in locate_app"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "exclude-patterns with fnmatch"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "Docstring: resources, extensions debugging"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "with_resource(app.app_context()) pushed"
+ },
+ {
+  "n": 57,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; PR trigger lines"
+ },
+ {
+  "n": 58,
+  "verdict": "supported",
+  "note": "_get_source_fast without logging"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "CSRF left to form validation framework"
+ },
+ {
+  "n": 60,
+  "verdict": "supported",
+  "note": "TESTING propagates exceptions"
+ },
+ {
+  "n": 61,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; return value types"
+ },
+ {
+  "n": 62,
+  "verdict": "supported",
+  "note": "follow_redirects example"
+ },
+ {
+  "n": 63,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; create-release job"
+ },
+ {
+  "n": 64,
+  "verdict": "supported",
+  "note": "Docs: do not run dev server in production"
+ },
+ {
+  "n": 65,
+  "verdict": "unsupported",
+  "note": "Cited TypeVars, not name parameter"
+ },
+ {
+  "n": 66,
+  "verdict": "supported",
+  "note": "One worker per request; capacity unchanged"
+ },
+ {
+  "n": 67,
+  "verdict": "supported",
+  "note": "stream_with_context keeps context during iteration"
+ },
+ {
+  "n": 68,
+  "verdict": "supported",
+  "note": "Custom-name filter registration tested"
+ },
+ {
+  "n": 69,
+  "verdict": "supported",
+  "note": "Blueprint accepts url_prefix parameter"
+ },
+ {
+  "n": 70,
+  "verdict": "partial",
+  "note": "Claim text lacks statement; response types"
+ },
+ {
+  "n": 71,
+  "verdict": "supported",
+  "note": "Async error route raising AppError"
+ },
+ {
+  "n": 72,
+  "verdict": "partial",
+  "note": "Before/after tested; teardown not covered"
+ },
+ {
+  "n": 73,
+  "verdict": "supported",
+  "note": "Async teardown_appcontext example"
+ },
+ {
+  "n": 74,
+  "verdict": "partial",
+  "note": "finalize_request called; make_response defaults not shown"
+ },
+ {
+  "n": 75,
+  "verdict": "supported",
+  "note": "SECRET_KEY_FALLBACKS for rotation"
+ },
+ {
+  "n": 76,
+  "verdict": "partial",
+  "note": "Pre-commit triggers only; diagram ends with zizmor"
+ },
+ {
+  "n": 77,
+  "verdict": "supported",
+  "note": "500 handler receives InternalServerError"
+ },
+ {
+  "n": 78,
+  "verdict": "partial",
+  "note": "Tests triggers only; diagram ends with zizmor"
+ },
+ {
+  "n": 79,
+  "verdict": "supported",
+  "note": "Flask.extensions stores app-specific state"
+ }
+]

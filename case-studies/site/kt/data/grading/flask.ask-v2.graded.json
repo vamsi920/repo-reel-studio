@@ -1,0 +1,352 @@
+[
+ {
+  "id": "flask-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate chain; finalize_request internals (make_response/process_response/request_finished) not described."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Chain right; omits handle_exception and handle_user_exception naming."
+  }
+ },
+ {
+  "id": "flask-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Push/pop, nesting count, full pop order shown in code."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Push/pop and nesting right; omits request.close and pop order detail."
+  }
+ },
+ {
+  "id": "flask-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All steps incl. ValueError, deferred replay, nested recursion."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All steps incl. first-registration merge condition."
+  }
+ },
+ {
+  "id": "flask-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Scaffold, App/Flask, sansio/flask Blueprint inheritance."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Scaffold, App/Flask, Blueprint from SansioBlueprint."
+  }
+ },
+ {
+  "id": "flask-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "One ContextVar and proxies correct; omits request_ctx alias."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "One ContextVar and proxies with code; omits request_ctx alias."
+  }
+ },
+ {
+  "id": "flask-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "All values right; omits APPLICATION_ROOT path fallback."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All values plus path fallback."
+  }
+ },
+ {
+  "id": "flask-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All four defaults."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All four defaults."
+  }
+ },
+ {
+  "id": "flask-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Before/after order, short-circuit, session save via code."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Order and short-circuit right; session save not mentioned."
+  }
+ },
+ {
+  "id": "flask-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Reverse order, blueprint first, collect errors, exception group."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All facts incl. 3.2 change."
+  }
+ },
+ {
+  "id": "flask-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Code-then-class, blueprint-first, MRO; omits RoutingException bypass."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Order and MRO right; omits RoutingException bypass."
+  }
+ },
+ {
+  "id": "flask-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Signal, propagate rule, ISE original_exception; omits from_error_handler."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Signal, propagate, ISE to handler; omits from_error_handler=True."
+  }
+ },
+ {
+  "id": "flask-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults, types, indent logic right; omits trailing newline."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Defaults, types, formatting, trailing newline."
+  }
+ },
+ {
+  "id": "flask-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior."
+  }
+ },
+ {
+  "id": "flask-14",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "303 for both, changed from 302 in 3.2."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "303 and 3.2 change; misleading on app.redirect, not confirmed."
+  }
+ },
+ {
+  "id": "flask-15",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Deprecated alias; fresh context each request."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Deprecated alias; no reuse of pushed context."
+  }
+ },
+ {
+  "id": "flask-16",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "ctx param, __init_subclass__ warning, remove_ctx/add_ctx."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Detection, warning text, remove_ctx wrapper, method list."
+  }
+ },
+ {
+  "id": "flask-17",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "False via get_debug_flag; wrongly lists off as falsy, omits no."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "None overwritten by get_debug_flag; correct falsy values."
+  }
+ },
+ {
+  "id": "flask-18",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "salt, hmac, lazy sha1, TaggedJSONSerializer, key order."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "All details except TaggedJSONSerializer payload serializer."
+  }
+ },
+ {
+  "id": "flask-19",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "load_app, wsgi.py/app.py, find_best_app order."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full order with code."
+  }
+ },
+ {
+  "id": "flask-20",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Scaffold registration, ValueError/TypeError, spec structure."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "scaffold.py with validation code and storage."
+  }
+ },
+ {
+  "id": "flask-21",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "add_url_rule and OPTIONS flow right; omits str TypeError."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Logic right; omits str TypeError."
+  }
+ },
+ {
+  "id": "flask-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": ">=3.10 and matrix; omits mypy/pyright 3.10."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All facts incl. type checker baseline."
+  }
+ },
+ {
+  "id": "flask-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "tox and CI command right; omits filterwarnings error and lock runner."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "tox/pytest general; omits CI command, uv runner, filterwarnings."
+  }
+ },
+ {
+  "id": "flask-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Typing env, strict mypy, basic pyright, CI."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All key facts."
+  }
+ },
+ {
+  "id": "flask-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Pins and main branches right; omits Python versions and hooks."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Versions 3.14/3.10 right; omits pins and hook list."
+  }
+ }
+]

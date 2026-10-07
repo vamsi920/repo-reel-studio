@@ -1,3 +1,4 @@
+import hashlib
 import os
 import subprocess
 from functools import wraps
@@ -184,8 +185,13 @@ class Repo:
             else:
                 repo_name = url_parts[-1].replace(".git", "")
         else:
-            # This is a local repository
-            repo_name = os.path.basename(repo_url)
+            # A local repository. The basename alone is not unique: every
+            # agent-server workspace defaults to ".../project", so distinct
+            # repos would share one embedding index. Suffix a hash of the
+            # absolute path to keep their indexes apart.
+            abs_path = os.path.abspath(repo_url.rstrip("/"))
+            digest = hashlib.sha1(abs_path.encode("utf-8")).hexdigest()[:10]
+            repo_name = f"{os.path.basename(abs_path)}_{digest}"
         return repo_name
 
     def download(self, force: bool = False) -> None:
@@ -214,6 +220,24 @@ class Repo:
                 raise NotImplementedError(f"Unknown repo type: {self.repo_type}")
 
             logger.info("Repository %s cloned successfully", self.name)
+
+    def checkout_commit(self, commit_sha: str) -> bool:
+        """Pin a cloned (non-local) repo's working tree to ``commit_sha``.
+
+        Clones are shallow and track the default branch, so without this a
+        generation scoped to an older commit would silently read HEAD.
+        Returns True when the working tree moved to a different commit, so
+        the caller can drop an embedding index built from the old one.
+        """
+        if self.is_local:
+            return False
+        git_repo = GitRepo(self.save_path)
+        if git_repo.head.commit.hexsha.startswith(commit_sha):
+            return False
+        git_repo.git.fetch("--depth=1", "origin", commit_sha)
+        git_repo.git.checkout("--detach", "FETCH_HEAD")
+        logger.info("Pinned %s to commit %s", self.name, commit_sha)
+        return True
 
     @property
     def save_path(self) -> str:

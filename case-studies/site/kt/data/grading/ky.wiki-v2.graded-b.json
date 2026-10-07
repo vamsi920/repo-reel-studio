@@ -1,0 +1,352 @@
+[
+ {
+  "id": "ky-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "validateAndMerge, Ky.create, #retry, #fetch, timeout; omits createInstance, hooks, ResponsePromise."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Ky.create/#retry/#fetch right; falsely says ky.get calls main ky() function."
+  }
+ },
+ {
+  "id": "ky-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "create ignores, extend merges; omits function form."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "create ignores, extend merges; omits function form."
+  }
+ },
+ {
+  "id": "ky-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "init, single beforeRequest, afterResponse, beforeRetry, final beforeError."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims beforeError after first error and beforeRequest before retry."
+  }
+ },
+ {
+  "id": "ky-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "AbortSignal.any combination; cites merge path; omits timeout abort/recreation/delay."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "TimeoutError via controller right; falsely says merge collects internal timeout/totalTimeout signals."
+  }
+ },
+ {
+  "id": "ky-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims NormalizedOptions are passed to fetch; misses findUnknownOptions."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Registries and unknown-key passthrough in options.ts."
+  }
+ },
+ {
+  "id": "ky-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults correct."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults correct."
+  }
+ },
+ {
+  "id": "ky-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout and RangeError right; totalTimeout not covered."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout and totalTimeout right; RangeError not covered."
+  }
+ },
+ {
+  "id": "ky-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "TimeoutError, retryOnTimeout false; omits shouldRetry."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Not retried by default, TimeoutError; omits shouldRetry."
+  }
+ },
+ {
+  "id": "ky-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Top order right; wrongly puts 413 check before afterStatusCodes/Retry-After; no ForceRetry."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Order and shouldRetry semantics right; no ForceRetry; 413 simplified."
+  }
+ },
+ {
+  "id": "ky-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Only Retry-After named; seconds, cap, no jitter right."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Header order and seconds/threshold right; omits date parse and cap."
+  }
+ },
+ {
+  "id": "ky-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Message not covered; data JSON/text and 10 MiB right."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact format and data semantics."
+  }
+ },
+ {
+  "id": "ky-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Accept right; claims empty body returns empty string (actually throws)."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accept header right; empty body not covered."
+  }
+ },
+ {
+  "id": "ky-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Sequential replace right; SchemaValidationError bypass true; omits non-Error/beforeRetry."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Falsely says Timeout/Network/ForceRetry errors bypass beforeError and #retry catches it."
+  }
+ },
+ {
+  "id": "ky-14",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "File right; falsely says checks error cause; omits TypeError/NetworkError wrap."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "NetworkError wrap in Ky.ts right; no isRawNetworkError or heuristics."
+  }
+ },
+ {
+  "id": "ky-15",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout.ts location only."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout.ts and race right; no TimeoutError or totalTimeout cap."
+  }
+ },
+ {
+  "id": "ky-16",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "deepMerge in merge.ts only."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "validateAndMerge/deepMerge, hooks, context, signal; no replaceOption; line ranges off."
+  }
+ },
+ {
+  "id": "ky-17",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "streamRequest/streamResponse in body.ts; no withProgress/getBodySize."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "body.ts functions and withProgress; no getBodySize."
+  }
+ },
+ {
+  "id": "ky-18",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "POST not in methods; method checked first."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "POST not in default methods."
+  }
+ },
+ {
+  "id": "ky-19",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Correct 'No' but claims 413 is never retried (retried with header)."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Not retried without header; throw path described."
+  }
+ },
+ {
+  "id": "ky-20",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "3 attempts right; body cloning not covered."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "3 attempts right; misses clone/tee skip."
+  }
+ },
+ {
+  "id": "ky-21",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "No retry right; falsely says 500 Response returned as success."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "No retry, skips fetch; HTTPError throw not stated."
+  }
+ },
+ {
+  "id": "ky-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "xo/build/ava only."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "xo/build/ava only."
+  }
+ },
+ {
+  "id": "ky-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Browsers right; build reason not tied to browser.ts import."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Browsers right; build reason vague."
+  }
+ },
+ {
+  "id": "ky-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "macOS and node versions; no Playwright/test steps."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Node versions only."
+  }
+ },
+ {
+  "id": "ky-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Node 22+, ESM, distribution via tsconfig.dist.json."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Node 22+, ESM, distribution."
+  }
+ }
+]

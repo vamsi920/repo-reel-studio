@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 1,
+  "verdict": "partial",
+  "note": "General extensions intro; does not establish init_app diagram relationships."
+ },
+ {
+  "n": 2,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "Lines describe multiple instances in one process."
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "Tests show request context provides app context/current_app."
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "Line 114 applies @login_required to delete view."
+ },
+ {
+  "n": 6,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 7,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 8,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "Debugger in browser, pin-protected, on errors."
+ },
+ {
+  "n": 10,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 11,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "Docs say decorator extensions should call ensure_sync."
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "Access file via request.files."
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "Mostly open_session NotImplementedError; only save_session signature start."
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "as_view shows init_every_request branching and dispatch_request."
+ },
+ {
+  "n": 17,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 18,
+  "verdict": "partial",
+  "note": "Login view, not load_logged_in_user shown in diagram."
+ },
+ {
+  "n": 19,
+  "verdict": "partial",
+  "note": "Only signal definition; sender/kwargs/timing not established."
+ },
+ {
+  "n": 20,
+  "verdict": "unsupported",
+  "note": "Cites auto-reload test, not custom jinja environment test."
+ },
+ {
+  "n": 21,
+  "verdict": "supported",
+  "note": "load_logged_in_user matches diagram exactly."
+ },
+ {
+  "n": 22,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "typeCheckingMode = basic."
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "App class sansio base."
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "Do not use dev server in production; not secure/stable/efficient."
+ },
+ {
+  "n": 26,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "Searches app, application attrs first."
+ },
+ {
+  "n": 28,
+  "verdict": "unsupported",
+  "note": "Line is decorator wrapper code, not Flask class."
+ },
+ {
+  "n": 29,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 30,
+  "verdict": "supported",
+  "note": "Signals implemented by Blinker."
+ },
+ {
+  "n": 31,
+  "verdict": "partial",
+  "note": "Changelog on context merge; not ctx/globals diagram detail."
+ },
+ {
+  "n": 32,
+  "verdict": "unsupported",
+  "note": "Cites handle_exception, not dispatch_request URL matching."
+ },
+ {
+  "n": 33,
+  "verdict": "partial",
+  "note": "Windows stated; UNIX not mentioned."
+ },
+ {
+  "n": 34,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "App class range includes config, url_map, blueprints, jinja env."
+ },
+ {
+  "n": 36,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 37,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 38,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 39,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 40,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 41,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 42,
+  "verdict": "supported",
+  "note": "venv create and activate commands shown."
+ },
+ {
+  "n": 43,
+  "verdict": "supported",
+  "note": "get_application parses host, cache lookup."
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "Flask is a WSGI application."
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "Matches context_processor test code."
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "Each request ties up one worker."
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "self.cli = AppGroup()."
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "Flask uses Jinja templating."
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "Flask(App) class range includes wsgi_app and run."
+ },
+ {
+  "n": 50,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 51,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 52,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 53,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "No database layer; extensions provide database integration."
+ },
+ {
+  "n": 55,
+  "verdict": "partial",
+  "note": "Only usage of instance_relative_config; path resolution behavior not shown."
+ },
+ {
+  "n": 56,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "Request defines url_rule, view_args, endpoint, blueprint, MAX_CONTENT_LENGTH."
+ },
+ {
+  "n": 58,
+  "verdict": "partial",
+  "note": "No factual statement in claim (Sources list only); lines topically related."
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "request_ctx deprecated alias for app_ctx, removed in 4.0."
+ }
+]

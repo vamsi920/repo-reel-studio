@@ -1,0 +1,402 @@
+[
+ {
+  "page": "URL Generation and WebSocket Support",
+  "path": "src/client/utils.ts",
+  "start": 18,
+  "end": 24,
+  "link": "",
+  "ok": true,
+  "claim": "| Function | Role |\n|----------|------|\n| `replaceUrlParam` | Replaces `:param` placeholders in strings with actual values ",
+  "inline": true
+ },
+ {
+  "page": "Type System and End-to-End Type Safety",
+  "path": "src/types.ts",
+  "start": 144,
+  "end": 144,
+  "link": "",
+  "ok": true,
+  "claim": " handler definition [src/types.ts:168-182](), [src/types.test.ts:150-175]().\n2. **Middleware Composition**: Multiple middlewares can contribute to the `Env` (Variables) and `Input` types through intersection types like `IntersectNonAnyTypes` [src/types.ts:198-210]().\n3. **Schema Mapping**: The final return type of the handler is captured in the `Schema` using `ToSchema` and response merging logic ",
+  "inline": true
+ },
+ {
+  "page": "JSX Component Features",
+  "path": "src/jsx/base.ts",
+  "start": 28,
+  "end": 32,
+  "link": "",
+  "ok": true,
+  "claim": "- **FC (Functional Component)**: A function that accepts props and returns a `JSXNode`, `HtmlEscapedString`, `Promise`, or `null` ",
+  "inline": true
+ },
+ {
+  "page": "Multi-Runtime Architecture and Web Standards",
+  "path": "README.md",
+  "start": 44,
+  "end": 44,
+  "link": "",
+  "ok": true,
+  "claim": "The granular exports structure enables effective tree-shaking. For example, using the `hono/tiny` preset allows for a bundle under 12KB by using a simpler router implementation ",
+  "inline": true
+ },
+ {
+  "page": "Core Framework",
+  "path": "src/hono-base.ts",
+  "start": 104,
+  "end": 107,
+  "link": "",
+  "ok": true,
+  "claim": "| Method / Property | Description |\n|-------------------|-------------|\n| `get`, `post`, `put`, `delete` | HTTP method route registration ",
+  "inline": true
+ },
+ {
+  "page": "Cookie, HTML, and Content Helpers",
+  "path": "src/utils/cookie.ts",
+  "start": 179,
+  "end": 192,
+  "link": "",
+  "ok": true,
+  "claim": "`.` separator [src/utils/cookie.ts:44-49]().\n3.  **Prefix Options**: The helper supports `__Host-` and `__Secure-` prefixes [src/utils/cookie.ts:29](). Using these prefixes triggers strict validation in the internal `_serialize` function:\n    -   `__Secure-` requires the `secure` attribute [src/utils/cookie.ts:174-177]().\n    -   `__Host-` requires `secure`, `path: '/'`, and no `domain` attribute ",
+  "inline": true
+ },
+ {
+  "page": "Hono Application Class and HonoBase",
+  "path": "src/hono-base.ts",
+  "start": 415,
+  "end": 415,
+  "link": "",
+  "ok": true,
+  "claim": "| Option | Type | Description |\n|--------|------|-------------|\n| `env` | `E['Bindings']` | Environment bindings (e.g., Cloudflare Workers bindings) [src/hono-base.ts:419]() |\n| `executionCtx` | `ExecutionContext` | Execution context for async operations [src/context.ts:31-52]() |\n| `path` | `string` | Resolved path from the request ",
+  "inline": true
+ },
+ {
+  "page": "JSX and UI Rendering",
+  "path": "src/jsx/base.ts",
+  "start": 190,
+  "end": 225,
+  "link": "",
+  "ok": true,
+  "claim": "*   **`tag`**: Either a string for intrinsic elements (e.g., `\"div\"`) or a function for components (`FC`). [src/jsx/base.ts:147-154]()\n*   **`props`**: A dictionary containing attributes, including special handling for `style` objects via `styleObjectForEach` and `dangerouslySetInnerHTML`. ",
+  "inline": true
+ },
+ {
+  "page": "Glossary",
+  "path": "src/types.ts",
+  "start": 1,
+  "end": 100,
+  "link": "",
+  "ok": true,
+  "claim": "**Sources**: [src/context.ts:1-52](), [src/hono-base.ts:1-120](), [src/request.ts:1-100](), ",
+  "inline": true
+ },
+ {
+  "page": "Build System and Distribution",
+  "path": "build/build.ts",
+  "start": 18,
+  "end": 18,
+  "link": "",
+  "ok": true,
+  "claim": "A watch mode is available for development, which uses `esbuild` contexts to rebuild on file changes ",
+  "inline": true
+ },
+ {
+  "page": "Other Runtime Adapters",
+  "path": "src/adapter/vercel/index.ts",
+  "start": 6,
+  "end": 6,
+  "link": "",
+  "ok": true,
+  "claim": "| Runtime | Source of Connection Info |\n|---------|---------------------------|\n| **Cloudflare Pages** | `getConnInfo` helper [src/adapter/cloudflare-pages/index.ts:7]() |\n| **Vercel** | `getConnInfo` helper ",
+  "inline": true
+ },
+ {
+  "page": "PatternRouter and LinearRouter",
+  "path": "src/router/linear-router/router.test.ts",
+  "start": 50,
+  "end": 54,
+  "link": "",
+  "ok": true,
+  "claim": "### Common Behaviors\nBoth routers share certain behaviors defined in the Hono routing contract:\n- **Trailing Slashes**: Both routers allow trailing slashes by default, often matching `/book` to `/book/` [src/router/pattern-router/router.test.ts:36-40](), ",
+  "inline": true
+ },
+ {
+  "page": "Package Structure and Module Exports",
+  "path": "jsr.json",
+  "start": 37,
+  "end": 42,
+  "link": "",
+  "ok": true,
+  "claim": "The dual JSX system supports:\n- **Server JSX** (`./jsx/*`): Server-side rendering and streaming [jsr.json:32-35]().\n- **DOM JSX** (`./jsx/dom/*`): Client-side rendering with hooks and virtual DOM reconciliation ",
+  "inline": true
+ },
+ {
+  "page": "Hono Application Class and HonoBase",
+  "path": "src/hono-base.ts",
+  "start": 86,
+  "end": 86,
+  "link": "",
+  "ok": true,
+  "claim": "iption |\n|--------|------|---------|-------------|\n| `strict` | `boolean` | `true` | Whether to distinguish trailing slashes (`/hello` vs `/hello/`) [src/hono-base.ts:54]() |\n| `router` | `Router<[H, RouterRoute]>` | `SmartRouter` (Hono only) | Router implementation to use [src/hono-base.ts:65]() |\n| `getPath` | `GetPath<E>` | `getPath` or `getPathNoStrict` | Function to extract path from request ",
+  "inline": true
+ },
+ {
+  "page": "Concurrent Rendering Features",
+  "path": "src/jsx/hooks/index.ts",
+  "start": 200,
+  "end": 200,
+  "link": "",
+  "ok": true,
+  "claim": "The function sets the global `updateHook` variable, which is captured by `useState` update functions and passed to the `update()` function ",
+  "inline": true
+ },
+ {
+  "page": "DOM Rendering and Virtual DOM Reconciliation",
+  "path": "src/jsx/dom/client.ts",
+  "start": 76,
+  "end": 84,
+  "link": "",
+  "ok": true,
+  "claim": "- `createRoot(element)`: Returns a `Root` object with `render()` and `unmount()` methods [src/jsx/dom/client.ts:37-65]().\n- `hydrateRoot(element, reactNode)`: Equivalent to `render` in Hono's implementation, it initializes the root and immediately renders the node ",
+  "inline": true
+ },
+ {
+  "page": "Core Framework",
+  "path": "src/request.ts",
+  "start": 36,
+  "end": 80,
+  "link": "",
+  "ok": true,
+  "claim": "ub-page | Component | Primary Source |\n|----------|-----------|-------------|\n| [Hono Application Class and HonoBase](#2.1) | `Hono` / `HonoBase` application class | [src/hono.ts:16-34](), [src/hono-base.ts:98-112]() |\n| [Context Object](#2.2) | `Context` class and response helpers | [src/context.ts:293-305]() |\n| [HonoRequest and Request Parsing](#2.3) | `HonoRequest` class and request parsing | ",
+  "inline": true
+ },
+ {
+  "page": "Validator Middleware System",
+  "path": "src/validator/validator.test.ts",
+  "start": 182,
+  "end": 204,
+  "link": "",
+  "ok": true,
+  "claim": "The JSON target uses a flexible regex pattern `jsonRegex` at [src/validator/validator.ts:24]() that matches standard `application/json`, JSON with charset parameters, and JSON subtypes like `application/merge-patch+json` or `application/vnd.api+json` ",
+  "inline": true
+ },
+ {
+  "page": "Hono Application Class and HonoBase",
+  "path": "src/hono-base.ts",
+  "start": 482,
+  "end": 491,
+  "link": "",
+  "ok": true,
+  "claim": "The `fetch()` method delegates to the internal `#dispatch()` method, passing the request, execution context, environment bindings, and the HTTP method ",
+  "inline": true
+ },
+ {
+  "page": "Static Site Generation and Streaming",
+  "path": "src/utils/stream.ts",
+  "start": 65,
+  "end": 67,
+  "link": "",
+  "ok": true,
+  "claim": "- `write(data)`: Writes a chunk of data (string or `Uint8Array`) to the stream [src/utils/stream.ts:48-58]().\n- `writeln(data)`: Writes a chunk followed by a newline [src/utils/stream.ts:60-63]().\n- `sleep(ms)`: A convenience method to pause execution in the streaming loop ",
+  "inline": true
+ },
+ {
+  "page": "Concurrent Rendering Features",
+  "path": "src/jsx/dom/render.ts",
+  "start": 82,
+  "end": 85,
+  "link": "",
+  "ok": true,
+  "claim": "The rendering system categorizes updates into priority levels using the `PendingType` enumeration stored in the `Context` array ",
+  "inline": true
+ },
+ {
+  "page": "Build System and Distribution",
+  "path": "build/build.ts",
+  "start": 81,
+  "end": 81,
+  "link": "",
+  "ok": true,
+  "claim": "| Path Pattern | Format | Purpose |\n|--------------|--------|---------|\n| `dist/*.js` | ESM | Top-level ES modules [build/build.ts:89]() |\n| `dist/middleware/**/*.js` | ESM | Middleware modules |\n| `dist/helper/**/*.js` | ESM | Helper utilities |\n| `dist/cjs/**/*.js` | CJS | CommonJS equivalents ",
+  "inline": true
+ },
+ {
+  "page": "WebSocket, Connection Info, and Other Helpers",
+  "path": "src/helper/factory/index.ts",
+  "start": 20,
+  "end": 213,
+  "link": "",
+  "ok": true,
+  "claim": "### Type Safety\nThe factory ensures that the `Env` (Bindings and Variables) defined at the factory level flows through all handlers in the chain [src/helper/factory/index.test.ts:41-65](). It supports up to 10 chained handlers with full type inference for input validation (json, query, param, etc.) and output types ",
+  "inline": true
+ },
+ {
+  "page": "HonoRequest and Request Parsing",
+  "path": "src/utils/body.ts",
+  "start": 211,
+  "end": 213,
+  "link": "",
+  "ok": true,
+  "claim": "#### Nested Value Handling\nWhen the `dot` option is enabled, `handleParsingNestedValues` [src/utils/body.ts:206-233]() recursively builds objects. It includes protection against prototype pollution by skipping keys containing `__proto__.` ",
+  "inline": true
+ },
+ {
+  "page": "URL and Path Processing Utilities",
+  "path": "src/utils/filepath.ts",
+  "start": 38,
+  "end": 40,
+  "link": "",
+  "ok": true,
+  "claim": "Normalizes file paths and prevents directory traversal attacks by checking for `..` segments ",
+  "inline": true
+ },
+ {
+  "page": "Build System and Distribution",
+  "path": "build/build.ts",
+  "start": 25,
+  "end": 26,
+  "link": "",
+  "ok": true,
+  "claim": "Hono provides a configuration for the JSR registry in `jsr.json`, mapping internal source files directly to public entry points [jsr.json:1-106](). The build system ensures these exports are valid by comparing `package.json` and `jsr.json` contents using `validateExports` ",
+  "inline": true
+ },
+ {
+  "page": "Glossary",
+  "path": "src/jsx/dom/render.ts",
+  "start": 80,
+  "end": 80,
+  "link": "",
+  "ok": true,
+  "claim": "KV) and Variables. | [src/types.ts:30-33]() |\n| **TypedResponse** | Typed Response | A Response object that carries type information about its body and status. | [src/types.ts:70-73]() |\n| **JSX** | JavaScript XML | Hono's built-in engine for rendering UI components. | [src/jsx/index.ts:1-10]() |\n| **VNode** | Virtual Node | An object representing a DOM element in Hono's JSX/DOM implementation. | ",
+  "inline": true
+ },
+ {
+  "page": "Hooks API",
+  "path": "src/jsx/hooks/index.ts",
+  "start": 195,
+  "end": 197,
+  "link": "",
+  "ok": true,
+  "claim": "**Hook Index Tracking**: Each functional component maintains a `hookIndex` at `node[DOM_STASH][0]` that increments with each hook call during the render phase [src/jsx/dom/render.ts:55-62](). This index determines which array slot stores that hook's data, ensuring consistent hook ordering across re-renders ",
+  "inline": true
+ },
+ {
+  "page": "Multi-Runtime Architecture and Web Standards",
+  "path": "README.md",
+  "start": 44,
+  "end": 44,
+  "link": "",
+  "ok": true,
+  "claim": "**Preset Differences**:\n- **`hono/quick`**: Optimized for performance using `SmartRouter` [package.json:63-67]().\n- **`hono/tiny`**: Uses `PatternRouter` for minimal footprint [package.json:58-62](), ",
+  "inline": true
+ },
+ {
+  "page": "URL and Path Processing Utilities",
+  "path": "src/utils/url.ts",
+  "start": 127,
+  "end": 127,
+  "link": "",
+  "ok": true,
+  "claim": "**Algorithm:**\n1. Locate the first `/` after the protocol [src/utils/url.ts:108]().\n2. Scan for `%` (37), `?` (63), or `#` (35) [src/utils/url.ts:110-132]().\n3. If `%` is found, it performs a `tryDecodeURI` on the slice ",
+  "inline": true
+ },
+ {
+  "page": "Multi-Runtime Architecture and Web Standards",
+  "path": "bun.lock",
+  "start": 9,
+  "end": 9,
+  "link": "",
+  "ok": true,
+  "claim": "----------|\n| Cloudflare Workers | `export default app` | No | Native Fetch [src/adapter/cloudflare-workers/index.ts:1-9]() |\n| Deno | `Deno.serve(app.fetch)` | Optional | Native Fetch [src/adapter/deno/index.ts:1-10]() |\n| Bun | `Bun.serve({ fetch: app.fetch })` | Optional | Native Fetch [src/adapter/bun/index.ts:1-12]() |\n| Node.js | Via `@hono/node-server` | Yes | Adapter [package.json:5-7](), ",
+  "inline": true
+ },
+ {
+  "page": "Static Site Generation and Streaming",
+  "path": "src/helper/streaming/sse.ts",
+  "start": 65,
+  "end": 67,
+  "link": "",
+  "ok": true,
+  "claim": "ream)` runs asynchronously within a try-catch block [src/helper/streaming/stream.ts:26-42]().\n3. **Piping**: Data written via `stream.write()` is pushed to the underlying writable stream via the `StreamingApi` writer [src/utils/stream.ts:48-58]().\n4. **Termination**: The stream is closed in the `finally` block of the execution wrapper via `stream.close()` [src/helper/streaming/stream.ts:39-41](), ",
+  "inline": true
+ },
+ {
+  "page": "Middleware Composition and Execution",
+  "path": "src/compose.test.ts",
+  "start": 22,
+  "end": 25,
+  "link": "",
+  "ok": true,
+  "claim": "1. **Pre-processing**: Code before `await next()` runs in the order the middleware was registered [src/compose.test.ts:17-20]().\n2. **Downstream**: The chain continues until the final handler or a middleware returns a `Response` without calling `next()`.\n3. **Post-processing**: Code after `await next()` runs in reverse order as the stack unwinds ",
+  "inline": true
+ },
+ {
+  "page": "Client Architecture and Proxy System",
+  "path": "src/client/client.ts",
+  "start": 60,
+  "end": 62,
+  "link": "",
+  "ok": true,
+  "claim": "**Request Building Process:**\n-   **Query Parameters**: Uses `buildSearchParams` to serialize the query object ",
+  "inline": true
+ },
+ {
+  "page": "DOM Rendering and Virtual DOM Reconciliation",
+  "path": "src/jsx/hooks/index.ts",
+  "start": 188,
+  "end": 192,
+  "link": "",
+  "ok": true,
+  "claim": "**Hook Integration**: The `buildDataStack` global variable stores the current `[context, node]` pair [src/jsx/dom/render.ts:106-106](), which hooks access via `buildDataStack.at(-1)` to retrieve their storage location ",
+  "inline": true
+ },
+ {
+  "page": "Type System and End-to-End Type Safety",
+  "path": "src/types.ts",
+  "start": 30,
+  "end": 33,
+  "link": "",
+  "ok": true,
+  "claim": "- `Bindings`: Platform-specific resources like Cloudflare Bindings or environment variables [src/types.ts:26-26]().\n- `Variables`: User-defined state stored in `Context` and accessible via `c.get()` [src/types.ts:27-27]().\n- `Env`: A container for both `Bindings` and `Variables` ",
+  "inline": true
+ },
+ {
+  "page": "Cookie, HTML, and Content Helpers",
+  "path": "src/helper/css/index.ts",
+  "start": 206,
+  "end": 206,
+  "link": "",
+  "ok": true,
+  "claim": "a `<style>` block [src/helper/css/index.ts:192-203]().\n-   **Contextual Styling**: `createCssContext` [src/helper/css/index.ts:72-215]() allows for isolated style buckets, providing unique IDs for style elements.\n-   **DOM Integration**: Includes `createCssJsxDomObjects` [src/helper/css/index.ts:81]() for client-side rendering where styles are inserted directly into the DOM via the `DOM_RENDERER` ",
+  "inline": true
+ },
+ {
+  "page": "HonoRequest and Request Parsing",
+  "path": "src/request.ts",
+  "start": 126,
+  "end": 128,
+  "link": "",
+  "ok": true,
+  "claim": "Hono uses two strategies for parameters depending on the router:\n1.  **Direct Value**: The parameter value is stored directly in the match result map [src/request.ts:107-107]().\n2.  **ParamStash**: The match result contains an index, and the value is retrieved from a separate stash array ",
+  "inline": true
+ },
+ {
+  "page": "Glossary",
+  "path": "src/context.ts",
+  "start": 747,
+  "end": 756,
+  "link": "",
+  "ok": true,
+  "claim": "*   **Implementation**: Defined as the `Context` class in [src/context.ts:446-455]().\n*   **Key Methods**:\n    *   `c.text()`: Returns a plain text response [src/context.ts:586-595]().\n    *   `c.json()`: Returns a JSON response with appropriate headers [src/context.ts:607-624]().\n    *   `c.set()` / `c.get()`: Manages state within the lifecycle of a single request ",
+  "inline": true
+ },
+ {
+  "page": "Type Inference and Response Handling",
+  "path": "src/utils/types.ts",
+  "start": 73,
+  "end": 74,
+  "link": "",
+  "ok": true,
+  "claim": "| Input Type | `JSONParsed` Output | Behavior |\n| :--- | :--- | :--- |\n| `number`, `string`, `boolean`, `null` | Same | Primitives pass through unchanged [src/utils/types.ts:61-62]() |\n| `undefined`, `symbol`, `function` | `never` | Non-serializable values are removed from objects ",
+  "inline": true
+ }
+]

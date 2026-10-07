@@ -1,0 +1,31 @@
+{
+ "repo": "ky",
+ "system": "devin",
+ "pages": 35,
+ "words": 41232,
+ "citations": 1259,
+ "citations_valid": 1225,
+ "citation_validity": 0.973,
+ "unique_files_cited": 55,
+ "citations_per_1k_words": 30.53,
+ "inline_citations": 584,
+ "mermaid_diagrams": 122,
+ "links_pinned_to_commit": 0,
+ "invalid_examples": [
+  "source/core/constants.js:4-4 (missing file)",
+  ".github/workflows/main.yml:1-25",
+  "source/core/ResponsePromise.ts:13-34 (missing file)",
+  "source/core/ResponsePromise.ts:13-34 (missing file)",
+  "source/utils/body.ts:78-121",
+  "source/types/standard-schema.ts:27-49",
+  "source/types/ResponsePromise.ts:1-70",
+  "source/types/response.ts:1-4",
+  "source/types/response.ts:1-4",
+  "source/utils/timeout.ts:1-35",
+  "source/test/hooks.ts:815-847 (missing file)",
+  "source/test/hooks.ts:263-281 (missing file)",
+  "source/test/hooks.ts:236-281 (missing file)",
+  "\"Ky.create()<br/>[Ky.ts:143-143",
+  "Ky.ts:154-160 (missing file)"
+ ]
+}

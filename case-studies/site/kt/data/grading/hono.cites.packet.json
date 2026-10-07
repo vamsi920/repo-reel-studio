@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "claim": "tus?)` | Creates a redirect response with a `Location` header. |\n| `header(name, value, options?)` | Sets a response header. |\n| `status(code)` | Sets the HTTP status code for the response. |\n| `set(key, value)` | Stores a value in the context for later use. |\n| `get(key)` | Retrieves a value from the context. |\n| `notFound()` | Invokes the not-found handler to generate a 404 response. |\nSources:",
+  "cited": "src/context.ts:366-779"
+ },
+ {
+  "n": 1,
+  "claim": "k` | `BeforeRequestHook \\| ...[]` | `undefined` | **(Deprecated)** Hook to modify requests. Use plugins instead. |\n| `afterResponseHook` | `AfterResponseHook \\| ...[]` | `undefined` | **(Deprecated)** Hook to modify responses. Use plugins instead. |\n| `afterGenerateHook` | `AfterGenerateHook \\| ...[]` | `undefined` | **(Deprecated)** Hook executed after generation. Use plugins instead. |\nSources:",
+  "cited": "src/helper/ssg/ssg.ts:181-198"
+ },
+ {
+  "n": 2,
+  "claim": "Hono --|> HonoBase\n```\n*A diagram illustrating the inheritance relationship between `Hono` and `HonoBase`.*\nSources:",
+  "cited": "src/hono.ts:16-20"
+ },
+ {
+  "n": 3,
+  "claim": "**Implementation Logic:**\n1. **Origin Matching:** Uses `findAllowOrigin` to determine if `c.req.header('origin')` matches the configured `origin` (string, array, or function) [src/middleware/cors/index.ts:72-84]().\n2. **Preflight Handling:** If the method is `OPTIONS`, it sets `Access-Control-Allow-Methods` and `Access-Control-Allow-Headers`, then returns a `204 No Content` response immediately",
+  "cited": "src/middleware/cors/index.ts:114-147"
+ },
+ {
+  "n": 4,
+  "claim": "#### Key Dispatch Logic:\n1. **Multiple Call Protection**: Tracks `index` to ensure `next()` is not called more than once within a single handler",
+  "cited": "src/compose.ts:33-36"
+ },
+ {
+  "n": 5,
+  "claim": "Hono --|> HonoBase\n```\n*A diagram illustrating the inheritance relationship between `Hono` and `HonoBase`.*\nSources: [src/hono.ts:16-20](https://github.com/honojs/hono/blob/HEAD/src/hono.ts#L16-L20),",
+  "cited": "src/hono-base.ts:98-103"
+ },
+ {
+  "n": 6,
+  "claim": "```mermaid\ngraph TD\n    A[TrieRouter.add(method, path, handler)] --> B{Path has optional parameters?};\n    B -- Yes --> C[\"checkOptionalParameter(path)\"];\n    C --> D[Loop through each path variation];\n    D --> E[\"this.#node.insert(method, variation, handler)\"];\n    E --> D;\n    B -- No --> F[\"this.#node.insert(method, path, handler)\"];\n    F --> G[End];\n    D -- End of loop --> G;\n```\n*Sources:",
+  "cited": "src/router/trie-router/router.ts:13-23"
+ },
+ {
+  "n": 7,
+  "claim": "### Static Site Generation (SSG) Implementation\nThe SSG helper uses `toSSG` to crawl an application's routes [src/helper/ssg/ssg.ts:181-198](). It filters for `GET` handlers",
+  "cited": "src/helper/ssg/utils.ts:61-71"
+ },
+ {
+  "n": 8,
+  "claim": "`.` separator [src/utils/cookie.ts:44-49]().\n3.  **Prefix Options**: The helper supports `__Host-` and `__Secure-` prefixes [src/utils/cookie.ts:29](). Using these prefixes triggers strict validation in the internal `_serialize` function:\n    -   `__Secure-` requires the `secure` attribute [src/utils/cookie.ts:174-177]().\n    -   `__Host-` requires `secure`, `path: '/'`, and no `domain` attribute",
+  "cited": "src/utils/cookie.ts:179-192"
+ },
+ {
+  "n": 9,
+  "claim": "| Field | Type | Purpose |\n|-------|------|---------|\n| `t` | `string` | Text content [src/jsx/dom/render.ts:67-67]() |\n| `d` | `boolean` | Dirty flag - true if text changed",
+  "cited": "src/jsx/dom/render.ts:68-68"
+ },
+ {
+  "n": 10,
+  "claim": "e.\n    Sources: [src/helper/ssg/middleware.ts:63-70](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/middleware.ts#L63-L70)\n-   **`onlySSG()`**: This middleware makes a route *only* available during the SSG build. If the request is not from an SSG context, it returns a 404 response. This is useful for pages that should only exist as static files and not be served dynamically.\n    Sources:",
+  "cited": "src/helper/ssg/middleware.ts:77-83"
+ },
+ {
+  "n": 11,
+  "claim": "/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. | [package.json:289-313](https://github.com/honojs/hono/blob/HEAD/package.json#L289-L313), [README.md:81](https://github.com/honojs/hono/blob/HEAD/README.md#L81) |\n| `hono/middleware/*` | Various built-in middleware such as `basic-auth`, `cors`, `jwt`, and `logger`. |",
+  "cited": "package.json:74-268"
+ },
+ {
+  "n": 12,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. | [package.json:39-43](https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63),",
+  "cited": "README.md:44-44"
+ },
+ {
+  "n": 13,
+  "claim": "| Method | Return type behavior |\n|---|---|\n| `.json()` | Returns `Promise<T>` when `F` is `'json'`; `Promise<never>` when `F` is `'text'` [src/client/types.ts:149]() |\n| `.text()` | Returns `Promise<T>` when `F` is `'text'` and `T extends string`",
+  "cited": "src/client/types.ts:150-150"
+ },
+ {
+  "n": 14,
+  "claim": "*Sources: [src/client/client.test.ts:923-975](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L923-L975),",
+  "cited": "src/client/client.test.ts:1101-1121"
+ },
+ {
+  "n": 15,
+  "claim": "**Sources:** [src/helper/ssg/ssg.ts:1-225](), [src/helper/ssg/middleware.ts:43-49](),",
+  "cited": "src/helper/ssg/utils.ts:50-71"
+ },
+ {
+  "n": 16,
+  "claim": "b/HEAD/package.json#L104-L108), [package.json:269-278](https://github.com/honojs/hono/blob/HEAD/package.json#L269-L278) |\n| `hono/adapter/*` | Adapters for specific JavaScript runtimes like Cloudflare, Deno, and AWS Lambda. | [package.json:344-388](https://github.com/honojs/hono/blob/HEAD/package.json#L344-L388) |\n| `hono/jsx` | A built-in JSX runtime for server-side rendering of UI components. |",
+  "cited": "package.json:154-173"
+ },
+ {
+  "n": 17,
+  "claim": "ok to modify responses. Use plugins instead. |\n| `afterGenerateHook` | `AfterGenerateHook \\| ...[]` | `undefined` | **(Deprecated)** Hook executed after generation. Use plugins instead. |\nSources: [src/helper/ssg/ssg.ts:181-198](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/ssg.ts#L181-L198), [src/helper/ssg/ssg.ts:17](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/ssg.ts#L17),",
+  "cited": "src/helper/ssg/ssg.ts:27-27"
+ },
+ {
+  "n": 18,
+  "claim": "-   **`disableSSG()`**: This middleware prevents a route from being included in the SSG build. If `isSSGContext` is true, it returns a 404 response with a special header (`x-hono-disable-ssg`), signaling the generator to skip this route.\n    Sources:",
+  "cited": "src/helper/ssg/middleware.ts:63-70"
+ },
+ {
+  "n": 19,
+  "claim": "The `proxy` helper [src/helper/proxy/index.ts:160]() implements RFC compliance by removing `hopByHopHeaders`",
+  "cited": "src/helper/proxy/index.ts:10-19"
+ },
+ {
+  "n": 20,
+  "claim": "it('Should return 200 Response', async () => {\n  const req = new Request('http://localhost/a/foo?q=bar')\n  const res = await app.request(req)\n  expect(res.status).toBe(200)\n  expect(await res.text()).toBe('Hello Bun!')\n  expect(res.headers.get('x-param')).toBe('foo')\n  expect(res.headers.get('x-query')).toBe('bar')\n})\n```\n*Sources:",
+  "cited": "runtime-tests/bun/index.test.tsx:28-42"
+ },
+ {
+  "n": 21,
+  "claim": "`ClientResponse` is the interface returned by all `hc` client method calls. It extends the Web standard `Response` interface with typed `json()` and `text()` methods that return correctly typed promises.",
+  "cited": "src/client/types.ts:128-154"
+ },
+ {
+  "n": 22,
+  "claim": "- **`tsconfig.build.json`**: Configures the production build, targeting `ES2020` and outputting to `dist/types/` [tsconfig.build.json:4-6](). It excludes all test files [tsconfig.build.json:14-17]().\n- **`tsconfig.json`**: Acts as a solution-style config using project references to link build, spec, and runtime test configurations",
+  "cited": "tsconfig.json:1-14"
+ },
+ {
+  "n": 23,
+  "claim": "inimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), [README.md:44](https://github.com/honojs/hono/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. | [package.json:289-313](https://github.com/honojs/hono/blob/HEAD/package.json#L289-L313),",
+  "cited": "README.md:81-81"
+ },
+ {
+  "n": 24,
+  "claim": "**Sources:** [src/context.ts:31-52](), [src/context.ts:315](),",
+  "cited": "src/context.ts:377-397"
+ },
+ {
+  "n": 25,
+  "claim": "--|\n| `username` | `string` | Conditional | Username for authentication |\n| `password` | `string` | Conditional | Password for authentication |\n| `verifyUser` | `Function` | Conditional | Custom credential verification function |\n| `onAuthSuccess` | `Function` | No | Callback executed on successful authentication |\n| `invalidUserMessage`| `string \\| object \\| function` | No | Custom error message",
+  "cited": "src/middleware/basic-auth/index.ts:20-27"
+ },
+ {
+  "n": 26,
+  "claim": "----------------|---------------|\n| Cloudflare Workers | `export default app` | No | Native Fetch [src/adapter/cloudflare-workers/index.ts:1-9]() |\n| Deno | `Deno.serve(app.fetch)` | Optional | Native Fetch [src/adapter/deno/index.ts:1-10]() |\n| Bun | `Bun.serve({ fetch: app.fetch })` | Optional | Native Fetch [src/adapter/bun/index.ts:1-12]() |\n| Node.js | Via `@hono/node-server` | Yes | Adapter",
+  "cited": "package.json:5-7"
+ },
+ {
+  "n": 27,
+  "claim": "To maintain a clean public API and reduce declaration file size, Hono uses `oxc-parser` to identify and remove `#private` class members from generated `.d.ts` files. The function `removePrivateFields` processes the AST to find `PrivateIdentifier` keys in `PropertyDefinition` nodes and replaces them with whitespace to preserve source mapping offsets",
+  "cited": "build/remove-private-fields.ts:27-53"
+ },
+ {
+  "n": 28,
+  "claim": "honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), [README.md:44](https://github.com/honojs/hono/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. |",
+  "cited": "package.json:289-313"
+ },
+ {
+  "n": 29,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. |",
+  "cited": "package.json:39-43"
+ },
+ {
+  "n": 30,
+  "claim": "many patterns into one RegExp, some path patterns are unsupported:\n- **Ambiguous Routes**: Multiple dynamic labels at the same level with different names (e.g., `/:user/entries` and `/entry/:name` if they conflict) [src/router/reg-exp-router/router.test.ts:44-52]().\n- **Complex Capturing Groups**: Nested capturing groups within custom label regexes that would interfere with the internal indexing",
+  "cited": "src/router/reg-exp-router/node.ts:88-91"
+ },
+ {
+  "n": 31,
+  "claim": "Sources: [src/adapter/cloudflare-workers/index.ts:6-8](https://github.com/honojs/hono/blob/HEAD/src/adapter/cloudflare-workers/index.ts#L6-L8), [src/adapter/deno/index.ts:6-9](https://github.com/honojs/hono/blob/HEAD/src/adapter/deno/index.ts#L6-L9), [src/adapter/bun/index.ts:6-11](https://github.com/honojs/hono/blob/HEAD/src/adapter/bun/index.ts#L6-L11),",
+  "cited": "src/adapter/aws-lambda/index.ts:6-8"
+ },
+ {
+  "n": 32,
+  "claim": "**Sources:** [src/adapter/bun/server.ts:13-14](), [src/adapter/bun/conninfo.ts:10](), [src/adapter/aws-lambda/handler.ts:123](), [src/helper/conninfo/types.ts:35](),",
+  "cited": "src/adapter/aws-lambda/index.ts:7-7"
+ },
+ {
+  "n": 33,
+  "claim": "Sources: [src/adapter/cloudflare-workers/index.ts:6-8](https://github.com/honojs/hono/blob/HEAD/src/adapter/cloudflare-workers/index.ts#L6-L8), [src/adapter/deno/index.ts:6-9](https://github.com/honojs/hono/blob/HEAD/src/adapter/deno/index.ts#L6-L9),",
+  "cited": "src/adapter/bun/index.ts:6-11"
+ },
+ {
+  "n": 34,
+  "claim": "js/hono/blob/HEAD/package.json#L289-L313), [README.md:81](https://github.com/honojs/hono/blob/HEAD/README.md#L81) |\n| `hono/middleware/*` | Various built-in middleware such as `basic-auth`, `cors`, `jwt`, and `logger`. | [package.json:74-268](https://github.com/honojs/hono/blob/HEAD/package.json#L74-L268) |\n| `hono/helper/*` | Helper utilities for tasks like cookie handling, streaming, and SSG. |",
+  "cited": "package.json:104-108"
+ },
+ {
+  "n": 35,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. | [package.json:39-43](https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. |",
+  "cited": "package.json:59-63"
+ },
+ {
+  "n": 36,
+  "claim": "F: Response (404 Not Found)\n    F->>F: Extract ssgParams from request\n    loop For each param\n        F->>F: Build URL e.g., /post/1\n        F->>+A: app.request('/post/1', { [SSG_CONTEXT]: true })\n        A-->>-F: Response with content\n    end\n    F-->>-T: Yield content promises\n```\nSources: [src/helper/ssg/ssg.ts:225-301](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/ssg.ts#L225-L301),",
+  "cited": "src/helper/ssg/middleware.ts:43-49"
+ },
+ {
+  "n": 37,
+  "claim": "/package.json#L74-L268) |\n| `hono/helper/*` | Helper utilities for tasks like cookie handling, streaming, and SSG. | [package.json:104-108](https://github.com/honojs/hono/blob/HEAD/package.json#L104-L108), [package.json:269-278](https://github.com/honojs/hono/blob/HEAD/package.json#L269-L278) |\n| `hono/adapter/*` | Adapters for specific JavaScript runtimes like Cloudflare, Deno, and AWS Lambda. |",
+  "cited": "package.json:344-388"
+ },
+ {
+  "n": 38,
+  "claim": "**Sources:** [src/router.ts:21-103](), [src/router/smart-router/router.ts:4-70](),",
+  "cited": "src/router/trie-router/router.ts:5-28"
+ },
+ {
+  "n": 39,
+  "claim": "A watch mode is available for development, which uses `esbuild` contexts to rebuild on file changes [build/build.ts:18](),",
+  "cited": "build/build.ts:94-101"
+ },
+ {
+  "n": 40,
+  "claim": "// Test for 200 OK\nit('Should authorize, return 200 Response', async () => {\n  const credential = 'aG9uby11c2VyLWE6aG9uby1wYXNzd29yZC1h' // base64('hono-user-a:hono-password-a')\n  const req = new Request('http://localhost/auth/a')\n  req.headers.set('Authorization', `Basic ${credential}`)\n  const res = await app.request(req)\n  expect(res.status).toBe(200)\n})\n```\n*Sources:",
+  "cited": "runtime-tests/bun/index.test.tsx:58-86"
+ },
+ {
+  "n": 41,
+  "claim": "/ssg/ssg.ts:368-470](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/ssg.ts#L368-L470)\n-   **`fetchRoutesContent`**: A generator function that identifies all static-generatable routes. For dynamic routes, it first fetches the `ssgParams` defined in the middleware, then generates content for each parameter set. It utilizes a concurrency pool to manage requests to the Hono app.\n    Sources:",
+  "cited": "src/helper/ssg/ssg.ts:205-302"
+ },
+ {
+  "n": 42,
+  "claim": "1. **Clean**: Remove existing `dist` directory via the `remove-dist` script [package.json:36]().\n2. **Compile**: Execute `build.ts` which uses `esbuild` to generate ESM and CJS bundles [build/build.ts:85-92](), [build/build.ts:78-83]().\n3. **Type Generation**: Run `tsc` with `--emitDeclarationOnly` using `tsconfig.build.json` as the project configuration [build/build.ts:106-109](),",
+  "cited": "tsconfig.build.json:1-18"
+ },
+ {
+  "n": 43,
+  "claim": "Sources: [src/helper/ssg/middleware.ts:5](https://github.com/honojs/hono/blob/HEAD/src/helper/ssg/middleware.ts#L5),",
+  "cited": "src/helper/ssg/middleware.ts:56-56"
+ },
+ {
+  "n": 44,
+  "claim": "quest` reconstructs the URL using the `Host` header or the `distributionDomainName` [src/adapter/lambda-edge/handler.ts:162-193]().\n- **Header Conversion**: `convertHeaders` transforms standard `Headers` into the multi-value array format required by CloudFront [src/adapter/lambda-edge/handler.ts:105-114]().\n- **Body Handling**: `createBody` handles base64-encoded request bodies sent by CloudFront",
+  "cited": "src/adapter/lambda-edge/handler.ts:195-209"
+ },
+ {
+  "n": 45,
+  "claim": "Sources: [src/adapter/cloudflare-workers/index.ts:6-8](https://github.com/honojs/hono/blob/HEAD/src/adapter/cloudflare-workers/index.ts#L6-L8),",
+  "cited": "src/adapter/deno/index.ts:6-9"
+ },
+ {
+  "n": 46,
+  "claim": "*Sources: [src/client/client.ts:135](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L135), [src/client/client.test.ts:853-888](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L853-L888), [src/client/client.test.ts:1198-1308](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1198-L1308),",
+  "cited": "src/client/client.test.ts:1704-1782"
+ },
+ {
+  "n": 47,
+  "claim": "**Implementation:**\n- Uses `crypto.subtle.digest` (defaulting to SHA-1) to hash the response body [src/middleware/etag/index.ts:41-54]().\n- Compares calculated ETag against the `If-None-Match` request header [src/middleware/etag/index.ts:107]().\n- If matched, returns a `304` response and retains specific headers defined in `RETAINED_304_HEADERS`",
+  "cited": "src/middleware/etag/index.ts:108-119"
+ },
+ {
+  "n": 48,
+  "claim": "*Sources: [src/client/client.ts:135](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L135), [src/client/client.test.ts:853-888](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L853-L888),",
+  "cited": "src/client/client.test.ts:1198-1308"
+ },
+ {
+  "n": 49,
+  "claim": "| Component / Symbol | File | Role |\n|---|---|---|\n| `childrenToString` | `src/jsx/components.ts` | Flattens and converts children to strings, awaiting promises [src/jsx/components.ts:14-30]() |\n| `resolveCallback` | `src/utils/html.ts` | Resolves escaped HTML callbacks during streaming",
+  "cited": "src/jsx/streaming.ts:7-7"
+ },
+ {
+  "n": 50,
+  "claim": "ated when accessed via the `Context` [src/context.ts:356-359]().\n3.  **Smart Routing**: Uses a `SmartRouter` to choose the most efficient routing algorithm (e.g., `RegExpRouter` or `TrieRouter`) based on the route patterns registered [src/hono.ts:28-32]().\n4.  **Body Caching**: `HonoRequest` caches parsed bodies to prevent multiple expensive reads of the same request stream [src/request.ts:69](),",
+  "cited": "src/request.ts:220-239"
+ },
+ {
+  "n": 51,
+  "claim": "- **AWS Lambda**: Supports API Gateway v1/v2, ALB, or Lattice",
+  "cited": "src/adapter/aws-lambda/handler.ts:23-28"
+ },
+ {
+  "n": 52,
+  "claim": "top of its values stack [src/jsx/context.ts:100-107]() |\n| `globalContexts` | exported array | Tracks all contexts used during the current render pass [src/jsx/context.ts:13]() |\n| `Context<T>.values` | array | Stack of values; `values.at(-1)` is the current value [src/jsx/context.ts:8-11]() |\n| `StreamingContext` | `Context` instance | Built-in context for passing CSP nonces to streaming scripts",
+  "cited": "src/jsx/streaming.ts:30-32"
+ },
+ {
+  "n": 53,
+  "claim": "- `Env`: Defines `Bindings` (infrastructure) and `Variables` (context-local storage) [src/types.ts:30-33]().\n- `Schema`: Maps paths and methods to input/output types",
+  "cited": "src/types.ts:48-50"
+ },
+ {
+  "n": 54,
+  "claim": "1-18]().\n4. **Post-Processing**: Remove private class fields from `.d.ts` files using `removePrivateFields` to minimize API surface [build/build.ts:114](), [build/remove-private-fields.ts:5-25]().\n5. **Package Markers**: Copy a specific CommonJS package configuration to `dist/cjs/package.json` and `dist/types/package.json` via the `copy:package.cjs.json` script to ensure correct module resolution",
+  "cited": "package.json:29-29"
+ },
+ {
+  "n": 55,
+  "claim": "nts**: Patterns like `:id{[0-9]+}` use `RegExp` objects. The router calculates `partOffsets` to allow regex to match against the `substring` of the remaining path [src/router/trie-router/node.ts:175-185]().\n- **Multi-segment Regex**: If a regex match contains slashes (e.g., matching a file path), the router adjusts the `curNodesQueue` based on the `componentCount` (number of slashes in the match)",
+  "cited": "src/router/trie-router/node.ts:192-194"
+ },
+ {
+  "n": 56,
+  "claim": "```typescript\nexport interface SSGPlugin {\n  beforeRequestHook?: BeforeRequestHook | BeforeRequestHook[]\n  afterResponseHook?: AfterResponseHook | AfterResponseHook[]\n  afterGenerateHook?: AfterGenerateHook | AfterGenerateHook[]\n}\n```\nSources:",
+  "cited": "src/helper/ssg/ssg.ts:175-179"
+ },
+ {
+  "n": 57,
+  "claim": "-   **`toSSG`**: The main orchestrator. It initializes hooks, calls `fetchRoutesContent` to get route data, uses `saveContentToFile` to write files, and manages the overall process including error handling.\n    Sources:",
+  "cited": "src/helper/ssg/ssg.ts:368-470"
+ },
+ {
+  "n": 58,
+  "claim": "ve path regardless of whether the `baseUrl` has trailing slashes or additional pathname segments [src/client/types.test.ts:129-145]().\n- **Protocol Translation**: Tests `replaceUrlProtocol` for both standard and secure protocol switching [src/client/utils.test.ts:81-105]().\n- **BigInt Serialization**: The client handles `BigInt` through custom `.toJSON()` methods or standard JSON parsing failures",
+  "cited": "src/client/client.test.ts:21-29"
+ },
+ {
+  "n": 59,
+  "claim": "| Member | Description |\n|--------|-------------|\n| `c.req` | Lazy-initialized `HonoRequest` wrapper [src/context.ts:356-359]() |\n| `c.text()`, `c.json()`, `c.html()` | Helpers for typed responses [src/context.ts:156-225]() |\n| `c.set()`, `c.get()` | Variable management for middleware",
+  "cited": "src/context.ts:95-108"
+ }
+]

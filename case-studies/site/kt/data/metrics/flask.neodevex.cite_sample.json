@@ -1,0 +1,72 @@
+[
+ {
+  "page": "Testing Flask Applications",
+  "path": "tests/conftest.py",
+  "start": 44,
+  "end": 51,
+  "link": "https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L44-L51",
+  "ok": true,
+  "claim": "| Fixture | Description | Source |\n|---|---|---|\n| `app` | Creates a new Flask application instance for testing, with `TESTING=True` and a `SECRET_KEY`. | ",
+  "inline": true
+ },
+ {
+  "page": "Architecture Overview (Diagram Recommended)",
+  "path": "src/flask/app.py",
+  "start": 109,
+  "end": 1625,
+  "link": "https://github.com/pallets/flask/blob/HEAD/src/flask/app.py#L109-L1625",
+  "ok": true,
+  "claim": "_map`, blueprints, and the Jinja2 environment. It does not handle I/O. Sources: [src/flask/sansio/app.py:59-1010](https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L59-L1010)\n*   **Flask**: The main application class that developers instantiate. It inherits all the setup logic from `App` and adds WSGI-specific methods like `wsgi_app` and `run` for the development server. Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Flask Applications",
+  "path": "tests/conftest.py",
+  "start": 54,
+  "end": 58,
+  "link": "https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L54-L58",
+  "ok": true,
+  "claim": "| Fixture | Description | Source |\n|---|---|---|\n| `app` | Creates a new Flask application instance for testing, with `TESTING=True` and a `SECRET_KEY`. | [tests/conftest.py:44-51](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L44-L51) |\n| `app_ctx` | Pushes and yields an application context for the test `app`. | ",
+  "inline": true
+ },
+ {
+  "page": "Architecture Overview (Diagram Recommended)",
+  "path": "src/flask/sansio/app.py",
+  "start": 59,
+  "end": 1010,
+  "link": "https://github.com/pallets/flask/blob/HEAD/src/flask/sansio/app.py#L59-L1010",
+  "ok": true,
+  "claim": "    Scaffold <|-- App\n    App <|-- Flask\n```\n*   **Scaffold**: Provides the basic functionality for routing and registering callbacks (e.g., `before_request`, `after_request`). Both `App` and `Blueprint` are scaffolds.\n*   **App**: The Sans-IO application class. It manages configuration, URL rules via a `url_map`, blueprints, and the Jinja2 environment. It does not handle I/O. Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Flask Applications",
+  "path": "tests/conftest.py",
+  "start": 60,
+  "end": 64,
+  "link": "https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L60-L64",
+  "ok": true,
+  "claim": "esting, with `TESTING=True` and a `SECRET_KEY`. | [tests/conftest.py:44-51](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L44-L51) |\n| `app_ctx` | Pushes and yields an application context for the test `app`. | [tests/conftest.py:54-58](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L54-L58) |\n| `req_ctx` | Pushes and yields a test request context for the test `app`. | ",
+  "inline": true
+ },
+ {
+  "page": "Testing Flask Applications",
+  "path": "tests/conftest.py",
+  "start": 84,
+  "end": 97,
+  "link": "https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L84-L97",
+  "ok": true,
+  "claim": "://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L60-L64) |\n| `client` | Returns a `FlaskClient` instance for the test `app`. | [tests/conftest.py:66-69](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L66-L69) |\n| `leak_detector` | An `autouse` fixture that runs after each test to ensure no application contexts were left on the stack, preventing state leakage between tests. | ",
+  "inline": true
+ },
+ {
+  "page": "Testing Flask Applications",
+  "path": "tests/conftest.py",
+  "start": 66,
+  "end": 69,
+  "link": "https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L66-L69",
+  "ok": true,
+  "claim": "es and yields an application context for the test `app`. | [tests/conftest.py:54-58](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L54-L58) |\n| `req_ctx` | Pushes and yields a test request context for the test `app`. | [tests/conftest.py:60-64](https://github.com/pallets/flask/blob/HEAD/tests/conftest.py#L60-L64) |\n| `client` | Returns a `FlaskClient` instance for the test `app`. | ",
+  "inline": true
+ }
+]

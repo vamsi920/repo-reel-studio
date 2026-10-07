@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "verdict": "unsupported",
+  "note": "Cited lines are onDownloadProgress streaming, not afterResponse hook response replacement"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "TimeoutError class definition extending KyError"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "Readme shows json<User>() generic typing"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "Sibling token-refresh afterResponse test"
+ },
+ {
+  "n": 4,
+  "verdict": "partial",
+  "note": "Only Standard Schema type exports; SchemaValidationError export is line 73"
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "Test shows jitter skipped with Retry-After"
+ },
+ {
+  "n": 6,
+  "verdict": "supported",
+  "note": "beforeRequest hook execution matches readme auth-header usage"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "beforeRetry hook loop implementation"
+ },
+ {
+  "n": 8,
+  "verdict": "partial",
+  "note": "Stream support check; unclear relation to cited sibling lines"
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "create uses only newDefaults, no parent defaults"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "Error class and type-guard exports"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "shouldRetry implementation"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "AfterResponseState fields incl. retryCount"
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "stop symbol documented for beforeRetry"
+ },
+ {
+  "n": 14,
+  "verdict": "supported",
+  "note": "throwHttpErrors type/default"
+ },
+ {
+  "n": 15,
+  "verdict": "supported",
+  "note": "Custom fetch test"
+ },
+ {
+  "n": 16,
+  "verdict": "unsupported",
+  "note": "Blank line; nothing about ky.extend"
+ },
+ {
+  "n": 17,
+  "verdict": "supported",
+  "note": "fetch option default"
+ },
+ {
+  "n": 18,
+  "verdict": "partial",
+  "note": "Only express import in browser test; mock server usage not shown"
+ },
+ {
+  "n": 19,
+  "verdict": "unsupported",
+  "note": "Lines cover prefix input handling, not JSON stringification"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "ky.retry doc for forced retries"
+ },
+ {
+  "n": 21,
+  "verdict": "partial",
+  "note": "Closing brace of method loop; method mapping is lines 14-16"
+ },
+ {
+  "n": 22,
+  "verdict": "supported",
+  "note": "Retry delay calculation"
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "Example shows parseJson context request/response"
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "createInstance with extend/create"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "getBodySize implementation"
+ },
+ {
+  "n": 26,
+  "verdict": "supported",
+  "note": "URLSearchParams toString byteLength"
+ },
+ {
+  "n": 27,
+  "verdict": "unsupported",
+  "note": "Line is supportsRequestStreams; requestMethods is line 39"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "RetryMarker converted to ForceRetryError"
+ },
+ {
+  "n": 29,
+  "verdict": "supported",
+  "note": "Token refresh afterResponse retry"
+ },
+ {
+  "n": 30,
+  "verdict": "partial",
+  "note": "Import only; does not show internal forced-retry role"
+ },
+ {
+  "n": 31,
+  "verdict": "supported",
+  "note": "extend deep-merge behavior"
+ },
+ {
+  "n": 32,
+  "verdict": "supported",
+  "note": "Ky class core"
+ },
+ {
+  "n": 33,
+  "verdict": "supported",
+  "note": "ky.create docs"
+ },
+ {
+  "n": 34,
+  "verdict": "partial",
+  "note": "Status code check shown; default codes list not in lines"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "parseRawBody returns text"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "Type guard exports from type-guards"
+ },
+ {
+  "n": 37,
+  "verdict": "supported",
+  "note": "no-unsafe-* rules off"
+ },
+ {
+  "n": 38,
+  "verdict": "supported",
+  "note": "Readme error classes section"
+ },
+ {
+  "n": 39,
+  "verdict": "supported",
+  "note": "Doc says returned Response skips retry"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "Ky class declaration"
+ },
+ {
+  "n": 41,
+  "verdict": "unsupported",
+  "note": "Lines are decorateResponse start, not cancel methods"
+ },
+ {
+  "n": 42,
+  "verdict": "supported",
+  "note": "Schema validation example"
+ },
+ {
+  "n": 43,
+  "verdict": "partial",
+  "note": "Option fields, not Options interface extends KyOptions/RequestInit"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "ResponsePromise type with body methods"
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "extend implementation"
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "totalTimeout throws TimeoutError before retry"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "Hook type exports"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "ky.retry readme"
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "totalTimeout precedence test"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "Custom fetch body test"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "KyError base class"
+ },
+ {
+  "n": 52,
+  "verdict": "supported",
+  "note": "undefined hook returns []"
+ },
+ {
+  "n": 53,
+  "verdict": "supported",
+  "note": "supportsAbortController check"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "beforeRequest runs once test"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "BeforeRequestState retryCount 0"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "ArrayBuffer byteLength"
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "ky.stop readme"
+ },
+ {
+  "n": 58,
+  "verdict": "supported",
+  "note": "Request flow implementation"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "onDownloadProgress readme"
+ }
+]

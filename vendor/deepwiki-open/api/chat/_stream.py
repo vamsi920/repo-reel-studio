@@ -13,6 +13,7 @@ from api.config import (
     OPENROUTER_API_KEY,
 )
 from api.logger import get_logger
+from api.usage import record_usage
 
 if TYPE_CHECKING:
     from ollama import ChatResponse
@@ -310,6 +311,7 @@ class GoogleGenerativeChatStreamer(ChatStreamer):
 
         genai.configure(api_key=GOOGLE_API_KEY)
 
+        self.model_name = model
         self.client = genai.GenerativeModel(
             model_name=model,
             generation_config=GenerationConfig(
@@ -326,7 +328,11 @@ class GoogleGenerativeChatStreamer(ChatStreamer):
 
     async def respond_stream(self, prompt: str) -> AsyncIterator[str]:
         response = await self.client.generate_content_async(prompt, stream=True)
+        usage = None
         async for chunk in response:
+            # Gemini reports cumulative usage on streamed chunks; the last
+            # one carries the final totals for the call.
+            usage = getattr(chunk, "usage_metadata", None) or usage
             # `chunk.text` is a property that RAISES (not just absent) when a
             # chunk has no valid Part -- a known Gemini streaming quirk, seen
             # even on a normal finish_reason. `hasattr` does not protect
@@ -341,6 +347,22 @@ class GoogleGenerativeChatStreamer(ChatStreamer):
                 continue
             if text:
                 yield text
+        if usage is not None:
+            prompt = getattr(usage, "prompt_token_count", 0) or 0
+            output = getattr(usage, "candidates_token_count", 0) or 0
+            # The legacy google.generativeai SDK has no thoughts_token_count
+            # field, but total_token_count still includes billed thinking
+            # tokens, so derive them from the remainder.
+            total = getattr(usage, "total_token_count", 0) or 0
+            thinking = getattr(usage, "thoughts_token_count", 0) or max(
+                0, total - prompt - output
+            )
+            record_usage(
+                self.model_name,
+                prompt_tokens=prompt,
+                output_tokens=output,
+                thinking_tokens=thinking,
+            )
 
 
 class AnthropicChatStreamer(ChatStreamer):

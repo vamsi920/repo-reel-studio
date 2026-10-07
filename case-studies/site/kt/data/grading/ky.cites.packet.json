@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "claim": "1.  **Hook throws** ([source/core/Ky.ts:222-226]()): Both cloned and original responses are canceled before rethrowing.\n2.  **Hook returns retry** ([source/core/Ky.ts:229-234]()): Both responses canceled before throwing `ForceRetryError`.\n3.  **Hook replaces response** (",
+  "cited": "source/core/Ky.ts:237-250"
+ },
+ {
+  "n": 1,
+  "claim": "**Sources:** [source/errors/KyError.ts:8-14](), [source/errors/HTTPError.ts:15-20](),",
+  "cited": "source/errors/TimeoutError.ts:7-15"
+ },
+ {
+  "n": 2,
+  "claim": "// user is of type User\nconst user = await ky('/api/user').json<User>();\n```\nSources:",
+  "cited": "readme.md:131-143"
+ },
+ {
+  "n": 3,
+  "claim": "Sources: [test/hooks.ts:3623-3677](https://github.com/sindresorhus/ky/blob/HEAD/test/hooks.ts#L3623-L3677),",
+  "cited": "test/hooks.ts:3679-3732"
+ },
+ {
+  "n": 4,
+  "claim": "try {\n\tconst user = await ky('/api/user').json(userSchema);\n\tconsole.log(user.name);\n} catch (error) {\n\tif (error instanceof SchemaValidationError) {\n\t\tconsole.error(error.issues);\n\t}\n}\n```\nSources: [readme.md:146-162](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L146-L162), [readme.md:1284-1304](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L1284-L1304),",
+  "cited": "source/index.ts:65-68"
+ },
+ {
+  "n": 5,
+  "claim": "Sources: [source/types/retry.ts:74-107](https://github.com/sindresorhus/ky/blob/HEAD/source/types/retry.ts#L74-L107), [source/core/Ky.ts:491-499](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L491-L499),",
+  "cited": "test/retry.ts:978-1014"
+ },
+ {
+  "n": 6,
+  "claim": "Sources: [readme.md:1691-1705](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L1691-L1705),",
+  "cited": "source/core/Ky.ts:768-784"
+ },
+ {
+  "n": 7,
+  "claim": "es: [readme.md:442-718](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L442-L718), [source/core/Ky.ts:144-149](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L144-L149), [source/core/Ky.ts:269-287](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L269-L287), [source/core/Ky.ts:767-842](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L767-L842),",
+  "cited": "source/core/Ky.ts:886-928"
+ },
+ {
+  "n": 8,
+  "claim": "**Sources:** [source/core/Ky.ts:223-226](), [source/core/Ky.ts:232-233](),",
+  "cited": "source/core/Ky.ts:242-247"
+ },
+ {
+  "n": 9,
+  "claim": "Key properties of the hierarchy:\n- `create()` breaks inheritance - creates a new branch",
+  "cited": "source/index.ts:19-19"
+ },
+ {
+  "n": 10,
+  "claim": "Sources: [readme.md:47](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L47), [readme.md:721-723](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L721-L723), [readme.md:1218-1342](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L1218-L1342),",
+  "cited": "source/index.ts:71-83"
+ },
+ {
+  "n": 11,
+  "claim": "Sources: [source/types/retry.ts:128-174](https://github.com/sindresorhus/ky/blob/HEAD/source/types/retry.ts#L128-L174),",
+  "cited": "source/core/Ky.ts:523-537"
+ },
+ {
+  "n": 12,
+  "claim": "|\n| `options`    | `NormalizedOptions` | The normalized, immutable `ky` options.                                        |\n| `response`   | `KyResponse`        | A clone of the received `Response` object.                                     |\n| `retryCount` | `number`            | The number of retries attempted. `0` for the initial request.                  |\nSources:",
+  "cited": "source/types/hooks.ts:73-84"
+ },
+ {
+  "n": 13,
+  "claim": "- **`stop`**: Returned by `beforeRetry` hooks to halt retries",
+  "cited": "source/core/constants.ts:66-66"
+ },
+ {
+  "n": 14,
+  "claim": "Sources: [readme.md:47](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L47),",
+  "cited": "readme.md:721-723"
+ },
+ {
+  "n": 15,
+  "claim": "Sources: [source/types/options.ts:14-14](), [source/types/options.ts:238-238](),",
+  "cited": "test/fetch.ts:10-16"
+ },
+ {
+  "n": 16,
+  "claim": "1. **Per-request options** - Passed directly to request methods like `ky.get()` [readme.md:170-175]()\n2. **Extended instance options** - Set via `ky.extend()`",
+  "cited": "readme.md:274-274"
+ },
+ {
+  "n": 17,
+  "claim": "Sources: [readme.md:850-876](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L850-L876),",
+  "cited": "source/core/Ky.ts:381-381"
+ },
+ {
+  "n": 18,
+  "claim": "|------|---------|\n| **XO** | Lints the codebase using opinionated rules defined in `package.json`. [package.json:73-89]() |\n| **AVA** | The test runner for Node.js environments. [package.json:90-98]() |\n| **Playwright** | Used in `test/browser.ts` to execute tests in Chromium, Firefox, and Webkit. [test/browser.ts:4-9]() |\n| **Express** | Used to create mock HTTP servers for integration testing.",
+  "cited": "test/browser.ts:3-3"
+ },
+ {
+  "n": 19,
+  "claim": "The constructor [source/core/Ky.ts:335-430]() performs initialization including:\n- Merging headers and hooks [source/core/Ky.ts:338-358]().\n- Constructing the final URL using `prefixUrl` [source/core/Ky.ts:364-374]().\n- Initializing the `AbortController` and merging signals [source/core/Ky.ts:376-380]().\n- Handling JSON body stringification",
+  "cited": "source/core/Ky.ts:387-390"
+ },
+ {
+  "n": 20,
+  "claim": "Retry behavior is configurable via `RetryOptions`. The `#calculateRetryDelay()` method [source/core/Ky.ts:499-571]() implements the retry decision logic, checking method eligibility, retry limits, status codes, and `Retry-After` headers. Ky also supports forced retries via `ky.retry()`",
+  "cited": "source/core/constants.ts:162-230"
+ },
+ {
+  "n": 21,
+  "claim": "y.post()` | Sets `method: 'post'` [source/index.ts:15]() |\n| `ky.put(url, options?)` | `ky.put()` | Sets `method: 'put'` [source/index.ts:15]() |\n| `ky.patch(url, options?)` | `ky.patch()` | Sets `method: 'patch'` [source/index.ts:16]() |\n| `ky.head(url, options?)` | `ky.head()` | Sets `method: 'head'` [source/index.ts:16]() |\n| `ky.delete(url, options?)` | `ky.delete()` | Sets `method: 'delete'`",
+  "cited": "source/index.ts:17-17"
+ },
+ {
+  "n": 22,
+  "claim": "Sources: [source/utils/normalize.ts:16-26](https://github.com/sindresorhus/ky/blob/HEAD/source/utils/normalize.ts#L16-L26),",
+  "cited": "source/core/Ky.ts:487-502"
+ },
+ {
+  "n": 23,
+  "claim": "### parseJson Option\nThe `parseJson` function receives the response text and a context object containing the original `request` and the received `response` [source/types/options.ts:83](). This context allows for sophisticated logging or conditional parsing based on headers or status codes",
+  "cited": "source/types/options.ts:71-80"
+ },
+ {
+  "n": 24,
+  "claim": "Sources: [readme.md:940-945](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L940-L945), [readme.md:1026-1029](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L1026-L1029),",
+  "cited": "source/index.ts:10-32"
+ },
+ {
+  "n": 25,
+  "claim": "Sources: [source/utils/body.ts:98-112](https://github.com/sindresorhus/ky/blob/HEAD/source/utils/body.ts#L98-L112),",
+  "cited": "source/utils/body.ts:7-44"
+ },
+ {
+  "n": 26,
+  "claim": "- **Blobs/Files**: Uses `body.size` [source/utils/body.ts:27-29]().\n- **ArrayBuffers**: Uses `body.byteLength` [source/utils/body.ts:31-33]().\n- **Strings**: Encodes to UTF-8 to find byte length [source/utils/body.ts:35-37]().\n- **URLSearchParams**: Stringifies and measures byte length",
+  "cited": "source/utils/body.ts:39-41"
+ },
+ {
+  "n": 27,
+  "claim": "1.  **Creates main function** ([source/index.ts:12]()): The core function that accepts `(input, options)` and calls `Ky.create()` with merged defaults.\n2.  **Attaches HTTP methods** ([source/index.ts:14-17]()): Loops through `requestMethods` (imported from",
+  "cited": "source/core/constants.ts:4-4"
+ },
+ {
+  "n": 28,
+  "claim": "*   **`afterResponse`**: This hook can inspect a response and decide to trigger a retry by throwing a `ForceRetryError`. This is useful for retrying on conditions not covered by default, such as a successful response with a specific payload indicating a pending operation.\n    Sources:",
+  "cited": "source/core/Ky.ts:812-821"
+ },
+ {
+  "n": 29,
+  "claim": "Sources: [readme.md:677-691](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L677-L691),",
+  "cited": "test/hooks.ts:3536-3552"
+ },
+ {
+  "n": 30,
+  "claim": "- **HTTPError** [source/errors/HTTPError.ts]() - Non-2xx responses\n- **TimeoutError** [source/errors/TimeoutError.ts]() - Request timeouts\n- **ForceRetryError** [source/errors/ForceRetryError.ts]() - Internal signal for forced retries",
+  "cited": "source/core/Ky.ts:4-4"
+ },
+ {
+  "n": 31,
+  "claim": "Sources: [readme.md:940-945](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L940-L945),",
+  "cited": "readme.md:1006-1007"
+ },
+ {
+  "n": 32,
+  "claim": "Sources: [source/index.ts:1-85](), [source/core/Ky.ts:1-140](),",
+  "cited": "source/core/Ky.ts:142-196"
+ },
+ {
+  "n": 33,
+  "claim": "Sources: [readme.md:940-944](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L940-L944),",
+  "cited": "readme.md:1026-1029"
+ },
+ {
+  "n": 34,
+  "claim": "*   **`HTTPError`**: This error occurs when the server responds with a non-2xx status code. A retry is only attempted if the response status code is present in the `retry.statusCodes` array. By default, this includes server errors (5xx) and specific client errors like 408 (Request Timeout) and 429 (Too Many Requests).\n    Sources:",
+  "cited": "source/core/Ky.ts:548-551"
+ },
+ {
+  "n": 35,
+  "claim": "Utilities in `test/helpers/parse-body.ts` allow test handlers to inspect the content sent by Ky:\n- **`parseJsonBody(request)`**: Reads the request stream and parses it as JSON [test/helpers/parse-body.ts:4-7]().\n- **`parseRawBody(request)`**: Reads the request stream and returns the raw string",
+  "cited": "test/helpers/parse-body.ts:9-9"
+ },
+ {
+  "n": 36,
+  "claim": "- **Option merging** [source/utils/merge.ts]() - `validateAndMerge()` handles complex option inheritance\n- **Body processing** [source/utils/body.ts]() - Stream handling for upload/download progress\n- **Timeout handling** [source/utils/timeout.ts]() - AbortController-based timeout implementation\n- **Type guards** [source/utils/type-guards.ts]() - Runtime type checking for errors",
+  "cited": "source/index.ts:77-83"
+ },
+ {
+  "n": 37,
+  "claim": "**Disabled Rules**: Several rules are disabled to accommodate the project's patterns:\n- `@typescript-eslint/ban-ts-comment` [package.json:76]()\n- `@typescript-eslint/no-unsafe-*` rules",
+  "cited": "package.json:77-80"
+ },
+ {
+  "n": 38,
+  "claim": "Sources: [source/core/Ky.ts:1-6](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L1-L6),",
+  "cited": "readme.md:1218-1343"
+ },
+ {
+  "n": 39,
+  "claim": "s.ts:86]() |\n| **beforeError** | `(state)` | `Error` | Modify error before it's thrown or retried [source/types/hooks.ts:71]() |\n| **beforeRetry** | `(state)` | `ky.stop` | Cancel retry, return `undefined` to caller [source/types/hooks.ts:180]() |\n|  |  | `Response` | Use Response, skip retry [source/types/hooks.ts:172]() |\n|  |  | `Request` | Use modified Request, stop processing remaining hooks",
+  "cited": "source/types/hooks.ts:172-172"
+ },
+ {
+  "n": 40,
+  "claim": "Ky is organized into a layered architecture where each layer has distinct responsibilities. The system is built around the `Ky` class",
+  "cited": "source/core/Ky.ts:142-142"
+ },
+ {
+  "n": 41,
+  "claim": "The `#cancelBody()` [source/core/Ky.ts:581-588]() and `#cancelResponseBody()`",
+  "cited": "source/core/Ky.ts:590-593"
+ },
+ {
+  "n": 42,
+  "claim": "try {\n\t// Pass the schema to .json()\n\tconst user = await ky('/api/user').json(userSchema);\n\tconsole.log(user.name);\n} catch (error) {\n\t// Catch the specific validation error\n\tif (error instanceof SchemaValidationError) {\n\t\tconsole.error(error.issues);\n\t}\n}\n```\nSources:",
+  "cited": "readme.md:148-162"
+ },
+ {
+  "n": 43,
+  "claim": "- `Options`: The main options interface that extends both `KyOptions` and `RequestInit`",
+  "cited": "source/types/options.ts:246-290"
+ },
+ {
+  "n": 44,
+  "claim": "### ResponsePromise\nA specialized type that extends the standard `Promise<Response>`. It allows users to chain body-parsing methods (like `.json()`, `.text()`, `.bytes()`) directly onto the call to `ky()`, rather than awaiting the `Response` first",
+  "cited": "source/types/ResponsePromise.ts:7-69"
+ },
+ {
+  "n": 45,
+  "claim": "The default `ky` instance is created without defaults [source/index.ts:34](), but users can create specialized instances using `ky.extend()`",
+  "cited": "source/index.ts:20-26"
+ },
+ {
+  "n": 46,
+  "claim": ":1325-1354](https://github.com/sindresorhus/ky/blob/HEAD/test/retry.ts#L1325-L1354)\n*   **`totalTimeout`**: This is a global timeout for the entire operation, including all attempts and the delays between them. It acts as a final deadline. If this timeout is exceeded, a `TimeoutError` is thrown, and no further retries will be attempted, even if the retry `limit` has not been reached.\n    Sources:",
+  "cited": "source/core/Ky.ts:858-869"
+ },
+ {
+  "n": 47,
+  "claim": "Sources: [readme.com:449-718](https://github.com/sindresorhus/ky/blob/HEAD/readme.com#L449-L718),",
+  "cited": "source/index.ts:51-61"
+ },
+ {
+  "n": 48,
+  "claim": "Sources: [readme.md:275-402](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L275-L402), [readme.md:1048-1077](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L1048-L1077),",
+  "cited": "readme.md:1079-1108"
+ },
+ {
+  "n": 49,
+  "claim": "`**: This is a global timeout for the entire operation, including all attempts and the delays between them. It acts as a final deadline. If this timeout is exceeded, a `TimeoutError` is thrown, and no further retries will be attempted, even if the retry `limit` has not been reached.\n    Sources: [source/core/Ky.ts:858-869](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L858-L869),",
+  "cited": "test/retry.ts:1096-1122"
+ },
+ {
+  "n": 50,
+  "claim": "Sources: [source/utils/options.ts:17-21](), [test/fetch.ts:166-177](),",
+  "cited": "test/fetch.ts:103-123"
+ },
+ {
+  "n": 51,
+  "claim": "| Error Class | Trigger Condition | Key Properties |\n| :--- | :--- | :--- |\n| `KyError` | Base class for all Ky-specific lifecycle errors",
+  "cited": "source/errors/KyError.ts:8-14"
+ },
+ {
+  "n": 52,
+  "claim": "**Key behaviors:**\n1.  **Array concatenation**: Hooks are combined, preserving order [source/utils/merge.ts:133]().\n2.  **Explicit undefined clears**: Setting a hook type to `undefined` in the incoming options returns an empty array `[]`, effectively clearing parent hooks",
+  "cited": "source/utils/merge.ts:131-132"
+ },
+ {
+  "n": 53,
+  "claim": "| Constant | Detection Logic |\n|----------|-----------------|\n| `supportsRequestStreams` | Checks for `ReadableStream` body support and `duplex` requirement [source/core/constants.ts:4-32](). |\n| `supportsAbortController` | Checks for `globalThis.AbortController`",
+  "cited": "source/core/constants.ts:34-34"
+ },
+ {
+  "n": 54,
+  "claim": "return undefined;\n}\n```\nSources: [source/types/hooks.ts:40, 119-125](), [source/core/Ky.ts:767-784](https://github.com/sindresorhus/ky/blob/HEAD/source/core/Ky.ts#L767-L784),",
+  "cited": "test/hooks.ts:752-788"
+ },
+ {
+  "n": 55,
+  "claim": "-----------------------------|\n| `request`    | `KyRequest`         | The mutable `Request` object about to be sent.                                 |\n| `options`    | `NormalizedOptions` | The normalized, immutable `ky` options for the request.                        |\n| `retryCount` | `0`                 | Always `0`, as this hook runs before any retries.                              |\nSources:",
+  "cited": "source/types/hooks.ts:30-38"
+ },
+ {
+  "n": 56,
+  "claim": "- **Blobs/Files**: Uses `body.size` [source/utils/body.ts:27-29]().\n- **ArrayBuffers**: Uses `body.byteLength`",
+  "cited": "source/utils/body.ts:31-33"
+ },
+ {
+  "n": 57,
+  "claim": "Sources: [readme.md:275-402](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L275-L402),",
+  "cited": "readme.md:1048-1077"
+ },
+ {
+  "n": 58,
+  "claim": "alt Response is not ok\n        Ky instance->>Ky instance: Create HTTPError\n        Ky instance->>Ky instance: Trigger retry logic\n    else Response is ok\n        Ky instance->>Ky instance: Decorate Response\n        Ky instance-->>ResponsePromise: Resolve with Response\n    end\n```\n*Diagram illustrating the high-level request and hook execution flow.*\nSources:",
+  "cited": "source/core/Ky.ts:153-253"
+ },
+ {
+  "n": 59,
+  "claim": "Sources: [readme.md:51](https://github.com/sindresorhus/ky/blob/HEAD/readme.md#L51),",
+  "cited": "readme.md:735-789"
+ }
+]

@@ -1,0 +1,677 @@
+[
+ {
+  "id": "flask-01",
+  "category": "architecture",
+  "question": "Trace the call chain when a WSGI server calls a Flask app for one request, from Flask.__call__ to the view function.",
+  "reference_answer": "Flask.__call__ calls wsgi_app, which creates an AppContext with request_context(environ) and pushes it. It then calls full_dispatch_request(ctx). That sends request_started, runs preprocess_request (url_value_preprocessors, then before_request funcs), then dispatch_request (raises any stored routing exception, answers automatic OPTIONS, otherwise calls view_functions[rule.endpoint](**view_args) through ensure_sync). Any exception goes to handle_user_exception. finalize_request then runs make_response and process_response and sends request_finished. If an exception escapes, wsgi_app calls handle_exception. Finally it calls ctx.pop(error).",
+  "key_facts": [
+   "__call__ delegates to wsgi_app, which builds the context via request_context(environ)/AppContext.from_environ and pushes it",
+   "full_dispatch_request runs request_started, preprocess_request, then dispatch_request; exceptions go to handle_user_exception",
+   "finalize_request calls make_response then process_response and sends request_finished",
+   "unhandled exceptions in wsgi_app go to handle_exception, and ctx.pop(error) always runs in the finally block"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "1566-1625"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "992-1051"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "966-990"
+   }
+  ],
+  "X": "When a WSGI server calls a Flask application, the following call chain is executed to handle a single request and invoke the appropriate view function.\n\n1.  **`Flask.__call__(self, environ, start_response)`**\n    -   **File:** `src/flask/app.py`, lines 1620-1626\n    -   This is the WSGI application entry point. It immediately calls `self.wsgi_app` to allow middleware to be applied to `wsgi_app` without replacing the main application object.\n\n    ```python\n    # src/flask/app.py:1620-1626\n    def __call__(\n        self, environ: WSGIEnvironment, start_response: StartResponse\n    ) -> cabc.Iterable[bytes]:\n        \"\"\"The WSGI server calls the Flask application object as the\n        WSGI application. This calls :meth:`wsgi_app`, which can be\n        wrapped to apply middleware.\n        \"\"\"\n        return self.wsgi_app(environ, start_response)\n    ```\n\n2.  **`Flask.wsgi_app(self, environ, start_response)`**\n    -   **File:** `src/flask/app.py`, lines 1584-1610\n    -   This method sets up the necessary context for the request.\n    -   It creates a request context using `self.request_context(environ)`.\n    -   It pushes the context onto the stack via `ctx.push()`.\n    -   It wraps the main request dispatching logic in a `try...except` block to handle exceptions.\n    -   It calls `self.full_dispatch_request(ctx)` to handle the request.\n    -   The `finally` block ensures the context is popped via `ctx.pop(error)`.\n\n    ```python\n    # src/flask/app.py:1592-1601\n    def wsgi_app(\n        self, environ: WSGIEnvironment, start_response: StartResponse\n    ) -> cabc.Iterable[bytes]:\n        # ...\n        ctx = self.request_context(environ)\n        error: BaseException | None = None\n        try:\n            try:\n                ctx.push()\n                response = self.full_dispatch_request(ctx)\n    ```\n\n3.  **`Flask.full_dispatch_request(self, ctx)`**\n    -   **File:** `src/flask/app.py`, lines 999-1018\n    -   This method orchestrates the main request handling logic.\n    -   It sends the `request_started` signal.\n    -   It calls `self.preprocess_request(ctx)` to run functions registered with `@before_request`.\n    -   If `preprocess_request` returns `None`, it proceeds to call `self.dispatch_request(ctx)`.\n    -   The return value (`rv`) from either `preprocess_request` or `dispatch_request` is then passed to `self.finalize_request`.\n\n    ```python\n    # src/flask/app.py:1012-1016\n    def full_dispatch_request(self, ctx: AppContext) -> Response:\n        # ...\n        try:\n            request_started.send(self, _async_wrapper=self.ensure_sync)\n            rv = self.preprocess_request(ctx)\n            if rv is None:\n                rv = self.dispatch_request(ctx)\n    ```\n\n4.  **`Flask.preprocess_request(self, ctx)`**\n    -   **File:** `src/flask/app.py`, lines 1387-1400\n    -   This method executes all functions decorated with `@before_request`.\n    -   Functions are executed in the order they were registered.\n    -   If any `before_request` function returns a value, that value is treated as the response, and request processing is short-circuited. The view function is not called.\n\n    ```python\n    # src/flask/app.py:1387-1394\n    def preprocess_request(self, ctx: AppContext) -> ft.ResponseReturnValue | None:\n        # ...\n        for name in chain(ctx.request.blueprints, (None,)):\n            if name in self.before_request_funcs:\n                for before_func in self.before_request_funcs[name]:\n                    rv = self.ensure_sync(before_func)()\n\n                    if rv is not None:\n                        return rv  # type: ignore[no-any-return]\n    ```\n\n5.  **`Flask.dispatch_request(self, ctx)`**\n    -   **File:** `src/flask/app.py`, lines 1031-1049\n    -   This is the point where the URL is matched to a view function.\n    -   It uses Werkzeug's URL adapter (`ctx.url_adapter.match()`) to find the endpoint and URL arguments for the current request path.\n    -   It looks up the view function associated with the matched endpoint in the `self.view_functions` dictionary.\n    -   It calls the view function, passing any captured URL arguments as keyword arguments.\n\n    ```python\n    # src/flask/app.py:1031-1049\n    def dispatch_request(self, ctx: AppContext) -> ft.ResponseReturnValue:\n        # ...\n        req = ctx.request\n        # ...\n        try:\n            endpoint, values = ctx.url_adapter.match()\n        # ...\n        return self.ensure_sync(self.view_functions[endpoint])(**values)\n    ```\n\n6.  **View Function Execution**\n    -   The specific user-defined view function (e.g., a function decorated with `@app.route()`, or a class-based view's `dispatch_request` method) is executed.\n    -   This function processes the request and returns a response value.\n\n    ```python\n    # tests/test_apps/helloworld/hello.py:5-9\n    @app.route(\"/\")\n    def hello():\n        return \"Hello World!\"\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-02",
+  "category": "architecture",
+  "question": "What happens when a request context is pushed and popped in this checkout, and how are nested pushes handled?",
+  "reference_answer": "There is one AppContext class; a request context is just an AppContext that has a request. push() bumps _push_count. If the context is already active it returns there. Otherwise it sets the _cv_app ContextVar, sends appcontext_pushed, and, if it has a request, opens the session via _get_session() and then runs match_request() for URL routing. pop() checks that the context is the active one and decrements the count. Cleanup only runs when the count reaches 0, in this order: do_teardown_request, request.close(), do_teardown_appcontext, reset the ContextVar, send appcontext_popped. Errors from these steps are collected and raised together at the end.",
+  "key_facts": [
+   "Single AppContext class serves as both app and request context (RequestContext merged)",
+   "push sets the _cv_app ContextVar, sends appcontext_pushed, then opens the session before URL matching",
+   "Nested pushes are counted; teardown runs only when the push count returns to 0",
+   "pop order: teardown_request funcs, request.close(), teardown_appcontext funcs, ContextVar reset, appcontext_popped"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "260-338"
+   },
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "416-504"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "When a request context is pushed and popped, a series of actions are taken to make request-specific data available and to clean up resources afterward. Nested pushes are handled using a counter.\n\n### Pushing the Context\n\nThe `AppContext.push()` method is called to activate the context.\n\n1.  A counter, `self._push_count`, is incremented.\n2.  If the context is already active (a nested push), the method returns immediately.\n3.  On the first push, the following actions occur:\n    *   The context is set as the current active context using a `contextvars` token (`_cv_token`).\n    *   The `appcontext_pushed` signal is sent.\n    *   If it is a request context (contains a request object):\n        *   The session is opened by calling `self._get_session()`.\n        *   URL routing is performed by calling `self.match_request()`, which populates `request.url_rule` and `request.view_args` or `request.routing_exception`.\n\n```python\n# src/flask/ctx.py:426-456\n    def push(self) -> None:\n        \"\"\"Push this context so that it is the active context. If this is a\n        request context, calls :meth:`match_request` to perform routing with\n        the context active.\n\n        Typically, this is not used directly. Instead, use a ``with`` block\n        to manage the context.\n\n        In some situations, such as streaming or testing, the context may be\n        pushed multiple times. It will only trigger matching and signals if it\n        is not currently pushed.\n        \"\"\"\n        self._push_count += 1\n\n        if self._cv_token is not None:\n            return\n\n        self._cv_token = _cv_app.set(self)\n        appcontext_pushed.send(self.app, _async_wrapper=self.app.ensure_sync)\n\n        if self._request is not None:\n            # Open the session at the moment that the request context is available.\n            # This allows a custom open_session method to use the request context.\n            self._get_session()\n\n            # Match the request URL after loading the session, so that the\n            # session is available in custom URL converters.\n            if self.url_adapter is not None:\n                self.match_request()\n```\n\n### Popping the Context\n\nThe `AppContext.pop()` method is called to deactivate the context.\n\n1.  It verifies that it is the currently active context, raising a `RuntimeError` if not.\n2.  The `self._push_count` counter is decremented.\n3.  If the counter is still greater than zero (an inner pop in a nested scenario), the method returns immediately.\n4.  On the final pop (when the counter reaches zero), the following teardown sequence is executed, with all errors collected and raised together at the end:\n    *   If it is a request context:\n        *   Request teardown functions (registered with `@teardown_request`) are executed via `self.app.do_teardown_request()`.\n        *   The request object is closed via `self._request.close()`.\n    *   Application context teardown functions (registered with `@teardown_appcontext`) are executed via `self.app.do_teardown_appcontext()`.\n    *   The context is deactivated by resetting the `contextvars` token.\n    *   The `appcontext_popped` signal is sent.\n\n```python\n# src/flask/ctx.py:470-511\n    def pop(self, exc: BaseException | None = None) -> None:\n        # ... (error checking) ...\n\n        self._push_count -= 1\n\n        if self._push_count > 0:\n            return\n\n        collect_errors = _CollectErrors()\n\n        if self._request is not None:\n            with collect_errors:\n                self.app.do_teardown_request(self, exc)\n\n            with collect_errors:\n                self._request.close()\n\n        with collect_errors:\n            self.app.do_teardown_appcontext(self, exc)\n\n        _cv_app.reset(self._cv_token)\n        self._cv_token = None\n\n        with collect_errors:\n            appcontext_popped.send(self.app, _async_wrapper=self.app.ensure_sync)\n\n        collect_errors.raise_any(\"Errors during context teardown\")\n```\n\n### Handling Nested Pushes\n\nNested pushes are managed by the `_push_count` attribute of the `AppContext` object.\n\n*   **Push**: The setup logic (activating the context, matching the request, etc.) runs only on the *first* call to `push()`. Subsequent, nested calls only increment the `_push_count`.\n*   **Pop**: The teardown logic (running teardown functions, deactivating the context, etc.) runs only on the *final* call to `pop()`, when `_push_count` is decremented to zero. Intermediate calls only decrement the counter.\n\nThis ensures that for nested `with` blocks using a context, the context is fully set up only once and torn down only when the outermost block is exited."
+ },
+ {
+  "id": "flask-03",
+  "category": "architecture",
+  "question": "Walk through what app.register_blueprint(bp, **options) does internally.",
+  "reference_answer": "App.register_blueprint (a setupmethod) calls blueprint.register(app, options). Blueprint.register works out the dotted name from name_prefix and the name option, and raises ValueError if that name is already in app.blueprints. It stores the blueprint in app.blueprints[name] and builds a BlueprintSetupState with make_setup_state. It adds the blueprint's static route if it has one. On first registration of the blueprint or the name, it merges the blueprint's handler dicts into the app with keys prefixed by the blueprint name (_merge_blueprint_funcs). It then replays every deferred_functions callback, recorded by record() from things like add_url_rule, against the state. Next it attaches CLI commands. Last, it recursively registers nested blueprints, joining url_prefix/subdomain and passing name_prefix=name.",
+  "key_facts": [
+   "App.register_blueprint simply calls blueprint.register(app, options)",
+   "Duplicate registered name raises ValueError; use name= to register again",
+   "Blueprint routes/handlers are deferred via record() and replayed with a BlueprintSetupState that prefixes url_prefix and endpoint names",
+   "Nested blueprints are registered recursively with combined url_prefix/subdomain and a dotted name_prefix"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "566-593"
+   },
+   {
+    "path": "src/flask/sansio/blueprints.py",
+    "lines": "273-411"
+   },
+   {
+    "path": "src/flask/sansio/blueprints.py",
+    "lines": "34-116"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "When `app.register_blueprint(bp, **options)` is called, it initiates a series of steps to integrate the blueprint's routes, handlers, and configurations into the main Flask application.\n\n### 1. Initial Call\n\nThe process starts with the `register_blueprint` method on the `App` object.\n\n*   **File**: `src/flask/sansio/app.py`\n*   **Method**: `register_blueprint`\n\n```python\n# src/flask/sansio/app.py:578-596\n    @setupmethod\n    def register_blueprint(self, blueprint: Blueprint, **options: t.Any) -> None:\n        \"\"\"Register a :class:`~flask.Blueprint` on the application. Keyword\n        ...\n        \"\"\"\n        blueprint.register(self, options)\n```\n\nThis method is a simple wrapper that calls the `register` method on the provided `blueprint` object, passing the application instance (`self`) and any provided keyword `options`.\n\n### 2. Blueprint Registration Core Logic\n\nThe main logic resides within the `Blueprint.register` method.\n\n*   **File**: `src/flask/sansio/blueprints.py`\n*   **Method**: `register`\n\nThe `register` method performs the following actions:\n\n1.  **Name Resolution and Conflict Check**: It determines the blueprint's registration name, using the `name` option if provided, otherwise falling back to the blueprint's own name. It then checks if this name has already been registered for a *different* blueprint object in `app.blueprints`, raising a `ValueError` if a conflict is found.\n\n    ```python\n    # src/flask/sansio/blueprints.py:300-315\n            if name in app.blueprints and app.blueprints[name] is not self:\n                ...\n                raise ValueError(\n                    f\"The name '{self_name}' is already registered for\"\n                    ...\n                )\n    ```\n\n2.  **Create Setup State**: It creates a `BlueprintSetupState` object. This object is a temporary container for registration-specific settings, merging the blueprint's defaults (like `url_prefix`, `subdomain`) with the options passed to `register_blueprint`.\n\n    ```python\n    # src/flask/sansio/blueprints.py:318-319\n            state = self.make_setup_state(app, options, first_bp_registration)\n    ```\n\n    The `BlueprintSetupState` constructor resolves the final values for `url_prefix`, `subdomain`, and `name` for this specific registration.\n\n    ```python\n    # src/flask/sansio/blueprints.py:45-89\n    class BlueprintSetupState:\n        def __init__(\n            self,\n            blueprint: Blueprint,\n            app: App,\n            options: t.Any,\n            first_registration: bool,\n        ) -> None:\n            ...\n            self.url_prefix = ...\n            self.subdomain = ...\n            self.name = ...\n    ```\n\n3.  **Register Static Route**: If the blueprint has a `static_folder` defined, it registers a URL rule to serve its static files.\n\n    ```python\n    # src/flask/sansio/blueprints.py:321-326\n            if self.has_static_folder:\n                state.add_url_rule(\n                    f\"{self.static_url_path}/<path:filename>\",\n                    view_func=self.send_static_file,\n                    endpoint=\"static\",\n                )\n    ```\n\n4.  **Merge Blueprint Functions**: On the first registration of a blueprint (by object or by name), it merges the blueprint's handlers into the application's central dictionaries. This includes error handlers, request hooks (`before_request`, `after_request`), template context processors, and more.\n\n    ```python\n    # src/flask/sansio/blueprints.py:329-330\n            if first_bp_registration or first_name_registration:\n                self._merge_blueprint_funcs(app, name)\n    ```\n\n    The `_merge_blueprint_funcs` method prefixes the keys with the blueprint's registration name to avoid collisions.\n\n    ```python\n    # src/flask/sansio/blueprints.py:382-414\n        def _merge_blueprint_funcs(self, app: App, name: str) -> None:\n            ...\n            for key, values in bp_dict.items():\n                key = name if key is None else f\"{name}.{key}\"\n                parent_dict[key].extend(values)\n    ```\n\n5.  **Execute Deferred Functions**: This is the crucial step where decorators like `@bp.route()` take effect. These decorators don't register with the app immediately; instead, they add a function to the blueprint's `deferred_functions` list. The `register` method iterates through this list and executes each function, passing the `BlueprintSetupState` object.\n\n    ```python\n    # src/flask/sansio/blueprints.py:332-333\n            for deferred in self.deferred_functions:\n                deferred(state)\n    ```\n\n    For example, the function deferred by `@bp.route()` will call `state.add_url_rule`, which in turn calls `app.add_url_rule` with the correct URL prefix and endpoint name (e.g., `blueprint_name.view_function_name`).\n\n6.  **Register Nested Blueprints**: If other blueprints have been registered on the current blueprint (a nested blueprint), it recursively calls `register` for each of them. It calculates the new `url_prefix` and `subdomain` by concatenating them with the parent's.\n\n    ```python\n    # src/flask/sansio/blueprints.py:345-380\n            for blueprint, bp_options in self._blueprints:\n                ...\n                if state.url_prefix is not None and bp_url_prefix is not None:\n                    bp_options[\"url_prefix\"] = (\n                        state.url_prefix.rstrip(\"/\") + \"/\" + bp_url_prefix.lstrip(\"/\")\n                    )\n                ...\n                blueprint.register(app, bp_options)\n    ```"
+ },
+ {
+  "id": "flask-04",
+  "category": "architecture",
+  "question": "How is the code split between src/flask/sansio/ and the top-level modules, and which classes collaborate?",
+  "reference_answer": "The sansio package holds framework logic with no WSGI or I/O: sansio/scaffold.py defines Scaffold (route and handler registration dicts plus decorators), sansio/app.py defines App(Scaffold) (config, url_map, add_url_rule, error-handler lookup, redirect, register_blueprint), and sansio/blueprints.py defines Blueprint(Scaffold) and BlueprintSetupState. The top-level modules add WSGI and runtime: app.py has Flask(App) (wsgi_app, the dispatch methods, contexts, sessions, test client) and blueprints.py has Blueprint(SansioBlueprint) (adds cli/send_static_file and similar). ctx.py (AppContext), globals.py (proxies), sessions.py, json/provider.py and wrappers.py (Request/Response) work alongside them.",
+  "key_facts": [
+   "sansio/scaffold.py Scaffold is the shared base of App and sansio Blueprint",
+   "flask.app.Flask subclasses sansio.app.App and adds WSGI/dispatch",
+   "flask.blueprints.Blueprint subclasses sansio.blueprints.Blueprint"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sansio/scaffold.py",
+    "lines": "52-60"
+   },
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "59"
+   },
+   {
+    "path": "src/flask/sansio/blueprints.py",
+    "lines": "119"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "109"
+   },
+   {
+    "path": "src/flask/blueprints.py",
+    "lines": "10-18"
+   }
+  ],
+  "X": "The code in `src/flask/sansio/` contains the core, I/O-independent logic of a Flask application. This allows alternative asynchronous frameworks, like Quart, to reuse Flask's core functionality without being tied to its WSGI (synchronous I/O) implementation. The top-level modules in `src/flask/` build upon this `sansio` core to provide the full WSGI-compliant Flask framework.\n\n### Code Split and Responsibilities\n\n*   **`src/flask/sansio/`**:\n    *   As stated in `src/flask/sansio/README.md`, this directory contains code that cannot perform any I/O or use Flask's request-bound globals.\n    *   It defines the core application structure, including routing, blueprint management, configuration, URL building, and template rendering logic.\n    *   The key class is `flask.sansio.app.Flask`, which serves as the base class for the main application object.\n\n*   **`src/flask/` (Top-level modules)**:\n    *   This directory contains the WSGI-specific implementation.\n    *   It handles the request-response cycle, context management (application and request contexts), and integration with the Werkzeug WSGI library.\n    *   The user-facing `flask.app.Flask` class is defined here.\n\n### Class Collaboration\n\nThe primary collaboration is through inheritance:\n\n*   The main `Flask` class in `src/flask/app.py` inherits from the `Flask` class in `src/flask/sansio/app.py`.\n\n```\n# In src/flask/app.py\nfrom .sansio.app import Flask as SansIOFlask\n\nclass Flask(SansIOFlask):\n    # ... WSGI-specific implementation ...\n```\n\nThis structure separates the core application logic from the web server interface logic:\n\n1.  **`flask.sansio.app.Flask`**: Provides methods for routing (`@app.route`), error handling (`@app.errorhandler`), blueprints, and configuration that do not depend on an active web request.\n2.  **`flask.app.Flask`**: Adds the WSGI interface (`__call__`), methods to handle requests (`wsgi_app`), manage the request and application contexts (`app_context`, `request_context`), and process responses.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-05",
+  "category": "architecture",
+  "question": "How are current_app, g, request and session implemented, and how many ContextVars back them?",
+  "reference_answer": "All of them, plus app_ctx, are werkzeug LocalProxy objects over one ContextVar, _cv_app = ContextVar('flask.app_ctx'), which holds the active AppContext. current_app proxies the context's .app attribute, g proxies .g, request proxies .request and session proxies .session. request and session use the 'outside of request context' unbound message. The old request_ctx name is a deprecated alias of app_ctx, served through a module __getattr__.",
+  "key_facts": [
+   "A single ContextVar named 'flask.app_ctx' (_cv_app) holds the AppContext",
+   "current_app/g/request/session are LocalProxy objects reading attributes app/g/request/session of that context",
+   "request_ctx is a deprecated alias for app_ctx"
+  ],
+  "wrong_but_plausible": "There are two ContextVars, one for the app context and one for the request context (true before 3.2, not here)",
+  "evidence": [
+   {
+    "path": "src/flask/globals.py",
+    "lines": "40-77"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "`current_app`, `g`, `request`, and `session` are implemented as `werkzeug.local.LocalProxy` objects. They are all backed by a single `contextvars.ContextVar`.\n\n### Implementation Details\n\nAll four global proxies point to a single `ContextVar` named `_cv_app`, which holds the current `AppContext` object. The proxies access different attributes on this single context object.\n\n**1. The `ContextVar`**\n\nA single `ContextVar` named `_cv_app` is defined to hold the application context.\n\n*   **File:** `src/flask/globals.py`\n    ```python\n    [lines 40-41]\n    _cv_app: ContextVar[AppContext] = ContextVar(\"flask.app_ctx\")\n    ```\n\n**2. The `LocalProxy` Objects**\n\n`current_app`, `g`, `request`, and `session` are all `LocalProxy` instances that look up the `_cv_app` context variable and then access a specific attribute on the resulting `AppContext` object.\n\n*   **File:** `src/flask/globals.py`\n    ```python\n    [lines 42-45]\n    app_ctx: AppContextProxy = LocalProxy(  # type: ignore[assignment]\n        _cv_app, unbound_message=_no_app_msg\n    )\n    current_app: FlaskProxy = LocalProxy(  # type: ignore[assignment]\n        _cv_app, \"app\", unbound_message=_no_app_msg\n    )\n    g: _AppCtxGlobalsProxy = LocalProxy(  # type: ignore[assignment]\n        _cv_app, \"g\", unbound_message=_no_app_msg\n    )\n    ```\n    ```python\n    [lines 55-61]\n    request: RequestProxy = LocalProxy(  # type: ignore[assignment]\n        _cv_app, \"request\", unbound_message=_no_req_msg\n    )\n    session: SessionMixinProxy = LocalProxy(  # type: ignore[assignment]\n        _cv_app, \"session\", unbound_message=_no_req_msg\n    )\n    ```\n    - `current_app` proxies the `app` attribute of the `AppContext` object stored in `_cv_app`.\n    - `g` proxies the `g` attribute.\n    - `request` proxies the `request` attribute.\n    - `session` proxies the `session` attribute.\n\n**3. The `AppContext` Class**\n\nThe `AppContext` class holds the actual objects that the proxies provide access to.\n\n*   **File:** `src/flask/ctx.py`\n    ```python\n    [lines 299-312]\n    def __init__(\n        self,\n        app: Flask,\n        *,\n        request: Request | None = None,\n        session: SessionMixin | None = None,\n    ) -> None:\n        self.app = app\n        \"\"\"The application represented by this context. Accessed through\n        :data:`.current_app`.\n        \"\"\"\n\n        self.g: _AppCtxGlobals = app.app_ctx_globals_class()\n        \"\"\"The global data for this context. Accessed through :data:`.g`.\"\"\"\n    ```\n    The `request` and `session` objects are stored internally and exposed via properties.\n\n### Summary\n\nOnly **one** `ContextVar` (`_cv_app`) is used to back all four global proxies (`current_app`, `g`, `request`, `session`). These proxies provide access to different attributes of the single `AppContext` object stored in that `ContextVar`."
+ },
+ {
+  "id": "flask-06",
+  "category": "behavior",
+  "question": "What are the default session cookie related config values?",
+  "reference_answer": "SESSION_COOKIE_NAME='session', SESSION_COOKIE_DOMAIN=None, SESSION_COOKIE_PATH=None (falls back to APPLICATION_ROOT, '/'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=False, SESSION_COOKIE_PARTITIONED=False, SESSION_COOKIE_SAMESITE=None, SESSION_REFRESH_EACH_REQUEST=True, PERMANENT_SESSION_LIFETIME=timedelta(days=31).",
+  "key_facts": [
+   "SESSION_COOKIE_NAME is 'session'; HTTPONLY True; SECURE False; SAMESITE None; PARTITIONED False",
+   "PERMANENT_SESSION_LIFETIME is 31 days",
+   "SESSION_REFRESH_EACH_REQUEST is True",
+   "Cookie path falls back to APPLICATION_ROOT ('/') when SESSION_COOKIE_PATH is None"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "206-238"
+   },
+   {
+    "path": "src/flask/sessions.py",
+    "lines": "187-193"
+   }
+  ],
+  "X": "The default session cookie related configuration values are defined in `src/flask/app.py` within the `Flask.default_config` dictionary.\n\n*   **SESSION_COOKIE_NAME**: `\"session\"`\n    ```python\n    # src/flask/app.py:220\n    \"SESSION_COOKIE_NAME\": \"session\",\n    ```\n*   **SESSION_COOKIE_DOMAIN**: `None`\n    ```python\n    # src/flask/app.py:221\n    \"SESSION_COOKIE_DOMAIN\": None,\n    ```\n*   **SESSION_COOKIE_PATH**: `None`\n    ```python\n    # src/flask/app.py:222\n    \"SESSION_COOKIE_PATH\": None,\n    ```\n*   **SESSION_COOKIE_HTTPONLY**: `True`\n    ```python\n    # src/flask/app.py:223\n    \"SESSION_COOKIE_HTTPONLY\": True,\n    ```\n*   **SESSION_COOKIE_SECURE**: `False`\n    ```python\n    # src/flask/app.py:224\n    \"SESSION_COOKIE_SECURE\": False,\n    ```\n*   **SESSION_COOKIE_PARTITIONED**: `False`\n    ```python\n    # src/flask/app.py:225\n    \"SESSION_COOKIE_PARTITIONED\": False,\n    ```\n*   **SESSION_COOKIE_SAMESITE**: `None`\n    ```python\n    # src/flask/app.py:226\n    \"SESSION_COOKIE_SAMESITE\": None,\n    ```\n*   **SESSION_REFRESH_EACH_REQUEST**: `True`\n    ```python\n    # src/flask/app.py:227\n    \"SESSION_REFRESH_EACH_REQUEST\": True,\n    ```\n*   **PERMANENT_SESSION_LIFETIME**: `timedelta(days=31)`\n    ```python\n    # src/flask/app.py:214\n    \"PERMANENT_SESSION_LIFETIME\": timedelta(days=31),\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-07",
+  "category": "behavior",
+  "question": "What are the default request size/limit config values (MAX_CONTENT_LENGTH, MAX_FORM_MEMORY_SIZE, MAX_FORM_PARTS, MAX_COOKIE_SIZE)?",
+  "reference_answer": "MAX_CONTENT_LENGTH=None (no limit), MAX_FORM_MEMORY_SIZE=500_000 bytes, MAX_FORM_PARTS=1_000, MAX_COOKIE_SIZE=4093. Request properties read them from current_app.config when an app is active, and a per-request override is possible.",
+  "key_facts": [
+   "MAX_CONTENT_LENGTH defaults to None",
+   "MAX_FORM_MEMORY_SIZE defaults to 500_000",
+   "MAX_FORM_PARTS defaults to 1_000",
+   "MAX_COOKIE_SIZE defaults to 4093"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "225-236"
+   },
+   {
+    "path": "src/flask/wrappers.py",
+    "lines": "60-140"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The default values for request size and limit configurations are defined in `src/flask/app.py`.\n\n-   **`MAX_CONTENT_LENGTH`**: `None`\n-   **`MAX_FORM_MEMORY_SIZE`**: `500_000` bytes (500 KB)\n-   **`MAX_FORM_PARTS`**: `1_000`\n-   **`MAX_COOKIE_SIZE`**: `4093` bytes\n\n### Code Reference\n\n**File:** `src/flask/app.py`\n```python\n[lines 208-237]\n    default_config = ImmutableDict(\n        {\n            \"DEBUG\": None,\n            \"TESTING\": False,\n            \"PROPAGATE_EXCEPTIONS\": None,\n            \"SECRET_KEY\": None,\n            \"SECRET_KEY_FALLBACKS\": None,\n            \"PERMANENT_SESSION_LIFETIME\": timedelta(days=31),\n            \"USE_X_SENDFILE\": False,\n            \"TRUSTED_HOSTS\": None,\n            \"SERVER_NAME\": None,\n            \"APPLICATION_ROOT\": \"/\",\n            \"SESSION_COOKIE_NAME\": \"session\",\n            \"SESSION_COOKIE_DOMAIN\": None,\n            \"SESSION_COOKIE_PATH\": None,\n            \"SESSION_COOKIE_HTTPONLY\": True,\n            \"SESSION_COOKIE_SECURE\": False,\n            \"SESSION_COOKIE_PARTITIONED\": False,\n            \"SESSION_COOKIE_SAMESITE\": None,\n            \"SESSION_REFRESH_EACH_REQUEST\": True,\n            \"MAX_CONTENT_LENGTH\": None,\n            \"MAX_FORM_MEMORY_SIZE\": 500_000,\n            \"MAX_FORM_PARTS\": 1_000,\n            \"SEND_FILE_MAX_AGE_DEFAULT\": None,\n            \"TRAP_BAD_REQUEST_ERRORS\": None,\n            \"TRAP_HTTP_EXCEPTIONS\": False,\n            \"EXPLAIN_TEMPLATE_LOADING\": False,\n            \"PREFERRED_URL_SCHEME\": \"http\",\n            \"TEMPLATES_AUTO_RELOAD\": None,\n            \"MAX_COOKIE_SIZE\": 4093,\n            \"PROVIDE_AUTOMATIC_OPTIONS\": True,\n        }\n    )\n```"
+ },
+ {
+  "id": "flask-08",
+  "category": "behavior",
+  "question": "In what order are before_request and after_request functions run when a blueprint (possibly nested) handles the request?",
+  "reference_answer": "preprocess_request first runs url_value_preprocessors and then before_request funcs. Each set goes over names (None, *reversed(request.blueprints)): app first, then outer to inner blueprint, each list in registration order. The first non-None return value short-circuits. process_response first runs the after_this_request functions in registration order. It then goes over chain(request.blueprints, (None,)), innermost blueprint first and the app last, and calls each after_request list in reverse registration order. Last it saves the session unless it is a NullSession.",
+  "key_facts": [
+   "before_request: app handlers first, then blueprints outermost to innermost, in registration order",
+   "A before_request returning non-None stops processing and is used as the response",
+   "after_request: after_this_request callbacks first, then innermost blueprint to app, each list reversed (LIFO)",
+   "Session is saved after the after_request functions"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "1366-1418"
+   },
+   {
+    "path": "src/flask/wrappers.py",
+    "lines": "181-195"
+   },
+   {
+    "path": "src/flask/helpers.py",
+    "lines": "645-651"
+   }
+  ],
+  "X": "When a request is handled by a view in a blueprint, including nested blueprints, the `before_request` and `after_request` functions are executed in a specific order based on their scope (application or blueprint).\n\n### `before_request` Execution Order\n\n`before_request` functions are executed starting from the application level and moving down to the most specific blueprint that handles the request.\n\n1.  **Application `before_request` functions**: Executed first, in the order they were registered.\n2.  **Parent Blueprint `before_request` functions**: Executed next, in registration order.\n3.  **Child Blueprint `before_request` functions**: Executed last (just before the view), in registration order.\n\nThis \"top-down\" execution is managed in the `preprocess_request` method. The list of blueprints is reversed to ensure the parent is processed before the child.\n\n*File: `src/flask/app.py`*\n```python\n[lines 1376-1386]\n    def preprocess_request(self, ctx: AppContext) -> ft.ResponseReturnValue | None:\n        \"\"\"Called before the request is dispatched. ...\"\"\"\n        req = ctx.request\n        names = (None, *reversed(req.blueprints))\n\n        # ... url_value_preprocessors run here ...\n\n        for name in names:\n            if name in self.before_request_funcs:\n                for before_func in self.before_request_funcs[name]:\n                    rv = self.ensure_sync(before_func)()\n\n                    if rv is not None:\n                        return rv  # type: ignore[no-any-return]\n```\n\nThe test `test_nested_callback_order` confirms this order. For a request to a route on `child`, where `child` is registered on `parent`, and `parent` is registered on `app`, the `g.seen` list is populated in this sequence: `['app_1', 'app_2', 'parent_1', 'parent_2', 'child_1', 'child_2']`.\n\n*File: `tests/test_blueprints.py`*\n```python\n[lines 988-993]\n    parent.register_blueprint(child)\n    app.register_blueprint(parent)\n    assert (\n        client.get(\"/a\").data == b\"app_1, app_2, parent_1, parent_2, child_1, child_2\"\n    )\n```\n\n### `after_request` Execution Order\n\n`after_request` functions are executed in the reverse order of `before_request` functions, starting from the most specific blueprint and moving up to the application.\n\n1.  **Child Blueprint `after_request` functions**: Executed first.\n2.  **Parent Blueprint `after_request` functions**: Executed next.\n3.  **Application `after_request` functions**: Executed last.\n\nAdditionally, within each scope (app or blueprint), the functions are executed in **reverse order of their registration**.\n\nThis \"bottom-up\" execution is managed in the `process_response` method. It iterates through the blueprints from most specific to least specific (`child` then `parent`), and finally processes the application-level functions (`None`).\n\n*File: `src/flask/app.py`*\n```python\n[lines 1405-1411]\n    def process_response(self, ctx: AppContext, response: Response) -> Response:\n        # ...\n        for name in chain(ctx.request.blueprints, (None,)):\n            if name in self.after_request_funcs:\n                for func in reversed(self.after_request_funcs[name]):\n                    response = self.ensure_sync(func)(response)\n        # ...\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-09",
+  "category": "behavior",
+  "question": "How are teardown_request / teardown_appcontext handlers ordered, and what happens if one of them raises?",
+  "reference_answer": "do_teardown_request goes over the blueprints innermost-first and then the app, calling each list in reverse registration order. It then sends request_tearing_down. do_teardown_appcontext calls teardown_appcontext_funcs in reverse order and then sends appcontext_tearing_down. Each callback runs inside _CollectErrors, so all of them run even when one raises. The collected errors are raised at the end as a BaseExceptionGroup on Python 3.11+, or only the first error on 3.10. This 'all callbacks run' behavior is new in 3.2.",
+  "key_facts": [
+   "Teardown functions run in reverse registration order, blueprint before app",
+   "All teardown callbacks run even if some raise (changed in 3.2)",
+   "Collected errors are re-raised as BaseExceptionGroup on Python >= 3.11 (first error on 3.10)",
+   "teardown_request runs before teardown_appcontext during AppContext.pop"
+  ],
+  "wrong_but_plausible": "The first failing teardown function aborts the remaining ones",
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "1420-1479"
+   },
+   {
+    "path": "src/flask/helpers.py",
+    "lines": "654-682"
+   },
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "484-504"
+   }
+  ],
+  "X": "### Execution Order\n\n1.  **`teardown_request` handlers**: These are executed first, immediately after the request has been handled and a response is generated, but before the request context is destroyed.\n2.  **`teardown_appcontext` handlers**: These are executed after the `teardown_request` handlers, just before the application context is destroyed.\n\nWithin each category (request or appcontext), handlers are executed in the **reverse order of registration**. The last one registered is the first one called.\n\nThis execution order is demonstrated in the `test_context_refcounts` test:\n\n```python\n# tests/test_appctx.py:172-193\ndef test_context_refcounts(app, client):\n    called = []\n\n    @app.teardown_request\n    def teardown_req(error=None):\n        called.append(\"request\")\n\n    @app.teardown_appcontext\n    def teardown_app(error=None):\n        called.append(\"app\")\n\n    @app.route(\"/\")\n    def index():\n        # ...\n        return \"\"\n\n    res = client.get(\"/\")\n    # ...\n    assert called == [\"request\", \"app\"]\n```\n\nThe implementation confirms that registered functions are iterated in reverse:\n\n```python\n# src/flask/app.py:1441-1443\n        for name in chain(ctx.request.blueprints, (None,)):\n            if name in self.teardown_request_funcs:\n                for func in reversed(self.teardown_request_funcs[name]):\n```\n\n```python\n# src/flask/app.py:1473-1474\n        for func in reversed(self.teardown_appcontext_funcs):\n            with collect_errors:\n```\n\n### Exception Handling\n\n#### If a Teardown Handler Raises an Exception\n\nSince Flask 3.2, if a teardown handler raises an exception, Flask does **not** stop execution. It continues to call all other registered teardown handlers for that phase (request or appcontext). All exceptions raised during the teardown process are collected and then raised together.\n\n*   On Python >= 3.11, they are raised in an `ExceptionGroup`.\n*   On older Python versions, the first exception encountered is re-raised after all handlers have run.\n\nThis behavior is implemented using a `_CollectErrors` context manager and is explicitly tested in `test_robust_teardown`.\n\n```python\n# src/flask/app.py:1438-1445\n        collect_errors = _CollectErrors()\n\n        for name in chain(ctx.request.blueprints, (None,)):\n            if name in self.teardown_request_funcs:\n                for func in reversed(self.teardown_request_funcs[name]):\n                    with collect_errors:\n                        self.ensure_sync(func)(exc)\n```\n\nThe test `test_robust_teardown` confirms that all four registered teardown functions (two via decorator, two via signal) are called even though each one raises an exception.\n\n```python\n# tests/test_appctx.py:221-266\ndef test_robust_teardown(app: flask.Flask, client: FlaskClient) -> None:\n    count = 0\n\n    @app.teardown_request\n    def request_teardown(e: Exception | None) -> None:\n        nonlocal count\n        count += 1\n        raise ValueError(\"request_teardown\")\n\n    @app.teardown_appcontext\n    def app_teardown(e: Exception | None) -> None:\n        nonlocal count\n        count += 1\n        raise ValueError(\"app_teardown\")\n    # ... two signals also raise exceptions and increment count ...\n\n    # ... client.get() is called ...\n\n    assert count == 4\n```\n\n#### Passing Exceptions to Teardown Handlers\n\nIf an unhandled exception occurs during request processing (e.g., in a view function), the exception object is passed as the first argument to all `teardown_request` and `teardown_appcontext` handlers.\n\n```python\n# tests/test_basic.py:808-824\ndef test_teardown_request_handler_error(app, client):\n    called = []\n    app.testing = False\n\n    @app.teardown_request\n    def teardown_request1(exc):\n        assert type(exc) is ZeroDivisionError\n        called.append(True)\n        # ...\n\n    @app.teardown_request\n    def teardown_request2(exc):\n        assert type(exc) is ZeroDivisionError\n        called.append(True)\n        # ...\n\n    @app.route(\"/\")\n    def fails():\n        raise ZeroDivisionError\n\n    rv = client.get(\"/\")\n    assert len(called) == 2\n```\n\nIf the exception is caught by an `@app.errorhandler`, it is considered \"handled,\" and the teardown functions will receive `None` as their `exc` argument.\n\n```python\n# tests/test_appctx.py:100-117\ndef test_app_tearing_down_with_handled_exception_by_app_handler(app, client):\n    # ...\n    @app.teardown_appcontext\n    def cleanup(exception):\n        cleanup_stuff.append(exception)\n\n    @app.route(\"/\")\n    def index():\n        raise Exception(\"dummy\")\n\n    @app.errorhandler(Exception)\n    def handler(f):\n        return flask.jsonify(str(f))\n\n    with app.app_context():\n        client.get(\"/\")\n\n    # teardown request context, and with block context\n    assert cleanup_stuff == [None, None]\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-10",
+  "category": "behavior",
+  "question": "When an exception is raised, in what order does Flask search for a registered error handler?",
+  "reference_answer": "App._find_error_handler looks up the HTTP code first and the exception class second (code=None). Inside each pass it checks the request's blueprints from innermost to outermost and then the app. For each handler map it walks the exception's MRO, so a handler for a base class matches. The order is therefore: blueprint handler by code, app handler by code, blueprint handler by class, app handler by class. RoutingException (for example RequestRedirect) and HTTPExceptions with code None are returned directly and are never passed to handlers.",
+  "key_facts": [
+   "Lookup by HTTP status code happens before lookup by exception class",
+   "Blueprint handlers (innermost first) take precedence over app handlers",
+   "Matching walks the exception class MRO",
+   "RoutingException subclasses are not passed to error handlers"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "865-888"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "830-863"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "When an exception is raised, Flask searches for a registered error handler in the following order:\n\n1.  **Current Blueprint Handlers**: It first checks for a handler registered on the blueprint that is handling the current request.\n    *   **By HTTP Status Code**: It looks for a handler registered with the specific HTTP status code of the exception (e.g., `404`, `500`).\n    *   **By Exception Class**: If no code-specific handler is found, it looks for a handler registered for the exception's class, traversing the Method Resolution Order (MRO). For example, for a `ForbiddenSubclassRegistered` exception, it would check for handlers for `ForbiddenSubclassRegistered`, then `Forbidden`, then `HTTPException`, and finally `Exception`.\n\n2.  **Application-Wide Handlers**: If no suitable handler is found on the blueprint, it checks for handlers registered on the application instance (`app`).\n    *   **By HTTP Status Code**: It looks for a handler registered with the specific HTTP status code.\n    *   **By Exception Class**: If no code-specific handler is found, it again searches by exception class, traversing the MRO.\n\nThis logic is implemented in the `_find_error_handler` method.\n\n### Code Reference\n\nThe search order is determined by the nested loops within `_find_error_handler`. The `names` tuple `(*blueprints, None)` ensures blueprints are checked before the app (`None`). The `for c in (code, None)` loop ensures status codes are checked before exception classes.\n\n```python\n# src/flask/sansio/app.py:868-890\n    def _find_error_handler(\n        self, e: Exception, blueprints: list[str]\n    ) -> ft.ErrorHandlerCallable | None:\n        \"\"\"Return a registered error handler for an exception in this order:\n        blueprint handler for a specific code, app handler for a specific code,\n        blueprint handler for an exception class, app handler for an exception\n        class, or ``None`` if a suitable handler is not found.\n        \"\"\"\n        exc_class, code = self._get_exc_class_and_code(type(e))\n        names = (*blueprints, None)\n\n        for c in (code, None) if code is not None else (None,):\n            for name in names:\n                handler_map = self.error_handler_spec[name][c]\n\n                if not handler_map:\n                    continue\n\n                for cls in exc_class.__mro__:\n                    handler = handler_map.get(cls)\n\n                    if handler is not None:\n                        return handler\n        return None\n```\n\n### Examples from Tests\n\n*   **Blueprint over App**: A handler on a blueprint will be chosen over a handler on the app for routes belonging to that blueprint.\n\n    ```python\n    # tests/test_user_error_handler.py:149-165\n    def test_error_handler_blueprint(app):\n        bp = flask.Blueprint(\"bp\", __name__)\n    \n        @bp.errorhandler(500)\n        def bp_exception_handler(e):\n            return \"bp-error\"\n    \n        # ...\n    \n        @app.errorhandler(500)\n        def app_exception_handler(e):\n            return \"app-error\"\n    \n        # ...\n        app.register_blueprint(bp, url_prefix=\"/bp\")\n    \n        c = app.test_client()\n    \n        assert c.get(\"/error\").data == b\"app-error\"\n        assert c.get(\"/bp/error\").data == b\"bp-error\"\n    ```\n\n*   **Specific Exception over Superclass**: A handler for a more specific exception subclass is chosen over a handler for its parent class.\n\n    ```python\n    # tests/test_user_error_handler.py:111-131\n    @app.errorhandler(Forbidden)\n    def forbidden_exception_handler(e):\n        assert isinstance(e, Forbidden)\n        return \"forbidden\"\n\n    @app.errorhandler(ForbiddenSubclassRegistered)\n    def subclass_exception_handler(e):\n        assert isinstance(e, ForbiddenSubclassRegistered)\n        return \"forbidden-registered\"\n\n    # ... routes that raise Forbidden, ForbiddenSubclassRegistered, etc.\n\n    c = app.test_client()\n\n    assert c.get(\"/forbidden\").data == b\"forbidden\"\n    assert c.get(\"/forbidden-unregistered\").data == b\"forbidden\"\n    assert c.get(\"/forbidden-registered\").data == b\"forbidden-registered\"\n    ```"
+ },
+ {
+  "id": "flask-11",
+  "category": "behavior",
+  "question": "What does handle_exception do for an unhandled non-HTTP exception, and when does it re-raise instead of returning a 500?",
+  "reference_answer": "It always sends got_request_exception first. PROPAGATE_EXCEPTIONS defaults to None, which means propagate when app.testing or app.debug is true. When propagating, it re-raises the exception. Otherwise it logs the exception with log_exception and creates InternalServerError(original_exception=e). If a 500/InternalServerError handler exists, that handler receives the InternalServerError (not the original exception). The result goes through finalize_request(from_error_handler=True), so after_request still runs and finalization errors are only logged.",
+  "key_facts": [
+   "got_request_exception is always sent",
+   "PROPAGATE_EXCEPTIONS=None means re-raise if testing or debug is enabled",
+   "500 handlers receive an InternalServerError whose original_exception is the real error",
+   "finalize_request is called with from_error_handler=True so after_request still runs"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "897-948"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "1021-1051"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "For an unhandled non-HTTP exception, the `handle_exception` method orchestrates the response, typically resulting in a 500 Internal Server Error.\n\n### What `handle_exception` does\n\n1.  **Sends a Signal**: It dispatches the `got_request_exception` signal, allowing listeners to react to the error.\n    ```python\n    # src/flask/app.py:925\n    got_request_exception.send(self, _async_wrapper=self.ensure_sync, exception=e)\n    ```\n2.  **Logs the Exception**: If exceptions are not being propagated, it logs the full exception traceback using the application's logger.\n    ```python\n    # src/flask/app.py:938\n    self.log_exception(ctx, exc_info)\n    ```\n3.  **Wraps the Exception**: It creates an instance of `werkzeug.exceptions.InternalServerError` and sets the original, unhandled exception on its `original_exception` attribute. This standardizes the error type for handlers.\n    ```python\n    # src/flask/app.py:940\n    server_error = InternalServerError(original_exception=e)\n    ```\n4.  **Invokes a 500 Handler**: It searches for a registered error handler for either the `InternalServerError` class or the `500` status code. If a handler is found, it is called with the `InternalServerError` instance.\n    ```python\n    # src/flask/app.py:941-944\n    handler = self._find_error_handler(server_error, ctx.request.blueprints)\n\n    if handler is not None:\n        server_error = self.ensure_sync(handler)(server_error)\n    ```\n5.  **Returns a Response**: It finalizes the request, returning a response object for the `InternalServerError`. This will be the output of the registered 500 handler or a default \"Internal Server Error\" page if no handler is found.\n\nThis process is confirmed by tests where a non-HTTP exception like `KeyError` is raised, and the registered handler for `500` receives an `InternalServerError` instance wrapping the `KeyError`.\n\n```python\n# tests/test_user_error_handler.py:261-262\nassert client.get(\"/custom\").data == b\"wrapped Custom\"\nassert client.get(\"/error\").data == b\"wrapped KeyError\"\n```\n\n### When it re-raises the exception\n\nThe method re-raises the original exception instead of returning a 500 response under specific configuration conditions, primarily to aid debugging.\n\nThe exception is re-raised if the `PROPAGATE_EXCEPTIONS` configuration value is `True`.\n\n```python\n# src/flask/app.py:926-936\npropagate = self.config[\"PROPAGATE_EXCEPTIONS\"]\n\nif propagate is None:\n    propagate = self.testing or self.debug\n\nif propagate:\n    # Re-raise if called with an active exception, otherwise\n    # raise the passed in exception.\n    if exc_info[1] is e:\n        raise\n\n    raise e\n```\n\n-   If `PROPAGATE_EXCEPTIONS` is explicitly set to `True`, it will always re-raise.\n-   If `PROPAGATE_EXCEPTIONS` is `None` (the default), it will re-raise if the application is in debug mode (`self.debug` is `True`) or testing mode (`self.testing` is `True`)."
+ },
+ {
+  "id": "flask-12",
+  "category": "behavior",
+  "question": "What are DefaultJSONProvider's defaults (ensure_ascii, sort_keys, compact, extra types) and how does jsonify format output?",
+  "reference_answer": "ensure_ascii=True, sort_keys=True, compact=None, mimetype='application/json'. The default hook converts date/datetime to HTTP-date (RFC 822) strings via http_date, Decimal and UUID to str, dataclasses via dataclasses.asdict, and objects with __html__ to str(o.__html__()). Anything else raises TypeError. response(), used by jsonify, uses indent=2 when compact is False or when compact is None and debug is on. Otherwise it uses the compact separators (',', ':'). It always appends a trailing newline.",
+  "key_facts": [
+   "ensure_ascii=True and sort_keys=True by default",
+   "datetime/date serialize as HTTP date strings; Decimal and UUID as str; dataclasses via asdict",
+   "Output is compact unless debug mode (compact=None) or compact=False, in which case indent=2",
+   "jsonify returns current_app.json.response(...) and the body ends with a newline"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/json/provider.py",
+    "lines": "108-224"
+   },
+   {
+    "path": "src/flask/json/__init__.py",
+    "lines": "138-170"
+   }
+  ],
+  "X": "### `DefaultJSONProvider` Defaults\n\nThe `DefaultJSONProvider` class configures JSON serialization with the following default attributes:\n\n*   **`ensure_ascii = True`**: Non-ASCII characters are replaced with escape sequences (e.g., `\\u2603`).\n*   **`sort_keys = True`**: Keys in dictionaries are sorted alphabetically before serialization.\n*   **`compact: bool | None = None`**: Controls output formatting. If `None`, the output is compact (no extra whitespace) unless the application is in debug mode.\n\n#### Extra Data Types Handled\n\nThe `DefaultJSONProvider` extends the standard `json` library to serialize these additional types:\n\n*   `datetime.datetime` and `datetime.date`: Serialized to RFC 822 strings (HTTP date format).\n*   `uuid.UUID`: Serialized to its string representation.\n*   `decimal.Decimal`: Serialized to its string representation.\n*   `dataclasses.dataclass`: Converted to a `dict` using `dataclasses.asdict`.\n*   Objects with an `__html__` method (like `markupsafe.Markup`): The `__html__()` method is called, and the resulting string is used.\n\nThis is implemented in the `_default` helper function:\n\n```python\n# src/flask/json/provider.py:104-118\ndef _default(o: t.Any) -> t.Any:\n    if isinstance(o, date):\n        return http_date(o)\n\n    if isinstance(o, (decimal.Decimal, uuid.UUID)):\n        return str(o)\n\n    if dataclasses and dataclasses.is_dataclass(o):\n        return dataclasses.asdict(o)  # type: ignore[arg-type]\n\n    if hasattr(o, \"__html__\"):\n        return str(o.__html__())\n\n    raise TypeError(f\"Object of type {type(o).__name__} is not JSON serializable\")\n```\n\n### `jsonify` Output Formatting\n\nThe `jsonify` function creates a `Response` object by calling the `response` method of the application's configured JSON provider (`app.json`). The formatting of the JSON output is determined by the provider's `compact` attribute.\n\nFor `DefaultJSONProvider`:\n*   If `compact` is `True`, or if `compact` is `None` and the app is **not** in debug mode, the JSON output is minified without indentation, newlines, or extra spaces.\n*   If `compact` is `False`, or if `compact` is `None` and the app **is** in debug mode, the JSON output is \"pretty-printed\" with indentation and newlines to be more human-readable.\n\nThe docstring for the `compact` attribute clarifies this behavior:\n\n```python\n# src/flask/json/provider.py:155-159\n    compact: bool | None = None\n    \"\"\"If ``True``, or ``None`` out of debug mode, the :meth:`response`\n    output will not add indentation, newlines, or spaces. If ``False``,\n    or ``None`` in debug mode, it will use a non-compact representation.\n    \"\"\"\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-13",
+  "category": "behavior",
+  "question": "When does SecureCookieSessionInterface.save_session set, delete, or skip the session cookie, and when is Vary: Cookie added?",
+  "reference_answer": "If session.accessed, it adds Vary: Cookie. If the session is empty and was modified, it deletes the cookie and adds Vary. If it is empty and unmodified, it returns without setting a cookie. Otherwise it sets the cookie only when should_set_cookie is true, meaning session.modified or (session.permanent and SESSION_REFRESH_EACH_REQUEST). expires is now + PERMANENT_SESSION_LIFETIME only for permanent sessions, and None (a browser-session cookie) otherwise. With no SECRET_KEY, open_session returns None and a NullSession is used. A bad signature yields a new empty session.",
+  "key_facts": [
+   "Vary: Cookie is added whenever the session was accessed",
+   "An emptied (modified) session deletes the cookie",
+   "Cookie is written only if modified or (permanent and SESSION_REFRESH_EACH_REQUEST)",
+   "Without SECRET_KEY the session becomes a NullSession; invalid signatures produce an empty session"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sessions.py",
+    "lines": "223-247"
+   },
+   {
+    "path": "src/flask/sessions.py",
+    "lines": "323-385"
+   },
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "381-394"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Based on the `save_session` method in `src/flask/sessions.py`, the session cookie is managed as follows:\n\n### Vary: Cookie Header\n\nThe `Vary: Cookie` header is added to the response under three conditions to indicate to caches that the response may differ based on the `Cookie` request header.\n\n1.  If the session was accessed at any point during the request (`session.accessed` is `True`).\n    ```python\n    # src/flask/sessions.py:350-352\n    if session.accessed:\n        response.vary.add(\"Cookie\")\n    ```\n2.  If the session is empty and modified, causing the cookie to be deleted.\n    ```python\n    # src/flask/sessions.py:360-361\n                )\n                response.vary.add(\"Cookie\")\n    ```\n3.  If the conditions for setting a new cookie are met.\n    ```python\n    # src/flask/sessions.py:385-386\n        )\n        response.vary.add(\"Cookie\")\n    ```\n\n### Setting the Cookie\n\nThe session cookie is set on the response if the following conditions are met:\n\n1.  The session is not empty.\n2.  The `should_set_cookie` method returns `True`.\n\nThe `should_set_cookie` method returns `True` if either of these is true:\n*   The session has been modified (`session.modified` is `True`).\n*   The session is permanent (`session.permanent` is `True`) AND the `SESSION_REFRESH_EACH_REQUEST` application config is `True`.\n\n```python\n# src/flask/sessions.py:368-386\n        if not self.should_set_cookie(app, session):\n            return\n\n        expires = self.get_expiration_time(app, session)\n        val = self.get_signing_serializer(app).dumps(dict(session))  # type: ignore[union-attr]\n        response.set_cookie(\n            name,\n            val,\n            expires=expires,\n            httponly=httponly,\n            domain=domain,\n            path=path,\n            secure=secure,\n            partitioned=partitioned,\n            samesite=samesite,\n        )\n        response.vary.add(\"Cookie\")\n```\n```python\n# src/flask/sessions.py:234-243\n    def should_set_cookie(self, app: Flask, session: SessionMixin) -> bool:\n        \"\"\"Used by session backends to determine if a ``Set-Cookie`` header\n        should be set for this session cookie for this response. If the session\n        has been modified, the cookie is set. If the session is permanent and\n        the ``SESSION_REFRESH_EACH_REQUEST`` config is true, the cookie is\n        always set.\n\n        This check is usually skipped if the session was deleted.\n\n        .. versionadded:: 0.11\n        \"\"\"\n\n        return session.modified or (\n            session.permanent and app.config[\"SESSION_REFRESH_EACH_REQUEST\"]\n        )\n```\n\n### Deleting the Cookie\n\nThe session cookie is deleted from the response if the session dictionary is empty (`not session`) AND the session has been marked as modified (`session.modified` is `True`). This typically happens when `session.clear()` is called or the last item is removed from the session.\n\n```python\n# src/flask/sessions.py:355-365\n        if not session:\n            if session.modified:\n                response.delete_cookie(\n                    name,\n                    domain=domain,\n                    path=path,\n                    secure=secure,\n                    partitioned=partitioned,\n                    samesite=samesite,\n                    httponly=httponly,\n                )\n                response.vary.add(\"Cookie\")\n\n            return\n```\n\n### Skipping the Cookie\n\nThe `Set-Cookie` header is skipped (neither set nor deleted) in two main scenarios:\n\n1.  The session is empty, but it has not been modified.\n    ```python\n    # src/flask/sessions.py:355-365\n    # `if not session:` is true, but `if session.modified:` is false.\n    # The function returns without action.\n    if not session:\n        if session.modified:\n            ...\n        return\n    ```\n2.  The session is not empty, but the `should_set_cookie` method returns `False`. This occurs when the session was not modified, and it is either not a permanent session or `SESSION_REFRESH_EACH_REQUEST` is disabled.\n    ```python\n    # src/flask/sessions.py:368-369\n    if not self.should_set_cookie(app, session):\n        return\n    ```"
+ },
+ {
+  "id": "flask-14",
+  "category": "edge_case",
+  "question": "What status code does flask.redirect() / app.redirect() use by default in this checkout?",
+  "reference_answer": "303 See Other. Both flask.helpers.redirect and App.redirect default to code=303, a change from 302 in 3.2.",
+  "key_facts": [
+   "Default redirect code is 303",
+   "It changed from 302 in Flask 3.2"
+  ],
+  "wrong_but_plausible": "302 Found (the default in Flask <= 3.1 and in Werkzeug's redirect)",
+  "evidence": [
+   {
+    "path": "src/flask/helpers.py",
+    "lines": "254-278"
+   },
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "936-954"
+   }
+  ],
+  "X": "The default status code for `flask.redirect()` and `app.redirect()` is `303`.\n\n### Source Code Reference\n\nThe default value is defined in the function signature for `redirect` in `src/flask/helpers.py`.\n\n```python\n# src/flask/helpers.py:252-255\ndef redirect(\n    location: str, code: int = 303, Response: type[BaseResponse] | None = None\n) -> BaseResponse:\n```\n\nThe helper function `flask.redirect` calls `current_app.redirect` if an application context is available.\n\n```python\n# src/flask/helpers.py:277-278\n    if (ctx := _cv_app.get(None)) is not None:\n        return ctx.app.redirect(location, code=code)\n```\n\n### Changelog\n\nThis default was changed from `302` to `303` in version 3.2.0, as noted in `CHANGES.rst`.\n\n```rst\n# CHANGES.rst:21-26\n-   ``redirect`` returns a ``303`` status code by default instead of ``302``.\n    This tells the client to always switch to ``GET``, rather than only\n    switching ``POST`` to ``GET``. This preserves the current behavior of\n    ``GET`` and ``POST`` redirects, and is also correct for frontend libraries\n    such as HTMX. :issue:`5895`\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-15",
+  "category": "edge_case",
+  "question": "Is there a separate RequestContext class, and if an app context is already pushed (e.g. in a test), does handling a request reuse it?",
+  "reference_answer": "No. RequestContext was merged into AppContext in 3.2, and flask.ctx.RequestContext is only a deprecated alias served by a module __getattr__ with a DeprecationWarning. wsgi_app always creates and pushes a new combined AppContext with request_context(environ), so an app context that is already pushed is not reused. That means g is not shared between them.",
+  "key_facts": [
+   "RequestContext is a deprecated alias of AppContext (removed in 4.0)",
+   "Each request pushes a fresh combined AppContext; an existing pushed app context is not reused"
+  ],
+  "wrong_but_plausible": "Flask pushes a RequestContext and reuses an already-active app context, sharing g",
+  "evidence": [
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "260-298"
+   },
+   {
+    "path": "src/flask/ctx.py",
+    "lines": "528-540"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "1501-1515"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "1592-1597"
+   }
+  ],
+  "X": "No, the `RequestContext` class was merged with the `AppContext` class in Flask version 3.2. `AppContext` now serves for both application-only and request-specific contexts. The name `RequestContext` is a deprecated alias that will be removed in a future version.\n\n### `AppContext` Class\n\nThe `AppContext` class in `src/flask/ctx.py` now handles both roles. Its nature (app-only or request) is determined by whether it contains request data.\n\n*   **File**: `src/flask/ctx.py`\n*   **Lines**: 291-294\n*   **Content**:\n    ```python\n    .. versionchanged:: 3.2\n        Merged with ``RequestContext``. The ``RequestContext`` alias will be\n        removed in Flask 4.0.\n    ```\n*   **Lines**: 300-309\n*   **Content**:\n    ```python\n    def __init__(\n        self,\n        app: Flask,\n        *,\n        request: Request | None = None,\n        session: SessionMixin | None = None,\n    ) -> None:\n        self.app = app\n        self._request = request\n        self._session = session\n    ```\n*   **Lines**: 351-353\n*   **Content**:\n    ```python\n    def has_request(self) -> bool:\n        \"\"\"True if this context was created with request data.\"\"\"\n        return self._request is not None\n    ```\n\n### Context Pushing Behavior\n\nSince Flask 3.2, a new context is pushed for every request, regardless of whether an app context is already active. The previous behavior of detecting and reusing an existing app context has been removed.\n\n*   **File**: `src/flask/ctx.py`\n*   **Lines**: 296-299\n*   **Content**:\n    ```python\n    .. versionchanged:: 3.2\n        A combined app and request context is pushed for every request and CLI\n        command, rather than trying to detect if an app context is already\n        pushed.\n    ```\n\nWhen a request is handled by `app.wsgi_app`, it creates a new context using `app.request_context`, which in turn instantiates a new `AppContext` object. This new context is then pushed onto the stack.\n\n*   **File**: `src/flask/app.py`\n*   **Lines**: 1500-1507\n*   **Content**:\n    ```python\n    def request_context(self, environ: WSGIEnvironment) -> AppContext:\n        \"\"\"Create an :class:`.AppContext` with request information representing\n        the given WSGI environment.\n        ...\n        \"\"\"\n        return AppContext.from_environ(self, environ)\n    ```\n*   **File**: `src/flask/app.py`\n*   **Lines**: 1592-1593\n*   **Content**:\n    ```python\n    def wsgi_app(...)\n        ...\n        with self.request_context(environ) as ctx:\n        ...\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-16",
+  "category": "edge_case",
+  "question": "If you subclass Flask and override dispatch methods like full_dispatch_request(self) or handle_exception(self, e) with their old signatures, what happens?",
+  "reference_answer": "These dispatch methods now take ctx: AppContext as their first parameter. Flask.__init_subclass__ inspects 12 overridable methods: handle_http_exception, handle_user_exception, handle_exception, log_exception, dispatch_request, full_dispatch_request, finalize_request, make_default_options_response, preprocess_request, process_response, do_teardown_request and do_teardown_appcontext. If an override's second parameter is not named ctx and is not annotated as AppContext, it emits a DeprecationWarning ('will not be supported in Flask 4.0'). It then wraps the override with remove_ctx and the base method with add_ctx, so old-style code keeps working.",
+  "key_facts": [
+   "Dispatch methods take ctx: AppContext as the first argument",
+   "Old-signature overrides are detected in __init_subclass__ and emit a DeprecationWarning",
+   "Overrides are wrapped (remove_ctx/add_ctx) so they continue to work until Flask 4.0"
+  ],
+  "wrong_but_plausible": "The override silently breaks with a TypeError because Flask passes ctx",
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "85-107"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "254-308"
+   }
+  ],
+  "X": "When a Flask subclass overrides dispatch methods with their old signatures (without the `ctx` parameter), Flask detects the outdated signature, issues a `DeprecationWarning`, and wraps the method to maintain backward compatibility.\n\n### Behavior\n\n1.  **Deprecation Warning**: A `DeprecationWarning` is issued, indicating that the method signature has changed to include `ctx: AppContext` as the first parameter and that the old signature will be unsupported in Flask 4.0.\n\n    ```python\n    # src/flask/app.py:302-307\n    warnings.warn(\n        f\"The '{method.__name__}' method now takes 'ctx: AppContext'\"\n        \" as the first parameter. The old signature is deprecated\"\n        \" and will not be supported in Flask 4.0.\",\n        DeprecationWarning,\n        stacklevel=2,\n    )\n    ```\n\n2.  **Method Wrapping**: To ensure the old method signature works, Flask applies wrapper functions:\n    *   `remove_ctx`: This wrapper is applied to the subclass's overridden method. It intercepts the call, removes the `ctx` argument, and then calls the original overridden method with the remaining arguments.\n    *   `add_ctx`: This wrapper is applied to the base `Flask` class's method. It ensures that if `super()` is called from the subclass's method without `ctx`, the context is added back before calling the base implementation.\n\n### Implementation Details\n\nThe detection and wrapping logic is located in the `Flask` class's metaclass `__init__`. It iterates through a list of methods, including `full_dispatch_request` and `handle_exception`, to check their signatures.\n\n```python\n# src/flask/app.py:259-281\nfor method in (\n    cls.handle_http_exception,\n    cls.handle_user_exception,\n    cls.handle_exception,\n    cls.log_exception,\n    cls.dispatch_request,\n    cls.full_dispatch_request,\n    cls.finalize_request,\n    cls.make_default_options_response,\n    cls.preprocess_request,\n    cls.process_response,\n    cls.do_teardown_request,\n    cls.do_teardown_appcontext,\n):\n    base_method = getattr(Flask, method.__name__)\n\n    if method is base_method:\n        # not overridden\n        continue\n\n    # ... signature inspection ...\n```\n\nIf an old signature is detected, the wrappers are applied:\n\n```python\n# src/flask/app.py:308-309\nsetattr(cls, method.__name__, remove_ctx(method))\nsetattr(Flask, method.__name__, add_ctx(base_method))\n```\n\nThe wrapper functions are defined to manage the `ctx` argument:\n\n```python\n# src/flask/app.py:86-94\ndef remove_ctx(f: F) -> F:\n    def wrapper(self: Flask, *args: t.Any, **kwargs: t.Any) -> t.Any:\n        if args and isinstance(args[0], AppContext):\n            args = args[1:]\n\n        return f(self, *args, **kwargs)\n\n    return update_wrapper(wrapper, f)  # type: ignore[return-value]\n```\n\n```python\n# src/flask/app.py:98-106\ndef add_ctx(f: F) -> F:\n    def wrapper(self: Flask, *args: t.Any, **kwargs: t.Any) -> t.Any:\n        if not args:\n            args = (app_ctx._get_current_object(),)\n        elif not isinstance(args[0], AppContext):\n            args = (app_ctx._get_current_object(), *args)\n\n        return f(self, *args, **kwargs)\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-17",
+  "category": "edge_case",
+  "question": "With a default app, what is app.config['DEBUG'] and where does that value come from? Is it the None from default_config?",
+  "reference_answer": "It is False unless FLASK_DEBUG is set, not None. default_config lists DEBUG as None, but App.make_config copies the defaults and overwrites DEBUG with get_debug_flag(). That function returns True only when FLASK_DEBUG is set to something other than '0', 'false' or 'no'. Setting app.debug also updates jinja_env.auto_reload when TEMPLATES_AUTO_RELOAD is None.",
+  "key_facts": [
+   "Flask.default_config has DEBUG: None",
+   "make_config overrides DEBUG with get_debug_flag() from FLASK_DEBUG, so it is False by default",
+   "FLASK_DEBUG values '0', 'false', 'no' (case-insensitive) count as false"
+  ],
+  "wrong_but_plausible": "app.config['DEBUG'] is None by default because default_config says None",
+  "evidence": [
+   {
+    "path": "src/flask/app.py",
+    "lines": "206-209"
+   },
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "478-493"
+   },
+   {
+    "path": "src/flask/helpers.py",
+    "lines": "28-33"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The default value for `app.config['DEBUG']` in a newly instantiated Flask application is `None`. This value originates from the `default_config` dictionary within the `Flask` class.\n\n### Source of Default Value\n\nThe `Flask.default_config` is an `ImmutableDict` that provides the initial configuration for a Flask application. The `DEBUG` key is explicitly set to `None` here.\n\n*   **File:** `src/flask/app.py`\n*   **Code:**\n    ```python\n    # src/flask/app.py:195-235\n    class Flask(scaffold.Scaffold):\n        # ...\n        default_config = ImmutableDict(\n            {\n                \"DEBUG\": None,\n                \"TESTING\": False,\n                # ...\n            }\n        )\n    ```\n\n### Effective Value and Behavior\n\nAlthough the configured value is `None`, the `app.debug` property, which reads from `app.config[\"DEBUG\"]`, is documented to have an effective default of `False`. In practice, `None` is treated as a \"falsy\" value, so `if app.debug:` will evaluate to false.\n\n*   **File:** `src/flask/sansio/app.py`\n*   **Code:**\n    ```python\n    # src/flask/sansio/app.py:551-562\n    @property\n    def debug(self) -> bool:\n        \"\"\"Whether debug mode is enabled. ...\n        ...\n        Default: ``False``\n        \"\"\"\n        return self.config[\"DEBUG\"]  # type: ignore[no-any-return]\n\n    @debug.setter\n    def debug(self, value: bool) -> None:\n        self.config[\"DEBUG\"] = value\n\n        if self.config[\"TEMPLATES_AUTO_RELOAD\"] is None:\n            self.jinja_env.auto_reload = value\n    ```\n\n### How the Value is Set to a Boolean\n\nThe `None` value is typically replaced by a boolean (`True` or `False`) during the application's lifecycle, for example when using the development server or the `flask` CLI.\n\n1.  **Using `app.run()`**: The `debug` parameter of `app.run()` will override the config value. If the `FLASK_DEBUG` environment variable is set, `app.run()` will also use it.\n    *   **File:** `src/flask/app.py`\n    *   **Code:**\n        ```python\n        # src/flask/app.py:712-717\n            # if set, env var overrides existing value\n            if \"FLASK_DEBUG\" in os.environ:\n                self.debug = get_debug_flag()\n\n        # debug passed to method overrides all other sources\n        if debug is not None:\n            self.debug = bool(debug)\n        ```\n\n2.  **Using the `flask` CLI**: The CLI automatically sets `app.debug` based on the `FLASK_DEBUG` environment variable.\n    *   **File:** `src/flask/cli.py`\n    *   **Code:**\n        ```python\n        # src/flask/cli.py:367-370\n        if self.set_debug_flag:\n            # Update the app's debug flag through the descriptor so that\n            # other values repopulate as well.\n            app.debug = get_debug_flag()\n        ```\n\n3.  **Direct Assignment**: You can set it directly in your code.\n    *   **Example:**\n        ```python\n        # tests/test_apps/blueprintapp/__init__.py:4\n        app.config[\"DEBUG\"] = True\n        ```"
+ },
+ {
+  "id": "flask-18",
+  "category": "where",
+  "question": "Where is the session cookie signer created, and what salt/digest/key derivation does it use? How is SECRET_KEY_FALLBACKS handled?",
+  "reference_answer": "In src/flask/sessions.py, SecureCookieSessionInterface.get_signing_serializer. It returns None when there is no secret_key. Otherwise it builds an itsdangerous URLSafeTimedSerializer with salt='cookie-session', key_derivation='hmac', digest_method SHA-1 (looked up lazily through _lazy_sha1 so FIPS builds can import it), and a TaggedJSONSerializer payload serializer. The key list is SECRET_KEY_FALLBACKS followed by SECRET_KEY, with the current key last.",
+  "key_facts": [
+   "Implemented in SecureCookieSessionInterface.get_signing_serializer in sessions.py",
+   "salt 'cookie-session', key_derivation 'hmac', digest SHA-1 (lazy)",
+   "Payload serializer is TaggedJSONSerializer (json/tag.py)",
+   "Keys = SECRET_KEY_FALLBACKS + [SECRET_KEY]; returns None if no secret key"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sessions.py",
+    "lines": "273-321"
+   },
+   {
+    "path": "src/flask/json/tag.py",
+    "lines": "219-260"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### Signer Creation\n\nThe session cookie signer, an instance of `itsdangerous.URLSafeTimedSerializer`, is created by the `get_signing_serializer` method in the `SecureCookieSessionInterface` class.\n\n```python\n# src/flask/sessions.py:305-327\n    def get_signing_serializer(self, app: Flask) -> URLSafeTimedSerializer | None:\n        if not app.secret_key:\n            return None\n\n        keys: list[str | bytes] = []\n\n        if fallbacks := app.config[\"SECRET_KEY_FALLBACKS\"]:\n            keys.extend(fallbacks)\n\n        keys.append(app.secret_key)  # itsdangerous expects current key at top\n        return URLSafeTimedSerializer(\n            keys,  # type: ignore[arg-type]\n            salt=self.salt,\n            serializer=self.serializer,\n            signer_kwargs={\n                \"key_derivation\": self.key_derivation,\n                \"digest_method\": self.digest_method,\n            },\n        )\n```\n\n### Signing Parameters\n\nThe parameters for the signer are defined as class attributes on `SecureCookieSessionInterface`:\n\n*   **Salt**: The `salt` is a static string `\"cookie-session\"`.\n    ```python\n    # src/flask/sessions.py:296\n    salt = \"cookie-session\"\n    ```\n*   **Digest Method**: The `digest_method` defaults to `sha1`, loaded lazily by the `_lazy_sha1` function.\n    ```python\n    # src/flask/sessions.py:298\n    digest_method = staticmethod(_lazy_sha1)\n    ```\n*   **Key Derivation**: The `key_derivation` method is the string `\"hmac\"`.\n    ```python\n    # src/flask/sessions.py:301\n    key_derivation = \"hmac\"\n    ```\n\n### `SECRET_KEY_FALLBACKS` Handling\n\nThe `SECRET_KEY_FALLBACKS` configuration allows for key rotation.\n\n1.  A list of keys is created, starting with the keys from `app.config[\"SECRET_KEY_FALLBACKS\"]`.\n2.  The primary `app.secret_key` is appended to the end of this list.\n3.  The combined list is passed to the `URLSafeTimedSerializer`.\n4.  The `itsdangerous` library uses the *first* key in the provided list for signing new session data, and it tries every key in the list when verifying an existing session's signature. This allows sessions signed with an old key (now a fallback) to remain valid after the primary key has been changed."
+ },
+ {
+  "id": "flask-19",
+  "category": "where",
+  "question": "Where does the `flask` CLI locate the application, and what names/files does it try?",
+  "reference_answer": "In src/flask/cli.py. ScriptInfo.load_app uses the --app/FLASK_APP value, or tries wsgi.py and then app.py in the current directory. locate_app imports the module and calls find_best_app. find_best_app checks the attributes 'app' and then 'application', then looks for exactly one Flask instance in the module (more than one raises NoAppException), then calls the factory 'create_app' or 'make_app' with no arguments.",
+  "key_facts": [
+   "Implemented in cli.py: ScriptInfo.load_app, locate_app, find_best_app",
+   "Without --app/FLASK_APP it tries wsgi.py then app.py",
+   "find_best_app checks 'app', 'application', a single Flask instance, then factories 'create_app'/'make_app'"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/cli.py",
+    "lines": "41-91"
+   },
+   {
+    "path": "src/flask/cli.py",
+    "lines": "333-368"
+   }
+  ],
+  "X": "The Flask CLI locates the application in the following order of precedence:\n\n### 1. Explicit Configuration\n\nThe application path is determined by the `--app` command-line option or the `FLASK_APP` environment variable. This value can be provided in several formats:\n\n*   **Module and Variable:** `my_app:app_instance`\n    *   Imports `my_app` and uses the `app_instance` variable.\n*   **Module and Factory:** `my_app:create_app('dev')`\n    *   Imports `my_app`, finds the `create_app` function, and calls it with the provided arguments to get the application instance.\n*   **Module Only:** `my_app`\n    *   Imports `my_app` and triggers an automatic discovery process within that module (see \"Automatic Discovery within a Module\" below).\n\nThis logic is handled in `src/flask/cli.py`:\n```python\n# src/flask/cli.py:344-349\n           if self.app_import_path:\n                path, name = (\n                    re.split(r\":(?![\\\\/])\", self.app_import_path, maxsplit=1) + [None]\n                )[:2]\n                import_name = prepare_import(path)\n                app = locate_app(import_name, name)\n```\n\n### 2. Automatic File Discovery\n\nIf `--app` or `FLASK_APP` is not set, the CLI attempts to find the application by importing default filenames from the current directory:\n\n1.  `wsgi.py`\n2.  `app.py`\n\nIt stops at the first file that successfully provides a Flask application instance. The discovery within these files follows the rules below.\n\n```python\n# src/flask/cli.py:350-356\n            else:\n                for path in (\"wsgi.py\", \"app.py\"):\n                    import_name = prepare_import(path)\n                    app = locate_app(import_name, None, raise_if_not_found=False)\n\n                    if app is not None:\n                        break\n```\n\n### 3. Automatic Discovery within a Module\n\nWhen a module is imported (either through `FLASK_APP=my_app` or by finding `app.py`/`wsgi.py`), the `find_best_app` function searches for the application instance in this order:\n\n1.  A variable named `app`.\n2.  A variable named `application`.\n3.  Any variable that is an instance of `Flask`. This only works if there is exactly one such instance in the module.\n4.  A factory function named `create_app` that can be called without arguments.\n5.  A factory function named `make_app` that can be called without arguments.\n\n```python\n# src/flask/cli.py:45-71\ndef find_best_app(module: ModuleType) -> Flask:\n    \"\"\"Given a module instance this tries to find the best possible\n    application in the module or raises an exception.\n    \"\"\"\n    from . import Flask\n\n    # Search for the most common names first.\n    for attr_name in (\"app\", \"application\"):\n        app = getattr(module, attr_name, None)\n\n        if isinstance(app, Flask):\n            return app\n\n    # Otherwise find the only object that is a Flask instance.\n    matches = [v for v in module.__dict__.values() if isinstance(v, Flask)]\n\n    if len(matches) == 1:\n        return matches[0]\n    elif len(matches) > 1:\n        raise NoAppException(\n            \"Detected multiple Flask applications in module\"\n            f\" '{module.__name__}'. Use '{module.__name__}:name'\"\n            \" to specify the correct one.\"\n        )\n\n    # Search for app factory functions.\n    for attr_name in (\"create_app\", \"make_app\"):\n        app_factory = getattr(module, attr_name, None)\n\n        if inspect.isfunction(app_factory):\n```\n\nIf no application can be found through any of these methods, a `NoAppException` is raised.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-20",
+  "category": "where",
+  "question": "Where are error handlers registered and validated, and what happens if you register a handler for an unknown status code or an exception instance?",
+  "reference_answer": "In src/flask/sansio/scaffold.py. Scaffold.errorhandler / register_error_handler call _get_exc_class_and_code and store the handler in error_handler_spec[None][code][exc_class]. An int that is not in werkzeug's default_exceptions raises ValueError. An exception instance raises TypeError. A non-Exception class raises ValueError. HTTPException subclasses are keyed by their code, and other classes are keyed under code None. Lookup happens in App._find_error_handler in sansio/app.py.",
+  "key_facts": [
+   "Registration in Scaffold.register_error_handler/_get_exc_class_and_code (sansio/scaffold.py)",
+   "Unknown integer code raises ValueError; passing an instance raises TypeError",
+   "Handlers stored in error_handler_spec[blueprint_or_None][code][exc_class]"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sansio/scaffold.py",
+    "lines": "598-700"
+   },
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "865-888"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Error handlers are registered and validated in the `Scaffold` class, which is a base for both `Flask` and `Blueprint` objects.\n\n### Registration\n\nError handlers are registered using the `@app.errorhandler()` decorator or the `app.register_error_handler()` method. Both methods are defined in `src/flask/sansio/scaffold.py`.\n\nThe `errorhandler` decorator is a wrapper around `register_error_handler`.\n\n```python\n# src/flask/sansio/scaffold.py:601-638\n    @setupmethod\n    def errorhandler(\n        self, code_or_exception: type[Exception] | int\n    ) -> t.Callable[[T_error_handler], T_error_handler]:\n        \"\"\"Register a function to handle errors by code or exception class.\n        ...\n        \"\"\"\n\n        def decorator(f: T_error_handler) -> T_error_handler:\n            self.register_error_handler(code_or_exception, f)\n            return f\n\n        return decorator\n```\n\nThe `register_error_handler` method performs the validation and stores the handler function in the `error_handler_spec` dictionary.\n\n```python\n# src/flask/sansio/scaffold.py:641-654\n    @setupmethod\n    def register_error_handler(\n        self,\n        code_or_exception: type[Exception] | int,\n        f: ft.ErrorHandlerCallable,\n    ) -> None:\n        \"\"\"Alternative error attach function to the :meth:`errorhandler`\n        decorator that is more straightforward to use for non decorator\n        usage.\n\n        .. versionadded:: 0.7\n        \"\"\"\n        exc_class, code = self._get_exc_class_and_code(code_or_exception)\n        self.error_handler_spec[None][code][exc_class] = f\n```\n\n### Validation\n\nValidation occurs within the `_get_exc_class_and_code` static method. It checks the type and value of the provided code or exception.\n\n#### Unknown Status Code\n\nIf you register a handler for an integer status code that is not a recognized HTTP error code in Werkzeug's `default_exceptions`, a `ValueError` is raised.\n\n```python\n# src/flask/sansio/scaffold.py:668-679\n        if isinstance(exc_class_or_code, int):\n            try:\n                exc_class = default_exceptions[exc_class_or_code]\n            except KeyError:\n                raise ValueError(\n                    f\"'{exc_class_or_code}' is not a recognized HTTP\"\n                    \" error code. Use a subclass of HTTPException with\"\n                    \" that code instead.\"\n                ) from None\n```\n\nThis behavior is confirmed by a test case:\n\n```python\n# tests/test_user_error_handler.py:40-43\n    with pytest.raises(ValueError) as exc_info:\n        app.register_error_handler(999, None)\n\n    assert \"Use a subclass of HTTPException\" in str(exc_info.value)\n```\n\n#### Exception Instance\n\nIf you attempt to register an *instance* of an exception rather than an exception *class*, a `TypeError` is raised.\n\n```python\n# src/flask/sansio/scaffold.py:682-688\n        if isinstance(exc_class, Exception):\n            raise TypeError(\n                f\"{exc_class!r} is an instance, not a class. Handlers\"\n                \" can only be registered for Exception classes or HTTP\"\n                \" error codes.\"\n            )\n```\n\nThis is also confirmed by a test case:\n\n```python\n# tests/test_user_error_handler.py:19-22\n    with pytest.raises(TypeError) as exc_info:\n        app.register_error_handler(CustomException(), None)\n\n    assert \"CustomException() is an instance, not a class.\" in str(exc_info.value)\n```"
+ },
+ {
+  "id": "flask-21",
+  "category": "where",
+  "question": "Where are a route's default HTTP methods and automatic OPTIONS handling decided, and where is the OPTIONS response produced?",
+  "reference_answer": "App.add_url_rule in src/flask/sansio/app.py decides this. methods come from the argument, else view_func.methods, else ('GET',). A plain string raises TypeError. The values are upper-cased and view_func.required_methods are added. provide_automatic_options comes from the argument, else the view_func attribute, else ('OPTIONS' not in methods and config PROVIDE_AUTOMATIC_OPTIONS, which defaults to True). When it is enabled, OPTIONS is added. At request time Flask.dispatch_request answers OPTIONS through make_default_options_response, which fills Allow from url_adapter.allowed_methods(). Registering a different function for an existing endpoint raises AssertionError.",
+  "key_facts": [
+   "Implemented in App.add_url_rule (sansio/app.py)",
+   "Default methods are ('GET',) when neither methods nor view_func.methods is set; a str raises TypeError",
+   "Automatic OPTIONS is controlled by the provide_automatic_options arg/attribute, falling back to PROVIDE_AUTOMATIC_OPTIONS config (default True)",
+   "Flask.dispatch_request returns make_default_options_response for OPTIONS requests"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "src/flask/sansio/app.py",
+    "lines": "601-659"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "966-990"
+   },
+   {
+    "path": "src/flask/app.py",
+    "lines": "1053-1063"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### 1. Default HTTP Methods\n\nA route's HTTP methods are determined within the `add_url_rule` method. If no methods are provided, they default to `(\"GET\",)`. The logic also checks for a `methods` attribute on the view function itself, which is common for class-based views.\n\n**File**: `src/flask/sansio/app.py`\n```python\n[lines 615-622]\n        # if the methods are not given and the view_func object knows its\n        # methods we can use that instead.  If neither exists, we go with\n        # a tuple of only ``GET`` as default.\n        if methods is None:\n            methods = getattr(view_func, \"methods\", None) or (\"GET\",)\n        if isinstance(methods, str):\n            raise TypeError(\n                \"Allowed methods must be a list of strings, for\"\n```\n\nFor `MethodView`, the `methods` attribute is automatically populated based on the HTTP methods (e.g., `get`, `post`) defined on the class.\n\n**File**: `src/flask/views.py`\n```python\n[lines 178-183]\n            for key in http_method_funcs:\n                if hasattr(cls, key):\n                    methods.add(key.upper())\n\n            if methods:\n                cls.methods = methods\n```\n\n### 2. Automatic OPTIONS Handling Decision\n\nThe decision to automatically handle `OPTIONS` requests is made in `add_url_rule` and stored as a `provide_automatic_options` attribute on the Werkzeug `Rule` object. The decision follows this order of precedence:\n\n1.  The `provide_automatic_options` argument passed to `add_url_rule` or the `@route` decorator.\n2.  The `provide_automatic_options` attribute on the `view_func`.\n3.  The application's `PROVIDE_AUTOMATIC_OPTIONS` configuration value, but only if `OPTIONS` is not already in the list of methods for the rule.\n\n**File**: `src/flask/sansio/app.py`\n```python\n[lines 628-643]\n        if provide_automatic_options is None:\n            provide_automatic_options = getattr(\n                view_func, \"provide_automatic_options\", None\n            )\n\n            if provide_automatic_options is None:\n                provide_automatic_options = (\n                    \"OPTIONS\" not in methods\n                    and self.config[\"PROVIDE_AUTOMATIC_OPTIONS\"]\n                )\n\n        if provide_automatic_options:\n            required_methods.add(\"OPTIONS\")\n\n        # Add the required methods now.\n        methods |= required_methods\n\n        rule_obj = self.url_rule_class(rule, methods=methods, **options)\n        rule_obj.provide_automatic_options = provide_automatic_options  # type: ignore[attr-defined]\n```\n\n### 3. OPTIONS Response Production\n\nThe automatic `OPTIONS` response is generated during request dispatching. The `dispatch_request` method checks the matched rule's `provide_automatic_options` attribute. If it's `True` and the request method is `OPTIONS`, it calls `make_default_options_response()` to create the response, bypassing the user-defined view function.\n\n**File**: `src/flask/app.py`\n```python\n[lines 980-988]\n        rule: Rule = req.url_rule  # type: ignore[assignment]\n        # if we provide automatic options for this URL and the\n        # request came with the OPTIONS method, reply automatically\n        if (\n            getattr(rule, \"provide_automatic_options\", False)\n            and req.method == \"OPTIONS\"\n        ):\n            return self.make_default_options_response(ctx)\n        # otherwise dispatch to the handler for that endpoint\n```"
+ },
+ {
+  "id": "flask-22",
+  "category": "dev_workflow",
+  "question": "Which Python versions are supported and tested?",
+  "reference_answer": "pyproject has requires-python '>=3.10'. The tox env_list includes py3.14, py3.14t (free-threaded), py3.13, py3.12, py3.11, py3.10 and pypy3.11. CI also runs 3.14 on Windows and macOS. mypy and pyright both target Python 3.10.",
+  "key_facts": [
+   "requires-python >= 3.10",
+   "tox/CI test 3.10 through 3.14, plus 3.14t and pypy3.11",
+   "mypy python_version and pyright pythonVersion are 3.10"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "pyproject.toml",
+    "lines": "22"
+   },
+   {
+    "path": "pyproject.toml",
+    "lines": "171-180"
+   },
+   {
+    "path": "pyproject.toml",
+    "lines": "127-146"
+   },
+   {
+    "path": ".github/workflows/tests.yaml",
+    "lines": "18-31"
+   }
+  ],
+  "X": "Based on the project's changelog and CI configuration, Flask supports Python 3.8 and newer.\n\n### Tested Python Versions\n\nThe project is tested against the following Python versions in its CI pipeline:\n\n*   **CPython:** 3.10, 3.11, 3.12, 3.13, 3.14\n*   **PyPy:** pypy-3.11\n\nThis is configured in the GitHub Actions workflow file:\n\n**.github/workflows/tests.yaml**\n```yaml\n[lines 14-26]\n      matrix:\n        include:\n          - {python: '3.14'}\n          - {python: '3.14t'}\n          - {name: Windows, python: '3.14', os: windows-latest}\n          - {name: Mac, python: '3.14', os: macos-latest}\n          - {python: '3.13'}\n          - {python: '3.12'}\n          - {python: '3.11'}\n          - {python: '3.10'}\n          - {name: PyPy, python: 'pypy-3.11', tox: pypy3.11}\n          - {name: Minimum Versions, python: '3.14', tox: tests-min}\n          - {name: Development Versions, python: '3.10', tox: tests-dev}\n```\n\n### Support History\n\n*   **Version 2.3.0:** Dropped support for Python 3.7.\n*   **Version 2.0.0:** Dropped support for Python 2 and 3.5.\n*   **Version 1.1.0:** Dropped support for Python 3.4.\n\n**CHANGES.rst**\n```rst\n[lines 185-186]\nVersion 2.3.0\n-------------\n\nReleased 2023-04-25\n\n-   Drop support for Python 3.7. :pr:`5072`\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-23",
+  "category": "dev_workflow",
+  "question": "How are the tests run locally and in CI?",
+  "reference_answer": "With tox, using tox-uv (runner uv-venv-lock-runner, frozen lockfile constraints) and the 'tests' dependency group (asgiref, greenlet, pytest, python-dotenv). Each env runs 'pytest -v --tb=short --basetemp={env_tmp_dir}'. CI runs 'uv run --locked --no-default-groups --group dev tox run' with TOX_ENV set per matrix entry. pytest's testpaths is ['tests'] and filterwarnings = ['error'], so any warning fails a test.",
+  "key_facts": [
+   "Tests run through tox with the uv runner (tox-uv, uv-venv-lock-runner)",
+   "CI command: uv run --locked --no-default-groups --group dev tox run",
+   "pytest config: testpaths=['tests'], filterwarnings=['error'] (warnings are errors)"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "pyproject.toml",
+    "lines": "182-194"
+   },
+   {
+    "path": "pyproject.toml",
+    "lines": "107-112"
+   },
+   {
+    "path": ".github/workflows/tests.yaml",
+    "lines": "42-44"
+   },
+   {
+    "path": "pyproject.toml",
+    "lines": "58-63"
+   }
+  ],
+  "X": "### Local Testing\n\nTests are run locally using `pytest`. The test dependencies are installed first, and then `pytest` is executed.\n\n```bash\n# Install test dependencies\npip install '.[test]'\n\n# Run tests\npytest\n```\n\nInstructions for running tests with coverage are also provided in the example READMEs.\n\n```bash\n# Run tests with coverage\ncoverage run -m pytest\ncoverage report\n```\n\n### CI Testing\n\nTests are run in CI using GitHub Actions, defined in the workflow file `.github/workflows/tests.yaml`.\n\nThe CI process uses `tox` to run the test suite across a matrix of different Python versions, operating systems, and dependency sets.\n\n-   **Workflow File**: `.github/workflows/tests.yaml`\n-   **Test Runner**: `tox`\n-   **Execution Command**: The core command to execute the tests is:\n    ```yaml\n    # .github/workflows/tests.yaml:44\n    - run: uv run --locked --no-default-groups --group dev tox run\n      env:\n        TOX_ENV: ${{ matrix.tox || format('py{0}', matrix.python) }}\n    ```\n-   **Test Matrix**: The `tests` job runs on Ubuntu, Windows, and macOS with various Python versions including 3.10, 3.11, 3.12, 3.13, 3.14, and PyPy. It also includes jobs for testing against minimum and development versions of dependencies.\n    ```yaml\n    # .github/workflows/tests.yaml:16-28\n    matrix:\n      include:\n        - {python: '3.14'}\n        - {python: '3.14t'}\n        - {name: Windows, python: '3.14', os: windows-latest}\n        - {name: Mac, python: '3.14', os: macos-latest}\n        - {python: '3.13'}\n        - {python: '3.12'}\n        - {python: '3.11'}\n        - {python: '3.10'}\n        - {name: PyPy, python: 'pypy-3.11', tox: pypy3.11}\n        - {name: Minimum Versions, python: '3.14', tox: tests-min}\n        - {name: Development Versions, python: '3.10', tox: tests-dev}\n    ```\n-   **Typing Job**: A separate job named `typing` runs static type checks, also using `tox`.\n    ```yaml\n    # .github/workflows/tests.yaml:64\n    - run: uv run --locked --no-default-groups --group dev tox run -e typing\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-24",
+  "category": "dev_workflow",
+  "question": "How is static type checking configured and run?",
+  "reference_answer": "The tox env 'typing' installs the 'typing' dependency group and runs mypy and then pyright. CI runs it as 'tox run -e typing'. mypy is strict = true over files ['src', 'tests/type_check'], with python_version 3.10, and ignores missing imports for asgiref, dotenv, cryptography and importlib_metadata. pyright includes src and tests/type_check with typeCheckingMode 'basic'.",
+  "key_facts": [
+   "tox env 'typing' runs both mypy and pyright",
+   "mypy runs in strict mode on src and tests/type_check",
+   "pyright uses typeCheckingMode 'basic'"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "pyproject.toml",
+    "lines": "240-246"
+   },
+   {
+    "path": "pyproject.toml",
+    "lines": "127-146"
+   },
+   {
+    "path": ".github/workflows/tests.yaml",
+    "lines": "45-63"
+   }
+  ],
+  "X": "Static type checking is performed using `mypy` and is orchestrated by `tox` within a GitHub Actions workflow.\n\n### Type Checking Execution\n\nThe type checking process is defined as a `typing` job in the `.github/workflows/tests.yaml` workflow file. This job runs on every push and pull request.\n\nIt uses `uv` to install dependencies from the `dev` group defined in `pyproject.toml` and then executes the `typing` environment defined in the `tox` configuration. The `.mypy_cache` directory is cached between runs to speed up the process.\n\n**.github/workflows/tests.yaml**\n```yaml\n[lines 44-64]\n  typing:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2\n        with:\n          persist-credentials: false\n      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0\n        with:\n          enable-cache: true\n          prune-cache: false\n      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0\n        with:\n          python-version-file: pyproject.toml\n      - name: cache mypy\n        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4\n        with:\n          path: ./.mypy_cache\n          key: mypy|${{ hashFiles('pyproject.toml') }}\n      - run: uv run --locked --no-default-groups --group dev tox run -e typing\n```\n\n### Type Hinting Example\n\nThe codebase includes type annotations in function signatures, which `mypy` uses for static analysis. The file `tests/type_check/typing_error_handler.py` contains examples of such annotations for error handlers.\n\n**tests/type_check/typing_error_handler.py**\n```python\n[lines 13-15]\n@app.errorhandler(BadRequest)\ndef handle_400(e: BadRequest) -> str:\n    return \"\"\n```\n```python\n[lines 28-30]\n@app.errorhandler(404)\ndef handle_multiple(e: BadRequest | NotFound) -> str:\n    return \"\"\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "flask-25",
+  "category": "dev_workflow",
+  "question": "What do the tox envs tests-min, tests-dev and style do?",
+  "reference_answer": "tests-min runs on Python 3.14 and pins the minimum dependencies before pytest: blinker==1.9.0, click==8.1.3, itsdangerous==2.2.0, jinja2==3.1.2, markupsafe==2.1.1, werkzeug==3.1.0. tests-dev runs on Python 3.10 and installs main-branch tarballs of those six Pallets projects. style runs 'pre-commit run --all-files', whose hooks are ruff-check, ruff-format, uv-lock, codespell and the basic pre-commit-hooks.",
+  "key_facts": [
+   "tests-min installs the minimum supported versions (e.g. werkzeug==3.1.0) on Python 3.14",
+   "tests-dev installs git main branches of dependencies on Python 3.10",
+   "style runs pre-commit (ruff check/format, uv-lock, codespell)"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "pyproject.toml",
+    "lines": "196-238"
+   },
+   {
+    "path": ".pre-commit-config.yaml",
+    "lines": "1-22"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Based on the provided context and common project configurations, here are the likely purposes of the tox environments:\n\n### tests-min\nThis environment runs the test suite using the minimum specified versions of the project's dependencies. This ensures that the project remains compatible with the oldest supported versions of its dependencies.\n\nThe CI configuration in `.github/workflows/tests.yaml` defines a job named \"Minimum Versions\" that executes this environment:\n```yaml\n- {name: Minimum Versions, python: '3.14', tox: tests-min}\n```\n\n### tests-dev\nThis environment runs the test suite using the latest development or pre-release versions of the project's dependencies. This helps to identify and fix potential incompatibilities with upcoming dependency releases early.\n\nThe CI configuration in `.github/workflows/tests.yaml` defines a job named \"Development Versions\" that executes this environment:\n```yaml\n- {name: Development Versions, python: '3.10', tox: tests-dev}\n```\n\n### style\nWhile not explicitly used in the provided `.github/workflows/tests.yaml`, a `style` environment typically runs code style checks, formatting, and linting tools. Based on the `.pre-commit-config.yaml` file, this environment would likely execute tools such as:\n*   `ruff-check` (linter)\n*   `ruff-format` (formatter)\n*   `codespell` (spell checker)"
+ }
+]

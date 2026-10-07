@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Using and Creating Middleware",
+  "path": "src/middleware/basic-auth/index.ts",
+  "start": 105,
+  "end": 152,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/middleware/basic-auth/index.ts#L105-L152",
+  "ok": true,
+  "claim": "\n            Note right of Middleware: Authentication fails\n            Middleware->>Hono: throw new HTTPException(401)\n            Hono-->>-Client: 401 Unauthorized Response\n        end\n    else No credentials\n        Note right of Middleware: No \"Authorization\" header\n        Middleware->>Hono: throw new HTTPException(401)\n        Hono-->>-Client: 401 Unauthorized Response\n    end\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 154,
+  "end": 173,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L154-L173",
+  "ok": true,
+  "claim": "b/HEAD/package.json#L104-L108), [package.json:269-278](https://github.com/honojs/hono/blob/HEAD/package.json#L269-L278) |\n| `hono/adapter/*` | Adapters for specific JavaScript runtimes like Cloudflare, Deno, and AWS Lambda. | [package.json:344-388](https://github.com/honojs/hono/blob/HEAD/package.json#L344-L388) |\n| `hono/jsx` | A built-in JSX runtime for server-side rendering of UI components. | ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 131,
+  "end": 131,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L131",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:133-136](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L133-L136), ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/bun/index.test.tsx",
+  "start": 72,
+  "end": 86,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L72-L86",
+  "ok": true,
+  "claim": " Process request\n    alt Credentials Invalid/Missing\n        AuthMiddleware-->>-HonoApp: 401 Unauthorized Response\n        HonoApp-->>-Client: 401 Unauthorized\n    else Credentials Valid\n        AuthMiddleware->>+RouteHandler: next()\n        RouteHandler-->>-AuthMiddleware: 200 OK Response\n        AuthMiddleware-->>-HonoApp: 200 OK Response\n        HonoApp-->>-Client: 200 OK\n    end\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 289,
+  "end": 313,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L289-L313",
+  "ok": true,
+  "claim": "honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), [README.md:44](https://github.com/honojs/hono/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. | ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "README.md",
+  "start": 81,
+  "end": 81,
+  "link": "https://github.com/honojs/hono/blob/HEAD/README.md#L81",
+  "ok": true,
+  "claim": "inimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), [README.md:44](https://github.com/honojs/hono/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. | [package.json:289-313](https://github.com/honojs/hono/blob/HEAD/package.json#L289-L313), ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 1198,
+  "end": 1308,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1198-L1308",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:135](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L135), [src/client/client.test.ts:853-888](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L853-L888), ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 104,
+  "end": 108,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L104-L108",
+  "ok": true,
+  "claim": "js/hono/blob/HEAD/package.json#L289-L313), [README.md:81](https://github.com/honojs/hono/blob/HEAD/README.md#L81) |\n| `hono/middleware/*` | Various built-in middleware such as `basic-auth`, `cors`, `jwt`, and `logger`. | [package.json:74-268](https://github.com/honojs/hono/blob/HEAD/package.json#L74-L268) |\n| `hono/helper/*` | Helper utilities for tasks like cookie handling, streaming, and SSG. | ",
+  "inline": true
+ },
+ {
+  "page": "Using and Creating Middleware",
+  "path": "src/helper/factory/index.ts",
+  "start": 368,
+  "end": 375,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/helper/factory/index.ts#L368-L375",
+  "ok": true,
+  "claim": "export const loggingMiddleware = createMiddleware(async (c, next) => {\n  console.log(`--> ${c.req.method} ${c.req.url}`)\n  await next()\n  console.log(`<-- ${c.res.status}`)\n})\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/deno/middleware.test.tsx",
+  "start": 12,
+  "end": 47,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/deno/middleware.test.tsx#L12-L47",
+  "ok": true,
+  "claim": "aG9uby11c2VyLWE6aG9uby1wYXNzd29yZC1h' // base64('hono-user-a:hono-password-a')\n  const req = new Request('http://localhost/auth/a')\n  req.headers.set('Authorization', `Basic ${credential}`)\n  const res = await app.request(req)\n  expect(res.status).toBe(200)\n})\n```\n*Sources: [runtime-tests/bun/index.test.tsx:58-86](https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L58-L86), ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 1403,
+  "end": 1531,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1403-L1531",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:187-212](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L187-L212), ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router.ts",
+  "start": 29,
+  "end": 52,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router.ts#L29-L52",
+  "ok": true,
+  "claim": "  Router <|.. TrieRouter\n  Router <|.. RegExpRouter\n  Router <|.. SmartRouter\n  SmartRouter o--> Router : routers\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "README.md",
+  "start": 44,
+  "end": 44,
+  "link": "https://github.com/honojs/hono/blob/HEAD/README.md#L44",
+  "ok": true,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. | [package.json:39-43](https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. | [package.json:59-63](https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63), ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 74,
+  "end": 268,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L74-L268",
+  "ok": true,
+  "claim": "/blob/HEAD/README.md#L44) |\n| `hono/router/*` | A selection of routers, including `RegExpRouter`, `SmartRouter`, and `TrieRouter`. | [package.json:289-313](https://github.com/honojs/hono/blob/HEAD/package.json#L289-L313), [README.md:81](https://github.com/honojs/hono/blob/HEAD/README.md#L81) |\n| `hono/middleware/*` | Various built-in middleware such as `basic-auth`, `cors`, `jwt`, and `logger`. | ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 853,
+  "end": 888,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L853-L888",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:135](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L135), ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 1101,
+  "end": 1121,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1101-L1121",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.test.ts:923-975](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L923-L975), ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "src/helper/testing/index.ts",
+  "start": 22,
+  "end": 26,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/helper/testing/index.ts#L22-L26",
+  "ok": true,
+  "claim": "    Test->>+Client: client.route.$get({ param: '...', query: '...' })\n    Client->>+CustomFetch: fetch(request)\n    CustomFetch->>+App: app.request(input, init, Env, executionCtx)\n    App-->>-CustomFetch: Response\n    CustomFetch-->>-Client: Response\n    Client-->>-Test: Typed Response\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 269,
+  "end": 278,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L269-L278",
+  "ok": true,
+  "claim": "blob/HEAD/README.md#L81) |\n| `hono/middleware/*` | Various built-in middleware such as `basic-auth`, `cors`, `jwt`, and `logger`. | [package.json:74-268](https://github.com/honojs/hono/blob/HEAD/package.json#L74-L268) |\n| `hono/helper/*` | Helper utilities for tasks like cookie handling, streaming, and SSG. | [package.json:104-108](https://github.com/honojs/hono/blob/HEAD/package.json#L104-L108), ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 231,
+  "end": 384,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L231-L384",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.test.ts:31-229](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L31-L229), ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router/trie-router/router.ts",
+  "start": 13,
+  "end": 23,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router/trie-router/router.ts#L13-L23",
+  "ok": true,
+  "claim": "```mermaid\ngraph TD\n    A[TrieRouter.add(method, path, handler)] --> B{Path has optional parameters?};\n    B -- Yes --> C[\"checkOptionalParameter(path)\"];\n    C --> D[Loop through each path variation];\n    D --> E[\"this.#node.insert(method, variation, handler)\"];\n    E --> D;\n    B -- No --> F[\"this.#node.insert(method, path, handler)\"];\n    F --> G[End];\n    D -- End of loop --> G;\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 553,
+  "end": 563,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L553-L563",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.test.ts:148](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L148), ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 59,
+  "end": 63,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L59-L63",
+  "ok": true,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. | [package.json:39-43](https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43) |\n| `hono/tiny` | A lightweight preset with minimal features for the smallest bundle size. | ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router/reg-exp-router/router.ts",
+  "start": 208,
+  "end": 251,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router/reg-exp-router/router.ts#L208-L251",
+  "ok": true,
+  "claim": "tcherFromPreprocessedRoutes(routes)];\n        E --> F[Create Trie];\n        F --> G[Insert all paths into Trie];\n        G --> H[\"trie.buildRegExp()\"];\n        H --> I[Build handler and parameter maps];\n        I --> J[Return Matcher];\n        J --> K[\"Store Matcher in map\"];\n    end\n    B -- All methods processed --> L[Clear route/middleware caches];\n    L --> M[Return MatcherMap];\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 1704,
+  "end": 1782,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1704-L1782",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:135](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L135), [src/client/client.test.ts:853-888](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L853-L888), [src/client/client.test.ts:1198-1308](https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L1198-L1308), ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.test.ts",
+  "start": 553,
+  "end": 599,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.test.ts#L553-L599",
+  "ok": true,
+  "claim": "*Sources: [src/client/index.ts:9-10](https://github.com/honojs/hono/blob/HEAD/src/client/index.ts#L9-L10), ",
+  "inline": true
+ },
+ {
+  "page": "Using and Creating Middleware",
+  "path": "src/middleware/cors/index.ts",
+  "start": 96,
+  "end": 156,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/middleware/cors/index.ts#L96-L156",
+  "ok": true,
+  "claim": "--> E[\"Set 'Access-Control-Allow-Methods'\"];\n    E --> F[\"Set 'Access-Control-Allow-Headers'\"];\n    F --> G[Return 204 No Content Response];\n    B -- No --> H[\"Set 'Access-Control-Allow-Origin'\"];\n    H --> I[\"Set other CORS headers (Credentials, Expose)\"];\n    I --> J[\"await next()\"];\n    J --> K[\"Set 'Vary: Origin' header if origin is not '*'\"];\n    K --> L[End];\n    G --> L[End];\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/bun/index.test.tsx",
+  "start": 28,
+  "end": 42,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L28-L42",
+  "ok": true,
+  "claim": "it('Should return 200 Response', async () => {\n  const req = new Request('http://localhost/a/foo?q=bar')\n  const res = await app.request(req)\n  expect(res.status).toBe(200)\n  expect(await res.text()).toBe('Hello Bun!')\n  expect(res.headers.get('x-param')).toBe('foo')\n  expect(res.headers.get('x-query')).toBe('bar')\n})\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router.ts",
+  "start": 67,
+  "end": 99,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router.ts#L67-L99",
+  "ok": true,
+  "claim": "// Format 2: Params map\n// [[handler, params][]]\n[\n  [\n    [middlewareA, {}],                             // '*'\n    [funcA,       {'id': '123'}],                  // '/user/:id/*'\n    [funcB,       {'id': '123', 'action': 'abc'}], // '/user/:id/:action'\n  ]\n]\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router/smart-router/router.ts",
+  "start": 21,
+  "end": 61,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router/smart-router/router.ts#L21-L61",
+  "ok": true,
+  "claim": "er-->>-Client: Result\n    else Path unsupported\n        RouterA-->>xSmartRouter: UnsupportedPathError\n        SmartRouter->>+RouterB: add(all_routes)\n        RouterB-->>-SmartRouter: \n        SmartRouter->>+RouterB: match(method, path)\n        RouterB-->>-SmartRouter: Result\n        SmartRouter->>SmartRouter: Set RouterB as activeRouter\n        SmartRouter-->>-Client: Result\n    end\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/deno/middleware.test.tsx",
+  "start": 70,
+  "end": 99,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/deno/middleware.test.tsx#L70-L99",
+  "ok": true,
+  "claim": "   D --> E{File exists at path?};\n    E -- Yes --> F[Serve file with correct Content-Type];\n    E -- No --> G{onNotFound callback provided?};\n    G -- Yes --> H[Execute onNotFound callback];\n    G -- No --> I[Continue to next middleware or 404];\n    H --> I;\n```\n*Sources: [runtime-tests/bun/index.test.tsx:89-116](https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L89-L116), ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 39,
+  "end": 43,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L39-L43",
+  "ok": true,
+  "claim": "| Module Path | Description | Source |\n|---|---|---|\n| `hono` | The main entry point for the Hono framework. | ",
+  "inline": true
+ },
+ {
+  "page": "Introduction and Philosophy",
+  "path": "package.json",
+  "start": 344,
+  "end": 388,
+  "link": "https://github.com/honojs/hono/blob/HEAD/package.json#L344-L388",
+  "ok": true,
+  "claim": "/package.json#L74-L268) |\n| `hono/helper/*` | Helper utilities for tasks like cookie handling, streaming, and SSG. | [package.json:104-108](https://github.com/honojs/hono/blob/HEAD/package.json#L104-L108), [package.json:269-278](https://github.com/honojs/hono/blob/HEAD/package.json#L269-L278) |\n| `hono/adapter/*` | Adapters for specific JavaScript runtimes like Cloudflare, Deno, and AWS Lambda. | ",
+  "inline": true
+ },
+ {
+  "page": "Type-Safe RPC with Hono Client",
+  "path": "src/client/client.ts",
+  "start": 137,
+  "end": 137,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L137",
+  "ok": true,
+  "claim": "*Sources: [src/client/client.ts:15-31](https://github.com/honojs/hono/blob/HEAD/src/client/client.ts#L15-L31), ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/bun/index.test.tsx",
+  "start": 58,
+  "end": 86,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L58-L86",
+  "ok": true,
+  "claim": "// Test for 200 OK\nit('Should authorize, return 200 Response', async () => {\n  const credential = 'aG9uby11c2VyLWE6aG9uby1wYXNzd29yZC1h' // base64('hono-user-a:hono-password-a')\n  const req = new Request('http://localhost/auth/a')\n  req.headers.set('Authorization', `Basic ${credential}`)\n  const res = await app.request(req)\n  expect(res.status).toBe(200)\n})\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "src/helper/testing/index.ts",
+  "start": 16,
+  "end": 21,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/helper/testing/index.ts#L16-L21",
+  "ok": true,
+  "claim": "```typescript\nexport const testClient = <T extends Hono<any, Schema, string>>(\n  app: T,\n  Env?: ExtractEnv<T>['Bindings'] | {},\n  executionCtx?: ExecutionContext,\n  options?: Omit<ClientRequestOptions, 'fetch'>\n): UnionToIntersection<Client<T, 'http://localhost'>>\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/deno/middleware.test.tsx",
+  "start": 28,
+  "end": 38,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/deno/middleware.test.tsx#L28-L38",
+  "ok": true,
+  "claim": "noApp-->>-Client: 401 Unauthorized\n    else Credentials Valid\n        AuthMiddleware->>+RouteHandler: next()\n        RouteHandler-->>-AuthMiddleware: 200 OK Response\n        AuthMiddleware-->>-HonoApp: 200 OK Response\n        HonoApp-->>-Client: 200 OK\n    end\n```\n*Sources: [runtime-tests/bun/index.test.tsx:72-86](https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L72-L86), ",
+  "inline": true
+ },
+ {
+  "page": "Using and Creating Middleware",
+  "path": "src/helper/factory/index.ts",
+  "start": 332,
+  "end": 361,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/helper/factory/index.ts#L332-L361",
+  "ok": true,
+  "claim": "```mermaid\nclassDiagram\n    direction TD\n    class Factory {\n        -initApp: InitApp\n        -defaultAppOptions: HonoOptions\n        +createApp(options): Hono\n        +createMiddleware(middleware): MiddlewareHandler\n        +createHandlers(...handlers): Handler[]\n    }\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router/smart-router/router.ts",
+  "start": 4,
+  "end": 70,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router/smart-router/router.ts#L4-L70",
+  "ok": true,
+  "claim": "uter\n  SmartRouter o--> Router : routers\n```\n*Sources: [src/router.ts:29-52](https://github.com/honojs/hono/blob/HEAD/src/router.ts#L29-L52), [src/router/trie-router/router.ts:5-28](https://github.com/honojs/hono/blob/HEAD/src/router/trie-router/router.ts#L5-L28), [src/router/reg-exp-router/router.ts:122-252](https://github.com/honojs/hono/blob/HEAD/src/router/reg-exp-router/router.ts#L122-L252), ",
+  "inline": true
+ },
+ {
+  "page": "The Routing System",
+  "path": "src/router.ts",
+  "start": 29,
+  "end": 52,
+  "link": "https://github.com/honojs/hono/blob/HEAD/src/router.ts#L29-L52",
+  "ok": true,
+  "claim": "```typescript\nexport interface Router<T> {\n  name: string\n  add(method: string, path: string, handler: T): void\n  match(method: string, path: string): Result<T>\n}\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Testing Hono Applications",
+  "path": "runtime-tests/bun/index.test.tsx",
+  "start": 89,
+  "end": 116,
+  "link": "https://github.com/honojs/hono/blob/HEAD/runtime-tests/bun/index.test.tsx#L89-L116",
+  "ok": true,
+  "claim": "Static] --> B{Path rewrite configured?};\n    B -- Yes --> C[Rewrite path];\n    B -- No --> D[Use original path];\n    C --> D;\n    D --> E{File exists at path?};\n    E -- Yes --> F[Serve file with correct Content-Type];\n    E -- No --> G{onNotFound callback provided?};\n    G -- Yes --> H[Execute onNotFound callback];\n    G -- No --> I[Continue to next middleware or 404];\n    H --> I;\n```\n*Sources: ",
+  "inline": true
+ }
+]

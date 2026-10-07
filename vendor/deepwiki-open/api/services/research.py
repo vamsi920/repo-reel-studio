@@ -1,4 +1,5 @@
 import asyncio
+import os
 from collections.abc import AsyncIterator, Callable
 from functools import partial
 
@@ -21,6 +22,107 @@ logger = get_logger(__name__)
 
 # Maximum token limit for embedding models
 MAX_INPUT_TOKENS = 7500  # Safe threshold below 8192 token limit
+
+
+# Token budget for whole files added to a chat answer's context, and the
+# largest single file worth inlining (bigger ones stay as fragments).
+ASK_FULL_FILE_TOKEN_BUDGET = int(os.environ.get("DEEPWIKI_ASK_FULL_FILE_TOKENS", 90000))
+ASK_MAX_FULL_FILE_TOKENS = 20000
+
+
+ASK_PLANNER_MODEL = os.environ.get("DEEPWIKI_ASK_PLANNER_MODEL", "gemini-2.5-flash")
+ASK_PLANNER_MAX_FILES = 12
+STREAM_RETRIES = 2
+ASK_PLANNER_TREE_LIMIT = 6000
+
+_PLANNER_PROMPT = """You are choosing which files an engineer must read to answer a question about the repository {repo_name}.
+
+Question: {query}
+
+Files the search index already matched (most relevant first):
+{retrieved}
+
+Complete file list of the repository:
+{tree}
+
+Pick at most {max_files} files whose FULL contents are needed to answer precisely. Prefer the
+files that define the behaviour asked about. For questions about tooling, tests, builds, CI,
+linting or supported versions, include the manifests and configs that define them (for example
+pyproject.toml, package.json, tox.ini, setup.cfg, vitest/jest configs, .github/workflows/*).
+Return ONLY a JSON array of paths copied exactly from the file list."""
+
+
+async def _plan_files(request, query: str, retrieved: list[str]) -> list[str]:
+    """Ask a cheap model which whole files the answer needs.
+
+    Embedding search alone surfaces fragments that look similar to the
+    question, which misses manifests/CI configs and the file that actually
+    owns a behaviour. Returns [] on any failure so retrieval still answers.
+    """
+    import json as _json
+
+    from api.config import iterate_files
+
+    try:
+        root = Repo(repo_url=request.repo_url, repo_type=request.type).save_path
+        files = await asyncio.to_thread(
+            iterate_files, root, request.excluded_dirs, request.excluded_files,
+            request.included_dirs, request.included_files,
+        )
+        if not files:
+            return []
+        tree = "\n".join(sorted(files)[:ASK_PLANNER_TREE_LIMIT])
+        prompt = _PLANNER_PROMPT.format(
+            repo_name=request.repo_url.rstrip("/").split("/")[-1],
+            query=query,
+            retrieved="\n".join(retrieved[:20]) or "(none)",
+            tree=tree,
+            max_files=ASK_PLANNER_MAX_FILES,
+        )
+        streamer = ChatStreamer.create(
+            provider=request.provider,
+            model=ASK_PLANNER_MODEL if request.provider == "google" else request.model,
+            model_config=get_model_config(request.provider, request.model)["model_kwargs"],
+        )
+        text = "".join([t async for t in streamer.respond_stream(prompt)])
+        start, end = text.find("["), text.rfind("]")
+        picked = _json.loads(text[start : end + 1]) if start != -1 and end > start else []
+        known = set(files)
+        return [p for p in picked if isinstance(p, str) and p in known][:ASK_PLANNER_MAX_FILES]
+    except Exception as e:  # noqa: BLE001 - planning is an optimisation
+        logger.warning("File planning failed, using retrieval only: %s", e)
+        return []
+
+
+def _expand_full_files(request, docs_by_file: dict, planned: list[str] | None = None) -> dict[str, str]:
+    """Line-numbered full contents of the planned and most-retrieved files.
+
+    Planned files come first; retrieved files are ranked by how many chunks
+    they contributed (ties keep retrieval order), within a token budget.
+    """
+    try:
+        root = Repo(repo_url=request.repo_url, repo_type=request.type).save_path
+    except Exception:  # noqa: BLE001 - fragments alone still answer
+        return {}
+    by_hits = sorted(docs_by_file, key=lambda p: -len(docs_by_file[p]))
+    ranked = list(dict.fromkeys([*(planned or []), *by_hits]))
+    out: dict[str, str] = {}
+    used = 0
+    for rel in ranked:
+        path = os.path.realpath(os.path.join(root, rel))
+        if not path.startswith(os.path.realpath(root) + os.sep) or not os.path.isfile(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        tokens = count_tokens(text, embedder_type=request.provider)
+        if tokens > ASK_MAX_FULL_FILE_TOKENS or used + tokens > ASK_FULL_FILE_TOKEN_BUDGET:
+            continue
+        out[rel] = "\n".join(f"{i:>5}| {line}" for i, line in enumerate(text.splitlines(), 1))
+        used += tokens
+    return out
 
 
 class RepoNotIndexedError(ValueError):
@@ -60,7 +162,12 @@ async def prepare_repo_index(
 async def research_chat(
     request: ChatCompletionRequest,
     skip_rag: bool = False,
+    raise_errors: bool = False,
 ) -> AsyncIterator[str]:
+    """Stream an answer. With ``raise_errors`` a provider failure raises
+    instead of being streamed as text: wiki generation stores the stream as
+    page content, so an inline "Error with google API" message would be
+    published as documentation rather than retried."""
     input_too_large = False
     if request.messages and len(request.messages) > 0:
         last_message = request.messages[-1]
@@ -174,9 +281,27 @@ async def research_chat(
                             docs_by_file[file_path] = []
                         docs_by_file[file_path].append(doc)
 
+                    # Retrieval returns ~350-word fragments. Answering from a
+                    # fragment makes the model guess the rest of a function
+                    # (benchmarked: invented calls and missing branches on
+                    # flow/ordering questions), so the most-hit files are
+                    # given in full, line-numbered, within a token budget.
+                    planned = (
+                        []
+                        if is_deep_research
+                        else await _plan_files(request, query, list(docs_by_file))
+                    )
+                    full_files = _expand_full_files(request, docs_by_file, planned)
+
                     # Format context text with file path grouping
                     context_parts = []
+                    for file_path, numbered in full_files.items():
+                        context_parts.append(
+                            f"## File Path: {file_path} (full file, line-numbered)\n\n{numbered}"
+                        )
                     for file_path, docs in docs_by_file.items():
+                        if file_path in full_files:
+                            continue
                         # Add file header with metadata
                         header = f"## File Path: {file_path}\n\n"
                         # Add document content, annotating each chunk with its
@@ -270,11 +395,24 @@ async def research_chat(
         prompt_func: Callable[[], str],
         simplified_prompt_func: Callable[[], str],
     ) -> AsyncIterator[str]:
+        sent = False
         try:
-            async for chunk in streamer.respond_stream(prompt_func()):
-                yield chunk
+            for attempt in range(STREAM_RETRIES + 1):
+                try:
+                    async for chunk in streamer.respond_stream(prompt_func()):
+                        sent = True
+                        yield chunk
+                    break
+                except Exception as retry_error:
+                    # A transient provider failure before any text arrived
+                    # (dropped stream, 503) is retried; once text has been
+                    # sent the caller already holds a partial answer.
+                    if sent or attempt == STREAM_RETRIES or is_token_limit_error(retry_error):
+                        raise
+                    logger.warning("Model stream failed before output, retrying: %s", retry_error)
+                    await asyncio.sleep(2 * (attempt + 1))
         except Exception as e:
-            if is_token_limit_error(e):
+            if is_token_limit_error(e) and not raise_errors:
                 logger.warning("Token limit exceeded, retrying without context")
                 try:
                     async for chunk in streamer.respond_stream(
@@ -288,6 +426,8 @@ async def research_chat(
                         "Please try a shorter query or break it into smaller parts."
                     )
             else:
+                if raise_errors:
+                    raise
                 error_str = f"Error with {streamer.provider} API: {e}"
                 logger.error(error_str, exc_info=True)
                 if streamer.error_hint:

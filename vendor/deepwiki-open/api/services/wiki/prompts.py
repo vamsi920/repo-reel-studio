@@ -147,11 +147,18 @@ understanding only — never cite it as a source):
     *   If an entire section is overwhelmingly based on one or two files, you can cite them under the section heading in addition to more specific citations within the section.
     *   IMPORTANT: You MUST cite AT LEAST 5 different source files throughout the wiki page to ensure comprehensive coverage.
 
-7.  **Technical Accuracy:** All information must be derived SOLELY from the `[RELEVANT_SOURCE_FILES]`. Do not infer, invent, or use external knowledge about similar systems or common practices unless it's directly supported by the provided code. If information is not present in the provided files, do not include it or explicitly state its absence if crucial to the topic.
+7.  **Precision and completeness (benchmarked: these are the questions new engineers ask):**
+    *   Every file in SOURCE FILE CONTENTS must be explained somewhere on the page: what it is for, its main exports, and how it connects to the rest. Small files may share a table; never silently skip one.
+    *   State exact values, not paraphrases: default option values, constants, status codes, ordering of hooks/handlers/middleware, the conditions under which a branch runs, and the exception or error type raised. Quote the literal value from the code and cite the line.
+    *   When the page describes a flow, walk it step by step in execution order, naming the function at each step, including what happens on errors, retries and early returns.
+    *   Include a `## Edge cases and gotchas` section listing behaviour that a reasonable reader would guess wrong (surprising defaults, things that are NOT done, renamed or removed options, precedence rules, limits), each with a citation. Omit the section only if the files genuinely contain none.
+    *   If the files include manifests, CI workflows, test or lint configs, state the exact commands, tools, runtime/language versions and CI matrix they define.
 
-8.  **Clarity and Conciseness:** Use clear, professional, and concise technical language suitable for other developers working on or learning about the project. Avoid unnecessary jargon, but use correct technical terms where appropriate.
+8.  **Technical Accuracy:** All information must be derived SOLELY from the `[RELEVANT_SOURCE_FILES]`. Do not infer, invent, or use external knowledge about similar systems or common practices unless it's directly supported by the provided code. If information is not present in the provided files, do not include it or explicitly state its absence if crucial to the topic.
 
-9.  **Conclusion/Summary:** End with a brief summary paragraph if appropriate for "{title}", reiterating the key aspects covered and their significance within the project.
+9.  **Clarity and Conciseness:** Use clear, professional, and concise technical language suitable for other developers working on or learning about the project. Avoid unnecessary jargon, but use correct technical terms where appropriate.
+
+10. **Conclusion/Summary:** End with a brief summary paragraph if appropriate for "{title}", reiterating the key aspects covered and their significance within the project.
 
 IMPORTANT: Generate the content in {language_name(language)} language.
 
@@ -254,6 +261,60 @@ Return your analysis in the following XML format:
 """
 
 
+def build_file_reference_prompt(title: str, file_contents: str, language: str) -> str:
+    """Prompt for documenting the files a wiki page did not cover."""
+    return f"""You are completing the technical wiki page "{title}". The page is already written,
+but it does not cover the source files below. Write ONE Markdown section that documents them.
+
+Start with the heading `## Other files in this area`. Then, for EACH file below, write a `### <path>`
+subsection that explains, using ONLY that file's content:
+- what the file is for and how it relates to "{title}";
+- its main exports, functions, classes or settings, with exact default values, conditions,
+  error types and ordering where the code defines them;
+- anything surprising a new engineer would get wrong.
+For test files, say which behaviours they verify. For config, CI or manifest files, list the exact
+commands, tools, versions and options they define.
+
+Cite every claim as `Sources: [path:start-end]()` using the line numbers shown (full
+repository-relative path, empty parentheses). Do not repeat a page title, do not add a summary,
+do not use Mermaid, and do not mention files that are not listed below.
+
+SOURCE FILE CONTENTS (each line prefixed with its real line number):
+
+{file_contents}
+
+Write the section in {language_name(language)}."""
+
+
+def comprehensive_page_range(
+    comprehensive: bool,
+    subsystem_count: int | None,
+    source_file_count: int | None,
+) -> str:
+    """How many pages to ask for, scaled to the repository.
+
+    A flat 8-12 left large repos thin: benchmarked against Devin's DeepWiki
+    on ky / flask / hono, a 10-page wiki cited 19-33 distinct files where
+    DeepWiki's 35-46 pages cited 55-183, and onboarding questions about the
+    uncovered modules went unanswered. Concise mode stays small on purpose.
+    """
+    if not comprehensive:
+        if subsystem_count:
+            return f"{max(3, subsystem_count // 2)}-{max(4, min(8, subsystem_count + 2))}"
+        return "4-6"
+    files = source_file_count or 0
+    # One page per ~4 source files, bounded. The second benchmark round
+    # (74 pages vs DeepWiki's 118) still left 7 of 75 questions without an
+    # answer in the docs, all about modules that had no page of their own.
+    by_files = (max(16, min(50, files // 4)), max(24, min(58, files // 4 + 8)))
+    if subsystem_count:
+        low = max(by_files[0], subsystem_count + 4)
+        high = max(by_files[1], low + 4)
+    else:
+        low, high = by_files
+    return f"{low}-{min(high, 60)}"
+
+
 def build_structure_prompt(
     owner: str,
     repo: str,
@@ -263,6 +324,7 @@ def build_structure_prompt(
     language: str,
     code_evidence: str | None = None,
     subsystem_count: int | None = None,
+    source_file_count: int | None = None,
 ) -> str:
     """Prompt for determining the wiki structure (port of determineWikiStructure).
 
@@ -275,15 +337,9 @@ def build_structure_prompt(
     exactly as before.
     """
     structure_format = _COMPREHENSIVE_STRUCTURE if comprehensive else _CONCISE_STRUCTURE
-    if subsystem_count and subsystem_count > 0:
-        # Scale from real detected subsystem count instead of a flat cap
-        # regardless of repo size — a small single-purpose repo and a large
-        # multi-service one were both landing at the same ~10 pages before.
-        low = max(4, subsystem_count) if comprehensive else max(3, subsystem_count // 2)
-        high = min(20, subsystem_count + 4) if comprehensive else min(8, subsystem_count + 2)
-        page_count = f"{low}-{max(low, high)}"
-    else:
-        page_count = "8-12" if comprehensive else "4-6"
+    page_count = comprehensive_page_range(
+        comprehensive, subsystem_count, source_file_count
+    )
     kind = "comprehensive" if comprehensive else "concise"
     evidence_block = (
         f"""
@@ -330,6 +386,9 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 
 IMPORTANT:
 1. Create {page_count} pages that would make a {kind} wiki for this repository
+   - Include an end-to-end lifecycle page that traces the main operation (a request, a call, a command) through every component in order.
+   - Include a development workflow page covering build, test, lint, type-checking, CI and release, with the manifests and CI/config files as its relevant_files.
+   - Give each significant module or subsystem its own page rather than folding several into one overview.
 2. Each page should focus on a specific aspect of the codebase (e.g., architecture, key features, setup)
 3. The relevant_files should be actual files from the repository that would be used to generate that page
 4. Return ONLY valid XML with the structure specified above, with no markdown code block delimiters"""

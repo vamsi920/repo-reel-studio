@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Request Body",
+  "path": "test/main.ts",
+  "start": 116,
+  "end": 132,
+  "link": "",
+  "ok": true,
+  "claim": "The `json` option provides a convenient shortcut for sending JSON data. Ky automatically handles serialization and sets the correct `Content-Type` header to `application/json` ",
+  "inline": true
+ },
+ {
+  "page": "Request Options",
+  "path": "source/types/options.ts",
+  "start": 34,
+  "end": 34,
+  "link": "",
+  "ok": true,
+  "claim": "HTTP headers for the request. Accepts a `Headers` instance or plain object ",
+  "inline": true
+ },
+ {
+  "page": "Development Guide",
+  "path": "tsconfig.json",
+  "start": 1,
+  "end": 9,
+  "link": "",
+  "ok": true,
+  "claim": "- **Main Config**: `tsconfig.json` - Used for IDE and development, includes the `source` directory (",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/index.ts",
+  "start": 77,
+  "end": 83,
+  "link": "",
+  "ok": true,
+  "claim": "- **Option merging** [source/utils/merge.ts]() - `validateAndMerge()` handles complex option inheritance\n- **Body processing** [source/utils/body.ts]() - Stream handling for upload/download progress\n- **Timeout handling** [source/utils/timeout.ts]() - AbortController-based timeout implementation\n- **Type guards** [source/utils/type-guards.ts]() - Runtime type checking for errors ",
+  "inline": true
+ },
+ {
+  "page": "Core Components",
+  "path": "source/core/Ky.ts",
+  "start": 376,
+  "end": 380,
+  "link": "",
+  "ok": true,
+  "claim": "The constructor [source/core/Ky.ts:335-430]() performs initialization including:\n- Merging headers and hooks [source/core/Ky.ts:338-358]().\n- Constructing the final URL using `prefixUrl` [source/core/Ky.ts:364-374]().\n- Initializing the `AbortController` and merging signals ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/core/Ky.ts",
+  "start": 387,
+  "end": 397,
+  "link": "",
+  "ok": true,
+  "claim": "-348]() |\n| **JSON Body** | Stringifies `options.json` and sets `content-type` header | [source/core/Ky.ts:355-358]() |\n| **Request Creation** | Creates native `Request` object with all options | [source/core/Ky.ts:371]() |\n| **searchParams** | Appends to URL, recreates Request if needed | [source/core/Ky.ts:373-384]() |\n| **Upload Progress** | Wraps Request body in stream for progress tracking | ",
+  "inline": true
+ },
+ {
+  "page": "JSON Parsing and Stringification",
+  "path": "test/main.ts",
+  "start": 1071,
+  "end": 1121,
+  "link": "",
+  "ok": true,
+  "claim": "| Test Case | Description | Source |\n|-----------|-------------|--------|\n| `parseJson` | Verifies custom parser receives text and context | ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 686,
+  "end": 704,
+  "link": "",
+  "ok": true,
+  "claim": "- **beforeRequest**: Intercept before the fetch call [source/core/Ky.ts:646-684]().\n- **afterResponse**: Process the response before returning [source/core/Ky.ts:179]().\n- **beforeRetry**: Logic to run before a retry attempt [source/core/Ky.ts:595-644]().\n- **beforeError**: Transform errors before they are thrown ",
+  "inline": true
+ },
+ {
+  "page": "Glossary",
+  "path": "source/types/hooks.ts",
+  "start": 86,
+  "end": 86,
+  "link": "",
+  "ok": true,
+  "claim": " [source/types/standard-schema.ts:1-20]().\n*   **Hooks:** Functions that tap into the request lifecycle.\n    *   `init`: Runs before the `Ky` instance is even created [source/types/hooks.ts:28-28]().\n    *   `beforeRequest`: Runs immediately before the native `fetch` [source/types/hooks.ts:167-167]().\n    *   `afterResponse`: Runs after a response is received but before it is returned to the user ",
+  "inline": true
+ },
+ {
+  "page": "Advanced Features",
+  "path": "source/core/Ky.ts",
+  "start": 40,
+  "end": 40,
+  "link": "",
+  "ok": true,
+  "claim": "| Direction | Option | Implementation | Requirements |\n|-----------|--------|----------------|--------------|\n| Upload | `onUploadProgress` | `streamRequest()` | `supportsRequestStreams` [source/core/Ky.ts:41]() |\n| Download | `onDownloadProgress` | `streamResponse()` | `supportsResponseStreams` ",
+  "inline": true
+ },
+ {
+  "page": "Quick Start",
+  "path": "readme.md",
+  "start": 118,
+  "end": 120,
+  "link": "",
+  "ok": true,
+  "claim": "Ky throws an `HTTPError` for non-2xx status codes (after redirects) ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/core/Ky.ts",
+  "start": 309,
+  "end": 317,
+  "link": "",
+  "ok": true,
+  "claim": "| Operation | Description | Code Reference |\n|-----------|-------------|----------------|\n| **Input Validation** | Ensures input is `string`, `URL`, or `Request` | [source/core/Ky.ts:328-330]() |\n| **Header Merging** | Combines headers from input Request and options using `mergeHeaders()` | [source/core/Ky.ts:308]() |\n| **Hook Merging** | Concatenates hook arrays using `mergeHooks()` | ",
+  "inline": true
+ },
+ {
+  "page": "Testing Infrastructure",
+  "path": "package.json",
+  "start": 28,
+  "end": 28,
+  "link": "",
+  "ok": true,
+  "claim": "d | Description | Implementation |\n|---------|-------------|---------------|\n| `npm test` | Runs linter (xo) + build + tests | `xo && npm run build && ava` [package.json:25]() |\n| `npm run debug` | Runs tests with Playwright debugger | `PWDEBUG=1 ava --timeout=2m` [package.json:26]() |\n| `npm run build` | Compiles source to distribution | `del-cli distribution && tsc --project tsconfig.dist.json` ",
+  "inline": true
+ },
+ {
+  "page": "Project Structure",
+  "path": "package.json",
+  "start": 25,
+  "end": 25,
+  "link": "",
+  "ok": true,
+  "claim": "| Command | Steps | Purpose |\n|---------|-------|---------|\n| `npm run build` | `del-cli distribution && tsc --project tsconfig.dist.json` | Cleans the output directory and compiles source files. [package.json:28]() |\n| `npm test` | `xo && npm run build && ava` | Lints code, builds it, and runs the test suite. ",
+  "inline": true
+ },
+ {
+  "page": "Core Components",
+  "path": "source/core/Ky.ts",
+  "start": 164,
+  "end": 165,
+  "link": "",
+  "ok": true,
+  "claim": "The `Ky.create()` method [source/core/Ky.ts:143-311]() is the entry point that:\n1. Orchestrates `init` hooks [source/core/Ky.ts:144-149]().\n2. Instantiates the `Ky` class [source/core/Ky.ts:151]().\n3. Returns a `ResponsePromise` that wraps the request lifecycle, including `beforeRequest` hooks and retries ",
+  "inline": true
+ },
+ {
+  "page": "Hook System",
+  "path": "source/utils/merge.ts",
+  "start": 21,
+  "end": 39,
+  "link": "",
+  "ok": true,
+  "claim": "### Option Merging\nWhen extending a Ky instance, hooks are merged by concatenating the arrays. If a hook type is set to `undefined` in the new options, it clears the hooks for that specific lifecycle stage ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/core/Ky.ts",
+  "start": 344,
+  "end": 348,
+  "link": "",
+  "ok": true,
+  "claim": "d Normalization** | Standardizes HTTP method to uppercase | [source/core/Ky.ts:318]() |\n| **Retry Normalization** | Processes retry options with defaults | [source/core/Ky.ts:321]() |\n| **prefixUrl Handling** | Prepends base URL to input, validates no leading slash | [source/core/Ky.ts:332-342]() |\n| **Signal Management** | Creates `AbortController` and combines signals with `AbortSignal.any()` | ",
+  "inline": true
+ },
+ {
+  "page": "Project Structure",
+  "path": "package.json",
+  "start": 73,
+  "end": 89,
+  "link": "",
+  "ok": true,
+  "claim": "| Tool | Purpose |\n|------|---------|\n| **XO** | Lints the codebase using opinionated rules defined in `package.json`. ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 499,
+  "end": 571,
+  "link": "",
+  "ok": true,
+  "claim": "Retry behavior is configurable via `RetryOptions`. The `#calculateRetryDelay()` method ",
+  "inline": true
+ },
+ {
+  "page": "Type System",
+  "path": "source/types/options.ts",
+  "start": 246,
+  "end": 290,
+  "link": "",
+  "ok": true,
+  "claim": "- `Options`: The main options interface that extends both `KyOptions` and `RequestInit` ",
+  "inline": true
+ },
+ {
+  "page": "Retry Mechanism",
+  "path": "source/core/constants.ts",
+  "start": 66,
+  "end": 66,
+  "link": "",
+  "ok": true,
+  "claim": "s and then waits using the `delay` utility before recursively calling itself [source/core/Ky.ts:273-301]().\n- **`_calculateRetryDelay`**: Evaluates the error, checks limits, parses headers, and applies the backoff/jitter logic [source/core/Ky.ts:227-263]().\n- **`stop` Symbol**: If a `beforeRetry` hook returns the `stop` symbol, the retry loop is terminated immediately without throwing a new error ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/utils/merge.ts",
+  "start": 21,
+  "end": 21,
+  "link": "",
+  "ok": true,
+  "claim": "- **Headers**: Merge additively; `undefined` values remove headers via `deletedParametersSymbol` [source/utils/merge.ts:22]().\n- **Hooks**: Concatenate arrays using `mergeHooks` ",
+  "inline": true
+ },
+ {
+  "page": "Development Guide",
+  "path": "package.json",
+  "start": 31,
+  "end": 33,
+  "link": "",
+  "ok": true,
+  "claim": "The compiled output is placed in the `distribution` folder, which is the only directory included in the published npm package (",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 4,
+  "end": 4,
+  "link": "",
+  "ok": true,
+  "claim": "- **HTTPError** [source/errors/HTTPError.ts]() - Non-2xx responses\n- **TimeoutError** [source/errors/TimeoutError.ts]() - Request timeouts\n- **ForceRetryError** [source/errors/ForceRetryError.ts]() - Internal signal for forced retries ",
+  "inline": true
+ },
+ {
+  "page": "Retry Mechanism",
+  "path": "source/core/Ky.ts",
+  "start": 273,
+  "end": 301,
+  "link": "",
+  "ok": true,
+  "claim": "- **`_retry`**: Wraps the request execution. If a failure occurs, it calls `_calculateRetryDelay`. If a delay is returned, it executes `beforeRetry` hooks and then waits using the `delay` utility before recursively calling itself ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 595,
+  "end": 644,
+  "link": "",
+  "ok": true,
+  "claim": "| Method | Purpose | Location |\n|--------|---------|----------|\n| `Ky.create()` | Static factory method that creates a `ResponsePromise` | [source/core/Ky.ts:143-314]() |\n| `#fetch()` | Executes the HTTP request with hooks | [source/core/Ky.ts:646-684]() |\n| `#retry()` | Implements retry logic with exponential backoff | ",
+  "inline": true
+ },
+ {
+  "page": "Type System",
+  "path": "source/types/hooks.ts",
+  "start": 42,
+  "end": 53,
+  "link": "",
+  "ok": true,
+  "claim": " Hook Type | State Object | Key Properties |\n|-----------|--------------|----------------|\n| `InitHook` | `Options` | Mutable options before request construction [source/types/hooks.ts:28]() |\n| `BeforeRequestHook` | `BeforeRequestState` | `request`, `options`, `retryCount` (0) [source/types/hooks.ts:30-40]() |\n| `BeforeRetryHook` | `BeforeRetryState` | `request`, `options`, `error`, `retryCount` ",
+  "inline": true
+ },
+ {
+  "page": "Request Configuration",
+  "path": "source/utils/merge.ts",
+  "start": 7,
+  "end": 11,
+  "link": "",
+  "ok": true,
+  "claim": "The `validateAndMerge` function ensures all option sources are valid objects. It throws a `TypeError` if a source is not an object or is an array ",
+  "inline": true
+ },
+ {
+  "page": "Project Structure",
+  "path": "package.json",
+  "start": 29,
+  "end": 29,
+  "link": "",
+  "ok": true,
+  "claim": "---|---------|\n| `npm run build` | `del-cli distribution && tsc --project tsconfig.dist.json` | Cleans the output directory and compiles source files. [package.json:28]() |\n| `npm test` | `xo && npm run build && ava` | Lints code, builds it, and runs the test suite. [package.json:25]() |\n| `npm run prepare` | `npm run build` | Ensures the project is built before publication or local installation. ",
+  "inline": true
+ },
+ {
+  "page": "HTTP Method Shortcuts",
+  "path": "source/core/constants.ts",
+  "start": 4,
+  "end": 4,
+  "link": "",
+  "ok": true,
+  "claim": "**Method Creation Process**: Each HTTP method shortcut is dynamically created by iterating over the `requestMethods` array ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/core/Ky.ts",
+  "start": 391,
+  "end": 391,
+  "link": "",
+  "ok": true,
+  "claim": "1. Checks if `onUploadProgress` is a function [source/core/Ky.ts:387]()\n2. Ensures request streams are supported in the environment [source/core/Ky.ts:388]()\n3. Transforms the request to enable progress tracking via `streamRequest()` ",
+  "inline": true
+ },
+ {
+  "page": "Request Configuration",
+  "path": "source/types/options.ts",
+  "start": 170,
+  "end": 176,
+  "link": "",
+  "ok": true,
+  "claim": "| Option | Type | Default | Description |\n|--------|------|---------|-------------|\n| `retry` | `RetryOptions | number` | `{limit: 2}` | Retry configuration ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances",
+  "path": "source/index.ts",
+  "start": 14,
+  "end": 17,
+  "link": "",
+  "ok": true,
+  "claim": "1.  **Creates main function** ([source/index.ts:12]()): The core function that accepts `(input, options)` and calls `Ky.create()` with merged defaults.\n2.  **Attaches HTTP methods** (",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/types/hooks.ts",
+  "start": 71,
+  "end": 71,
+  "link": "",
+  "ok": true,
+  "claim": "hooks.ts:123]() |\n| **afterResponse** | `(state)` | `RetryMarker` | Force retry (throws `ForceRetryError`), bypasses `shouldRetry` [source/types/hooks.ts:86]() |\n|  |  | `Response` | Replace response [source/types/hooks.ts:86]() |\n|  |  | `undefined` | Continue with current response [source/types/hooks.ts:86]() |\n| **beforeError** | `(state)` | `Error` | Modify error before it's thrown or retried ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances",
+  "path": "source/index.ts",
+  "start": 12,
+  "end": 12,
+  "link": "",
+  "ok": true,
+  "claim": "- **Entry Point**: [source/index.ts:19]() - `ky.create` property definition.\n- **Factory Function**: [source/index.ts:10-32]() - `createInstance()` implementation.\n- **Main Function**: ",
+  "inline": true
+ },
+ {
+  "page": "Browser Support",
+  "path": "test/browser.ts",
+  "start": 24,
+  "end": 32,
+  "link": "",
+  "ok": true,
+  "claim": "| Function | File | Purpose |\n|----------|------|---------|\n| `browserTest()` | [test/helpers/with-page.ts:39-78]() | Run tests on specific browser engines |\n| `defaultBrowsersTest()` | [test/helpers/with-page.ts:80-82]() | Run tests on Chromium, Firefox, and WebKit |\n| `createEsmTestServer()` | ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle",
+  "path": "source/types/hooks.ts",
+  "start": 123,
+  "end": 123,
+  "link": "",
+  "ok": true,
+  "claim": "| Hook | Arguments | Can Return | Effect |\n|------|-----------|------------|--------|\n| **beforeRequest** | `(state)` | `Response` | Skip fetch, use returned Response ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 590,
+  "end": 593,
+  "link": "",
+  "ok": true,
+  "claim": "The `#cancelBody()` [source/core/Ky.ts:581-588]() and `#cancelResponseBody()` ",
+  "inline": true
+ },
+ {
+  "page": "Architecture",
+  "path": "source/core/constants.ts",
+  "start": 162,
+  "end": 230,
+  "link": "",
+  "ok": true,
+  "claim": "Retry behavior is configurable via `RetryOptions`. The `#calculateRetryDelay()` method [source/core/Ky.ts:499-571]() implements the retry decision logic, checking method eligibility, retry limits, status codes, and `Retry-After` headers. Ky also supports forced retries via `ky.retry()` ",
+  "inline": true
+ },
+ {
+  "page": "Options Merging Strategy",
+  "path": "source/utils/merge.ts",
+  "start": 266,
+  "end": 266,
+  "link": "",
+  "ok": true,
+  "claim": "**Key behaviors:**\n1.  **Collection**: Signals from all option sources are collected into an array [source/utils/merge.ts:225]().\n2.  **AbortSignal.any()**: If the environment supports it, all signals are combined. The request aborts if *any* signal triggers [source/utils/merge.ts:262-264]().\n3.  **Fallback**: If `AbortSignal.any` is unavailable, the last provided signal is used ",
+  "inline": true
+ }
+]

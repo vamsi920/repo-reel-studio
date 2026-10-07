@@ -1,0 +1,59 @@
+{
+ "ky": {
+  "head": "0d59458a",
+  "version_sensitive": [
+   "ky-01",
+   "ky-02",
+   "ky-03",
+   "ky-04",
+   "ky-05",
+   "ky-06",
+   "ky-08",
+   "ky-09",
+   "ky-10",
+   "ky-11",
+   "ky-12",
+   "ky-13",
+   "ky-14",
+   "ky-15",
+   "ky-16",
+   "ky-17",
+   "ky-18",
+   "ky-19",
+   "ky-20",
+   "ky-21",
+   "ky-22"
+  ]
+ },
+ "flask": {
+  "head": "d73fa1cd",
+  "version_sensitive": [
+   "flask-15",
+   "flask-22",
+   "flask-23",
+   "flask-24",
+   "flask-25"
+  ]
+ },
+ "hono": {
+  "head": "5f36607f",
+  "version_sensitive": [
+   "hono-01",
+   "hono-02",
+   "hono-04",
+   "hono-08",
+   "hono-09",
+   "hono-10",
+   "hono-13",
+   "hono-14",
+   "hono-15",
+   "hono-16",
+   "hono-17",
+   "hono-18",
+   "hono-22",
+   "hono-23",
+   "hono-24",
+   "hono-25"
+  ]
+ }
+}

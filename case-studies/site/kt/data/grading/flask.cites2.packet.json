@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "claim": "(\"Hello, World!\")\n    FlaskApp->>FlaskApp: process_response(response)\n    FlaskApp-->>WSGIServer: Return Response object\n    WSGIServer-->>Client: 200 OK, \"Hello, World!\"\n    Note over FlaskApp: Context is popped via ctx.pop() in a finally block.\n```\n*Sources: [src/flask/app.py:1566-1616](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1566-L1616),",
+  "cited": "src/flask/app.py:966-991"
+ },
+ {
+  "n": 1,
+  "claim": "Description |\n|-----------|------|-------------|\n| `import_name` | `str` | The name of the application package/module [src/flask/app.py:175](). |\n| `static_url_path` | `str` | URL path for static files [src/flask/app.py:176](). |\n| `static_folder` | `str` | Folder containing static files, relative to `root_path` [src/flask/app.py:179](). |\n| `template_folder` | `str` | Folder containing templates",
+  "cited": "src/flask/app.py:186-186"
+ },
+ {
+  "n": 2,
+  "claim": "Blueprint-specific registrations (e.g., `@blueprint.app_template_filter`) are available application-wide",
+  "cited": "docs/templating.rst:185-188"
+ },
+ {
+  "n": 3,
+  "claim": "ethodView --> J[\"`await view.get()` / `post()`\"];\n    E --> K[Response];\n    F --> K;\n    I --> K;\n    J --> K;\n```\n*Sources: [tests/test_async.py:44-48](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L44-L48), [tests/test_async.py:22-38](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L22-L38),",
+  "cited": "tests/type_check/typing_route.py:96-98"
+ },
+ {
+  "n": 4,
+  "claim": "t ensures an application context is pushed before the command runs, making `current_app` available. (`Sources: [src/flask/cli.py:380-403](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L380-L403)`)\n- **`AppGroup` Integration**: The `AppGroup` class automatically applies the `@with_appcontext` decorator to all commands registered with it. (`Sources:",
+  "cited": "src/flask/cli.py:413-428"
+ },
+ {
+  "n": 5,
+  "claim": "2.  **Automatic Discovery**: If no explicit path is given, the CLI attempts to find the application automatically by looking for `wsgi.py` and then `app.py` in the current directory. (`Sources: [src/flask/cli.py:351-357](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L351-L357),",
+  "cited": "tests/test_cli.py:276-287"
+ },
+ {
+  "n": 6,
+  "claim": "Blueprints support scoped error handling via `@bp.errorhandler`",
+  "cited": "src/flask/sansio/scaffold.py:300-315"
+ },
+ {
+  "n": 7,
+  "claim": "| `app` | _(none)_ | Immediately after an app context is pushed [src/flask/signals.py:15]() |\n| `appcontext_popped` | `app` | _(none)_ | Immediately after an app context is popped [src/flask/signals.py:16]() |\n| `appcontext_tearing_down` | `app` | `exc` | During app context teardown [src/flask/signals.py:14]() |\n| `template_rendered` | `app` | `template`, `context` | After a template is rendered",
+  "cited": "src/flask/signals.py:8-8"
+ },
+ {
+  "n": 8,
+  "claim": "| Key | Default | Purpose |\n|---|---|---|\n| `DEBUG` | `False` | Enable debug mode",
+  "cited": "docs/config.rst:68-79"
+ },
+ {
+  "n": 9,
+  "claim": "```python\ndef hello():\n    return \"Hello, World!\"\n```\n*Sources:",
+  "cited": "README.md:29-30"
+ },
+ {
+  "n": 10,
+  "claim": "s/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L2-L5), [.github/workflows/tests.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/tests.yaml#L2-L7), [.github/workflows/zizmor.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/zizmor.yaml#L2-L7),",
+  "cited": ".github/workflows/lock.yaml:7-9"
+ },
+ {
+  "n": 11,
+  "claim": "xit\"];\n    B -- No --> D{\"load_dotenv?\"};\n    D -- Yes --> E[\"Load .env/.flaskenv\"];\n    E --> F[\"Determine debug status\"];\n    D -- No --> F;\n    F --> G[\"Determine host (default '127.0.0.1')\"];\n    G --> H[\"Determine port (default 5000)\"];\n    H --> I[\"Set Werkzeug options (reloader, debugger)\"];\n    I --> J[\"Show server banner\"];\n    J --> K[\"Call werkzeug.serving.run_simple()\"];\n```\n*Sources:",
+  "cited": "src/flask/app.py:632-754"
+ },
+ {
+  "n": 12,
+  "claim": "om the WSGI environment and pushed. This makes globals like `request` available.\n    *Sources: [src/flask/app.py:1592-1596](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1592-L1596)*\n3.  **Request Dispatch**: `full_dispatch_request` is called. It runs `preprocess_request` functions (none in this case), then calls `dispatch_request`.\n    *Sources:",
+  "cited": "src/flask/app.py:992-1019"
+ },
+ {
+  "n": 13,
+  "claim": "`_AppCtxGlobals`) for storing data during an application context. | [src/flask/ctx.py:30]() |\n| **JSON Provider** | An interface that defines how JSON is serialized and deserialized, allowing replacement of the default library. | [src/flask/json/provider.py:252]() |\n| **Scaffold** | A base class providing common functionality for both `Flask` and `Blueprint` objects, such as route registration. |",
+  "cited": "src/flask/sansio/scaffold.py:12-12"
+ },
+ {
+  "n": 14,
+  "claim": "/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L1)` |\n| `build.os` | `ubuntu-24.04` | Sets the operating system for the build container. | `[.readthedocs.yaml:3](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L3)` |\n| `build.tools.python` | `3.13` | Defines the specific Python version to be used in the build environment. | `",
+  "cited": ".readthedocs.yaml:5-5"
+ },
+ {
+  "n": 15,
+  "claim": "# Asynchronous teardown_appcontext hook\n@app.teardown_appcontext\nasync def teardown_async(exc: BaseException | None) -> None: ...\n```\n*Sources: [tests/type_check/typing_app_decorators.py:14-16](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L14-L16),",
+  "cited": "tests/type_check/typing_app_decorators.py:23-24"
+ },
+ {
+  "n": 16,
+  "claim": "```python\n@app.route(\"/\")\ndef hello():\n    # ...\n```\n*Sources:",
+  "cited": "README.md:28-29"
+ },
+ {
+  "n": 17,
+  "claim": "To create signals in an extension or application, use a custom `Namespace` to avoid collisions",
+  "cited": "docs/signals.rst:100-106"
+ },
+ {
+  "n": 18,
+  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()`",
+  "cited": "docs/config.rst:114-127"
+ },
+ {
+  "n": 19,
+  "claim": "4.  **URL Matching**: `dispatch_request` uses the `request.url_rule` (matched by Werkzeug) to find the associated view function, `hello`.\n    *Sources: [src/flask/app.py:976-980](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L976-L980)*\n5.  **View Execution**: The `hello` function is executed and returns the string `\"Hello, World!\"`.\n    *Sources:",
+  "cited": "src/flask/app.py:990-990"
+ },
+ {
+  "n": 20,
+  "claim": "instance of `FlaskClient` [src/flask/app.py:721-742](). This allows simulating requests to the application without a live server.\n-   **`test_cli_runner()`**: Returns an instance of `FlaskCliRunner` [src/flask/app.py:744-760](). This is used to test Click-based CLI commands registered with the app.\n-   **`test_request_context()`**: Creates a `RequestContext` for use in a `with` block during tests",
+  "cited": "src/flask/app.py:702-719"
+ },
+ {
+  "n": 21,
+  "claim": "- Implements the WSGI callable interface.\n- Maintains the URL map, registered view functions, error handlers, and template context processors.\n- Holds application-level configuration via `app.config`",
+  "cited": "src/flask/app.py:109-109"
+ },
+ {
+  "n": 22,
+  "claim": "app.add_url_rule(\"/methodview\", view_func=AsyncMethodView.as_view(\"methodview\"))\n```\n*Sources:",
+  "cited": "tests/test_async.py:30-38"
+ },
+ {
+  "n": 23,
+  "claim": "### Discovery Sequence\n1. **`locate_app`**: Takes an import path (e.g., from `FLASK_APP`) and attempts to import the module [src/flask/cli.py:248-290]().\n2. **`find_best_app`**: Inspects the imported module for a `Flask` instance or a factory function like `create_app` or `make_app`",
+  "cited": "src/flask/cli.py:41-91"
+ },
+ {
+  "n": 24,
+  "claim": "-->>Client: 200 OK, \"Hello, World!\"\n    Note over FlaskApp: Context is popped via ctx.pop() in a finally block.\n```\n*Sources: [src/flask/app.py:1566-1616](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1566-L1616), [src/flask/app.py:966-991](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L966-L991),",
+  "cited": "src/flask/app.py:1224-1364"
+ },
+ {
+  "n": 25,
+  "claim": "@app.errorhandler(CustomException)\ndef custom_exception_handler(e):\n    assert isinstance(e, CustomException)\n    return \"custom\"\n```\n*Sources:",
+  "cited": "tests/test_user_error_handler.py:11-18"
+ },
+ {
+  "n": 26,
+  "claim": "Template object\n    Flask->>App: update_template_context(context)\n    App-->>Flask: Context updated\n    Flask->>Signals: send(before_render_template)\n    Flask->>Template: render(context)\n    Template-->>Flask: Return rendered string (HTML)\n    Flask->>Signals: send(template_rendered)\n    Flask-->>View: Return rendered string\n```\n*Sequence diagram for a standard `render_template` call.*\n`Sources:",
+  "cited": "src/flask/templating.py:123-133"
+ },
+ {
+  "n": 27,
+  "claim": "| Parameter | Description | Source |\n| --- | --- | --- |\n| `import_name` | The name of the application package or module. Used to determine the `root_path`. |",
+  "cited": "src/flask/app.py:312-312"
+ },
+ {
+  "n": 28,
+  "claim": ". It creates a `RequestContext` and pushes it [src/flask/app.py:1138-1153]().\n2.  **`full_dispatch_request`**: Orchestrates the request. It handles the first request setup, triggers `preprocess_request`, dispatches to the view, and finalizes the response [src/flask/app.py:904-922]().\n3.  **`dispatch_request`**: Performs URL matching via `url_adapter.match()` and calls the associated view function",
+  "cited": "src/flask/app.py:931-945"
+ },
+ {
+  "n": 29,
+  "claim": "# A view that raises the error\n@app.route(\"/error\")\nasync def error():\n    raise AppError()\n```\n*Sources:",
+  "cited": "tests/test_async.py:14-15"
+ },
+ {
+  "n": 30,
+  "claim": "*   `_cv_app`: The `ContextVar` holding the active `AppContext` [src/flask/globals.py:24]().\n*   `current_app`: Points to `_cv_app.get().app`",
+  "cited": "src/flask/globals.py:31-33"
+ },
+ {
+  "n": 31,
+  "claim": "The lock file (`uv.lock`) pins all transitive dependencies for reproducible installs. The `uv-lock` pre-commit hook ensures `uv.lock` stays in sync whenever `pyproject.toml` changes. [uv.lock:1-10](),",
+  "cited": ".pre-commit-config.yaml:7-10"
+ },
+ {
+  "n": 32,
+  "claim": "/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/tests.yaml#L2-L7), [.github/workflows/zizmor.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/zizmor.yaml#L2-L7), [.github/workflows/lock.yaml:7-9](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/lock.yaml#L7-L9),",
+  "cited": ".github/workflows/publish.yaml:2-4"
+ },
+ {
+  "n": 33,
+  "claim": "- `open_session(app, request)` \u2014 Loads or creates the session [src/flask/sessions.py:249-251]().\n- `save_session(app, session, response)` \u2014 Persists the session state",
+  "cited": "src/flask/sessions.py:261-263"
+ },
+ {
+  "n": 34,
+  "claim": "```bash\n$ flask run\n  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)\n```\n*Sources:",
+  "cited": "README.md:34-36"
+ },
+ {
+  "n": 35,
+  "claim": "The `Environment` class extends Jinja2's `Environment` with Flask-specific functionality, particularly autoescaping configuration",
+  "cited": "src/flask/templating.py:39-49"
+ },
+ {
+  "n": 36,
+  "claim": "The Jinja2 environment is created lazily on first access via the `jinja_env` cached property on the `App` class",
+  "cited": "src/flask/sansio/app.py:466-474"
+ },
+ {
+  "n": 37,
+  "claim": "| Parameter | Description | Source |\n| --- | --- | --- |\n| `import_name` | The name of the application package or module. Used to determine the `root_path`. | [src/flask/app.py:312-312](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L312-L312) |\n| `static_url_path` | The URL path for serving static files. Defaults to the name of `static_folder`. |",
+  "cited": "src/flask/app.py:313-313"
+ },
+ {
+  "n": 38,
+  "claim": "0d6ab827/src/flask/cli.py#L413-L428)`)\n- **`FlaskGroup` Behavior**: For commands registered on the application or blueprints (`app.cli`), `FlaskGroup` automatically pushes an app context after loading the app but before invoking the command. This makes the context available even during parameter processing and removes the need for the `@with_appcontext` decorator on app-level commands. (`Sources:",
+  "cited": "src/flask/cli.py:628-633"
+ },
+ {
+  "n": 39,
+  "claim": "in the `Flask` class [src/flask/app.py:109]().\n*   **CLI**: Command Line Interface. Flask uses the `click` library to provide its command-line tools [src/flask/cli.py:17]().\n*   **JSON**: JavaScript Object Notation. Handled via `flask.json` and `JSONProvider` [src/flask/json/provider.py:252]().\n*   **URL**: Uniform Resource Locator. Routes are mapped to endpoints using the `werkzeug.routing.Map`",
+  "cited": "src/flask/app.py:23-23"
+ },
+ {
+  "n": 40,
+  "claim": "om/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L313-L313) |\n| `static_folder` | The folder containing static files. Defaults to `\"static\"`. | [src/flask/app.py:314-314](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L314-L314) |\n| `template_folder` | The folder containing template files. Defaults to `\"templates\"`. |",
+  "cited": "src/flask/app.py:318-318"
+ },
+ {
+  "n": 41,
+  "claim": "| Key | Value | Description | Source |\n|---|---|---|---|\n| `version` | `2` | Specifies the configuration file format version. | `",
+  "cited": ".readthedocs.yaml:1-1"
+ },
+ {
+  "n": 42,
+  "claim": "### Loading Methods\n*   **Direct Mapping**: `app.config.from_mapping({\"SECRET_KEY\": \"dev\"})` [docs/tutorial/factory.rst:46-49]().\n*   **Python Files**: `app.config.from_pyfile(\"config.py\")` [docs/tutorial/factory.rst:53-53]().\n*   **Environment Variables**: Use `from_prefixed_env()` to load variables starting with `FLASK_`",
+  "cited": "docs/cli.rst:154-157"
+ },
+ {
+  "n": 43,
+  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` |",
+  "cited": "src/flask/globals.py:60-62"
+ },
+ {
+  "n": 44,
+  "claim": "The `-e`/`--env-file` option is processed eagerly, ensuring that environment variables are available for other options, like `FLASK_APP`. (`Sources:",
+  "cited": "src/flask/cli.py:515-528"
+ },
+ {
+  "n": 45,
+  "claim": "the search path and attempts made by the `DispatchingJinjaLoader` to find a template. If the template is not found, the log provides a detailed explanation of which loaders were tried. This is handled by the `_get_source_explained` method.\n    `Sources: [src/flask/templating.py:60-62](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L60-L62),",
+  "cited": "src/flask/templating.py:64-87"
+ },
+ {
+  "n": 46,
+  "claim": "| Discovery Target | Priority / Search Logic |\n| :--- | :--- |\n| **Instance Name** | Looks for an object named `app` or `application`",
+  "cited": "docs/cli.rst:58-60"
+ },
+ {
+  "n": 47,
+  "claim": "The `Flask` object is a WSGI application. When a WSGI server calls the application, it triggers the `__call__` method, which delegates to `wsgi_app`",
+  "cited": "src/flask/app.py:1161-1166"
+ },
+ {
+  "n": 48,
+  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session",
+  "cited": "src/flask/testing.py:167-167"
+ },
+ {
+  "n": 49,
+  "claim": "Routes on a blueprint are registered via the `route` decorator",
+  "cited": "src/flask/sansio/scaffold.py:165-180"
+ },
+ {
+  "n": 50,
+  "claim": "| Method | Source | Use Case |\n|---|---|---|\n| `from_envvar` | Environment variable pointing to a file | Production secrets [src/flask/config.py:102-124]() |\n| `from_prefixed_env` | Environment variables starting with prefix | Container/Twelve-Factor apps",
+  "cited": "src/flask/config.py:126-151"
+ },
+ {
+  "n": 51,
+  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` | [src/flask/globals.py:60-62]() |\n| `g` | `app_ctx.g` |",
+  "cited": "src/flask/globals.py:47-49"
+ },
+ {
+  "n": 52,
+  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session [src/flask/testing.py:167]() |\n| Context variables unavailable after request | Client must be used inside a `with client:` block",
+  "cited": "docs/testing.rst:202-202"
+ },
+ {
+  "n": 53,
+  "claim": "subgraph locate_app\n        J --> J1{app_name provided?};\n        J1 -- Yes --> J2[find_app_by_string];\n        J1 -- No --> J3[find_best_app];\n    end\n```\n`Sources:",
+  "cited": "src/flask/cli.py:333-373"
+ },
+ {
+  "n": 54,
+  "claim": "debug mode)* | Enable/disable Werkzeug debugger [docs/debugging.rst:42-46]() |\n| `--cert` | *(none)* | SSL certificate path or `\"adhoc\"` |\n| `--key` | *(none)* | SSL private key path (used with `--cert path`) |\n| `--extra-files` | *(none)* | Additional files/dirs for the reloader to watch [docs/cli.rst:119-121]() |\n| `--exclude-patterns` | *(none)* | `fnmatch` patterns for the reloader to ignore",
+  "cited": "docs/cli.rst:128-130"
+ },
+ {
+  "n": 55,
+  "claim": "The `Flask` constructor requires an `import_name` to resolve resources from the filesystem [src/flask/app.py:115-118](). This name is used to find templates, static files, and can be used by extensions for debugging",
+  "cited": "src/flask/app.py:130-133"
+ },
+ {
+  "n": 56,
+  "claim": "ogic\nWhen a command decorated with `with_appcontext` is invoked:\n1. It accesses the Click `Context` via `@click.pass_context` [src/flask/cli.py:382]().\n2. It retrieves the `ScriptInfo` object [src/flask/cli.py:394]().\n3. It calls `script_info.load_app()` to ensure the Flask instance is ready [src/flask/cli.py:396]().\n4. It pushes an application context using `ctx.with_resource(app.app_context())`",
+  "cited": "src/flask/cli.py:398-398"
+ },
+ {
+  "n": 57,
+  "claim": "C & D --> E;\n```\n*Sources: [.github/pull_request_template.md:2-4](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/pull_request_template.md#L2-L4),",
+  "cited": ".github/workflows/pre-commit.yaml:3-5"
+ },
+ {
+  "n": 58,
+  "claim": "Without this flag, the loader uses a faster, non-logging path via `_get_source_fast`.\n`Sources: [src/flask/templating.py:62](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L62),",
+  "cited": "src/flask/templating.py:88-97"
+ },
+ {
+  "n": 59,
+  "claim": "### What Flask Delegates\n- **Databases**: No built-in ORM; delegates to extensions like Flask-SQLAlchemy. [docs/design.rst:133-151]()\n- **Forms**: No built-in validation; delegates to extensions like Flask-WTF. [docs/design.rst:133-151]()\n- **Security**: Provides basic protections (XSS via Jinja, JSON security) but delegates CSRF to form libraries.",
+  "cited": "docs/web-security.rst:103-137"
+ },
+ {
+  "n": 60,
+  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()` [docs/config.rst:114-127]().\n*   `TESTING`: Propagates exceptions for test runners",
+  "cited": "docs/config.rst:80-87"
+ },
+ {
+  "n": 61,
+  "claim": "*Sources: [src/flask/app.py:1224-1226](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1224-L1226),",
+  "cited": "src/flask/typing.py:36-42"
+ },
+ {
+  "n": 62,
+  "claim": "| Technique | Implementation | Source |\n| :--- | :--- | :--- |\n| **File Uploads** | Pass `(io.BytesIO, filename)` in `client.post(data=...)` | [docs/testing.rst:138-149]() |\n| **JSON APIs** | Use `client.post(json=...)` and `response.json` | [docs/testing.rst:163-176]() |\n| **Redirects** | Use `client.get(follow_redirects=True)` |",
+  "cited": "docs/testing.rst:194-199"
+ },
+ {
+  "n": 63,
+  "claim": "*Sources: [.github/workflows/publish.yaml:10-14](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/publish.yaml#L10-L14),",
+  "cited": ".github/workflows/publish.yaml:33-38"
+ },
+ {
+  "n": 64,
+  "claim": "> **Warning:** Do not use `flask run` in production. It uses Werkzeug's built-in server, which is not designed for stability, efficiency, or security under load [docs/server.rst:10-17](),",
+  "cited": "docs/debugging.rst:8-11"
+ },
+ {
+  "n": 65,
+  "claim": "| Parameter | Type | Purpose |\n|---|---|---|\n| `name` | `str` | Unique identifier. Prefixes all endpoint names",
+  "cited": "src/flask/sansio/blueprints.py:18-20"
+ },
+ {
+  "n": 66,
+  "claim": "talled with `pip install flask[async]`. [docs/async-await.rst:6-11]() However, Flask is still a synchronous WSGI application underneath. Each async request runs an event loop in a thread; one worker is still consumed per request. [docs/async-await.rst:30-33]() This is useful for concurrent I/O within a single request (e.g., multiple database calls), but does not increase total request throughput.",
+  "cited": "docs/async-await.rst:35-39"
+ },
+ {
+  "n": 67,
+  "claim": "### Streaming with Context\nWhen returning a streamed response, the context must be preserved even after the view function returns. `stream_with_context` wraps a generator to ensure the context remains pushed during iteration",
+  "cited": "src/flask/helpers.py:63-148"
+ },
+ {
+  "n": 68,
+  "claim": "These can be registered with a custom name by passing it as an argument to the decorator, e.g., `@app.template_filter(\"strrev\")`.\n`Sources:",
+  "cited": "tests/test_templating.py:123-155"
+ },
+ {
+  "n": 69,
+  "claim": "`Blueprint` inherits from `SansioBlueprint` [src/flask/blueprints.py:18-18](). During registration, blueprint routes can be prefixed with a `url_prefix`",
+  "cited": "src/flask/blueprints.py:26-26"
+ },
+ {
+  "n": 70,
+  "claim": "*Sources: [src/flask/app.py:1224-1350](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1224-L1350),",
+  "cited": "src/flask/typing.py:12-42"
+ },
+ {
+  "n": 71,
+  "claim": "# A view that raises the error\n@app.route(\"/error\")\nasync def error():\n    raise AppError()\n```\n*Sources: [tests/test_async.py:14-15](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L14-L15),",
+  "cited": "tests/test_async.py:50-56"
+ },
+ {
+  "n": 72,
+  "claim": "-->>FlaskApp: Complete\n    FlaskApp->>View: Dispatch to view\n    View-->>FlaskApp: Return response object\n    FlaskApp->>AfterRequest: Process response\n    AfterRequest-->>FlaskApp: Return final response\n    FlaskApp-->>Client: Send response\n    Note over FlaskApp, Teardown: After response is sent\n    FlaskApp->>Teardown: Execute teardown functions\n    Teardown-->>FlaskApp: Complete\n```\n*Sources:",
+  "cited": "tests/test_async.py:97-145"
+ },
+ {
+  "n": 73,
+  "claim": "on | None) -> None: ...\n```\n*Sources: [tests/type_check/typing_app_decorators.py:14-16](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L14-L16), [tests/type_check/typing_app_decorators.py:23-24](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L23-L24),",
+  "cited": "tests/type_check/typing_app_decorators.py:31-32"
+ },
+ {
+  "n": 74,
+  "claim": "48b48bab90d6ab827/src/flask/app.py#L990), [README.md:29-30](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/README.md#L29-L30)*\n6.  **Response Creation**: The return value is passed to `finalize_request`, which calls `make_response`. The string is converted into a `Response` object with default status `200` and `Content-Type: text/html; charset=utf-8`.\n    *Sources:",
+  "cited": "src/flask/app.py:1019-1019"
+ },
+ {
+  "n": 75,
+  "claim": "| Config Key | Purpose |\n|---|---|\n| `SECRET_KEY` | Signs session cookies and other security-sensitive values [docs/config.rst:114-126]() |\n| `SECRET_KEY_FALLBACKS` | List of old keys still valid for unsigning (key rotation)",
+  "cited": "docs/config.rst:128-145"
+ },
+ {
+  "n": 76,
+  "claim": "Pre_commit_Workflow-->>GitHub: Report status (pass/fail)\n    GitHub->>Tests_Workflow: Trigger `tests` and `typing` jobs\n    Tests_Workflow-->>GitHub: Report status (pass/fail)\n    alt PR contains YAML changes\n        GitHub->>Zizmor_Workflow: Trigger `zizmor` job\n        Zizmor_Workflow-->>GitHub: Report status (pass/fail)\n    end\n    GitHub-->>Contributor: Display all check results\n```\n*Sources:",
+  "cited": ".github/workflows/pre-commit.yaml:2-5"
+ },
+ {
+  "n": 77,
+  "claim": "```python\n@app.errorhandler(500)\ndef handle_500(e):\n    assert isinstance(e, InternalServerError)\n    # ...\n    return \"direct\"\n```\n*Sources:",
+  "cited": "tests/test_user_error_handler.py:29-37"
+ },
+ {
+  "n": 78,
+  "claim": "us (pass/fail)\n    alt PR contains YAML changes\n        GitHub->>Zizmor_Workflow: Trigger `zizmor` job\n        Zizmor_Workflow-->>GitHub: Report status (pass/fail)\n    end\n    GitHub-->>Contributor: Display all check results\n```\n*Sources: [.github/workflows/pre-commit.yaml:2-5](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L2-L5),",
+  "cited": ".github/workflows/tests.yaml:2-7"
+ },
+ {
+  "n": 79,
+  "claim": "app(app)` method | Allows the extension to be created once and attached to multiple apps [docs/extensiondev.rst:52-55](). |\n| **Per-Deployment Configuration** | `app.config` | Pulls settings from the application's global configuration [docs/extensions.rst:20-23](). |\n| **Per-Application State Storage** | `Flask.extensions` dict | Stores state (like connection pools) specific to a `Flask` instance",
+  "cited": "docs/extensiondev.rst:91-96"
+ }
+]

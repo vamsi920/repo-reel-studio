@@ -447,7 +447,10 @@ def _should_process_file(
     so the tree listing and the RAG indexer share one implementation)."""
     if isinstance(file_path, str):
         file_path = Path(file_path)
-    file_path_parts = file_path.resolve().parts
+    # Match against the repo-relative path. Resolving to an absolute path
+    # made every ancestor directory count: a repo checked out anywhere under
+    # a folder named "tmp", "build", "out" or "log" lost all of its files.
+    file_path_parts = file_path.parts if not file_path.is_absolute() else file_path.resolve().parts
     file_name = file_path_parts[-1]
 
     if use_inclusion:
@@ -529,17 +532,60 @@ def iterate_files(
         configs.get("code_extensions", []) + configs.get("doc_extensions", [])
     )
 
+    tracked = _git_tracked_files(root_dir)
+    if tracked is not None and not use_inclusion:
+        # Files under version control are source by definition, so the
+        # build-output directory names in the default excludes must not hide
+        # them (hono keeps its build script in build/build.ts). Untracked
+        # output directories never appear in `git ls-files` anyway.
+        tracked_exc_dirs = [
+            d for d in exc_dirs
+            if d.removeprefix("./").rstrip("/") not in _TRACKED_SOURCE_DIR_NAMES
+        ]
+    candidates = (
+        (Path(root_dir) / rel for rel in tracked)
+        if tracked is not None
+        else (p for p in Path(root_dir).rglob("*"))
+    )
+
     results: list[str] = []
-    for p in Path(root_dir).rglob("*"):
+    for p in candidates:
         if not p.is_file():
             continue
-        if extensions and p.suffix.lower() not in extensions:
+        if extensions and p.suffix.lower() not in extensions and p.name not in _EXTENSIONLESS_SOURCE_FILES:
             continue
+        rel = Path(os.path.relpath(p, root_dir))
         if _should_process_file(
-            p, use_inclusion, inc_dirs, inc_files, exc_dirs, exc_files
+            rel,
+            use_inclusion,
+            inc_dirs,
+            inc_files,
+            tracked_exc_dirs if tracked is not None and not use_inclusion else exc_dirs,
+            exc_files,
         ):
-            results.append(os.path.relpath(p, root_dir).replace(os.sep, "/"))
+            results.append(str(rel).replace(os.sep, "/"))
     return results
+
+
+_TRACKED_SOURCE_DIR_NAMES = {"build", "bin", "out", "target", "obj", "log", "logs", "tmp", "temp"}
+_EXTENSIONLESS_SOURCE_FILES = {"Dockerfile", "Makefile", "Justfile", "Procfile", "Gemfile", "Rakefile"}
+
+
+def _git_tracked_files(root_dir: str) -> list[str] | None:
+    """Repo-relative tracked paths, or None when root_dir isn't a git work tree."""
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "-C", root_dir, "ls-files", "-z"],
+            capture_output=True,
+            timeout=60,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    paths = [p for p in out.decode("utf-8", "replace").split("\0") if p]
+    return paths or None
 
 
 def get_embedder(

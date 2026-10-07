@@ -1,0 +1,100 @@
+[
+ {
+  "repo": "ky",
+  "id": "ky-03",
+  "question": "Describe the order in which hook types run during a request lifecycle that ends in a retried HTTP error and eventual failure.",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Says beforeError runs every attempt before retry and steps incl. beforeRequest repeat; beforeError only on final error."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-02",
+  "question": "How do runtime adapters connect a platform's entry point to a Hono app? Compare Vercel, Cloudflare Workers, Cloudflare Pages and AWS Lambda.",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Vercel/Pages/Lambda flow right but omits Lambda env bindings; invented deprecation notes for adapters."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-05",
+  "question": "How does Context manage the response object as middleware and handlers run?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Getter/setter right; misses compose rule; falsely suggests headers lost on overwrite unless merged manually."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-08",
+  "question": "What are the default options of the cors() middleware and how does it handle preflight?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Default allowMethods wrongly includes 'QUERY'; preflight description otherwise accurate."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-09",
+  "question": "How does the etag() middleware generate and compare ETags by default?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "SHA-1, weak option, W/ stripping right; invents '*' match and GET/HEAD/QUERY + 2xx conditions."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-13",
+  "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "302 and text charset right; falsely says c.notFound fallback is empty 404; misses encodeURI and delegation."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-15",
+  "question": "Where does RegExpRouter build its matchers, and when does that happen?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Lazy build in buildAllMatchers right; falsely says tries built at add() and #tries cleared; no matcher.ts/UnsupportedPathError."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-17",
+  "question": "Where are app.get/post/.../all, app.on and app.use defined, and which HTTP methods get shortcut methods?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Lists nonexistent 'query' shortcut; METHODS is get/post/put/delete/options/patch."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-19",
+  "question": "If you pass both strict: false and a custom getPath to new Hono(), which getPath is used?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Opens by asserting custom getPath is used, then correctly concludes getPathNoStrict overrides it; self-contradictory."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-22",
+  "question": "How are tests run, and how are the per-runtime suites organized?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Runtime dirs and vitest projects right; invents pnpm, 'vp test', MAINTAINING/ci-adapters; omits tsc step."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-23",
+  "question": "How is the npm package built?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Claims vite-plus/tsdown/vp pack; actual build is build/build.ts with esbuild and tsc."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-24",
+  "question": "How are linting and formatting configured?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Claims oxlint/oxfmt/vite-plus/pnpm; repo uses ESLint flat config and prettier."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-25",
+  "question": "How is the package published to JSR, and how is consistency with npm exports enforced?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "Bidirectional validateExports and publish-on-tag right; wrongly places it in vite plugin, pnpm dlx, v-tag trigger."
+ },
+ {
+  "repo": "hono",
+  "id": "hono-18",
+  "question": "There is no app.head(). How are HEAD requests handled?",
+  "answer": "[Devin answer not redistributed]",
+  "grader_note": "GET handles HEAD with null body; invents methodNotAllowed middleware."
+ }
+]

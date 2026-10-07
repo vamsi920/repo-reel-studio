@@ -1,0 +1,15 @@
+{
+ "repo": "hono",
+ "system": "neodevex",
+ "pages": 9,
+ "words": 13728,
+ "citations": 136,
+ "citations_valid": 136,
+ "citation_validity": 1.0,
+ "unique_files_cited": 33,
+ "citations_per_1k_words": 9.91,
+ "inline_citations": 67,
+ "mermaid_diagrams": 23,
+ "links_pinned_to_commit": 0,
+ "invalid_examples": []
+}

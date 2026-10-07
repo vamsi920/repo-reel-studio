@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Templating with Jinja2",
+  "path": "src/flask/templating.py",
+  "start": 123,
+  "end": 133,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L123-L133",
+  "ok": true,
+  "claim": "Template object\n    Flask->>App: update_template_context(context)\n    App-->>Flask: Context updated\n    Flask->>Signals: send(before_render_template)\n    Flask->>Template: render(context)\n    Template-->>Flask: Return rendered string (HTML)\n    Flask->>Signals: send(template_rendered)\n    Flask-->>View: Return rendered string\n```\n*Sequence diagram for a standard `render_template` call.*\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Repository root: module reference",
+  "path": ".readthedocs.yaml",
+  "start": 5,
+  "end": 5,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L5",
+  "ok": true,
+  "claim": "/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L1)` |\n| `build.os` | `ubuntu-24.04` | Sets the operating system for the build container. | `[.readthedocs.yaml:3](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L3)` |\n| `build.tools.python` | `3.13` | Defines the specific Python version to be used in the build environment. | `",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 1019,
+  "end": 1019,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1019",
+  "ok": true,
+  "claim": "48b48bab90d6ab827/src/flask/app.py#L990), [README.md:29-30](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/README.md#L29-L30)*\n6.  **Response Creation**: The return value is passed to `finalize_request`, which calls `make_response`. The string is converted into a `Response` object with default status `200` and `Content-Type: text/html; charset=utf-8`.\n    *Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Templating with Jinja2",
+  "path": "src/flask/templating.py",
+  "start": 64,
+  "end": 87,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L64-L87",
+  "ok": true,
+  "claim": " the search path and attempts made by the `DispatchingJinjaLoader` to find a template. If the template is not found, the log provides a detailed explanation of which loaders were tried. This is handled by the `_get_source_explained` method.\n    `Sources: [src/flask/templating.py:60-62](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L60-L62), ",
+  "inline": true
+ },
+ {
+  "page": "The Flask Command-Line Interface",
+  "path": "tests/test_cli.py",
+  "start": 276,
+  "end": 287,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_cli.py#L276-L287",
+  "ok": true,
+  "claim": "2.  **Automatic Discovery**: If no explicit path is given, the CLI attempts to find the application automatically by looking for `wsgi.py` and then `app.py` in the current directory. (`Sources: [src/flask/cli.py:351-357](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L351-L357), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/typing.py",
+  "start": 36,
+  "end": 42,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/typing.py#L36-L42",
+  "ok": true,
+  "claim": "*Sources: [src/flask/app.py:1224-1226](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1224-L1226), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 632,
+  "end": 754,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L632-L754",
+  "ok": true,
+  "claim": "xit\"];\n    B -- No --> D{\"load_dotenv?\"};\n    D -- Yes --> E[\"Load .env/.flaskenv\"];\n    E --> F[\"Determine debug status\"];\n    D -- No --> F;\n    F --> G[\"Determine host (default '127.0.0.1')\"];\n    G --> H[\"Determine port (default 5000)\"];\n    H --> I[\"Set Werkzeug options (reloader, debugger)\"];\n    I --> J[\"Show server banner\"];\n    J --> K[\"Call werkzeug.serving.run_simple()\"];\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/pre-commit.yaml",
+  "start": 2,
+  "end": 5,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L2-L5",
+  "ok": true,
+  "claim": "Pre_commit_Workflow-->>GitHub: Report status (pass/fail)\n    GitHub->>Tests_Workflow: Trigger `tests` and `typing` jobs\n    Tests_Workflow-->>GitHub: Report status (pass/fail)\n    alt PR contains YAML changes\n        GitHub->>Zizmor_Workflow: Trigger `zizmor` job\n        Zizmor_Workflow-->>GitHub: Report status (pass/fail)\n    end\n    GitHub-->>Contributor: Display all check results\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/type_check/typing_route.py",
+  "start": 96,
+  "end": 98,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L96-L98",
+  "ok": true,
+  "claim": "ethodView --> J[\"`await view.get()` / `post()`\"];\n    E --> K[Response];\n    F --> K;\n    I --> K;\n    J --> K;\n```\n*Sources: [tests/test_async.py:44-48](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L44-L48), [tests/test_async.py:22-38](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L22-L38), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 1224,
+  "end": 1364,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1224-L1364",
+  "ok": true,
+  "claim": "-->>Client: 200 OK, \"Hello, World!\"\n    Note over FlaskApp: Context is popped via ctx.pop() in a finally block.\n```\n*Sources: [src/flask/app.py:1566-1616](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1566-L1616), [src/flask/app.py:966-991](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L966-L991), ",
+  "inline": true
+ },
+ {
+  "page": "Templating with Jinja2",
+  "path": "tests/test_templating.py",
+  "start": 123,
+  "end": 155,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_templating.py#L123-L155",
+  "ok": true,
+  "claim": "These can be registered with a custom name by passing it as an argument to the decorator, e.g., `@app.template_filter(\"strrev\")`.\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/test_async.py",
+  "start": 50,
+  "end": 56,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L50-L56",
+  "ok": true,
+  "claim": "# A view that raises the error\n@app.route(\"/error\")\nasync def error():\n    raise AppError()\n```\n*Sources: [tests/test_async.py:14-15](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L14-L15), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/typing.py",
+  "start": 12,
+  "end": 42,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/typing.py#L12-L42",
+  "ok": true,
+  "claim": "*Sources: [src/flask/app.py:1224-1350](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1224-L1350), ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/test_async.py",
+  "start": 30,
+  "end": 38,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L30-L38",
+  "ok": true,
+  "claim": "app.add_url_rule(\"/methodview\", view_func=AsyncMethodView.as_view(\"methodview\"))\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Application Object (Flask)",
+  "path": "src/flask/app.py",
+  "start": 312,
+  "end": 312,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L312-L312",
+  "ok": true,
+  "claim": "| Parameter | Description | Source |\n| --- | --- | --- |\n| `import_name` | The name of the application package or module. Used to determine the `root_path`. | ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "README.md",
+  "start": 28,
+  "end": 29,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/README.md#L28-L29",
+  "ok": true,
+  "claim": "```python\n@app.route(\"/\")\ndef hello():\n    # ...\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 966,
+  "end": 991,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L966-L991",
+  "ok": true,
+  "claim": "(\"Hello, World!\")\n    FlaskApp->>FlaskApp: process_response(response)\n    FlaskApp-->>WSGIServer: Return Response object\n    WSGIServer-->>Client: 200 OK, \"Hello, World!\"\n    Note over FlaskApp: Context is popped via ctx.pop() in a finally block.\n```\n*Sources: [src/flask/app.py:1566-1616](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1566-L1616), ",
+  "inline": true
+ },
+ {
+  "page": "Error Handling",
+  "path": "tests/test_user_error_handler.py",
+  "start": 11,
+  "end": 18,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_user_error_handler.py#L11-L18",
+  "ok": true,
+  "claim": "@app.errorhandler(CustomException)\ndef custom_exception_handler(e):\n    assert isinstance(e, CustomException)\n    return \"custom\"\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Templating with Jinja2",
+  "path": "src/flask/templating.py",
+  "start": 88,
+  "end": 97,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L88-L97",
+  "ok": true,
+  "claim": "Without this flag, the loader uses a faster, non-logging path via `_get_source_fast`.\n`Sources: [src/flask/templating.py:62](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/templating.py#L62), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "README.md",
+  "start": 34,
+  "end": 36,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/README.md#L34-L36",
+  "ok": true,
+  "claim": "```bash\n$ flask run\n  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Application Object (Flask)",
+  "path": "src/flask/app.py",
+  "start": 318,
+  "end": 318,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L318-L318",
+  "ok": true,
+  "claim": "om/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L313-L313) |\n| `static_folder` | The folder containing static files. Defaults to `\"static\"`. | [src/flask/app.py:314-314](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L314-L314) |\n| `template_folder` | The folder containing template files. Defaults to `\"templates\"`. | ",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/tests.yaml",
+  "start": 2,
+  "end": 7,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/tests.yaml#L2-L7",
+  "ok": true,
+  "claim": "us (pass/fail)\n    alt PR contains YAML changes\n        GitHub->>Zizmor_Workflow: Trigger `zizmor` job\n        Zizmor_Workflow-->>GitHub: Report status (pass/fail)\n    end\n    GitHub-->>Contributor: Display all check results\n```\n*Sources: [.github/workflows/pre-commit.yaml:2-5](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L2-L5), ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/type_check/typing_app_decorators.py",
+  "start": 23,
+  "end": 24,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L23-L24",
+  "ok": true,
+  "claim": "# Asynchronous teardown_appcontext hook\n@app.teardown_appcontext\nasync def teardown_async(exc: BaseException | None) -> None: ...\n```\n*Sources: [tests/type_check/typing_app_decorators.py:14-16](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L14-L16), ",
+  "inline": true
+ },
+ {
+  "page": "Error Handling",
+  "path": "tests/test_user_error_handler.py",
+  "start": 29,
+  "end": 37,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_user_error_handler.py#L29-L37",
+  "ok": true,
+  "claim": "```python\n@app.errorhandler(500)\ndef handle_500(e):\n    assert isinstance(e, InternalServerError)\n    # ...\n    return \"direct\"\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/lock.yaml",
+  "start": 7,
+  "end": 9,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/lock.yaml#L7-L9",
+  "ok": true,
+  "claim": "s/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L2-L5), [.github/workflows/tests.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/tests.yaml#L2-L7), [.github/workflows/zizmor.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/zizmor.yaml#L2-L7), ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/test_async.py",
+  "start": 97,
+  "end": 145,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L97-L145",
+  "ok": true,
+  "claim": "-->>FlaskApp: Complete\n    FlaskApp->>View: Dispatch to view\n    View-->>FlaskApp: Return response object\n    FlaskApp->>AfterRequest: Process response\n    AfterRequest-->>FlaskApp: Return final response\n    FlaskApp-->>Client: Send response\n    Note over FlaskApp, Teardown: After response is sent\n    FlaskApp->>Teardown: Execute teardown functions\n    Teardown-->>FlaskApp: Complete\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 992,
+  "end": 1019,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L992-L1019",
+  "ok": true,
+  "claim": "om the WSGI environment and pushed. This makes globals like `request` available.\n    *Sources: [src/flask/app.py:1592-1596](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1592-L1596)*\n3.  **Request Dispatch**: `full_dispatch_request` is called. It runs `preprocess_request` functions (none in this case), then calls `dispatch_request`.\n    *Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Application Object (Flask)",
+  "path": "src/flask/app.py",
+  "start": 313,
+  "end": 313,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L313-L313",
+  "ok": true,
+  "claim": "\n| Parameter | Description | Source |\n| --- | --- | --- |\n| `import_name` | The name of the application package or module. Used to determine the `root_path`. | [src/flask/app.py:312-312](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L312-L312) |\n| `static_url_path` | The URL path for serving static files. Defaults to the name of `static_folder`. | ",
+  "inline": true
+ },
+ {
+  "page": "The Flask Command-Line Interface",
+  "path": "src/flask/cli.py",
+  "start": 333,
+  "end": 373,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L333-L373",
+  "ok": true,
+  "claim": "    subgraph locate_app\n        J --> J1{app_name provided?};\n        J1 -- Yes --> J2[find_app_by_string];\n        J1 -- No --> J3[find_best_app];\n    end\n```\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Flask Command-Line Interface",
+  "path": "src/flask/cli.py",
+  "start": 413,
+  "end": 428,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L413-L428",
+  "ok": true,
+  "claim": "t ensures an application context is pushed before the command runs, making `current_app` available. (`Sources: [src/flask/cli.py:380-403](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L380-L403)`)\n- **`AppGroup` Integration**: The `AppGroup` class automatically applies the `@with_appcontext` decorator to all commands registered with it. (`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/publish.yaml",
+  "start": 2,
+  "end": 4,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/publish.yaml#L2-L4",
+  "ok": true,
+  "claim": "/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/tests.yaml#L2-L7), [.github/workflows/zizmor.yaml:2-7](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/zizmor.yaml#L2-L7), [.github/workflows/lock.yaml:7-9](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/lock.yaml#L7-L9), ",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/pre-commit.yaml",
+  "start": 3,
+  "end": 5,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/pre-commit.yaml#L3-L5",
+  "ok": true,
+  "claim": "    C & D --> E;\n```\n*Sources: [.github/pull_request_template.md:2-4](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/pull_request_template.md#L2-L4), ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/test_async.py",
+  "start": 14,
+  "end": 15,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L14-L15",
+  "ok": true,
+  "claim": "# A view that raises the error\n@app.route(\"/error\")\nasync def error():\n    raise AppError()\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Flask Command-Line Interface",
+  "path": "src/flask/cli.py",
+  "start": 515,
+  "end": 528,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L515-L528",
+  "ok": true,
+  "claim": "The `-e`/`--env-file` option is processed eagerly, ensuring that environment variables are available for other options, like `FLASK_APP`. (`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Repository root: module reference",
+  "path": ".readthedocs.yaml",
+  "start": 1,
+  "end": 1,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.readthedocs.yaml#L1",
+  "ok": true,
+  "claim": "| Key | Value | Description | Source |\n|---|---|---|---|\n| `version` | `2` | Specifies the configuration file format version. | `",
+  "inline": true
+ },
+ {
+  "page": "Contributing Guide",
+  "path": ".github/workflows/publish.yaml",
+  "start": 33,
+  "end": 38,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/publish.yaml#L33-L38",
+  "ok": true,
+  "claim": "*Sources: [.github/workflows/publish.yaml:10-14](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/.github/workflows/publish.yaml#L10-L14), ",
+  "inline": true
+ },
+ {
+  "page": "The Flask Command-Line Interface",
+  "path": "src/flask/cli.py",
+  "start": 628,
+  "end": 633,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L628-L633",
+  "ok": true,
+  "claim": "0d6ab827/src/flask/cli.py#L413-L428)`)\n- **`FlaskGroup` Behavior**: For commands registered on the application or blueprints (`app.cli`), `FlaskGroup` automatically pushes an app context after loading the app but before invoking the command. This makes the context available even during parameter processing and removes the need for the `@with_appcontext` decorator on app-level commands. (`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "README.md",
+  "start": 29,
+  "end": 30,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/README.md#L29-L30",
+  "ok": true,
+  "claim": "```python\ndef hello():\n    return \"Hello, World!\"\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Asynchronous Support",
+  "path": "tests/type_check/typing_app_decorators.py",
+  "start": 31,
+  "end": 32,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L31-L32",
+  "ok": true,
+  "claim": "on | None) -> None: ...\n```\n*Sources: [tests/type_check/typing_app_decorators.py:14-16](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L14-L16), [tests/type_check/typing_app_decorators.py:23-24](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_app_decorators.py#L23-L24), ",
+  "inline": true
+ },
+ {
+  "page": "A \"Hello, World!\" Application",
+  "path": "src/flask/app.py",
+  "start": 990,
+  "end": 990,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L990",
+  "ok": true,
+  "claim": "4.  **URL Matching**: `dispatch_request` uses the `request.url_rule` (matched by Werkzeug) to find the associated view function, `hello`.\n    *Sources: [src/flask/app.py:976-980](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L976-L980)*\n5.  **View Execution**: The `hello` function is executed and returns the string `\"Hello, World!\"`.\n    *Sources: ",
+  "inline": true
+ }
+]

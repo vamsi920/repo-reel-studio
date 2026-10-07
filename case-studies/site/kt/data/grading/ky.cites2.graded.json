@@ -1,0 +1,312 @@
+[
+ {
+  "n": 0,
+  "verdict": "supported",
+  "note": "Test asserts monotonic progress with larger replacement body"
+ },
+ {
+  "n": 1,
+  "verdict": "partial",
+  "note": "Type returns Error; 'or retried' not established"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "Loop attaches method shortcuts"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "Build script matches"
+ },
+ {
+  "n": 4,
+  "verdict": "unsupported",
+  "note": "Cited blank line; fallback is at lines 303-308"
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "Defines createEsmTestServer"
+ },
+ {
+  "n": 6,
+  "verdict": "supported",
+  "note": "Loop over afterResponse hooks, RetryMarker forces retry"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "Option set true in tsconfig"
+ },
+ {
+  "n": 8,
+  "verdict": "supported",
+  "note": "beforeRetry loop handles Request return and stop"
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "BeforeRetryState fields shown"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "Context shallow merge into new object"
+ },
+ {
+  "n": 11,
+  "verdict": "partial",
+  "note": "replaceOption code; undefined-clears-hooks not shown here"
+ },
+ {
+  "n": 12,
+  "verdict": "partial",
+  "note": "Readme confirms non-2xx HTTPError; 'after redirects' not stated"
+ },
+ {
+  "n": 13,
+  "verdict": "partial",
+  "note": "Only an import; 'internal signal' role not shown"
+ },
+ {
+  "n": 14,
+  "verdict": "supported",
+  "note": "xo rules configured in package.json"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "Call site only; overwrite/delete semantics elsewhere"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "Test: JSON replaced by large blob, sized by new body"
+ },
+ {
+  "n": 17,
+  "verdict": "supported",
+  "note": "Spread overwrites, normalize drops undefined"
+ },
+ {
+  "n": 18,
+  "verdict": "supported",
+  "note": "Doc: stop retrying without throwing"
+ },
+ {
+  "n": 19,
+  "verdict": "supported",
+  "note": "init hooks run once before instance creation"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "AbortSignal.any else last signal"
+ },
+ {
+  "n": 21,
+  "verdict": "supported",
+  "note": "Test asserts application/json content-type"
+ },
+ {
+  "n": 22,
+  "verdict": "supported",
+  "note": "Doc: returning Response avoids HTTP request"
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "mergeHeaders sets/deletes undefined"
+ },
+ {
+  "n": 24,
+  "verdict": "unsupported",
+  "note": "Cited lines are response body reading, not beforeError"
+ },
+ {
+  "n": 25,
+  "verdict": "unsupported",
+  "note": "Cited lines handle prefix/baseUrl, not upload progress"
+ },
+ {
+  "n": 26,
+  "verdict": "supported",
+  "note": "files array is distribution only"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "beforeRequest loop; Response return bypasses fetch"
+ },
+ {
+  "n": 28,
+  "verdict": "unsupported",
+  "note": "Lines show progress options, not Options inheritance"
+ },
+ {
+  "n": 29,
+  "verdict": "partial",
+  "note": "Type signature only; timing not established"
+ },
+ {
+  "n": 30,
+  "verdict": "partial",
+  "note": "Shows collection only; combining elsewhere"
+ },
+ {
+  "n": 31,
+  "verdict": "unsupported",
+  "note": "Cited tests are searchParams, not parseJson"
+ },
+ {
+  "n": 32,
+  "verdict": "supported",
+  "note": "prepare runs build"
+ },
+ {
+  "n": 33,
+  "verdict": "unsupported",
+  "note": "Cited lines are parseJson/error data, not #retry"
+ },
+ {
+  "n": 34,
+  "verdict": "partial",
+  "note": "Number-as-limit shown; type/default not shown"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "Test second hook sets header, progress intact"
+ },
+ {
+  "n": 36,
+  "verdict": "unsupported",
+  "note": "Cited normalizeSearchParams, not signals"
+ },
+ {
+  "n": 37,
+  "verdict": "supported",
+  "note": "Smaller body test completes progress at 1"
+ },
+ {
+  "n": 38,
+  "verdict": "unsupported",
+  "note": "Line 391 is prefix normalization"
+ },
+ {
+  "n": 39,
+  "verdict": "partial",
+  "note": "Import only; requirement not shown"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "ky.retry doc for forced retries"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "newHookValue concatenates; undefined yields []"
+ },
+ {
+  "n": 42,
+  "verdict": "unsupported",
+  "note": "Cited beforeError loop, not _retry recursion"
+ },
+ {
+  "n": 43,
+  "verdict": "unsupported",
+  "note": "Cited decorateResponse, not #cancelResponseBody"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "Same-body replacement sized by original blob"
+ },
+ {
+  "n": 45,
+  "verdict": "partial",
+  "note": "Shows appending; per-param undefined deletion elsewhere"
+ },
+ {
+  "n": 46,
+  "verdict": "unsupported",
+  "note": "Cited ReplaceMarked type, no TypeError check"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "Type guards exported from utils/type-guards"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "tsconfig includes source"
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "beforeError hooks replace thrown error"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "Main function defined line 12"
+ },
+ {
+  "n": 51,
+  "verdict": "unsupported",
+  "note": "Line is isReplace flag, not mergeHooks"
+ },
+ {
+  "n": 52,
+  "verdict": "unsupported",
+  "note": "Line is supportsRequestStreams, not requestMethods"
+ },
+ {
+  "n": 53,
+  "verdict": "supported",
+  "note": "Deep merge for other object keys"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "KyHeadersInit allows Headers or record"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "appendSearchParameters handles types, undefined deletes"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "calculateRetryDelay checks method, limit, Retry-After"
+ },
+ {
+  "n": 57,
+  "verdict": "unsupported",
+  "note": "Cited body shortcuts, not mergeHooks"
+ },
+ {
+  "n": 58,
+  "verdict": "unsupported",
+  "note": "Cited option defaults, not AbortController"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "test script matches"
+ },
+ {
+  "n": 60,
+  "verdict": "partial",
+  "note": "mergeHooks call site; concatenation shown elsewhere"
+ },
+ {
+  "n": 61,
+  "verdict": "supported",
+  "note": "beforeRequest hooks and retry inside promise"
+ }
+]

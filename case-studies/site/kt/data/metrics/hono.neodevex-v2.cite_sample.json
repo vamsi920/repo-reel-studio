@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Grouping Routes",
+  "path": "src/hono.test.ts",
+  "start": 623,
+  "end": 629,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono.test.ts#L623-L629",
+  "ok": true,
+  "claim": "// Request to /two/three/hi will fail (404 Not Found)\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Context Object",
+  "path": "src/context.ts",
+  "start": 522,
+  "end": 523,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L522-L523",
+  "ok": true,
+  "claim": "*   **Setting a header:** `c.header('X-Message', 'Hello!')`\n*   **Deleting a header:** `c.header('X-Message', undefined)` `Sources: [src/context.test.ts:184-193](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L184-L193)`\n*   **Appending a header:** `c.header('X-Foo', 'Bar', { append: true })` `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "SmartRouter",
+  "path": "src/router/smart-router/router.ts",
+  "start": 58,
+  "end": 58,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L58",
+  "ok": true,
+  "claim": "| Property | Type | Description |\n| --- | --- | --- |\n| `name` | `string` | Initially `'SmartRouter'`. After a router is selected, it's updated to reflect the active router, e.g., `'SmartRouter + RegExpRouter'`. `Sources: [src/router/smart-router/router.ts:5](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L5), ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/cloudflare-pages/handler.ts",
+  "start": 114,
+  "end": 123,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/cloudflare-pages/handler.ts#L114-L123",
+  "ok": true,
+  "claim": "*   **`serveStatic`**: A middleware handler that forwards the request to `c.env.ASSETS.fetch(c.req.raw)`. If the asset fetch returns a 404 status, it calls `c.notFound()` to allow subsequent handlers to process the request.\n    `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/routers/package.json",
+  "start": 20,
+  "end": 20,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L20",
+  "ok": true,
+  "claim": "/benchmarks/routers/package.json#L13)` |\n| `find-my-way` | `[benchmarks/routers/package.json:15](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L15)` |\n| `koa-router` | `[benchmarks/routers/package.json:16](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L16)` |\n| `radix3` | `",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/jsx/package.json",
+  "start": 22,
+  "end": 22,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L22",
+  "ok": true,
+  "claim": "| :--- |\n| `react` / `react-dom` | `[benchmarks/jsx/package.json:25-26](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L25-L26)` |\n| `preact` / `preact-render-to-string` | `[benchmarks/jsx/package.json:23-24](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L23-L24)` |\n| `nano-jsx` | `",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/combine/index.test.ts",
+  "start": 7,
+  "end": 136,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/combine/index.test.ts#L7-L136",
+  "ok": true,
+  "claim": "*Sources: [src/middleware/combine/index.ts:38-69](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/combine/index.ts#L38-L69), ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/query-param/package.json",
+  "start": 4,
+  "end": 4,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/query-param/package.json#L4",
+  "ok": true,
+  "claim": "thub.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/http-server/benchmark.ts#L7), [benchmarks/jsx/package.json:7](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L7), [benchmarks/routers/package.json:4](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L4), ",
+  "inline": true
+ },
+ {
+  "page": "RegExpRouter",
+  "path": "src/router/reg-exp-router/router.ts",
+  "start": 149,
+  "end": 151,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/reg-exp-router/router.ts#L149-L151",
+  "ok": true,
+  "claim": "/router.ts:189-203](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/reg-exp-router/router.ts#L189-L203)\n*   **Wildcard Paths**: Paths ending in `*` (or the special case `/*`) are treated as middleware. A regular expression is generated for the wildcard path using `buildWildcardRegExp` to apply the handler to any matching routes or other middleware. Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/bun/ssg.ts",
+  "start": 9,
+  "end": 12,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/ssg.ts#L9-L12",
+  "ok": true,
+  "claim": "Both features are marked as experimental, and their APIs may change in the future.\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/routers/package.json",
+  "start": 22,
+  "end": 22,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L22",
+  "ok": true,
+  "claim": "287973/benchmarks/routers/package.json#L16)` |\n| `radix3` | `[benchmarks/routers/package.json:20](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L20)` |\n| `rou3` | `[benchmarks/routers/package.json:21](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L21)` |\n| `trek-router` | `",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/body-limit/index.ts",
+  "start": 61,
+  "end": 110,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/body-limit/index.ts#L61-L110",
+  "ok": true,
+  "claim": "dy?};\n    B -- No --> C[\"next()\"];\n    B -- Yes --> D{Transfer-Encoding header?};\n    D -- Yes --> G[Stream body and count bytes];\n    D -- No --> E{\"Content-Length > maxSize?\"};\n    E -- Yes --> F[\"onError(c)\"];\n    E -- No --> C;\n    G --> H{\"bytes > maxSize?\"};\n    H -- Yes --> F;\n    H -- No --> I[Re-create request with buffered body];\n    I --> C;\n    C --> Z[End];\n    F --> Z;\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The HonoRequest Object",
+  "path": "src/request.ts",
+  "start": 212,
+  "end": 218,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L212-L218",
+  "ok": true,
+  "claim": "lob>` |\n| `formData(): Promise<FormData>` | Parses the body as `FormData`. `Sources: [src/request.ts:329-331](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L329-L331)` | `Promise<FormData>` |\n| `parseBody(options?)` | Parses `multipart/form-data` or `application/x-www-form-urlencoded` content. It delegates to an external `parseBody` utility. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/handle-event/package.json",
+  "start": 19,
+  "end": 19,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/handle-event/package.json#L19",
+  "ok": true,
+  "claim": "on#L12)` |\n| `sunder` | `handle-event`, `webapp` | `[benchmarks/handle-event/package.json:18](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/handle-event/package.json#L18)`, `[benchmarks/webapp/package.json:13](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/webapp/package.json#L13)` |\n| `worktop` | `handle-event` | `",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/jsx/package.json",
+  "start": 7,
+  "end": 7,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L7",
+  "ok": true,
+  "claim": "*Sources: [benchmarks/handle-event/package.json:8](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/handle-event/package.json#L8), [benchmarks/http-server/benchmark.ts:7](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/http-server/benchmark.ts#L7), ",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/basic-auth/index.ts",
+  "start": 93,
+  "end": 99,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/basic-auth/index.ts#L93-L99",
+  "ok": true,
+  "claim": "*Sources: [src/middleware/basic-auth/index.ts:14-29](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/basic-auth/index.ts#L14-L29), ",
+  "inline": true
+ },
+ {
+  "page": "Understanding Middleware",
+  "path": "src/compose.ts",
+  "start": 17,
+  "end": 17,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/compose.ts#L17",
+  "ok": true,
+  "claim": "An array of middleware functions to be executed in sequence.                                            | [src/compose.ts:16](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/compose.ts#L16)                |\n| `onError`    | `ErrorHandler<E>`                  | An optional handler that is invoked when an error is thrown within any middleware.                      | ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/jsx/package.json",
+  "start": 23,
+  "end": 24,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L23-L24",
+  "ok": true,
+  "claim": "| Library | Source |\n| :--- | :--- |\n| `react` / `react-dom` | `[benchmarks/jsx/package.json:25-26](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L25-L26)` |\n| `preact` / `preact-render-to-string` | `",
+  "inline": true
+ },
+ {
+  "page": "Basic Routing",
+  "path": "src/hono-base.ts",
+  "start": 385,
+  "end": 397,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L385-L397",
+  "ok": true,
+  "claim": "```mermaid\ngraph TD\n    A[\"app.get('/path', handler)\"] --> B[\"Hono constructor loop\"]\n    B --> C{\"Internal #path = '/path'\"}\n    C --> D[\"#addRoute('GET', '/path', handler)\"]\n    D --> E[\"this.router.add(...)\"]\n    D --> F[\"this.routes.push(...)\"]\n```\n`Sources: [src/hono-base.ts:129-141](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L129-L141), ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/routers/package.json",
+  "start": 4,
+  "end": 4,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L4",
+  "ok": true,
+  "claim": "honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/handle-event/package.json#L8), [benchmarks/http-server/benchmark.ts:7](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/http-server/benchmark.ts#L7), [benchmarks/jsx/package.json:7](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/jsx/package.json#L7), ",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/compress/index.ts",
+  "start": 86,
+  "end": 120,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.ts#L86-L120",
+  "ok": true,
+  "claim": "--> S_NO;\n        S2 -- No --> S3{Method is HEAD?};\n        S3 -- Yes --> S_NO;\n        S3 -- No --> S4{\"Content-Length < threshold?\"};\n        S4 -- Yes --> S_NO;\n        S4 -- No --> S5{Content-Type compressible?};\n        S5 -- No --> S_NO;\n        S5 -- Yes --> S6{Cache-Control: no-transform?};\n        S6 -- Yes --> S_NO;\n        S6 -- No --> S_YES[Yes];\n        S_NO[No]\n    end\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Understanding Middleware",
+  "path": "src/types.ts",
+  "start": 114,
+  "end": 117,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/types.ts#L114-L117",
+  "ok": true,
+  "claim": ".ts:16](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/compose.ts#L16)                |\n| `onError`    | `ErrorHandler<E>`                  | An optional handler that is invoked when an error is thrown within any middleware.                      | [src/compose.ts:17](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/compose.ts#L17), ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/routers/package.json",
+  "start": 14,
+  "end": 14,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L14",
+  "ok": true,
+  "claim": "chmarks/routers/package.json#L20)` |\n| `rou3` | `[benchmarks/routers/package.json:21](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L21)` |\n| `trek-router` | `[benchmarks/routers/package.json:22](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L22)` |\n| `express` (router) | `",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/compress/index.ts",
+  "start": 115,
+  "end": 119,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.ts#L115-L119",
+  "ok": true,
+  "claim": "index.test.ts:349-427](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.test.ts#L349-L427)*\n-   **ETag Handling**: When a response with a strong `ETag` (e.g., `\"abc\"`) is compressed, the middleware converts it to a weak `ETag` (e.g., `W/\"abc\"`) because the payload is no longer byte-for-byte identical to the original resource.\n    *Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Context Object",
+  "path": "src/context.ts",
+  "start": 664,
+  "end": 668,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L664-L668",
+  "ok": true,
+  "claim": "| Method | Description | Default `Content-Type` |\n| --- | --- | --- |\n| `body()` | Sends a response with a raw body (`string`, `ArrayBuffer`, `ReadableStream`, etc.). `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Basic Routing",
+  "path": "src/hono.test.ts",
+  "start": 2042,
+  "end": 2047,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono.test.ts#L2042-L2047",
+  "ok": true,
+  "claim": "```typescript\n// Registering a handler for both PUT and DELETE methods\nconst app = new Hono()\napp.on(['PUT', 'DELETE'], '/posts/:id', (c) => {\n  return c.json({\n    postId: c.req.param('id'),\n    method: c.req.method,\n  })\n})\n```\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/cloudflare-workers/conninfo.ts",
+  "start": 3,
+  "end": 7,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/cloudflare-workers/conninfo.ts#L3-L7",
+  "ok": true,
+  "claim": "*   **`getConnInfo`**: This function retrieves the client's IP address from the `cf-connecting-ip` request header, identical to the Cloudflare Pages implementation.\n    `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/bun/websocket.test.ts",
+  "start": 107,
+  "end": 157,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/websocket.test.ts#L107-L157",
+  "ok": true,
+  "claim": "bsocket-->>BunServer: \n        \n        Client->>BunServer: Closes connection\n        BunServer->>websocket: close(ws, code, reason)\n        websocket->>websocket: calls onClose(evt, wsCtx)\n        websocket-->>BunServer: \n    end\n```\n`Sources: [src/adapter/bun/websocket.ts:48-104](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/websocket.ts#L48-L104), ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/bun/ssg.ts",
+  "start": 13,
+  "end": 18,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/ssg.ts#L13-L18",
+  "ok": true,
+  "claim": "*   **`bunFileSystemModule`**: An implementation of the `FileSystemModule` interface. It uses `Bun.write` to write files to disk. The `mkdir` function is a no-op.\n    `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/bun/websocket.ts",
+  "start": 33,
+  "end": 46,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/websocket.ts#L33-L46",
+  "ok": true,
+  "claim": "SEvents`. `Sources: [src/adapter/bun/websocket.ts:76-104](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/websocket.ts#L76-L104)` |\n| `createWSContext`  | An internal function that wraps a native `BunServerWebSocket` instance into a Hono `WSContext`, providing a consistent API for sending data, closing the connection, and accessing its state. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 5)",
+  "path": "src/adapter/vercel/handler.ts",
+  "start": 4,
+  "end": 8,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/vercel/handler.ts#L4-L8",
+  "ok": true,
+  "claim": "```typescript\nexport const handle =\n  (app: Hono<any, any, any>) =>\n  (req: Request): Response | Promise<Response> => {\n    return app.fetch(req)\n  }\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 5)",
+  "path": "src/adapter/service-worker/handler.ts",
+  "start": 26,
+  "end": 35,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/service-worker/handler.ts#L26-L35",
+  "ok": true,
+  "claim": "    SW->>Handler: Dispatches FetchEvent\n    Note right of SW: evt.respondWith() is called\n    Handler->>App: app.fetch(evt.request)\n    App-->>Handler: Response\n    alt Response status is 404 AND opts.fetch exists\n        Handler->>Fallback: fetch(evt.request)\n        Fallback-->>Handler: Fallback Response\n    end\n    Handler-->>SW: Provides final Response\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Basic Routing",
+  "path": "src/hono.test.ts",
+  "start": 765,
+  "end": 774,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono.test.ts#L765-L774",
+  "ok": true,
+  "claim": "app\n  .get('/chained/:abc', (c) => {\n    const abc = c.req.param('abc')\n    return c.text(`GET for ${abc}`)\n  })\n  .post((c) => {\n    const abc = c.req.param('abc')\n    return c.text(`POST for ${abc}`)\n  })\n```\n`Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Hono vs. Other Frameworks",
+  "path": "benchmarks/routers/package.json",
+  "start": 16,
+  "end": 16,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L16",
+  "ok": true,
+  "claim": "brary | Source |\n| :--- | :--- |\n| `@medley/router` | `[benchmarks/routers/package.json:13](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L13)` |\n| `find-my-way` | `[benchmarks/routers/package.json:15](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/benchmarks/routers/package.json#L15)` |\n| `koa-router` | `",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/compress/index.ts",
+  "start": 24,
+  "end": 44,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.ts#L24-L44",
+  "ok": true,
+  "claim": "-   **Content Negotiation**: It correctly parses the `Accept-Encoding` header, respecting quality values (`q`) and prioritizing `gzip` over `deflate` by default when both are available.\n    *Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Context Object",
+  "path": "src/context.ts",
+  "start": 723,
+  "end": 733,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L723-L733",
+  "ok": true,
+  "claim": "L694)` | `text/plain; charset=UTF-8` |\n| `json()` | Sends an `application/json` response. The input object is automatically stringified. `Sources: [src/context.ts:708-721](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L708-L721)` | `application/json` |\n| `html()` | Sends a `text/html` response. Can handle both `string` and `Promise<string>`. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Grouping Routes",
+  "path": "src/hono-base.ts",
+  "start": 247,
+  "end": 253,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L247-L253",
+  "ok": true,
+  "claim": "```typescript\nbasePath<SubPath extends string>(\n  path: SubPath\n): Hono<E, S, MergePath<BasePath, SubPath>, MergePath<BasePath, SubPath>> {\n  const subApp = this.#clone()\n  subApp._basePath = mergePath(this._basePath, path)\n  return subApp\n}\n```\n*Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/adapter: module reference (part 2)",
+  "path": "src/adapter/cloudflare-pages/handler.ts",
+  "start": 49,
+  "end": 102,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/cloudflare-pages/handler.ts#L49-L102",
+  "ok": true,
+  "claim": "*   **`handleMiddleware`**: Wraps a Hono middleware. It creates a Hono `Context`, calls the middleware, and manages the call to `next()`. It includes logic to handle `HTTPException` and other errors gracefully.\n    `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "The Context Object",
+  "path": "src/context.ts",
+  "start": 776,
+  "end": 779,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L776-L779",
+  "ok": true,
+  "claim": "et=UTF-8` |\n| `redirect()` | Performs a redirect. The default status code is `302`. It automatically URI-encodes multi-byte characters in the location URL. `Sources: [src/context.ts:750-762](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.ts#L750-L762)` | None |\n| `notFound()` | Invokes the configured `notFoundHandler` to generate a 404 response. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "src/middleware: module reference (part 1)",
+  "path": "src/middleware/combine/index.test.ts",
+  "start": 138,
+  "end": 227,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/combine/index.test.ts#L138-L227",
+  "ok": true,
+  "claim": "*Sources: [src/middleware/combine/index.ts:99-117](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/combine/index.ts#L99-L117), ",
+  "inline": true
+ }
+]

@@ -1,0 +1,31 @@
+{
+ "repo": "flask",
+ "system": "devin",
+ "pages": 37,
+ "words": 45204,
+ "citations": 1320,
+ "citations_valid": 1252,
+ "citation_validity": 0.9485,
+ "unique_files_cited": 101,
+ "citations_per_1k_words": 29.2,
+ "inline_citations": 613,
+ "mermaid_diagrams": 123,
+ "links_pinned_to_commit": 0,
+ "invalid_examples": [
+  "src/flask/__init__.py:1-40",
+  "src/flask/__init__.py:1-40",
+  "src/flask/__init__.py:1-40",
+  "src/flask/__init__.py:1-40",
+  "docs/index.rst:39-90",
+  "src/flask/app.py:2098-2121",
+  "src/flask/app.py:2098-2121",
+  "src/flask/app.py:2098-2121",
+  "src/flask/app.py:1680-1765",
+  "src/flask/json/__init__.py:13-171",
+  "src/flask/json/__init__.py:13-171",
+  "src/flask/json/__init__.py:13-171",
+  "src/flask/templating.py:222-243",
+  "src/flask/templating.py:126-219",
+  "src/flask/signals.py:47-51"
+ ]
+}

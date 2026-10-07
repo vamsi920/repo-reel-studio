@@ -1,0 +1,352 @@
+[
+ {
+  "id": "hono-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "fetch, #dispatch, getPath, match, Context, compose right; misses fast path and finalized error"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Covers dispatch, match, Context, single-handler fast path, compose, finalized check"
+  }
+ },
+ {
+  "id": "hono-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Workers and Lambda roughly right; Vercel and Pages not covered"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Lambda, Workers, Pages right; invents Vercel_handle_fn, handle is req => app.fetch(req)"
+  }
+ },
+ {
+  "id": "hono-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Only vague hono/tiny description; quick not covered, no routers"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "All three routers right; omits that presets overwrite options.router"
+  }
+ },
+ {
+  "id": "hono-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Clone sharing router, route copying, compose wrap for custom onError"
+  },
+  "Y": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  }
+ },
+ {
+  "id": "hono-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Generic usage; mentions notFound on unfinalized; misses res getter/setter mechanics"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Setter header merge and finalized right; misses lazy getter and compose assignment rule"
+  }
+ },
+ {
+  "id": "hono-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy first-match choice and UnsupportedPathError right; misses post-build add error"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Default and lazy selection right; misses post-build add error"
+  }
+ },
+ {
+  "id": "hono-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "routeIndex, onError, onNotFound right; misses next() twice error and non-Error rethrow"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "next() twice and onNotFound right; misses routeIndex and non-Error rethrow"
+  }
+ },
+ {
+  "id": "hono-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults and 204 preflight right; misses request-headers reflection"
+  }
+ },
+ {
+  "id": "hono-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "SHA-1 and 304 right; misses strong default, W/ stripping, retained headers"
+  }
+ },
+ {
+  "id": "hono-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Listed values correct; misses COEP off, X-XSS-Protection 0, CSP note"
+  },
+  "Y": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  }
+ },
+ {
+  "id": "hono-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Content-Length/stream check right; misses 413 default, transfer-encoding rule, body rebuild"
+  }
+ },
+ {
+  "id": "hono-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Vague; default bodies not specified"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "404 text, getResponse duck-typing, 500 right; misses non-Error rethrow"
+  }
+ },
+ {
+  "id": "hono-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "302 default right; misses encodeURI, text content-type, notFound delegation"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Location and JSON content-type right; defaults not covered"
+  }
+ },
+ {
+  "id": "hono-14",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "strict default true right; misses url.ts getPath/getPathNoStrict"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "getPath/getPathNoStrict in url.ts selected by strict in constructor"
+  }
+ },
+ {
+  "id": "hono-15",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "buildAllMatchers on first match right; misses matcher.ts, static map, PATH_ERROR"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "First-match build right; misses matcher.ts, static map, conflict errors"
+  }
+ },
+ {
+  "id": "hono-16",
+  "category": "where",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "bodyCache/#cachedBody in HonoRequest right; misses json via text detail"
+  }
+ },
+ {
+  "id": "hono-17",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Constructor and methods right; misses #addRoute and use default '*'"
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims only GET and POST shortcuts; METHODS has six plus all"
+  }
+ },
+ {
+  "id": "hono-18",
+  "category": "gotcha",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "HEAD dispatched as GET with null body"
+  }
+ },
+ {
+  "id": "hono-19",
+  "category": "gotcha",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Says custom getPath used; strict:false forces getPathNoStrict"
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Says custom getPath used; strict:false forces getPathNoStrict"
+  }
+ },
+ {
+  "id": "hono-20",
+  "category": "gotcha",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims sub-app notFound applies; route() drops it, parent notFound used"
+  },
+  "Y": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  }
+ },
+ {
+  "id": "hono-21",
+  "category": "gotcha",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "401 with body/headers kept right; omits default 500"
+  }
+ },
+ {
+  "id": "hono-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "runtime-tests layout right; how tests run not covered"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Per-runtime scripts right; misses tsc step, vitest projects, deno/bun native runners"
+  }
+ },
+ {
+  "id": "hono-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "esbuild ESM/CJS, tsc decls, private strip, package.cjs.json, publint"
+  }
+ },
+ {
+  "id": "hono-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "ESLint/Prettier right; misses @hono/eslint-config and rule config"
+  },
+  "Y": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  }
+ },
+ {
+  "id": "hono-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "NOT COVERED"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "publish-on-tag, validateExports, dry-run right; misses @hono/hono and src exports"
+  }
+ }
+]

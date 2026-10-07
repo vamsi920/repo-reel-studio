@@ -1,0 +1,302 @@
+[
+ {
+  "n": 0,
+  "verdict": "supported",
+  "note": "Range covers redirect, header, status, set, get, notFound definitions"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "ToSSGOptions marks the three hooks @deprecated in favor of plugins"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "Hono class extends HonoBase"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "OPTIONS branch sets methods/headers, returns 204 No Content"
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "dispatch throws if i <= index"
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "Base Hono class definition (HonoBase) shown"
+ },
+ {
+  "n": 6,
+  "verdict": "supported",
+  "note": "add() checks optional params, loops inserts, else single insert"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "filterStaticGenerateRoutes keeps GET/ALL non-middleware routes"
+ },
+ {
+  "n": 8,
+  "verdict": "supported",
+  "note": "__Host- requires secure, path '/', no domain"
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "d: boolean // is dirty"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "onlySSG returns notFound when not SSG context"
+ },
+ {
+  "n": 11,
+  "verdict": "partial",
+  "note": "Middleware exports present but paths are hono/basic-auth etc, not hono/middleware/*"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "README says hono/tiny preset under 12kB"
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "text() returns Promise<T> when F is text and T extends string"
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "jsx exports at those lines"
+ },
+ {
+  "n": 17,
+  "verdict": "partial",
+  "note": "Line 27 is DEFAULT_OUTPUT_DIR; does not back deprecated hook statement"
+ },
+ {
+  "n": 18,
+  "verdict": "supported",
+  "note": "disableSSG sets x-hono-disable-ssg header and returns notFound"
+ },
+ {
+  "n": 19,
+  "verdict": "supported",
+  "note": "hopByHopHeaders list defined"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "Test code matches quoted snippet"
+ },
+ {
+  "n": 21,
+  "verdict": "supported",
+  "note": "ClientResponse interface with typed json/text"
+ },
+ {
+  "n": 22,
+  "verdict": "supported",
+  "note": "tsconfig.json has files [] and references to build/spec/runtime configs"
+ },
+ {
+  "n": 23,
+  "verdict": "partial",
+  "note": "README line is authorship; omits TrieRouter, not module path"
+ },
+ {
+  "n": 24,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "invalidUserMessage typed string | object | MessageFunction"
+ },
+ {
+  "n": 26,
+  "verdict": "unsupported",
+  "note": "main/type/module fields do not show Node.js via @hono/node-server"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "Visitor finds PrivateIdentifier PropertyDefinitions, replaced with spaces"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "Router exports reg-exp, smart, trie, pattern, linear"
+ },
+ {
+  "n": 29,
+  "verdict": "supported",
+  "note": "Main '.' export entry"
+ },
+ {
+  "n": 30,
+  "verdict": "supported",
+  "note": "Nested capturing groups throw PATH_ERROR"
+ },
+ {
+  "n": 31,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 32,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 33,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 34,
+  "verdict": "partial",
+  "note": "Cookie export exists but path is hono/cookie, not hono/helper/*"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "./tiny export entry"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "ssgParams stores params and returns notFound"
+ },
+ {
+  "n": 37,
+  "verdict": "partial",
+  "note": "Adapter exports exist but paths are hono/deno etc, not hono/adapter/*"
+ },
+ {
+  "n": 38,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 39,
+  "verdict": "supported",
+  "note": "Watch mode uses esbuild context().watch()"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "Test code matches quoted snippet"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "Generator over routes, ssgParams handling, createPool concurrency"
+ },
+ {
+  "n": 42,
+  "verdict": "partial",
+  "note": "Shows tsconfig.build.json content, not tsc --emitDeclarationOnly invocation"
+ },
+ {
+  "n": 43,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "createBody decodes base64 bodies"
+ },
+ {
+  "n": 45,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 46,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "304 response then deletes non-retained headers"
+ },
+ {
+  "n": 48,
+  "verdict": "partial",
+  "note": "Claim text is only a source list; no statement to verify, lines topically related"
+ },
+ {
+  "n": 49,
+  "verdict": "partial",
+  "note": "Import line only shows location, not resolveCallback's role"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "#cachedBody caches body reads in bodyCache"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "LambdaEvent union: v1, v2, ALB, Lattice"
+ },
+ {
+  "n": 52,
+  "verdict": "supported",
+  "note": "StreamingContext carries scriptNonce"
+ },
+ {
+  "n": 53,
+  "verdict": "partial",
+  "note": "BlankSchema/BlankInput only; Schema mapping not shown"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "copy:package.cjs.json copies to dist/cjs and dist/types"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "componentCount from slashes selects curNodesQueue slot"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "SSGPlugin interface matches"
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "toSSG sets hooks, fetches, saves, handles errors"
+ },
+ {
+  "n": 58,
+  "verdict": "partial",
+  "note": "SafeBigInt toJSON shown; parsing-failure path not shown"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "Get/Set variable interfaces"
+ }
+]

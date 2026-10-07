@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KT vs Devin Wiki · NeoDevEx case study</title>
+<meta name="description" content="NeoDevEx Knowledge Transfer docs benchmarked against Devin's DeepWiki on three open-source repositories: 75 code-verified questions, blind grading, measured cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#ledger">Ledger</a><a href="#scorecard">Scorecard</a><a href="#gaps">Gaps we fixed</a><a href="#method">Method</a><a href="#data">Raw data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <p class="eyebrow">Module 01 · Knowledge Transfer (KT docs) · <span data-bind="date"></span></p>
+    <h1>We asked both tools <em data-bind="questionCount"></em> questions we had already checked in the code.</h1>
+    <p class="lede" data-bind="lede"></p>
+    <div class="legend" aria-label="Verdict colours">
+      <span><i class="v-correct"></i>Correct</span><span><i class="v-partial"></i>Partly right</span><span><i class="v-wrong"></i>Wrong</span><span><i class="v-not_covered"></i>Not in the docs</span><span><i class="hall"></i>States something false</span>
+    </div>
+  </section>
+
+  <section id="ledger" class="ledger-wrap" aria-labelledby="ledger-h">
+    <div class="ledger-head">
+      <h2 id="ledger-h">Every answer, graded blind</h2>
+      <div class="seg" role="tablist" aria-label="Which test">
+        <button role="tab" data-mode="wiki" aria-selected="true">Reading the docs</button>
+        <button role="tab" data-mode="ask" aria-selected="false">Asking the repo</button>
+      </div>
+    </div>
+    <p class="mode-note" data-bind-mode="note"></p>
+    <div id="ledger-grid" class="ledger"></div>
+    <aside id="ledger-detail" class="detail" aria-live="polite">
+      <p class="detail-empty">Pick any square to see the question, both answers' verdicts and the grader's reason.</p>
+    </aside>
+  </section>
+
+  <section id="scorecard" aria-labelledby="score-h">
+    <h2 id="score-h">Scorecard</h2>
+    <p class="section-lede">Baseline is the KT engine as it shipped before this study. “After fixes” is the same engine after the changes listed below, re-run on the same commits and re-graded.</p>
+    <div id="scorecard-table" class="scorecard" role="table" aria-label="Metrics"></div>
+  </section>
+
+  <section id="gaps" aria-labelledby="gaps-h">
+    <h2 id="gaps-h">Where Devin was ahead, and what we changed</h2>
+    <p class="section-lede">Every gap below was found by this benchmark. Each fix shipped in the KT engine and was measured again.</p>
+    <ol id="gaps-list" class="gaps"></ol>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <div class="method-grid">
+      <div>
+        <h3>Repositories</h3>
+        <table class="repos" id="repos-table"><thead><tr><th>Repo</th><th>Commit</th><th>Tracked files</th><th>Lines of code</th></tr></thead><tbody></tbody></table>
+      </div>
+      <ul id="method-list" class="method-list"></ul>
+    </div>
+    <h3>What could skew this</h3>
+    <ul id="caveats" class="caveats"></ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <p class="section-lede">Everything behind the numbers above. Re-grade it yourself.</p>
+    <ul class="downloads" id="downloads"></ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Devin, DeepWiki and Ask Devin are products of Cognition. Their output was collected from the public DeepWiki service; no private Devin data was used. NeoDevEx is not affiliated with Cognition.</p>
+</footer>
+
+<script>window.CASE = /*DATA*/null;</script>
+<script src="../assets/case.js"></script>
+</body>
+</html>

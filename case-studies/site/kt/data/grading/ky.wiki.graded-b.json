@@ -1,0 +1,352 @@
+[
+ {
+  "id": "ky-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Shortcut calls Ky.create directly, not main ky fn; misses merge, hooks, ResponsePromise"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Good merge/create/retry/fetch chain; omits hooks and ResponsePromise"
+  }
+ },
+ {
+  "id": "ky-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "create vs extend right; misses function form of extend"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "create vs extend right; misses function form"
+  }
+ },
+ {
+  "id": "ky-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "beforeError after first error and beforeRequest on retry are false"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct order; beforeRequest once, beforeError final"
+  }
+ },
+ {
+  "id": "ky-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Managed signal combination right; no AbortSignal.any, recreation, delay signal"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "AbortSignal.any right; misses recreation and retry-delay signal"
+  }
+ },
+ {
+  "id": "ky-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Registries and pass-through right; function name not given"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Names findUnknownOptions; omits registries detail"
+  }
+ },
+ {
+  "id": "ky-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults correct"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults correct"
+  }
+ },
+ {
+  "id": "ky-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults right; misses RangeError over max"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout and RangeError right; totalTimeout default missing"
+  }
+ },
+ {
+  "id": "ky-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Not retried, TimeoutError; misses shouldRetry override"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Not retried, TimeoutError; misses shouldRetry override"
+  }
+ },
+ {
+  "id": "ky-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Misses NetworkError rule; 413/afterStatusCodes order misstated"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Order correct incl. shouldRetry semantics and NetworkError"
+  }
+ },
+ {
+  "id": "ky-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Header order right; misses date parsing, maxRetryAfter, no jitter"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Only Retry-After mentioned; other headers missing"
+  }
+ },
+ {
+  "id": "ky-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Format and data semantics correct"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Message format not covered; data correct"
+  }
+ },
+ {
+  "id": "ky-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Empty body returns '' is false; it throws"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accept right; empty-body behavior hedged, not stated as throw"
+  }
+ },
+ {
+  "id": "ky-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Timeout/Network errors do not bypass beforeError; retry claim false"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Replacement and beforeRetry bypass right; misses non-Error values"
+  }
+ },
+ {
+  "id": "ky-14",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "File right; checking error.cause is false; it checks message/TypeError"
+  },
+  "Y": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "Not covered"
+  }
+ },
+ {
+  "id": "ky-15",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "timeout() in timeout.ts right; misses totalTimeout cap"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "File and behavior right; misses totalTimeout cap"
+  }
+ },
+ {
+  "id": "ky-16",
+  "category": "where",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Locates merging in Ky constructor; actually merge.ts"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "merge.ts deepMerge/validateAndMerge right; misses replaceOption"
+  }
+ },
+ {
+  "id": "ky-17",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "streamRequest/streamResponse right; misses withProgress, getBodySize"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All key functions named"
+  }
+ },
+ {
+  "id": "ky-18",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct"
+  }
+ },
+ {
+  "id": "ky-19",
+  "category": "edge_case",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "Not covered"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct: not retried without header"
+  }
+ },
+ {
+  "id": "ky-20",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "3 attempts right; misses no-clone at limit 0"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "3 attempts and no clone at limit 0"
+  }
+ },
+ {
+  "id": "ky-21",
+  "category": "edge_case",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "No retry right; but 500 throws HTTPError, not returned as success"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "No retry right; 500 throws HTTPError, not returned to caller"
+  }
+ },
+ {
+  "id": "ky-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "Not covered"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "xo/build/ava right; misses tsx loader, workerThreads"
+  }
+ },
+ {
+  "id": "ky-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "Not covered"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Browsers right; reason generic, not distribution import"
+  }
+ },
+ {
+  "id": "ky-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "not_covered",
+   "hallucination": false,
+   "note": "Not covered"
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "macOS and versions right; omits Playwright install step"
+  }
+ },
+ {
+  "id": "ky-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "ESM only; Node version and output missing"
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Node 22+, ESM, distribution/ correct"
+  }
+ }
+]

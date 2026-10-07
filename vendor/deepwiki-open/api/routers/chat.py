@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from fastapi.websockets import WebSocketState
 
+import json
+
 from api.logger import get_logger
+from api.usage import start_usage_meter
 from api.schemas import ChatCompletionRequest
 from api.services.research import RepoNotIndexedError, research_chat
 
@@ -78,8 +81,9 @@ async def chat_completions_stream(request: ChatCompletionRequest):
             status_code=400, detail="Last message must be from the user"
         )
 
+    meter = start_usage_meter()
     try:
-        async_respond = await research_chat(request=request)
+        async_respond = _log_usage_when_done(await research_chat(request=request), meter)
 
     except RepoNotIndexedError as e:
         raise HTTPException(status_code=425, detail=str(e))
@@ -114,3 +118,10 @@ async def chat_completions_stream(request: ChatCompletionRequest):
         error_msg = f"Error in streaming chat completion: {str(e_handler)}"
         logger.error(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
+
+
+async def _log_usage_when_done(stream, meter):
+    """Pass the stream through, then log the answer's measured LLM cost."""
+    async for chunk in stream:
+        yield chunk
+    logger.info("chat usage %s", json.dumps(meter.to_dict()))

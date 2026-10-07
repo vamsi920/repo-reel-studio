@@ -1,0 +1,352 @@
+[
+ {
+  "id": "flask-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Fabricates preprocess loop (chain blueprints) and url_adapter.match in dispatch_request; omits finalize_request, handle_exception."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate chain incl. from_environ, preprocessors, finalize; omits request_finished and handle_exception."
+  }
+ },
+ {
+  "id": "flask-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Push/nesting correct; pop omits request.close and error collection."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full push/pop order, nesting, error collection all match code."
+  }
+ },
+ {
+  "id": "flask-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All steps correct: naming, ValueError, setup state, merge, deferred, CLI, nested."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Fabricated check 'app.blueprints[name] is not self'; claims only different blueprint conflicts. Omits CLI."
+  }
+ },
+ {
+  "id": "flask-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims base class is sansio Flask / 'Flask as SansIOFlask'; it's App. Omits Scaffold and Blueprint split."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Scaffold, App, Flask(App), Blueprint(SansioBlueprint) correctly described."
+  }
+ },
+ {
+  "id": "flask-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Single ContextVar and proxies correct; omits request_ctx deprecated alias."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Correct single _cv_app and proxies; omits request_ctx alias."
+  }
+ },
+ {
+  "id": "flask-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "All values correct; omits APPLICATION_ROOT path fallback."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All values plus path fallback; extra claims match docs."
+  }
+ },
+ {
+  "id": "flask-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All four defaults correct."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All four defaults correct with config excerpt."
+  }
+ },
+ {
+  "id": "flask-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Before/after ordering correct; omits after_this_request first and session save."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Ordering, short-circuit, after_this_request covered; omits session save."
+  }
+ },
+ {
+  "id": "flask-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Reverse order, blueprint first, collect-all, group on 3.11+; minor ExceptionGroup naming."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Order, signals, collect-all, raise rules correct."
+  }
+ },
+ {
+  "id": "flask-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Order and MRO correct; omits RoutingException not passed to handlers."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Prose says blueprint code+class before app code; code checks code across bp+app first. Omits RoutingException."
+  }
+ },
+ {
+  "id": "flask-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Signal, propagate, InternalServerError correct; omits from_error_handler/after_request."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate; omits finalize_request from_error_handler=True detail."
+  }
+ },
+ {
+  "id": "flask-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults and types correct; omits indent=2 and trailing newline."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults, types, indent=2/separators correct; omits trailing newline."
+  }
+ },
+ {
+  "id": "flask-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Vary/delete/set logic correct; omits NullSession and bad-signature behavior."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Vary/delete/set/skip correct; omits NullSession and bad-signature behavior."
+  }
+ },
+ {
+  "id": "flask-14",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "303, changed from 302 in 3.2."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "303, changed from 302 in 3.2."
+  }
+ },
+ {
+  "id": "flask-15",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Facts right, but wsgi_app snippet 'with self.request_context(environ) as ctx' is fabricated."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Deprecated alias and fresh context per request correct."
+  }
+ },
+ {
+  "id": "flask-16",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Behavior right but says logic is in metaclass __init__; it's __init_subclass__."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "__init_subclass__, warning, remove_ctx/add_ctx, 12 methods correct."
+  }
+ },
+ {
+  "id": "flask-17",
+  "category": "edge_case",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Explains make_config overwrites None with get_debug_flag; falsy values correct."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims default DEBUG is None (WBP); 'class Flask(scaffold.Scaffold)' false."
+  }
+ },
+ {
+  "id": "flask-18",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Salt, hmac, lazy SHA-1, TaggedJSONSerializer, fallback ordering correct."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Mostly correct but claims itsdangerous signs with first key; it signs with last. Omits TaggedJSONSerializer."
+  }
+ },
+ {
+  "id": "flask-19",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "--app parsing, wsgi.py/app.py, find_best_app order correct."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "load_app, locate_app, find_best_app order and files correct."
+  }
+ },
+ {
+  "id": "flask-20",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Scaffold registration, ValueError/TypeError, storage structure correct."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Code-backed registration and validation in scaffold.py correct."
+  }
+ },
+ {
+  "id": "flask-21",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "add_url_rule/OPTIONS logic correct; omits str TypeError."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Defaults, TypeError, precedence, dispatch_request OPTIONS correct."
+  }
+ },
+ {
+  "id": "flask-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims Python 3.8+ support; requires-python is >=3.10. Omits mypy/pyright target."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "3.10+, matrix incl. 3.14t/pypy, mypy/pyright 3.10."
+  }
+ },
+ {
+  "id": "flask-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "CI tox command correct; local pip/pytest generic; omits tox-uv and pytest config."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "tox and testpaths mentioned; omits CI command, filterwarnings error, tox-uv."
+  }
+ },
+ {
+  "id": "flask-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "tox typing env in CI correct; omits pyright, strict mode, basic mode."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Config correct, but CI command misquoted as 'uv run --locked tox run -e typing'."
+  }
+ },
+ {
+  "id": "flask-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Min versions on 3.14, git main on 3.10, pre-commit style correct."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Hedged; purposes right but no pins, omits uv-lock, speculative on style."
+  }
+ }
+]

@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "verdict": "supported",
+  "note": "Regex rejects '..' segments, returns undefined"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "onError?: ErrorHandler<E> optional param"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "get/post/put/delete HandlerInterface declarations"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "respondWith, app.fetch, 404 fallback to opts.fetch"
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "HonoRequest class definition"
+ },
+ {
+  "n": 5,
+  "verdict": "supported",
+  "note": "parseBody delegates to parseBody utility"
+ },
+ {
+  "n": 6,
+  "verdict": "partial",
+  "note": "Shows post-next code, not reverse ordering"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "ASSETS.fetch, 404 calls c.notFound()"
+ },
+ {
+  "n": 8,
+  "verdict": "partial",
+  "note": "Only shows capture of updateHook, not setting/passing"
+ },
+ {
+  "n": 9,
+  "verdict": "partial",
+  "note": "q-value parsing shown; gzip priority depends on candidates order"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "hydrateRoot creates root and renders"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "Code matches exactly"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "worktop devDependency"
+ },
+ {
+  "n": 13,
+  "verdict": "partial",
+  "note": "Only isWatch flag; esbuild context usage not shown"
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "Under 12kB stated; simpler router not stated"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "DOM exports exist; hooks/reconciliation not shown"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "Chained route code matches"
+ },
+ {
+  "n": 17,
+  "verdict": "supported",
+  "note": "Strong ETag converted to weak"
+ },
+ {
+  "n": 18,
+  "verdict": "supported",
+  "note": "Code matches"
+ },
+ {
+  "n": 19,
+  "verdict": "partial",
+  "note": "FC returns HtmlEscapedString/Promise/null, not JSXNode"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "express dependency line"
+ },
+ {
+  "n": 21,
+  "verdict": "supported",
+  "note": "createWSContext wraps Bun ws into WSContext"
+ },
+ {
+  "n": 22,
+  "verdict": "supported",
+  "note": "Bun write; mkdir no-op"
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "notFound invokes notFoundHandler"
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "replaceUrlParam replaces :param placeholders"
+ },
+ {
+  "n": 25,
+  "verdict": "partial",
+  "note": "Tests show json and merge-patch; not regex itself"
+ },
+ {
+  "n": 26,
+  "verdict": "partial",
+  "note": "Only bunFileSystemModule marked experimental in cited lines"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "#addRoute calls router.add and routes.push"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "Test expects 404"
+ },
+ {
+  "n": 29,
+  "verdict": "unsupported",
+  "note": "Line is HEAD handling, not path resolution"
+ },
+ {
+  "n": 30,
+  "verdict": "supported",
+  "note": "validateExports compares both export maps"
+ },
+ {
+  "n": 31,
+  "verdict": "supported",
+  "note": "koa-router dependency line"
+ },
+ {
+  "n": 32,
+  "verdict": "partial",
+  "note": "README says under 12kB; PatternRouter not mentioned"
+ },
+ {
+  "n": 33,
+  "verdict": "partial",
+  "note": "Sources-only fragment; bench:bun script shown"
+ },
+ {
+  "n": 34,
+  "verdict": "supported",
+  "note": "buildDataStack.at(-1) yields [context,node]"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "Code matches"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "query serialized via buildSearchParams"
+ },
+ {
+  "n": 37,
+  "verdict": "supported",
+  "note": "preact and preact-render-to-string lines"
+ },
+ {
+  "n": 38,
+  "verdict": "supported",
+  "note": "Key remapping drops invalid-typed keys"
+ },
+ {
+  "n": 39,
+  "verdict": "partial",
+  "note": "Node type union, not a DOM-element description"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "sleep uses setTimeout promise"
+ },
+ {
+  "n": 41,
+  "verdict": "partial",
+  "note": "Sources-only fragment; tests for some()"
+ },
+ {
+  "n": 42,
+  "verdict": "partial",
+  "note": "Sources-only fragment; bench:bun script shown"
+ },
+ {
+  "n": 43,
+  "verdict": "unsupported",
+  "note": "Lines are redirect, not set/get"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "matchResult[1] stash lookup by index"
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "hookIndex = node[DOM_STASH][0]++"
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "PendingType defined; first Context element"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "trek-router dependency line"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "Reads cf-connecting-ip header"
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "fetch calls #dispatch with request, ctx, env, method"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "__Host- secure, path '/', no domain enforced"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "LinearRouter matches /book/ to /book"
+ },
+ {
+  "n": 52,
+  "verdict": "supported",
+  "note": "tryDecodeURI on sliced path"
+ },
+ {
+  "n": 53,
+  "verdict": "partial",
+  "note": "Only /* normalization; buildWildcardRegExp just outside"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "name set to SmartRouter + active router"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "ToSchema with MergeTypedResponse"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "Context creation, next, HTTPException handling"
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "radix3 dependency line"
+ },
+ {
+  "n": 58,
+  "verdict": "supported",
+  "note": "finally calls stream.close() (SSE variant)"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "cjs outdir dist/cjs"
+ },
+ {
+  "n": 60,
+  "verdict": "supported",
+  "note": "Compression checks match flowchart"
+ },
+ {
+  "n": 61,
+  "verdict": "supported",
+  "note": "ErrorHandler type definition"
+ },
+ {
+  "n": 62,
+  "verdict": "supported",
+  "note": "websocket.close triggers onClose"
+ },
+ {
+  "n": 63,
+  "verdict": "supported",
+  "note": "Body limit logic matches flowchart"
+ },
+ {
+  "n": 64,
+  "verdict": "partial",
+  "note": "Line 6 exports handle; getConnInfo on line 7"
+ },
+ {
+  "n": 65,
+  "verdict": "partial",
+  "note": "Sources-only fragment; realm/message defaults"
+ },
+ {
+  "n": 66,
+  "verdict": "supported",
+  "note": "Env has Bindings and Variables"
+ },
+ {
+  "n": 67,
+  "verdict": "supported",
+  "note": "nano-jsx dependency line"
+ },
+ {
+  "n": 68,
+  "verdict": "partial",
+  "note": "Sources-only fragment; tests for every()"
+ },
+ {
+  "n": 69,
+  "verdict": "supported",
+  "note": "getPath?: GetPath<E> option"
+ },
+ {
+  "n": 70,
+  "verdict": "partial",
+  "note": "JSDoc params only; __proto__ check at line 220"
+ },
+ {
+  "n": 71,
+  "verdict": "supported",
+  "note": "Style DOM_RENDERER assignment"
+ },
+ {
+  "n": 72,
+  "verdict": "partial",
+  "note": "Sources-only fragment; bench:bun script shown"
+ },
+ {
+  "n": 73,
+  "verdict": "supported",
+  "note": "style via styleObjectForEach and dangerouslySetInnerHTML"
+ },
+ {
+  "n": 74,
+  "verdict": "supported",
+  "note": "html handles string or Promise"
+ },
+ {
+  "n": 75,
+  "verdict": "partial",
+  "note": "Lockfile devDependency, not adapter usage"
+ },
+ {
+  "n": 76,
+  "verdict": "partial",
+  "note": "Sources-only fragment; types module header"
+ },
+ {
+  "n": 77,
+  "verdict": "supported",
+  "note": "append option calls headers.append"
+ },
+ {
+  "n": 78,
+  "verdict": "supported",
+  "note": "body() passes raw data to newResponse"
+ },
+ {
+  "n": 79,
+  "verdict": "partial",
+  "note": "Cited lines cover up to 8 handlers, not 10"
+ }
+]

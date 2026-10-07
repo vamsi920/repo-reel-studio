@@ -1,0 +1,222 @@
+[
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 148,
+  "end": 204,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L148-L204",
+  "ok": true,
+  "claim": "om/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L122-L128), [source/utils/merge.ts:283-290](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L283-L290)` |\n| `searchParams` | Values are appended. Supports `URLSearchParams`, objects, arrays of tuples, and strings. `undefined` values delete the parameter. | `",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle and Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 270,
+  "end": 285,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L270-L285",
+  "ok": true,
+  "claim": " the error, or stop the retry process by returning `ky.stop`. `Sources: [source/core/Ky.ts:886-922](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L886-L922)`              |\n| `beforeError`     | After all retries are exhausted and just before an error is thrown.      | Modify the final `Error` object that will be thrown to the caller. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 234,
+  "end": 249,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L234-L249",
+  "ok": true,
+  "claim": "[source/utils/merge.ts:148-204](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L148-L204), [source/utils/merge.ts:252-262](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L252-L262)` |\n| `context` | A shallow merge is performed. The property is always a new object to prevent mutation. | `",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle and Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 767,
+  "end": 784,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784",
+  "ok": true,
+  "claim": ": [source/core/Ky.ts:144-149](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L144-L149)`                                                                    |\n| `beforeRequest`   | Before the request is sent.                                              | Modify the `Request` object. Can return a `Response` to bypass the fetch entirely. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle and Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 786,
+  "end": 842,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842",
+  "ok": true,
+  "claim": "y.ts:767-784](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784)`                                            |\n| `afterResponse`   | After a response is received, before it's processed for errors.          | Modify the `Response`. Can trigger a forced retry by returning `ky.retry()`. Runs in a loop until all hooks are processed. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle and Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 886,
+  "end": 922,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L886-L922",
+  "ok": true,
+  "claim": "ntil all hooks are processed. `Sources: [source/core/Ky.ts:786-842](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842)` |\n| `beforeRetry`     | Before a retry attempt is made after a delay.                            | Modify the `Request` for the next attempt, inspect the error, or stop the retry process by returning `ky.stop`. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 252,
+  "end": 262,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L252-L262",
+  "ok": true,
+  "claim": "om/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L283-L290)` |\n| `searchParams` | Values are appended. Supports `URLSearchParams`, objects, arrays of tuples, and strings. `undefined` values delete the parameter. | `[source/utils/merge.ts:148-204](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L148-L204), ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 283,
+  "end": 290,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L283-L290",
+  "ok": true,
+  "claim": "nstances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `[source/utils/merge.ts:64-78](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L64-L78), [source/utils/merge.ts:122-128](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L122-L128), ",
+  "inline": true
+ },
+ {
+  "page": "Request Lifecycle and Architecture",
+  "path": "source/core/Ky.ts",
+  "start": 144,
+  "end": 149,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L144-L149",
+  "ok": true,
+  "claim": "------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n| `init`            | Before the `Ky` instance is created.                                     | Modify options for a single request. Executed only once. `Sources: ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 122,
+  "end": 128,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L122-L128",
+  "ok": true,
+  "claim": "b.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L274-L281)` |\n| `headers` | Header objects or `Headers` instances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `[source/utils/merge.ts:64-78](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L64-L78), ",
+  "inline": true
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/stream.ts",
+  "start": 165,
+  "end": 210,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L165-L210",
+  "ok": true,
+  "claim": "| Scenario | Original Body | Replacement Body | Expected Outcome | Source |\n| --- | --- | --- | --- | --- |\n| Size Preservation | Large Blob | Same Blob (new `Request`) | Progress is calculated based on the original blob size. | ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 224,
+  "end": 227,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L224-L227",
+  "ok": true,
+  "claim": "shallow merge is performed. The property is always a new object to prevent mutation. | `[source/utils/merge.ts:234-249](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L234-L249)` |\n| `signal` | Multiple `AbortSignal` instances are collected. If `AbortSignal.any` is supported, they are combined; otherwise, the last signal provided is used. | `",
+  "inline": true
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/stream.ts",
+  "start": 292,
+  "end": 332,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L292-L332",
+  "ok": true,
+  "claim": "est/stream.ts#L165-L210) |\n| Size Increase | Small JSON | Large Blob | Progress is calculated based on the new, larger blob size. | [test/stream.ts:212-248](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L212-L248) |\n| Size Decrease | Large Blob | Small String | Progress is calculated based on the new, smaller string size and completes correctly. | ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 274,
+  "end": 281,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L274-L281",
+  "ok": true,
+  "claim": "| Option | Merging Behavior | Source |\n| --- | --- | --- |\n| `hooks` | Arrays of hooks are concatenated. `undefined` in a source clears the array. | `[source/utils/merge.ts:130-144](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L130-L144), ",
+  "inline": true
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/stream.ts",
+  "start": 334,
+  "end": 372,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L334-L372",
+  "ok": true,
+  "claim": "se | Large Blob | Small String | Progress is calculated based on the new, smaller string size and completes correctly. | [test/stream.ts:292-332](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L292-L332) |\n| Monotonicity | Tiny String | Large Blob | Progress `percent` and `transferredBytes` remain monotonic despite the initial size being smaller. | ",
+  "inline": true
+ },
+ {
+  "page": "Repository root: module reference",
+  "path": "tsconfig.json",
+  "start": 4,
+  "end": 4,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/tsconfig.json#L4-L4",
+  "ok": true,
+  "claim": "| Option | Value | Description | Source |\n| --- | --- | --- | --- |\n| `exactOptionalPropertyTypes` | `true` | Enforces a strict distinction between properties that are `undefined` and properties that are not present on an object. | ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 298,
+  "end": 309,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L298-L309",
+  "ok": true,
+  "claim": "rhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L234-L249)` |\n| `signal` | Multiple `AbortSignal` instances are collected. If `AbortSignal.any` is supported, they are combined; otherwise, the last signal provided is used. | `[source/utils/merge.ts:224-227](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L224-L227), ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 64,
+  "end": 78,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L64-L78",
+  "ok": true,
+  "claim": "m/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L130-L144), [source/utils/merge.ts:274-281](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L274-L281)` |\n| `headers` | Header objects or `Headers` instances are merged. Values in later sources overwrite earlier ones. `undefined` values delete the header. | `",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 267,
+  "end": 269,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L267-L269",
+  "ok": true,
+  "claim": "wise, the last signal provided is used. | `[source/utils/merge.ts:224-227](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L224-L227), [source/utils/merge.ts:298-309](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L298-L309)` |\n| Other properties | A recursive deep merge is performed. | `",
+  "inline": true
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/stream.ts",
+  "start": 374,
+  "end": 416,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L374-L416",
+  "ok": true,
+  "claim": "arge Blob | Progress `percent` and `transferredBytes` remain monotonic despite the initial size being smaller. | [test/stream.ts:334-372](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L334-L372) |\n| Header Modification | Large Blob | Same Blob (new `Request`) | A subsequent hook can modify headers without affecting the body or progress tracking. | ",
+  "inline": true
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/stream.ts",
+  "start": 212,
+  "end": 248,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L212-L248",
+  "ok": true,
+  "claim": "ource |\n| --- | --- | --- | --- | --- |\n| Size Preservation | Large Blob | Same Blob (new `Request`) | Progress is calculated based on the original blob size. | [test/stream.ts:165-210](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/stream.ts#L165-L210) |\n| Size Increase | Small JSON | Large Blob | Progress is calculated based on the new, larger blob size. | ",
+  "inline": true
+ },
+ {
+  "page": "Creating Instances: create vs. extend",
+  "path": "source/utils/merge.ts",
+  "start": 130,
+  "end": 144,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/merge.ts#L130-L144",
+  "ok": true,
+  "claim": "| Option | Merging Behavior | Source |\n| --- | --- | --- |\n| `hooks` | Arrays of hooks are concatenated. `undefined` in a source clears the array. | `",
+  "inline": true
+ }
+]

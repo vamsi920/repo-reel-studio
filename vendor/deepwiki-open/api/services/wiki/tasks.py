@@ -22,12 +22,14 @@ from api.schemas import (
 )
 from api.repository import Repo
 from api.rag import repo_index_exist, count_tokens
+from api.rag.pipeline import get_repo_db
 from api.services.codemap import read_repo_file
 from api.services.research import prepare_repo_index, research_chat
 from api.services.wiki import (
     save_wiki_cache,
     wiki_cache_exists,
 )
+from api.services.wiki.coverage import ensure_file_coverage
 from api.services.wiki.content import (
     RepoUrlContext,
     generate_file_url,
@@ -42,10 +44,12 @@ from api.services.wiki.structure import (
 
 from api.services.wiki.prompts import (
     build_page_prompt,
+    build_file_reference_prompt,
     build_structure_prompt,
 )
 
 from api.logger import get_logger
+from api.usage import UsageMeter, start_usage_meter
 
 logger = get_logger(__name__)
 
@@ -85,6 +89,9 @@ class WikiTask(BaseModel):
     error: str | None = None
     submitted_at: int = Field(default_factory=lambda: int(time.time() * 1000))
     task: asyncio.Task | None = Field(default=None, repr=False)
+    usage: UsageMeter | None = Field(default=None, repr=False)
+    started_at: int | None = None
+    finished_at: int | None = None
 
     @computed_field
     @property
@@ -119,6 +126,7 @@ class WikiTask(BaseModel):
             wiki_structure=self.wiki_structure,
             error=self.error,
             submitted_at=self.submitted_at,
+            usage=self.usage.to_dict() if self.usage else None,
         )
 
     def to_summary(self) -> WikiTaskSummary:
@@ -214,8 +222,15 @@ registry = TaskRegistry()
 async def generate_repo_wiki(task: WikiTask) -> None:
     """Drive one task through the state machine (SPEC.md §7)."""
     r = task.request
+    task.usage = start_usage_meter()
+    task.started_at = int(time.time() * 1000)
     try:
         repo = Repo(r.repo_url, r.type, access_token=r.token)
+        if r.commit_sha and not repo.is_local:
+            if not repo.downloaded:
+                repo.download()
+            if repo.checkout_commit(r.commit_sha) and repo_index_exist(repo):
+                os.remove(get_repo_db(repo))
 
         # Req 1.1: build the index only if it does not already exist.
         if not repo_index_exist(repo):
@@ -253,6 +268,7 @@ async def generate_repo_wiki(task: WikiTask) -> None:
         task.status = TaskStatus.GENERATING
         pages = await _generate_pages(task, structure)
 
+        task.finished_at = int(time.time() * 1000)
         await _save(task, pages)
         task.status = TaskStatus.COMPLETED
         logger.info("Wiki task completed for %s", task.repo_key)
@@ -285,8 +301,18 @@ async def _save(
             ),
             provider=task.request.provider,
             model=task.request.model,
+            usage=_usage_record(task),
         ),
     )
+
+
+def _usage_record(task: WikiTask) -> dict | None:
+    if task.usage is None:
+        return None
+    record = task.usage.to_dict()
+    if task.started_at is not None and task.finished_at is not None:
+        record["duration_ms"] = task.finished_at - task.started_at
+    return record
 
 
 async def _generate_page_with_retry(task: WikiTask, page: WikiPage) -> WikiPage:
@@ -382,6 +408,7 @@ async def _determine_structure(task: WikiTask) -> WikiStructureModel:
         subsystem_count=(
             len(r.code_evidence_subsystems) if r.code_evidence_subsystems else None
         ),
+        source_file_count=len(file_paths),
     )
     chat_request = ChatCompletionRequest(
         repo_url=r.repo_url,
@@ -398,10 +425,13 @@ async def _determine_structure(task: WikiTask) -> WikiStructureModel:
     )
 
     text = ""
-    async for chunk in await research_chat(chat_request):
+    async for chunk in await research_chat(chat_request, raise_errors=True):
         text += chunk
 
-    return parse_wiki_structure(text, comprehensive=r.comprehensive)
+    structure = parse_wiki_structure(text, comprehensive=r.comprehensive)
+    attached = ensure_file_coverage(structure, file_paths)
+    logger.info("Coverage pass attached %d uncovered source files", len(attached))
+    return structure
 
 
 def _strip_markdown_fences(content: str) -> str:
@@ -500,6 +530,51 @@ def _page_code_evidence(r: WikiTaskRequest, page: WikiPage) -> str | None:
     return "\n".join(lines)
 
 
+_CITED_PATH_RE = re.compile(r"\[([^\]\s:]+)(?::\d+(?:-\d+)?)?\]\(")
+MAX_SUPPLEMENT_FILES = 10
+_DETAILS_BLOCK_RE = re.compile(r"<details>[\s\S]*?</details>", re.I)
+
+
+def uncited_files(content: str, file_paths: list[str]) -> list[str]:
+    """Page files the written content never cites."""
+    # The page opens with a <details> list linking every page file; those
+    # links are not citations and must not count as coverage.
+    body = _DETAILS_BLOCK_RE.sub("", content)
+    cited = {m.group(1).replace("\\", "") for m in _CITED_PATH_RE.finditer(body)}
+    return [p for p in file_paths if p not in cited]
+
+
+async def _cover_uncited_files(r: WikiTaskRequest, page: WikiPage, content: str) -> str:
+    """Write a grounded section for every page file the page left out.
+
+    Benchmarked: pages handed 8-12 files typically wrote about 4-5 of them,
+    so a third of the files the coverage pass assigned were never
+    documented (flask: 79 files assigned, 41 cited). This second, smaller
+    call sees only the skipped files. Returns "" when nothing was skipped
+    or the call fails, so the main page is never lost.
+    """
+    missing = uncited_files(content, list(page.filePaths))[:MAX_SUPPLEMENT_FILES]
+    if not missing:
+        return ""
+    try:
+        prompt = build_file_reference_prompt(
+            page.title, _build_file_contents_block(r, missing), r.language
+        )
+        chat_request = ChatCompletionRequest(
+            repo_url=r.repo_url, type=r.type, token=r.token, provider=r.provider,
+            model=r.model, language=r.language,
+            messages=[ChatMessage(role="user", content=prompt)],
+        )
+        text = ""
+        async for chunk in await research_chat(chat_request, skip_rag=True, raise_errors=True):
+            text += chunk
+    except Exception as e:  # noqa: BLE001 - the supplement is optional
+        logger.warning("File-reference supplement failed for %s: %s", page.id, e)
+        return ""
+    text = _strip_markdown_fences(text).strip()
+    return f"\n\n{text}\n" if text else ""
+
+
 async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
     """Generate one wiki page: build the prompt, stream from the LLM (reusing the
     RAG chat pipeline), strip fences, and resolve citations.
@@ -507,8 +582,12 @@ async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
     Port of the frontend `generatePageContent` + `postProcessWikiContent`.
     """
     r = task.request
+    # Pin source links to the generated commit: a branch ref (or HEAD) keeps
+    # moving, so links would later open code the page was never written from.
     ctx = RepoUrlContext(
-        type=r.type, repo_url=r.repo_url, default_branch=task.default_branch
+        type=r.type,
+        repo_url=r.repo_url,
+        default_branch=r.commit_sha or task.default_branch,
     )
     file_links = "\n".join(
         f"- [{p}]({generate_file_url(p, ctx)})" for p in page.filePaths
@@ -543,10 +622,12 @@ async def _generate_page(task: WikiTask, page: WikiPage) -> WikiPage:
     # does was surfacing undeclared files with unreliable chunk-level line
     # numbers as citations, contradicting the "ONLY these files" contract
     # build_page_prompt gives the model.
-    async for chunk in await research_chat(chat_request, skip_rag=True):
+    async for chunk in await research_chat(chat_request, skip_rag=True, raise_errors=True):
         content += chunk
 
     content = _strip_markdown_fences(content)
+    if content.strip():
+        content += await _cover_uncited_files(r, page, content)
     content = post_process_wiki_content(content, list(page.filePaths), ctx)
     if not content.strip():
         # An empty response usually means every chunk in the stream hit a

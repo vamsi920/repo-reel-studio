@@ -1,0 +1,352 @@
+[
+ {
+  "id": "hono-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "dispatch, getPath, match, Context, fast path, compose, not-finalized error."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full trace with fast path and not-finalized error."
+  }
+ },
+ {
+  "id": "hono-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Vercel/Pages right; invents deprecation of adapters for v5; Lambda env contents omitted."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Workers no-handle right; Vercel fetch and Lambda env/createResult not detailed."
+  }
+ },
+ {
+  "id": "hono-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "All routers right; omits presets overwriting options.router."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "quick/tiny right; says default router not defined in context."
+  }
+ },
+ {
+  "id": "hono-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Clone and route copying right; omits errorHandler wrapping."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Clone, route copying via #addRoute, error handler wrapping."
+  }
+ },
+ {
+  "id": "hono-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy getter and setter header merge right; omits compose assignment rule."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Getter/setter right; compose assignment condition omitted."
+  }
+ },
+ {
+  "id": "hono-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Default routers, lazy UnsupportedPathError selection; omits add-after-build error."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy selection and name update; omits add-after-build error."
+  }
+ },
+ {
+  "id": "hono-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "next() twice, routeIndex, onNotFound; omits Error-only onError rule."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "next() twice, Error-only, onNotFound; omits routeIndex."
+  }
+ },
+ {
+  "id": "hono-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Adds QUERY to default allowMethods; otherwise preflight details right."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact defaults and preflight handling."
+  }
+ },
+ {
+  "id": "hono-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "SHA-1, strong default, W/ stripping; omits retained 304 headers."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Invents '*' match and GET/HEAD/QUERY 2xx conditions."
+  }
+ },
+ {
+  "id": "hono-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full default list, X-Powered-By removal, CSP unset."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full list, COEP false, CSP unset, removePoweredBy."
+  }
+ },
+ {
+  "id": "hono-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Enforcement and 413 default exact; omits maxSize required."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Enforcement and 413 right; omits HTTPException and maxSize required."
+  }
+ },
+ {
+  "id": "hono-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims no default error handler; default returns 500 and uses getResponse."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Defaults and getResponse right; omits non-Error rethrow."
+  }
+ },
+ {
+  "id": "hono-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "302 and content types right; c.notFound default wrongly empty 404."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "302, encodeURI, text fast path, notFound delegation."
+  }
+ },
+ {
+  "id": "hono-14",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "getPath/getPathNoStrict in url.ts, strict default true."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "url.ts functions and constructor selection with default true."
+  }
+ },
+ {
+  "id": "hono-15",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Claims routes inserted into trie at add and #tries field; neither exist."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "matcher.ts lazy match, buildAllMatchers, static map, UnsupportedPathError."
+  }
+ },
+ {
+  "id": "hono-16",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "bodyCache, #cachedBody conversion, json via text."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "bodyCache, conversion code, json via text+parse."
+  }
+ },
+ {
+  "id": "hono-17",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Constructor, METHODS list, #addRoute, use '*'."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Lists nonexistent query shortcut."
+  }
+ },
+ {
+  "id": "hono-18",
+  "category": "gotcha",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "HEAD dispatched as GET with null body."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Correct core; invents methodNotAllowed middleware."
+  }
+ },
+ {
+  "id": "hono-19",
+  "category": "gotcha",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Opens claiming custom getPath used, then correctly says getPathNoStrict."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "getPathNoStrict always used with strict:false."
+  }
+ },
+ {
+  "id": "hono-20",
+  "category": "gotcha",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Sub onError kept, parent notFound used."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Sub onError wrapped, parent notFound used."
+  }
+ },
+ {
+  "id": "hono-21",
+  "category": "gotcha",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "401, body/headers kept; omits 500 default."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "401, body/headers kept; omits 500 default."
+  }
+ },
+ {
+  "id": "hono-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Vitest projects right; invents pnpm and vp test commands."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "tsc+vitest, projects, --project scripts, deno/bun native."
+  }
+ },
+ {
+  "id": "hono-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact build steps incl private strip, cjs marker, publint."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims vite-plus/tsdown build; uses build.ts with esbuild."
+  }
+ },
+ {
+  "id": "hono-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims oxlint/oxfmt; repo uses ESLint and Prettier."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "ESLint config extends, type rules off, Prettier scripts."
+  }
+ },
+ {
+  "id": "hono-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "JSR publish, jsr.json, validateExports; omits CI dry-run."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Invents validatePackageExportsPlugin in vite.config.ts and pnpm dlx."
+  }
+ }
+]
