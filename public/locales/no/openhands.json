@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "Tenker…",
   "THINKING_GRAPH$PANEL_DONE": "Tenkte gjennom {{count}} steg",
   "THINKING_GRAPH$PANEL_SHOW": "Vis tenkning",
-  "THINKING_GRAPH$PANEL_HIDE": "Skjul tenkning"
+  "THINKING_GRAPH$PANEL_HIDE": "Skjul tenkning",
+  "THINKING_GRAPH$PARALLEL": "{{count}} parallelt",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} tidligere steg"
 }

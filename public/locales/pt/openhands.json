@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "Pensando…",
   "THINKING_GRAPH$PANEL_DONE": "Pensou em {{count}} etapas",
   "THINKING_GRAPH$PANEL_SHOW": "Mostrar raciocínio",
-  "THINKING_GRAPH$PANEL_HIDE": "Ocultar raciocínio"
+  "THINKING_GRAPH$PANEL_HIDE": "Ocultar raciocínio",
+  "THINKING_GRAPH$PARALLEL": "{{count}} em paralelo",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} etapas anteriores"
 }

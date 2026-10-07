@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "Düşünüyor…",
   "THINKING_GRAPH$PANEL_DONE": "{{count}} adımda düşündü",
   "THINKING_GRAPH$PANEL_SHOW": "Düşünmeyi göster",
-  "THINKING_GRAPH$PANEL_HIDE": "Düşünmeyi gizle"
+  "THINKING_GRAPH$PANEL_HIDE": "Düşünmeyi gizle",
+  "THINKING_GRAPH$PARALLEL": "{{count}} paralel",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} önceki adım"
 }

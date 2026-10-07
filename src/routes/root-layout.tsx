@@ -13,6 +13,7 @@ import { Sidebar } from "#/components/features/sidebar/sidebar";
 import { SidebarMobileNavProvider } from "#/components/features/sidebar/sidebar-mobile-nav-context";
 import { SidebarMobileMenuBar } from "#/components/features/sidebar/sidebar-mobile-menu-bar";
 import { useSettings } from "#/hooks/query/use-settings";
+import { useHarnessMigration } from "#/hooks/use-harness-migration";
 import { useEnsureActiveProfile } from "#/hooks/use-ensure-active-profile";
 import { useDocumentLanguage } from "#/hooks/use-document-language";
 import { useSyncTelemetryConsent } from "#/hooks/use-sync-telemetry-consent";
@@ -94,6 +95,7 @@ export default function MainApp() {
   const config = useConfig();
 
   useSyncAutomationTelemetryConsent();
+  useHarnessMigration(settings);
 
   useSyncTelemetryConsent();
   useTelemetryIdentity();

@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "思考中…",
   "THINKING_GRAPH$PANEL_DONE": "{{count}} ステップで思考",
   "THINKING_GRAPH$PANEL_SHOW": "思考を表示",
-  "THINKING_GRAPH$PANEL_HIDE": "思考を隠す"
+  "THINKING_GRAPH$PANEL_HIDE": "思考を隠す",
+  "THINKING_GRAPH$PARALLEL": "{{count}} 件を並列実行",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 件の前のステップ"
 }

@@ -132,6 +132,11 @@ COPY --from=frontend-build /build/node_modules/totalist /opt/agent-canvas/node_m
 # emit the agent's <RUNTIME_SERVICES> block; same builder the dev stack uses).
 COPY scripts/runtime-services-info.mjs /opt/agent-canvas/runtime-services-info.mjs
 
+# NeoDevEx agent harness (sub-agents + always-on playbook). entrypoint.sh
+# installs it into ~/.openhands so every run — chat or automation — loads it.
+COPY scripts/install-harness.mjs /opt/agent-canvas/install-harness.mjs
+COPY config/harness /opt/agent-canvas/harness
+
 # Copy the Neo AgentOps Control Tower collector and the vendored AgentOps
 # semantic conventions it emits spans in.
 # The repo's `scripts/` ↔ `vendor/` relative layout is preserved here because

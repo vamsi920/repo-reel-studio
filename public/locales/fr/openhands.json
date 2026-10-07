@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "Réflexion…",
   "THINKING_GRAPH$PANEL_DONE": "Réflexion en {{count}} étapes",
   "THINKING_GRAPH$PANEL_SHOW": "Afficher la réflexion",
-  "THINKING_GRAPH$PANEL_HIDE": "Masquer la réflexion"
+  "THINKING_GRAPH$PANEL_HIDE": "Masquer la réflexion",
+  "THINKING_GRAPH$PARALLEL": "{{count}} en parallèle",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} étapes précédentes"
 }

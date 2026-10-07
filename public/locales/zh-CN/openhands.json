@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "思考中…",
   "THINKING_GRAPH$PANEL_DONE": "经过 {{count}} 个步骤思考",
   "THINKING_GRAPH$PANEL_SHOW": "显示思考",
-  "THINKING_GRAPH$PANEL_HIDE": "隐藏思考"
+  "THINKING_GRAPH$PANEL_HIDE": "隐藏思考",
+  "THINKING_GRAPH$PARALLEL": "{{count}} 个并行",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 个更早的步骤"
 }

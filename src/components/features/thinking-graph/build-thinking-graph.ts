@@ -30,6 +30,7 @@ import type {
   ThinkingNodeStatus,
   ToolCategory,
 } from "./thinking-graph-types";
+import type { SubagentTrace } from "./subagent-trace";
 
 /** Horizontal distance between consecutive steps. */
 export const COLUMN_WIDTH = 250;
@@ -37,8 +38,9 @@ export const COLUMN_WIDTH = 250;
 export const ROW_COLUMNS = 4;
 /** Vertical distance between snake rows (before any sub-agent lanes). */
 const ROW_HEIGHT = 230;
-/** Slots a fork occupies on its row: fork, agent orb, result. */
-const FORK_SPAN = 3;
+/** Branch columns: 1 = the parallel step / agent, 2 = the agent's result. */
+const BRANCH_SLOT_STEP = 1;
+const BRANCH_SLOT_RESULT = 2;
 /** Vertical distance between agent lanes. */
 export const LANE_HEIGHT = 170;
 /** Runs of at least this many finished same-kind tool steps fold into one. */
@@ -98,16 +100,32 @@ function acpStatus(event: ACPToolCallEvent): ThinkingNodeStatus {
 }
 
 type DraftNode = Omit<ThinkingGraphNode, "x" | "y" | "order" | "flow"> & {
-  /** Main-lane node this sub-agent node hangs off (sub-agent lanes only). */
+  /** Fork node this parallel branch hangs off (branch nodes only). */
   forkId?: string;
-  /** Column offset inside a sub-agent lane (1 = agent orb, 2 = result). */
+  /** Column offset inside the branch (1 = step / agent, 2 = agent result). */
   laneSlot?: number;
+  /** Which branch of its fork (0 = level with the main line, then below). */
+  depth?: number;
 };
 
+/** Actions that can run as one branch of a parallel batch. */
+const NON_BRANCHABLE_KINDS = new Set([
+  "ThinkAction",
+  "FinishAction",
+  "TaskTrackerAction",
+]);
+
+function isBranchable(event: OpenHandsEvent): event is ActionEvent {
+  return isActionEvent(event) && !NON_BRANCHABLE_KINDS.has(event.action.kind);
+}
+
 /**
- * Turns the raw conversation event history into a 2D graph: one main line for
- * the primary agent that grows left → right, thoughts lifted above it, and a
- * separate colored lane per delegated sub-agent that forks off and joins back.
+ * Turns the raw conversation event history into a 2D graph. The main agent's
+ * work grows along a snaking main line; whenever it does several things at
+ * once — parallel tool calls from one LLM response, or delegated sub-agents —
+ * the line forks into stacked branches that run side by side and join back
+ * into the next step. Each sub-agent branch gets its own colored lane showing
+ * its internal steps live (from `subagentTraces`).
  *
  * Pure and deterministic: node ids are event ids, so React keeps existing
  * nodes mounted and only brand-new ones play their "birth" animation.
@@ -115,6 +133,7 @@ type DraftNode = Omit<ThinkingGraphNode, "x" | "y" | "order" | "flow"> & {
 export function buildThinkingGraph(
   events: readonly OpenHandsEvent[],
   expandedClusters: ReadonlySet<string> = new Set(),
+  subagentTraces: ReadonlyMap<string, SubagentTrace> = new Map(),
 ): ThinkingGraph {
   const nodes = new Map<string, DraftNode>();
   const creation: string[] = [];
@@ -123,11 +142,20 @@ export function buildThinkingGraph(
   const lanes: string[] = [];
   const nodeByActionId = new Map<string, string>();
   const nodeByToolCallId = new Map<string, string>();
-  const laneTailByActionId = new Map<string, string>();
+  const forkIds: string[] = [];
+
+  // How many branchable actions each LLM response produced: two or more
+  // means the agent asked for them together, so they run in parallel.
+  const batchSize = new Map<string, number>();
+  for (const event of events) {
+    if (isBranchable(event) && event.llm_response_id) {
+      const key = event.llm_response_id;
+      batchSize.set(key, (batchSize.get(key) ?? 0) + 1);
+    }
+  }
 
   let cursor: string[] = [];
-  let lastForkResponseId: string | null = null;
-  let lastForkId: string | null = null;
+  let fork: { id: string; responseId: string; branches: number } | null = null;
   let isFinished = false;
 
   const addNode = (node: DraftNode) => {
@@ -177,10 +205,14 @@ export function buildThinkingGraph(
       }
     } else if (isActionEvent(event)) {
       const { kind } = event.action;
+      const responseId = event.llm_response_id || event.id;
+      const continuesFork =
+        fork !== null && fork.responseId === responseId && isBranchable(event);
+      if (!continuesFork) fork = null;
       const thought = oneLine(
         getActionThoughtText(event) || getReasoningContent(event),
       );
-      if (thought && kind !== "ThinkAction") {
+      if (thought && kind !== "ThinkAction" && !continuesFork) {
         pushMain({
           id: `${event.id}:thought`,
           kind: "thought",
@@ -229,61 +261,80 @@ export function buildThinkingGraph(
           });
           nodeByActionId.set(event.id, event.id);
         }
-      } else if (kind === "TaskAction") {
-        const action = event.action as {
-          subagent_type: string;
-          description?: string | null;
-          prompt: string;
-        };
-        // Sub-agent calls emitted in the same LLM response run side by side:
-        // share one fork node so the graph visibly splits the work.
-        const responseId = event.llm_response_id || event.id;
-        let forkId: string | null = lastForkId;
-        if (!forkId || lastForkResponseId !== responseId) {
-          forkId = `${event.id}:fork`;
+      } else {
+        const isTask = kind === "TaskAction";
+        const parallel = (batchSize.get(responseId) ?? 1) >= 2;
+        if (!isTask && !parallel) {
+          pushMain({
+            id: event.id,
+            kind: "tool",
+            lane: 0,
+            status: "running",
+            label: "",
+            title: getActionEventTitleDescriptor(event),
+            toolCategory: toolCategoryOf(event),
+            eventId: event.id,
+          });
+          nodeByActionId.set(event.id, event.id);
+          nodeByToolCallId.set(event.tool_call_id, event.id);
+          continue;
+        }
+        // Several things at once (or a delegation): split the line.
+        if (!fork) {
+          const forkId = `${event.id}:fork`;
           pushMain({
             id: forkId,
             kind: "fork",
             lane: 0,
             status: "running",
             label: "",
+            count: batchSize.get(responseId) ?? 1,
           });
+          forkIds.push(forkId);
           cursor = [];
-          lastForkId = forkId;
-          lastForkResponseId = responseId;
+          fork = { id: forkId, responseId, branches: 0 };
         }
-        lanes.push(action.subagent_type || "agent");
-        const lane = lanes.length;
-        addNode({
-          id: event.id,
-          kind: "agent",
-          lane,
-          status: "running",
-          label: oneLine(action.description || action.prompt, 60),
-          eventId: event.id,
-          forkId,
-          laneSlot: 1,
-        });
-        connect(forkId, event.id, lane);
-        laneTailByActionId.set(event.id, event.id);
+        const depth = fork.branches;
+        fork.branches += 1;
+        if (isTask) {
+          const action = event.action as {
+            subagent_type: string;
+            description?: string | null;
+            prompt: string;
+          };
+          lanes.push(action.subagent_type || "agent");
+          addNode({
+            id: event.id,
+            kind: "agent",
+            lane: lanes.length,
+            status: "running",
+            label: oneLine(action.description || action.prompt, 60),
+            eventId: event.id,
+            forkId: fork.id,
+            laneSlot: BRANCH_SLOT_STEP,
+            depth,
+          });
+          connect(fork.id, event.id, lanes.length);
+        } else {
+          addNode({
+            id: event.id,
+            kind: "tool",
+            lane: 0,
+            status: "running",
+            label: "",
+            title: getActionEventTitleDescriptor(event),
+            toolCategory: toolCategoryOf(event),
+            eventId: event.id,
+            forkId: fork.id,
+            laneSlot: BRANCH_SLOT_STEP,
+            depth,
+          });
+          connect(fork.id, event.id, 0);
+          nodeByToolCallId.set(event.tool_call_id, event.id);
+        }
         nodeByActionId.set(event.id, event.id);
         cursor.push(event.id);
-        continue;
-      } else {
-        pushMain({
-          id: event.id,
-          kind: "tool",
-          lane: 0,
-          status: "running",
-          label: "",
-          title: getActionEventTitleDescriptor(event),
-          toolCategory: toolCategoryOf(event),
-          eventId: event.id,
-        });
-        nodeByActionId.set(event.id, event.id);
-        nodeByToolCallId.set(event.tool_call_id, event.id);
       }
-      lastForkId = null;
     } else if (isObservationEvent(event)) {
       const nodeId = nodeByActionId.get(event.action_id);
       const node = nodeId ? nodes.get(nodeId) : undefined;
@@ -300,21 +351,11 @@ export function buildThinkingGraph(
           label: "",
           eventId: event.id,
           forkId: node.forkId,
-          laneSlot: 2,
+          laneSlot: BRANCH_SLOT_RESULT,
+          depth: node.depth,
         });
         connect(node.id, resultId, node.lane);
         cursor = cursor.map((id) => (id === node.id ? resultId : id));
-        laneTailByActionId.set(event.action_id, resultId);
-        const forkNode = node.forkId ? nodes.get(node.forkId) : undefined;
-        if (forkNode) {
-          const stillRunning = [...nodes.values()].some(
-            (n) =>
-              n.kind === "agent" &&
-              n.forkId === forkNode.id &&
-              n.status === "running",
-          );
-          forkNode.status = stillRunning ? "running" : "done";
-        }
       } else if (node.kind === "plan") {
         const body = event.observation as { task_list?: TaskItem[] };
         if (body.task_list) node.items = body.task_list;
@@ -367,6 +408,27 @@ export function buildThinkingGraph(
         eventId: id,
       });
     }
+  }
+
+  // Sub-agent internals, from the trace their hook writes.
+  for (const node of nodes.values()) {
+    if (node.kind !== "agent") continue;
+    const trace = subagentTraces.get(node.id);
+    if (!trace) continue;
+    node.steps = trace.steps.map((step) =>
+      node.status !== "running" && step.status === "running"
+        ? { ...step, status: "done" }
+        : step,
+    );
+  }
+
+  // A fork stays "running" until every branch has come back.
+  for (const forkId of forkIds) {
+    const forkNode = nodes.get(forkId)!;
+    const busy = [...nodes.values()].some(
+      (n) => n.forkId === forkId && n.status === "running",
+    );
+    forkNode.status = busy ? "running" : "done";
   }
 
   // Once the agent is finished nothing can still be "running".
@@ -453,6 +515,21 @@ function layout({
   // the next row right → left, so the graph grows as a 2D board instead of
   // an ever-longer thread. A fork (and its sub-agent lanes) never straddles
   // a row break, and rows grow taller to make room for the lanes under them.
+  // Each fork spans its own column plus its branches' columns.
+  const forkSpan = new Map<string, number>();
+  const forkDepth = new Map<string, number>();
+  for (const node of nodes.values()) {
+    if (!node.forkId) continue;
+    forkSpan.set(
+      node.forkId,
+      Math.max(forkSpan.get(node.forkId) ?? 1, 1 + (node.laneSlot ?? 1)),
+    );
+    forkDepth.set(
+      node.forkId,
+      Math.max(forkDepth.get(node.forkId) ?? 0, node.depth ?? 0),
+    );
+  }
+
   const slotOf = new Map<string, number>();
   const forkSlot = new Map<string, number>();
   let slot = 0;
@@ -468,41 +545,31 @@ function layout({
     }
     const node = nodes.get(id)!;
     if (node.kind === "fork") {
-      if (slot % ROW_COLUMNS > ROW_COLUMNS - FORK_SPAN) {
+      const span = forkSpan.get(id) ?? 1;
+      if (slot % ROW_COLUMNS > ROW_COLUMNS - span) {
         slot += ROW_COLUMNS - (slot % ROW_COLUMNS);
       }
       forkSlot.set(id, slot);
       slotOf.set(id, slot);
-      slot += FORK_SPAN; // fork → agent orb → result, then the join
+      slot += span; // fork → branches, then the join
     } else {
       slotOf.set(id, slot);
       slot += 1;
     }
   }
 
-  // Lane depth (1 = first sub-agent of that fork) and lanes per row.
-  const firstLaneOfFork = new Map<string, number>();
-  for (const node of nodes.values()) {
-    if (node.lane === 0 || !node.forkId) continue;
-    const first = firstLaneOfFork.get(node.forkId);
-    if (first === undefined || node.lane < first) {
-      firstLaneOfFork.set(node.forkId, node.lane);
-    }
-  }
-  const laneDepth = (node: DraftNode) =>
-    node.lane - (firstLaneOfFork.get(node.forkId!) ?? node.lane) + 1;
+  // Rows grow taller to fit the deepest fork that splits on them.
   const rowCount = Math.floor(Math.max(slot - 1, 0) / ROW_COLUMNS) + 1;
-  const lanesInRow = new Array<number>(rowCount).fill(0);
-  for (const node of nodes.values()) {
-    if (node.lane === 0 || !node.forkId) continue;
-    const row = Math.floor((forkSlot.get(node.forkId) ?? 0) / ROW_COLUMNS);
-    lanesInRow[row] = Math.max(lanesInRow[row], laneDepth(node));
+  const depthInRow = new Array<number>(rowCount).fill(0);
+  for (const [forkId, at] of forkSlot) {
+    const row = Math.floor(at / ROW_COLUMNS);
+    depthInRow[row] = Math.max(depthInRow[row], forkDepth.get(forkId) ?? 0);
   }
   const rowY: number[] = [];
   let y = 0;
   for (let row = 0; row < rowCount; row += 1) {
     rowY.push(y);
-    y += ROW_HEIGHT + lanesInRow[row] * LANE_HEIGHT;
+    y += ROW_HEIGHT + depthInRow[row] * LANE_HEIGHT;
   }
 
   const position = (atSlot: number) => {
@@ -520,13 +587,16 @@ function layout({
   for (const [id, atSlot] of slotOf) {
     placed.set(id, position(atSlot));
   }
-  // Sub-agent lanes hang below their fork's row, continuing its direction.
+  // Branches stack downward from their fork's row, continuing its direction.
   for (const node of nodes.values()) {
-    if (node.lane === 0 || !node.forkId) continue;
+    if (!node.forkId) continue;
     const base = position(
       (forkSlot.get(node.forkId) ?? 0) + (node.laneSlot ?? 1),
     );
-    placed.set(node.id, { ...base, y: base.y + laneDepth(node) * LANE_HEIGHT });
+    placed.set(node.id, {
+      ...base,
+      y: base.y + (node.depth ?? 0) * LANE_HEIGHT,
+    });
   }
 
   const resolve = (id: string) => clusterOf.get(id) ?? id;
@@ -541,6 +611,7 @@ function layout({
     const node: Partial<DraftNode> = { ...nodes.get(id)! };
     delete node.forkId;
     delete node.laneSlot;
+    delete node.depth;
     outNodes.push({
       ...(node as DraftNode),
       ...position,

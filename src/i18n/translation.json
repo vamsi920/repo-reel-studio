@@ -61164,5 +61164,39 @@
     "uk": "Сховати міркування",
     "zh-CN": "隐藏思考",
     "zh-TW": "隱藏思考"
+  },
+  "THINKING_GRAPH$PARALLEL": {
+    "ar": "{{count}} بالتوازي",
+    "ca": "{{count}} en paral·lel",
+    "de": "{{count}} parallel",
+    "en": "{{count}} in parallel",
+    "es": "{{count}} en paralelo",
+    "fr": "{{count}} en parallèle",
+    "it": "{{count}} in parallelo",
+    "ja": "{{count}} 件を並列実行",
+    "ko-KR": "{{count}}개 병렬 실행",
+    "no": "{{count}} parallelt",
+    "pt": "{{count}} em paralelo",
+    "tr": "{{count}} paralel",
+    "uk": "{{count}} паралельно",
+    "zh-CN": "{{count}} 个并行",
+    "zh-TW": "{{count}} 個並行"
+  },
+  "THINKING_GRAPH$EARLIER_STEPS": {
+    "ar": "+{{count}} خطوات سابقة",
+    "ca": "+{{count}} passos anteriors",
+    "de": "+{{count}} frühere Schritte",
+    "en": "+{{count}} earlier steps",
+    "es": "+{{count}} pasos anteriores",
+    "fr": "+{{count}} étapes précédentes",
+    "it": "+{{count}} passaggi precedenti",
+    "ja": "+{{count}} 件の前のステップ",
+    "ko-KR": "+{{count}}개 이전 단계",
+    "no": "+{{count}} tidligere steg",
+    "pt": "+{{count}} etapas anteriores",
+    "tr": "+{{count}} önceki adım",
+    "uk": "+{{count}} попередніх кроків",
+    "zh-CN": "+{{count}} 个更早的步骤",
+    "zh-TW": "+{{count}} 個較早的步驟"
   }
 }

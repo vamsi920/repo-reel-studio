@@ -71,6 +71,7 @@ import {
   signalProcessTree,
 } from "./dev-process-utils.mjs";
 import { fileLog, stripAnsi } from "./logger.mjs";
+import { installHarness } from "./install-harness.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
@@ -1279,6 +1280,12 @@ function printBanner(config) {
 }
 
 async function main(options = {}) {
+  // Sub-agents + always-on playbook the agent-server loads for every run.
+  try {
+    installHarness();
+  } catch (error) {
+    console.warn(`[harness] not installed: ${error.message}`);
+  }
   const {
     bannerTitle = "Agent Canvas + Automation Development Stack",
     startAgentServer: startAgentServerOverride,

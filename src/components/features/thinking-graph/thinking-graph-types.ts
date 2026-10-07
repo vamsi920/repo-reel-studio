@@ -1,4 +1,5 @@
 import type { EventTitleDescriptor } from "#/components/conversation-events/chat/event-content-helpers/get-action-event-title";
+import type { SubagentStep } from "./subagent-trace";
 import type { TaskItem } from "#/types/agent-server/core/base/common";
 
 export type ThinkingNodeKind =
@@ -44,8 +45,10 @@ export type ThinkingGraphNode = {
   eventId?: string;
   /** Plan checklist (plan nodes only). */
   items?: TaskItem[];
-  /** Number of folded nodes (cluster nodes only). */
+  /** Folded nodes (cluster) or parallel branches (fork). */
   count?: number;
+  /** A sub-agent's own steps, live from its trace (agent nodes only). */
+  steps?: SubagentStep[];
   /** Creation order — drives the "grow" replay. */
   order: number;
   x: number;

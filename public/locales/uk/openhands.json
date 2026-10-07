@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "Думає…",
   "THINKING_GRAPH$PANEL_DONE": "Обміркував за {{count}} кроків",
   "THINKING_GRAPH$PANEL_SHOW": "Показати міркування",
-  "THINKING_GRAPH$PANEL_HIDE": "Сховати міркування"
+  "THINKING_GRAPH$PANEL_HIDE": "Сховати міркування",
+  "THINKING_GRAPH$PARALLEL": "{{count}} паралельно",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} попередніх кроків"
 }

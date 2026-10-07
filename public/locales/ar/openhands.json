@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "يفكر…",
   "THINKING_GRAPH$PANEL_DONE": "فكّر خلال {{count}} خطوات",
   "THINKING_GRAPH$PANEL_SHOW": "إظهار التفكير",
-  "THINKING_GRAPH$PANEL_HIDE": "إخفاء التفكير"
+  "THINKING_GRAPH$PANEL_HIDE": "إخفاء التفكير",
+  "THINKING_GRAPH$PARALLEL": "{{count}} بالتوازي",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} خطوات سابقة"
 }

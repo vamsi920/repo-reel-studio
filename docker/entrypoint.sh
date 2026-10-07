@@ -178,6 +178,12 @@ cleanup() {
 }
 trap cleanup EXIT SIGINT SIGTERM
 
+# ── 0. Install the NeoDevEx agent harness ────────────────────────────────────
+# Sub-agent definitions + the always-on harness skill, written into
+# ~/.openhands/{agents,skills} where the agent-server loads them for every run.
+node /opt/agent-canvas/install-harness.mjs /opt/agent-canvas/harness \
+  || echo "[harness] install failed; continuing without it"
+
 # ── 1. Start Agent Server ────────────────────────────────────────────────────
 log "Starting agent-server on port $AGENT_SERVER_PORT..."
 

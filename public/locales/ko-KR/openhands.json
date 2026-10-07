@@ -3596,5 +3596,7 @@
   "THINKING_GRAPH$PANEL_RUNNING": "생각 중…",
   "THINKING_GRAPH$PANEL_DONE": "{{count}}단계로 생각함",
   "THINKING_GRAPH$PANEL_SHOW": "생각 보기",
-  "THINKING_GRAPH$PANEL_HIDE": "생각 숨기기"
+  "THINKING_GRAPH$PANEL_HIDE": "생각 숨기기",
+  "THINKING_GRAPH$PARALLEL": "{{count}}개 병렬 실행",
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}}개 이전 단계"
 }

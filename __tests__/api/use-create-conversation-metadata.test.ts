@@ -54,6 +54,7 @@ vi.mock("#/api/agent-server-config", () => ({
   buildConversationWorkingDir: vi.fn(
     (id: string) => `/state/workspaces/${id.replace(/-/g, "")}`,
   ),
+  buildRepoWorkingDir: vi.fn((repo: string) => `/state/repos/${repo}`),
   shouldLoadPublicSkills: vi.fn(() => true),
   syncBakedSessionApiKey: vi.fn(),
   getLockedCloudHost: vi.fn(() => null),
@@ -63,6 +64,20 @@ vi.mock("#/api/settings-service/settings-service.api", () => ({
   default: {
     getSettings: mockGetSettings,
     getSettingsForConversation: mockGetSettingsForConversation,
+  },
+}));
+
+// Repo launches register their checkout folder as a saved workspace.
+vi.mock("#/api/workspaces-service/workspaces-service.api", () => ({
+  default: {
+    listWorkspaces: vi.fn(async () => ({
+      workspaces: [],
+      workspaceParents: [],
+    })),
+    addWorkspaces: vi.fn(async () => ({
+      workspaces: [],
+      workspaceParents: [],
+    })),
   },
 }));
 
@@ -153,8 +168,9 @@ describe("useCreateConversation persists selected repository metadata", () => {
       selected_repository: "octocat/hello-world",
       selected_branch: "main",
       git_provider: "github",
-      selected_workspace: null,
-      workspace_mode: "new_worktree",
+      // Repo launches get a stable per-repo checkout folder as their workspace.
+      selected_workspace: "/state/repos/octocat/hello-world",
+      workspace_mode: "local_repo",
     });
   });
 

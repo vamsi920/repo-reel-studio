@@ -26,6 +26,7 @@ import {
 // (dev-with-automation.mjs and tests still import it from here).
 import { buildRuntimeServicesInfo } from "./runtime-services-info.mjs";
 import { fileLog, stripAnsi } from "./logger.mjs";
+import { installHarness } from "./install-harness.mjs";
 
 // ── Centralized config (single source of truth for versions, ports, etc.) ───
 const __dev_safe_dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -885,6 +886,12 @@ function spawnProcess(command, args, options = {}) {
 }
 
 async function main() {
+  // Sub-agents + always-on playbook the agent-server loads for every run.
+  try {
+    installHarness();
+  } catch (error) {
+    console.warn(`[harness] not installed: ${error.message}`);
+  }
   console.log("Starting isolated agent-server + frontend dev stack...");
   fileLog("info", "Starting isolated agent-server + frontend dev stack...");
   validateFrontendDependencies();

@@ -129,6 +129,71 @@ describe("buildThinkingGraph", () => {
     expect(graph.isFinished).toBe(true);
   });
 
+  it("splits tool calls the agent issued together into side-by-side branches that join into the next step", () => {
+    const together = (id: string) =>
+      action(
+        id,
+        "ExecuteBashAction",
+        { command: `echo ${id}` },
+        { llm_response_id: "resp-batch" },
+      );
+    const events = [
+      userMessage("u1", "go"),
+      together("p1"),
+      together("p2"),
+      observation("o1", "p1", "ExecuteBashObservation", { exit_code: 0 }),
+      observation("o2", "p2", "ExecuteBashObservation", { exit_code: 0 }),
+      bash("next"),
+    ];
+
+    const graph = buildThinkingGraph(events);
+
+    const fork = graph.nodes.find((n) => n.kind === "fork")!;
+    const [b1, b2] = ["p1", "p2"].map(
+      (id) => graph.nodes.find((n) => n.id === id)!,
+    );
+    expect(fork.count).toBe(2);
+    expect(b1.x).toBe(b2.x);
+    expect(b2.y).toBeGreaterThan(b1.y);
+    expect(
+      graph.edges
+        .filter((e) => e.target === "next")
+        .map((e) => e.source)
+        .sort(),
+    ).toEqual(["p1", "p2"]);
+  });
+
+  it("shows a sub-agent's own steps inside its lane", () => {
+    const events = [
+      userMessage("u1", "go"),
+      action("t1", "TaskAction", {
+        subagent_type: "neo-explorer",
+        prompt: "x",
+      }),
+    ];
+    const trace = {
+      sessionId: "s1",
+      prompt: "x",
+      finished: false,
+      steps: [
+        {
+          id: "s1:0",
+          tool: "terminal",
+          label: "rg foo",
+          status: "running" as const,
+        },
+      ],
+    };
+
+    const graph = buildThinkingGraph(
+      events,
+      new Set(),
+      new Map([["t1", trace]]),
+    );
+
+    expect(graph.nodes.find((n) => n.id === "t1")!.steps).toEqual(trace.steps);
+  });
+
   it("folds a long run of finished same-kind steps into one expandable cluster", () => {
     const steps = Array.from({ length: CLUSTER_MIN }, (_, i) => `b${i}`);
     const events = [

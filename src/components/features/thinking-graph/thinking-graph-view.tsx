@@ -22,6 +22,7 @@ import {
   getActionThoughtText,
 } from "#/components/conversation-events/chat/event-thought-helpers";
 import { buildThinkingGraph } from "./build-thinking-graph";
+import { useSubagentTraces } from "./use-subagent-traces";
 import { laneColor, nodeAccent } from "./agent-palette";
 import {
   ThinkingNode,
@@ -51,6 +52,14 @@ function fullTextOf(
   event: OpenHandsEvent | undefined,
   actionsById: ReturnType<typeof buildActionsById>,
 ): React.ReactNode {
+  if (node.kind === "agent" && node.steps?.length) {
+    return node.steps
+      .map(
+        (step) =>
+          `${step.status === "error" ? "✗" : "•"} ${step.tool}  ${step.label}`,
+      )
+      .join("\n");
+  }
   if (!event) return null;
   if (isMessageEvent(event)) {
     return event.llm_message.content
@@ -88,7 +97,7 @@ function NodeDrawer({
   return (
     <aside
       data-testid="thinking-graph-drawer"
-      className="absolute bottom-3 right-3 top-12 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] shadow-xl"
+      className="absolute bottom-3 right-3 top-3 z-30 flex w-[min(380px,85%)] flex-col overflow-hidden rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] shadow-xl"
     >
       <header
         className="flex items-center gap-2 border-b border-[var(--oh-border-subtle,#d9dee8)] px-4 py-2.5"
@@ -130,14 +139,15 @@ function ThinkingGraphCanvas({
 }) {
   const { t } = useTranslation("openhands");
   const { setCenter, fitView, getZoom } = useReactFlow();
+  const subagentTraces = useSubagentTraces(events);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [isFollowing, setIsFollowing] = React.useState(true);
   const [revealCount, setRevealCount] = React.useState<number | null>(null);
 
   const graph = React.useMemo(
-    () => buildThinkingGraph(events, expanded),
-    [events, expanded],
+    () => buildThinkingGraph(events, expanded, subagentTraces),
+    [events, expanded, subagentTraces],
   );
   const eventsById = React.useMemo(
     () => new Map(events.map((event) => [event.id, event] as const)),
@@ -242,113 +252,117 @@ function ThinkingGraphCanvas({
 
   return (
     <div
-      className="tg-canvas relative h-full w-full overflow-hidden"
+      className="tg-canvas flex h-full w-full flex-col overflow-hidden"
       data-testid="thinking-graph"
     >
-      {graph.nodes.length === 0 ? (
-        <div className="flex h-full flex-col items-center justify-center gap-4">
-          <span className="tg-seed" />
-          <p className="font-mono text-xs text-[var(--oh-muted,#64748b)]">
-            {t(I18nKey.THINKING_GRAPH$EMPTY)}
-          </p>
-        </div>
-      ) : (
-        // `isolate` keeps React Flow's internal z-indexes in their own
-        // stacking context so the HUD overlay always stays on top.
-        <div className="absolute inset-0 isolate">
-          <ReactFlow
-            style={{ background: "transparent" }}
-            nodes={flowNodes}
-            edges={flowEdges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            onNodeClick={handleNodeClick}
-            onPaneClick={() => setSelectedId(null)}
-            onMoveStart={(event) => {
-              // Only a user drag/scroll carries an input event; programmatic
-              // camera moves (follow/fit) don't, so they never unfollow.
-              if (event) setIsFollowing(false);
-            }}
-            nodesConnectable={false}
-            minZoom={0.15}
-            maxZoom={1.8}
-            proOptions={{ hideAttribution: true }}
-            defaultViewport={{ x: 80, y: 160, zoom: FOLLOW_ZOOM }}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={22}
-              size={1.2}
-              color="rgba(148,163,184,0.18)"
-            />
-          </ReactFlow>
-        </div>
-      )}
-
-      {/* HUD: the cast of agents on the left, controls on the right. */}
-      <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap items-center gap-1.5">
-        {[t(I18nKey.THINKING_GRAPH$MAIN_AGENT), ...graph.lanes].map(
-          (name, lane) => (
-            <span
-              // Lane index is the agent's identity in this graph.
-              key={lane}
-              className="flex items-center gap-1.5 rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)] shadow-sm"
-            >
+      {/* Header bar: the cast of agents on the left, controls on the right.
+          Kept out of the canvas so it never covers a node. */}
+      <div className="flex shrink-0 items-center gap-1.5 border-b border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {[t(I18nKey.THINKING_GRAPH$MAIN_AGENT), ...graph.lanes].map(
+            (name, lane) => (
               <span
-                className="h-2 w-2 rounded-[2px]"
-                style={{ backgroundColor: laneColor(lane) }}
-              />
-              {name}
+                // Lane index is the agent's identity in this graph.
+                key={lane}
+                className="flex items-center gap-1.5 rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--oh-foreground,#0f172a)]"
+              >
+                <span
+                  className="h-2 w-2 rounded-[2px]"
+                  style={{ backgroundColor: laneColor(lane) }}
+                />
+                {name}
+              </span>
+            ),
+          )}
+          {runningCount > 0 && (
+            <span className="px-1 font-mono text-[10px] text-[var(--oh-muted,#64748b)]">
+              {runningCount} {t(I18nKey.THINKING_GRAPH$RUNNING)}
             </span>
-          ),
-        )}
-        {runningCount > 0 && (
-          <span className="rounded-sm border border-[var(--oh-border-subtle,#d9dee8)] bg-[var(--oh-surface,#ffffff)] px-2 py-1 font-mono text-[10px] text-[var(--oh-muted,#64748b)] shadow-sm">
-            {runningCount} {t(I18nKey.THINKING_GRAPH$RUNNING)}
-          </span>
+          )}
+        </div>
+        {graph.nodes.length > 0 && (
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            {!isFollowing && (
+              <HudButton
+                icon={<Crosshair size={12} />}
+                label={t(I18nKey.THINKING_GRAPH$FOLLOW)}
+                onClick={() => setIsFollowing(true)}
+              />
+            )}
+            <HudButton
+              icon={<Maximize2 size={12} />}
+              label={t(I18nKey.THINKING_GRAPH$FIT)}
+              onClick={() => {
+                setIsFollowing(false);
+                fitView({ duration: 600, padding: 0.2 });
+              }}
+            />
+            <HudButton
+              icon={<Play size={12} />}
+              label={t(I18nKey.THINKING_GRAPH$REPLAY)}
+              testId="thinking-graph-replay"
+              onClick={() => {
+                setSelectedId(null);
+                setIsFollowing(true);
+                setRevealCount(1);
+              }}
+            />
+          </div>
         )}
       </div>
 
-      {graph.nodes.length > 0 && (
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
-          {!isFollowing && (
-            <HudButton
-              icon={<Crosshair size={12} />}
-              label={t(I18nKey.THINKING_GRAPH$FOLLOW)}
-              onClick={() => setIsFollowing(true)}
-            />
-          )}
-          <HudButton
-            icon={<Maximize2 size={12} />}
-            label={t(I18nKey.THINKING_GRAPH$FIT)}
-            onClick={() => {
-              setIsFollowing(false);
-              fitView({ duration: 600, padding: 0.2 });
-            }}
-          />
-          <HudButton
-            icon={<Play size={12} />}
-            label={t(I18nKey.THINKING_GRAPH$REPLAY)}
-            testId="thinking-graph-replay"
-            onClick={() => {
-              setSelectedId(null);
-              setIsFollowing(true);
-              setRevealCount(1);
-            }}
-          />
-        </div>
-      )}
+      <div className="relative min-h-0 grow">
+        {graph.nodes.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-4">
+            <span className="tg-seed" />
+            <p className="font-mono text-xs text-[var(--oh-muted,#64748b)]">
+              {t(I18nKey.THINKING_GRAPH$EMPTY)}
+            </p>
+          </div>
+        ) : (
+          // `isolate` keeps React Flow's internal z-indexes in their own
+          // stacking context so the HUD overlay always stays on top.
+          <div className="absolute inset-0 isolate">
+            <ReactFlow
+              style={{ background: "transparent" }}
+              nodes={flowNodes}
+              edges={flowEdges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodeClick={handleNodeClick}
+              onPaneClick={() => setSelectedId(null)}
+              onMoveStart={(event) => {
+                // Only a user drag/scroll carries an input event; programmatic
+                // camera moves (follow/fit) don't, so they never unfollow.
+                if (event) setIsFollowing(false);
+              }}
+              nodesConnectable={false}
+              minZoom={0.15}
+              maxZoom={1.8}
+              proOptions={{ hideAttribution: true }}
+              defaultViewport={{ x: 80, y: 160, zoom: FOLLOW_ZOOM }}
+            >
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={14}
+                size={1.8}
+                color="#aab4c6"
+              />
+            </ReactFlow>
+          </div>
+        )}
 
-      {selected && (
-        <NodeDrawer
-          node={selected}
-          event={
-            selected.eventId ? eventsById.get(selected.eventId) : undefined
-          }
-          actionsById={actionsById}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
+        {selected && (
+          <NodeDrawer
+            node={selected}
+            event={
+              selected.eventId ? eventsById.get(selected.eventId) : undefined
+            }
+            actionsById={actionsById}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }

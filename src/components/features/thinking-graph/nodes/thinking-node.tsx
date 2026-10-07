@@ -30,6 +30,7 @@ import type {
   ThinkingNodeKind,
   ToolCategory,
 } from "../thinking-graph-types";
+import type { SubagentStep } from "../subagent-trace";
 
 export type ThinkingFlowNode = Node<
   ThinkingGraphNode & { laneLabel?: string },
@@ -85,6 +86,9 @@ export function useNodeText(node: ThinkingGraphNode): {
     heading = t(I18nKey.THINKING_GRAPH$CLUSTER, { count: node.count ?? 0 });
     body = t(I18nKey.THINKING_GRAPH$EXPAND_HINT);
   }
+  if (node.kind === "fork" && (node.count ?? 0) > 1) {
+    body = t(I18nKey.THINKING_GRAPH$PARALLEL, { count: node.count });
+  }
   if (node.kind === "tool" && !body && node.title) {
     body =
       node.title.kind === "text"
@@ -92,6 +96,58 @@ export function useNodeText(node: ThinkingGraphNode): {
         : plain(t(node.title.key, node.title.values as Record<string, string>));
   }
   return { heading, body };
+}
+
+/** Most recent sub-agent steps shown inside its lane card. */
+const VISIBLE_STEPS = 4;
+
+const STEP_DOT: Record<SubagentStep["status"], string> = {
+  running: "animate-pulse",
+  done: "",
+  error: "",
+};
+
+function SubagentSteps({
+  steps,
+  accent,
+}: {
+  steps: SubagentStep[];
+  accent: string;
+}) {
+  const { t } = useTranslation("openhands");
+  const hidden = Math.max(steps.length - VISIBLE_STEPS, 0);
+  return (
+    <ul
+      data-testid="subagent-steps"
+      className="mt-2 flex flex-col gap-1 border-t border-dashed pt-1.5"
+      style={{ borderColor: `color-mix(in srgb, ${accent} 35%, #e2e8f0)` }}
+    >
+      {hidden > 0 && (
+        <li className="font-mono text-[10px] text-[#64748b]">
+          {t(I18nKey.THINKING_GRAPH$EARLIER_STEPS, { count: hidden })}
+        </li>
+      )}
+      {steps.slice(-VISIBLE_STEPS).map((step) => (
+        <li
+          key={step.id}
+          className="flex items-center gap-1.5 font-mono text-[10px] text-[#334155]"
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 shrink-0 rounded-[1px]",
+              STEP_DOT[step.status],
+            )}
+            style={{
+              backgroundColor: step.status === "error" ? "#e5484d" : accent,
+              opacity: step.status === "done" ? 0.55 : 1,
+            }}
+          />
+          <span className="shrink-0 text-[#64748b]">{step.tool}</span>
+          <span className="truncate">{step.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
@@ -161,6 +217,10 @@ function ThinkingNodeImpl({ data }: NodeProps<ThinkingFlowNode>) {
         >
           {body}
         </p>
+      )}
+
+      {data.kind === "agent" && data.steps && data.steps.length > 0 && (
+        <SubagentSteps steps={data.steps} accent={accent} />
       )}
 
       {data.kind === "plan" && data.items && (
