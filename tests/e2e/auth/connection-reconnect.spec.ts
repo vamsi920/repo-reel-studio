@@ -25,6 +25,15 @@ test.skip(
 );
 
 async function login(page: Page) {
+  // A fresh browser gets the first-run welcome and analytics-consent dialogs,
+  // which cover the page. Answer them the way the live tests do (consent
+  // denied, so this run sends no analytics).
+  await page.addInitScript(() => {
+    window.localStorage.setItem("analytics-consent", "false");
+    window.localStorage.setItem("openhands-telemetry-consent", "denied");
+    window.localStorage.setItem("openhands-telemetry-first-use", "true");
+    window.localStorage.setItem("openhands-onboarded", "1");
+  });
   await page.goto("/login");
   await page.getByTestId("auth-email").fill(email!);
   await page.getByTestId("auth-password").fill(password!);
@@ -34,6 +43,22 @@ async function login(page: Page) {
       timeout: 30_000,
     })
     .toMatch(/\/conversations/);
+  await declineAnalyticsIfAsked(page);
+}
+
+/**
+ * The analytics-consent dialog is stored per backend, not in localStorage, so
+ * a fresh test browser can still be asked. Opt out (the test account's
+ * choice), so this run sends no analytics and the dialog stops covering the
+ * page.
+ */
+async function declineAnalyticsIfAsked(page: Page) {
+  const dialog = page.getByRole("dialog", { name: "Help improve Neo" });
+  if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) return;
+  const optIn = dialog.getByRole("checkbox");
+  if (await optIn.isChecked()) await optIn.uncheck();
+  await dialog.getByRole("button").last().click();
+  await expect(dialog).toBeHidden({ timeout: 10_000 });
 }
 
 test("denying consent returns to the page and origin the flow started from", async ({
@@ -47,6 +72,7 @@ test("denying consent returns to the page and origin the flow started from", asy
   await expect(page.getByTestId("environment-connections")).toBeVisible({
     timeout: 15_000,
   });
+  await declineAnalyticsIfAsked(page);
 
   // Capture the authorize URL instead of visiting GitHub.
   let authorizeUrl: string | null = null;
