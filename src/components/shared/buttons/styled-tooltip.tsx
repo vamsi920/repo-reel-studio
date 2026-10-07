@@ -39,13 +39,15 @@ export function StyledTooltip({
       placement={placement}
       offset={offset}
       shouldFlip={shouldFlip}
-      className={cn("bg-white text-black", tooltipClassName)}
+      className={cn("bg-[#ffffff] text-[#111827]", tooltipClassName)}
       showArrow={showArrow}
       disableAnimation={disableAnimation}
       classNames={{
         content: cn(
           "z-[9999] rounded-md px-2 py-1 text-xs font-medium shadow-md",
-          "!bg-white !text-black",
+          // Literal colours: the theme remaps `bg-white`/`text-black` to dark
+          // tokens, which made tooltips black text on a near-black box.
+          "!bg-[#ffffff] !text-[#111827] border border-[#e5e7eb]",
           tooltipClassName,
         ),
       }}
