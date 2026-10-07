@@ -68,9 +68,18 @@ function renderWithProviders(
   );
 }
 
+// The Cloud option was intentionally removed from the chooser (local-only
+// fork), so the agent-server form is shown immediately with no tab to select.
 async function selectAgentServer(user = userEvent.setup()) {
-  await user.click(screen.getByTestId("add-backend-option-agent-server"));
+  expect(
+    await screen.findByTestId("add-backend-agent-server-panel"),
+  ).toBeInTheDocument();
   return user;
+}
+
+const LOCK_TO_CLOUD_KEY = "__AGENT_CANVAS_LOCK_TO_CLOUD__";
+function lockToCloud(host: string) {
+  (window as unknown as Record<string, unknown>)[LOCK_TO_CLOUD_KEY] = host;
 }
 
 beforeEach(() => {
@@ -96,32 +105,27 @@ beforeEach(() => {
 afterEach(() => {
   captureMock.mockRestore();
   window.localStorage.clear();
+  delete (window as unknown as Record<string, unknown>)[LOCK_TO_CLOUD_KEY];
   __resetActiveStoreForTests();
 });
 
 describe("AddBackendModal – connection chooser", () => {
-  it("renders OpenHands Cloud first with its brand mark", () => {
+  it("offers only the agent-server connection, with no Cloud tab", () => {
     renderWithProviders(<AddBackendModal onClose={vi.fn()} />);
 
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(2);
-    expect(tabs[0]).toHaveAttribute("data-testid", "add-backend-option-cloud");
-    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    expect(tabs[1]).toHaveAttribute(
-      "data-testid",
-      "add-backend-option-agent-server",
-    );
-    expect(tabs[1]).toHaveAttribute("aria-selected", "false");
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
     expect(
-      within(tabs[0]).getByTestId("add-backend-option-cloud-logo"),
+      screen.getByTestId("add-backend-agent-server-panel"),
     ).toBeInTheDocument();
-    expect(tabs[0]).toHaveTextContent("BACKEND$CLOUD_OPTION_DESCRIPTION");
-    expect(tabs[1]).toHaveTextContent(
-      "BACKEND$AGENT_SERVER_OPTION_DESCRIPTION",
-    );
-
-    expect(screen.getByTestId("add-backend-cloud-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("add-backend-login-button")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("add-backend-cloud-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("add-backend-login-button"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("add-backend-advanced-toggle"),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("add-backend-description")).toHaveTextContent(
       "BACKEND$CHOOSER_DESCRIPTION",
     );
@@ -137,8 +141,9 @@ describe("AddBackendModal – connection chooser", () => {
     ).toHaveTextContent("CTA$LEARN_MORE");
   });
 
-  it("hides the Advanced host disclosure while authorization is pending", async () => {
+  it("shows only the Cloud login (no Advanced host override) when the deployment is locked to Cloud", async () => {
     const user = userEvent.setup();
+    lockToCloud("https://app.all-hands.dev");
     vi.spyOn(window, "open").mockReturnValue({
       closed: false,
       close: vi.fn(),
@@ -146,16 +151,18 @@ describe("AddBackendModal – connection chooser", () => {
     } as unknown as Window);
     renderWithProviders(<AddBackendModal onClose={vi.fn()} />);
 
-    expect(screen.getByTestId("add-backend-advanced-toggle")).toBeVisible();
+    expect(
+      screen.queryByTestId("add-backend-agent-server-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("add-backend-advanced-toggle"),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("add-backend-login-button"));
 
     expect(
       await screen.findByTestId("add-backend-auth-awaiting"),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("add-backend-advanced-toggle"),
-    ).not.toBeInTheDocument();
   });
 
   it("shows Local and Remote inside the Agent-server tab", async () => {
@@ -422,39 +429,8 @@ describe("AddBackendModal – connection chooser", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("hides advanced host settings until expanded while preserving what was typed", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<AddBackendModal onClose={vi.fn()} />);
-
-    // Collapsed: mounted so state survives, but collapsed to zero height and
-    // kept out of the tab order.
-    expect(screen.getByTestId("add-backend-advanced-panel")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
-
-    await user.click(screen.getByTestId("add-backend-advanced-toggle"));
-    expect(screen.getByTestId("add-backend-advanced-toggle")).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(
-      screen.getByTestId("add-backend-advanced-panel"),
-    ).not.toHaveAttribute("aria-hidden", "true");
-
-    await user.type(
-      screen.getByTestId("add-backend-cloud-host"),
-      "https://cloud.example.com",
-    );
-    await user.click(screen.getByTestId("add-backend-advanced-toggle"));
-    await user.click(screen.getByTestId("add-backend-advanced-toggle"));
-
-    expect(screen.getByTestId("add-backend-cloud-host")).toHaveValue(
-      "https://cloud.example.com",
-    );
-  });
-
   it("renders the cloud login button without a key icon prefix", () => {
+    lockToCloud("https://app.all-hands.dev");
     renderWithProviders(<AddBackendModal onClose={vi.fn()} />);
 
     const loginButton = screen.getByTestId("add-backend-login-button");

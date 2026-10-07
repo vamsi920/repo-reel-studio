@@ -360,18 +360,8 @@ describe("Sidebar", () => {
     expect(sidebar.dataset.collapsed).toBe("false");
   });
 
-  it("shows the version tile above the backend selector when expanded", () => {
-    renderSidebar("/conversations");
-
-    const versionTile = screen.getByTestId("agent-canvas-version-tile");
-    const backendSelector = screen.getByTestId("backend-selector");
-    expect(versionTile.compareDocumentPosition(backendSelector)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-  });
-
-  it("hides the version tile when the sidebar is collapsed", () => {
-    useSidebarStore.setState({ collapsed: true });
+  it("does not render the upstream version tile (removed in the NeoDevEx rebrand)", () => {
+    useSidebarStore.setState({ collapsed: false });
     renderSidebar("/conversations");
 
     expect(

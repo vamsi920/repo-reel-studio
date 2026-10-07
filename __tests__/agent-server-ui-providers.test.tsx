@@ -232,8 +232,8 @@ describe("AgentServerUIProviders", () => {
 
     const themedContainer =
       scopeRoot?.firstElementChild as HTMLDivElement | null;
-    expect(themedContainer).toHaveAttribute("data-theme", "dark");
-    expect(themedContainer).toHaveClass("dark", "min-h-screen");
+    expect(themedContainer).toHaveAttribute("data-theme", "light");
+    expect(themedContainer).toHaveClass("light", "min-h-screen");
     expect(themedContainer).toContainElement(
       screen.getByTestId("styled-child"),
     );

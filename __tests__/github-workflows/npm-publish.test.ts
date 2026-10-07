@@ -19,15 +19,11 @@ describe("npm publish workflow", () => {
     const dockerfile = read("docker/Dockerfile");
     const dockerWorkflow = read(".github/workflows/docker.yml");
 
-    expect(packageJson.repository.url).toBe(
-      "https://github.com/OpenHands/OpenHands",
-    );
-    expect(packageJson.homepage).toBe(
-      "https://github.com/OpenHands/OpenHands#readme",
-    );
-    expect(packageJson.bugs.url).toBe(
-      "https://github.com/OpenHands/OpenHands/issues",
-    );
+    // The private Neo package intentionally carries no upstream OpenHands
+    // repository metadata; only the container artifacts keep the upstream URLs.
+    expect(packageJson.repository).toBeUndefined();
+    expect(packageJson.homepage).toBeUndefined();
+    expect(packageJson.bugs).toBeUndefined();
     expect(dockerfile).toContain(
       'LABEL org.opencontainers.image.source="https://github.com/OpenHands/OpenHands"',
     );

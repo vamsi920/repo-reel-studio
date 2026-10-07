@@ -39,7 +39,7 @@ describe("useAppTitle", () => {
   it("returns the OSS app title outside conversations", async () => {
     const { result } = renderAppTitleHook();
 
-    await waitFor(() => expect(result.current).toBe("OpenHands"));
+    await waitFor(() => expect(result.current).toBe("Neo"));
   });
 
   it("returns the conversation title with the OSS app name", async () => {
@@ -51,9 +51,7 @@ describe("useAppTitle", () => {
 
     const { result } = renderAppTitleHook();
 
-    await waitFor(() =>
-      expect(result.current).toBe("My Conversation | OpenHands"),
-    );
+    await waitFor(() => expect(result.current).toBe("My Conversation | Neo"));
   });
 
   it("returns the app name while conversation data is loading", async () => {
@@ -63,7 +61,7 @@ describe("useAppTitle", () => {
 
     const { result } = renderAppTitleHook();
 
-    await waitFor(() => expect(result.current).toBe("OpenHands"));
+    await waitFor(() => expect(result.current).toBe("Neo"));
   });
 
   it.each([
@@ -87,7 +85,7 @@ describe("useAppTitle", () => {
       const { result } = renderAppTitleHook();
 
       await waitFor(() =>
-        expect(result.current).toBe(`${emoji} My Conversation | OpenHands`),
+        expect(result.current).toBe(`${emoji} My Conversation | Neo`),
       );
     },
   );
@@ -105,7 +103,7 @@ describe("useAppTitle", () => {
     const { result } = renderAppTitleHook();
 
     await waitFor(() =>
-      expect(result.current).toBe("🟢 My Conversation | OpenHands"),
+      expect(result.current).toBe("🟢 My Conversation | Neo"),
     );
   });
 
@@ -118,8 +116,6 @@ describe("useAppTitle", () => {
 
     const { result } = renderAppTitleHook();
 
-    await waitFor(() =>
-      expect(result.current).toBe("My Conversation | OpenHands"),
-    );
+    await waitFor(() => expect(result.current).toBe("My Conversation | Neo"));
   });
 });

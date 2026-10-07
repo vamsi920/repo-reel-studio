@@ -2,13 +2,14 @@ import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
+import SettingsService from "#/api/settings-service/settings-service.api";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { NewConversation } from "#/components/features/home/new-conversation/new-conversation";
 
 vi.mock("#/hooks/query/use-settings", async () => {
-  const actual = await vi.importActual<typeof import("#/hooks/query/use-settings")>(
-    "#/hooks/query/use-settings",
-  );
+  const actual = await vi.importActual<
+    typeof import("#/hooks/query/use-settings")
+  >("#/hooks/query/use-settings");
   return {
     ...actual,
     getSettingsQueryFn: vi.fn().mockResolvedValue({}),
@@ -43,6 +44,10 @@ const renderNewConversation = (navigate = vi.fn()) =>
 
 describe("NewConversation", () => {
   it("should create an empty conversation and navigate when pressing the launch from scratch button", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue({
+      llm_api_key_set: true,
+      agent_settings: {},
+    } as Awaited<ReturnType<typeof SettingsService.getSettings>>);
     const navigate = vi.fn();
     const createConversationSpy = vi
       .spyOn(AgentServerConversationService, "createConversation")
@@ -76,7 +81,9 @@ describe("NewConversation", () => {
     const launchButton = screen.getByTestId("launch-new-conversation-button");
     await userEvent.click(launchButton);
 
-    expect(createConversationSpy).toHaveBeenCalledOnce();
+    await waitFor(() => {
+      expect(createConversationSpy).toHaveBeenCalledOnce();
+    });
     await waitFor(() => {
       expect(navigate).toHaveBeenCalledWith("/conversations/conv-123");
     });
@@ -84,9 +91,10 @@ describe("NewConversation", () => {
 
   it("should change the launch button text to 'Loading...' when creating a conversation", async () => {
     // Mock V1 API to never resolve, keeping the mutation in loading state
-    vi.spyOn(AgentServerConversationService, "createConversation").mockImplementation(
-      () => new Promise(() => {}),
-    );
+    vi.spyOn(
+      AgentServerConversationService,
+      "createConversation",
+    ).mockImplementation(() => new Promise(() => {}));
 
     renderNewConversation();
 

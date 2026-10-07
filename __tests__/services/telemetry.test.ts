@@ -136,7 +136,7 @@ describe("Telemetry Service", () => {
         properties: expect.objectContaining({
           client_source: "agent_canvas",
           client_version: expect.any(String),
-          package_name: "@openhands/agent-canvas",
+          package_name: "neo",
           package_version: expect.any(String),
           backend_kind: null,
           agent_server_version: "unknown",

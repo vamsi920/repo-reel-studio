@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoutesStub } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -66,6 +66,10 @@ vi.mock("#/components/features/onboarding/onboarding-modal", async () => {
   };
 });
 
+// The recovery modal is React.lazy-loaded; a cold dynamic import can exceed
+// the default 1s findBy timeout.
+const LAZY_MODAL_TIMEOUT = { timeout: 5000 };
+
 const ORIGINAL_LOCATION = window.location;
 
 const RouterStub = createRoutesStub([
@@ -75,7 +79,7 @@ const RouterStub = createRoutesStub([
     children: [
       {
         Component: () => <div data-testid="app-outlet">app outlet</div>,
-        path: "/",
+        path: "/home",
       },
       {
         Component: () => (
@@ -87,7 +91,7 @@ const RouterStub = createRoutesStub([
   },
 ]);
 
-const renderApp = (initialEntries: string[] = ["/"]) =>
+const renderApp = (initialEntries: string[] = ["/home"]) =>
   render(<RouterStub initialEntries={initialEntries} />, {
     wrapper: ({ children }) => (
       <QueryClientProvider
@@ -123,7 +127,10 @@ describe("App root agent-server availability guard", () => {
     });
   });
 
-  it("shows first-run onboarding before the auth gate when public mode has no backend key", async () => {
+  it("shows the API key screen, not a root-level onboarding takeover, when public mode has no backend key", async () => {
+    // Non-locked first-run onboarding now lives in OnboardingHost under the
+    // app shell; root only takes over for locked-to-Cloud. Without any key
+    // nothing can render the shell, so the auth gate owns the screen.
     vi.stubEnv("VITE_AUTH_REQUIRED", "true");
     vi.stubEnv("VITE_SESSION_API_KEY", "");
     delete (window as unknown as Record<string, unknown>)
@@ -131,65 +138,36 @@ describe("App root agent-server availability guard", () => {
     window.localStorage.clear();
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("first-run-onboarding-screen"),
-      ).toBeInTheDocument();
-    });
-    expect(await screen.findByTestId("onboarding-modal")).toBeInTheDocument();
     expect(
-      await screen.findByTestId("onboarding-step-check-backend"),
+      await screen.findByTestId("api-key-entry-screen"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByTestId("api-key-entry-screen"),
+      screen.queryByTestId("first-run-onboarding-screen"),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("onboarding-modal")).not.toBeInTheDocument();
   });
 
-  it("shows first-run onboarding before the recovery modal when no backend is configured", async () => {
+  it("does not take over the root with onboarding when no backend is configured (non-locked)", async () => {
     vi.stubEnv("VITE_SESSION_API_KEY", "");
     delete (window as unknown as Record<string, unknown>)
       .__AGENT_CANVAS_SESSION_API_KEY__;
     window.localStorage.clear();
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
-        screen.getByTestId("first-run-onboarding-screen"),
+        screen.queryByTestId("agent-server-onboarding-screen") ??
+          screen.queryByTestId("app-outlet"),
       ).toBeInTheDocument();
     });
-    expect(await screen.findByTestId("onboarding-modal")).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("agent-server-onboarding-screen"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId("manage-backends-modal"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("lets root-level onboarding navigate to the launched conversation before closing", async () => {
-    server.use(
-      http.get("*/server_info", () =>
-        HttpResponse.json({ uptime: 0, idle_time: 0, version: "1.28.1" }),
-      ),
-    );
-
-    renderApp(["/"]);
-
-    fireEvent.click(await screen.findByTestId("mock-onboarding-launch"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("conversation-outlet")).toBeInTheDocument();
-    });
-    expect(window.localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY)).toBe(
-      "1",
-    );
     expect(
       screen.queryByTestId("first-run-onboarding-screen"),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("onboarding-modal")).not.toBeInTheDocument();
   });
 
   it("shows first-run onboarding before the recovery modal when locked to Cloud with no backend", async () => {
@@ -200,7 +178,7 @@ describe("App root agent-server availability guard", () => {
     window.localStorage.clear();
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -230,7 +208,7 @@ describe("App root agent-server availability guard", () => {
     window.localStorage.clear();
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -273,7 +251,7 @@ describe("App root agent-server availability guard", () => {
     );
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -326,7 +304,7 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -382,7 +360,7 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -413,7 +391,7 @@ describe("App root agent-server availability guard", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -438,7 +416,7 @@ describe("App root agent-server availability guard", () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(screen.getByTestId("api-key-entry-screen")).toBeInTheDocument();
@@ -454,7 +432,7 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -476,7 +454,7 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -499,7 +477,7 @@ describe("App root agent-server availability guard", () => {
       }),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -547,14 +525,20 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
         screen.getByTestId("agent-server-onboarding-screen"),
       ).toBeInTheDocument();
     });
-    expect(screen.getByTestId("manage-backends-modal")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId(
+        "manage-backends-modal",
+        {},
+        LAZY_MODAL_TIMEOUT,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Logged out")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Log back in" }),
@@ -591,16 +575,22 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Reconnect to Cloud" }),
-      ).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Reconnect to Cloud" },
+        LAZY_MODAL_TIMEOUT,
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("manage-backends-add")).not.toBeInTheDocument();
     expect(
-      screen.getByTestId("manage-backends-reconnect-cloud-login-button"),
+      await screen.findByTestId(
+        "manage-backends-reconnect-cloud-login-button",
+        {},
+        LAZY_MODAL_TIMEOUT,
+      ),
     ).toHaveTextContent("Reconnect to Cloud");
     expect(screen.queryByTestId("app-outlet")).not.toBeInTheDocument();
   });
@@ -608,7 +598,7 @@ describe("App root agent-server availability guard", () => {
   it("renders the routed page when the agent server is reachable", async () => {
     window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, "1");
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(screen.getByTestId("app-outlet")).toBeInTheDocument();
@@ -619,7 +609,7 @@ describe("App root agent-server availability guard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows first-run onboarding for the launcher-seeded default-local backend even when the agent-server reports a configured LLM", async () => {
+  it("leaves first-run onboarding to OnboardingHost for the launcher-seeded default-local backend even when the agent-server reports a configured LLM", async () => {
     // Regression for mock-llm-onboarding-regressions.spec.ts:16
     // ("keeps the modal open on backdrop click and Escape") and
     // mock-llm-auth-modes.spec.ts:57 ("reaches the onboarding modal
@@ -648,14 +638,15 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
-    await waitFor(() => {
-      expect(
-        screen.getByTestId("first-run-onboarding-screen"),
-      ).toBeInTheDocument();
-    });
-    expect(screen.queryByTestId("app-outlet")).not.toBeInTheDocument();
+    // Root renders the routed shell (OnboardingHost shows the modal on top
+    // of it); it must not blank the app with a first-run screen, and backend
+    // readiness must not auto-complete onboarding.
+    expect(await screen.findByTestId("app-outlet")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("first-run-onboarding-screen"),
+    ).not.toBeInTheDocument();
 
     expect(
       window.localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY),
@@ -669,7 +660,7 @@ describe("App root agent-server availability guard", () => {
       .__AGENT_CANVAS_SESSION_API_KEY__;
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(
@@ -718,7 +709,7 @@ describe("App root agent-server availability guard", () => {
     );
     __resetActiveStoreForTests();
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     await waitFor(() => {
       expect(assign).toHaveBeenCalledWith(
@@ -777,7 +768,7 @@ describe("App root agent-server availability guard", () => {
       ),
     );
 
-    renderApp(["/"]);
+    renderApp(["/home"]);
 
     // The first-run onboarding screen must NOT be mounted (no reopen),
     // and the routed app must render instead.

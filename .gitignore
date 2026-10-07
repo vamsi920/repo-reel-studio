@@ -104,3 +104,7 @@ supabase/.temp/
 
 # Playwright auth-suite output
 test-results-auth/
+
+# stryker mutation testing
+.stryker-tmp/
+reports/

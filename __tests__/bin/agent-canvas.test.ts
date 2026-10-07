@@ -39,7 +39,7 @@ describe("agent-canvas CLI", () => {
 
     expect(code).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout).toContain("@openhands/agent-canvas");
+    expect(stdout).toContain("neo - Run the Agent Canvas UI");
     expect(stdout).toContain("USAGE:");
     expect(stdout).toContain("--frontend-only");
     expect(stdout).toContain("--backend-only");

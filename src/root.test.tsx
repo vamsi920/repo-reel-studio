@@ -41,11 +41,11 @@ function renderApp() {
         path: "/",
         Component: App,
         children: [
-          { index: true, element: <div data-testid="app-outlet-content" /> },
+          { path: "home", element: <div data-testid="app-outlet-content" /> },
         ],
       },
     ],
-    { initialEntries: ["/"] },
+    { initialEntries: ["/home"] },
   );
 
   return render(

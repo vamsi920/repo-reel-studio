@@ -40,6 +40,6 @@ describe("useSearchProviders", () => {
     // Assert: the picker must surface every provider the backend reports.
     const names = result.current.data?.map((provider) => provider.name) ?? [];
     expect(names).toContain("openrouter");
-    expect(names).toHaveLength(providers.length + 1); // + the verified "openhands"
+    expect(names).toHaveLength(providers.length); // "openhands" is hidden by design
   });
 });

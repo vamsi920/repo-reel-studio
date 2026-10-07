@@ -23,7 +23,7 @@ describe("library public entrypoints", () => {
     expect(publicApi.AGENT_SERVER_UI_SCOPE_SELECTOR).toBe(
       "[data-agent-server-ui]",
     );
-    expect(publicApi.AGENT_SERVER_UI_DEFAULT_THEME).toBe("dark");
+    expect(publicApi.AGENT_SERVER_UI_DEFAULT_THEME).toBe("light");
   });
 
   it("keeps each component-domain barrel importable", () => {

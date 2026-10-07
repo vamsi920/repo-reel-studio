@@ -2,6 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
+import SettingsService from "#/api/settings-service/settings-service.api";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import GitService from "#/api/git-service/git-service.api";
 import { TaskCard } from "#/components/features/home/tasks/task-card";
@@ -103,6 +104,10 @@ describe("TaskCard", () => {
     });
 
     it("should call create conversation with suggest task trigger and selected suggested task", async () => {
+      vi.spyOn(SettingsService, "getSettings").mockResolvedValue({
+        llm_api_key_set: true,
+        agent_settings: {},
+      } as Awaited<ReturnType<typeof SettingsService.getSettings>>);
       const createConversationSpy = vi
         .spyOn(AgentServerConversationService, "createConversation")
         .mockResolvedValue({
@@ -135,12 +140,19 @@ describe("TaskCard", () => {
       const launchButton = screen.getByTestId("task-launch-button");
       await userEvent.click(launchButton);
 
-      expect(createConversationSpy).toHaveBeenCalledWith({
-        metadata: {
-          selected_repository: MOCK_TASK_1.repo,
-          selected_branch: null,
-          git_provider: MOCK_TASK_1.git_provider,
-        },
+      await waitFor(() => {
+        // Repo launches become real local workspaces (8cc11545), so the call
+        // also carries workspaceMode/workingDirOverride.
+        expect(createConversationSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            metadata: {
+              selected_repository: MOCK_TASK_1.repo,
+              selected_branch: null,
+              git_provider: MOCK_TASK_1.git_provider,
+            },
+            workspaceMode: "local_repo",
+          }),
+        );
       });
     });
   });

@@ -27,7 +27,7 @@ describe("package library metadata", () => {
   ]);
 
   it("publishes the agent-canvas package entrypoints", () => {
-    expect(packageJson.name).toBe("@openhands/agent-canvas");
+    expect(packageJson.name).toBe("neo");
     expect(packageJson.main).toBe("./dist/index.cjs");
     expect(packageJson.module).toBe("./dist/index.js");
     expect(packageJson.types).toBe("./dist/index.d.ts");
@@ -127,7 +127,7 @@ describe("package library metadata", () => {
     expect(dependencyInstall.status).toBe(0);
     expect(dependencyInstall.stdout).toBe("");
     expect(globalInstall.status).toBe(0);
-    expect(globalInstall.stdout).toContain("To start Agent Canvas, run:");
+    expect(globalInstall.stdout).toContain("To start Neo, run:");
   });
 
   it("ships runtime logger dependencies for the published CLI", () => {

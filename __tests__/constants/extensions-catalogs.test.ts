@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AUTOMATION_CATALOG } from "@openhands/extensions/automations";
 import { INTEGRATION_CATALOG } from "@openhands/extensions/integrations";
 import { SETUP_REGISTRY } from "#/manifests/manifest-sources";
+import { LOCAL_AUTOMATION_CATALOG } from "#/manifests/local-automation-catalog";
 import { getIntegrationIds } from "#/utils/automation-catalog";
 import {
   getDefaultMcpTransport,
@@ -50,7 +51,9 @@ describe("OpenHands extensions catalogs", () => {
     expect(linear.docsUrl).toBe("https://linear.app/docs/mcp");
     expect(mcpOption.auth.strategy).toBe("bearer");
     expect(
-      linear.connectionOptions.some((option) => option.transport?.kind === "sse"),
+      linear.connectionOptions.some(
+        (option) => option.transport?.kind === "sse",
+      ),
     ).toBe(false);
   });
 
@@ -78,9 +81,10 @@ describe("OpenHands extensions catalogs", () => {
   });
 
   it("admits every setup experience the automation catalog ships", () => {
-    // Arrange — the pinned package is the whole source of setup manifests, and
-    // a shipped one that fails admission is dropped silently.
-    const shipped = AUTOMATION_CATALOG.filter(
+    // Arrange — the pinned package plus this fork's local catalog are the
+    // sources of setup manifests, and a shipped one that fails admission is
+    // dropped silently.
+    const shipped = [...AUTOMATION_CATALOG, ...LOCAL_AUTOMATION_CATALOG].filter(
       (automation) => !!automation.setup,
     );
     expect(shipped.length).toBeGreaterThan(0);
