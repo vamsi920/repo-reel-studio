@@ -35,6 +35,12 @@ export function TutorialLaunchMenu({
   const menuRef = React.useRef<HTMLDivElement>(null);
   const inputId = React.useId();
 
+  // Start downloading the AI guide (page-agent is ~170 KB) as soon as the
+  // menu opens, so the first step isn't held up by the download.
+  React.useEffect(() => {
+    import("./ai-guide/ai-guide-agent").catch(() => undefined);
+  }, []);
+
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();

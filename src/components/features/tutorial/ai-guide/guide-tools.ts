@@ -78,14 +78,12 @@ async function settleAfterAction(
   signal: AbortSignal,
 ) {
   if (expectsNavigation) {
-    let waited = 0;
-    while (
-      window.location.pathname === pathBefore &&
-      waited < MAX_NAVIGATION_WAIT_MS
-    ) {
-      // eslint-disable-next-line no-await-in-loop -- polling for navigation
+    // Measured by the clock, not by counting polls: browsers slow timers in
+    // background tabs (to once a second or even once a minute), and a
+    // poll-count budget then stretched a 3-second wait into minutes.
+    const deadline = Date.now() + MAX_NAVIGATION_WAIT_MS;
+    while (window.location.pathname === pathBefore && Date.now() < deadline) {
       await waitFor(NAVIGATION_POLL_MS, signal);
-      waited += NAVIGATION_POLL_MS;
     }
   }
   await waitFor(SETTLE_AFTER_ACTION_MS, signal);
