@@ -840,7 +840,10 @@ describe("ChatInterface - Scroll-up loads older events", () => {
     });
     rerender(tree);
 
-    expect(screen.queryByTestId("scroll-to-bottom")).not.toBeInTheDocument();
+    // The reset runs in an effect after the rerender, so wait for it.
+    await waitFor(() => {
+      expect(screen.queryByTestId("scroll-to-bottom")).not.toBeInTheDocument();
+    });
   });
 });
 
