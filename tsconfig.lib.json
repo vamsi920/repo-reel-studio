@@ -23,7 +23,7 @@
     "emitDeclarationOnly": true,
     "declarationMap": false,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "types": [
       "@react-router/node",
       "vite/client",

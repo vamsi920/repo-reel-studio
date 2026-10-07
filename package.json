@@ -111,7 +111,7 @@
     "typecheck:staged": "react-router typegen && npx tsc --noEmit --skipLibCheck",
     "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
     "build:app": "npm run make-i18n && npm run build:codegraph-analyzer && react-router build",
-    "build:lib": "npm run make-i18n && react-router typegen && cross-env BUILD_LIB=true vite build && tsc -p tsconfig.lib.json",
+    "build:lib": "npm run make-i18n && react-router typegen && cross-env BUILD_LIB=true vite build && node scripts/build-lib-types.mjs",
     "build:docker": "node scripts/docker-build.mjs",
     "example:acp-docker:env": "node scripts/gen-acp-docker-env.mjs",
     "predesktop": "node scripts/brand-dev-electron.mjs",
