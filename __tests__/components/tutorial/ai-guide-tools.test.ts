@@ -75,6 +75,8 @@ describe("AI guide tools", () => {
     const button = document.createElement("button");
     const label = document.createElement("span");
     button.append(label);
+    button.getBoundingClientRect = () =>
+      ({ top: 10, left: 10, width: 120, height: 32 }) as DOMRect;
     document.body.append(button);
     const tools = createGuideTools(makeBridge());
 
@@ -96,6 +98,35 @@ describe("AI guide tools", () => {
     fireEvent.click(label);
 
     await expect(pending).resolves.toMatch(/clicked element 3/);
+  });
+
+  it("sends a step back to the AI instead of showing a blank tip or a ring around nothing", async () => {
+    const hidden = document.createElement("a");
+    document.body.append(hidden); // zero-size box, like a hidden duplicate link
+    const tools = createGuideTools(makeBridge());
+
+    await expect(
+      run(
+        tools,
+        "guide_click",
+        { index: 1, title: "Open", tip: "" },
+        controllerWith(1, hidden),
+      ),
+    ).resolves.toMatch(/^Rejected: every step needs/);
+    await expect(
+      run(
+        tools,
+        "guide_click",
+        {
+          index: 1,
+          title: "Open Automate",
+          tip: "Automations live on this page.",
+        },
+        controllerWith(1, hidden),
+      ),
+    ).resolves.toMatch(/^Rejected: element 1 is not visible/);
+
+    expect(useAiGuideStore.getState().step).toBeNull();
   });
 
   it("falls back to an explanation when the element can't be found", async () => {

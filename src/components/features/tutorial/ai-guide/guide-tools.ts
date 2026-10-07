@@ -121,6 +121,38 @@ const pointerSchema = z.object({
 
 const explainSchema = z.object({ title: z.string(), tip: z.string() });
 
+/** Shortest tip worth showing; anything less reads as an empty bubble. */
+const MIN_TIP_CHARS = 12;
+const MIN_TITLE_CHARS = 3;
+/** Smallest box we will spotlight; smaller is usually a hidden duplicate. */
+const MIN_TARGET_PX = 4;
+
+/**
+ * Why a step can't be shown as written, or null if it can. Returned to the
+ * agent as the tool result so it corrects itself on its next step, instead
+ * of the user seeing a blank bubble or a ring around nothing.
+ */
+function rejectCopy(title: string, tip: string): string | null {
+  if (
+    title.trim().length < MIN_TITLE_CHARS ||
+    tip.trim().length < MIN_TIP_CHARS
+  ) {
+    return "Rejected: every step needs a short title and a one-sentence tip that says what this does and why. Call the tool again with both.";
+  }
+  return null;
+}
+
+function isVisibleTarget(element: HTMLElement): boolean {
+  const rect = element.getBoundingClientRect();
+  if (rect.width < MIN_TARGET_PX || rect.height < MIN_TARGET_PX) return false;
+  const style = window.getComputedStyle(element);
+  return (
+    style.visibility !== "hidden" &&
+    style.display !== "none" &&
+    Number(style.opacity) !== 0
+  );
+}
+
 /**
  * Tool set for "guide mode": page-agent's tools that act on the page are
  * removed, so the agent can only point at elements and explain them while
@@ -135,7 +167,12 @@ export function createGuideTools(
     input: z.infer<typeof pointerSchema>,
     signal: AbortSignal,
   ) {
+    const badCopy = rejectCopy(input.title, input.tip);
+    if (badCopy) return badCopy;
     const element = resolveIndexedElement(controller, input.index);
+    if (element && !isVisibleTarget(element)) {
+      return `Rejected: element ${input.index} is not visible on screen. Point at a visible element instead, or use go_to_page.`;
+    }
     if (!element) {
       // Never point at nothing: fall back to a centred explanation.
       await bridge.presentStep({
@@ -204,6 +241,8 @@ export function createGuideTools(
         "Show a short explanation with nothing highlighted, for context the user needs before the next step. Waits until the user presses Next.",
       inputSchema: explainSchema,
       execute: async function explain(input) {
+        const badCopy = rejectCopy(input.title, input.tip);
+        if (badCopy) return badCopy;
         await bridge.presentStep({ kind: "explain", ...input, element: null });
         return "The user read the explanation and pressed Next.";
       },
