@@ -90,6 +90,10 @@ Deno.serve(async (req) => {
     tools: body.tools,
     tool_choice: body.tools ? "required" : undefined,
     max_tokens: MAX_OUTPUT_TOKENS,
+    // Pointing at the next control is a lookup, not a reasoning task:
+    // Gemini 2.5 Flash's default thinking pass roughly doubled each
+    // step's latency for no better pick.
+    reasoning_effort: "none",
   };
 
   const upstream = await fetch(GEMINI_OPENAI_URL, {
