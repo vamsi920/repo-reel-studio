@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "显示思考",
   "THINKING_GRAPH$PANEL_HIDE": "隐藏思考",
   "THINKING_GRAPH$PARALLEL": "{{count}} 个并行",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 个更早的步骤"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 个更早的步骤",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} 访问权限将于 {{date}} 过期",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "访问权限将于 {{date}} 过期。请在此之前重新连接以避免中断。",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "MCP 服务器 {{server}} 拒绝了其凭据",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "LLM 配置 “{{profile}}” 的 API 密钥被拒绝",
+  "ENVIRONMENT$FIX_ISSUE": "修复",
+  "ENVIRONMENT$MORE_ISSUES": "（另有 {{count}} 项）",
+  "ENVIRONMENT$ACTIVITY_TITLE": "最近的连接活动",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "暂无连接活动。",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "无法加载连接活动。",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} 已连接",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} 已断开连接",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} 访问权限已续期",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}：{{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "你的组织已连接 GitHub，但仓库列表来自你自己的 GitHub 账户。请连接你的账户以查看你的仓库。",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "连接你的 GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "设置助手需要本地后端。OpenHands Cloud 目前还无法运行它用于配置此工作区的工具。请切换到本地后端，或直接连接提供商。",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "直接连接提供商"
 }

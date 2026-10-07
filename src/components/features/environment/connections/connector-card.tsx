@@ -9,7 +9,10 @@ import {
   CONNECTION_STATUS_LABEL_KEY,
   MATURITY_LABEL_KEY,
 } from "#/lib/environment/display";
-import { needsReconnect } from "#/lib/environment/connection-health";
+import {
+  expiresSoon,
+  needsReconnect,
+} from "#/lib/environment/connection-health";
 import { ConnectorLogo } from "../shared/connector-logo";
 
 export interface ConnectorCardProps {
@@ -52,6 +55,7 @@ export function ConnectorCard({
   const reduceMotion = useReducedMotion();
   const connected = Boolean(connection);
   const reconnectNeeded = needsReconnect(connection);
+  const expiringAt = connection ? expiresSoon(connection, manifest) : null;
   const missingScopes = connection
     ? connection.requestedScopes.filter(
         (scope) => !connection.grantedScopes.includes(scope),
@@ -127,7 +131,16 @@ export function ConnectorCard({
               {`${t(I18nKey.ENVIRONMENT$SCOPES_MISSING)}: ${missingScopes.join(", ")}`}
             </span>
           ) : null}
-          {connection.expiresAt ? (
+          {expiringAt ? (
+            <span
+              data-testid={`connector-expiring-${manifest.id}`}
+              className="text-xs text-[var(--warning-500)]"
+            >
+              {t(I18nKey.ENVIRONMENT$EXPIRES_SOON_HINT, {
+                date: expiringAt.toLocaleDateString(),
+              })}
+            </span>
+          ) : connection.expiresAt ? (
             <span className="text-xs text-[var(--text-tertiary)]">
               {`${t(I18nKey.ENVIRONMENT$CREDENTIAL_EXPIRES)}: ${new Date(connection.expiresAt).toLocaleDateString()}`}
             </span>
@@ -138,7 +151,7 @@ export function ConnectorCard({
       <div className="mt-auto flex flex-wrap items-center gap-2">
         {connection ? (
           <>
-            {reconnectNeeded && onReconnect ? (
+            {(reconnectNeeded || expiringAt) && onReconnect ? (
               <button
                 type="button"
                 data-testid={`connector-reconnect-${manifest.id}`}

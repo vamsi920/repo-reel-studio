@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Show thinking",
   "THINKING_GRAPH$PANEL_HIDE": "Hide thinking",
   "THINKING_GRAPH$PARALLEL": "{{count}} in parallel",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} earlier steps"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} earlier steps",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} access expires on {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "Access expires on {{date}}. Reconnect before then to avoid interruptions.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "The {{server}} MCP server rejected its credentials",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "The API key for LLM profile \"{{profile}}\" was rejected",
+  "ENVIRONMENT$FIX_ISSUE": "Fix",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} more)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Recent connection activity",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "No connection activity yet.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "Could not load connection activity.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} connected",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} disconnected",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} access renewed",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Your organization has GitHub connected, but repositories are listed from your own GitHub account. Connect your account to see your repositories.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Connect your GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "The setup assistant needs a local backend. OpenHands Cloud can't yet run the tools it uses to configure this workspace. Switch to a local backend to use it, or connect providers directly.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Connect providers directly"
 }

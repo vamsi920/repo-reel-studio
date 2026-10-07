@@ -87,6 +87,8 @@ export interface AppConversationStartRequest {
   // POST /api/v1/app-conversations; the local path uses the encrypted
   // agent_settings builder instead, which threads its own agentProfileId.
   agent_profile_id?: string | null;
+  // Appended to the agent's system prompt (Cloud app-server schema field).
+  system_message_suffix?: string | null;
 }
 
 export type AppConversationStartTaskStatus =

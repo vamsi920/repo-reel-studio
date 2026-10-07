@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "إظهار التفكير",
   "THINKING_GRAPH$PANEL_HIDE": "إخفاء التفكير",
   "THINKING_GRAPH$PARALLEL": "{{count}} بالتوازي",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} خطوات سابقة"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} خطوات سابقة",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "تنتهي صلاحية الوصول إلى {{provider}} في {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "تنتهي صلاحية الوصول في {{date}}. أعد الاتصال قبل ذلك لتجنب الانقطاع.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "رفض خادم MCP {{server}} بيانات الاعتماد الخاصة به",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "تم رفض مفتاح API لملف LLM \"{{profile}}\"",
+  "ENVIRONMENT$FIX_ISSUE": "إصلاح",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} أخرى)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "نشاط الاتصال الأخير",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "لا يوجد نشاط اتصال بعد.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "تعذر تحميل نشاط الاتصال.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "تم الاتصال بـ {{provider}}",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "تم قطع الاتصال بـ {{provider}}",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "تم تجديد الوصول إلى {{provider}}",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "مؤسستك متصلة بـ GitHub، لكن المستودعات تُعرض من حسابك الشخصي على GitHub. اربط حسابك لرؤية مستودعاتك.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "اربط حسابك على GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "يحتاج مساعد الإعداد إلى واجهة خلفية محلية. لا يمكن لـ OpenHands Cloud بعد تشغيل الأدوات التي يستخدمها لتهيئة مساحة العمل هذه. انتقل إلى واجهة خلفية محلية، أو اربط المزودين مباشرة.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "اربط المزودين مباشرة"
 }

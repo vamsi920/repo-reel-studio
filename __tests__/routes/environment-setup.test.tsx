@@ -52,7 +52,8 @@ vi.mock("#/lib/data-platform/client", () => ({
 }));
 
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
-  ONBOARDING_ORG_UNRESOLVED_ERROR: "onboarding session organization not resolved",
+  ONBOARDING_ORG_UNRESOLVED_ERROR:
+    "onboarding session organization not resolved",
   useOnboardingSession: () => ({
     data: state.session,
     isLoading: state.sessionLoading,
@@ -76,9 +77,12 @@ vi.mock("#/hooks/mutation/use-create-conversation", () => ({
   }),
 }));
 
-vi.mock("#/api/conversation-service/agent-server-conversation-service.api", () => ({
-  default: { deleteConversation: state.deleteConversation },
-}));
+vi.mock(
+  "#/api/conversation-service/agent-server-conversation-service.api",
+  () => ({
+    default: { deleteConversation: state.deleteConversation },
+  }),
+);
 
 vi.mock("#/utils/custom-toast-handlers", () => ({
   displayErrorToast: vi.fn(),
@@ -150,9 +154,7 @@ function SeedNavigator({ seed }: { seed: string }) {
 // without needing its own direct access to router internals.
 function LocationSearchDisplay() {
   const [searchParams] = useSearchParams();
-  return (
-    <div data-testid="location-search">{searchParams.toString()}</div>
-  );
+  return <div data-testid="location-search">{searchParams.toString()}</div>;
 }
 
 function renderScreen(entry: string) {
@@ -261,9 +263,7 @@ describe("Environment setup studio workbench reset", () => {
     const { rerender } = renderScreen("/environment/setup");
 
     await waitFor(() =>
-      expect(useOnboardingStudioStore.getState().conversationId).toBe(
-        "conv-1",
-      ),
+      expect(useOnboardingStudioStore.getState().conversationId).toBe("conv-1"),
     );
     useOnboardingStudioStore.getState().pushCard({
       id: "discovery-1",
@@ -285,9 +285,7 @@ describe("Environment setup studio workbench reset", () => {
     );
 
     await waitFor(() =>
-      expect(useOnboardingStudioStore.getState().conversationId).toBe(
-        "conv-2",
-      ),
+      expect(useOnboardingStudioStore.getState().conversationId).toBe("conv-2"),
     );
     expect(useOnboardingStudioStore.getState().cards).toHaveLength(0);
   });
@@ -303,9 +301,7 @@ describe("Environment setup studio workbench reset", () => {
     const { rerender } = renderScreen("/environment/setup");
 
     await waitFor(() =>
-      expect(useOnboardingStudioStore.getState().conversationId).toBe(
-        "conv-1",
-      ),
+      expect(useOnboardingStudioStore.getState().conversationId).toBe("conv-1"),
     );
     expect(screen.getByTestId("chat-stub")).toBeInTheDocument();
 
@@ -460,9 +456,7 @@ describe("Environment setup seed forwarding", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByTestId("location-search").textContent).toContain(
-      "seed",
-    );
+    expect(screen.getByTestId("location-search").textContent).toContain("seed");
 
     await user.click(await screen.findByTestId("environment-setup-begin"));
 
@@ -637,5 +631,38 @@ describe("Environment setup session start failure", () => {
         "ENVIRONMENT$STUDIO_START_ERROR_ORG",
       ),
     );
+  });
+});
+
+describe("Environment setup on a Cloud backend", () => {
+  it("explains the studio needs a local backend instead of starting a session it cannot drive", async () => {
+    // Arrange
+    state.sessionLoading = false;
+    state.session = null;
+    setActiveSelection({ backendId: cloudBackend.id });
+
+    // Act
+    render(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ActiveBackendProvider>
+          <MemoryRouter initialEntries={["/environment/setup"]}>
+            <EnvironmentSetupScreen />
+          </MemoryRouter>
+        </ActiveBackendProvider>
+      </QueryClientProvider>,
+    );
+
+    // Assert
+    expect(
+      await screen.findByTestId("environment-setup-cloud-unsupported"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("environment-setup-begin"),
+    ).not.toBeInTheDocument();
+    expect(state.createConversation).not.toHaveBeenCalled();
   });
 });

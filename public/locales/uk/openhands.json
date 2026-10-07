@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Показати міркування",
   "THINKING_GRAPH$PANEL_HIDE": "Сховати міркування",
   "THINKING_GRAPH$PARALLEL": "{{count}} паралельно",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} попередніх кроків"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} попередніх кроків",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "Доступ до {{provider}} спливає {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "Доступ спливає {{date}}. Підключіться знову до цього часу, щоб уникнути перерв.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "MCP-сервер {{server}} відхилив свої облікові дані",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "API-ключ LLM-профілю «{{profile}}» відхилено",
+  "ENVIRONMENT$FIX_ISSUE": "Виправити",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} ще)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Остання активність підключень",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Активності підключень ще немає.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "Не вдалося завантажити активність підключень.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} підключено",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} відключено",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "Доступ до {{provider}} поновлено",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Ваша організація підключила GitHub, але репозиторії беруться з вашого власного облікового запису GitHub. Підключіть свій обліковий запис, щоб бачити свої репозиторії.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Підключити свій GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Помічнику налаштування потрібен локальний бекенд. OpenHands Cloud поки не може запускати інструменти, якими він налаштовує цей робочий простір. Перейдіть на локальний бекенд або підключіть постачальників напряму.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Підключити постачальників напряму"
 }

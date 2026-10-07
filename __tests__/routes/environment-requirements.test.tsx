@@ -69,6 +69,7 @@ function connectionRecord(
     lastProbe: null,
     lastProbeAt: null,
     expiresAt: null,
+    createdBy: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,

@@ -43,3 +43,26 @@ export function oauthConfigFor(
 export function reconnectKind(manifest: ConnectorManifest): "oauth" | "form" {
   return manifest.oauth ? "oauth" : "form";
 }
+
+/** How far ahead to warn about a token that will lapse on its own. */
+export const EXPIRY_WARNING_WINDOW_MS = 3 * 24 * 60 * 60_000;
+
+/**
+ * When a still-working connection will stop working by itself, if soon.
+ *
+ * Refreshable OAuth tokens (Jira) are renewed by the hourly health check
+ * before they lapse, so their short `expiresAt` is not news and returns null.
+ * Only tokens nothing can renew -- the user has to act -- are warned about.
+ */
+export function expiresSoon(
+  connection: Pick<ConnectionRecord, "status" | "lastProbe" | "expiresAt">,
+  manifest: Pick<ConnectorManifest, "oauth"> | undefined,
+  now: number = Date.now(),
+): Date | null {
+  if (!connection.expiresAt || needsReconnect(connection)) return null;
+  if (manifest?.oauth?.refreshable) return null;
+  const at = new Date(connection.expiresAt);
+  const remaining = at.getTime() - now;
+  if (Number.isNaN(remaining) || remaining <= 0) return null;
+  return remaining <= EXPIRY_WARNING_WINDOW_MS ? at : null;
+}

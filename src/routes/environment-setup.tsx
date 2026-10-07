@@ -482,6 +482,36 @@ function EnvironmentSetupScreen() {
     return <main className="p-6" data-testid="environment-setup-loading" />;
   }
 
+  // The setup assistant drives this screen through the `onboarding_control`
+  // client tool. OpenHands Cloud's start-conversation API has no client-tools
+  // field (checked against its published schema), so on a Cloud backend the
+  // agent could chat but never act on the workbench. Say so up front instead
+  // of starting a conversation that cannot do its job.
+  if (!conversationId && active.backend.kind === "cloud") {
+    return (
+      <main
+        data-testid="environment-setup-cloud-unsupported"
+        className="flex flex-col items-center justify-center gap-4 p-10 text-center"
+      >
+        <Sparkles size={24} aria-hidden className="text-[var(--primary-500)]" />
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+          {t(I18nKey.ENVIRONMENT$STUDIO_TITLE)}
+        </h1>
+        <p className="max-w-[52ch] text-sm text-[var(--text-secondary)]">
+          {t(I18nKey.ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED)}
+        </p>
+        <button
+          type="button"
+          data-testid="environment-setup-cloud-connections"
+          onClick={() => navigate("/environment/connections")}
+          className="ame-btn-secondary ame-btn-sm"
+        >
+          {t(I18nKey.ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS)}
+        </button>
+      </main>
+    );
+  }
+
   if (!conversationId) {
     return (
       <main

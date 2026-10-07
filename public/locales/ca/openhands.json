@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Mostra el raonament",
   "THINKING_GRAPH$PANEL_HIDE": "Amaga el raonament",
   "THINKING_GRAPH$PARALLEL": "{{count}} en paral·lel",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} passos anteriors"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} passos anteriors",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "L'accés a {{provider}} caduca el {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "L'accés caduca el {{date}}. Torna a connectar abans per evitar interrupcions.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "El servidor MCP {{server}} ha rebutjat les seves credencials",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "S'ha rebutjat la clau d'API del perfil LLM \"{{profile}}\"",
+  "ENVIRONMENT$FIX_ISSUE": "Corregeix",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} més)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Activitat recent de connexions",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Encara no hi ha activitat de connexions.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "No s'ha pogut carregar l'activitat de connexions.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} connectat",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} desconnectat",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "Accés a {{provider}} renovat",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "La teva organització té GitHub connectat, però els repositoris es mostren des del teu propi compte de GitHub. Connecta el teu compte per veure els teus repositoris.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Connecta el teu GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "L'assistent de configuració necessita un backend local. OpenHands Cloud encara no pot executar les eines que fa servir per configurar aquest espai de treball. Canvia a un backend local o connecta els proveïdors directament.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Connecta els proveïdors directament"
 }

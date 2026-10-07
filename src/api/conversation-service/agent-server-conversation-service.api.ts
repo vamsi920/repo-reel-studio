@@ -483,6 +483,12 @@ class AgentServerConversationService {
         agent_type: agentType,
         sandbox_id: sandboxId ?? null,
         agent_profile_id: agentProfileId ?? null,
+        // Cloud's start request accepts a system-prompt suffix (it is in the
+        // published AppConversationStartRequest schema); dropping it meant
+        // feature briefs such as onboarding's never reached a Cloud agent.
+        system_message_suffix: extraSystemSuffix?.trim()
+          ? extraSystemSuffix
+          : null,
       };
       return createCloudAppConversation(request);
     }

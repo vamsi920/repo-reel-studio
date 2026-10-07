@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Düşünmeyi göster",
   "THINKING_GRAPH$PANEL_HIDE": "Düşünmeyi gizle",
   "THINKING_GRAPH$PARALLEL": "{{count}} paralel",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} önceki adım"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} önceki adım",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} erişimi {{date}} tarihinde sona eriyor",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "Erişim {{date}} tarihinde sona eriyor. Kesinti olmaması için öncesinde yeniden bağlanın.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "{{server}} MCP sunucusu kimlik bilgilerini reddetti",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "\"{{profile}}\" LLM profilinin API anahtarı reddedildi",
+  "ENVIRONMENT$FIX_ISSUE": "Düzelt",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} daha)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Son bağlantı etkinliği",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Henüz bağlantı etkinliği yok.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "Bağlantı etkinliği yüklenemedi.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} bağlandı",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} bağlantısı kesildi",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} erişimi yenilendi",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Kuruluşunuz GitHub'a bağlı, ancak depolar kendi GitHub hesabınızdan listelenir. Depolarınızı görmek için hesabınızı bağlayın.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "GitHub hesabını bağla",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Kurulum asistanı yerel bir arka uç gerektirir. OpenHands Cloud, bu çalışma alanını yapılandırmak için kullandığı araçları henüz çalıştıramıyor. Yerel bir arka uca geçin veya sağlayıcıları doğrudan bağlayın.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Sağlayıcıları doğrudan bağla"
 }

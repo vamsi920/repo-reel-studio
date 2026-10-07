@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "思考を表示",
   "THINKING_GRAPH$PANEL_HIDE": "思考を隠す",
   "THINKING_GRAPH$PARALLEL": "{{count}} 件を並列実行",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 件の前のステップ"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 件の前のステップ",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} のアクセスは {{date}} に期限切れになります",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "アクセスは {{date}} に期限切れになります。中断を避けるため、それまでに再接続してください。",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "MCP サーバー {{server}} が認証情報を拒否しました",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "LLM プロファイル「{{profile}}」の API キーが拒否されました",
+  "ENVIRONMENT$FIX_ISSUE": "修正",
+  "ENVIRONMENT$MORE_ISSUES": "（他 {{count}} 件）",
+  "ENVIRONMENT$ACTIVITY_TITLE": "最近の接続アクティビティ",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "接続アクティビティはまだありません。",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "接続アクティビティを読み込めませんでした。",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} を接続しました",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} の接続を解除しました",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} のアクセスを更新しました",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "組織には GitHub が接続されていますが、リポジトリはあなた自身の GitHub アカウントから表示されます。リポジトリを表示するには、あなたのアカウントを接続してください。",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "自分の GitHub を接続",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "セットアップアシスタントにはローカルバックエンドが必要です。OpenHands Cloud では、このワークスペースを構成するためのツールをまだ実行できません。ローカルバックエンドに切り替えるか、プロバイダーを直接接続してください。",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "プロバイダーを直接接続"
 }

@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Vis tenkning",
   "THINKING_GRAPH$PANEL_HIDE": "Skjul tenkning",
   "THINKING_GRAPH$PARALLEL": "{{count}} parallelt",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} tidligere steg"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} tidligere steg",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "Tilgangen til {{provider}} utløper {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "Tilgangen utløper {{date}}. Koble til på nytt før det for å unngå avbrudd.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "MCP-serveren {{server}} avviste legitimasjonen",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "API-nøkkelen for LLM-profilen «{{profile}}» ble avvist",
+  "ENVIRONMENT$FIX_ISSUE": "Fiks",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} til)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Nylig tilkoblingsaktivitet",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Ingen tilkoblingsaktivitet ennå.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "Kunne ikke laste tilkoblingsaktivitet.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} koblet til",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} koblet fra",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "Tilgangen til {{provider}} ble fornyet",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Organisasjonen din har koblet til GitHub, men repositorier hentes fra din egen GitHub-konto. Koble til kontoen din for å se repositoriene dine.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Koble til din GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Oppsettassistenten trenger en lokal backend. OpenHands Cloud kan ennå ikke kjøre verktøyene den bruker for å konfigurere dette arbeidsområdet. Bytt til en lokal backend, eller koble til leverandører direkte.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Koble til leverandører direkte"
 }

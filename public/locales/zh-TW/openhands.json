@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "顯示思考",
   "THINKING_GRAPH$PANEL_HIDE": "隱藏思考",
   "THINKING_GRAPH$PARALLEL": "{{count}} 個並行",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 個較早的步驟"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} 個較早的步驟",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} 存取權限將於 {{date}} 到期",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "存取權限將於 {{date}} 到期。請在此之前重新連線以避免中斷。",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "MCP 伺服器 {{server}} 拒絕了其憑證",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "LLM 設定檔「{{profile}}」的 API 金鑰遭拒",
+  "ENVIRONMENT$FIX_ISSUE": "修正",
+  "ENVIRONMENT$MORE_ISSUES": "（另有 {{count}} 項）",
+  "ENVIRONMENT$ACTIVITY_TITLE": "最近的連線活動",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "尚無連線活動。",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "無法載入連線活動。",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} 已連線",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} 已中斷連線",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} 存取權限已續期",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}：{{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "你的組織已連線 GitHub，但儲存庫清單來自你自己的 GitHub 帳戶。請連線你的帳戶以查看你的儲存庫。",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "連線你的 GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "設定助理需要本機後端。OpenHands Cloud 目前還無法執行它用來設定此工作區的工具。請切換到本機後端，或直接連線提供者。",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "直接連線提供者"
 }

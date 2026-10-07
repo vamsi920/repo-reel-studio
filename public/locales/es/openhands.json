@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Mostrar razonamiento",
   "THINKING_GRAPH$PANEL_HIDE": "Ocultar razonamiento",
   "THINKING_GRAPH$PARALLEL": "{{count}} en paralelo",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} pasos anteriores"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} pasos anteriores",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "El acceso a {{provider}} caduca el {{date}}",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "El acceso caduca el {{date}}. Vuelve a conectar antes para evitar interrupciones.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "El servidor MCP {{server}} rechazó sus credenciales",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "Se rechazó la clave de API del perfil LLM \"{{profile}}\"",
+  "ENVIRONMENT$FIX_ISSUE": "Corregir",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} más)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Actividad reciente de conexiones",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Todavía no hay actividad de conexiones.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "No se pudo cargar la actividad de conexiones.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} conectado",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} desconectado",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "Acceso a {{provider}} renovado",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Tu organización tiene GitHub conectado, pero los repositorios se muestran desde tu propia cuenta de GitHub. Conecta tu cuenta para ver tus repositorios.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Conecta tu GitHub",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "El asistente de configuración necesita un backend local. OpenHands Cloud todavía no puede ejecutar las herramientas que usa para configurar este espacio de trabajo. Cambia a un backend local o conecta los proveedores directamente.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Conectar proveedores directamente"
 }

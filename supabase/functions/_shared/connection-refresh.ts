@@ -6,6 +6,7 @@ import { classifyRefreshFailure, readJsonSafely } from "./connection-health.ts";
 import {
   jiraRefreshLockKey,
   markConnectionStatus,
+  recordConnectionEvents,
   writeJiraRotationToLegacy,
 } from "./connection-sync.ts";
 
@@ -145,6 +146,18 @@ export async function refreshIfNeeded(
         updated_at: new Date().toISOString(),
       })
       .eq("id", connectionId);
+
+    if (connection.org_id) {
+      await recordConnectionEvents(admin, [
+        {
+          orgId: connection.org_id as string,
+          providerId: connection.provider_id as string,
+          instanceKey: (connection.instance_key as string) ?? "default",
+          action: "refreshed",
+          status: "ok",
+        },
+      ]);
+    }
 
     if (isJira && createdBy) {
       await writeJiraRotationToLegacy(admin, createdBy, {

@@ -37,6 +37,7 @@ import {
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
 import { ConnectorCard } from "#/components/features/environment/connections/connector-card";
+import { ConnectionActivity } from "#/components/features/environment/connections/connection-activity";
 import { ConnectionForm } from "#/components/features/environment/connections/connection-form";
 import { ProbeResultPanel } from "#/components/features/environment/shared/probe-result-panel";
 import type { ProbeResult } from "#/lib/environment/types/probe";
@@ -418,6 +419,8 @@ function EnvironmentConnectionsScreen() {
           </section>
         );
       })}
+
+      <ConnectionActivity />
 
       {visibleManifests.length === 0 ? (
         <p

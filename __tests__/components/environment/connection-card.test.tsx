@@ -352,6 +352,7 @@ describe("ConnectionCard", () => {
         lastProbe: null,
         lastProbeAt: null,
         expiresAt: null,
+        createdBy: null,
         createdAt: "2026-09-01T00:00:00.000Z",
         updatedAt: "2026-09-01T00:00:00.000Z",
       },

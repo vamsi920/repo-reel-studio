@@ -6,6 +6,7 @@ import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { assertHostAllowed, interpolatePath, resolveBaseUrl } from "../_shared/template.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
 import { mirrorToLegacy } from "../_shared/legacy-mirror.ts";
+import { recordConnectionEvents } from "../_shared/connection-sync.ts";
 import {
   DEFAULT_APP_ORIGIN,
   parseAppOriginAllowlist,
@@ -311,6 +312,18 @@ export async function completeConnectionsOAuth(
   } catch (error) {
     mirrorNote = `failed:${(error as Error)?.message ?? "unknown"}`;
   }
+
+  await recordConnectionEvents(admin, [
+    {
+      orgId: stateRow.org_id as string,
+      providerId: manifest.id,
+      instanceKey: stateRow.instance_key as string,
+      action: "connected",
+      status,
+      actor: stateRow.user_id as string,
+      detail: { via: "oauth" },
+    },
+  ]);
 
   await admin.from("environment_checks").insert({
     org_id: stateRow.org_id,

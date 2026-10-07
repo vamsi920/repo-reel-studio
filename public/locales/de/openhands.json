@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "Denken anzeigen",
   "THINKING_GRAPH$PANEL_HIDE": "Denken ausblenden",
   "THINKING_GRAPH$PARALLEL": "{{count}} parallel",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} frühere Schritte"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}} frühere Schritte",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "Der Zugriff auf {{provider}} läuft am {{date}} ab",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "Der Zugriff läuft am {{date}} ab. Verbinde dich vorher erneut, um Unterbrechungen zu vermeiden.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "Der MCP-Server {{server}} hat seine Anmeldedaten abgelehnt",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "Der API-Schlüssel für das LLM-Profil „{{profile}}“ wurde abgelehnt",
+  "ENVIRONMENT$FIX_ISSUE": "Beheben",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}} weitere)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "Letzte Verbindungsaktivität",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "Noch keine Verbindungsaktivität.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "Verbindungsaktivität konnte nicht geladen werden.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} verbunden",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} getrennt",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "Zugriff auf {{provider}} erneuert",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "Deine Organisation hat GitHub verbunden, aber Repositories werden aus deinem eigenen GitHub-Konto geladen. Verbinde dein Konto, um deine Repositories zu sehen.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "Eigenes GitHub verbinden",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Der Einrichtungsassistent benötigt ein lokales Backend. OpenHands Cloud kann die Werkzeuge, mit denen er diesen Arbeitsbereich konfiguriert, noch nicht ausführen. Wechsle zu einem lokalen Backend oder verbinde Anbieter direkt.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Anbieter direkt verbinden"
 }

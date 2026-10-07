@@ -28,6 +28,12 @@ export interface ConnectionSnapshotEntry {
   granted_scopes: string[];
   last_probe_at: string | null;
   expires_at: string | null;
+  /**
+   * Whether the current user authorised this connection. GitHub repository
+   * access is per person: an org-level GitHub connection made by a colleague
+   * does not give THIS user's repository picker their own repositories.
+   */
+  connected_by_you: boolean | null;
 }
 
 export interface ConnectionSnapshot {
@@ -83,6 +89,7 @@ export async function snapshotConnections(): Promise<ConnectionSnapshot> {
         granted_scopes: record.grantedScopes,
         last_probe_at: record.lastProbeAt,
         expires_at: record.expiresAt,
+        connected_by_you: user ? record.createdBy === user.id : null,
       })),
       can_write_connections: canWrite,
     };

@@ -8,6 +8,7 @@ import {
 } from "../_shared/connector-registry/index.ts";
 import { mergeConnectionCredentials } from "../_shared/connection-credentials.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
+import { recordConnectionEvents } from "../_shared/connection-sync.ts";
 
 /**
  * The only path a credential ever takes into this system.
@@ -228,6 +229,18 @@ Deno.serve(async (req: Request) => {
       { status: 500 },
     );
   }
+
+  await recordConnectionEvents(admin, [
+    {
+      orgId,
+      providerId: manifest.id,
+      instanceKey,
+      action: "connected",
+      status,
+      actor: userId,
+      detail: { via: "credentials" },
+    },
+  ]);
 
   await admin.from("environment_checks").insert({
     org_id: orgId,

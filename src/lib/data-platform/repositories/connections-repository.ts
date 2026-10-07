@@ -31,6 +31,8 @@ export interface ConnectionRecord {
   lastProbe: ProbeResult | null;
   lastProbeAt: string | null;
   expiresAt: string | null;
+  /** The user whose credential this is (who authorised it). */
+  createdBy: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +52,7 @@ const SELECT_COLUMNS = [
   "last_probe",
   "last_probe_at",
   "expires_at",
+  "created_by",
   "created_at",
   "updated_at",
 ].join(", ");
@@ -70,6 +73,7 @@ function toRecord(row: Record<string, unknown>): ConnectionRecord {
     lastProbe: (row.last_probe as ProbeResult | null) ?? null,
     lastProbeAt: (row.last_probe_at as string | null) ?? null,
     expiresAt: (row.expires_at as string | null) ?? null,
+    createdBy: (row.created_by as string | null) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

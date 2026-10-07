@@ -25,6 +25,7 @@ function connectionWith(
     lastProbe: null,
     lastProbeAt: null,
     expiresAt: null,
+    createdBy: null,
     createdAt: "2026-09-01T00:00:00.000Z",
     updatedAt: "2026-09-01T00:00:00.000Z",
     ...overrides,
@@ -208,5 +209,26 @@ describe("ConnectorCard", () => {
     expect(
       screen.queryByTestId("connector-reconnect-linear"),
     ).not.toBeInTheDocument();
+  });
+
+  it("warns ahead of time and offers Reconnect before a non-renewable token lapses", () => {
+    const expiring = connectionWith({
+      expiresAt: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+    });
+    render(
+      <ConnectorCard
+        manifest={manifest}
+        connection={expiring}
+        index={0}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onTest={vi.fn()}
+        onReconnect={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("connector-expiring-linear")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("connector-reconnect-linear"),
+    ).toBeInTheDocument();
   });
 });

@@ -25,6 +25,8 @@ export const ENVIRONMENT_QUERY_KEYS = {
     ["environment", "profile", orgId ?? null] as const,
   connections: (orgId?: string) =>
     ["environment", "connections", orgId ?? null] as const,
+  connectionEvents: (orgId?: string) =>
+    ["environment", "connection-events", orgId ?? null] as const,
   readiness: () => ["environment", "readiness"] as const,
   checks: (orgId?: string, limit?: number) =>
     ["environment", "checks", orgId ?? null, limit ?? null] as const,

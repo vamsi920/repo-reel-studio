@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetMcpHealthStoreForTests,
   beginMcpHealthCheck,
@@ -72,5 +72,40 @@ describe("mcp-health-store", () => {
     resetMcpHealthStore();
 
     expect(getMcpHealthSnapshot()).toEqual({});
+  });
+
+  it("keeps a rejected-credentials verdict across a reload, and nothing else", async () => {
+    // Arrange
+    const rejected: McpServerHealth = {
+      status: "failed",
+      kind: "credentials",
+      error: "401 unauthorized",
+      checkedAt: 3,
+    };
+    setMcpServerHealth("slack", rejected);
+    setMcpServerHealth("linear", HEALTHY);
+    setMcpServerHealth("figma", FAILED);
+
+    // Act: a fresh page load re-imports the module.
+    vi.resetModules();
+    const reloaded = await import("#/api/mcp-health/mcp-health-store");
+
+    // Assert
+    expect(reloaded.getMcpHealthSnapshot()).toEqual({ slack: rejected });
+  });
+
+  it("forgets a persisted credentials failure once the server is re-tested or edited", async () => {
+    setMcpServerHealth("slack", {
+      status: "failed",
+      kind: "credentials",
+      error: "401",
+      checkedAt: 3,
+    });
+    clearMcpServerHealth("slack");
+
+    vi.resetModules();
+    const reloaded = await import("#/api/mcp-health/mcp-health-store");
+
+    expect(reloaded.getMcpHealthSnapshot()).toEqual({});
   });
 });

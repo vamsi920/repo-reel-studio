@@ -5,19 +5,63 @@ type Listener = () => void;
 export type McpHealthMap = Record<string, McpServerHealth>;
 
 /**
- * In-memory MCP connection-health store, keyed by
- * `getMcpServerHealthKey(server)`. Mirrors the module-store shape of
- * `#/api/backend-registry/health-store` but is deliberately NOT persisted:
- * a health verdict is only as fresh as its probe, so a page reload resets
- * every server to "unchecked" instead of resurrecting a possibly-stale
- * "healthy".
+ * MCP connection-health store, keyed by `getMcpServerHealthKey(server)`.
+ * Mirrors the module-store shape of `#/api/backend-registry/health-store`.
+ *
+ * Most verdicts are deliberately NOT persisted: a health verdict is only as
+ * fresh as its probe, so a reload resets servers to "unchecked" instead of
+ * resurrecting a possibly-stale "healthy". The one exception is a
+ * `credentials` failure: a rejected token does not fix itself, and losing it
+ * on reload hid it from the app-wide reconnect banner. Those survive a reload
+ * until the server is edited, re-tested, deleted, or the backend changes.
+ * Only the display-safe (already redacted) error text is stored.
  */
-let healthMap: McpHealthMap = {};
+const PERSIST_KEY = "neodevex-mcp-credential-failures";
+
+function isCredentialFailure(health: McpServerHealth | undefined): boolean {
+  return health?.status === "failed" && health.kind === "credentials";
+}
+
+function loadPersisted(): McpHealthMap {
+  try {
+    if (typeof localStorage === "undefined") return {};
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as McpHealthMap;
+    const out: McpHealthMap = {};
+    for (const [key, health] of Object.entries(parsed ?? {})) {
+      if (isCredentialFailure(health)) out[key] = health;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function persist(map: McpHealthMap): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const failures: McpHealthMap = {};
+    for (const [key, health] of Object.entries(map)) {
+      if (isCredentialFailure(health)) failures[key] = health;
+    }
+    if (Object.keys(failures).length === 0) {
+      localStorage.removeItem(PERSIST_KEY);
+    } else {
+      localStorage.setItem(PERSIST_KEY, JSON.stringify(failures));
+    }
+  } catch {
+    // Storage blocked: the verdict still lives for this page load.
+  }
+}
+
+let healthMap: McpHealthMap = loadPersisted();
 const listeners = new Set<Listener>();
 let nextCheckId = 1;
 
 function commit(next: McpHealthMap): void {
   healthMap = next;
+  persist(next);
   listeners.forEach((listener) => listener());
 }
 
@@ -89,6 +133,7 @@ export function resetMcpHealthStore(): void {
 /** Test-only: reset state and listeners. */
 export function __resetMcpHealthStoreForTests(): void {
   healthMap = {};
+  persist({});
   listeners.clear();
   nextCheckId = 1;
 }

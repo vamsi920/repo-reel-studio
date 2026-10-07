@@ -3598,5 +3598,22 @@
   "THINKING_GRAPH$PANEL_SHOW": "생각 보기",
   "THINKING_GRAPH$PANEL_HIDE": "생각 숨기기",
   "THINKING_GRAPH$PARALLEL": "{{count}}개 병렬 실행",
-  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}}개 이전 단계"
+  "THINKING_GRAPH$EARLIER_STEPS": "+{{count}}개 이전 단계",
+  "ENVIRONMENT$EXPIRES_SOON_BANNER": "{{provider}} 액세스가 {{date}}에 만료됩니다",
+  "ENVIRONMENT$EXPIRES_SOON_HINT": "액세스가 {{date}}에 만료됩니다. 중단을 피하려면 그 전에 다시 연결하세요.",
+  "ENVIRONMENT$MCP_CREDENTIALS_BANNER": "{{server}} MCP 서버가 자격 증명을 거부했습니다",
+  "ENVIRONMENT$LLM_AUTH_BANNER": "LLM 프로필 \"{{profile}}\"의 API 키가 거부되었습니다",
+  "ENVIRONMENT$FIX_ISSUE": "수정",
+  "ENVIRONMENT$MORE_ISSUES": "(+{{count}}개 더)",
+  "ENVIRONMENT$ACTIVITY_TITLE": "최근 연결 활동",
+  "ENVIRONMENT$ACTIVITY_EMPTY": "아직 연결 활동이 없습니다.",
+  "ENVIRONMENT$ACTIVITY_LOAD_ERROR": "연결 활동을 불러올 수 없습니다.",
+  "ENVIRONMENT$ACTIVITY_CONNECTED": "{{provider}} 연결됨",
+  "ENVIRONMENT$ACTIVITY_DISCONNECTED": "{{provider}} 연결 해제됨",
+  "ENVIRONMENT$ACTIVITY_REFRESHED": "{{provider}} 액세스 갱신됨",
+  "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
+  "CONNECTIONS$TEAM_GITHUB_HINT": "조직에 GitHub가 연결되어 있지만 저장소는 본인의 GitHub 계정에서 표시됩니다. 저장소를 보려면 계정을 연결하세요.",
+  "CONNECTIONS$CONNECT_YOUR_GITHUB": "내 GitHub 연결",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "설정 도우미에는 로컬 백엔드가 필요합니다. OpenHands Cloud는 아직 이 작업 공간을 구성하는 도구를 실행할 수 없습니다. 로컬 백엔드로 전환하거나 공급자를 직접 연결하세요.",
+  "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "공급자 직접 연결"
 }

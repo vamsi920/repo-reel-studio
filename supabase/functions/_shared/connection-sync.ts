@@ -30,6 +30,71 @@ export function jiraRefreshLockKey(userId: string): string {
   return `jira:${userId}`;
 }
 
+
+export type ConnectionEventAction =
+  | "connected"
+  | "disconnected"
+  | "refreshed"
+  | "status_changed";
+
+export interface ConnectionEventInput {
+  orgId: string;
+  providerId: string;
+  instanceKey?: string;
+  action: ConnectionEventAction;
+  status?: string | null;
+  actor?: string | null;
+  detail?: Record<string, unknown>;
+}
+
+/**
+ * Appends to the connection activity log (`connection_events`). Never throws
+ * and never blocks the caller's real work: the log is a record, not a gate.
+ * `detail` must never carry a credential -- only reasons and HTTP statuses.
+ */
+export async function recordConnectionEvents(
+  admin: SupabaseClient,
+  events: ConnectionEventInput[],
+): Promise<void> {
+  if (events.length === 0) return;
+  try {
+    await admin.from("connection_events").insert(
+      events.map((event) => ({
+        org_id: event.orgId,
+        provider_id: event.providerId,
+        instance_key: event.instanceKey ?? "default",
+        action: event.action,
+        status: event.status ?? null,
+        actor: event.actor ?? null,
+        detail: event.detail ?? {},
+      })),
+    );
+  } catch {
+    // Bookkeeping only.
+  }
+}
+
+interface ChangedRow {
+  org_id: string;
+  provider_id: string;
+  instance_key: string;
+}
+
+function statusEvents(
+  rows: ChangedRow[] | null,
+  status: string,
+  detail?: Record<string, unknown>,
+): ConnectionEventInput[] {
+  return (rows ?? []).map((row) => ({
+    orgId: row.org_id,
+    providerId: row.provider_id,
+    instanceKey: row.instance_key,
+    action: "status_changed" as const,
+    status,
+    detail,
+  }));
+}
+
 /**
  * Records a health verdict on the generic rows the given user authorised for
  * the given providers. Used by the legacy proxies, which only know the user,
@@ -43,20 +108,27 @@ export async function markUserConnectionsStatus(
   userId: string,
   providerIds: readonly string[],
   status: ConnectionHealthStatus,
-  // Accepted for call-site readability and future logging; deliberately not
-  // written to `last_probe`, whose shape the UI reads as a full ProbeResult.
-  _detail?: Record<string, unknown>,
+  /** Why, for the activity log. Never a credential. */
+  detail?: Record<string, unknown>,
 ): Promise<void> {
   try {
     const now = new Date().toISOString();
-    await admin
+    // `neq` makes this a no-op for rows already in that state, so a proxy
+    // that sees the same 401 a hundred times logs one change, not a hundred.
+    const { data } = await admin
       .from("connections")
       .update({
         status,
         updated_at: now,
       })
       .eq("created_by", userId)
-      .in("provider_id", providerIds as string[]);
+      .in("provider_id", providerIds as string[])
+      .neq("status", status)
+      .select("org_id, provider_id, instance_key");
+    await recordConnectionEvents(
+      admin,
+      statusEvents(data as ChangedRow[] | null, status, detail),
+    );
   } catch {
     // Bookkeeping only.
   }
@@ -67,19 +139,24 @@ export async function markConnectionStatus(
   admin: SupabaseClient,
   connectionId: string,
   status: ConnectionHealthStatus,
-  // Accepted for call-site readability and future logging; deliberately not
-  // written to `last_probe`, whose shape the UI reads as a full ProbeResult.
-  _detail?: Record<string, unknown>,
+  /** Why, for the activity log. Never a credential. */
+  detail?: Record<string, unknown>,
 ): Promise<void> {
   try {
     const now = new Date().toISOString();
-    await admin
+    const { data } = await admin
       .from("connections")
       .update({
         status,
         updated_at: now,
       })
-      .eq("id", connectionId);
+      .eq("id", connectionId)
+      .neq("status", status)
+      .select("org_id, provider_id, instance_key");
+    await recordConnectionEvents(
+      admin,
+      statusEvents(data as ChangedRow[] | null, status, detail),
+    );
   } catch {
     // Bookkeeping only.
   }
@@ -192,11 +269,22 @@ export async function deleteUserConnections(
   providerIds: readonly string[],
 ): Promise<void> {
   try {
-    await admin
+    const { data } = await admin
       .from("connections")
       .delete()
       .eq("created_by", userId)
-      .in("provider_id", providerIds as string[]);
+      .in("provider_id", providerIds as string[])
+      .select("org_id, provider_id, instance_key");
+    await recordConnectionEvents(
+      admin,
+      ((data as ChangedRow[] | null) ?? []).map((row) => ({
+        orgId: row.org_id,
+        providerId: row.provider_id,
+        instanceKey: row.instance_key,
+        action: "disconnected" as const,
+        actor: userId,
+      })),
+    );
   } catch {
     // The legacy row is gone either way; a leftover generic row will show
     // as disconnected-at-next-probe rather than silently working.
@@ -269,6 +357,16 @@ export async function mirrorLegacyToGeneric(
       { onConflict: "org_id,capability,provider_id,instance_key" },
     );
     if (error) return { mirrored: false, reason: error.message };
+    await recordConnectionEvents(admin, [
+      {
+        orgId,
+        providerId: input.providerId,
+        action: "connected",
+        status: "ok",
+        actor: input.userId,
+        detail: { via: "settings" },
+      },
+    ]);
     return { mirrored: true };
   } catch (error) {
     return { mirrored: false, reason: (error as Error)?.message ?? "unknown" };

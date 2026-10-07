@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  expiresSoon,
   needsReconnect,
   oauthConfigFor,
 } from "#/lib/environment/connection-health";
@@ -54,5 +55,42 @@ describe("resolveOAuthReturnPath", () => {
     expect(resolveOAuthReturnPath("https://evil.example")).toBe(
       "/environment/connections",
     );
+  });
+});
+
+describe("expiresSoon", () => {
+  const NOW = Date.parse("2026-10-07T00:00:00.000Z");
+  const DAY = 24 * 60 * 60_000;
+  const healthy = (expiresAt: string | null) =>
+    ({ status: "ok", lastProbe: null, expiresAt }) as Parameters<
+      typeof expiresSoon
+    >[0];
+
+  it("warns for a non-renewable token lapsing within three days", () => {
+    const at = new Date(NOW + 2 * DAY).toISOString();
+    expect(
+      expiresSoon(healthy(at), { oauth: undefined }, NOW)?.toISOString(),
+    ).toBe(at);
+  });
+
+  it("stays quiet for renewable tokens, distant expiry, no expiry, or an already-broken connection", () => {
+    const soon = new Date(NOW + DAY).toISOString();
+    const renewable = { oauth: { refreshable: true } } as never;
+    expect(expiresSoon(healthy(soon), renewable, NOW)).toBeNull();
+    expect(
+      expiresSoon(
+        healthy(new Date(NOW + 10 * DAY).toISOString()),
+        undefined,
+        NOW,
+      ),
+    ).toBeNull();
+    expect(expiresSoon(healthy(null), undefined, NOW)).toBeNull();
+    expect(
+      expiresSoon(
+        { ...healthy(soon), status: "revoked" } as never,
+        undefined,
+        NOW,
+      ),
+    ).toBeNull();
   });
 });

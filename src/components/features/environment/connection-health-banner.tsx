@@ -1,20 +1,21 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Clock, X } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
-import { useConnections } from "#/hooks/query/use-connections";
+import { cn } from "#/utils/utils";
 import {
-  needsReconnect,
   oauthConfigFor,
   reconnectKind,
 } from "#/lib/environment/connection-health";
 import { getConnectorManifest } from "#/lib/environment/registry";
 import { EnvironmentService } from "#/api/environment-service/environment-service.api";
 import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
-import { buildAgentCanvasPath } from "#/utils/base-path";
+import { useNavigation } from "#/context/navigation-context";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
+import { useHealthIssues, type HealthIssue } from "#/hooks/use-health-issues";
 
 const DISMISSED_STORAGE_KEY = "neo-connection-banner-dismissed";
+const CONNECTIONS_PATH = "/environment/connections";
 
 function readDismissed(): Set<string> {
   try {
@@ -34,38 +35,39 @@ function writeDismissed(keys: Set<string>): void {
 }
 
 /**
- * Tells the user, on any screen, that a connection stopped working and offers
- * the one click that fixes it.
+ * Tells the user, on any screen, that something they connected stopped
+ * working -- or is about to -- and offers the one click that fixes it.
  *
- * Status is written by the server (a refresh the provider rejected, an API
- * call that came back 401, the hourly sweep) and pushed here over Realtime,
- * so this appears without a reload and without anyone opening the
- * Environment page. Dismissal is per session and keyed on the connection's
- * `updatedAt`, so a connection that breaks AGAIN after being repaired is
- * shown again rather than staying dismissed forever.
+ * Covers org connections (pushed over Realtime from the server's verdicts and
+ * the hourly sweep), tokens about to lapse, MCP servers whose credentials were
+ * rejected, and LLM profiles whose key a provider rejected. Broken things are
+ * shown before merely-expiring ones. Dismissal is per session and keyed on
+ * the problem itself, so a problem that recurs is shown again.
  */
 export function ConnectionHealthBanner() {
   const { t } = useTranslation("openhands");
-  const { data: connections } = useConnections();
+  const { navigate } = useNavigation();
+  const issues = useHealthIssues();
   const [dismissed, setDismissed] = React.useState<Set<string>>(readDismissed);
   const [busy, setBusy] = React.useState(false);
 
-  const broken = (connections ?? []).filter(
-    (connection) =>
-      needsReconnect(connection) &&
-      !dismissed.has(`${connection.id}:${connection.updatedAt}`),
-  );
-  const first = broken[0];
+  const visible = issues
+    .filter((issue) => !dismissed.has(issue.key))
+    // Broken before expiring: a warning must never hide an outage.
+    .sort(
+      (a, b) =>
+        Number(a.kind === "connection-expiring") -
+        Number(b.kind === "connection-expiring"),
+    );
+  const first = visible[0];
   if (!first) return null;
-
-  const manifest = getConnectorManifest(first.providerId);
-  const providerName = manifest ? t(manifest.nameKey) : first.providerId;
+  const warningOnly = visible.every(
+    (issue) => issue.kind === "connection-expiring",
+  );
 
   const dismiss = () => {
     const next = new Set(dismissed);
-    for (const connection of broken) {
-      next.add(`${connection.id}:${connection.updatedAt}`);
-    }
+    for (const issue of visible) next.add(issue.key);
     writeDismissed(next);
     setDismissed(next);
   };
@@ -74,7 +76,7 @@ export function ConnectionHealthBanner() {
     const target = getConnectorManifest(connection.providerId);
     if (!target || reconnectKind(target) === "form") {
       // Token-based connectors need a new secret typed into the form.
-      window.location.assign(buildAgentCanvasPath("/environment/connections"));
+      navigate(CONNECTIONS_PATH);
       return;
     }
     setBusy(true);
@@ -97,29 +99,59 @@ export function ConnectionHealthBanner() {
     }
   };
 
+  const act = (issue: HealthIssue) => {
+    if (issue.connection) {
+      void reconnect(issue.connection);
+      return;
+    }
+    if (issue.fixPath) navigate(issue.fixPath);
+  };
+
+  const actionLabel =
+    first.kind === "connection-reconnect" ||
+    first.kind === "connection-expiring"
+      ? t(I18nKey.ENVIRONMENT$RECONNECT)
+      : t(I18nKey.ENVIRONMENT$FIX_ISSUE);
+
   return (
     <div
-      role="alert"
+      role={warningOnly ? "status" : "alert"}
       data-testid="connection-health-banner"
-      className="mx-3 flex items-center gap-3 rounded-lg border border-[var(--error-500)] bg-[var(--error-bg-subtle)] px-3 py-2 text-sm text-[var(--text-primary)]"
+      data-kind={first.kind}
+      className={cn(
+        "mx-3 flex items-center gap-3 rounded-lg border px-3 py-2 text-sm text-[var(--text-primary)]",
+        warningOnly
+          ? "border-[var(--warning-500)] bg-[var(--warning-bg-subtle)]"
+          : "border-[var(--error-500)] bg-[var(--error-bg-subtle)]",
+      )}
     >
-      <AlertTriangle
-        size={16}
-        aria-hidden
-        className="shrink-0 text-[var(--error-500)]"
-      />
+      {warningOnly ? (
+        <Clock
+          size={16}
+          aria-hidden
+          className="shrink-0 text-[var(--warning-500)]"
+        />
+      ) : (
+        <AlertTriangle
+          size={16}
+          aria-hidden
+          className="shrink-0 text-[var(--error-500)]"
+        />
+      )}
       <span className="min-w-0 flex-1 truncate">
-        {t(I18nKey.ENVIRONMENT$RECONNECT_BANNER, { provider: providerName })}
-        {broken.length > 1 ? ` (+${broken.length - 1})` : ""}
+        {first.message}
+        {visible.length > 1
+          ? ` ${t(I18nKey.ENVIRONMENT$MORE_ISSUES, { count: visible.length - 1 })}`
+          : ""}
       </span>
       <button
         type="button"
         data-testid="connection-health-banner-reconnect"
         disabled={busy}
-        onClick={() => void reconnect(first)}
+        onClick={() => act(first)}
         className="ame-btn-primary ame-btn-sm"
       >
-        {t(I18nKey.ENVIRONMENT$RECONNECT)}
+        {actionLabel}
       </button>
       <button
         type="button"

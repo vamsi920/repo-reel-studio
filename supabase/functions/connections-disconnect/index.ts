@@ -3,6 +3,7 @@ import { createAdminClient, getCallerUserId } from "../_shared/supabase-admin.ts
 import { getCallerOrgId, requireOrgRole } from "../_shared/org.ts";
 import { unmirrorFromLegacy } from "../_shared/legacy-mirror.ts";
 import { cleanupJiraUserArtifacts } from "../_shared/jira-cleanup.ts";
+import { recordConnectionEvents } from "../_shared/connection-sync.ts";
 
 /**
  * Removes a connection.
@@ -61,6 +62,16 @@ Deno.serve(async (req: Request) => {
     .eq("org_id", orgId);
 
   if (error) return jsonResponse({ error: "delete_failed" }, { status: 500 });
+
+  await recordConnectionEvents(admin, [
+    {
+      orgId,
+      providerId: connection.provider_id as string,
+      instanceKey: connection.instance_key as string,
+      action: "disconnected",
+      actor: userId,
+    },
+  ]);
 
   // Remove the mirrored legacy row too, or the two stores diverge: the
   // Environment screen would show the provider as gone while the repo picker

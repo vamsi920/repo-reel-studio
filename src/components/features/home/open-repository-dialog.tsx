@@ -7,6 +7,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { Branch, GitRepository } from "#/types/git";
 import { Provider } from "#/types/settings";
 import { useUserProviders } from "#/hooks/use-user-providers";
+import { TeamGithubNotice } from "./team-github-notice";
 import { RepositorySelectionForm } from "./repo-selection-form";
 
 interface OpenRepositoryDialogProps {
@@ -47,6 +48,7 @@ export function OpenRepositoryDialog({
           <BaseModalTitle title={t(I18nKey.COMMON$OPEN_REPOSITORY)} />
         </div>
 
+        <TeamGithubNotice />
         <div className="w-full" data-testid="open-repository-dialog-body">
           <RepositorySelectionForm
             isLoadingSettings={isLoadingSettings}
