@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DebugAutomationButton } from "#/components/features/automations/detail/debug-automation-button";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import ProfilesService from "#/api/profiles-service/profiles-service.api";
+import AgentProfilesService from "#/api/agent-profiles-service/agent-profiles-service.api";
+import SettingsService from "#/api/settings-service/settings-service.api";
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import {
   NavigationProvider,
@@ -33,6 +35,24 @@ vi.mock(
 
 vi.mock("#/api/profiles-service/profiles-service.api", () => ({
   default: { listProfiles: vi.fn() },
+}));
+
+// The hook also loads agent profiles and settings. Left unmocked these became
+// real requests that could finish after jsdom teardown and fail the whole run
+// with "ProgressEvent is not defined".
+vi.mock(
+  "#/api/agent-profiles-service/agent-profiles-service.api",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("#/api/agent-profiles-service/agent-profiles-service.api")
+      >();
+    return { ...actual, default: { listProfiles: vi.fn() } };
+  },
+);
+
+vi.mock("#/api/settings-service/settings-service.api", () => ({
+  default: { getSettings: vi.fn() },
 }));
 
 const mockDisplayErrorToast = vi.fn();
@@ -113,6 +133,13 @@ beforeEach(() => {
     profiles: [],
     active_profile: null,
   });
+  vi.mocked(AgentProfilesService.listProfiles).mockResolvedValue({
+    profiles: [],
+    active_agent_profile_id: null,
+  } as never);
+  vi.mocked(SettingsService.getSettings).mockResolvedValue({
+    llm_api_key_set: true,
+  } as never);
 });
 
 afterEach(() => {
