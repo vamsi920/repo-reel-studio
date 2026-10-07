@@ -148,8 +148,15 @@ vi.mock("react-router", async (importOriginal) => ({
 vi.mock("zustand");
 
 // Mock requests during tests
+// True once this test file has made any request MSW intercepted. Only those
+// files need the long drain in `afterAll`, so quiet files stay fast.
+let sawInterceptedRequest = false;
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "bypass" });
+  server.events.on("request:start", () => {
+    sawInterceptedRequest = true;
+  });
   vi.stubGlobal("ResizeObserver", MockResizeObserver);
 });
 
@@ -185,6 +192,13 @@ afterAll(async () => {
   vi.useRealTimers();
   for (let i = 0; i < 10; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  // Ten empty ticks are ~10ms, which a loaded CI runner can overrun: a mocked
+  // response still in flight then lands after teardown and fails the whole
+  // run with "ProgressEvent is not defined" (attributed to whichever test
+  // file happens to be running). Give files that used the network real time.
+  if (sawInterceptedRequest) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
   server.close();
   vi.unstubAllGlobals();
