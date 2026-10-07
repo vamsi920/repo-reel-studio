@@ -13,6 +13,15 @@ import { reviewKnowledgeQuality } from "./quality-review";
 import { repairInvalidDiagrams } from "./mermaid-repair";
 import { resolvePersistenceIds } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+import {
+  computeWorkspaceId,
+  submitMemoryCandidate,
+} from "#/lib/workspace-memory";
+import {
+  exportKtToWorkspace,
+  KT_INDEX_FILE,
+  KT_PAGES_DIR,
+} from "./kt-workspace-export";
 
 /** Fire-and-forget, mirrors src/api/workspace-memory/workspace-memory-supabase-sync.ts's
  * queueSupabaseMemorySync pattern — never blocks or fails generation. Both
@@ -44,6 +53,48 @@ function queueKnowledgePersistence(
         snapshot.branch,
         knowledge,
       );
+    })
+    .catch(() => {});
+}
+
+/** Fire-and-forget: writes the KT docs into the workspace as files under
+ * `.neodevex/kt/` so agents can read them, then pins a workspace-memory
+ * convention pointing every agent at them. Best-effort like the Supabase
+ * mirror above -- a failed export never fails generation. */
+function queueKtWorkspaceExport(
+  snapshot: RepositorySnapshot,
+  conversationUrl: string | null,
+  sessionApiKey: string | null,
+  backendId: string | null,
+  knowledge: KnowledgeRepository,
+) {
+  if (!conversationUrl || !snapshot.localPath) return;
+  void exportKtToWorkspace(
+    { conversationUrl, sessionApiKey, workingDir: snapshot.localPath },
+    knowledge,
+    snapshot,
+  )
+    .then((result) => {
+      if (!result.ok) return;
+      const workspaceId = computeWorkspaceId(backendId, snapshot.localPath);
+      if (!workspaceId) return;
+      submitMemoryCandidate({
+        workspaceId,
+        kind: "convention",
+        subject: "kt-docs:location",
+        statement: `KT docs for this repository live in ${KT_INDEX_FILE} (architecture map) and ${KT_PAGES_DIR}/ (one page per area). Read them before planning changes; if a doc and the code disagree, trust the code.`,
+        tags: ["kt-docs", "knowledge"],
+        pinned: true,
+        provenance: {
+          source: "knowledge-reference",
+          sourceId: snapshot.repositoryId,
+          conversationId: null,
+          repositoryId: snapshot.repositoryId,
+          commitSha: knowledge.commitSha || snapshot.commitSha,
+          filePath: KT_INDEX_FILE,
+          observedAt: knowledge.generatedAt || new Date().toISOString(),
+        },
+      });
     })
     .catch(() => {});
 }
@@ -118,6 +169,13 @@ export async function generateKnowledge(
     store.setReady(snapshot.repositoryId, knowledge, qualityFlags, attempt);
     navigate(`/kt/${encodeURIComponent(snapshot.repositoryId)}`);
     queueKnowledgePersistence(snapshot, backendId, knowledge);
+    queueKtWorkspaceExport(
+      snapshot,
+      conversationUrl,
+      sessionApiKey,
+      backendId,
+      knowledge,
+    );
     if (evidence) {
       // Re-run analysis with real subsystem hints now that Knowledge exists,
       // so a later CodeGraph visit finds better-named subsystems without the

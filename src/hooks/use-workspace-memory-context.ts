@@ -4,6 +4,10 @@ import useMetricsStore from "#/stores/metrics-store";
 import useWorkspaceMemoryStore from "#/stores/workspace-memory-store";
 import { WorkspaceContextService } from "#/lib/workspace-memory";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
+import {
+  buildKtPagePointers,
+  findKnowledgeForConversation,
+} from "#/lib/knowledge/kt-agent-context";
 
 import { useActiveConversation } from "./query/use-active-conversation";
 import { useSettings } from "./query/use-settings";
@@ -70,10 +74,21 @@ export function useWorkspaceMemoryContext() {
         model: settings?.llm_model ?? null,
       });
 
-      if (!context.text) return "";
+      // KT docs pointers ride with memory so profile-launched conversations
+      // (which lose the launch-time system suffix) still get pointed at them.
+      const ktPointers = buildKtPagePointers(
+        findKnowledgeForConversation({
+          workingDir: conversation?.workspace?.working_dir,
+          repository: conversation?.selected_repository,
+          branch: conversation?.selected_branch,
+        }),
+        task,
+      );
+
+      if (!context.text) return ktPointers;
 
       recordSavings(context.sample);
-      return context.text;
+      return ktPointers ? `${context.text}\n\n${ktPointers}` : context.text;
     },
     [
       workspaceId,

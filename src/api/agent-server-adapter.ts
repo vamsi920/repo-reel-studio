@@ -33,6 +33,10 @@ import {
 } from "./conversation-service/agent-server-conversation-service.types";
 import SettingsService from "./settings-service/settings-service.api";
 import { getStoredConversationMetadata } from "./conversation-metadata-store";
+import {
+  buildKnowledgeSystemSuffix,
+  findKnowledgeForConversation,
+} from "#/lib/knowledge/kt-agent-context";
 import LLMSubscriptionService from "./llm-subscription-service";
 import {
   LLM_AUTH_TYPE_SUBSCRIPTION,
@@ -1111,6 +1115,9 @@ export interface StartConversationOptions {
   agentProfileKind?: AgentKind;
   titleLlmProfile?: string;
   runtimeServicesInfo?: RuntimeServicesInfo | null;
+  /** `"owner/repo"` the conversation targets; used to find its KT docs. */
+  selectedRepository?: string | null;
+  selectedBranch?: string | null;
 }
 
 export function buildStartConversationRequest(
@@ -1126,16 +1133,24 @@ export function buildStartConversationRequest(
     : acpMode
       ? "acp"
       : "openhands";
+  const launchWorkingDir = options.workingDir ?? getAgentServerWorkingDir();
+  // KT docs generated for this workspace ride along as a system-prompt map so
+  // the agent starts by reading them instead of rediscovering the codebase.
+  const knowledgeSuffix = buildKnowledgeSystemSuffix(
+    findKnowledgeForConversation({
+      workingDir: launchWorkingDir,
+      repository: options.selectedRepository,
+      branch: options.selectedBranch,
+    }),
+  );
   const agentSettings = buildConfiguredAgentSettings(
     sourceAgentSettings,
     options.runtimeServicesInfo,
     // The workspace is known here (it is what the conversation will run in),
     // so launch-time memory is scoped to it exactly as message-time memory is.
-    computeWorkspaceId(
-      getActiveBackend().backend.id,
-      options.workingDir ?? getAgentServerWorkingDir(),
-    ),
-    options.extraSystemSuffix ?? null,
+    computeWorkspaceId(getActiveBackend().backend.id, launchWorkingDir),
+    [knowledgeSuffix, options.extraSystemSuffix].filter(Boolean).join("\n\n") ||
+      null,
   );
   const acpServerTag = acpMode
     ? getAcpServerTag(sourceAgentSettings)
@@ -1340,6 +1355,8 @@ export async function buildStartConversationRequestWithEncryptedSettings(options
   agentProfileId?: string;
   agentProfileKind?: AgentKind;
   titleLlmProfile?: string;
+  selectedRepository?: string | null;
+  selectedBranch?: string | null;
 }): Promise<Record<string, unknown>> {
   const { SecretsService } = await import("./secrets-service");
 

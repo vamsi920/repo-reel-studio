@@ -99,6 +99,7 @@ export function runToRow(run, workspaceDbId) {
     tool_call_count: run.toolCallCount,
     llm_call_count: run.llmCallCount,
     error_count: run.errorCount,
+    kt_docs_read_count: run.ktDocsReadCount ?? 0,
     artifacts: run.artifacts,
     last_event_timestamp: run.lastEventTimestamp ?? null,
     last_event_ids: run.lastEventIds ?? [],
@@ -131,6 +132,7 @@ export function rowToRun(row) {
     toolCallCount: row.tool_call_count ?? 0,
     llmCallCount: row.llm_call_count ?? 0,
     errorCount: row.error_count ?? 0,
+    ktDocsReadCount: row.kt_docs_read_count ?? 0,
     artifacts: row.artifacts ?? [],
     // Cursor bookkeeping (see map-events.mjs / collector.mjs) — persisted so
     // a collector restart resumes tailing from where it left off instead of

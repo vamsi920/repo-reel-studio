@@ -6,6 +6,7 @@ import {
   phaseForAction,
   summarizeActionParameters,
   isActiveStatus,
+  isKtDocsRead,
   isInterruptedToolCallError,
   isTerminalStatus,
   normalizeTimestamp,
@@ -398,6 +399,58 @@ describe("RunAggregator — tool spans", () => {
       }),
     );
     expect(aggregator.run.artifacts).toEqual(["/workspace/project/src/app.ts"]);
+  });
+});
+
+describe("KT docs reads", () => {
+  it.each([
+    [
+      {
+        kind: "FileEditorAction",
+        command: "view",
+        path: "/w/.neodevex/kt/INDEX.md",
+      },
+      true,
+    ],
+    [
+      {
+        kind: "TerminalAction",
+        command: "cd app && cat docs/kt/pages/auth.md",
+      },
+      true,
+    ],
+    [
+      {
+        kind: "FileEditorAction",
+        command: "create",
+        path: ".neodevex/kt/x.md",
+      },
+      false,
+    ],
+    [
+      { kind: "TerminalAction", command: "npm run kt:export -- --out docs/kt" },
+      false,
+    ],
+    [{ kind: "TerminalAction", command: "cat src/kt/index.ts" }, false],
+  ])("classifies %o as a KT read: %s", (action, expected) => {
+    expect(isKtDocsRead(action)).toBe(expected);
+  });
+
+  it("counts KT reads on the run and tags the span", () => {
+    const aggregator = new RunAggregator(newRun());
+
+    const opened = aggregator.applyEvent(
+      actionEvent({
+        action: {
+          kind: "TerminalAction",
+          command: "cat .neodevex/kt/INDEX.md",
+        },
+      }),
+    );
+    aggregator.applyEvent(actionEvent({ id: "evt-2", tool_call_id: "call-2" }));
+
+    expect(aggregator.run.ktDocsReadCount).toBe(1);
+    expect(opened.spans[0].attributes["neodevex.kt_docs.read"]).toBe(true);
   });
 });
 

@@ -19,6 +19,8 @@ import {
 } from "#/api/conversation-metadata-store";
 import { ACP_VERTEX_SAFE_MODEL } from "#/constants/acp-providers";
 import { DEFAULT_SETTINGS } from "#/services/settings";
+import { useKnowledgeStore } from "#/stores/knowledge-store";
+import { KT_KNOWLEDGE, KT_SNAPSHOT } from "../lib/knowledge/kt-fixtures";
 import {
   LLM_AUTH_TYPE_SUBSCRIPTION,
   OPENAI_SUBSCRIPTION_VENDOR,
@@ -1342,6 +1344,44 @@ describe("agent_settings runtime services suffix", () => {
     expect(
       payload.agent_settings.agent_context.system_message_suffix as string,
     ).toContain("<RUNTIME_SERVICES>");
+  });
+});
+
+describe("agent_settings KT docs suffix", () => {
+  afterEach(() => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+  });
+
+  it("adds a KT docs block when knowledge exists for the launch workspace", () => {
+    useKnowledgeStore
+      .getState()
+      .hydrate(KT_SNAPSHOT.repositoryId, KT_SNAPSHOT, KT_KNOWLEDGE, []);
+
+    const payload = buildStartConversationRequest({
+      settings: DEFAULT_SETTINGS,
+      query: "hello",
+      workingDir: KT_SNAPSHOT.localPath,
+    }) as {
+      agent_settings: { agent_context: Record<string, unknown> };
+    };
+
+    expect(
+      payload.agent_settings.agent_context.system_message_suffix as string,
+    ).toContain(".neodevex/kt/INDEX.md");
+  });
+
+  it("adds no KT docs block for a workspace without knowledge", () => {
+    const payload = buildStartConversationRequest({
+      settings: DEFAULT_SETTINGS,
+      query: "hello",
+      workingDir: "/workspace/elsewhere",
+    }) as {
+      agent_settings: { agent_context: Record<string, unknown> };
+    };
+
+    expect(
+      payload.agent_settings.agent_context.system_message_suffix,
+    ).toBeUndefined();
   });
 });
 

@@ -532,6 +532,10 @@ class AgentServerConversationService {
       agentProfileId,
       agentProfileKind,
       titleLlmProfile,
+      // Lets the KT docs block match knowledge generated for this repo in a
+      // different folder (or loaded from Supabase with no folder at all).
+      selectedRepository: metadata?.selected_repository ?? null,
+      selectedBranch: metadata?.selected_branch ?? null,
     });
 
     const data = await new ConversationClient(

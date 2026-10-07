@@ -80,6 +80,16 @@ describe("buildProactivationPrompt", () => {
     expect(prompt).toContain("gh pr list");
   });
 
+  it("instructs the agent to read the KT docs map first", () => {
+    const prompt = buildProactivationPrompt({
+      watchAreas: ["dependency"],
+      autonomyLevel: "recommend",
+      repository: "acme/repo",
+    });
+
+    expect(prompt).toContain(".neodevex/kt/INDEX.md");
+  });
+
   it("never hardcodes a quota of findings", () => {
     const prompt = buildProactivationPrompt({
       watchAreas: ["dependency"],

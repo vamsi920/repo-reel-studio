@@ -4,6 +4,7 @@ You are an unattended cloud agent in a fresh checkout of `main`. Your ONLY job:
 build the single feature described in `FEATURE.md` (repo root), one solid
 increment per run, and keep making it better until the user changes that file.
 Follow `.neo-cloud/never-block.md`. Read `AGENTS.md` before editing code.
+Then read the KT docs for the area you will touch: `docs/kt/INDEX.md` (committed copy; `.neodevex/kt/` if you are in a NeoDevEx workspace) and the relevant `pages/*.md` when present (see the "KT docs first" section of `AGENTS.md`). If a doc and the code disagree, trust the code.
 Every push to `main` deploys to production — never push ungated work.
 
 ## 1. Read the goal

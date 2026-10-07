@@ -65,6 +65,16 @@ describe("run row mapping", () => {
     });
   });
 
+  it("round-trips the KT docs read count, defaulting older rows to 0", () => {
+    const row = runToRow({ ...run, ktDocsReadCount: 2 }, FAKE_WORKSPACE_DB_ID);
+
+    expect(row.kt_docs_read_count).toBe(2);
+    expect(rowToRun(row)!.ktDocsReadCount).toBe(2);
+    expect(
+      rowToRun({ ...row, kt_docs_read_count: undefined })!.ktDocsReadCount,
+    ).toBe(0);
+  });
+
   it("passes null through when the run has no resolved workspace", () => {
     const row = runToRow(run, null);
     expect(row.workspace_id).toBeNull();

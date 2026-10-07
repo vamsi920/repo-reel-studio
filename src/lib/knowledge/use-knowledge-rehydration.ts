@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { useActiveBackend } from "#/contexts/active-backend-context";
-import {
-  resolveOrgIdWithStatus,
-  findRepositoryUuid,
-} from "#/lib/data-platform/repositories/repository-identity";
-import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
+import { loadPersistedKnowledge } from "#/lib/knowledge/persisted-knowledge";
 import {
   useConnectedRepositories,
   resolveCommitSha,
@@ -63,20 +59,13 @@ async function tryColdRehydration(
     >[3],
   ) => void,
 ): Promise<ColdRehydrationResult> {
-  const { orgId, hadError } = await resolveOrgIdWithStatus();
-  if (!orgId) return { status: hadError ? "org-error" : "not-found" };
-  const repositoryUuid = await findRepositoryUuid(
-    orgId,
+  const result = await loadPersistedKnowledge(
     parsed.owner,
     parsed.repo,
+    parsed.branch,
   );
-  if (!repositoryUuid) return { status: "not-found" };
-  const knowledge =
-    await knowledgePersistenceRepository.getLatestGenerationForRepository(
-      repositoryUuid,
-      parsed.branch,
-    );
-  if (!knowledge) return { status: "not-found" };
+  if (result.status !== "found") return result;
+  const { knowledge } = result;
   hydrate(
     repositoryId,
     {

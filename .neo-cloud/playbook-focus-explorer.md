@@ -56,6 +56,7 @@ npm ci
 
 Read `focus-state.json`, `verify-queue.md`, `learnings.md`, and today's
 `coverage/$(date -u +%F).md` if it exists.
+Then read the KT docs for the area you will touch: `docs/kt/INDEX.md` (committed copy; `.neodevex/kt/` if you are in a NeoDevEx workspace) and the relevant `pages/*.md` when present (see the "KT docs first" section of `AGENTS.md`). If a doc and the code disagree, trust the code.
 
 If `focus-state.json`'s `today.date` isn't today (UTC):
 - **Incident override**: if any `OPEN` `CRITICAL`/`HIGH` incident's `affects:`

@@ -146,7 +146,7 @@ export function buildProactivationPrompt(
 
   const instruction = `You are running a Proactivation pass for this repository, on behalf of the user who enabled it. Follow this disciplined process:
 
-1. Load workspace and repository context. Understand the current state of the codebase before looking for problems.
+1. Load workspace and repository context. If ".neodevex/kt/INDEX.md" exists, read it first: it is the KT (knowledge transfer) docs map of this codebase, with one page per area under ".neodevex/kt/pages/". Open the pages for the areas you investigate. Trust the code where a doc disagrees. Understand the current state of the codebase before looking for problems.
 2. Check ".neodevex/memory" for any previously-dismissed Proactivation candidates and any previous Proactivation fixes or pull requests. Do not re-propose something that was already dismissed with a reason, and do not duplicate an already-open pull request or branch — check "gh pr list" and existing branches first.
 3. Look for improvement candidates only in these areas:
 ${areaGuidance}

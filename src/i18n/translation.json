@@ -45253,6 +45253,23 @@
     "tr": "Tool calls",
     "uk": "Tool calls"
   },
+  "AGENTOPS$RUN_KT_DOCS_READS": {
+    "en": "KT docs reads",
+    "ja": "KTドキュメント参照",
+    "zh-CN": "KT 文档读取",
+    "zh-TW": "KT 文件讀取",
+    "ko-KR": "KT 문서 읽기",
+    "no": "KT-dokumenter lest",
+    "ar": "قراءات مستندات KT",
+    "de": "KT-Dokumente gelesen",
+    "fr": "Lectures des docs KT",
+    "it": "Letture documenti KT",
+    "pt": "Leituras de documentos KT",
+    "es": "Lecturas de documentos KT",
+    "ca": "Lectures de documents KT",
+    "tr": "KT belge okumaları",
+    "uk": "Читання документів KT"
+  },
   "AGENTOPS$RUN_LLM_CALLS": {
     "en": "LLM calls",
     "ja": "LLM calls",

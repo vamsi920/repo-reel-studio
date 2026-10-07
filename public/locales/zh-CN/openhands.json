@@ -2661,6 +2661,7 @@
   "AGENTOPS$RUN_NOT_FOUND_BODY": "The AgentOps collector is running but has no record of this run. The id may be mistyped, or the run may have been recorded before the collector last restarted.",
   "AGENTOPS$RUN_OPEN_CONVERSATION": "Open conversation",
   "AGENTOPS$RUN_TOOL_CALLS": "Tool calls",
+  "AGENTOPS$RUN_KT_DOCS_READS": "KT 文档读取",
   "AGENTOPS$RUN_LLM_CALLS": "LLM calls",
   "AGENTOPS$RUN_TOKENS": "Tokens",
   "AGENTOPS$SPAN_SELECT_HINT": "Select a span to inspect its attributes.",

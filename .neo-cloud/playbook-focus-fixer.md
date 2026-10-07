@@ -34,7 +34,7 @@ and today's hourly run log); still nothing → stop.
 ## 2. Take the first finding and brainstorm
 
 Same rules as the local version: restate the item, find the code, weigh 2–3
-approaches, pick one and say why — into the run log. If it starts with
+approaches, pick one and say why — into the run log. Then read the KT docs for the area you will touch: `docs/kt/INDEX.md` (committed copy; `.neodevex/kt/` if you are in a NeoDevEx workspace) and the relevant `pages/*.md` when present (see the "KT docs first" section of `AGENTS.md`). If a doc and the code disagree, trust the code. If it starts with
 `STILL BROKEN after <sha>:`, `git show <sha>` first and choose a different
 approach.
 

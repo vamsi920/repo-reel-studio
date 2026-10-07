@@ -3,6 +3,7 @@ import { useConversationWebSocket } from "#/contexts/conversation-websocket-cont
 import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { MessageContent } from "#/api/conversation-service/agent-server-conversation-service.types";
 import { containsMemoryBlock } from "#/lib/workspace-memory";
+import { KT_DOCS_BLOCK_START } from "#/lib/knowledge/kt-format";
 import { useWorkspaceMemoryContext } from "#/hooks/use-workspace-memory-context";
 
 interface SendResult {
@@ -43,9 +44,11 @@ export function useSendMessage() {
         if (action === "message" && args?.content) {
           // Workspace memory rides above the user's text. Resends already
           // carry a block, so never stack a second one.
-          const memory = containsMemoryBlock(args.content)
-            ? ""
-            : buildMemoryContext(args.content);
+          const memory =
+            containsMemoryBlock(args.content) ||
+            args.content.includes(KT_DOCS_BLOCK_START)
+              ? ""
+              : buildMemoryContext(args.content);
 
           // Build agent-server message content array
           const content: Array<MessageContent> = [

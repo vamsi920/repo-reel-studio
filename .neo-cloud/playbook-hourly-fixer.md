@@ -52,6 +52,7 @@ continue — never skip the run (never-block.md rule 1).
 
 Record `BASE_SHA=$(git rev-parse HEAD)`. Read `AGENTS.md` (repo root) before
 editing anything.
+Then read the KT docs for the area you will touch: `docs/kt/INDEX.md` (committed copy; `.neodevex/kt/` if you are in a NeoDevEx workspace) and the relevant `pages/*.md` when present (see the "KT docs first" section of `AGENTS.md`). If a doc and the code disagree, trust the code.
 
 ## 2. Check `.neo-cloud/TODO.txt` first — the user's own requests take priority
 

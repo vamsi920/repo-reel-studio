@@ -16,8 +16,9 @@ import { compressForPromptWithPolicy, estimateTokens } from "#/lib/layman";
 import type { SelectedRecord } from "./selection";
 import type { MemoryRecord } from "./types";
 
-export const MEMORY_BLOCK_START = "<!-- neodevex:workspace-memory:start -->";
-export const MEMORY_BLOCK_END = "<!-- neodevex:workspace-memory:end -->";
+import { MEMORY_BLOCK_END, MEMORY_BLOCK_START } from "./markers";
+
+export { MEMORY_BLOCK_END, MEMORY_BLOCK_START };
 
 /** Markdown so Layman's segmenter treats headings and lists structurally. */
 const COMPRESSION_PATH = "workspace-memory.md";

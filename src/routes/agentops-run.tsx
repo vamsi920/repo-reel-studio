@@ -94,7 +94,7 @@ function AgentOpsRunDetailScreen() {
             </div>
           </header>
 
-          <section className="grid grid-cols-2 gap-4 rounded-[var(--radius-lg)] border border-[var(--border-color)] bg-[var(--background-primary)] p-4 sm:grid-cols-3 lg:grid-cols-6">
+          <section className="grid grid-cols-2 gap-4 rounded-[var(--radius-lg)] border border-[var(--border-color)] bg-[var(--background-primary)] p-4 sm:grid-cols-3 lg:grid-cols-7">
             <Stat
               label={t(I18nKey.AGENTOPS$COL_MODEL)}
               value={data.run.model ?? "—"}
@@ -118,6 +118,10 @@ function AgentOpsRunDetailScreen() {
             <Stat
               label={t(I18nKey.AGENTOPS$RUN_LLM_CALLS)}
               value={String(data.run.llmCallCount)}
+            />
+            <Stat
+              label={t(I18nKey.AGENTOPS$RUN_KT_DOCS_READS)}
+              value={String(data.run.ktDocsReadCount ?? 0)}
             />
           </section>
 

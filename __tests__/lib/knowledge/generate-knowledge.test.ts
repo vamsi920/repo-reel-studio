@@ -56,6 +56,20 @@ vi.mock("#/lib/data-platform/repositories/knowledge-repository", () => ({
   },
 }));
 
+const exportKtToWorkspace = vi.fn();
+vi.mock("#/lib/knowledge/kt-workspace-export", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("#/lib/knowledge/kt-workspace-export")
+  >()),
+  exportKtToWorkspace: (...args: unknown[]) => exportKtToWorkspace(...args),
+}));
+
+const submitMemoryCandidate = vi.fn();
+vi.mock("#/lib/workspace-memory", () => ({
+  computeWorkspaceId: () => "ws-1",
+  submitMemoryCandidate: (...args: unknown[]) => submitMemoryCandidate(...args),
+}));
+
 const { generateKnowledge } =
   await import("#/lib/knowledge/generate-knowledge");
 
@@ -103,6 +117,54 @@ describe("generateKnowledge", () => {
     displayErrorToast.mockReset();
     resolvePersistenceIds.mockReset();
     saveFullKnowledge.mockReset();
+    exportKtToWorkspace.mockReset().mockResolvedValue({ ok: true });
+    submitMemoryCandidate.mockReset();
+  });
+
+  it("writes KT docs into the workspace and pins a memory pointer to them", async () => {
+    const raw = knowledge();
+    engineGenerate.mockResolvedValue(raw);
+    repairInvalidDiagrams.mockResolvedValue(raw);
+    resolvePersistenceIds.mockResolvedValue(null);
+
+    await generateKnowledge(
+      snapshot,
+      "https://conversation.example",
+      "session-key",
+      stubStore(),
+      vi.fn(),
+      {},
+      "default-local",
+    );
+    await vi.waitFor(() => expect(submitMemoryCandidate).toHaveBeenCalled());
+
+    expect(exportKtToWorkspace).toHaveBeenCalledWith(
+      {
+        conversationUrl: "https://conversation.example",
+        sessionApiKey: "session-key",
+        workingDir: snapshot.localPath,
+      },
+      raw,
+      snapshot,
+    );
+    expect(submitMemoryCandidate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "ws-1",
+        kind: "convention",
+        pinned: true,
+        provenance: expect.objectContaining({ source: "knowledge-reference" }),
+      }),
+    );
+  });
+
+  it("skips the workspace export without a live runtime", async () => {
+    const raw = knowledge();
+    engineGenerate.mockResolvedValue(raw);
+    repairInvalidDiagrams.mockResolvedValue(raw);
+
+    await generateKnowledge(snapshot, null, null, stubStore(), vi.fn());
+
+    expect(exportKtToWorkspace).not.toHaveBeenCalled();
   });
 
   it("runs generation end to end and marks the store ready under the started attempt token", async () => {

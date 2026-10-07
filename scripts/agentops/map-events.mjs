@@ -78,6 +78,36 @@ const TEST_COMMAND_PATTERN =
 const INSPECTION_COMMAND_PATTERN =
   /^\s*(ls|cat|head|tail|find|grep|rg|tree|wc|file|stat|git\s+(status|log|diff|show|branch))\b/i;
 
+/** Where KT (knowledge transfer) docs live: the per-workspace export and the
+ * copy committed to `docs/kt/` for cloud clones. */
+const KT_DOCS_PATH_PATTERN =
+  /(^|[\s/'"])(\.neodevex\/kt|docs\/kt)(\/|\s|$|['"])/;
+const KT_DOCS_READ_VERB_PATTERN =
+  /\b(cat|head|tail|less|more|grep|rg|ls|find|tree|wc|sed\s+-n|bat)\b/;
+
+/**
+ * Whether an action reads KT docs -- the signal behind "did the agent
+ * actually use its KT helper docs" in the run summary.
+ */
+export function isKtDocsRead(action) {
+  const kind = action?.kind;
+  if (EDIT_ACTION_KINDS.has(kind)) {
+    return (
+      READ_ONLY_EDITOR_COMMANDS.has(action.command) &&
+      typeof action.path === "string" &&
+      KT_DOCS_PATH_PATTERN.test(action.path)
+    );
+  }
+  if (kind === "ExecuteBashAction" || kind === "TerminalAction") {
+    const command = typeof action.command === "string" ? action.command : "";
+    return (
+      KT_DOCS_PATH_PATTERN.test(command) &&
+      KT_DOCS_READ_VERB_PATTERN.test(command)
+    );
+  }
+  return false;
+}
+
 /** Shell command shapes that mean "reviewing the work". */
 const REVIEW_COMMAND_PATTERN =
   /\b(lint|eslint|ruff|flake8|mypy|tsc|typecheck|prettier|black|gofmt|clippy)\b/i;
@@ -454,9 +484,15 @@ export class RunAggregator {
         "neodevex.action.summary": event.summary ?? null,
       },
     };
+    const readsKtDocs = isKtDocsRead(event.action);
+    if (readsKtDocs) span.attributes["neodevex.kt_docs.read"] = true;
 
     this.openToolSpans.set(event.tool_call_id, span);
     this.run.toolCallCount += 1;
+    if (readsKtDocs) {
+      // Runs resumed from rows written before this counter existed lack it.
+      this.run.ktDocsReadCount = (this.run.ktDocsReadCount ?? 0) + 1;
+    }
     this.#setPhase(phase);
 
     const artifacts = artifactsForAction(event.action);
@@ -884,6 +920,7 @@ export function createRun(conversation, observedAt) {
     toolCallCount: 0,
     llmCallCount: 0,
     errorCount: 0,
+    ktDocsReadCount: 0,
     artifacts: [],
     lastEventId: null,
   };

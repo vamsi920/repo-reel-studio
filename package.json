@@ -101,6 +101,7 @@
     "dev_wsl": "VITE_WATCH_USE_POLLING=true vite",
     "preview": "vite preview",
     "make-i18n": "node scripts/make-i18n-translations.cjs",
+    "kt:export": "node --env-file-if-exists=.env scripts/export-kt-docs.mjs",
     "prelint": "npm run make-i18n",
     "lint": "npm run typecheck && eslint src && prettier --check src/**/*.{ts,tsx}",
     "preflight": "node scripts/environment-preflight.mjs",

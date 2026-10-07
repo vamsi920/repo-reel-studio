@@ -67,6 +67,8 @@ export interface AgentOpsRun {
   toolCallCount: number;
   llmCallCount: number;
   errorCount: number;
+  /** Times the agent read its KT docs; absent on collectors older than the counter. */
+  ktDocsReadCount?: number;
   artifacts: string[];
 }
 
