@@ -166,7 +166,10 @@ export function ProactivationSetupWizard({
   // -- fall back to typing owner/repo, exactly as `manifest-form-field.tsx`
   // does for repo-picker.
   const canListRepositories =
-    useActiveBackend().backend.kind === "cloud" || isLocalGithubConnected();
+    useActiveBackend().backend.kind === "cloud" ||
+    (selectedProvider?.id === "github" &&
+      useActiveBackend().backend.kind !== "cloud" &&
+      isLocalGithubConnected());
   const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
