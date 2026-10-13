@@ -1,0 +1,243 @@
+{
+  "tasks": {
+    "T1": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 10,
+        "input_tokens": 169529,
+        "output_tokens": 2149,
+        "reasoning_tokens": 1102,
+        "total_tokens": 171163,
+        "cost_usd": 0.024747980000000003,
+        "first_call_input": 15582,
+        "mean_total_tokens": 182041.33333333334,
+        "mean_cost_usd": 0.031068163333333332
+      },
+      "layman-in": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 8,
+        "input_tokens": 129352,
+        "output_tokens": 1345,
+        "reasoning_tokens": 707,
+        "total_tokens": 130397,
+        "cost_usd": 0.018825559999999998,
+        "first_call_input": 14151,
+        "mean_total_tokens": 129453.33333333333,
+        "mean_cost_usd": 0.016232673333333333
+      },
+      "layman-terse": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 8,
+        "input_tokens": 145325,
+        "output_tokens": 1424,
+        "reasoning_tokens": 677,
+        "total_tokens": 146909,
+        "cost_usd": 0.025802059999999998,
+        "first_call_input": 14215,
+        "mean_total_tokens": 164211,
+        "mean_cost_usd": 0.027055199999999998
+      }
+    },
+    "T2": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 0.3333333333333333,
+        "llm_calls": 3,
+        "input_tokens": 47021,
+        "output_tokens": 1026,
+        "reasoning_tokens": 614,
+        "total_tokens": 48040,
+        "cost_usd": 0.012650519999999998,
+        "first_call_input": 15424,
+        "mean_total_tokens": 51424.333333333336,
+        "mean_cost_usd": 0.01327388
+      },
+      "layman-in": {
+        "runs": 3,
+        "pass_rate": 0.3333333333333333,
+        "llm_calls": 3,
+        "input_tokens": 42730,
+        "output_tokens": 987,
+        "reasoning_tokens": 544,
+        "total_tokens": 43699,
+        "cost_usd": 0.007006760000000001,
+        "first_call_input": 13994,
+        "mean_total_tokens": 43606.333333333336,
+        "mean_cost_usd": 0.008092003333333334
+      },
+      "layman-terse": {
+        "runs": 3,
+        "pass_rate": 0.0,
+        "llm_calls": 3,
+        "input_tokens": 42899,
+        "output_tokens": 712,
+        "reasoning_tokens": 427,
+        "total_tokens": 43611,
+        "cost_usd": 0.0111694,
+        "first_call_input": 14057,
+        "mean_total_tokens": 43599.666666666664,
+        "mean_cost_usd": 0.00935388
+      }
+    },
+    "T3": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 5,
+        "input_tokens": 94880,
+        "output_tokens": 2677,
+        "reasoning_tokens": 879,
+        "total_tokens": 97557,
+        "cost_usd": 0.02512645,
+        "first_call_input": 18256,
+        "mean_total_tokens": 104855.66666666667,
+        "mean_cost_usd": 0.024338996666666668
+      },
+      "layman-in": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 6,
+        "input_tokens": 103455,
+        "output_tokens": 2322,
+        "reasoning_tokens": 793,
+        "total_tokens": 105777,
+        "cost_usd": 0.02236943,
+        "first_call_input": 16550,
+        "mean_total_tokens": 106606,
+        "mean_cost_usd": 0.02227107
+      },
+      "layman-terse": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 4,
+        "input_tokens": 68960,
+        "output_tokens": 1683,
+        "reasoning_tokens": 731,
+        "total_tokens": 70643,
+        "cost_usd": 0.0161853,
+        "first_call_input": 16612,
+        "mean_total_tokens": 76176.33333333333,
+        "mean_cost_usd": 0.017059269999999998
+      }
+    },
+    "T4": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 8,
+        "input_tokens": 152916,
+        "output_tokens": 1933,
+        "reasoning_tokens": 772,
+        "total_tokens": 155291,
+        "cost_usd": 0.0229427,
+        "first_call_input": 18262,
+        "mean_total_tokens": 148416.66666666666,
+        "mean_cost_usd": 0.023978896666666666
+      },
+      "layman-in": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 7,
+        "input_tokens": 140191,
+        "output_tokens": 1574,
+        "reasoning_tokens": 621,
+        "total_tokens": 142804,
+        "cost_usd": 0.017075780000000002,
+        "first_call_input": 16557,
+        "mean_total_tokens": 147163,
+        "mean_cost_usd": 0.017192703333333333
+      },
+      "layman-terse": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 10,
+        "input_tokens": 174373,
+        "output_tokens": 2566,
+        "reasoning_tokens": 692,
+        "total_tokens": 177471,
+        "cost_usd": 0.018803059999999996,
+        "first_call_input": 16619,
+        "mean_total_tokens": 166390.33333333334,
+        "mean_cost_usd": 0.019713166666666664
+      }
+    },
+    "T5": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 0.6666666666666666,
+        "llm_calls": 15,
+        "input_tokens": 302460,
+        "output_tokens": 5723,
+        "reasoning_tokens": 2595,
+        "total_tokens": 308657,
+        "cost_usd": 0.05176664000000001,
+        "first_call_input": 15459,
+        "mean_total_tokens": 281213.3333333333,
+        "mean_cost_usd": 0.05659436
+      },
+      "layman-in": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 15,
+        "input_tokens": 382322,
+        "output_tokens": 4008,
+        "reasoning_tokens": 1861,
+        "total_tokens": 386330,
+        "cost_usd": 0.06760215,
+        "first_call_input": 14029,
+        "mean_total_tokens": 630704.6666666666,
+        "mean_cost_usd": 0.059939273333333334
+      },
+      "layman-terse": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 20,
+        "input_tokens": 536953,
+        "output_tokens": 5913,
+        "reasoning_tokens": 2273,
+        "total_tokens": 543795,
+        "cost_usd": 0.0929397,
+        "first_call_input": 14092,
+        "mean_total_tokens": 561397.6666666666,
+        "mean_cost_usd": 0.08248191
+      }
+    }
+  },
+  "totals": {
+    "today": {
+      "sum_median_tokens": 780708.0,
+      "sum_median_cost_usd": 0.13723,
+      "sum_mean_tokens": 767951.3333333333,
+      "sum_mean_cost_usd": 0.14925,
+      "passes": 12,
+      "runs": 15
+    },
+    "layman-in": {
+      "sum_median_tokens": 809007.0,
+      "sum_median_cost_usd": 0.13288,
+      "sum_mean_tokens": 1057533.3333333333,
+      "sum_mean_cost_usd": 0.12373,
+      "passes": 13,
+      "runs": 15,
+      "token_saving": -0.03624786732043228,
+      "cost_saving": 0.0317312094520984,
+      "mean_token_saving": -0.37708379089994426,
+      "mean_cost_saving": 0.17102739353857577
+    },
+    "layman-terse": {
+      "sum_median_tokens": 982429.0,
+      "sum_median_cost_usd": 0.1649,
+      "sum_mean_tokens": 1011775.0,
+      "sum_mean_cost_usd": 0.15566,
+      "passes": 12,
+      "runs": 15,
+      "token_saving": -0.25838213519010944,
+      "cost_saving": -0.20159123496030018,
+      "mean_token_saving": -0.31749885192377647,
+      "mean_cost_saving": -0.04294100835377401
+    }
+  }
+}

@@ -49,10 +49,16 @@ vi.mock("#/lib/data-platform/repositories/jira-triggers-repository", () => ({
   jiraTriggersRepository: jiraTriggersRepositoryMock,
 }));
 
+const automationServiceMock = vi.hoisted(() => ({
+  toggleAutomation: vi.fn().mockResolvedValue({}),
+  deleteAutomation: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("#/api/automation-service/automation-service.api", () => ({
   default: {
     createCustomWebhook: state.createCustomWebhook,
     createAutomationDraft: vi.fn().mockResolvedValue({ id: "draft-1" }),
+    ...automationServiceMock,
   },
 }));
 
@@ -60,9 +66,8 @@ vi.mock("#/lib/environment/invalidate-connection-caches", () => ({
   invalidateConnectionCaches: vi.fn().mockResolvedValue(undefined),
 }));
 
-const { ConnectionsSettingsScreen } = await import(
-  "#/routes/connections-settings"
-);
+const { ConnectionsSettingsScreen } =
+  await import("#/routes/connections-settings");
 
 function renderConnectionsScreen() {
   return render(
@@ -80,9 +85,7 @@ function renderConnectionsScreen() {
 }
 
 async function fillAndSubmitTriggerForm() {
-  const projectKeyInput = await screen.findByTestId(
-    "jira-trigger-project-key",
-  );
+  const projectKeyInput = await screen.findByTestId("jira-trigger-project-key");
   const repoInput = screen.getByTestId("jira-trigger-repository");
   await userEvent.type(projectKeyInput, "NEOQA");
   await userEvent.type(repoInput, "vamsi920/neo-qa-fixture");
@@ -152,9 +155,7 @@ describe("Jira instant triggers add-trigger toast", () => {
     });
     // The form must not silently clear on failure — the user's input stays
     // so they can retry without retyping.
-    expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue(
-      "NEOQA",
-    );
+    expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue("NEOQA");
   });
 
   it("surfaces a visible success toast and clears the form when trigger creation succeeds", async () => {
@@ -184,9 +185,7 @@ describe("Jira instant triggers add-trigger toast", () => {
     });
     expect(screen.queryByText("CONNECTIONS$TRIGGER_CREATED")).toBeNull();
     // Input stays so the user can retry without retyping.
-    expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue(
-      "NEOQA",
-    );
+    expect(screen.getByTestId("jira-trigger-project-key")).toHaveValue("NEOQA");
   });
 
   // Regression: setEnabled/deleteTrigger resolve to `false` on a Supabase
@@ -244,5 +243,60 @@ describe("Jira instant triggers add-trigger toast", () => {
     await waitFor(() => {
       expect(screen.queryByText("ERROR$GENERIC")).not.toBeNull();
     });
+  });
+
+  const savedTrigger = {
+    id: "trigger-1",
+    projectKey: "NEOQA",
+    labelFilter: null,
+    readyStatus: "Ready for Development",
+    repository: "vamsi920/neo-qa-fixture",
+    branch: null,
+    automationId: "draft-1",
+    enabled: true,
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+
+  // Benchmark finding: pausing or deleting a trigger only changed its
+  // Supabase row, and the automation it created kept running.
+  it("pauses the automation behind a trigger when the trigger is switched off", async () => {
+    jiraTriggersRepositoryMock.listTriggers.mockResolvedValue([savedTrigger]);
+
+    renderConnectionsScreen();
+    await userEvent.click(
+      await screen.findByTestId("jira-trigger-toggle-trigger-1"),
+    );
+
+    await waitFor(() => {
+      expect(automationServiceMock.toggleAutomation).toHaveBeenCalledWith(
+        "draft-1",
+        false,
+      );
+    });
+    expect(jiraTriggersRepositoryMock.setEnabled).toHaveBeenCalledWith(
+      "trigger-1",
+      false,
+    );
+  });
+
+  it("deletes the trigger's automation, and still removes the trigger if it was already gone", async () => {
+    jiraTriggersRepositoryMock.listTriggers.mockResolvedValue([savedTrigger]);
+    automationServiceMock.deleteAutomation.mockRejectedValueOnce({
+      response: { status: 404 },
+    });
+
+    renderConnectionsScreen();
+    await userEvent.click(
+      await screen.findByTestId("jira-trigger-delete-trigger-1"),
+    );
+
+    await waitFor(() => {
+      expect(jiraTriggersRepositoryMock.deleteTrigger).toHaveBeenCalledWith(
+        "trigger-1",
+      );
+    });
+    expect(automationServiceMock.deleteAutomation).toHaveBeenCalledWith(
+      "draft-1",
+    );
   });
 });

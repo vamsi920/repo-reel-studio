@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { withoutDeliveryContract } from "#/lib/automation/delivery-contract";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { Automation } from "#/types/automation";
@@ -26,6 +27,7 @@ import {
 } from "#/manifests/automation-insights";
 import type { InterfaceListInsights } from "#/manifests/types";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
+import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
 
 /** Run insights shown when the manifest declares the dashboard surface. */
 export interface AutomationInsightsProps {
@@ -56,6 +58,7 @@ export function AutomationCard({
   onEdit,
   insights,
 }: AutomationCardProps) {
+  const supportedSources = useSupportedEventSources();
   const { navigate } = useNavigation();
   const { t } = useTranslation("openhands");
   const canManage = useHasPermission("manage_automations");
@@ -122,7 +125,7 @@ export function AutomationCard({
           </h3>
           {automation.prompt ? (
             <p className="line-clamp-2 text-xs leading-relaxed text-tertiary-light">
-              {automation.prompt}
+              {withoutDeliveryContract(automation.prompt)}
             </p>
           ) : null}
         </div>
@@ -148,7 +151,7 @@ export function AutomationCard({
         </div>
       </header>
 
-      {isUnsupportedEventTrigger(automation.trigger) && (
+      {isUnsupportedEventTrigger(automation.trigger, supportedSources) && (
         <UnsupportedTriggerBadge className="self-start" />
       )}
 

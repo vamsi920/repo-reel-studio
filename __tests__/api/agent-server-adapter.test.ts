@@ -106,6 +106,38 @@ beforeEach(() => {
   });
 });
 
+describe("buildStartConversationRequest — lean skills index", () => {
+  // case-studies/tokens: the skills index was ~6k of the ~15k tokens resent
+  // on every model call.
+  it("keeps keyword-triggered skills out of the index and compacts descriptions", () => {
+    const payload = buildStartConversationRequest({
+      settings: DEFAULT_SETTINGS,
+    }) as unknown as {
+      agent_settings: {
+        agent_context: {
+          skills: {
+            trigger: unknown;
+            description: string | null;
+            disable_model_invocation?: boolean;
+          }[];
+        };
+      };
+    };
+    const { skills } = payload.agent_settings.agent_context;
+    const triggered = skills.filter((skill) => skill.trigger);
+    const listed = skills.filter((skill) => !skill.trigger);
+
+    expect(triggered.length).toBeGreaterThan(0);
+    expect(triggered.every((skill) => skill.disable_model_invocation)).toBe(
+      true,
+    );
+    expect(listed.some((skill) => skill.disable_model_invocation)).toBe(false);
+    expect(
+      skills.every((skill) => (skill.description ?? "").length <= 141),
+    ).toBe(true);
+  });
+});
+
 describe("buildStartConversationRequest", () => {
   it("includes the resolved title LLM profile when configured", () => {
     const payload = buildStartConversationRequest({
@@ -1204,12 +1236,17 @@ describe("buildRuntimeServicesSystemSuffix", () => {
       "X-Session-API-Key: $OPENHANDS_AUTOMATION_API_KEY",
     );
     expect(suffix).not.toContain("X-API-Key: $OPENHANDS_AUTOMATION_API_KEY");
+    // Asked to "create an automation", the agent wrote a GitHub Actions
+    // workflow instead (benchmark A7); the block now says how to create one.
+    expect(suffix).toContain(
+      "curl -sS -X POST http://localhost:18001/api/automation/v1/preset/prompt",
+    );
     expect(suffix).toContain("</RUNTIME_SERVICES>");
     // The "don't guess" line should reference the actual agent-server URL
     // for this stack, not a hardcoded port. The assertion anchors on the URL
     // we supplied above.
     expect(suffix).toContain(
-      "In particular, http://localhost:18000 inside your sandbox is the Agent Server",
+      "http://localhost:18000 = Agent Server you run inside",
     );
   });
 
@@ -1224,11 +1261,9 @@ describe("buildRuntimeServicesSystemSuffix", () => {
     });
     expect(suffix).toBeDefined();
     expect(suffix).toContain(
-      "In particular, http://localhost:18000 inside your sandbox is the Agent Server",
+      "http://localhost:18000 = Agent Server you run inside",
     );
-    expect(suffix).not.toContain(
-      "In particular, http://localhost:8000 inside your sandbox",
-    );
+    expect(suffix).not.toContain("http://localhost:8000 = Agent Server");
   });
 
   it("renders the frontend entry with the new key", () => {

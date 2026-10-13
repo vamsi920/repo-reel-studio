@@ -38,14 +38,21 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  Menu,
   nativeImage,
   nativeTheme,
+  Notification,
   shell,
+  Tray,
 } from "electron";
 import { chmodSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  launchedInBackground,
+  setupBackgroundMode,
+} from "./background-mode.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -630,6 +637,20 @@ async function startStack() {
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
+/** @type {{ shouldStayInBackground: () => boolean } | null} */
+let background = null;
+
+/** Show the main window, creating it again after it was closed. */
+function showMainWindow() {
+  app.dock?.show();
+  if (mainWin && !mainWin.isDestroyed()) {
+    mainWin.show();
+    mainWin.focus();
+    return;
+  }
+  createMainWindow();
+}
+
 app.whenReady().then(async () => {
   nativeTheme.themeSource = "dark";
 
@@ -656,7 +677,14 @@ app.whenReady().then(async () => {
     return;
   }
 
-  createLoadingWindow();
+  // Started by the "Open at login" item: bring the stack up without a
+  // window, so automations run from the moment the user signs in.
+  const startHidden = launchedInBackground(
+    process.argv,
+    app.getLoginItemSettings(),
+  );
+  if (startHidden) app.dock?.hide();
+  else createLoadingWindow();
 
   try {
     setBootPhase("Starting backend services…");
@@ -675,7 +703,17 @@ app.whenReady().then(async () => {
     await waitForAgentServer("http://localhost:8000/server_info", 60_000);
 
     setBootPhase("Ready.");
-    createMainWindow();
+    background = setupBackgroundMode({
+      app,
+      Tray,
+      Menu,
+      Notification,
+      nativeImage,
+      iconPath: appIconPath,
+      prefsPath: join(app.getPath("userData"), "background-mode.json"),
+      openWindow: showMainWindow,
+    });
+    if (!startHidden) createMainWindow();
   } catch (err) {
     const summary =
       err.message +
@@ -748,6 +786,12 @@ app.on("before-quit", (event) => {
 });
 
 app.on("window-all-closed", () => {
+  // Keep the stack (scheduler, GitHub bridge, automation guard) alive in
+  // the background unless the user turned that off or there is no tray.
+  if (background?.shouldStayInBackground()) {
+    app.dock?.hide();
+    return;
+  }
   app.quit();
 });
 
@@ -755,6 +799,6 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     // The backend is already running — just open a new renderer window.
-    if (mainWin === null) createMainWindow();
+    if (mainWin === null) showMainWindow();
   }
 });

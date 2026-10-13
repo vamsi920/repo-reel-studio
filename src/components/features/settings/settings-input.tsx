@@ -45,6 +45,8 @@ interface SettingsInputProps {
   onBlur?: () => void;
   /** Extra classes merged onto the `<input>` element. */
   inputClassName?: string;
+  /** id of a `<datalist>` offering suggestions for this input. */
+  list?: string;
 }
 
 export const SettingsInput = forwardRef<HTMLInputElement, SettingsInputProps>(
@@ -77,6 +79,7 @@ export const SettingsInput = forwardRef<HTMLInputElement, SettingsInputProps>(
       hint,
       onBlur,
       inputClassName,
+      list,
     },
     ref,
   ) {
@@ -108,6 +111,7 @@ export const SettingsInput = forwardRef<HTMLInputElement, SettingsInputProps>(
           onKeyDown={onKeyDown}
           onBlur={onBlur}
           name={name}
+          list={list}
           disabled={isDisabled}
           type={type}
           defaultValue={defaultValue}

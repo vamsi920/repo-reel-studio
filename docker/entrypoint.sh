@@ -218,6 +218,10 @@ export AUTOMATION_BASE_URL="${AUTOMATION_BASE_URL:-http://127.0.0.1:${PORT}}"
 # AUTOMATION_WORKSPACE_BASE — where automation runs unpack tarballs.
 export AUTOMATION_WORKSPACE_BASE="${AUTOMATION_WORKSPACE_BASE:-${OPENHANDS_DIR}/workspaces}"
 mkdir -p "$AUTOMATION_WORKSPACE_BASE"
+# Each automation run leaves a full repo copy behind; prune stale ones so the
+# volume does not fill up (AUTOMATION_RUN_RETENTION_DAYS, default 3, 0 = off).
+node /opt/agent-canvas/prune-automation-runs.mjs \
+  "$AUTOMATION_WORKSPACE_BASE/automation-runs" || true
 
 # Default to SQLite so the automation server works out of the box without
 # an external PostgreSQL instance. Users can override AUTOMATION_DB_URL to
@@ -229,8 +233,43 @@ if [ -z "${AUTOMATION_DB_URL:-}" ]; then
   log "Using SQLite database: $AUTOMATION_DB_URL"
 fi
 
+# Secret the GitHub event bridge signs events with and the automation backend
+# verifies them with. Persisted like the session key so restarts keep it.
+if [ -z "${AUTOMATION_WEBHOOK_SECRET:-}" ]; then
+  WEBHOOK_SECRET_FILE="${STATE_DIR}/automation-webhook-secret.txt"
+  if [ -f "$WEBHOOK_SECRET_FILE" ]; then
+    AUTOMATION_WEBHOOK_SECRET="$(cat "$WEBHOOK_SECRET_FILE")"
+  else
+    AUTOMATION_WEBHOOK_SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    mkdir -p "$(dirname "$WEBHOOK_SECRET_FILE")"
+    printf '%s' "$AUTOMATION_WEBHOOK_SECRET" > "$WEBHOOK_SECRET_FILE"
+    chmod 600 "$WEBHOOK_SECRET_FILE"
+  fi
+fi
+export AUTOMATION_WEBHOOK_SECRET
+
+# Start schedules within seconds of coming due instead of up to a minute
+# late: openhands-automation hard-codes a 60 s per-automation poll, so the
+# Python entry point below lowers it before running uvicorn's CLI (same
+# entry point as scripts/dev-with-automation.mjs::AUTOMATION_SERVER_ENTRY).
+export AUTOMATION_SCHEDULER_INTERVAL_SECONDS="${AUTOMATION_SCHEDULER_INTERVAL_SECONDS:-5}"
+export AUTOMATION_DISPATCHER_INTERVAL_SECONDS="${AUTOMATION_DISPATCHER_INTERVAL_SECONDS:-2}"
+AUTOMATION_SERVER_BOOT="import os, sys, uvicorn
+try:
+    import openhands.automation.scheduler as scheduler
+    if hasattr(scheduler, 'POLL_INTERVAL_SECONDS'):
+        scheduler.POLL_INTERVAL_SECONDS = int(os.environ.get('NEODEVEX_SCHEDULE_POLL_SECONDS', '5'))
+except Exception as error:
+    print('neodevex: scheduler poll patch skipped:', error, file=sys.stderr)
+uvicorn.main(args=['openhands.automation.app:app', *sys.argv[1:]])"
+
 # The automation server uses uvicorn. Set AUTOMATION_PORT via its CLI.
-if command -v uvicorn >/dev/null 2>&1; then
+if python -c "import openhands.automation, uvicorn" 2>/dev/null; then
+  python -c "$AUTOMATION_SERVER_BOOT" \
+    --host 0.0.0.0 \
+    --port "$AUTOMATION_PORT" &
+  PIDS+=($!)
+elif command -v uvicorn >/dev/null 2>&1; then
   uvicorn openhands.automation.app:app \
     --host 0.0.0.0 \
     --port "$AUTOMATION_PORT" &
@@ -263,6 +302,20 @@ AGENTOPS_PORT="$AGENTOPS_PORT" \
 AGENT_SERVER_URL="http://127.0.0.1:${AGENT_SERVER_PORT}" \
 LOCAL_BACKEND_API_KEY="$EFFECTIVE_SESSION_KEY" \
   node /opt/agent-canvas/scripts/agentops-server.mjs &
+PIDS+=($!)
+
+# ── 2c. GitHub event bridge + automation run recovery ───────────────────
+# Polls GitHub for repos that GitHub/CI-triggered automations watch and posts
+# signed events to the automation backend (a container has no public webhook
+# URL GitHub could call), resumes runs that died on a transient LLM error, and
+# enforces automation spend caps / rate limits and sends failure alerts.
+log "Starting GitHub event bridge..."
+AUTOMATION_URL="http://127.0.0.1:${AUTOMATION_PORT}" \
+AGENT_SERVER_URL="http://127.0.0.1:${AGENT_SERVER_PORT}" \
+SESSION_API_KEY="$EFFECTIVE_SESSION_KEY" \
+GITHUB_BRIDGE_STATE="${STATE_DIR}/github-bridge-state.json" \
+NEODEVEX_APP_URL="${NEODEVEX_APP_URL:-http://localhost:${PORT:-8000}}" \
+  node /opt/agent-canvas/scripts/github-event-bridge.mjs &
 PIDS+=($!)
 
 # ── 3. Wait for backends to be ready ─────────────────────────────────────────

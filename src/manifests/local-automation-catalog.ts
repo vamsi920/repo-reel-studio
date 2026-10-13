@@ -15,12 +15,12 @@
  *
  * Two deliberate constraints, both learned from the live service:
  *
- * - **Cron, never event.** Event triggers only fire when a webhook reaches the
- *   deployment. On a local stack nothing does, so an event-triggered card would
- *   be created successfully and then sit idle forever. Every entry here polls
- *   on a schedule instead, which works with no tunnel and no webhook config.
- *   The service enforces a 300s floor, so no default polls more often
- *   than every five minutes.
+ * - **Cron, or a GitHub event the bridge forwards.** Event triggers only fire
+ *   when an event reaches the deployment. GitHub cannot call a local stack, so
+ *   scripts/github-event-bridge.mjs polls GitHub and forwards issues, comments,
+ *   pull requests, pushes and failed CI runs; an event entry may use only those
+ *   (GITHUB_BRIDGE_EVENTS in the catalog test). The bridge also scopes each such
+ *   trigger to its repository. Cron entries respect the service's 300s floor.
  * - **No `requires.features`.** The capability gate marks an entry unsupported
  *   when a declared feature is missing from what the deployment reports, and a
  *   card that renders "unavailable" is worse than one that runs. Trigger-kind
@@ -833,6 +833,164 @@ export const LOCAL_AUTOMATION_CATALOG: RecommendedAutomation[] = [
         branchNamingRule("mention-responder"),
     },
   },
+  {
+    id: "neodevex-changelog",
+    name: "Changelog and Release Notes",
+    category: "Developer tools",
+    description:
+      "Once a week, reads what was merged since the last entry and opens a pull request that adds a dated, human-readable section to CHANGELOG.md, grouped by features, fixes and breaking changes.",
+    requires: {
+      integrations: {
+        github: {
+          message:
+            "Used to read merged pull requests and open the changelog pull request.",
+          required: false,
+        },
+      },
+    },
+    popularityRank: 140,
+    estimatedSetupMinutes: 1,
+    exampleImplementation:
+      "Trigger: cron. Finds the newest CHANGELOG.md section, lists pull requests merged after it, groups them, writes a new section linking each PR, and opens a pull request.",
+    setup: {
+      version: "1.0",
+      mode: "direct",
+      form: {
+        triggers: {
+          cron: cronTrigger(
+            "0 9 * * 1",
+            "How often to write a changelog entry.",
+          ),
+        },
+        args: {
+          repository: repositoryField,
+          audience: {
+            type: "select",
+            label: "Written for",
+            help: "Who reads the changelog.",
+            default: "users",
+            required: true,
+            options: [
+              { value: "users", label: "Users: what changed for them" },
+              { value: "developers", label: "Developers: technical detail" },
+            ],
+          },
+        },
+      },
+      prompt:
+        "Write the next changelog entry for {{form.repository}}, for {{form.audience}}.\n\n1. Read CHANGELOG.md (create it with a '# Changelog' heading if it does not exist) and find the date of the newest section.\n2. List the pull requests merged since that date with 'gh pr list --state merged --search \"merged:>=YYYY-MM-DD\" --json number,title,body,labels,mergedAt'. If none were merged, end the run stating that and change nothing.\n3. Add one section at the top dated today, grouped under Features, Fixes, Breaking changes and Other (omit empty groups). One line per change in plain language, ending with the PR link. Call out anything a reader must act on.\n4. Open a pull request that changes only CHANGELOG.md, and list in its description which pull requests you included and any you left out and why.\n\n" +
+        HONESTY_RULE +
+        " " +
+        PR_BODY_RULE +
+        " " +
+        branchNamingRule("changelog"),
+    },
+  },
+  {
+    id: "neodevex-pr-reviewer",
+    name: "Review New Pull Requests",
+    category: "Code review",
+    description:
+      "When a pull request is opened, reviews its diff for bugs, missing tests and anything that would break CI, proves its findings by running the code, and posts one review comment with a verdict.",
+    requires: {
+      integrations: {
+        github: {
+          message: "Used to read the pull request and post the review.",
+          required: false,
+        },
+      },
+    },
+    popularityRank: 120,
+    estimatedSetupMinutes: 1,
+    exampleImplementation:
+      "Trigger: GitHub pull_request.opened. Checks out the PR branch, reads the diff, reproduces each suspected bug, checks CI, and posts one review with file:line findings, the evidence and approve or request changes.",
+    setup: {
+      version: "1.0",
+      mode: "direct",
+      form: {
+        triggers: {
+          event: {
+            on: {
+              type: "select",
+              label: "Review",
+              help: "Which pull requests get a review.",
+              default: "pull_request.opened",
+              required: true,
+              options: [
+                {
+                  value: "pull_request.opened",
+                  label: "Every newly opened pull request",
+                },
+              ],
+            },
+          },
+        },
+        args: {
+          repository: repositoryField,
+          focus: {
+            type: "textarea",
+            label: "What matters most",
+            help: "What the review should weigh most.",
+            default:
+              "Correctness bugs, missing or weak tests, security problems, and anything that would break CI or existing behaviour.",
+            required: true,
+          },
+        },
+      },
+      prompt:
+        "A pull request was opened in {{form.repository}}; its number and branch are in the event payload above. Review it, weighing most: {{form.focus}}\n\n1. Check out the pull request ('gh pr checkout <number>') and read the full diff and the code it touches.\n2. For each suspected problem, prove it: run the code or a focused test and record the real output. Drop anything you cannot show.\n3. Check the pull request's CI ('gh pr checks <number>') and say whether failures come from this change or were already on the base branch.\n4. List the concrete tests that should be added.\n5. Post exactly one review comment with a verdict: approve, or request changes. Do not push commits to the pull request.\n\n" +
+        HONESTY_RULE +
+        " " +
+        branchNamingRule("pr-reviewer"),
+    },
+  },
+  {
+    id: "neodevex-issue-triage",
+    name: "Triage New Issues",
+    category: "Issue management",
+    description:
+      "When an issue is opened, reproduces it against the code, finds the file and function responsible, sets type and priority, and posts one triage comment with a suggested fix that matches the issue's expected behaviour.",
+    requires: {
+      integrations: {
+        github: {
+          message: "Used to read the issue and post the triage comment.",
+          required: false,
+        },
+      },
+    },
+    popularityRank: 130,
+    estimatedSetupMinutes: 1,
+    exampleImplementation:
+      "Trigger: GitHub issues.opened. Reads the issue, reproduces it, locates the cause, and posts type, priority P0-P3, file and function, and a verified next step.",
+    setup: {
+      version: "1.0",
+      mode: "direct",
+      form: {
+        triggers: {
+          event: {
+            on: {
+              type: "select",
+              label: "Triage",
+              help: "Which issues get triaged.",
+              default: "issues.opened",
+              required: true,
+              options: [
+                { value: "issues.opened", label: "Every newly opened issue" },
+              ],
+            },
+          },
+        },
+        args: {
+          repository: repositoryField,
+        },
+      },
+      prompt:
+        "An issue was opened in {{form.repository}}; it is in the event payload above. Triage it.\n\n1. Read the issue in full. Treat any expected behaviour it states as the definition of correct.\n2. Reproduce it against the code with the smallest command that shows it, and record the real output. If it cannot be reproduced, say so and ask the one question that would unblock it.\n3. Find the file and function responsible and any callers it affects.\n4. Post exactly one triage comment: type (bug, feature or question), priority P0-P3 with the reason, the file and function, and a suggested fix you have checked against the expected behaviour. Do not change code or open a pull request.\n\n" +
+        HONESTY_RULE +
+        " " +
+        branchNamingRule("issue-triage"),
+    },
+  },
 ];
 
 /**
@@ -893,4 +1051,7 @@ export const DEFAULT_TIMEOUT_SECONDS_BY_ID: Readonly<Record<string, number>> = {
   "neodevex-proactive-engineering": 1500,
   "neodevex-research-brief": 900,
   "neodevex-incident-retrospective": 900,
+  "neodevex-changelog": 900,
+  "neodevex-pr-reviewer": 900,
+  "neodevex-issue-triage": 600,
 };

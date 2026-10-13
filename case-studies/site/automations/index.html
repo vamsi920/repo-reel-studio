@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automations vs Devin</title>
+<meta name="description" content="Eleven automations built on NeoDevEx and Devin and run against the same GitHub repository over two rounds: what fired, what shipped, how good it was, how fast, and what we fixed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .sc-row.five { grid-template-columns: minmax(170px, 1.1fr) repeat(3, minmax(120px, 1fr)) minmax(110px, 0.8fr); }
+  .sc-row .cellnote { font: 400 0.9rem/1.45 var(--body); }
+  .sc-row .cellnote b { font: 600 0.82rem var(--display); display: block; margin-bottom: 2px; }
+  .pass { color: var(--v-correct); }
+  .fail { color: var(--v-wrong); }
+  .part { color: var(--v-partial); }
+  .na { color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .incidents { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .incidents li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+  .incidents li .tag { font: 600 0.72rem var(--mono); margin-right: 8px; }
+  .incidents li .tag.fixed { color: var(--v-correct); }
+  .incidents li .tag.open { color: var(--v-wrong); }
+  .incidents li .tag.vendor { color: var(--devin); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .q-row { display: grid; grid-template-columns: minmax(150px, 0.9fr) repeat(3, minmax(150px, 1fr)); gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .q-row.head { font: 600 0.78rem var(--display); color: var(--muted); }
+  .q-row p { margin: 0; font-size: 0.92rem; }
+  .q-row b { font: 600 0.82rem var(--display); display: block; margin-bottom: 3px; }
+  .round { font: 600 0.72rem var(--mono); color: var(--neo); margin-left: 6px; }
+  @media (max-width: 860px) {
+    .sc-row.five { grid-template-columns: 1fr 1fr; }
+    .sc-row.five .sc-metric, .sc-row.five .sc-call { grid-column: 1 / -1; }
+    .q-row { grid-template-columns: 1fr; gap: 8px; }
+    .q-row.head { display: none; }
+    .q-row p[data-label]::before { content: attr(data-label); display: block; font: 600 0.72rem var(--display); color: var(--muted); margin-bottom: 2px; }
+    .two-col, .stat-strip { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) { .two-col, .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#scenarios">Scenarios</a><a href="#quality">Quality</a><a href="#usability">Usability</a><a href="#speed">Speed</a><a href="#reliability">Reliability</a><a href="#gaps">Gaps we fixed</a><a href="#round3">Round 3</a><a href="#open">Still open</a><a href="#method">Method</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <p class="eyebrow">Module 02 · Automations · four rounds, 2026-10-08 to 2026-10-12</p>
+    <h1>We built the same automations on both tools and <em>let them loose on a real repository.</em></h1>
+    <p class="lede">Each automation was created on NeoDevEx and on Devin with identical instructions, then triggered by a real schedule, webhook, GitHub comment, new issue, new pull request or failing CI run on a private test repository. In round 1, NeoDevEx passed 2 of the 7 scenarios it could run; after its fixes it passed all 7. Round 2 added PR review, issue triage and creating a GitHub-triggered automation in the app's own form, and re-tested everything. NeoDevEx now passes all 10 scenarios we could run on it, and Devin passes 7 of 10 (one not measured). Schedules now fire within 2 seconds, as Devin's do. On review and triage quality, Gemini 2.5 Pro with our verify-first rules matches Devin on correctness and is the only side that shows executed proof; the default Gemini 2.5 Flash still trails. Round 4 added what Devin had and we lacked: spend and rate limits, failure alerts, webhooks set up in the app, and automations that keep running after the window closes.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>10 / 10</b><span>NeoDevEx scenarios passing (2 / 7 at start)</span></div>
+      <div class="stat"><b>7 / 10</b><span>Devin scenarios passing (1 not measured)</span></div>
+      <div class="stat"><b>54</b><span>problems found in NeoDevEx and fixed across four rounds</span></div>
+      <div class="stat"><b>2 s</b><span>schedule start delay, down from 52–59 s (Devin: 0 s)</span></div>
+    </div>
+  </section>
+
+  <section id="scenarios" aria-labelledby="sc-h">
+    <h2 id="sc-h">Scenario by scenario</h2>
+    <p class="section-lede">A scenario passes only if creation succeeds, the trigger starts a run without manual help, the run finishes, and the result checks out on GitHub (a real pull request, a real comment, CI green where the scenario asks for it). Every scenario ran once per product, so the times are single observations.</p>
+    <div class="scorecard" role="table" aria-label="Scenario results">
+      <div class="sc-row five head" role="row"><span class="sc-metric" role="columnheader">Scenario</span><span role="columnheader">Devin</span><span role="columnheader">NeoDevEx at start</span><span role="columnheader">NeoDevEx now</span><span role="columnheader">Call</span></div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A1 · Scheduled changelog PR<small>Cron trigger; write CHANGELOG.md and open a PR.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Fired on the second; PR #3 57 s later.</span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Run marked complete after linking GitHub's "create a PR" page. No PR existed.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>PR #4 100 s after start. Round 2: the run now starts 2 s after the scheduled minute (was 59 s).</span>
+        <span class="sc-call lose" role="cell">Devin faster to PR</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A2 · Run now: fix a bug<small>Manual run; fix the discount bug and open a PR.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>PR #5 in 2 m 50 s. Also caught the fixture's broken CI test script.</span>
+        <span class="cellnote" role="cell"><b class="part">Pass, with scope creep</b>PR #6 in 3 m 50 s. Also changed the shipping rule, which it wasn't asked to touch.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass (same run)</b>Not re-run; it already opened a correct PR. Staying in scope depends on the model (Gemini 2.5 Flash here).</span>
+        <span class="sc-call lose" role="cell">Devin ahead</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A3 · Webhook: fix an issue<small>Signed webhook POST names issue #2; fix it in a PR.</small></span>
+        <span class="cellnote" role="cell"><b class="na">Not measured</b>Created; URL, one-time secret and a curl test shown. Firing it needs the account's secret, which we left with the account owner.</span>
+        <span class="cellnote" role="cell"><b class="part">API only</b>Signed POST accepted in 372 ms; the app had no screen for custom webhooks.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>PR #7 2 m 41 s after the POST, correct fix, "Fixes #2".</span>
+        <span class="sc-call tie" role="cell">Devin not fired</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A4 · Issue comment trigger<small>"/bench" comment on an issue; reply with a plan.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Reply in 55 s naming the exact bug (&gt; vs &gt;= 5000). Then a second, duplicate summary comment.</span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Never fired. A local install had no way to receive GitHub events.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Event picked up in 11 s, one reply at 71 s. The plan was more generic than Devin's.</span>
+        <span class="sc-call lose" role="cell">Devin better reply</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A5 · Fix failing CI<small>CI fails on a PR; push a fix to that PR's branch and comment.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Fix on the PR branch 62 s after the PR, CI green 18 s later, clear comment linking the log.</span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>No CI trigger existed. Our first run after adding one opened a second PR instead of fixing the first.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Run 10 s after the CI failure; fix on the PR branch, CI green about 4 m 30 s after the breaking push.</span>
+        <span class="sc-call lose" role="cell">Devin faster</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A6 · Start from a template<small>Changelog / release-notes template.</small></span>
+        <span class="cellnote" role="cell"><b class="na">Catalog only</b>24 suggested templates.</span>
+        <span class="cellnote" role="cell"><b class="na">Catalog only</b>16 templates, none for changelogs or release notes.</span>
+        <span class="cellnote" role="cell"><b class="na">Not run</b>Every template path now adds the delivery rules (verified in code).</span>
+        <span class="sc-call lose" role="cell">Devin wider catalog</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A7 · Create from one sentence<small>"Every weekday at 9am, check … for open issues with no comments and post a short triage note on each."</small></span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Drafted an excellent spec and asked the right questions (timezone, run-as). Approval returned "Failed to respond to permission request"; after about 40 minutes and three tries, no automation existed.</span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>The chat agent wrote a GitHub Actions workflow file instead of creating an automation.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Created in 45 s: <code>0 9 * * 1-5</code>, America/New_York, right repository, enabled.</span>
+        <span class="sc-call win" role="cell">NeoDevEx ahead</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A8 · Fail visibly<small>Point an automation at a repository that does not exist.</small></span>
+        <span class="cellnote" role="cell"><b class="part">Half</b>The session diagnosed it correctly and changed nothing, but the automation page lists the run as succeeded (100% success rate).</span>
+        <span class="cellnote" role="cell"><b class="part">Half</b>Run ended "completed"; its final line said FAILED, but nothing in the app showed it.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Run shows "Not delivered" with the reason. The reason named an expired GitHub credential, which hid the missing repo.</span>
+        <span class="sc-call win" role="cell">NeoDevEx ahead</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A9 · Review new pull requests<span class="round">round 2</span><small>PR opened with a planted bug and no tests; post one review with file:line findings and a verdict.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Review in 58 s: the bug, a null-input crash, an edge case, CI attribution and a test list. Then a duplicate summary comment.</span>
+        <span class="cellnote" role="cell"><b class="na">Not possible</b>No way to trigger on a new pull request locally.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Run 4 s after the PR, review at 57 s, found the bug. With Gemini 2.5 Pro: ran the code to prove it (expected 900, actual 1000) and verified the fix.</span>
+        <span class="sc-call lose" role="cell">Devin deeper; ours verified</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A10 · Triage new issues<span class="round">round 2</span><small>Issue: subtotal is NaN without a quantity, "expected 1200". Post one triage comment.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Triage at 115 s: right function, fix <code>quantity ?? 1</code>, the knock-on shipping charge. Duplicate summary comment.</span>
+        <span class="cellnote" role="cell"><b class="na">Not possible</b>No issue trigger locally.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass with Pro</b>Triage at 84 s. Gemini 2.5 Flash suggested defaulting to 0, which contradicts the issue. Gemini 2.5 Pro: <code>?? 1</code> with a real reproduction.</span>
+        <span class="sc-call tie" role="cell">Even with Pro</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">A11 · Create a GitHub trigger in the app<span class="round">round 2</span><small>In the create form: "when someone comments /neo-ui on this repo, reply with the likely cause".</small></span>
+        <span class="cellnote" role="cell"><b class="pass">Pass, with friction</b>Rich condition builder and a repository picker, but the form reset itself and dropped typed input 6 times across the study.</span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>The form could only make daily, weekday or weekly schedules.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Picked "Someone comments", typed <code>/neo-ui</code>, saved. Comment to run in 13 s, reply 59 s after the comment.</span>
+        <span class="sc-call win" role="cell">NeoDevEx simpler</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="quality" aria-labelledby="q-h">
+    <h2 id="q-h">Quality: the same review and triage, three ways</h2>
+    <p class="section-lede">A9 and A10 compared side by side. NeoDevEx ran each with its default model (Gemini 2.5 Flash, the only profile configured on this install) and with Gemini 2.5 Pro, under the verify-first rules added in round 2. Devin ran on its own models.</p>
+    <div role="table" aria-label="Quality comparison">
+      <div class="q-row head" role="row"><span role="columnheader">What we checked</span><span role="columnheader">Devin</span><span role="columnheader">NeoDevEx · Gemini 2.5 Flash</span><span role="columnheader">NeoDevEx · Gemini 2.5 Pro</span></div>
+      <div class="q-row" role="row"><p role="cell"><b>Found the planted bug</b>A9, <code>src/coupon.js:6</code></p><p role="cell" data-label="Devin" class="pass">Yes</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash" class="pass">Yes</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro" class="pass">Yes</p></div>
+      <div class="q-row" role="row"><p role="cell"><b>Right fix for the issue</b>A10, "expected 1200"</p><p role="cell" data-label="Devin" class="pass"><code>?? 1</code></p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash" class="fail"><code>|| 0</code>, contradicts the issue (4 of 4 runs)</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro" class="pass"><code>?? 1</code> (2 of 2 runs)</p></div>
+      <div class="q-row" role="row"><p role="cell"><b>Ran code as proof</b></p><p role="cell" data-label="Devin" class="part">No: its sandbox could not run Node, so it reasoned from the code</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash" class="fail">No ("tested mentally")</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro" class="pass">Yes: real command with expected and actual output, and a fix verified the same way</p></div>
+      <div class="q-row" role="row"><p role="cell"><b>Went past the first finding</b></p><p role="cell" data-label="Devin" class="pass">Null-input crash, prototype-key edge case, knock-on shipping charge, CI attribution, test list</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash" class="part">Missing tests; generic edge cases</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro" class="part">Missing tests; attributed CI failures to main in one of two runs</p></div>
+      <div class="q-row" role="row"><p role="cell"><b>One comment, signed by the product</b></p><p role="cell" data-label="Devin" class="part">Two comments per event</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash" class="pass">One, "Posted by a NeoDevEx automation" (was "OpenHands")</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro" class="pass">One, NeoDevEx signature</p></div>
+      <div class="q-row" role="row"><p role="cell"><b>Time and cost per run</b></p><p role="cell" data-label="Devin">58–115 s; cost not shown per run</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Flash">57–98 s · $0.02–0.07</p><p role="cell" data-label="NeoDevEx · Gemini 2.5 Pro">69–130 s · $0.10–0.22</p></div>
+    </div>
+    <p class="section-lede" style="margin-top:18px">Prompting alone did not lift Gemini 2.5 Flash: with rules to reproduce first, and then a required Reproduction section, it filled in the format without running anything. With Pro, the same rules produced executed proof. The remaining gap to Devin is depth (extra edge cases) rather than correctness. Choosing Pro for review and triage automations is a per-automation setting in the create and edit forms.</p>
+  </section>
+
+  <section id="usability" aria-labelledby="u-h">
+    <h2 id="u-h">Usability: creating and changing automations</h2>
+    <div class="two-col">
+      <div>
+        <h3>Devin</h3>
+        <ul class="incidents">
+          <li>Seven GitHub event types, ten condition operators and multi-row conditions. Powerful, but several clicks per condition.</li>
+          <li>Searchable picker of connected repositories, so a missing repository cannot be chosen.</li>
+          <li>The create form reset itself and dropped typed input 6 times across the study.</li>
+          <li>Built-in "Reply" step posts a second comment after the agent's own (A4, A9, A10).</li>
+          <li>Creating from a sentence (A7) produced an excellent draft that was never saved.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>NeoDevEx, after round 2</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">new</span>"When should it run?": on a schedule (hourly, daily, weekdays, weekly or a custom cron) or when something happens on GitHub: issue opened, comment, PR opened, push or CI failed.</li>
+          <li><span class="tag fixed">new</span>One plain-language condition per event: "title contains", "comment contains", "branch starts with". Every GitHub trigger is tied to its repository automatically.</li>
+          <li><span class="tag fixed">new</span>GitHub triggers can be changed in the edit dialog the same way they were made (they were read-only).</li>
+          <li><span class="tag fixed">new</span>A warning when this install cannot receive the chosen event, and an app-wide banner when GitHub rejects the credential automations use.</li>
+          <li><span class="tag fixed">new</span>Creating from a sentence in chat saves a real automation (A7, 45 s).</li>
+          <li><span class="tag fixed">new</span>The repository field suggests your repositories and refuses one GitHub says does not exist (round 3).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="speed" aria-labelledby="speed-h">
+    <h2 id="speed-h">Speed and responsiveness</h2>
+    <p class="section-lede">Measured from GitHub timestamps and each product's own run record. API timings are single requests to the local NeoDevEx stack; Devin's are not exposed.</p>
+    <div class="scorecard" role="table" aria-label="Timings">
+      <div class="sc-row head" role="row"><span class="sc-metric" role="columnheader">Measure</span><span role="columnheader">Devin</span><span role="columnheader">NeoDevEx</span><span role="columnheader"></span><span role="columnheader">Call</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">Schedule fires<small>Scheduled minute to run start (A1). Round 1 was 52–59 s.</small></span><span class="sc-val devin" role="cell">0 s</span><span class="sc-val neo" role="cell">2 s</span><span></span><span class="sc-call tie" role="cell">About even</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">GitHub event picked up<small>Comment, PR, issue or CI failure to run start (A4, A5, A9–A11).</small></span><span class="sc-val devin" role="cell">not shown</span><span class="sc-val neo" role="cell">4–22 s</span><span></span><span class="sc-call tie" role="cell">Devin doesn't expose it</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">Comment to reply<small>A4, end to end.</small></span><span class="sc-val devin" role="cell">55 s</span><span class="sc-val neo" role="cell">71 s</span><span></span><span class="sc-call lose" role="cell">Devin ahead</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">New PR to review<small>A9, end to end.</small></span><span class="sc-val devin" role="cell">58 s</span><span class="sc-val neo" role="cell">57 s</span><span></span><span class="sc-call tie" role="cell">About even</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">New issue to triage<small>A10, end to end.</small></span><span class="sc-val devin" role="cell">115 s</span><span class="sc-val neo" role="cell">84 s</span><span></span><span class="sc-call win" role="cell">NeoDevEx ahead</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">Broken CI to green<small>A5, from the push that broke CI to CI passing on the fix.</small></span><span class="sc-val devin" role="cell">80 s</span><span class="sc-val neo" role="cell">~4 m 30 s</span><span></span><span class="sc-call lose" role="cell">Devin ahead</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">Run to pull request<small>A1 / A2.</small></span><span class="sc-val devin" role="cell">57 s / 2 m 50 s</span><span class="sc-val neo" role="cell">100 s / 3 m 50 s</span><span></span><span class="sc-call lose" role="cell">Devin ahead</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">Create from a sentence<small>A7, request to saved automation.</small></span><span class="sc-val devin" role="cell">not saved</span><span class="sc-val neo" role="cell">45 s</span><span></span><span class="sc-call win" role="cell">NeoDevEx ahead</span></div>
+      <div class="sc-row" role="row"><span class="sc-metric" role="cell">API: create / run now / webhook accept<small>NeoDevEx local stack.</small></span><span class="sc-val devin" role="cell">n/a</span><span class="sc-val neo" role="cell">659 / 193 / 372 ms</span><span></span><span class="sc-call tie" role="cell">No Devin figure</span></div>
+    </div>
+  </section>
+
+  <section id="reliability" aria-labelledby="rel-h">
+    <h2 id="rel-h">What broke while we used them</h2>
+    <p class="section-lede">Every failure we hit, on either side, during one working day of building and running these automations.</p>
+    <div class="two-col">
+      <div>
+        <h3>Devin</h3>
+        <ul class="incidents">
+          <li><span class="tag vendor">×5</span>The create form reset itself and dropped input typed in its first 10–20 seconds.</li>
+          <li><span class="tag vendor">×2</span>"Message failed to send" on a message that had in fact been received.</li>
+          <li><span class="tag vendor">×2</span>A session sat idle until the page was reloaded.</li>
+          <li><span class="tag vendor">×2</span>The session page froze the browser tab's renderer.</li>
+          <li><span class="tag vendor">×1</span>Approving an automation it had drafted failed ("Failed to respond to permission request"). A7 was never saved.</li>
+          <li><span class="tag vendor">×1</span>A run that could not do its job (A8) is counted as a success on the automation page.</li>
+          <li><span class="tag vendor">×3</span>Posted two comments for one request (A4, A9, A10).</li>
+        </ul>
+      </div>
+      <div>
+        <h3>NeoDevEx</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span>A run claimed a pull request it never opened, and was recorded as complete (A1).</li>
+          <li><span class="tag fixed">fixed</span>GitHub and CI triggers could not fire on a local install (A4, A5).</li>
+          <li><span class="tag fixed">fixed</span>Asked to fix a PR's CI, a run opened a second PR (A5).</li>
+          <li><span class="tag fixed">fixed</span>Comments lost every word in backticks to shell substitution (A5).</li>
+          <li><span class="tag fixed">fixed</span>A provider rate-limit error killed a run outright (A5).</li>
+          <li><span class="tag fixed">fixed</span>Asked to create an automation, the chat agent wrote a GitHub Actions file (A7).</li>
+          <li><span class="tag fixed">fixed</span>The automation service did not restart after a transient package-download error at boot.</li>
+          <li><span class="tag fixed">fixed</span>GitHub triggers fired for every watched repository, not just their own: the service matches events by type and filter only.</li>
+          <li><span class="tag fixed">fixed</span>A background service killed by the OS was never restarted, which would silently stop every GitHub trigger.</li>
+          <li><span class="tag fixed">warns</span>The app's stored GitHub connection had been revoked, and runs inherit it (A8). The app now shows a banner with a Fix button; reconnecting GitHub is still a manual step.</li>
+          <li><span class="tag open">open</span>Local installs only run automations while the app's stack is running. Ours had stopped overnight, so any schedule due then was missed. Devin's cloud is always on.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="gaps" aria-labelledby="gaps-h">
+    <h2 id="gaps-h">Gaps this study found, and what we changed</h2>
+    <p class="section-lede">Every fix below shipped in NeoDevEx during the study, has tests, and was re-run against the same scenario.</p>
+    <ol class="gaps">
+      <li><h3>Runs could report success they never delivered</h3><div><span class="lbl">Finding</span><p>An unattended run pushed a branch, told the user it had opened a PR, and linked GitHub's "create a PR" page. The run was recorded as complete.</p></div><div><span class="lbl">Fix</span><p>Every automation prompt carries a delivery contract: how to open the PR or comment, how to verify it exists, and a final <code>RESULT:</code> line. The run page reads that line and shows Delivered, Not delivered or Unverified instead of trusting the status.</p></div><div class="effect"><span class="lbl">Effect</span><p>A1 rerun: real PR #4. A8: shown as Not delivered with the reason.</p></div></li>
+      <li><h3>GitHub-triggered automations could never fire locally</h3><div><span class="lbl">Finding</span><p>The automation service understands GitHub events, but a local install has no public URL for GitHub to call. Every GitHub-triggered automation silently never ran.</p></div><div><span class="lbl">Fix</span><p>A GitHub event bridge polls the repositories that GitHub-triggered automations watch (issues, comments, PRs, pushes, failed CI runs) and posts signed events to the service. It now ships in the desktop launcher and the Docker image.</p></div><div class="effect"><span class="lbl">Effect</span><p>A4: event in 11 s. A5: CI failure to run in 10 s.</p></div></li>
+      <li><h3>No trigger for failing CI</h3><div><span class="lbl">Finding</span><p>The service has no GitHub schema for CI results.</p></div><div><span class="lbl">Fix</span><p>Failed workflow runs are posted to a <code>github-ci</code> webhook source with event <code>workflow_run.failure</code>, filterable by branch.</p></div><div class="effect"><span class="lbl">Effect</span><p>A5 passes: fix pushed to the PR branch, CI green.</p></div></li>
+      <li><h3>A run asked to fix a PR opened another PR</h3><div><span class="lbl">Finding</span><p>Version 1 of the contract always demanded a new branch, so the CI fix arrived as a second, stacked PR.</p></div><div><span class="lbl">Fix</span><p>Contract v2: a run about an existing PR checks out that PR's branch and pushes there. Saved prompts upgrade to the current contract automatically.</p></div><div class="effect"><span class="lbl">Effect</span><p>A5 rerun: fix landed on PR #9's own branch.</p></div></li>
+      <li><h3>Transient model errors killed runs</h3><div><span class="lbl">Finding</span><p>Gemini's per-minute quota error ("retry in 30 s") reached the runtime labelled as a bad request, which is not retried, so the run failed after 86 s.</p></div><div><span class="lbl">Fix</span><p>Run recovery resumes the same conversation (it keeps the triggering event) after the delay the provider asks for, at most twice, only for errors that clear on their own.</p></div><div class="effect"><span class="lbl">Effect</span><p>The A5 run resumed and delivered its fix, CI green. Recovery has since resumed a real scheduled run on its own.</p></div></li>
+      <li><h3>Creating an automation from chat did not create one</h3><div><span class="lbl">Finding</span><p>The chat agent knew an automation service existed but not how to use it, and wrote a GitHub Actions workflow file instead.</p></div><div><span class="lbl">Fix</span><p>The agent's system context now carries a short recipe for creating automations: the endpoint, a cron or GitHub-event trigger, and the user's time zone. It is told not to substitute a GitHub Actions file or crontab. Automations created that way get the delivery contract added automatically.</p></div><div class="effect"><span class="lbl">Effect</span><p>A7: correct automation saved in 45 s.</p></div></li>
+      <li><h3>Comments lost their code</h3><div><span class="lbl">Finding</span><p>Comments posted with a quoted <code>--body</code> lost every word inside backticks to the shell, for example "Corrected discount logic in  and …".</p></div><div><span class="lbl">Fix</span><p>The contract gives an exact heredoc recipe, and asks for reviewer-ready reports: the failing job, expected vs actual, root cause, change, verification.</p></div><div class="effect"><span class="lbl">Effect</span><p>Applies to every automation from its next run.</p></div></li>
+      <li><h3>Smaller fixes</h3><div><span class="lbl">Finding</span><p>The service crashed at boot on a transient package-download error. An expired stored GitHub token stopped every GitHub trigger. The run-trace store failed when one batch held the same span twice. The UI flagged GitHub triggers as unsupported even when a receiver existed.</p></div><div><span class="lbl">Fix</span><p>Restart with backoff. The bridge validates credentials and falls back to the machine's GitHub CLI login. Spans are de-duplicated. The UI asks the service which event sources it can receive.</p></div><div class="effect"><span class="lbl">Effect</span><p>Covered by tests.</p></div></li>
+      <li><h3>Schedules started up to a minute late <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>The automation service checks schedules every 60 s and has a hard-coded 60 s throttle per automation, so A1 started 52–59 s after its minute. Devin fires on the second.</p></div><div><span class="lbl">Fix</span><p>The service starts through a short entry point that lowers the throttle to 5 s, with the scheduler at 5 s and the dispatcher at 2 s (in dev, the desktop app and Docker).</p></div><div class="effect"><span class="lbl">Effect</span><p>Due 20:25:00, run created 20:25:00, started 20:25:02.</p></div></li>
+      <li><h3>GitHub triggers fired for every repository <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>Events are matched by type and filter only. A "push" automation for repository X also ran on pushes to repository Y.</p></div><div><span class="lbl">Fix</span><p>Every GitHub trigger carries <code>repository.full_name == '…'</code>: built in by the form, and added to existing automations by the event bridge.</p></div><div class="effect"><span class="lbl">Effect</span><p>All 6 GitHub-triggered automations scoped; covered by tests.</p></div></li>
+      <li><h3>Review and triage quality <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>Our comments found the main bug but stopped there, and one fix contradicted the issue's expected value. They were also signed "OpenHands".</p></div><div><span class="lbl">Fix</span><p>Delivery rules v3 and v4: reproduce first, follow the value into callers, check edge cases and CI, stay in scope, one comment with required Reproduction / Findings / Fix / Verification sections, and a NeoDevEx signature. Applied to every automation.</p></div><div class="effect"><span class="lbl">Effect</span><p>With Gemini 2.5 Pro: correct fixes with executed proof. Gemini 2.5 Flash: better format, same mistakes.</p></div></li>
+      <li><h3>The create form could only make schedules <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>GitHub, CI and comment triggers were reachable only through the API or chat. Hourly and custom schedules were missing, and event triggers could not be edited.</p></div><div><span class="lbl">Fix</span><p>A schedule-or-GitHub choice, five GitHub events with one plain-language condition, hourly and custom cron, and the same controls in the edit dialog.</p></div><div class="effect"><span class="lbl">Effect</span><p>A11 created in the form and running 13 s after its first comment.</p></div></li>
+      <li><h3>Dead GitHub credentials failed silently <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>Runs inherited a revoked GitHub token and failed with generic authentication errors (A8).</p></div><div><span class="lbl">Fix</span><p>The app checks the credential every 10 minutes and shows a banner with a Fix button when GitHub rejects it. Runs retry with the machine's own GitHub login before giving up.</p></div><div class="effect"><span class="lbl">Effect</span><p>Banner shown on this install, whose stored token is revoked.</p></div></li>
+      <li><h3>Background services stayed down after a crash <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>The launcher restarted a service only if it exited with an error code, not if a signal killed it.</p></div><div><span class="lbl">Fix</span><p>Restart on any exit outside a stack shutdown.</p></div><div class="effect"><span class="lbl">Effect</span><p>Bridge killed, back in about 2 s.</p></div></li>
+    </ol>
+  </section>
+
+  <section id="round3" aria-labelledby="r3-h">
+    <h2 id="r3-h">Round 3: hunting for everything else</h2>
+    <p class="section-lede">After round 2 we went looking for problems instead of waiting for scenarios to expose them: two code audits of the automation feature, a live end-to-end run of each new template, and a re-test of every fix. 23 more problems, all fixed, each with a test.</p>
+    <div class="two-col">
+      <div>
+        <h3>Things that silently never worked</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span>Switching a Jira trigger off, or deleting it, only changed a bookkeeping row: the automation behind it kept running.</li>
+          <li><span class="tag fixed">fixed</span>The Jira Bug Fixer listened for an event name Jira never sends, and cloned the Jira project key as if it were a repository.</li>
+          <li><span class="tag fixed">fixed</span>Jira label filters raised an error on issues with no labels, which the service counts as "no match".</li>
+          <li><span class="tag fixed">fixed</span>The standalone Bug Fixer webhook server looked for automations by a field the service never fills in, so it never found one.</li>
+          <li><span class="tag fixed">fixed</span>An issue opened right after a poll was skipped forever: GitHub caches lists for up to 60 s and the bridge's cursor only moved forward. Found by our own live test; fixed with a 10-minute look-back window.</li>
+          <li><span class="tag fixed">fixed</span>"Run now" on an event-triggered automation gave the agent no event. It now picks the newest matching issue or PR, says which, and finishes the job (verified live).</li>
+          <li><span class="tag fixed">fixed</span>Runs given a revoked GitHub token gave up at the first 401, and ran <code>gh</code> outside the cloned repository. Two explicit setup steps fixed both: the same template on the same model went from posting nothing to a reproduced, correct triage in 93 s.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Things that got in the way</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span>Every failed action showed two identical error toasts.</li>
+          <li><span class="tag fixed">fixed</span>Double-clicking Delete sent two deletes; the second failed with another error.</li>
+          <li><span class="tag fixed">fixed</span>The guided tour advanced on a timer and navigated away under an open form, losing what had been typed. It now pauses while a dialog is open or you are typing.</li>
+          <li><span class="tag fixed">fixed</span>"Load more" replaced every card with a skeleton and lost the scroll position.</li>
+          <li><span class="tag fixed">fixed</span>Searching for an automation beyond the first page said "no matches" with no way to load more.</li>
+          <li><span class="tag fixed">fixed</span>Health badges stayed on "Running" after a run finished until the window was refocused.</li>
+          <li><span class="tag fixed">fixed</span>The detail page showed schedules without their time zone, and editing a time kept the old schedule description.</li>
+          <li><span class="tag fixed">fixed</span>A deleted automation could still be opened from cache; clicks on a menu's padding opened the detail page; exports wrote 1970 start dates for runs that never started.</li>
+          <li><span class="tag fixed">new</span>The repository field suggests your GitHub repositories and refuses one GitHub says does not exist (it never blocks when it cannot check).</li>
+          <li><span class="tag fixed">new</span>Three new templates: Changelog and Release Notes (Devin's A6 template had no NeoDevEx equivalent), Review New Pull Requests and Triage New Issues. The triage template was created through the real UI and triaged a live issue correctly.</li>
+          <li><span class="tag fixed">new</span>GitHub events are fetched with conditional requests, so polling every 10 s (was 20 s) costs nothing when nothing changed.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="round4" aria-labelledby="r4-h">
+    <h2 id="r4-h">Round 4: closing Devin's feature lead</h2>
+    <p class="section-lede">Round 3 left a short list of things Devin had and we did not: spend and rate limits, failure notifications, webhooks you can set up in the app, and automations that keep running when nobody has the app open. Round 4 built each of them, tested each live on this machine, and fixed 7 more problems found along the way.</p>
+    <div class="two-col">
+      <div>
+        <h3>Built to match or beat Devin</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">new</span><b>Spend limits.</b> A daily limit per automation, over a rolling 24 hours, counting the live cost of runs still going. Reaching it cancels the running run and turns the automation off; it turns itself back on when spend leaves the window.</li>
+          <li><span class="tag fixed">new</span><b>Rate limit and one-at-a-time.</b> A cap on runs per hour, and an option to cancel a new run while an earlier one is still going. Live test: 3 runs dispatched at once, limit 1, two cancelled within 9 s, each labelled "Cancelled: hourly limit".</li>
+          <li><span class="tag fixed">new</span><b>Failure alerts.</b> A desktop notification and/or a Slack, Discord or any https webhook, sent with the app closed. A run that finished but reported <code>RESULT: FAILED</code> counts as a failure (Devin recorded A8, which delivered nothing, as a success). A failure that run recovery is still retrying waits. Live: alert 1 s after the failure.</li>
+          <li><span class="tag fixed">new</span><b>Webhooks in the form.</b> "When a webhook is called" gives the automation its own webhook. The detail page shows the URL, the signing secret once, a copy-paste signed <code>curl</code>, and "Send test event". Live: the displayed command and the button each started a run; deleting the automation removes its webhook.</li>
+          <li><span class="tag fixed">new</span><b>Keeps running in the background.</b> Closing the desktop window now leaves Neo in the menu bar or system tray, so schedules, GitHub triggers and limits keep working. "Open at login" starts it hidden when you sign in.</li>
+          <li><span class="tag fixed">new</span><b>A model suggestion where it matters.</b> When the instructions describe review, triage or investigation and the chosen model is a light one, the form suggests your cheapest frontier-tier profile, one click to switch. Round 2 showed Flash missing what Pro found.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Found while building them</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span>A failed run said only "Remote conversation ended with error". Run rows now show the real cause from the conversation, for example a rejected model API key, with a plain fix hint.</li>
+          <li><span class="tag fixed">fixed</span>The activity log showed a status but not what the run did. Each row now shows the agent's final report, expandable to the full text.</li>
+          <li><span class="tag fixed">fixed</span>The "Automations" tile counted only the loaded page, so it stopped at 50.</li>
+          <li><span class="tag fixed">fixed</span>An empty or partial time in the schedule form silently became 09:00.</li>
+          <li><span class="tag fixed">fixed</span>"Run now" on a GitHub- or webhook-triggered automation did not say what it would do. It now explains that it runs once on the newest matching item, and why it is disabled when the automation is off.</li>
+          <li><span class="tag fixed">fixed</span>Webhook automations were labelled "Event" with an event type of <code>*</code>; they now read "Webhook" and "Any event". The create dialog no longer says every automation runs "on the schedule".</li>
+          <li><span class="tag fixed">new</span>An end-to-end test drives the whole webhook path in a browser against the real stack: create in the form, send a signed test event, read the run's report and outcome.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="open" aria-labelledby="open-h">
+    <h2 id="open-h">Where Devin is still ahead</h2>
+    <ul class="caveats">
+      <li><b>Always on.</b> Devin runs in its cloud. The NeoDevEx desktop app now keeps running in the background after its window closes and can open at login, but automations still need the machine to be on. A schedule that came due while it was off runs once when it is back (the service catches up), but late. A hosted (Docker) install that is kept running avoids this.</li>
+      <li><b>Depth on the default model.</b> On Gemini 2.5 Flash our reviews stop at the first finding and one triage fix was wrong. Gemini 2.5 Pro closes the correctness gap; Devin still finds a couple more edge cases per review.</li>
+      <li><b>Speed to a pull request.</b> A1 57 s vs 100 s; A2 2 m 50 s vs 3 m 50 s; broken CI to green 80 s vs about 4 m 30 s.</li>
+      <li><b>Breadth.</b> Devin triggers on Slack, GitLab, Linear and seven GitHub event types, with 24 templates. NeoDevEx covers schedules, five GitHub events, CI failures, webhooks set up in the app and Jira, with 19 templates including changelog, PR review and issue triage. Both now have spend and rate limits.</li>
+      <li><b>GitHub events arrive by polling.</b> Locally, a bridge polls GitHub every 10 s (event to run about 4–15 s), because GitHub cannot call a laptop. Devin receives webhooks.</li>
+      <li><b>Repository picker.</b> Devin lists connected repositories in a searchable picker; ours suggests them while you type and checks the name, but only when the stored GitHub connection works.</li>
+    </ul>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <ul class="method-list">
+      <li>One private fixture repository (<code>vamsi920/automation-bench</code>): a small cart service with two planted bugs, an issue for each, and a CI workflow running <code>npm test</code>.</li>
+      <li>Eight scenarios with verbatim instructions and the same trigger semantics on both products. Devin was driven through its web app; NeoDevEx through its automation API and agent server, exactly as its own UI and chat call them. NeoDevEx's web UI requires a sign-in we did not perform on the account owner's behalf, so its new run-outcome view is covered by component tests rather than a browser session.</li>
+      <li>Times come from GitHub's own timestamps (comments, commits, check runs, PRs) and each product's run record.</li>
+      <li>Where a NeoDevEx scenario failed, we fixed the cause and re-ran the same scenario. The "at start" column keeps the first result.</li>
+      <li>Code quality: the automation code changed in this study ships with unit and component tests. After round 3, 3,626 tests across 421 files (automation UI, tour, scripts, hooks, routes, API guards) pass, and the project typechecks clean. Devin is closed source, so there is nothing equivalent to compare.</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>Each scenario ran once per product per round (A9 and A10 ran four times on NeoDevEx as rules and models changed). Timings are single observations, not distributions.</li>
+      <li>NeoDevEx ran on a local machine. Its default profile (Gemini 2.5 Flash) was also serving other work, which caused the rate-limit errors in round 1. For round 2 we added a Gemini 2.5 Pro profile, used only by the "(pro)" benchmark automations. Devin runs on its own infrastructure and models.</li>
+      <li>Devin's A3 webhook was not fired, because doing so needs the account's webhook secret.</li>
+      <li>A6 compares template catalogs; no template was run end to end on either product.</li>
+      <li>The fixes were made in response to these scenarios and re-measured on them. They are general (delivery, triggers, recovery), but a fresh set of scenarios would be a stronger test.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/suite.json">suite.json<small>All eleven scenarios, the rules and the verbatim instructions.</small></a></li>
+      <li><a href="data/observations.jsonl">observations.jsonl<small>Every timestamped observation behind this page, both products, all three rounds.</small></a></li>
+      <li><a href="https://github.com/vamsi920/automation-bench/pulls?q=is%3Apr">The pull requests and comments<small>Every PR, review and triage comment both products posted (private repository; ask for access).</small></a></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Devin is a product of Cognition. NeoDevEx is not affiliated with Cognition. Devin was used through the account owner's own subscription on a private test repository.</p>
+</footer>
+</body>
+</html>

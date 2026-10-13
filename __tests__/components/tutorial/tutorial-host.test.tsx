@@ -1218,6 +1218,32 @@ describe("TutorialHost watch mode", () => {
     ).not.toBeInTheDocument();
   });
 
+  // Auto-play once navigated from /automations to /conversations underneath
+  // an open "New automation" form and threw away what had been typed.
+  it("pauses instead of advancing while a dialog is open", () => {
+    vi.useFakeTimers();
+    act(() => {
+      useTutorialStore.setState({
+        isOpen: true,
+        stepIndex: 0,
+        isPlaying: true,
+      });
+    });
+    renderHost();
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.appendChild(dialog);
+
+    act(() => {
+      vi.advanceTimersByTime(TUTORIAL_MAX_CAPTION_MS);
+    });
+
+    expect(useTutorialStore.getState().stepIndex).toBe(0);
+    expect(useTutorialStore.getState().isPlaying).toBe(false);
+    dialog.remove();
+  });
+
   it("pausing holds the current caption", () => {
     vi.useFakeTimers();
     act(() => {

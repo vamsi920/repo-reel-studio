@@ -38,21 +38,39 @@ describe("local automation catalog", () => {
     },
   );
 
+  // GitHub cannot call a local stack; scripts/github-event-bridge.mjs polls
+  // GitHub and forwards exactly these events, so an event entry may only use
+  // them. Anything else would be created and then never fire.
+  const GITHUB_BRIDGE_EVENTS = [
+    "issues.opened",
+    "issue_comment.created",
+    "pull_request.opened",
+    "push",
+  ];
+
   it.each(LOCAL_AUTOMATION_CATALOG.map((entry) => [entry.id, entry]))(
-    "%s creates a real automation on a cron trigger",
+    "%s creates a real automation on a trigger that fires locally",
     (_id, entry) => {
       // "direct" is what makes completing the form POST to the service.
       // Anything else only opens a chat, which is the gap these entries close.
       expect(entry.setup?.mode).toBe("direct");
       expect(entry.setup?.prompt).toBeTruthy();
-      // Event triggers never fire without webhook delivery reaching the
-      // deployment, so every local entry polls instead.
-      expect(Object.keys(entry.setup?.form.triggers ?? {})).toEqual(["cron"]);
+      const kinds = Object.keys(entry.setup?.form.triggers ?? {});
+      expect(kinds.length).toBe(1);
+      if (kinds[0] === "event") {
+        const on = entry.setup?.form.triggers?.event?.on;
+        expect(GITHUB_BRIDGE_EVENTS).toContain(on?.default);
+        expect(entry.setup?.form.args?.repository?.provider).toBe("github");
+      } else {
+        expect(kinds).toEqual(["cron"]);
+      }
     },
   );
 
   it("never polls more often than the service's 300s floor", () => {
-    LOCAL_AUTOMATION_CATALOG.forEach((entry) => {
+    LOCAL_AUTOMATION_CATALOG.filter(
+      (entry) => entry.setup?.form.triggers?.cron,
+    ).forEach((entry) => {
       const schedule = entry.setup?.form.triggers?.cron?.schedule?.default;
       expect(schedule, `${entry.id} must default its schedule`).toBeTruthy();
       const minuteField = String(schedule).trim().split(/\s+/)[0];

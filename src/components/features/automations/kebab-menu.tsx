@@ -119,7 +119,12 @@ export function KebabMenu({ items }: KebabMenuProps) {
 
       {open && portalStyle && typeof document !== "undefined"
         ? ReactDOM.createPortal(
-            <div style={portalStyle}>{menu}</div>,
+            // React bubbles portal events up the component tree, so a click on
+            // the menu's padding or a disabled item reached the row/card and
+            // opened the detail page.
+            <div style={portalStyle} onClick={(e) => e.stopPropagation()}>
+              {menu}
+            </div>,
             document.body,
           )
         : null}

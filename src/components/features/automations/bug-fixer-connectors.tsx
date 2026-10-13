@@ -19,6 +19,8 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { modalTitleLgClassName } from "#/utils/modal-classes";
 import type { AutomationSpec } from "#/types/automation";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
+import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
+import { repoClause, repoSlug } from "#/utils/automation-event-trigger";
 
 type BugFixerSource = "github" | "jira";
 
@@ -50,24 +52,46 @@ function buildBugFixerPrompt(
   ].join("\n");
 }
 
-function buildAutomationSpec(
+/** Jira keys are letters, digits, hyphens and underscores; drop anything else
+ * so a typed value cannot break out of the JMESPath string literal. */
+function sanitizeJiraKey(value: string): string {
+  return value.replace(/[^A-Za-z0-9_-]/g, "").toUpperCase();
+}
+
+/**
+ * GitHub: scoped to the repository, because the automation service matches
+ * events by type and filter only. Jira: the service keys Jira events by the
+ * raw `webhookEvent` ("jira:issue_created"; the old "issue.created" never
+ * matched) and the project is filtered from the payload, while the GitHub
+ * repository is where the fix is made.
+ */
+export function buildAutomationSpec(
   source: BugFixerSource,
   repository: string,
+  jiraProjectKey = "",
 ): AutomationSpec {
   const trimmedRepo = repository.trim();
+  const slug = repoSlug(trimmedRepo) ?? trimmedRepo;
+  const projectKey = sanitizeJiraKey(jiraProjectKey);
   return {
     name:
       source === "github"
         ? `Bug Fixer — ${trimmedRepo} (GitHub Issues)`
-        : `Bug Fixer — ${trimmedRepo} (Jira)`,
-    trigger: {
-      type: "event",
-      source,
-      on:
-        source === "github"
-          ? ["issues.labeled", "issues.opened"]
-          : ["issue.created"],
-    },
+        : `Bug Fixer — ${projectKey} → ${trimmedRepo} (Jira)`,
+    trigger:
+      source === "github"
+        ? {
+            type: "event",
+            source,
+            on: ["issues.labeled", "issues.opened"],
+            filter: repoClause(slug),
+          }
+        : {
+            type: "event",
+            source,
+            on: ["jira:issue_created"],
+            filter: `(issue.fields.project.key || fields.project.key) == '${projectKey}'`,
+          },
     enabled: false,
     repository: trimmedRepo,
     prompt: buildBugFixerPrompt(source, trimmedRepo),
@@ -121,23 +145,29 @@ function RepositoryPromptModal({
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
+  const supportedSources = useSupportedEventSources();
   const { t } = useTranslation("openhands");
   const [repository, setRepository] = useState("");
+  const [jiraProjectKey, setJiraProjectKey] = useState("");
   const importAutomation = useImportAutomation();
 
-  const placeholder =
-    source === "github"
-      ? "owner/repo (e.g. neodevex/repo-reel-studio)"
-      : "PROJECT_KEY";
+  const placeholder = "owner/repo (e.g. neodevex/repo-reel-studio)";
+  const jiraPlaceholder = "PROJ";
+  const isComplete =
+    !!repoSlug(repository) &&
+    (source === "github" || sanitizeJiraKey(jiraProjectKey).length > 0);
   const label =
     source === "github"
       ? t(I18nKey.AUTOMATIONS$BUG_FIXER_GITHUB_TITLE)
       : t(I18nKey.AUTOMATIONS$BUG_FIXER_JIRA_TITLE);
-  const isUnsupported = isUnsupportedEventTrigger({ type: "event", source });
+  const isUnsupported = isUnsupportedEventTrigger(
+    { type: "event", source },
+    supportedSources,
+  );
 
   const handleCreate = () => {
-    if (!repository.trim() || importAutomation.isPending) return;
-    const spec = buildAutomationSpec(source, repository);
+    if (!isComplete || importAutomation.isPending) return;
+    const spec = buildAutomationSpec(source, repository, jiraProjectKey);
     importAutomation.mutate(spec, {
       onSuccess: (created) => {
         displaySuccessToast(t(I18nKey.AUTOMATIONS$BUG_FIXER_CREATED_TOAST));
@@ -180,8 +210,20 @@ function RepositoryPromptModal({
             onChange={(e) => setRepository(e.target.value)}
             placeholder={placeholder}
             data-testid="bug-fixer-repository-input"
+            aria-label={t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_LABEL)}
             className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-3 py-2 text-sm text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-400)]"
           />
+          {source === "jira" && (
+            <input
+              type="text"
+              value={jiraProjectKey}
+              onChange={(e) => setJiraProjectKey(e.target.value)}
+              placeholder={jiraPlaceholder}
+              data-testid="bug-fixer-jira-project-input"
+              aria-label={t(I18nKey.AUTOMATIONS$BUG_FIXER_JIRA_PROJECT_LABEL)}
+              className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-3 py-2 text-sm text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-400)]"
+            />
+          )}
           {isUnsupported && (
             <div
               role="alert"
@@ -207,7 +249,7 @@ function RepositoryPromptModal({
             type="button"
             variant="primary"
             onClick={handleCreate}
-            isDisabled={!repository.trim() || importAutomation.isPending}
+            isDisabled={!isComplete || importAutomation.isPending}
             aria-busy={importAutomation.isPending}
           >
             {importAutomation.isPending ? (

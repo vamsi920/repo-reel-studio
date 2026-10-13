@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { DELIVERY_CONTRACT_MARKER } from "#/lib/automation/delivery-contract";
 import { AutomationRunStatus } from "#/types/automation";
 import type {
   Automation,
@@ -303,6 +304,16 @@ describe("AutomationService", () => {
       expect(result).toEqual(updated);
     });
 
+    it("appends the delivery contract when the prompt changes", async () => {
+      mockPatch.mockResolvedValue({ data: mockAutomation });
+
+      await AutomationService.updateAutomation("1", { prompt: "Fix issue #1" });
+
+      const [, body] = mockPatch.mock.calls[0];
+      expect(body.prompt.startsWith("Fix issue #1")).toBe(true);
+      expect(body.prompt).toContain(DELIVERY_CONTRACT_MARKER);
+    });
+
     it("sends model profile updates to the automation API", async () => {
       const updated = { ...mockAutomation, model: "careful-profile" };
       mockPatch.mockResolvedValue({ data: updated });
@@ -315,6 +326,24 @@ describe("AutomationService", () => {
         model: "careful-profile",
       });
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe("createAutomationDraft", () => {
+    it("sends the user's prompt with the delivery contract appended", async () => {
+      mockPost.mockResolvedValue({ data: { id: "a1" } });
+
+      await AutomationService.createAutomationDraft({
+        name: "Changelog",
+        prompt: "Add a changelog line and open a PR",
+      });
+
+      const [, body] = mockPost.mock.calls[0];
+      expect(body.name).toBe("Changelog");
+      expect(body.prompt.startsWith("Add a changelog line and open a PR")).toBe(
+        true,
+      );
+      expect(body.prompt).toContain("RESULT:");
     });
   });
 
@@ -666,10 +695,11 @@ describe("AutomationService", () => {
       // Both hosts directly serve the automation mount -- no origin
       // fallback needed, so `mockGet` is only ever hit for the explicit
       // per-host probe this test is asserting on.
-      mockGet.mockImplementation((_path: string, config?: { baseURL?: string }) =>
-        config?.baseURL === hostA || config?.baseURL === hostB
-          ? Promise.resolve({ data: { status: "ok" } })
-          : Promise.reject(new Error(`unexpected probe: ${config?.baseURL}`)),
+      mockGet.mockImplementation(
+        (_path: string, config?: { baseURL?: string }) =>
+          config?.baseURL === hostA || config?.baseURL === hostB
+            ? Promise.resolve({ data: { status: "ok" } })
+            : Promise.reject(new Error(`unexpected probe: ${config?.baseURL}`)),
       );
 
       mockGetEffectiveLocal.mockReturnValue({ ...localBackend, host: hostA });

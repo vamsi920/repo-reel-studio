@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import AutomationService from "#/api/automation-service/automation-service.api";
+import type { DeploymentCapabilities } from "#/manifests/types";
 import { AutomationListRow } from "#/components/features/automations/automation-list-row";
 import type { Automation } from "#/types/automation";
 
@@ -29,9 +32,35 @@ const automation: Automation = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+// Cards read deployment capabilities through react-query.
+function renderWithQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
+
+// No GitHub receiver is advertised, so github event triggers read as unsupported.
+const CAPABILITIES_WITHOUT_GITHUB: DeploymentCapabilities = {
+  ready: true,
+  triggerKinds: ["cron", "event"],
+  eventSources: ["jira"],
+  eventTypes: [],
+  triggers: {},
+  features: [],
+};
+
+beforeEach(() => {
+  vi.spyOn(AutomationService, "getCapabilities").mockResolvedValue(
+    CAPABILITIES_WITHOUT_GITHUB,
+  );
+});
+
 describe("AutomationListRow", () => {
   it("renders title, pills, and action icons in a table row layout", () => {
-    render(
+    renderWithQueryClient(
       <AutomationListRow
         automation={automation}
         onToggle={vi.fn()}
@@ -59,7 +88,7 @@ describe("AutomationListRow", () => {
   it("opens the actions menu without triggering row navigation handlers", async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <AutomationListRow
         automation={automation}
         onToggle={vi.fn()}
@@ -82,7 +111,7 @@ describe("AutomationListRow", () => {
       trigger: { type: "event", source: "github" },
     };
 
-    render(
+    renderWithQueryClient(
       <AutomationListRow
         automation={githubAutomation}
         onToggle={vi.fn()}
@@ -92,13 +121,11 @@ describe("AutomationListRow", () => {
       />,
     );
 
-    expect(
-      screen.getByTestId("unsupported-trigger-badge"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("unsupported-trigger-badge")).toBeInTheDocument();
   });
 
   it("does not show the unsupported-trigger badge for a schedule automation", () => {
-    render(
+    renderWithQueryClient(
       <AutomationListRow
         automation={{ ...automation, trigger: { type: "cron" } }}
         onToggle={vi.fn()}
@@ -118,7 +145,7 @@ describe("AutomationListRow", () => {
     const onRunNow = vi.fn();
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <AutomationListRow
         automation={automation}
         onToggle={vi.fn()}

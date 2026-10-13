@@ -59,6 +59,7 @@ import {
 } from "./dev-process-utils.mjs";
 import {
   buildAgentServerAutomationEnv,
+  AUTOMATION_TIMING_ENV,
   buildAutomationCommand,
   buildAutomationTelemetryEnv,
   buildAutomationRuntimeServicesInfo,
@@ -328,6 +329,7 @@ function startAgentServer(config) {
 function buildAutomationBackendEnv(config, env = process.env) {
   // Both backends share the same session API key value.
   return {
+    ...AUTOMATION_TIMING_ENV,
     AUTOMATION_AGENT_SERVER_URL: `http://localhost:${config.agentServerPort}`,
     AUTOMATION_AGENT_SERVER_API_KEY: config.sessionApiKey,
     AUTOMATION_DB_URL: `sqlite+aiosqlite:///${join(config.stateDir, "automations.db")}`,

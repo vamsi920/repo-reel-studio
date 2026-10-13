@@ -5,6 +5,7 @@ import {
 } from "#/api/backend-registry/active-store";
 import type { Backend } from "#/api/backend-registry/types";
 import type { Automation, AutomationSpec } from "#/types/automation";
+import { withDeliveryContract } from "#/lib/automation/delivery-contract";
 import AutomationService, {
   __resetAutomationBaseUrlForTests,
 } from "./automation-service.api";
@@ -220,7 +221,8 @@ describe("AutomationService.createAutomation", () => {
       "/api/automation/v1/preset/plugin",
       {
         name: spec.name,
-        prompt: spec.prompt,
+        // Every saved prompt carries the delivery contract.
+        prompt: withDeliveryContract(spec.prompt!),
         model: spec.model,
         trigger: {
           type: "event",

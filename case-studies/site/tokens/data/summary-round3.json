@@ -1,0 +1,243 @@
+{
+  "tasks": {
+    "T1": {
+      "today": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 9.5,
+        "input_tokens": 206003.5,
+        "output_tokens": 1445.0,
+        "reasoning_tokens": 749.5,
+        "total_tokens": 207417.0,
+        "cost_usd": 0.030226984999999998,
+        "first_call_input": 15582.5,
+        "mean_total_tokens": 187342.25,
+        "mean_cost_usd": 0.0276555
+      },
+      "lean": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 7.0,
+        "input_tokens": 96121.0,
+        "output_tokens": 1369.0,
+        "reasoning_tokens": 747.0,
+        "total_tokens": 97451.5,
+        "cost_usd": 0.018714670000000003,
+        "first_call_input": 11736.5,
+        "mean_total_tokens": 99080,
+        "mean_cost_usd": 0.0171521875
+      },
+      "neo": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 8.0,
+        "input_tokens": 108368.0,
+        "output_tokens": 1454.0,
+        "reasoning_tokens": 772.5,
+        "total_tokens": 109822.0,
+        "cost_usd": 0.016488245,
+        "first_call_input": 11958.0,
+        "mean_total_tokens": 127655.25,
+        "mean_cost_usd": 0.015273134999999998
+      }
+    },
+    "T2": {
+      "today": {
+        "runs": 4,
+        "pass_rate": 0.25,
+        "llm_calls": 3.5,
+        "input_tokens": 47010.5,
+        "output_tokens": 810.5,
+        "reasoning_tokens": 484.5,
+        "total_tokens": 47821.0,
+        "cost_usd": 0.012411829999999999,
+        "first_call_input": 15425.0,
+        "mean_total_tokens": 54432.25,
+        "mean_cost_usd": 0.0122278875
+      },
+      "lean": {
+        "runs": 4,
+        "pass_rate": 0.25,
+        "llm_calls": 3.0,
+        "input_tokens": 35474.0,
+        "output_tokens": 818.5,
+        "reasoning_tokens": 442.5,
+        "total_tokens": 36345.5,
+        "cost_usd": 0.008052614999999999,
+        "first_call_input": 11577.5,
+        "mean_total_tokens": 45326.5,
+        "mean_cost_usd": 0.009152912499999999
+      },
+      "neo": {
+        "runs": 4,
+        "pass_rate": 0.0,
+        "llm_calls": 3.0,
+        "input_tokens": 36150.5,
+        "output_tokens": 747.0,
+        "reasoning_tokens": 374.5,
+        "total_tokens": 36897.5,
+        "cost_usd": 0.0066093,
+        "first_call_input": 11799.5,
+        "mean_total_tokens": 39952.75,
+        "mean_cost_usd": 0.0075201999999999995
+      }
+    },
+    "T3": {
+      "today": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 4.5,
+        "input_tokens": 84854.5,
+        "output_tokens": 1779.5,
+        "reasoning_tokens": 657.0,
+        "total_tokens": 86487.0,
+        "cost_usd": 0.012838039999999998,
+        "first_call_input": 18254.0,
+        "mean_total_tokens": 86958.25,
+        "mean_cost_usd": 0.0155159125
+      },
+      "lean": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 5.0,
+        "input_tokens": 74191.5,
+        "output_tokens": 2173.0,
+        "reasoning_tokens": 817.0,
+        "total_tokens": 76364.5,
+        "cost_usd": 0.015038065,
+        "first_call_input": 14132.0,
+        "mean_total_tokens": 76230.25,
+        "mean_cost_usd": 0.0169766775
+      },
+      "neo": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 5.5,
+        "input_tokens": 83881.0,
+        "output_tokens": 2795.0,
+        "reasoning_tokens": 855.5,
+        "total_tokens": 86676.0,
+        "cost_usd": 0.021660005000000003,
+        "first_call_input": 14355.0,
+        "mean_total_tokens": 86803,
+        "mean_cost_usd": 0.0221382575
+      }
+    },
+    "T4": {
+      "today": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 7.0,
+        "input_tokens": 159627.0,
+        "output_tokens": 2182.5,
+        "reasoning_tokens": 765.5,
+        "total_tokens": 161430.0,
+        "cost_usd": 0.01791309,
+        "first_call_input": 18261.0,
+        "mean_total_tokens": 163672.5,
+        "mean_cost_usd": 0.019230539999999997
+      },
+      "lean": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 9.5,
+        "input_tokens": 144622.0,
+        "output_tokens": 2348.0,
+        "reasoning_tokens": 864.0,
+        "total_tokens": 147580.5,
+        "cost_usd": 0.01741298,
+        "first_call_input": 14140.0,
+        "mean_total_tokens": 142982,
+        "mean_cost_usd": 0.019780945
+      },
+      "neo": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 7.0,
+        "input_tokens": 116211.0,
+        "output_tokens": 1869.5,
+        "reasoning_tokens": 700.5,
+        "total_tokens": 118080.5,
+        "cost_usd": 0.01649257,
+        "first_call_input": 14361.0,
+        "mean_total_tokens": 121076.75,
+        "mean_cost_usd": 0.019204667499999998
+      }
+    },
+    "T5": {
+      "today": {
+        "runs": 4,
+        "pass_rate": 0.75,
+        "llm_calls": 15.5,
+        "input_tokens": 315509.0,
+        "output_tokens": 4217.5,
+        "reasoning_tokens": 1527.5,
+        "total_tokens": 319726.5,
+        "cost_usd": 0.04451422000000001,
+        "first_call_input": 15458.0,
+        "mean_total_tokens": 350758.25,
+        "mean_cost_usd": 0.047090742500000005
+      },
+      "lean": {
+        "runs": 4,
+        "pass_rate": 1.0,
+        "llm_calls": 12.0,
+        "input_tokens": 166993.0,
+        "output_tokens": 2873.5,
+        "reasoning_tokens": 1176.5,
+        "total_tokens": 169866.5,
+        "cost_usd": 0.017812784999999998,
+        "first_call_input": 11613.0,
+        "mean_total_tokens": 344849,
+        "mean_cost_usd": 0.036131905
+      },
+      "neo": {
+        "runs": 4,
+        "pass_rate": 0.25,
+        "llm_calls": 15.0,
+        "input_tokens": 229975.0,
+        "output_tokens": 4442.0,
+        "reasoning_tokens": 1825.0,
+        "total_tokens": 234020.5,
+        "cost_usd": 0.040961515,
+        "first_call_input": 11834.5,
+        "mean_total_tokens": 230568.25,
+        "mean_cost_usd": 0.04190044
+      }
+    }
+  },
+  "totals": {
+    "today": {
+      "sum_median_tokens": 822881.5,
+      "sum_median_cost_usd": 0.1179,
+      "sum_mean_tokens": 843163.5,
+      "sum_mean_cost_usd": 0.12172,
+      "passes": 16,
+      "runs": 20
+    },
+    "lean": {
+      "sum_median_tokens": 527608.5,
+      "sum_median_cost_usd": 0.07703,
+      "sum_mean_tokens": 708467.75,
+      "sum_mean_cost_usd": 0.09919,
+      "passes": 17,
+      "runs": 20,
+      "token_saving": 0.3588280937170176,
+      "cost_saving": 0.34666332610048156,
+      "mean_token_saving": 0.159750451721404,
+      "mean_cost_saving": 0.18506282616582137
+    },
+    "neo": {
+      "sum_median_tokens": 585496.5,
+      "sum_median_cost_usd": 0.10221,
+      "sum_mean_tokens": 606056.0,
+      "sum_mean_cost_usd": 0.10604,
+      "passes": 13,
+      "runs": 20,
+      "token_saving": 0.2884801760642328,
+      "cost_saving": 0.13309563746115327,
+      "mean_token_saving": 0.28121176972200523,
+      "mean_cost_saving": 0.1288515235293095
+    }
+  }
+}

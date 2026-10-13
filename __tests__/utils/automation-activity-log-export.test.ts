@@ -101,6 +101,16 @@ describe("automation-activity-log-export", () => {
     expect(row.cost).toBe(0.4213);
   });
 
+  // The service leaves started_at at the epoch until a run starts.
+  it("exports no start time or duration for a run that never started", () => {
+    const run = sampleRun({ started_at: "1970-01-01T00:00:00Z" });
+
+    const row = mapAutomationRunToExportRow(run, automation);
+
+    expect(row.start_time).toBeNull();
+    expect(row.duration_seconds).toBeNull();
+  });
+
   it("serializes the cost as a raw number so spreadsheets can total it", () => {
     // Arrange
     const rows: AutomationRunExportRow[] = [sampleRow({ cost: 0.4213 })];

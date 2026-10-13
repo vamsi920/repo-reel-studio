@@ -12,6 +12,7 @@ import { useHasPermission } from "#/hooks/use-has-permission";
 import { ActiveStatusBadge } from "./active-status-badge";
 import { UnsupportedTriggerBadge } from "#/components/features/automations/unsupported-trigger-badge";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
+import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
 
 interface DetailHeaderProps {
   automation: Automation;
@@ -40,6 +41,7 @@ export function DetailHeader({
   isRunningNow = false,
   isTogglePending = false,
 }: DetailHeaderProps) {
+  const supportedSources = useSupportedEventSources();
   const { t } = useTranslation("openhands");
   const canManage = useHasPermission("manage_automations");
 
@@ -97,7 +99,7 @@ export function DetailHeader({
             {automation.name}
           </h1>
           <ActiveStatusBadge active={automation.enabled} />
-          {isUnsupportedEventTrigger(automation.trigger) && (
+          {isUnsupportedEventTrigger(automation.trigger, supportedSources) && (
             <UnsupportedTriggerBadge />
           )}
         </div>
@@ -108,6 +110,16 @@ export function DetailHeader({
               className="inline-flex items-center gap-1.5 rounded-md border border-[var(--oh-border)] px-3 py-1.5 text-sm font-medium text-content transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isRunningNow || !automation.enabled}
               onClick={onRunNow}
+              data-testid="automation-run-now"
+              // Event automations have no payload on a manual run; the
+              // delivery contract has them pick the newest matching item.
+              title={
+                !automation.enabled
+                  ? t(I18nKey.AUTOMATIONS$RUN_NOW_HINT_OFF)
+                  : automation.trigger.type === "event"
+                    ? t(I18nKey.AUTOMATIONS$RUN_NOW_HINT_EVENT)
+                    : undefined
+              }
             >
               <PlayIcon className="size-3.5 shrink-0" aria-hidden />
               {isRunningNow

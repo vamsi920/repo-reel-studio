@@ -6,7 +6,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from "react";
-import { FileUp } from "lucide-react";
+import { Bell, FileUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import {
@@ -42,6 +42,7 @@ import { TurnOffConfirmationModal } from "#/components/features/automations/turn
 import { EditAutomationModal } from "#/components/features/automations/detail/edit-automation-modal";
 import { AddAutomationModal } from "#/components/features/automations/add-automation-modal";
 import { ImportAutomationModal } from "#/components/features/automations/import-automation-modal";
+import { AutomationAlertsModal } from "#/components/features/automations/automation-alerts-modal";
 import { RecommendedAutomationsLauncher } from "#/components/features/automations/recommended-automations-launcher";
 import { ProactivationFeatureCard } from "#/components/features/automations/proactivation/proactivation-feature-card";
 import { BrandButton } from "#/components/features/settings/brand-button";
@@ -115,6 +116,7 @@ export default function AutomationsList() {
   const [isAddAutomationOpen, setIsAddAutomationOpen] = useState(false);
   const [importSpec, setImportSpec] = useState<AutomationSpec | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
   const active = useActiveBackend();
   // Edit is a local-backend-only feature in MVP — cloud automations
@@ -386,7 +388,12 @@ export default function AutomationsList() {
     if (!dashboardSpec || isLoading || isError) return [];
     const automations = data?.automations ?? [];
     return dashboardSpec.overview.tiles.map((tile) => {
-      const value = computeOverviewTile(tile.metric, automations, runSummaries);
+      const value = computeOverviewTile(
+        tile.metric,
+        automations,
+        runSummaries,
+        data?.total,
+      );
       const template =
         value.isZero && tile.zeroDetail ? tile.zeroDetail : tile.detail;
       return {
@@ -397,7 +404,14 @@ export default function AutomationsList() {
         Icon: MANIFEST_ICON_BY_SLUG[tile.icon],
       };
     });
-  }, [dashboardSpec, isLoading, isError, data?.automations, runSummaries]);
+  }, [
+    dashboardSpec,
+    isLoading,
+    isError,
+    data?.automations,
+    data?.total,
+    runSummaries,
+  ]);
 
   const groupInsights = dashboard
     ? { spec: dashboard.spec.insights, byId: runSummaries }
@@ -471,6 +485,18 @@ export default function AutomationsList() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          {active.backend.kind === "local" && (
+            <BrandButton
+              type="button"
+              variant="secondary"
+              testId="automations-alerts"
+              className="whitespace-nowrap"
+              onClick={() => setIsAlertsOpen(true)}
+              startContent={<Bell className="size-4" aria-hidden />}
+            >
+              {t(I18nKey.AUTOMATIONS$ALERTS$BUTTON)}
+            </BrandButton>
+          )}
           <BrandButton
             type="button"
             variant="secondary"
@@ -498,6 +524,12 @@ export default function AutomationsList() {
             data-testid="automations-import-file"
             onChange={handleImportFile}
           />
+          {isAlertsOpen && (
+            <AutomationAlertsModal
+              isOpen
+              onClose={() => setIsAlertsOpen(false)}
+            />
+          )}
           <BrandButton
             type="button"
             variant="secondary"
@@ -568,7 +600,21 @@ export default function AutomationsList() {
           data &&
           data.automations.length > 0 &&
           (dashboard && visible.length === 0 ? (
-            <AutomationsFilteredEmptyState onClear={handleClearFilters} />
+            <>
+              <AutomationsFilteredEmptyState onClear={handleClearFilters} />
+              {/* Search and filters only cover the loaded page; without this
+                  a match beyond it was reported as "no matches" with no way
+                  to look further. */}
+              {hasMore && (
+                <button
+                  type="button"
+                  onClick={() => setLimit((prev) => prev + PAGE_SIZE)}
+                  className="self-center rounded-lg border border-[var(--oh-border)] px-6 py-2 text-sm text-white hover:bg-surface-raised"
+                >
+                  {t(I18nKey.AUTOMATIONS$LOAD_MORE)}
+                </button>
+              )}
+            </>
           ) : (
             <>
               <AutomationGroup

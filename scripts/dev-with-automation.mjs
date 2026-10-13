@@ -45,7 +45,8 @@
  */
 
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
@@ -72,6 +73,15 @@ import {
 } from "./dev-process-utils.mjs";
 import { fileLog, stripAnsi } from "./logger.mjs";
 import { installHarness } from "./install-harness.mjs";
+import {
+  AUTOMATION_RUNS_SUBDIR,
+  LOW_DISK_THRESHOLD_BYTES,
+  RETENTION_ENV_VAR,
+  formatBytes,
+  freeDiskBytes,
+  pruneAutomationRuns,
+  resolveRetentionDays,
+} from "./prune-automation-runs.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..");
@@ -283,6 +293,45 @@ ACCESS POINTS:
  * DEFAULT_AUTOMATION_VERSION. Set OH_AUTOMATION_GIT_REF to use a
  * git branch or commit instead.
  */
+/**
+ * Seconds between scheduler checks of the same cron automation.
+ *
+ * openhands-automation hard-codes POLL_INTERVAL_SECONDS = 60, so a schedule
+ * started up to a minute late (benchmarked against Devin, which fires on the
+ * second: case-studies/automations, scenario A1 started 52-59 s late). The
+ * constant is not configurable, so the service is started through a short
+ * Python entry point that lowers it before handing over to uvicorn's own CLI.
+ * If a future release renames the constant the patch is skipped and the
+ * service still starts normally.
+ */
+export const AUTOMATION_SCHEDULE_POLL_SECONDS = 5;
+
+const AUTOMATION_SERVER_BOOT = [
+  "import os, sys, uvicorn",
+  "try:",
+  "    import openhands.automation.scheduler as scheduler",
+  "    if hasattr(scheduler, 'POLL_INTERVAL_SECONDS'):",
+  `        scheduler.POLL_INTERVAL_SECONDS = int(os.environ.get('NEODEVEX_SCHEDULE_POLL_SECONDS', '${AUTOMATION_SCHEDULE_POLL_SECONDS}'))`,
+  "except Exception as error:",
+  "    print('neodevex: scheduler poll patch skipped:', error, file=sys.stderr)",
+  "uvicorn.main(args=['openhands.automation.app:app', *sys.argv[1:]])",
+].join("\n");
+
+/** Runs inside the package's environment: `python -c <boot> --host ... --port ...`. */
+export const AUTOMATION_SERVER_ENTRY = ["python", "-c", AUTOMATION_SERVER_BOOT];
+
+/**
+ * Scheduler and dispatcher cadence for the local automation service. The
+ * defaults (60 s and 10 s) add up to over a minute between a schedule coming
+ * due and its run starting; a local SQLite poll every few seconds is cheap.
+ */
+export const AUTOMATION_TIMING_ENV = {
+  AUTOMATION_SCHEDULER_INTERVAL_SECONDS: String(
+    AUTOMATION_SCHEDULE_POLL_SECONDS,
+  ),
+  AUTOMATION_DISPATCHER_INTERVAL_SECONDS: "2",
+};
+
 function buildAutomationCommand(env = process.env) {
   const gitRef = env.OH_AUTOMATION_GIT_REF;
   const version = env.OH_AUTOMATION_VERSION;
@@ -294,21 +343,14 @@ function buildAutomationCommand(env = process.env) {
   if (gitRef) {
     // Use git ref - refresh to ensure latest commit is fetched
     const gitUrl = `git+${repoUrl}@${gitRef}`;
-    uvxArgs.push(
-      "--refresh",
-      "--from",
-      gitUrl,
-      "uvicorn",
-      "openhands.automation.app:app",
-    );
+    uvxArgs.push("--refresh", "--from", gitUrl, ...AUTOMATION_SERVER_ENTRY);
     source = `git (${gitRef})`;
   } else if (version) {
     // Use specific PyPI version
     uvxArgs.push(
       "--from",
       `${DEFAULT_AUTOMATION_PACKAGE}==${version}`,
-      "uvicorn",
-      "openhands.automation.app:app",
+      ...AUTOMATION_SERVER_ENTRY,
     );
     source = `PyPI (${version})`;
   } else {
@@ -316,8 +358,7 @@ function buildAutomationCommand(env = process.env) {
     uvxArgs.push(
       "--from",
       `${DEFAULT_AUTOMATION_PACKAGE}==${DEFAULT_AUTOMATION_VERSION}`,
-      "uvicorn",
-      "openhands.automation.app:app",
+      ...AUTOMATION_SERVER_ENTRY,
     );
     source = `PyPI (${DEFAULT_AUTOMATION_VERSION}, default)`;
   }
@@ -520,6 +561,39 @@ function checkPrerequisites({
   }
 }
 
+/**
+ * Delete stale automation-run workspaces and warn when the disk is nearly
+ * full. Best-effort: never blocks startup.
+ */
+function housekeepDisk(config, automationWorkspaceBase) {
+  if (config.launchAutomation) {
+    const runsDir = join(
+      process.env.AUTOMATION_WORKSPACE_BASE ||
+        automationWorkspaceBase ||
+        join(config.stateDir, "workspaces"),
+      AUTOMATION_RUNS_SUBDIR,
+    );
+    const { removed, freedBytes, errors } = pruneAutomationRuns({
+      dir: runsDir,
+      retentionDays: resolveRetentionDays(process.env),
+    });
+    if (removed > 0) {
+      logSuccess(
+        `pruned ${removed} old automation runs (${formatBytes(freedBytes)})`,
+      );
+    }
+    for (const error of errors) logError(`prune failed: ${error}`);
+  }
+
+  const free = freeDiskBytes(config.stateDir);
+  if (free !== null && free < LOW_DISK_THRESHOLD_BYTES) {
+    logError(
+      `low disk space: only ${formatBytes(free)} free. Builds and agent runs may fail. ` +
+        `Lower ${RETENTION_ENV_VAR} (days) to prune automation runs sooner.`,
+    );
+  }
+}
+
 function ensureDirectories(config) {
   const dirs = [
     config.stateDir,
@@ -583,7 +657,25 @@ function registerShutdownHook(hook) {
   return shutdownHooks.add(hook);
 }
 
-function spawnService(name, command, args, options = {}) {
+/**
+ * Restart policy for services whose failure would otherwise leave a feature
+ * down for the whole session (benchmarked: a transient PyPI connection
+ * refusal made `uvx` exit with code 2 and automations stayed unavailable
+ * until the developer noticed and restarted the stack).
+ */
+export function nextRestartDelayMs(restart, attempt, livedMs) {
+  if (!restart) return null;
+  const effectiveAttempt =
+    livedMs >= (restart.healthyAfterMs ?? 60_000) ? 0 : attempt;
+  if (effectiveAttempt >= (restart.maxAttempts ?? 5)) return null;
+  return Math.min(
+    (restart.baseDelayMs ?? 2_000) * 2 ** effectiveAttempt,
+    60_000,
+  );
+}
+
+function spawnService(name, command, args, options = {}, attempt = 0) {
+  const startedAt = Date.now();
   const proc = spawn(
     resolveWindowsCommand(command),
     args,
@@ -636,12 +728,33 @@ function spawnService(name, command, args, options = {}) {
     emitServiceLog(name, `failed to start: ${error.message}`, "error");
   });
 
-  proc.on("exit", (code, _signal) => {
-    if (code !== 0 && code !== null && !shuttingDown) {
-      logService(name, `Exited with code ${code}`, c.red);
-      emitServiceLog(name, `exited with code ${code}`, "error");
+  proc.on("exit", (code, signal) => {
+    if (code !== 0 && !shuttingDown) {
+      const how = code === null ? `signal ${signal}` : `code ${code}`;
+      logService(name, `Exited with ${how}`, c.red);
+      emitServiceLog(name, `exited with ${how}`, "error");
     }
     processes.delete(name);
+    // A service killed by a signal outside a stack shutdown (the OS's OOM
+    // killer, a stray `kill`) is restarted too: the GitHub event bridge once
+    // stayed down after one, and every GitHub trigger silently stopped.
+    if (shuttingDown || code === 0) return;
+    const livedMs = Date.now() - startedAt;
+    const wait = nextRestartDelayMs(options.restart, attempt, livedMs);
+    if (wait === null) {
+      if (options.restart) {
+        logService(name, "Giving up after repeated failures", c.red);
+      }
+      return;
+    }
+    const nextAttempt =
+      livedMs >= (options.restart.healthyAfterMs ?? 60_000) ? 1 : attempt + 1;
+    logService(name, `Restarting in ${Math.round(wait / 1000)}s...`, c.yellow);
+    setTimeout(() => {
+      if (!shuttingDown) {
+        spawnService(name, command, args, options, nextAttempt);
+      }
+    }, wait);
   });
 
   processes.set(name, proc);
@@ -870,10 +983,12 @@ function startAutomationBackend(config) {
     ],
     {
       cwd: config.stateDir,
+      restart: { maxAttempts: 5, baseDelayMs: 3_000 },
       env: {
         // Force UTF-8 for all Python file I/O (same reason as agent-server;
         // see buildAgentServerEnv in dev-safe.mjs).
         PYTHONUTF8: "1",
+        ...AUTOMATION_TIMING_ENV,
         OPENHANDS_REMOTE_WS_READY_REQUIRED:
           process.env.OPENHANDS_REMOTE_WS_READY_REQUIRED || "false",
         // The URL the automation backend itself uses to call the
@@ -936,6 +1051,10 @@ function startAutomationBackend(config) {
         //   2. sessionApiKey — convenient zero-config default for local dev
         AUTOMATION_KV_SECRET:
           process.env.AUTOMATION_KV_SECRET || config.sessionApiKey,
+        // Turns on the backend's built-in GitHub event source. The local
+        // GitHub event bridge (scripts/github-event-bridge.mjs) signs the
+        // events it forwards with the same secret.
+        AUTOMATION_WEBHOOK_SECRET: getAutomationWebhookSecret(config),
         // CORS: allow localhost origins for dev, unless explicitly overridden.
         AUTOMATION_CORS_ORIGINS:
           process.env.AUTOMATION_CORS_ORIGINS ||
@@ -983,6 +1102,55 @@ function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 process.on("SIGHUP", shutdown);
+
+/**
+ * Secret for the automation backend's GitHub event source, generated once and
+ * persisted next to the other launcher keys so the backend and the GitHub
+ * event bridge always agree after a restart.
+ */
+export function getAutomationWebhookSecret(config) {
+  if (process.env.AUTOMATION_WEBHOOK_SECRET) {
+    return process.env.AUTOMATION_WEBHOOK_SECRET;
+  }
+  const file = join(config.stateDir, "automation-webhook-secret.txt");
+  if (existsSync(file)) {
+    const saved = readFileSync(file, "utf8").trim();
+    if (saved) return saved;
+  }
+  const secret = randomBytes(32).toString("hex");
+  mkdirSync(config.stateDir, { recursive: true });
+  writeFileSync(file, `${secret}\n`, { mode: 0o600 });
+  return secret;
+}
+
+/**
+ * Start the GitHub event bridge. A local install has no public URL, so
+ * GitHub webhooks can never reach it; the bridge polls the repositories that
+ * GitHub-triggered automations watch and forwards new activity as signed
+ * events, which is what makes those triggers fire at all.
+ */
+function startGithubEventBridge(config) {
+  logService("github-bridge", "Starting GitHub event bridge...", c.blue);
+
+  spawnService(
+    "github-bridge",
+    "node",
+    [join(projectRoot, "scripts", "github-event-bridge.mjs")],
+    {
+      cwd: projectRoot,
+      color: c.blue,
+      restart: { maxAttempts: 10, baseDelayMs: 5_000 },
+      env: {
+        AUTOMATION_URL: `http://127.0.0.1:${config.autoBackendPort}`,
+        AGENT_SERVER_URL: `http://127.0.0.1:${config.agentServerPort}`,
+        SESSION_API_KEY: config.sessionApiKey,
+        AUTOMATION_WEBHOOK_SECRET: getAutomationWebhookSecret(config),
+        GITHUB_BRIDGE_STATE: join(config.stateDir, "github-bridge-state.json"),
+        NEODEVEX_APP_URL: `http://localhost:${config.ingressPort}`,
+      },
+    },
+  );
+}
 
 /**
  * Start the Neo AgentOps Control Tower collector.
@@ -1407,6 +1575,7 @@ async function main(options = {}) {
   config.agentHostAlias = agentHostAlias;
   config.frontendKind = useStaticMode ? "static" : "vite";
   ensureDirectories(config);
+  housekeepDisk(config, automationWorkspaceBase);
   if (typeof extraPrereqs === "function") {
     extraPrereqs(config);
   }
@@ -1467,6 +1636,7 @@ async function main(options = {}) {
   // 3. Start automation backend
   if (config.launchAutomation) {
     startAutomationBackend(config);
+    startGithubEventBridge(config);
   }
 
   // 3b. Start the AgentOps collector (reads the agent-server; no dependency

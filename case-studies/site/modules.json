@@ -3,6 +3,18 @@
     "href": "kt/",
     "title": "Knowledge Transfer docs vs Devin Wiki",
     "state": "Published",
-    "summary": "75 code-verified questions on ky, flask and hono. Repository Q&A 79.7% vs 70.3% with 4% false claims vs 21%; docs-only reading even at 51.3% vs 52.3%; Devin still covers more of each codebase."
+    "summary": "75 code-verified questions on ky, flask and hono. Docs-only reading 62.7% vs Devin 52.3%; repository Q&A 81.3% vs 71.3% with 2.7% false claims vs 22.7%; 460 files cited vs 315, 0 uncovered questions vs 2."
+  },
+  {
+    "href": "automations/",
+    "title": "Automations vs Devin",
+    "state": "Published",
+    "summary": "Twelve automations, four rounds, one real repository. NeoDevEx went from 2/7 to 10/10 passing after 54 fixes the study and two code audits found: GitHub, CI and PR triggers; schedules within 2 s; repo-scoped triggers; verified delivery; run recovery; spend and rate limits; failure alerts; webhooks set up in the app; background running. Devin passes 7/10 and goes deeper on the default model; with Gemini 2.5 Pro our reviews match it on correctness and show executed proof."
+  },
+  {
+    "href": "tokens/",
+    "title": "Token costs vs Devin",
+    "state": "Published",
+    "summary": "154 real agent runs on Gemini 2.5 Flash, tokens as reported by the provider. The Layman integration as shipped saved 0 tokens on a fresh install; moved to where tokens go (skills index, automation contract), the same tasks use 36% fewer tokens and cost 35% less with the same pass rate (17/20 vs 16/20). Same triage task: Devin $0.22, NeoDevEx $0.017."
   }
 ]

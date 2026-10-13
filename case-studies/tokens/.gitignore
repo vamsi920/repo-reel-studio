@@ -1,0 +1,4 @@
+# Run outputs: agent settings dumps, completion logs, a node_modules copy.
+# Published results live in case-studies/site/tokens/data/.
+bench/out/
+__pycache__/

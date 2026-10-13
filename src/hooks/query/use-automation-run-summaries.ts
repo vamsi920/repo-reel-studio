@@ -6,7 +6,11 @@ import {
   summarizeAutomationRuns,
   type RunSummaryState,
 } from "#/manifests/automation-insights";
-import type { Automation } from "#/types/automation";
+import {
+  AutomationRunStatus,
+  type Automation,
+  type AutomationRunsResponse,
+} from "#/types/automation";
 
 /**
  * The newest runs sampled per automation. Matches the detail page's default
@@ -52,6 +56,16 @@ export function useAutomationRunSummaries(
         ),
       staleTime: 60 * 1000,
       enabled: enabled && !!automation.id,
+      // Keep polling while a run is in flight; otherwise a run started from
+      // the list stayed "Running" on its badge until the window refocused.
+      refetchInterval: (query: { state: { data?: AutomationRunsResponse } }) =>
+        query.state.data?.runs.some(
+          (run) =>
+            run.status === AutomationRunStatus.PENDING ||
+            run.status === AutomationRunStatus.RUNNING,
+        )
+          ? 3000
+          : false,
     })),
     combine: (results) => {
       const byId = new Map<string, RunSummaryState>();

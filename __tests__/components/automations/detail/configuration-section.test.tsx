@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, vi, it, expect, beforeEach } from "vitest";
+import AutomationService from "#/api/automation-service/automation-service.api";
+import type { DeploymentCapabilities } from "#/manifests/types";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { ConfigurationSection } from "#/components/features/automations/detail/configuration-section";
 import type { Automation } from "#/types/automation";
@@ -51,9 +54,35 @@ const eventMultiPatternAutomation: Automation = {
   },
 };
 
+// Cards read deployment capabilities through react-query.
+function renderWithQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
+
+// No GitHub receiver is advertised, so github event triggers read as unsupported.
+const CAPABILITIES_WITHOUT_GITHUB: DeploymentCapabilities = {
+  ready: true,
+  triggerKinds: ["cron", "event"],
+  eventSources: ["jira"],
+  eventTypes: [],
+  triggers: {},
+  features: [],
+};
+
+beforeEach(() => {
+  vi.spyOn(AutomationService, "getCapabilities").mockResolvedValue(
+    CAPABILITIES_WITHOUT_GITHUB,
+  );
+});
+
 describe("ConfigurationSection", () => {
   it("renders cron trigger with schedule", () => {
-    render(<ConfigurationSection automation={cronAutomation} />);
+    renderWithQueryClient(<ConfigurationSection automation={cronAutomation} />);
 
     // t() returns the key in tests
     expect(
@@ -65,7 +94,9 @@ describe("ConfigurationSection", () => {
   });
 
   it("renders event trigger with source, event type, and filter", () => {
-    render(<ConfigurationSection automation={eventAutomation} />);
+    renderWithQueryClient(
+      <ConfigurationSection automation={eventAutomation} />,
+    );
 
     expect(
       screen.getByText("AUTOMATIONS$DETAIL$TRIGGER_EVENT"),
@@ -78,7 +109,9 @@ describe("ConfigurationSection", () => {
   });
 
   it("does not show schedule field for event triggers", () => {
-    render(<ConfigurationSection automation={eventAutomation} />);
+    renderWithQueryClient(
+      <ConfigurationSection automation={eventAutomation} />,
+    );
 
     expect(
       screen.queryByText("AUTOMATIONS$DETAIL$SCHEDULE"),
@@ -86,7 +119,9 @@ describe("ConfigurationSection", () => {
   });
 
   it("renders multiple event patterns joined by comma", () => {
-    render(<ConfigurationSection automation={eventMultiPatternAutomation} />);
+    renderWithQueryClient(
+      <ConfigurationSection automation={eventMultiPatternAutomation} />,
+    );
 
     expect(screen.getByText("push, release.published")).toBeInTheDocument();
   });
@@ -105,7 +140,7 @@ describe("ConfigurationSection", () => {
     };
 
     const user = userEvent.setup();
-    render(<ConfigurationSection automation={automation} />);
+    renderWithQueryClient(<ConfigurationSection automation={automation} />);
 
     expect(screen.getByText("SETTINGS$SKILLS_SHOW_MORE")).toBeInTheDocument();
     expect(screen.queryByText(longFilter)).not.toBeInTheDocument();
@@ -125,7 +160,7 @@ describe("ConfigurationSection", () => {
       },
     };
 
-    render(<ConfigurationSection automation={automation} />);
+    renderWithQueryClient(<ConfigurationSection automation={automation} />);
 
     expect(
       screen.queryByText("AUTOMATIONS$DETAIL$EVENT_FILTER"),
@@ -133,7 +168,9 @@ describe("ConfigurationSection", () => {
   });
 
   it("shows the unsupported-trigger warning for a github event automation", () => {
-    render(<ConfigurationSection automation={eventAutomation} />);
+    renderWithQueryClient(
+      <ConfigurationSection automation={eventAutomation} />,
+    );
 
     expect(
       screen.getByTestId("unsupported-trigger-warning"),
@@ -144,7 +181,7 @@ describe("ConfigurationSection", () => {
   });
 
   it("does not show the unsupported-trigger warning for a cron automation", () => {
-    render(<ConfigurationSection automation={cronAutomation} />);
+    renderWithQueryClient(<ConfigurationSection automation={cronAutomation} />);
 
     expect(
       screen.queryByTestId("unsupported-trigger-warning"),

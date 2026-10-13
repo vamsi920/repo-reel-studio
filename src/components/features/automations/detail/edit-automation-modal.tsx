@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  buildGitHubEventTrigger,
+  parseGitHubEventTrigger,
+  type GitHubTriggerEvent,
+} from "#/utils/automation-event-trigger";
+import { GitHubTriggerFields } from "../github-trigger-fields";
+import { ModelRecommendationHint } from "../model-recommendation-hint";
+import { withoutDeliveryContract } from "#/lib/automation/delivery-contract";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import type { Automation } from "#/types/automation";
@@ -64,6 +72,8 @@ const WEEKDAY_KEYS: I18nKey[] = [
 ];
 
 interface FormState {
+  githubEvent: GitHubTriggerEvent;
+  githubMatch: string;
   name: string;
   prompt: string;
   model: string;
@@ -76,11 +86,28 @@ interface FormState {
 }
 
 function buildInitialState(automation: Automation): FormState {
+  const github = withGitHubTrigger(automation);
+  return { ...github, ...buildScheduleState(automation) };
+}
+
+function withGitHubTrigger(
+  automation: Automation,
+): Pick<FormState, "githubEvent" | "githubMatch"> {
+  const parsed = parseGitHubEventTrigger(automation.trigger);
+  return {
+    githubEvent: parsed?.event ?? "issue_opened",
+    githubMatch: parsed?.match ?? "",
+  };
+}
+
+function buildScheduleState(
+  automation: Automation,
+): Omit<FormState, "githubEvent" | "githubMatch"> {
   const timeout = automation.timeout != null ? String(automation.timeout) : "";
   if (automation.trigger.type === "event") {
     return {
       name: automation.name,
-      prompt: automation.prompt ?? "",
+      prompt: withoutDeliveryContract(automation.prompt ?? ""),
       model: automation.model ?? "",
       frequency: "custom",
       weekday: 1,
@@ -94,7 +121,7 @@ function buildInitialState(automation: Automation): FormState {
   if (parsed.kind === "custom") {
     return {
       name: automation.name,
-      prompt: automation.prompt ?? "",
+      prompt: withoutDeliveryContract(automation.prompt ?? ""),
       model: automation.model ?? "",
       frequency: "custom",
       weekday: 1,
@@ -109,7 +136,7 @@ function buildInitialState(automation: Automation): FormState {
   }
   return {
     name: automation.name,
-    prompt: automation.prompt ?? "",
+    prompt: withoutDeliveryContract(automation.prompt ?? ""),
     model: automation.model ?? "",
     frequency: parsed.kind,
     weekday: parsed.kind === "weekly" ? (parsed.weekday ?? 1) : 1,
@@ -155,6 +182,10 @@ export function EditAutomationModal({
   ];
 
   const initial = useMemo(() => buildInitialState(automation), [automation]);
+  const githubTrigger = useMemo(
+    () => parseGitHubEventTrigger(automation.trigger),
+    [automation.trigger],
+  );
   const [form, setForm] = useState<FormState>(initial);
   const [nameError, setNameError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState<string | null>(null);
@@ -240,7 +271,7 @@ export function EditAutomationModal({
     }
 
     const trimmedPrompt = form.prompt.trim();
-    const initialPrompt = automation.prompt ?? "";
+    const initialPrompt = withoutDeliveryContract(automation.prompt ?? "");
     if (trimmedPrompt !== initialPrompt.trim()) {
       body.prompt = trimmedPrompt.length === 0 ? null : trimmedPrompt;
     }
@@ -253,6 +284,23 @@ export function EditAutomationModal({
 
     if ((timeoutResult.value ?? null) !== (automation.timeout ?? null)) {
       body.timeout = timeoutResult.value;
+    }
+
+    // GitHub triggers the app built can be changed the same way they were
+    // made; anything else (Jira, hand-written filters) stays read-only.
+    if (githubTrigger) {
+      const next = buildGitHubEventTrigger(
+        form.githubEvent,
+        githubTrigger.repo,
+        form.githubMatch,
+      );
+      if (
+        next.on !== automation.trigger.on ||
+        next.source !== automation.trigger.source ||
+        next.filter !== automation.trigger.filter
+      ) {
+        body.trigger = next;
+      }
     }
 
     if (automation.trigger.type !== "event") {
@@ -276,10 +324,11 @@ export function EditAutomationModal({
         );
       }
       if (newSchedule !== null && newSchedule !== automation.trigger.schedule) {
-        body.trigger = {
-          ...automation.trigger,
-          schedule: newSchedule,
-        };
+        // The old summary ("Weekdays at 09:00") no longer describes the new
+        // cron; drop it so the service recomputes it rather than keeping it.
+        const { schedule_human: _staleSummary, ...trigger } =
+          automation.trigger;
+        body.trigger = { ...trigger, schedule: newSchedule };
       }
     }
 
@@ -371,6 +420,16 @@ export function EditAutomationModal({
               }
             />
           )}
+          {modelSpec.present && (
+            <ModelRecommendationHint
+              profiles={profiles}
+              active={profilesData?.active_profile ?? null}
+              selected={form.model}
+              prompt={form.prompt}
+              onUse={(profile) => setForm((f) => ({ ...f, model: profile }))}
+              testIdPrefix="edit-automation"
+            />
+          )}
 
           {timeoutSpec.present && (
             <div className="flex flex-col gap-2.5 w-full min-w-0">
@@ -397,7 +456,19 @@ export function EditAutomationModal({
             </div>
           )}
 
-          {automation.trigger.type === "event" ? (
+          {githubTrigger ? (
+            <GitHubTriggerFields
+              testIdPrefix="edit-automation"
+              event={form.githubEvent}
+              match={form.githubMatch}
+              onEventChange={(githubEvent) =>
+                setForm((f) => ({ ...f, githubEvent }))
+              }
+              onMatchChange={(githubMatch) =>
+                setForm((f) => ({ ...f, githubMatch }))
+              }
+            />
+          ) : automation.trigger.type === "event" ? (
             <div className="flex flex-col gap-3 rounded-lg bg-[var(--oh-surface-raised)] p-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted">
@@ -485,9 +556,10 @@ export function EditAutomationModal({
                     "disabled:bg-[var(--oh-surface-raised)]",
                   )}
                 />
-                {automation.timezone && (
+                {(automation.timezone ?? automation.trigger.timezone) && (
                   <span className="text-xs text-muted">
-                    {t(I18nKey.AUTOMATIONS$TIMEZONE)}: {automation.timezone}
+                    {t(I18nKey.AUTOMATIONS$TIMEZONE)}:{" "}
+                    {automation.timezone ?? automation.trigger.timezone}
                   </span>
                 )}
               </label>

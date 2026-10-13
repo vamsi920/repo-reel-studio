@@ -24,7 +24,18 @@ import {
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import AutomationService from "#/api/automation-service/automation-service.api";
 import { buildJiraTriggerPayload } from "#/manifests/jira-trigger-setup";
-import { jiraTriggersRepository } from "#/lib/data-platform/repositories/jira-triggers-repository";
+import {
+  jiraTriggersRepository,
+  type JiraTrigger,
+} from "#/lib/data-platform/repositories/jira-triggers-repository";
+
+/** HTTP status of a failed request (axios or cloud proxy), if it has one. */
+function getHttpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const e = error as { status?: unknown; response?: { status?: unknown } };
+  const status = e.response?.status ?? e.status;
+  return typeof status === "number" ? status : undefined;
+}
 
 export const handle = { hideTitle: true };
 
@@ -410,9 +421,16 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
     }
   };
 
-  const handleToggle = async (id: string, enabled: boolean) => {
+  // The trigger row is bookkeeping; the automation it created is what actually
+  // runs. Pausing or deleting only the row left the automation firing on
+  // every Jira event.
+  const handleToggle = async (trigger: JiraTrigger, enabled: boolean) => {
+    const { id } = trigger;
     setPendingTriggerId(id);
     try {
+      if (trigger.automationId) {
+        await AutomationService.toggleAutomation(trigger.automationId, enabled);
+      }
       const ok = await jiraTriggersRepository.setEnabled(id, enabled);
       if (!ok) {
         displayErrorToast(t(I18nKey.ERROR$GENERIC));
@@ -426,9 +444,18 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (trigger: JiraTrigger) => {
+    const { id } = trigger;
     setPendingTriggerId(id);
     try {
+      if (trigger.automationId) {
+        await AutomationService.deleteAutomation(trigger.automationId).catch(
+          (error: unknown) => {
+            // Already gone (deleted from the Automations page): nothing to do.
+            if (getHttpStatus(error) !== 404) throw error;
+          },
+        );
+      }
       const ok = await jiraTriggersRepository.deleteTrigger(id);
       if (!ok) {
         displayErrorToast(t(I18nKey.ERROR$GENERIC));
@@ -470,7 +497,7 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
                   type="button"
                   data-testid={`jira-trigger-toggle-${trigger.id}`}
                   onClick={() => {
-                    void handleToggle(trigger.id, !trigger.enabled);
+                    void handleToggle(trigger, !trigger.enabled);
                   }}
                   disabled={pendingTriggerId === trigger.id}
                   className="text-tertiary-light hover:text-white disabled:opacity-50"
@@ -483,7 +510,7 @@ function JiraInstantTriggers({ cloudId }: { cloudId: string }) {
                   type="button"
                   data-testid={`jira-trigger-delete-${trigger.id}`}
                   onClick={() => {
-                    void handleDelete(trigger.id);
+                    void handleDelete(trigger);
                   }}
                   disabled={pendingTriggerId === trigger.id}
                   className="text-red-500 hover:text-red-400 disabled:opacity-50"

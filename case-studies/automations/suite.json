@@ -1,0 +1,113 @@
+{
+  "repo": "vamsi920/automation-bench",
+  "fixture_commit": "main at creation (2026-10-08)",
+  "rules": [
+    "Each scenario is created and run on both products with the same name, instructions and trigger semantics.",
+    "Instructions are copied verbatim; only product-specific trigger wiring differs.",
+    "A scenario passes only if: creation succeeds, the trigger starts a run without manual help, the run finishes, and the outcome check below holds.",
+    "Timings: create = first click on Create to saved automation; start latency = trigger event to run/session start; run = start to finish (from each product's own run record).",
+    "Every PR an automation opens is checked by CI on GitHub (the fixture's CI runs npm test)."
+  ],
+  "scenarios": [
+    {
+      "id": "A1-schedule",
+      "name": "bench-A1 scheduled changelog",
+      "trigger": {
+        "kind": "schedule",
+        "detail": "a run a few minutes after creation (Devin: Run once / Custom; NeoDevEx: cron)"
+      },
+      "instructions": "In vamsi920/automation-bench, add the line \"- Benchmark run A1.\" under the \"## 1.0.0\" heading in CHANGELOG.md, then open a pull request titled \"bench A1: changelog\". Change nothing else.",
+      "check": "A PR titled 'bench A1: changelog' exists whose diff only adds that line to CHANGELOG.md."
+    },
+    {
+      "id": "A2-run-now",
+      "name": "bench-A2 fix discount bug",
+      "trigger": {
+        "kind": "manual",
+        "detail": "Run now / dispatch on an automation with a far-future schedule"
+      },
+      "instructions": "In vamsi920/automation-bench, fix GitHub issue #1 (10% discount gives a negative total). Run npm test until it passes for the discount test, then open a pull request titled \"bench A2: fix discount\" that references #1. Do not change the tests.",
+      "check": "PR exists, does not modify test/, and its CI run of the discount test passes."
+    },
+    {
+      "id": "A3-webhook",
+      "name": "bench-A3 webhook issue fix",
+      "trigger": {
+        "kind": "webhook",
+        "detail": "HTTP POST with JSON {\"issue\": 2} to the automation's webhook URL"
+      },
+      "instructions": "A webhook delivered a JSON payload naming an issue number in vamsi920/automation-bench. Read that issue, fix it, run npm test, and open a pull request titled \"bench A3: fix issue <number>\" that references it. Do not change the tests.",
+      "check": "PR titled 'bench A3: fix issue 2' exists and changes shippingCents to free shipping at >= 5000."
+    },
+    {
+      "id": "A4-issue-comment",
+      "name": "bench-A4 /bench comment",
+      "trigger": {
+        "kind": "github.issue_comment",
+        "detail": "comment starting with /bench on any issue in the repo"
+      },
+      "instructions": "Someone commented /bench on an issue in vamsi920/automation-bench. Reply on that issue with a one-paragraph plan for fixing it, then stop.",
+      "check": "A reply comment appears on the issue that received the /bench comment."
+    },
+    {
+      "id": "A5-ci-failure",
+      "name": "bench-A5 fix failing CI",
+      "trigger": {
+        "kind": "github.check_run",
+        "detail": "a failed CI check run on a pull request"
+      },
+      "instructions": "A CI check failed on a pull request in vamsi920/automation-bench. Read the failing job's log, push a fix to that pull request's branch so CI passes, and comment on the PR with what you changed.",
+      "check": "A fix commit lands on the failing PR's branch and CI turns green."
+    },
+    {
+      "id": "A6-template",
+      "name": "bench-A6 template: weekly changelog",
+      "trigger": {
+        "kind": "template",
+        "detail": "each product's built-in changelog/release-notes template, then run it once manually"
+      },
+      "instructions": "(template default, repository set to vamsi920/automation-bench)",
+      "check": "Template creates without edits beyond choosing the repo, runs, and produces a changelog PR or report."
+    },
+    {
+      "id": "A7-from-prompt",
+      "name": "bench-A7 create from a sentence",
+      "trigger": {
+        "kind": "natural-language creation",
+        "detail": "Devin: Generate with Devin. NeoDevEx: create from chat."
+      },
+      "instructions": "Every weekday at 9am, check vamsi920/automation-bench for open issues with no comments and post a short triage note on each.",
+      "check": "An automation exists afterwards with a weekday 9am schedule, the right repo, and instructions matching the sentence."
+    },
+    {
+      "id": "A8-failure",
+      "name": "bench-A8 failure surfacing",
+      "trigger": {
+        "kind": "manual",
+        "detail": "run an automation pointed at a repository that does not exist: vamsi920/automation-bench-missing"
+      },
+      "instructions": "In vamsi920/automation-bench-missing, add a README line and open a PR.",
+      "check": "The run fails visibly with a clear reason in the product's run view; no silent success and no stuck 'running' state."
+    },
+    {
+      "id": "A9-pr-review",
+      "name": "bench-A9 review new PRs",
+      "trigger": {
+        "kind": "github.pull_request",
+        "detail": "a pull request is opened in the fixture repo"
+      },
+      "instructions": "A pull request was opened in vamsi920/automation-bench. Review its diff for bugs, missing tests and anything that would break CI, and post one review comment on the PR with concrete findings (file and line) and a verdict: approve, or request changes.",
+      "check": "Exactly one review comment on the new PR, naming the planted bug's file and line, with a verdict."
+    },
+    {
+      "id": "A10-issue-triage",
+      "name": "bench-A10 triage new issues",
+      "trigger": {
+        "kind": "github.issues",
+        "detail": "an issue is opened in the fixture repo"
+      },
+      "instructions": "An issue was opened in vamsi920/automation-bench. Read it and the relevant code, then post one triage comment: type (bug/feature/question), priority P0-P3, the likely file and function, and a suggested next step.",
+      "check": "Exactly one triage comment on the new issue that names the right file and function."
+    }
+  ]
+}

@@ -135,6 +135,7 @@ export default defineConfig({
         [
           "exec env",
           envAssignment("OH_CANVAS_SAFE_STATE_DIR", STATE_DIR),
+          envAssignment("NEODEVEX_DESKTOP_NOTIFICATIONS", "0"),
           envAssignment("PORT", INGRESS_PORT),
           envAssignment("LOCAL_BACKEND_API_KEY", sessionApiKey),
           "VITE_DO_NOT_TRACK=1",

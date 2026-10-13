@@ -681,3 +681,47 @@ describe("EditAutomationModal", () => {
     expect(body).not.toHaveProperty("timeout");
   });
 });
+
+describe("EditAutomationModal GitHub triggers", () => {
+  // Benchmark finding: a GitHub trigger with a typo in its condition could
+  // only be fixed by deleting and recreating the automation.
+  it("lets the condition of an app-built GitHub trigger be corrected", async () => {
+    const automation: Automation = {
+      ...dailyAutomation,
+      id: "auto-gh",
+      trigger: {
+        type: "event",
+        source: "github",
+        on: "issue_comment.created",
+        filter:
+          "repository.full_name == 'acme/app' && (icontains(comment.body, '/neo/neo'))",
+      },
+    };
+    vi.mocked(AutomationService.updateAutomation).mockResolvedValue(automation);
+    const user = userEvent.setup();
+    renderModal(automation);
+
+    const match = screen.getByTestId(
+      "edit-automation-github-match",
+    ) as HTMLInputElement;
+    expect(match.value).toBe("/neo/neo");
+    await user.clear(match);
+    await user.type(match, "/neo");
+    await user.click(screen.getByTestId("edit-automation-save"));
+
+    await waitFor(() => {
+      expect(AutomationService.updateAutomation).toHaveBeenCalledWith(
+        "auto-gh",
+        {
+          trigger: {
+            type: "event",
+            source: "github",
+            on: "issue_comment.created",
+            filter:
+              "repository.full_name == 'acme/app' && (icontains(comment.body, '/neo'))",
+          },
+        },
+      );
+    });
+  });
+});

@@ -4,6 +4,7 @@ import {
   parseCronSchedule,
   parseTimeOfDay,
   replaceCronTime,
+  isValidCronExpression,
 } from "#/utils/automation-schedule";
 
 describe("automation-schedule", () => {
@@ -103,5 +104,18 @@ describe("automation-schedule", () => {
         expect(replaceCronTime(input, 10, 30)).toBeNull();
       });
     });
+  });
+});
+
+describe("isValidCronExpression", () => {
+  it.each([
+    ["0 9 * * 1-5", true],
+    ["*/15 * * * *", true],
+    ["0 9,17 1 * *", true],
+    ["0 9 * *", false],
+    ["0 9 * * MON", false],
+    ["@daily", false],
+  ])("%s -> %s", (raw, expected) => {
+    expect(isValidCronExpression(raw)).toBe(expected);
   });
 });

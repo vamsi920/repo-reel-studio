@@ -131,6 +131,7 @@ COPY --from=frontend-build /build/node_modules/totalist /opt/agent-canvas/node_m
 # Copy the runtime-services-info builder (entrypoint.sh runs it as a CLI to
 # emit the agent's <RUNTIME_SERVICES> block; same builder the dev stack uses).
 COPY scripts/runtime-services-info.mjs /opt/agent-canvas/runtime-services-info.mjs
+COPY scripts/prune-automation-runs.mjs /opt/agent-canvas/prune-automation-runs.mjs
 
 # NeoDevEx agent harness (sub-agents + always-on playbook). entrypoint.sh
 # installs it into ~/.openhands so every run — chat or automation — loads it.
@@ -144,6 +145,12 @@ COPY config/harness /opt/agent-canvas/harness
 COPY scripts/agentops-server.mjs /opt/agent-canvas/scripts/agentops-server.mjs
 COPY scripts/agentops/ /opt/agent-canvas/scripts/agentops/
 COPY vendor/agentops/ /opt/agent-canvas/vendor/agentops/
+
+# GitHub event bridge + automation run recovery (node: builtins only). Without
+# the bridge a container has no way to receive GitHub events, so GitHub- and
+# CI-triggered automations never fire; recovery resumes runs that die on a
+# transient LLM error.
+COPY scripts/github-event-bridge.mjs scripts/automation-run-recovery.mjs scripts/automation-guard.mjs scripts/automation-guard-policy.mjs scripts/automation-delivery-contract.mjs scripts/automation-event-trigger.mjs /opt/agent-canvas/scripts/
 
 # The collector's only real dependency: the Supabase client used by
 # scripts/agentops/supabase-store.mjs (the real Postgres store — used

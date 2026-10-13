@@ -1,0 +1,20 @@
+{
+  "source": "app.devin.ai Usage & limits > Usage history, account vamsi920, read 2026-10-13",
+  "note": "Devin reports cost per session in dollars (ACU-based on-demand credits). It does not expose token counts.",
+  "same_task_run": {
+    "task": "T4 triage (identical bug report, repository vamsi920/automation-bench, no posting)",
+    "session": "Fix Discount Code Calculation",
+    "started": "2026-10-13 10:18 local",
+    "finished_after_minutes": 16,
+    "cost_usd": 0.22,
+    "result": "Correct root cause (totalWithDiscount treats percent as a fraction), priority P0, suggested fix; also flagged the shippingCents > vs >= bug."
+  },
+  "other_sessions_in_account_usd": [
+    {"title": "Generate New Automation", "date": "2026-10-08", "cost_usd": 1.2},
+    {"title": "Improve error handling in repo-reel-studio", "date": "2026-08-04", "cost_usd": 3.96},
+    {"title": "Refactor duplicated code in repo-reel-studio", "date": "2026-08-04", "cost_usd": 3.3},
+    {"title": "Security scan of repo-reel-studio", "date": "2026-08-04", "cost_usd": 5.02},
+    {"title": "Add test coverage for repo-reel-studio", "date": "2026-08-04", "cost_usd": 5.2},
+    {"title": "Review recent changes in repo-reel-studio", "date": "2026-08-04", "cost_usd": 3.14}
+  ]
+}

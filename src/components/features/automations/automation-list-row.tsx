@@ -28,6 +28,7 @@ import {
 import { deriveAutomationHealth } from "#/manifests/automation-insights";
 import type { AutomationInsightsProps } from "./automation-card";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
+import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
 
 interface AutomationListRowProps {
   automation: Automation;
@@ -52,6 +53,7 @@ export function AutomationListRow({
   onEdit,
   insights,
 }: AutomationListRowProps) {
+  const supportedSources = useSupportedEventSources();
   const { navigate } = useNavigation();
   const { t } = useTranslation("openhands");
   const canManage = useHasPermission("manage_automations");
@@ -114,7 +116,7 @@ export function AutomationListRow({
           >
             {automation.name}
           </span>
-          {isUnsupportedEventTrigger(automation.trigger) && (
+          {isUnsupportedEventTrigger(automation.trigger, supportedSources) && (
             <UnsupportedTriggerBadge className="shrink-0" />
           )}
           {pills.length > 0 ? (

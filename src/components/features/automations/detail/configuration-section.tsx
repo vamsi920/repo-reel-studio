@@ -13,9 +13,12 @@ import CodeTagIcon from "#/icons/code-tag.svg?react";
 import LinkExternalIcon from "#/icons/link-external.svg?react";
 import { formatEventOn } from "#/utils/automation-schedule";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
+import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
 import { SectionCard } from "./section-card";
 import { ConfigField } from "./config-field";
 import { BranchBadge } from "./branch-badge";
+import { WebhookTriggerPanel } from "./webhook-trigger-panel";
+import { isCustomWebhookSource } from "#/utils/automation-webhook";
 
 interface ConfigurationSectionProps {
   automation: Automation;
@@ -54,20 +57,27 @@ function FilterExpression({ filter }: { filter: string }) {
 export function ConfigurationSection({
   automation,
 }: ConfigurationSectionProps) {
+  const supportedSources = useSupportedEventSources();
   const { t } = useTranslation("openhands");
   const isEvent = automation.trigger.type === "event";
-  const isUnsupported = isUnsupportedEventTrigger(automation.trigger);
+  const isUnsupported = isUnsupportedEventTrigger(
+    automation.trigger,
+    supportedSources,
+  );
 
-  let scheduleDisplay = automation.trigger.schedule ?? "";
-  if (automation.trigger.schedule_human) {
-    scheduleDisplay = automation.timezone
-      ? `${automation.trigger.schedule_human} (${automation.timezone})`
-      : automation.trigger.schedule_human;
-  }
+  // The app writes the zone onto the trigger; older records carry it on the
+  // automation. Without it the schedule read as if it were in local time.
+  const timezone = automation.timezone ?? automation.trigger.timezone;
+  const schedule =
+    automation.trigger.schedule_human ?? automation.trigger.schedule ?? "";
+  const scheduleDisplay =
+    schedule && timezone ? `${schedule} (${timezone})` : schedule;
 
-  const triggerDisplay = isEvent
-    ? t(I18nKey.AUTOMATIONS$DETAIL$TRIGGER_EVENT)
-    : t(I18nKey.AUTOMATIONS$DETAIL$TRIGGER_SCHEDULE);
+  const isWebhook = isEvent && isCustomWebhookSource(automation.trigger.source);
+  let triggerDisplay = t(I18nKey.AUTOMATIONS$DETAIL$TRIGGER_SCHEDULE);
+  if (isWebhook) triggerDisplay = t(I18nKey.AUTOMATIONS$DETAIL$TRIGGER_WEBHOOK);
+  else if (isEvent)
+    triggerDisplay = t(I18nKey.AUTOMATIONS$DETAIL$TRIGGER_EVENT);
 
   return (
     <SectionCard
@@ -126,7 +136,9 @@ export function ConfigurationSection({
             icon={<LinkExternalIcon className="size-3.5" />}
             label={t(I18nKey.AUTOMATIONS$DETAIL$EVENT_TYPE)}
           >
-            {formatEventOn(automation.trigger.on)}
+            {automation.trigger.on === "*"
+              ? t(I18nKey.AUTOMATIONS$DETAIL$ANY_EVENT)
+              : formatEventOn(automation.trigger.on)}
           </ConfigField>
         )}
 
@@ -155,6 +167,12 @@ export function ConfigurationSection({
           </ConfigField>
         )}
       </div>
+      {isWebhook && (
+        <WebhookTriggerPanel
+          automationId={automation.id}
+          source={automation.trigger.source!}
+        />
+      )}
     </SectionCard>
   );
 }

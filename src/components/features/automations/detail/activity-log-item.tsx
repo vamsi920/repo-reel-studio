@@ -25,6 +25,185 @@ import { useHasPermission } from "#/hooks/use-has-permission";
 import { useDismissedProactivationRuns } from "#/hooks/use-dismissed-proactivation-runs";
 import { getApiErrorMessage } from "#/utils/api-error-message";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
+import { useRunReport } from "#/hooks/query/use-run-outcome";
+import { useAutomationPolicies } from "#/hooks/query/use-automation-policies";
+import type { GuardCancelReason } from "#/api/automation-policy-service";
+import { MarkdownRenderer } from "#/components/features/markdown/markdown-renderer";
+import {
+  hasDeliveryContract,
+  type RunErrorKind,
+  type RunOutcome,
+} from "#/lib/automation/delivery-contract";
+
+const OUTCOME_CHIP =
+  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium";
+
+/**
+ * What the run delivered, from its RESULT line. Shown instead of the status
+ * badge when it adds something the status cannot say: a COMPLETED run that
+ * never proved a delivery, or a FAILED run that was resumed and delivered.
+ */
+function RunOutcomeChip({
+  outcome,
+  run,
+}: {
+  outcome: RunOutcome;
+  run: AutomationRun;
+}) {
+  const { t } = useTranslation("openhands");
+
+  if (outcome.kind === "delivered") {
+    const recovered = run.status === AutomationRunStatus.FAILED;
+    const open = (
+      e:
+        | React.MouseEvent<HTMLButtonElement>
+        | React.KeyboardEvent<HTMLButtonElement>,
+    ) => {
+      // The row itself links to the conversation.
+      e.stopPropagation();
+      e.preventDefault();
+      window.open(outcome.url, "_blank", "noopener,noreferrer");
+    };
+    return (
+      <StyledTooltip
+        content={
+          recovered
+            ? t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_RECOVERED_HINT, {
+                url: outcome.url,
+              })
+            : outcome.url
+        }
+        placement="top"
+      >
+        <button
+          type="button"
+          data-testid="run-outcome-delivered"
+          onClick={open}
+          aria-label={t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_OPEN, {
+            url: outcome.url,
+          })}
+          className={`${OUTCOME_CHIP} border-[var(--oh-success)]/50 bg-[var(--oh-success)]/10 text-success hover:bg-[var(--oh-success)]/20`}
+        >
+          {recovered
+            ? t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_RECOVERED)
+            : t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_DELIVERED)}
+        </button>
+      </StyledTooltip>
+    );
+  }
+
+  if (outcome.kind === "failed") {
+    return (
+      <StyledTooltip content={outcome.reason} placement="top">
+        <span
+          data-testid="run-outcome-failed"
+          className={`${OUTCOME_CHIP} border-[var(--oh-danger)]/50 bg-[var(--oh-danger)]/10 text-danger`}
+        >
+          {t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_NOT_DELIVERED)}
+        </span>
+      </StyledTooltip>
+    );
+  }
+
+  return (
+    <StyledTooltip
+      content={t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_UNVERIFIED_HINT)}
+      placement="top"
+    >
+      <span
+        data-testid="run-outcome-unverified"
+        className={`${OUTCOME_CHIP} border-[var(--oh-warning)]/50 bg-[var(--oh-warning)]/10 text-[var(--oh-warning)]`}
+      >
+        {t(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_UNVERIFIED)}
+      </span>
+    </StyledTooltip>
+  );
+}
+
+const GUARD_CANCEL_LABELS: Record<GuardCancelReason, I18nKey> = {
+  budget: I18nKey.AUTOMATIONS$GUARD$CANCELLED_BUDGET,
+  rate_limit: I18nKey.AUTOMATIONS$GUARD$CANCELLED_RATE_LIMIT,
+  overlap: I18nKey.AUTOMATIONS$GUARD$CANCELLED_OVERLAP,
+};
+
+const RUN_ERROR_HINTS: Partial<Record<RunErrorKind, I18nKey>> = {
+  llm_auth: I18nKey.AUTOMATIONS$DETAIL$ERROR_HINT_LLM_AUTH,
+  llm_quota: I18nKey.AUTOMATIONS$DETAIL$ERROR_HINT_LLM_QUOTA,
+  context_window: I18nKey.AUTOMATIONS$DETAIL$ERROR_HINT_CONTEXT,
+  budget: I18nKey.AUTOMATIONS$DETAIL$ERROR_HINT_BUDGET,
+};
+
+/** Characters of the report shown on the row before "Show full report". */
+const REPORT_PREVIEW_LENGTH = 220;
+
+/**
+ * The run's final report under its row: what it found and did, readable
+ * without opening the conversation. A failed run without a report shows its
+ * error instead.
+ */
+function RunReportPreview({
+  text,
+  error,
+  errorKind,
+}: {
+  text: string | null;
+  error: string | null;
+  errorKind: RunErrorKind | null;
+}) {
+  const { t } = useTranslation("openhands");
+  const [expanded, setExpanded] = useState(false);
+  const body = text ?? error;
+  if (!body) return null;
+  const hint = !text && errorKind ? RUN_ERROR_HINTS[errorKind] : undefined;
+  const isLong = body.length > REPORT_PREVIEW_LENGTH;
+  const flat = body.replace(/\s+/g, " ").trim();
+
+  return (
+    <div
+      data-testid="run-report"
+      className="flex flex-col gap-1 px-5 pb-3 text-xs text-muted"
+    >
+      {expanded && text ? (
+        <div className="max-h-96 overflow-y-auto rounded-lg border border-[var(--oh-border)] bg-surface-raised p-3 text-sm text-content">
+          <MarkdownRenderer>{text}</MarkdownRenderer>
+        </div>
+      ) : (
+        <p className={text ? "" : "text-danger"}>
+          {isLong ? `${flat.slice(0, REPORT_PREVIEW_LENGTH)}…` : flat}
+        </p>
+      )}
+      {hint && (
+        <p data-testid="run-error-hint" className="text-content">
+          {t(hint)}
+        </p>
+      )}
+      {text && isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="self-start text-xs text-muted underline-offset-2 hover:text-content hover:underline"
+        >
+          {expanded
+            ? t(I18nKey.AUTOMATIONS$DETAIL$HIDE_REPORT)
+            : t(I18nKey.AUTOMATIONS$DETAIL$SHOW_REPORT)}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Whether the outcome replaces the plain status badge for this run. */
+function shouldShowOutcome(
+  outcome: RunOutcome | null,
+  run: AutomationRun,
+): outcome is RunOutcome {
+  if (!outcome) return false;
+  if (run.status === AutomationRunStatus.COMPLETED) return true;
+  // A FAILED run only changes meaning when it was recovered and delivered;
+  // otherwise its own failure (and rate-limit hint) is the right message.
+  return outcome.kind === "delivered";
+}
 
 interface ActivityLogItemProps {
   run: AutomationRun;
@@ -153,6 +332,22 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
   const isDismissed = isRunDismissed(run.id);
   const [isDismissModalOpen, setIsDismissModalOpen] = useState(false);
 
+  const report = useRunReport(run);
+  const outcome = hasDeliveryContract(automation?.prompt)
+    ? (report?.outcome ?? null)
+    : null;
+  const { data: guardData } = useAutomationPolicies();
+  const guardCancel =
+    run.status === AutomationRunStatus.CANCELLED
+      ? (guardData?.guard.cancelled?.[run.id] ?? null)
+      : null;
+  // The service records only "Remote conversation ended with error"; the
+  // conversation says why.
+  const failureLine =
+    run.status === AutomationRunStatus.FAILED
+      ? (report?.error?.summary ??
+        (run.error_detail ? run.error_detail.split("\n")[0] : null))
+      : null;
   const proactivationConfig = parseProactivationMarker(automation?.prompt);
   const showProactivationActions =
     !!proactivationConfig &&
@@ -351,7 +546,16 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
           </button>
         )}
         {logsButton}
-        {isRateLimitFailure ? (
+        {guardCancel ? (
+          <span
+            data-testid="run-guard-cancelled"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--oh-warning)]/50 bg-[var(--oh-warning)]/10 px-2.5 py-1 text-xs font-medium text-[var(--oh-warning)]"
+          >
+            {t(GUARD_CANCEL_LABELS[guardCancel.reason])}
+          </span>
+        ) : shouldShowOutcome(outcome, run) ? (
+          <RunOutcomeChip outcome={outcome} run={run} />
+        ) : isRateLimitFailure ? (
           <StyledTooltip content={run.error_detail ?? ""} placement="top">
             <span
               data-testid="run-rate-limit-failed"
@@ -373,7 +577,9 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
         <a
           href={getConversationUrl(run.conversation_id)}
           className="flex items-center justify-between px-5 py-3 transition-colors cursor-pointer hover:bg-surface-raised focus:bg-surface-raised focus:outline-none"
-          aria-label={`View conversation for run at ${formattedTimestamp}`}
+          aria-label={t(I18nKey.AUTOMATIONS$DETAIL$VIEW_RUN_CONVERSATION, {
+            timestamp: formattedTimestamp,
+          })}
         >
           {content}
         </a>
@@ -382,6 +588,11 @@ export function ActivityLogItem({ run, automation }: ActivityLogItemProps) {
           {content}
         </div>
       )}
+      <RunReportPreview
+        text={report?.text ?? null}
+        error={failureLine}
+        errorKind={report?.error?.kind ?? null}
+      />
 
       {hasBashCommand && (
         <RunLogsModal

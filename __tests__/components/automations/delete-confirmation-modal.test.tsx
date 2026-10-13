@@ -92,4 +92,24 @@ describe("DeleteConfirmationModal", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  // A second click while the first DELETE was in flight sent another
+  // DELETE, which failed with 404 and toasted an error.
+  it("ignores a second click while the delete is in flight", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <DeleteConfirmationModal
+        automationName="Nightly sync"
+        isOpen
+        isPending
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId("delete-automation-confirm"));
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

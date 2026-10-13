@@ -48,13 +48,17 @@ function sanitizeForFilterLiteral(value: string): string {
 
 function buildFilter(values: JiraTriggerFormValues): string {
   const parts = [
-    `fields.project.key == '${sanitizeForFilterLiteral(values.projectKey)}'`,
+    // Jira webhooks nest the issue under `issue`; accept either shape.
+    `(issue.fields.project.key || fields.project.key) == '${sanitizeForFilterLiteral(values.projectKey)}'`,
   ];
   const label = values.labelFilter
     ? sanitizeForFilterLiteral(values.labelFilter)
     : "";
   if (label) {
-    parts.push(`contains(fields.labels, '${label}')`);
+    // An empty or missing label list must read as "no match", not an error.
+    parts.push(
+      `contains(issue.fields.labels || fields.labels || \`[]\`, '${label}')`,
+    );
   }
   return parts.join(" && ");
 }

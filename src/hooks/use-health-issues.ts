@@ -16,6 +16,7 @@ import {
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
 import { parseMcpConfig } from "#/utils/mcp-config";
 import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
+import { useGithubCredentialHealth } from "#/hooks/query/use-github-credential-health";
 
 /**
  * Everything, app-wide, that has stopped working (or is about to) and needs
@@ -24,7 +25,8 @@ import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
  * Sources:
  * - org connections the server marked expired/revoked (Realtime-pushed);
  * - org connections whose non-renewable token lapses within three days;
- * - MCP servers whose last test rejected their credentials.
+ * - MCP servers whose last test rejected their credentials;
+ * - the GitHub credential automation runs use, when GitHub rejects it.
  *
  * `key` changes when the underlying problem changes (it embeds the
  * connection's `updatedAt` / the failure time), so a dismissed issue that
@@ -33,7 +35,8 @@ import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
 export type HealthIssueKind =
   | "connection-reconnect"
   | "connection-expiring"
-  | "mcp-credentials";
+  | "mcp-credentials"
+  | "github-credential";
 
 export interface HealthIssue {
   key: string;
@@ -46,6 +49,7 @@ export interface HealthIssue {
 }
 
 export const MCP_FIX_PATH = "/mcp";
+export const GITHUB_FIX_PATH = "/settings/connections";
 
 export function useHealthIssues(): HealthIssue[] {
   const { t } = useTranslation("openhands");
@@ -56,6 +60,7 @@ export function useHealthIssues(): HealthIssue[] {
     getMcpHealthSnapshot,
     getMcpHealthSnapshot,
   );
+  const githubCredential = useGithubCredentialHealth();
 
   return React.useMemo(() => {
     const issues: HealthIssue[] = [];
@@ -103,6 +108,15 @@ export function useHealthIssues(): HealthIssue[] {
       }
     }
 
+    if (githubCredential === "rejected") {
+      issues.push({
+        key: "github-credential:rejected",
+        kind: "github-credential",
+        message: t(I18nKey.ENVIRONMENT$GITHUB_CREDENTIAL_BANNER),
+        fixPath: GITHUB_FIX_PATH,
+      });
+    }
+
     return issues;
-  }, [connections, settings, mcpHealth, t]);
+  }, [connections, settings, mcpHealth, githubCredential, t]);
 }

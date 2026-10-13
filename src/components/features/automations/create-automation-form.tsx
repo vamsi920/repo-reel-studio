@@ -14,9 +14,15 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import {
   buildCronSchedule,
   formatTimeOfDay,
+  isValidCronExpression,
   parseTimeOfDay,
   type SchedulePresetKind,
 } from "#/utils/automation-schedule";
+import {
+  buildGitHubEventTrigger,
+  repoSlug,
+  type GitHubTriggerEvent,
+} from "#/utils/automation-event-trigger";
 import {
   validateAutomationTimeout,
   AUTOMATION_TIMEOUT_DEFAULT_SECONDS,
@@ -32,6 +38,16 @@ import {
   formControlSettingsFieldClassName,
 } from "#/utils/form-control-classes";
 import { cn } from "#/utils/utils";
+import { checkGithubRepository } from "#/api/git-service/github-credential-health";
+import { useGithubRepositorySuggestions } from "#/hooks/query/use-github-repository-suggestions";
+import {
+  buildWebhookTrigger,
+  rememberWebhookSecret,
+  WEBHOOK_EVENT_KEY_EXPR,
+  webhookSourceFor,
+} from "#/utils/automation-webhook";
+import { GitHubTriggerFields } from "./github-trigger-fields";
+import { ModelRecommendationHint } from "./model-recommendation-hint";
 
 interface CreateAutomationFormProps {
   onCreated: () => void;
@@ -40,6 +56,17 @@ interface CreateAutomationFormProps {
 
 /** Sentinel for "use the active profile", mirroring EditAutomationModal. */
 const ACTIVE_PROFILE_KEY = "__active__";
+
+type RunWhen = "schedule" | "github" | "webhook";
+
+const REPOSITORY_SUGGESTIONS_ID = "create-automation-repository-suggestions";
+
+const RUN_WHEN_OPTIONS: readonly (readonly [RunWhen, I18nKey])[] = [
+  ["schedule", I18nKey.AUTOMATIONS$CREATE_RUN_WHEN_SCHEDULE],
+  ["github", I18nKey.AUTOMATIONS$CREATE_RUN_WHEN_GITHUB],
+  ["webhook", I18nKey.AUTOMATIONS$CREATE_RUN_WHEN_WEBHOOK],
+];
+type Frequency = SchedulePresetKind | "hourly" | "custom";
 
 const WEEKDAY_KEYS: I18nKey[] = [
   I18nKey.AUTOMATIONS$WEEKDAY_SUN,
@@ -74,11 +101,18 @@ export function CreateAutomationForm({
   const { data: profilesData, isLoading: isLoadingProfiles } = useLlmProfiles();
   const { data: capabilities } = useDeploymentCapabilities();
   const profiles = profilesData?.profiles ?? [];
+  const repositorySuggestions = useGithubRepositorySuggestions();
 
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [repository, setRepository] = useState("");
-  const [frequency, setFrequency] = useState<SchedulePresetKind>("daily");
+  const [runWhen, setRunWhen] = useState<RunWhen>("schedule");
+  const [githubEvent, setGithubEvent] =
+    useState<GitHubTriggerEvent>("issue_opened");
+  const [githubMatch, setGithubMatch] = useState("");
+  const [webhookMatch, setWebhookMatch] = useState("");
+  const [frequency, setFrequency] = useState<Frequency>("daily");
+  const [customCron, setCustomCron] = useState("");
   const [weekday, setWeekday] = useState(1);
   const [timeOfDay, setTimeOfDay] = useState(formatTimeOfDay(9, 0));
   const [model, setModel] = useState("");
@@ -88,15 +122,20 @@ export function CreateAutomationForm({
   const [nameError, setNameError] = useState<string | null>(null);
   const [promptError, setPromptError] = useState<string | null>(null);
   const [timeoutError, setTimeoutError] = useState<string | null>(null);
+  const [repositoryError, setRepositoryError] = useState<string | null>(null);
+  const [cronError, setCronError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const timeoutMax = capabilities?.maxAutomationTimeoutSeconds;
 
   const frequencyItems = [
+    { key: "hourly", label: t(I18nKey.AUTOMATIONS$FREQUENCY_HOURLY) },
     { key: "daily", label: t(I18nKey.AUTOMATIONS$FREQUENCY_DAILY) },
     { key: "weekdays", label: t(I18nKey.AUTOMATIONS$FREQUENCY_WEEKDAYS) },
     { key: "weekly", label: t(I18nKey.AUTOMATIONS$FREQUENCY_WEEKLY) },
+    { key: "custom", label: t(I18nKey.AUTOMATIONS$CREATE_CRON_LABEL) },
   ];
   const weekdayItems = WEEKDAY_KEYS.map((key, index) => ({
     key: String(index),
@@ -120,6 +159,18 @@ export function CreateAutomationForm({
     if (promptError && value.trim()) setPromptError(null);
   };
 
+  function scheduleFor(): string {
+    if (frequency === "custom") return customCron.trim().replace(/\s+/g, " ");
+    const parsedTime = parseTimeOfDay(timeOfDay) ?? { hour: 9, minute: 0 };
+    if (frequency === "hourly") return `${parsedTime.minute} * * * *`;
+    return buildCronSchedule({
+      kind: frequency,
+      hour: parsedTime.hour,
+      minute: parsedTime.minute,
+      weekday: frequency === "weekly" ? weekday : undefined,
+    });
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -135,7 +186,36 @@ export function CreateAutomationForm({
         ? null
         : t(I18nKey.AUTOMATIONS$CREATE_INSTRUCTIONS_REQUIRED),
     );
-    if (!trimmedName || !trimmedPrompt) return;
+    const slug = repoSlug(trimmedRepository);
+    const repoInvalid = runWhen === "github" && !slug;
+    setRepositoryError(
+      repoInvalid
+        ? t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_REQUIRED_FOR_GITHUB)
+        : null,
+    );
+    const cronInvalid =
+      runWhen === "schedule" &&
+      frequency === "custom" &&
+      !isValidCronExpression(customCron);
+    setCronError(
+      cronInvalid ? t(I18nKey.AUTOMATIONS$CREATE_CRON_INVALID) : null,
+    );
+    // An empty or partial time used to fall back to 09:00 without a word.
+    const timeInvalid =
+      runWhen === "schedule" &&
+      frequency !== "custom" &&
+      parseTimeOfDay(timeOfDay) === null;
+    setTimeError(
+      timeInvalid ? t(I18nKey.AUTOMATIONS$CREATE_TIME_INVALID) : null,
+    );
+    if (
+      !trimmedName ||
+      !trimmedPrompt ||
+      repoInvalid ||
+      cronInvalid ||
+      timeInvalid
+    )
+      return;
 
     const timeoutResult = validateAutomationTimeout(timeout, timeoutMax);
     if ("errorKey" in timeoutResult) {
@@ -144,18 +224,51 @@ export function CreateAutomationForm({
     }
     setTimeoutError(null);
 
-    const parsedTime = parseTimeOfDay(timeOfDay) ?? { hour: 9, minute: 0 };
-    const schedule = buildCronSchedule({
-      kind: frequency,
-      hour: parsedTime.hour,
-      minute: parsedTime.minute,
-      weekday: frequency === "weekly" ? weekday : undefined,
-    });
+    setIsSubmitting(true);
+    // A typo'd or inaccessible repository used to save fine and fail on its
+    // first run. Only a definite "not found" blocks; unknown never does.
+    if (slug && (await checkGithubRepository(slug)) === "missing") {
+      setIsSubmitting(false);
+      setRepositoryError(
+        t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_NOT_FOUND, { repo: slug }),
+      );
+      return;
+    }
+
+    // A webhook automation gets its own webhook source, so its URL (and a
+    // test event) reaches this automation and no other.
+    let webhook: { source: string; secret: string | null } | null = null;
+    if (runWhen === "webhook") {
+      try {
+        const source = webhookSourceFor(
+          trimmedName,
+          Math.random().toString(36).slice(2),
+        );
+        const created = await AutomationService.createCustomWebhook({
+          name: trimmedName,
+          source,
+          event_key_expr: WEBHOOK_EVENT_KEY_EXPR,
+        });
+        webhook = { source, secret: created.webhook_secret };
+      } catch (error) {
+        setIsSubmitting(false);
+        displayErrorToast(
+          getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$CREATE_ERROR)),
+        );
+        return;
+      }
+    }
+
+    let trigger: SetupRequestBody["trigger"];
+    if (webhook) trigger = buildWebhookTrigger(webhook.source, webhookMatch);
+    else if (runWhen === "github" && slug)
+      trigger = buildGitHubEventTrigger(githubEvent, slug, githubMatch);
+    else trigger = { type: "cron", schedule: scheduleFor(), timezone };
 
     const body: SetupRequestBody = {
       name: trimmedName,
       prompt: trimmedPrompt,
-      trigger: { type: "cron", schedule, timezone },
+      trigger,
       enabled,
       ...(model.trim() ? { model: model.trim() } : {}),
       ...(timeoutResult.value != null ? { timeout: timeoutResult.value } : {}),
@@ -175,15 +288,26 @@ export function CreateAutomationForm({
         : {}),
     };
 
-    setIsSubmitting(true);
     try {
       const created = await AutomationService.createAutomationDraft(body);
+      if (webhook?.secret)
+        rememberWebhookSecret(webhook.source, webhook.secret);
       await queryClient.invalidateQueries({ queryKey: AUTOMATIONS_QUERY_KEY });
       displaySuccessToast(t(I18nKey.AUTOMATIONS$CREATE_SUCCESS));
       onCreated();
       const createdId = typeof created.id === "string" ? created.id : null;
       if (createdId) navigate?.(automationDetailPath(createdId));
     } catch (error) {
+      if (webhook) {
+        // Do not leave an orphaned webhook behind a failed create.
+        const orphan = (
+          await AutomationService.listCustomWebhooks().catch(() => [])
+        ).find((hook) => hook.source === webhook?.source);
+        if (orphan)
+          await AutomationService.deleteCustomWebhook(orphan.id).catch(
+            () => {},
+          );
+      }
       displayErrorToast(
         getApiErrorMessage(error, t(I18nKey.AUTOMATIONS$CREATE_ERROR)),
       );
@@ -244,63 +368,175 @@ export function CreateAutomationForm({
       <div className="flex flex-col gap-2.5">
         <SettingsInput
           testId="create-automation-repository"
+          list={REPOSITORY_SUGGESTIONS_ID}
           name="repository"
           type="text"
           label={t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_LABEL)}
           value={repository}
           onChange={setRepository}
           placeholder={t(I18nKey.SETUP$REPOSITORY_PLACEHOLDER)}
-          showOptionalTag
+          error={repositoryError ?? undefined}
+          showOptionalTag={runWhen === "schedule"}
+          showRequiredTag={runWhen === "github"}
         />
-        <span className="text-xs text-muted">
-          {t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_HELP)}
-        </span>
+        <datalist id={REPOSITORY_SUGGESTIONS_ID}>
+          {repositorySuggestions.map((repo) => (
+            <option key={repo} value={repo} />
+          ))}
+        </datalist>
+        {!repositoryError && (
+          <span className="text-xs text-muted">
+            {t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_HELP)}
+          </span>
+        )}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="min-w-[180px] flex-1">
-          <SettingsDropdownInput
-            testId="create-automation-frequency"
-            name="frequency"
-            label={t(I18nKey.AUTOMATIONS$CREATE_SCHEDULE_LABEL)}
-            items={frequencyItems}
-            selectedKey={frequency}
-            onSelectionChange={(key) => {
-              if (key) setFrequency(key as SchedulePresetKind);
-            }}
-          />
+      <fieldset className="flex flex-col gap-2.5">
+        <legend className="mb-2.5 text-sm">
+          {t(I18nKey.AUTOMATIONS$CREATE_RUN_WHEN_LABEL)}
+        </legend>
+        <div
+          role="radiogroup"
+          className="flex flex-wrap gap-2"
+          data-testid="create-automation-run-when"
+        >
+          {RUN_WHEN_OPTIONS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={runWhen === value}
+              data-testid={`create-automation-run-when-${value}`}
+              onClick={() => {
+                setRunWhen(value);
+                setRepositoryError(null);
+              }}
+              className={cn(
+                "rounded-md border px-3 py-1.5 text-sm",
+                runWhen === value
+                  ? "border-[var(--oh-accent)] bg-[var(--oh-accent)]/10 text-content"
+                  : "border-[var(--oh-border)] text-muted hover:text-content",
+              )}
+            >
+              {t(label)}
+            </button>
+          ))}
         </div>
-        {frequency === "weekly" && (
-          <div className="min-w-[150px] flex-1">
+      </fieldset>
+
+      {runWhen === "github" && (
+        <GitHubTriggerFields
+          testIdPrefix="create-automation"
+          event={githubEvent}
+          match={githubMatch}
+          onEventChange={setGithubEvent}
+          onMatchChange={setGithubMatch}
+        />
+      )}
+
+      {runWhen === "webhook" && (
+        <div className="flex flex-col gap-1.5">
+          <SettingsInput
+            testId="create-automation-webhook-match"
+            name="webhookMatch"
+            type="text"
+            label={t(I18nKey.AUTOMATIONS$CREATE_WEBHOOK_MATCH_LABEL)}
+            value={webhookMatch}
+            onChange={setWebhookMatch}
+            showOptionalTag
+            // eslint-disable-next-line i18next/no-literal-string
+            placeholder="deploy.failed"
+          />
+          <p className="text-xs text-muted">
+            {t(I18nKey.AUTOMATIONS$CREATE_WEBHOOK_MATCH_HINT)}
+          </p>
+        </div>
+      )}
+
+      {runWhen === "schedule" && (
+        <div className="flex flex-wrap gap-3">
+          <div className="min-w-[180px] flex-1">
             <SettingsDropdownInput
-              testId="create-automation-weekday"
-              name="weekday"
-              label={t(I18nKey.AUTOMATIONS$WEEKDAY)}
-              items={weekdayItems}
-              selectedKey={String(weekday)}
+              testId="create-automation-frequency"
+              name="frequency"
+              label={t(I18nKey.AUTOMATIONS$CREATE_SCHEDULE_LABEL)}
+              items={frequencyItems}
+              selectedKey={frequency}
               onSelectionChange={(key) => {
-                if (key !== null) setWeekday(Number(key));
+                if (key) setFrequency(key as Frequency);
               }}
             />
           </div>
-        )}
-        <label className="flex min-w-[130px] flex-1 flex-col gap-2.5">
-          <span className="text-sm">
-            {t(I18nKey.AUTOMATIONS$CREATE_TIME_LABEL)}
-          </span>
-          <input
-            data-testid="create-automation-time"
-            name="timeOfDay"
-            type="time"
-            value={timeOfDay}
-            onChange={(e) => setTimeOfDay(e.target.value)}
-            className={formControlSettingsFieldClassName}
-          />
-          <span className="text-xs text-muted">
-            {t(I18nKey.AUTOMATIONS$CREATE_TIMEZONE_NOTE)}: {timezone}
-          </span>
-        </label>
-      </div>
+          {frequency === "weekly" && (
+            <div className="min-w-[150px] flex-1">
+              <SettingsDropdownInput
+                testId="create-automation-weekday"
+                name="weekday"
+                label={t(I18nKey.AUTOMATIONS$WEEKDAY)}
+                items={weekdayItems}
+                selectedKey={String(weekday)}
+                onSelectionChange={(key) => {
+                  if (key !== null) setWeekday(Number(key));
+                }}
+              />
+            </div>
+          )}
+          {frequency === "custom" ? (
+            <div className="flex min-w-[220px] flex-1 flex-col gap-2.5">
+              <SettingsInput
+                testId="create-automation-cron"
+                name="cron"
+                type="text"
+                label={t(I18nKey.AUTOMATIONS$CREATE_CRON_LABEL)}
+                value={customCron}
+                onChange={(value) => {
+                  setCustomCron(value);
+                  if (cronError && isValidCronExpression(value))
+                    setCronError(null);
+                }}
+                // eslint-disable-next-line i18next/no-literal-string
+                placeholder="0 9 * * 1-5"
+                error={cronError ?? undefined}
+              />
+              <span className="text-xs text-muted">
+                {t(I18nKey.AUTOMATIONS$CREATE_TIMEZONE_NOTE)}: {timezone}
+              </span>
+            </div>
+          ) : (
+            <label className="flex min-w-[130px] flex-1 flex-col gap-2.5">
+              <span className="text-sm">
+                {t(I18nKey.AUTOMATIONS$CREATE_TIME_LABEL)}
+              </span>
+              <input
+                data-testid="create-automation-time"
+                name="timeOfDay"
+                type="time"
+                value={timeOfDay}
+                onChange={(e) => {
+                  setTimeOfDay(e.target.value);
+                  if (timeError && parseTimeOfDay(e.target.value))
+                    setTimeError(null);
+                }}
+                aria-invalid={!!timeError}
+                className={cn(
+                  formControlSettingsFieldClassName,
+                  timeError && "border-red-500",
+                )}
+              />
+              {timeError && (
+                <span role="alert" className="text-xs text-red-400">
+                  {timeError}
+                </span>
+              )}
+              <span className="text-xs text-muted">
+                {frequency === "hourly"
+                  ? t(I18nKey.AUTOMATIONS$CREATE_HOURLY_NOTE)
+                  : `${t(I18nKey.AUTOMATIONS$CREATE_TIMEZONE_NOTE)}: ${timezone}`}
+              </span>
+            </label>
+          )}
+        </div>
+      )}
 
       {(isLoadingProfiles || profiles.length > 0) && (
         <SettingsDropdownInput
@@ -316,6 +552,14 @@ export function CreateAutomationForm({
           }
         />
       )}
+      <ModelRecommendationHint
+        profiles={profiles}
+        active={profilesData?.active_profile ?? null}
+        selected={model}
+        prompt={prompt}
+        onUse={setModel}
+        testIdPrefix="create-automation"
+      />
 
       <SettingsInput
         testId="create-automation-timeout"

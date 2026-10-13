@@ -72,7 +72,10 @@ export function mapAutomationRunToExportRow(
   automation: Pick<Automation, "id" | "name" | "trigger">,
   conversationBaseUrl?: string,
 ): AutomationRunExportRow {
-  const start = run.started_at || null;
+  // The service leaves started_at at the epoch until a run starts; exported
+  // as-is that read as a 1970 start and a ~1.7e9 s duration.
+  const startMs = run.started_at ? new Date(run.started_at).getTime() : NaN;
+  const start = Number.isFinite(startMs) && startMs > 0 ? run.started_at : null;
   const end = run.completed_at;
   let duration_seconds: number | null = null;
   if (start && end) {

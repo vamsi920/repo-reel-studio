@@ -38,6 +38,7 @@ import {
   findKnowledgeForConversation,
 } from "#/lib/knowledge/kt-agent-context";
 import LLMSubscriptionService from "./llm-subscription-service";
+import { compactSkillDescription } from "#/lib/layman/token-saver";
 import {
   LLM_AUTH_TYPE_SUBSCRIPTION,
   OPENAI_SUBSCRIPTION_VENDOR,
@@ -219,6 +220,55 @@ export function getDeploymentMode(
  * Returns `undefined` when no runtime info is available, so callers can safely
  * omit the field when the selected backend does not advertise runtime services.
  */
+function browserTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * How to turn "every weekday at 9am, do X" into a real NeoDevEx automation.
+ *
+ * Benchmarked against Devin (case-studies/automations, scenario A7): asked
+ * to "create an automation" from one sentence, the chat agent knew only that
+ * an automation backend existed and wrote a GitHub Actions workflow file
+ * instead -- nothing was scheduled in the product. The cloud-only
+ * openhands-automation skill is filtered out locally, so this block is the
+ * agent's only guide. The delivery contract is added to the prompt by the
+ * GitHub event bridge, so the agent writes only the task itself.
+ */
+function automationCreationRecipe(automation: {
+  url_from_agent?: string;
+  api_prefix?: string;
+  auth_env_var?: string;
+}): string[] {
+  const base = `${automation.url_from_agent}${automation.api_prefix ?? "/api/automation"}`;
+  const authHeader = `X-Session-API-Key: $${automation.auth_env_var ?? "OPENHANDS_AUTOMATION_API_KEY"}`;
+  const timeZone = browserTimeZone();
+  return [
+    "    Creating automations: user wants anything recurring, scheduled or",
+    '    GitHub-triggered ("every weekday", "when an issue is opened", "when CI',
+    '    fails") = create NeoDevEx automation here. Never GitHub Actions workflow,',
+    "    crontab or sleep loop unless user names it.",
+    `      curl -sS -X POST ${base}/v1/preset/prompt \\`,
+    `        -H '${authHeader}' -H 'content-type: application/json' -d '{`,
+    '          "name": "<short name>", "enabled": true,',
+    '          "prompt": "<what the agent must do on every run, self-contained>",',
+    '          "repos": [{"url": "https://github.com/<owner>/<repo>", "provider": "github"}],',
+    `          "trigger": {"type": "cron", "schedule": "<5-field cron, e.g. 0 9 * * 1-5>", "timezone": "${timeZone ?? "<IANA time zone>"}"}}'`,
+    '    GitHub trigger: "trigger": {"type": "event", "source": "github",',
+    '      "on": "issues.opened" | "issue_comment.created" | "pull_request.opened" | "push"}.',
+    '    Failed CI: {"type": "event", "source": "github-ci", "on": "workflow_run.failure"}.',
+    ...(timeZone
+      ? [`    User time zone: ${timeZone} (schedules use it).`]
+      : []),
+    `    Confirm with GET ${base}/v1/<id>; tell user name, schedule in words,`,
+    "    repository, and that it shows on the Automations page.",
+  ];
+}
+
 export function buildRuntimeServicesSystemSuffix(
   runtimeServicesInfo?: RuntimeServicesInfo | null,
 ): string | undefined {
@@ -228,15 +278,12 @@ export function buildRuntimeServicesSystemSuffix(
   const lines: string[] = [];
   lines.push("<RUNTIME_SERVICES>");
   if (info.mode) {
-    lines.push(
-      `You are running inside an agent-canvas dev stack started in '${info.mode}' mode.`,
-    );
+    lines.push(`Agent-canvas dev stack, '${info.mode}' mode.`);
   } else {
-    lines.push("You are running inside an agent-canvas dev stack.");
+    lines.push("Agent-canvas dev stack.");
   }
   lines.push(
-    "The following services are reachable from your sandbox. URLs are written",
-    "from your point of view (i.e., as you should curl/fetch them).",
+    "Services reachable from your sandbox (URLs as you curl/fetch them):",
     "",
   );
 
@@ -279,6 +326,7 @@ export function buildRuntimeServicesSystemSuffix(
         `    Auth:    header 'X-Session-API-Key: $${automation.auth_env_var}'`,
       );
     }
+    lines.push(...automationCreationRecipe(automation));
   } else {
     lines.push(
       "* Automation backend: not running in this dev mode (skip /api/automation calls).",
@@ -291,14 +339,10 @@ export function buildRuntimeServicesSystemSuffix(
   // system prompt is exactly the kind of confusion this block is meant to
   // prevent.
   const agentServerUrl = agent_server?.url_from_agent;
-  lines.push(
-    "",
-    "Trust this block over guessing: do not assume any other URLs are running.",
-  );
+  lines.push("", "Trust this block over guessing: assume no other URLs run.");
   if (agentServerUrl) {
     lines.push(
-      `In particular, ${agentServerUrl} inside your sandbox is the Agent Server`,
-      "you are running inside of — NOT the automation backend.",
+      `${agentServerUrl} = Agent Server you run inside, NOT the automation backend.`,
     );
   }
   lines.push("</RUNTIME_SERVICES>");
@@ -710,6 +754,12 @@ interface BundledSkill {
   source: string;
   description: string | null;
   is_agentskills_format: true;
+  /**
+   * True for keyword-triggered skills: the SDK then leaves them out of the
+   * skills index sent on every call and loads them only when the user's
+   * message mentions one of their keywords.
+   */
+  disable_model_invocation: boolean;
   license?: string;
   compatibility?: string;
 }
@@ -743,6 +793,12 @@ function buildBundledSkills(): BundledSkill[] {
       source,
       description: entry.description ?? null,
       is_agentskills_format: true as const,
+      // Lean skills index (case-studies/tokens): the index of every bundled
+      // skill was ~6k of the ~15k tokens resent on every model call. A
+      // keyword-triggered skill is injected in full whenever the user's
+      // message mentions its keywords, so it does not also need to sit in
+      // the index; skills without triggers stay listed and invocable.
+      disable_model_invocation: trigger !== null,
       ...(entry.license ? { license: entry.license } : {}),
       ...(entry.compatibility ? { compatibility: entry.compatibility } : {}),
     };
@@ -805,10 +861,19 @@ function buildAgentContext(
     ? (existingContext.skills as SettingsRecord[])
     : [];
   const disabledSkillNames = new Set(disabledSkills);
-  const mergedSkills = [...existingSkills, ...buildBundledSkills()].filter(
-    (skill) =>
-      typeof skill.name !== "string" || !disabledSkillNames.has(skill.name),
-  );
+  const mergedSkills = [...existingSkills, ...buildBundledSkills()]
+    .filter(
+      (skill) =>
+        typeof skill.name !== "string" || !disabledSkillNames.has(skill.name),
+    )
+    // The index of every skill's name and description is resent on every
+    // model call (about 6k tokens with the bundled catalog); Layman shortens
+    // the descriptions. A skill's content still loads in full when invoked.
+    .map((skill) =>
+      typeof skill.description === "string"
+        ? { ...skill, description: compactSkillDescription(skill.description) }
+        : skill,
+    );
 
   return {
     ...existingContext,

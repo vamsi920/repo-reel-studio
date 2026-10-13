@@ -30,6 +30,8 @@ import {
   DEFAULT_AUTOMATION_VERSION,
   DEFAULT_BACKEND_PORT,
   DEFAULT_AUTOMATION_PORT,
+  nextRestartDelayMs,
+  getAutomationWebhookSecret,
 } from "../../scripts/dev-with-automation.mjs";
 import { resetPersistedSessionApiKeyCache } from "../../scripts/dev-safe.mjs";
 
@@ -47,8 +49,11 @@ describe("buildAutomationCommand", () => {
     expect(cmd.args).toContain(
       `${DEFAULT_AUTOMATION_PACKAGE}==${DEFAULT_AUTOMATION_VERSION}`,
     );
-    expect(cmd.args).toContain("uvicorn");
-    expect(cmd.args).toContain("openhands.automation.app:app");
+    // Started through a Python entry point that lowers the scheduler's
+    // hard-coded 60 s per-automation poll, then runs uvicorn's own CLI.
+    expect(cmd.args.slice(-3, -1)).toEqual(["python", "-c"]);
+    expect(cmd.args.at(-1)).toContain("POLL_INTERVAL_SECONDS");
+    expect(cmd.args.at(-1)).toContain("openhands.automation.app:app");
     expect(cmd.source).toBe(`PyPI (${DEFAULT_AUTOMATION_VERSION}, default)`);
   });
 
@@ -872,5 +877,35 @@ describe("dev-with-automation CLI", () => {
     expect(exitResult.timedOut).toBe(false);
     expect(exitResult.code).toBe(1);
     expect(output).toContain("uvx");
+  });
+});
+
+describe("service restart policy", () => {
+  it("backs off exponentially, gives up, and resets after a healthy run", () => {
+    const restart = { maxAttempts: 3, baseDelayMs: 1_000, healthyAfterMs: 60_000 };
+
+    expect(nextRestartDelayMs(undefined, 0, 0)).toBeNull();
+    expect([0, 1, 2].map((a) => nextRestartDelayMs(restart, a, 500))).toEqual([
+      1_000, 2_000, 4_000,
+    ]);
+    expect(nextRestartDelayMs(restart, 3, 500)).toBeNull();
+    expect(nextRestartDelayMs(restart, 3, 120_000)).toBe(1_000);
+  });
+});
+
+describe("automation webhook secret", () => {
+  it("is generated once and reused across restarts", () => {
+    const stateDir = mkdtempSync(path.join(tmpdir(), "webhook-secret-"));
+    const saved = process.env.AUTOMATION_WEBHOOK_SECRET;
+    delete process.env.AUTOMATION_WEBHOOK_SECRET;
+    try {
+      const first = getAutomationWebhookSecret({ stateDir });
+
+      expect(first).toMatch(/^[0-9a-f]{64}$/);
+      expect(getAutomationWebhookSecret({ stateDir })).toBe(first);
+    } finally {
+      if (saved !== undefined) process.env.AUTOMATION_WEBHOOK_SECRET = saved;
+      rmSync(stateDir, { recursive: true, force: true });
+    }
   });
 });

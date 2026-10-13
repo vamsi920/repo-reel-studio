@@ -20,11 +20,22 @@ import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import type { Backend } from "#/api/backend-registry/types";
 import { I18nKey } from "#/i18n/declaration";
 import AutomationService from "#/api/automation-service/automation-service.api";
+import EventService from "#/api/event-service/event-service.api";
+import AutomationPolicyService from "#/api/automation-policy-service";
+import { withDeliveryContract } from "#/lib/automation/delivery-contract";
 
 vi.mock("#/api/automation-service/automation-service.api", () => ({
   default: {
     cancelAutomationRun: vi.fn(),
   },
+}));
+
+vi.mock("#/api/event-service/event-service.api", () => ({
+  default: { searchEvents: vi.fn() },
+}));
+
+vi.mock("#/api/automation-policy-service", () => ({
+  default: { get: vi.fn().mockResolvedValue({ policies: {}, guard: {} }) },
 }));
 
 vi.mock("#/utils/custom-toast-handlers", () => ({
@@ -629,5 +640,131 @@ describe("ActivityLogItem — Proactivation dismissal persistence", () => {
     expect(
       screen.getByText(I18nKey.AUTOMATIONS$PROACTIVATION_DISMISSED),
     ).toBeInTheDocument();
+  });
+});
+
+describe("ActivityLogItem — delivered outcome", () => {
+  const finalMessage = (text: string) => ({
+    items: [
+      {
+        kind: "MessageEvent",
+        source: "agent",
+        llm_message: { content: [{ type: "text", text }] },
+      },
+    ],
+    next_page_id: null,
+  });
+  const contractAutomation = () =>
+    makeAutomation({ prompt: withDeliveryContract("Fix failing CI.") });
+
+  beforeEach(() => {
+    __resetActiveStoreForTests();
+    setRegisteredBackends([localBackend]);
+    setActiveSelection({ backendId: localBackend.id });
+  });
+
+  afterEach(() => {
+    __resetActiveStoreForTests();
+    vi.mocked(EventService.searchEvents).mockReset();
+  });
+
+  it("marks a COMPLETED run that only printed a /pull/new/ link as unverified", async () => {
+    vi.mocked(EventService.searchEvents).mockResolvedValue(
+      finalMessage("RESULT: https://github.com/o/r/pull/new/fix") as never,
+    );
+
+    renderItem(makeRun(), contractAutomation());
+
+    expect(
+      await screen.findByTestId("run-outcome-unverified"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a FAILED run that was resumed and then delivered as recovered", async () => {
+    vi.mocked(EventService.searchEvents).mockResolvedValue(
+      finalMessage(
+        "Pushed.\nRESULT: https://github.com/o/r/commit/abc",
+      ) as never,
+    );
+
+    renderItem(
+      makeRun({
+        status: AutomationRunStatus.FAILED,
+        error_detail: "Remote conversation ended with error",
+      }),
+      contractAutomation(),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: (name) => name.includes(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_OPEN),
+      }),
+    ).toHaveTextContent(I18nKey.AUTOMATIONS$DETAIL$OUTCOME_RECOVERED);
+  });
+
+  it("shows the final report under the row, but no outcome chip without the contract", async () => {
+    vi.mocked(EventService.searchEvents).mockResolvedValue(
+      finalMessage(
+        "Reproduced the crash and opened a fix.\nRESULT: https://github.com/o/r/pull/7",
+      ) as never,
+    );
+
+    renderItem(makeRun(), makeAutomation());
+
+    expect(await screen.findByTestId("run-report")).toHaveTextContent(
+      "Reproduced the crash and opened a fix.",
+    );
+    expect(screen.getByTestId("run-report")).not.toHaveTextContent("RESULT:");
+    expect(screen.queryByTestId("run-outcome-delivered")).toBeNull();
+  });
+
+  it("shows why a failed run errored and how to fix it", async () => {
+    vi.mocked(EventService.searchEvents).mockResolvedValue({
+      items: [
+        {
+          kind: "ConversationErrorEvent",
+          detail:
+            'litellm.AuthenticationError: {"error": {"message": "Incorrect API key provided: None."}}',
+        },
+      ],
+      next_page_id: null,
+    } as never);
+
+    renderItem(
+      makeRun({
+        status: AutomationRunStatus.FAILED,
+        error_detail: "Remote conversation ended with error",
+      }),
+      makeAutomation(),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("run-report")).toHaveTextContent(
+        "AuthenticationError: Incorrect API key provided: None.",
+      ),
+    );
+    expect(screen.getByTestId("run-error-hint")).toHaveTextContent(
+      I18nKey.AUTOMATIONS$DETAIL$ERROR_HINT_LLM_AUTH,
+    );
+  });
+
+  it("says why the automation guard cancelled a run", async () => {
+    vi.mocked(AutomationPolicyService.get).mockResolvedValueOnce({
+      policies: {},
+      guard: {
+        cancelled: {
+          "run-1": { reason: "budget", at: "", automation_id: "auto-1" },
+        },
+      },
+    });
+
+    renderItem(
+      makeRun({ status: AutomationRunStatus.CANCELLED }),
+      makeAutomation(),
+    );
+
+    expect(await screen.findByTestId("run-guard-cancelled")).toHaveTextContent(
+      I18nKey.AUTOMATIONS$GUARD$CANCELLED_BUDGET,
+    );
   });
 });

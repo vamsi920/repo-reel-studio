@@ -23,6 +23,7 @@ import { DetailHeader } from "#/components/features/automations/detail/detail-he
 import { PromptSection } from "#/components/features/automations/detail/prompt-section";
 import { ConfigurationSection } from "#/components/features/automations/detail/configuration-section";
 import { PluginsSection } from "#/components/features/automations/detail/plugins-section";
+import { LimitsSection } from "#/components/features/automations/detail/limits-section";
 import { ActivitySection } from "#/components/features/automations/detail/activity-section";
 import { ActivityLogSection } from "#/components/features/automations/detail/activity-log-section";
 import { DetailSkeleton } from "#/components/features/automations/detail/detail-skeleton";
@@ -271,6 +272,7 @@ export default function AutomationDetail() {
           />
           {automation.prompt && <PromptSection prompt={automation.prompt} />}
           <ConfigurationSection automation={automation} />
+          {canEdit && <LimitsSection automationId={automation.id} />}
           {automation.plugins && automation.plugins.length > 0 && (
             <PluginsSection plugins={automation.plugins} />
           )}
@@ -293,6 +295,7 @@ export default function AutomationDetail() {
             isOpen={showDeleteModal}
             onConfirm={handleDelete}
             onCancel={() => setShowDeleteModal(false)}
+            isPending={deleteMutation.isPending}
           />
           {canEdit && (
             <EditAutomationModal

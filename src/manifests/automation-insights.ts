@@ -269,15 +269,26 @@ function loadedSummaries(
 
 const TILE_COMPUTATIONS: Record<
   OverviewMetric,
-  (automations: readonly Automation[], byId: Summaries) => OverviewTileValue
+  (
+    automations: readonly Automation[],
+    byId: Summaries,
+    total: number,
+  ) => OverviewTileValue
 > = {
-  automations: (automations) => ({
-    display: automations.length.toLocaleString(),
-    isZero: automations.length === 0,
-    placeholderValues: {
-      active: automations.filter((automation) => automation.enabled).length,
-    },
-  }),
+  // The list loads a page at a time (50); the tile counts the server's total,
+  // and the active count says when it only covers the loaded page.
+  automations: (automations, _byId, total) => {
+    const active = automations.filter(
+      (automation) => automation.enabled,
+    ).length;
+    return {
+      display: total.toLocaleString(),
+      isZero: total === 0,
+      placeholderValues: {
+        active: total > automations.length ? `${active}+` : active,
+      },
+    };
+  },
   "needs-attention": (automations, byId) => {
     const failing = automations.filter(
       (automation) =>
@@ -323,6 +334,11 @@ export function computeOverviewTile(
   metric: OverviewMetric,
   automations: readonly Automation[],
   byId: Summaries,
+  total: number = automations.length,
 ): OverviewTileValue {
-  return TILE_COMPUTATIONS[metric](automations, byId);
+  return TILE_COMPUTATIONS[metric](
+    automations,
+    byId,
+    Math.max(total, automations.length),
+  );
 }

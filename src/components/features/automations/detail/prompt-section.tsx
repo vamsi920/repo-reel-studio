@@ -1,4 +1,5 @@
 import React from "react";
+import { withoutDeliveryContract } from "#/lib/automation/delivery-contract";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import TerminalIcon from "#/icons/terminal.svg?react";
@@ -55,7 +56,7 @@ export function PromptSection({ prompt }: PromptSectionProps) {
             )}
             data-testid="automation-prompt-content"
           >
-            {prompt}
+            {withoutDeliveryContract(prompt)}
           </p>
           {isCollapsed ? (
             <div

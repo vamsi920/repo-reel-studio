@@ -24,6 +24,10 @@ vi.mock("#/hooks/query/use-connections", () => ({
 vi.mock("#/hooks/query/use-settings", () => ({
   useSettings: () => ({ data: { mcp_config: state.mcpConfig } }),
 }));
+// The GitHub credential check calls GitHub; it has its own tests.
+vi.mock("#/hooks/query/use-github-credential-health", () => ({
+  useGithubCredentialHealth: () => "ok",
+}));
 
 const DAY = 24 * 60 * 60_000;
 

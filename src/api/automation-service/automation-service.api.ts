@@ -1,4 +1,5 @@
 import axios from "axios";
+import { withDeliveryContract } from "#/lib/automation/delivery-contract";
 import {
   clearPendingLocalTelemetryRevocation,
   getTelemetryConsent,
@@ -27,6 +28,11 @@ import type {
   ValidateDraftResponse,
 } from "#/manifests/types";
 import type { Backend, ResolvedActiveBackend } from "../backend-registry/types";
+import {
+  signWebhookBody,
+  WEBHOOK_TEST_PAYLOAD,
+  webhookPath,
+} from "#/utils/automation-webhook";
 import {
   getActiveBackend,
   getEffectiveLocalBackend,
@@ -70,6 +76,17 @@ function normalizeAutomation(raw: RawAutomation): Automation {
     repository: primaryRepo.url,
     branch: primaryRepo.ref ?? automation.branch,
   };
+}
+
+export interface CustomWebhook {
+  id: string;
+  org_id: string;
+  name: string;
+  source: string;
+  webhook_url: string;
+  event_key_expr: string;
+  signature_header: string;
+  enabled: boolean;
 }
 
 export interface AutomationHealthResponse {
@@ -315,7 +332,7 @@ function buildCreateAutomationRequest(spec: AutomationSpec) {
     )}`,
     body: {
       name: spec.name,
-      prompt: spec.prompt,
+      prompt: withDeliveryContract(spec.prompt),
       // Preset creation defaults to enabled. A unique event trigger keeps the
       // new record inert until the real trigger and disabled state are applied
       // together in the follow-up PATCH.
@@ -538,10 +555,14 @@ class AutomationService {
 
   static async updateAutomation(
     id: string,
-    body: Partial<Automation>,
+    patch: Partial<Automation>,
   ): Promise<Automation> {
     const active = getActiveBackend().backend;
     const path = `${AUTOMATION_BASE_PATH}${getAutomationIdEndpoint("detail", id)}`;
+    const body =
+      typeof patch.prompt === "string"
+        ? { ...patch, prompt: withDeliveryContract(patch.prompt) }
+        : patch;
 
     if (active.kind === "cloud") {
       return callCloudProxy<Automation>({
@@ -736,8 +757,12 @@ class AutomationService {
    * one request.
    */
   static async createAutomationDraft(
-    body: SetupRequestBody,
+    draft: SetupRequestBody,
   ): Promise<Record<string, unknown>> {
+    const body =
+      typeof draft.prompt === "string"
+        ? { ...draft, prompt: withDeliveryContract(draft.prompt) }
+        : draft;
     const active = getActiveBackend().backend;
     const path = `${AUTOMATION_BASE_PATH}${AUTOMATION_CREATE_ENDPOINT}`;
 
@@ -796,6 +821,80 @@ class AutomationService {
       await buildPinnedLocalConfig(active.backend),
     );
     return data;
+  }
+
+  /** Custom webhook sources registered with the automation service. */
+  static async listCustomWebhooks(): Promise<CustomWebhook[]> {
+    const active = getActiveBackend();
+    const path = `${AUTOMATION_BASE_PATH}/v1/webhooks?limit=100`;
+    const data =
+      active.backend.kind === "cloud"
+        ? await callCloudProxy<{ webhooks: CustomWebhook[] }>({
+            backend: active.backend,
+            method: "GET",
+            path,
+            headers: await buildAutomationRequestHeaders(),
+          })
+        : (await localAutomationAxios.get<{ webhooks: CustomWebhook[] }>(path))
+            .data;
+    return data.webhooks ?? [];
+  }
+
+  /** New signing secret; the old one stops working immediately. */
+  static async rotateWebhookSecret(id: string): Promise<string> {
+    const active = getActiveBackend();
+    const path = `${AUTOMATION_BASE_PATH}/v1/webhooks/${id}/rotate-secret`;
+    const data =
+      active.backend.kind === "cloud"
+        ? await callCloudProxy<{ webhook_secret: string }>({
+            backend: active.backend,
+            method: "POST",
+            path,
+            headers: await buildAutomationRequestHeaders(),
+          })
+        : (await localAutomationAxios.post<{ webhook_secret: string }>(path))
+            .data;
+    return data.webhook_secret;
+  }
+
+  static async deleteCustomWebhook(id: string): Promise<void> {
+    const active = getActiveBackend();
+    const path = `${AUTOMATION_BASE_PATH}/v1/webhooks/${id}`;
+    if (active.backend.kind === "cloud") {
+      await callCloudProxy<unknown>({
+        backend: active.backend,
+        method: "DELETE",
+        path,
+        headers: await buildAutomationRequestHeaders(),
+      });
+      return;
+    }
+    await localAutomationAxios.delete(path);
+  }
+
+  /**
+   * Post a signed test event to a webhook, exactly as an outside service
+   * would. Returns how many automations it started.
+   */
+  static async sendWebhookTestEvent(webhook: {
+    webhook_url: string;
+    signature_header: string;
+    secret: string;
+  }): Promise<number> {
+    const body = JSON.stringify(WEBHOOK_TEST_PAYLOAD);
+    const signature = await signWebhookBody(body, webhook.secret);
+    const { data } = await localAutomationAxios.post<{
+      matched?: number;
+      automations_triggered?: number;
+    }>(webhookPath(webhook.webhook_url), body, {
+      headers: {
+        "Content-Type": "application/json",
+        [webhook.signature_header]: signature,
+      },
+      // The body must reach the server byte-for-byte as signed.
+      transformRequest: [(raw: string) => raw],
+    });
+    return data.matched ?? data.automations_triggered ?? 0;
   }
 
   static async checkHealth(): Promise<AutomationHealthResponse> {

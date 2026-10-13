@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Costs vs Devin</title>
+<meta name="description" content="How many tokens NeoDevEx spends per task, what the Layman integration actually saved, what we changed after measuring it, and what the same task costs on Devin.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .incidents { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .incidents li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+  .incidents li .tag { font: 600 0.72rem var(--mono); margin-right: 8px; }
+  .tag.fixed { color: var(--v-correct); }
+  .tag.open { color: var(--v-wrong); }
+  .tag.vendor { color: var(--devin); }
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin-top: 14px; }
+  table.data th, table.data td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+  table.data th:first-child, table.data td:first-child { text-align: left; white-space: normal; }
+  table.data th { font: 600 0.78rem var(--display); color: var(--muted); }
+  table.data td.num { font-family: var(--mono); }
+  table.data tr.total td { font-weight: 600; border-top: 2px solid var(--rule); }
+  .table-wrap { overflow-x: auto; }
+  .bar { display: grid; grid-template-columns: 170px 1fr 80px; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.9rem; }
+  .bar .track { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; height: 18px; position: relative; overflow: hidden; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--neo); opacity: 0.75; }
+  .bar .fill.devin { background: var(--devin); }
+  .bar .fill.muted { background: var(--muted); opacity: 0.45; }
+  .bar b { font: 600 0.85rem var(--mono); text-align: right; }
+  .good { color: var(--v-correct); }
+  .bad { color: var(--v-wrong); }
+  @media (max-width: 860px) { .two-col, .stat-strip { grid-template-columns: 1fr 1fr; } .bar { grid-template-columns: 120px 1fr 70px; } }
+  @media (max-width: 480px) { .two-col, .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#where">Where tokens go</a><a href="#layman">Layman, as integrated</a><a href="#changes">What we changed</a><a href="#results">Results</a><a href="#devin">vs Devin</a><a href="#rounds">Rounds</a><a href="#method">Method</a><a href="#data">Data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <p class="eyebrow">Module 04 · Token costs · three rounds, 2026-10-13</p>
+    <h1>We counted every token our agent spends, found the Layman integration saving <em>nothing</em>, and fixed it.</h1>
+    <p class="lede">NeoDevEx ships a vendored copy of <a href="https://github.com/vamsi920/layman">Layman</a>, a prompt-compression and brevity toolkit, to keep model costs down. We ran five real coding tasks 154 times on Gemini 2.5 Flash and read the token counts the model provider reported. On a fresh install the integration as shipped saved 0 tokens: it only compressed workspace memory, which starts empty, while every model call resent a fixed 15,600-token prefix. We moved Layman to where the tokens actually go. The same tasks now use 36% fewer tokens and cost 35% less (median per task), with the same pass rate. On an identical triage task, Devin charged $0.22 and NeoDevEx $0.017.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>−36%</b><span>tokens per task, median of 5 tasks × 4 runs (cost −35%)</span></div>
+      <div class="stat"><b>−25%</b><span>first model call: 15,582 → 11,736 tokens, resent on every step</span></div>
+      <div class="stat"><b>17 / 20</b><span>tasks passed after, 16 / 20 before</span></div>
+      <div class="stat"><b>13×</b><span>cheaper than Devin on the same triage ($0.017 vs $0.22)</span></div>
+    </div>
+  </section>
+
+  <section id="where" aria-labelledby="where-h">
+    <h2 id="where-h">Where the tokens go</h2>
+    <p class="section-lede">An agent run is a loop of model calls, 3 to 20 per task here, and every call resends the whole context: a fixed prefix plus the conversation so far. Before our changes the fixed prefix was 15,582 tokens. Input was 98% of all tokens; output (including the model's thinking) was 2%, but at Flash's prices it was about a fifth of the cost.</p>
+    <h3>The first call of a run, by part (before)</h3>
+    <div class="bar"><span>Skills index</span><span class="track"><span class="fill" style="width:55%"></span></span><b>~6.0k</b></div>
+    <div class="bar"><span>SDK system prompt</span><span class="track"><span class="fill muted" style="width:41%"></span></span><b>~4.5k</b></div>
+    <div class="bar"><span>Tool schemas</span><span class="track"><span class="fill muted" style="width:36%"></span></span><b>~4.0k</b></div>
+    <div class="bar"><span>Our runtime notes</span><span class="track"><span class="fill" style="width:6%"></span></span><b>~0.7k</b></div>
+    <div class="bar"><span>Repo context, user msg</span><span class="track"><span class="fill muted" style="width:5%"></span></span><b>~0.5k</b></div>
+    <p class="section-lede" style="margin-top:14px">Estimated from the character share of each part of the logged request against the provider's 15,423-token count for that call. The skills index lists the name and description of every bundled skill (69 of them) on every call; the SDK system prompt holds safety and security rules we chose not to touch. Automation runs add the delivery contract (about 1,200 tokens) to their first message, which is also resent on every call.</p>
+  </section>
+
+  <section id="layman" aria-labelledby="layman-h">
+    <h2 id="layman-h">Layman, as it was integrated</h2>
+    <div class="two-col">
+      <div>
+        <h3>What we found</h3>
+        <ul class="incidents">
+          <li><span class="tag open">found</span>Layman ran in one place only: the workspace-memory snippets attached to chat messages. A fresh install has no workspace memory, so it saved <b>0 tokens</b> per task.</li>
+          <li><span class="tag open">found</span>The vendored compressor is deterministic and only removes filler words. On our already-terse prose it saved 0% of the delivery contract, 5% of the runtime notes and under 1% of the skill descriptions.</li>
+          <li><span class="tag open">found</span>Its plain prose pass broke a file name ("AGENTS.md" became "AGENTS. md"). Layman's protected pass, which keeps paths, code and commands byte for byte, does not; we use only that one now.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What Layman is good at</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">use</span>Rewriting long Markdown once, keeping every fact, command and heading (its <code>/layman:compress</code>). We did this to the automation delivery contract and checked the result with Layman's own validator.</li>
+          <li><span class="tag fixed">use</span>"Ultra" short descriptions: what a thing does and when to use it, no examples or filler. We applied it to the skills index.</li>
+          <li><span class="tag open">tried</span>Brief mode for the agent's own messages. Measured in rounds 1 and 2, it made agents skip instructions and did not lower total tokens, so it is off (see <a href="#rounds">Rounds</a>).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="changes" aria-labelledby="changes-h">
+    <h2 id="changes-h">What we changed</h2>
+    <ul class="incidents">
+      <li><span class="tag fixed">shipped</span><b>Lean skills index.</b> 46 of the bundled skills have trigger keywords and are injected in full whenever your message mentions one. They no longer also sit in the index sent on every call; the 8 skills without keywords stay listed and invocable. <span class="good">About −3,000 tokens per call.</span> Trade-off: the agent cannot pull in a keyword skill on its own if no keyword appears in the conversation.</li>
+      <li><span class="tag fixed">shipped</span><b>Layman skill descriptions.</b> Every description cut to what the skill does and when to use it, at most 140 characters, through Layman's protected compressor (13,649 → 6,574 characters). The skill's full content still loads when it is used.</li>
+      <li><span class="tag fixed">shipped</span><b>Delivery contract v6.</b> The rules every automation run carries, rewritten Layman-style: 5,028 → 3,707 characters (−26%), with every command, code block, section name, signature and RESULT line unchanged. Layman's validator passes it against v5.</li>
+      <li><span class="tag fixed">shipped</span><b>Shorter runtime notes.</b> The block that tells the agent which local services exist, same URLs, commands and JSON, fewer words.</li>
+      <li><span class="tag open">dropped</span><b>Brief-mode output directive.</b> Measured twice, removed (below).</li>
+    </ul>
+  </section>
+
+  <section id="results" aria-labelledby="results-h">
+    <h2 id="results-h">Results: before and after, 4 runs per task</h2>
+    <p class="section-lede">Round 3, runs interleaved so provider-side caching and load could not favour either side. "Before" is the app as it was this morning; "After" is the app with the four shipped changes. Medians per task; total tokens = input + output.</p>
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Task</th><th>Passed before</th><th>Passed after</th><th>Tokens before</th><th>Tokens after</th><th>Change</th><th>Cost before</th><th>Cost after</th></tr></thead>
+      <tbody>
+        <tr><td>T1 · Fix the failing tests</td><td class="num">4/4</td><td class="num">4/4</td><td class="num">207,417</td><td class="num">97,452</td><td class="num good">−53%</td><td class="num">$0.0302</td><td class="num">$0.0187</td></tr>
+        <tr><td>T2 · Answer a code question</td><td class="num">1/4</td><td class="num">1/4</td><td class="num">47,821</td><td class="num">36,346</td><td class="num good">−24%</td><td class="num">$0.0124</td><td class="num">$0.0081</td></tr>
+        <tr><td>T3 · Review a pull request (automation)</td><td class="num">4/4</td><td class="num">4/4</td><td class="num">86,487</td><td class="num">76,364</td><td class="num good">−12%</td><td class="num">$0.0128</td><td class="num">$0.0150</td></tr>
+        <tr><td>T4 · Triage a bug report (automation)</td><td class="num">4/4</td><td class="num">4/4</td><td class="num">161,430</td><td class="num">147,580</td><td class="num good">−9%</td><td class="num">$0.0179</td><td class="num">$0.0174</td></tr>
+        <tr><td>T5 · Add a feature with a test</td><td class="num">3/4</td><td class="num">4/4</td><td class="num">319,726</td><td class="num">169,866</td><td class="num good">−47%</td><td class="num">$0.0445</td><td class="num">$0.0178</td></tr>
+        <tr class="total"><td>All five tasks</td><td class="num">16/20</td><td class="num">17/20</td><td class="num">822,882</td><td class="num">527,609</td><td class="num good">−36%</td><td class="num">$0.118</td><td class="num">$0.077</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="section-lede" style="margin-top:14px">Every model call got cheaper: input per call fell 14% (20,562 → 17,663 tokens) and cost per call 17% ($0.00301 → $0.00251). How much a whole task saves also depends on how many steps the agent happens to take, which varies run to run: using means instead of medians, the saving is 16% of tokens and 19% of cost. T2 fails on both sides for the same reason: Gemini 2.5 Flash names only one of the two bugs.</p>
+    <p class="section-lede">We also measured the app as it stands after another change landed the same day (a <code>&lt;WORKING_RULES&gt;</code> block from separate work on chat quality): 29% fewer tokens than before, but 13/20 passed, mostly because T5 dropped to 1/4 (the test went into the wrong file and unrelated bugs got fixed). That block is under review separately; the numbers above isolate the token changes.</p>
+  </section>
+
+  <section id="devin" aria-labelledby="devin-h">
+    <h2 id="devin-h">The same task on Devin</h2>
+    <p class="section-lede">Devin does not show token counts; it bills each session in dollars (ACU-based credits), which its usage page lists. We ran T4 (triage the discount bug report, no posting) on Devin with the identical bug report and repository.</p>
+    <div class="bar"><span>Devin</span><span class="track"><span class="fill devin" style="width:100%"></span></span><b>$0.22</b></div>
+    <div class="bar"><span>NeoDevEx before</span><span class="track"><span class="fill muted" style="width:10.2%"></span></span><b>$0.023</b></div>
+    <div class="bar"><span>NeoDevEx after</span><span class="track"><span class="fill" style="width:7.9%"></span></span><b>$0.017</b></div>
+    <div class="two-col" style="margin-top:20px">
+      <div>
+        <h3>Devin</h3>
+        <ul class="incidents">
+          <li><span class="tag vendor">devin</span>$0.22, about 16 minutes. Correct root cause, P0, a fix, and it also flagged the second (shipping) bug.</li>
+          <li><span class="tag vendor">devin</span>Other sessions in the same account cost $1.20 to $5.20 each (a review $3.14, test coverage $5.20, a security scan $5.02).</li>
+        </ul>
+      </div>
+      <div>
+        <h3>NeoDevEx</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">neo</span>$0.017 median, about 40 seconds, 4 of 4 correct (root cause, priority, fix). Before our changes: $0.023.</li>
+          <li><span class="tag fixed">neo</span>All 154 benchmark runs in this study, three rounds, cost $3.47 in total.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="section-lede" style="margin-top:14px">Most of that gap is the model: Devin uses its own frontier models, NeoDevEx ran Gemini 2.5 Flash. The Layman work is what we control on top of any model, and it applies to every model, including stronger ones that cost more per token.</p>
+  </section>
+
+  <section id="rounds" aria-labelledby="rounds-h">
+    <h2 id="rounds-h">How we got there: three rounds</h2>
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Round · variant</th><th>Runs</th><th>Passed</th><th>Tokens vs before</th><th>Cost vs before</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Layman compression + brief-mode output directive</td><td class="num">15</td><td class="num">10/15 <span class="bad">(before 12/15)</span></td><td class="num bad">+10%</td><td class="num bad">+1%</td><td>Rejected: agents skipped instructions</td></tr>
+        <tr><td>2 · Layman compression only</td><td class="num">15</td><td class="num">13/15 <span class="good">(before 12/15)</span></td><td class="num">−9% first call</td><td class="num good">−17% (mean)</td><td>Kept; saving too small</td></tr>
+        <tr><td>2 · Compression + narration-only directive</td><td class="num">15</td><td class="num">12/15</td><td class="num bad">+26%</td><td class="num bad">+20%</td><td>Rejected</td></tr>
+        <tr><td>3 · Compression + lean skills index</td><td class="num">20</td><td class="num">17/20 <span class="good">(before 16/20)</span></td><td class="num good">−36%</td><td class="num good">−35%</td><td>Shipped</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="section-lede" style="margin-top:14px">The brief-mode directive is what Layman is best known for, and it reads well in a chat. On an agent it backfired: told to write less, Gemini 2.5 Flash also read less carefully, put a requested test in the wrong file, fixed things it was not asked to, and took more steps. Output was only about 2% of tokens anyway.</p>
+  </section>
+
+  <section id="open" aria-labelledby="open-h">
+    <h2 id="open-h">What is left</h2>
+    <ul class="caveats">
+      <li><b>Tool schemas (~4k tokens per call).</b> The task-tracker tool alone is about 1,300 tokens on every call and was used in none of the 154 runs. Dropping it would save roughly another 7%, but it is the agent's planning tool on long tasks, so we left it in.</li>
+      <li><b>Automation runs.</b> Real automation runs build their agent inside the automation service, not from the app's chat settings, so in production they get the shorter contract but not the lean skills index. T3 and T4 here ran with the app's settings plus the contract.</li>
+      <li><b>Prompt caching.</b> Gemini already serves about 70% of input tokens from its cache at a quarter of the price, which is why cost falls less than tokens on some tasks.</li>
+    </ul>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we measured</h2>
+    <ul class="caveats">
+      <li>The harness (<code>run_bench.py</code>) runs each task with OpenHands SDK 1.42.1, the version the agent-server ships, and builds the agent from the exact settings the app sends (<code>dump-app-context.test.ts</code> calls the app's own <code>buildStartConversationRequest</code>): same tools, skills and system-prompt additions. The browser tool was off for every variant.</li>
+      <li>Model: Gemini 2.5 Flash. Token counts and costs are what the provider reported for each call, summed by the SDK; nothing is estimated except the per-part breakdown of the first call.</li>
+      <li>Tasks ran on a fresh copy of a small cart service with two planted bugs. Each task has a mechanical pass check: tests pass, the answer names both bugs, the review flags the wrong divisor, the triage names <code>totalWithDiscount</code> and the divide-by-100 fix, the new test file exists and the function returns the right value.</li>
+      <li>Variants were interleaved run by run. With 4 runs per task the step count still varies a lot, which is why we report medians and means.</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>One model and one small repository. On a large repository the conversation part grows and the fixed prefix becomes a smaller share, so the percentage saving will be smaller.</li>
+      <li>Devin was run once on one task; its other costs come from unrelated sessions in the same account.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/round3-results.jsonl">round3-results.jsonl<small>All 60 round-3 runs: tokens, cost, steps, pass, final message.</small></a></li>
+      <li><a href="data/round2-results.jsonl">round2-results.jsonl<small>Round 2, 45 runs.</small></a></li>
+      <li><a href="data/round1-results.jsonl">round1-results.jsonl<small>Round 1, 30 runs.</small></a></li>
+      <li><a href="data/summary-round3.json">summary-round3.json<small>Per-task medians and totals.</small></a></li>
+      <li><a href="data/devin.json">devin.json<small>Devin session costs read from its usage page.</small></a></li>
+      <li><a href="data/run_bench.py">run_bench.py<small>The harness.</small></a></li>
+      <li><a href="data/dump-app-context.test.ts">dump-app-context.test.ts<small>Dumps the exact agent settings the app sends.</small></a></li>
+      <li><a href="data/contract-validation.json">contract-validation.json<small>Layman's validator on contract v6 vs v5.</small></a></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Layman is MIT licensed, by its authors. Devin is a product of Cognition. NeoDevEx is not affiliated with Cognition. Devin was used through the account owner's own subscription on a private test repository.</p>
+</footer>
+</body>
+</html>

@@ -389,6 +389,23 @@ describe("computeOverviewTile", () => {
     });
   });
 
+  it("counts the server total, not just the loaded page", () => {
+    // Act — 2 of 120 automations loaded.
+    const value = computeOverviewTile(
+      "automations",
+      [enabled, disabled],
+      byId,
+      120,
+    );
+
+    // Assert
+    expect(value).toEqual({
+      display: "120",
+      isZero: false,
+      placeholderValues: { active: "1+" },
+    });
+  });
+
   it("counts only failing automations for needs-attention, flagging zero", () => {
     // Act — the disabled automation's failed history must not count.
     const attention = computeOverviewTile(

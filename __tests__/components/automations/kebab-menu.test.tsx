@@ -17,4 +17,27 @@ describe("KebabMenu", () => {
 
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  // React bubbles portal events up the component tree: a click on the menu's
+  // padding reached the row underneath and opened the detail page.
+  it("keeps clicks inside the open menu from reaching the row behind it", async () => {
+    const onRowClick = vi.fn();
+    render(
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+      <div onClick={onRowClick}>
+        <KebabMenu
+          items={[{ label: "Delete", icon: <span />, onClick: vi.fn() }]}
+        />
+      </div>,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "AUTOMATIONS$ACTIONS_MENU" }),
+    );
+    onRowClick.mockClear();
+
+    const item = await screen.findByText("Delete");
+    fireEvent.click(item.closest("[style]") ?? item.parentElement!);
+
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
 });

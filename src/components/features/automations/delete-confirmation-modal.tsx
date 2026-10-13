@@ -9,6 +9,9 @@ interface DeleteConfirmationModalProps {
   isOpen: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** True while the delete request is in flight: a second click would send a
+   * second DELETE, which then fails and toasts an error. */
+  isPending?: boolean;
 }
 
 export function DeleteConfirmationModal({
@@ -16,6 +19,7 @@ export function DeleteConfirmationModal({
   isOpen,
   onConfirm,
   onCancel,
+  isPending = false,
 }: DeleteConfirmationModalProps) {
   const { t } = useTranslation("openhands");
 
@@ -49,7 +53,10 @@ export function DeleteConfirmationModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-lg bg-danger px-4 py-2 text-sm text-white hover:bg-danger/80"
+            disabled={isPending}
+            aria-busy={isPending}
+            data-testid="delete-automation-confirm"
+            className="rounded-lg bg-danger px-4 py-2 text-sm text-white hover:bg-danger/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t(I18nKey.AUTOMATIONS$DELETE)}
           </button>

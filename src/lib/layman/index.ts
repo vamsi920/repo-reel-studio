@@ -53,3 +53,8 @@ export type {
   LaymanCompressionPolicy,
   LaymanPolicyDecision,
 } from "./compression-policy";
+
+export {
+  compactSkillDescription,
+  SKILL_INDEX_DESCRIPTION_MAX,
+} from "./token-saver";

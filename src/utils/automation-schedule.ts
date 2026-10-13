@@ -64,6 +64,18 @@ export function parseCronSchedule(
   return { kind: "custom", raw, hour, minute };
 }
 
+const CRON_FIELD = /^[\d*,/-]+$/;
+
+/**
+ * A five-field cron expression made of numbers, `*`, `,`, `-` and `/`. Names
+ * (MON, JAN) and macros (@daily) are rejected, because the edit modal and the
+ * schedule summaries only understand numeric fields.
+ */
+export function isValidCronExpression(raw: string): boolean {
+  const fields = raw.trim().split(/\s+/);
+  return fields.length === 5 && fields.every((f) => CRON_FIELD.test(f));
+}
+
 export function buildCronSchedule(input: PresetSchedule): string {
   const { kind, hour, minute, weekday } = input;
   switch (kind) {

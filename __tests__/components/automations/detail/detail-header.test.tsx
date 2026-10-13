@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import AutomationService from "#/api/automation-service/automation-service.api";
+import type { DeploymentCapabilities } from "#/manifests/types";
 import { DetailHeader } from "#/components/features/automations/detail/detail-header";
 import type { Automation } from "#/types/automation";
 
@@ -27,9 +30,35 @@ const baseAutomation: Automation = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+// Cards read deployment capabilities through react-query.
+function renderWithQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
+
+// No GitHub receiver is advertised, so github event triggers read as unsupported.
+const CAPABILITIES_WITHOUT_GITHUB: DeploymentCapabilities = {
+  ready: true,
+  triggerKinds: ["cron", "event"],
+  eventSources: ["jira"],
+  eventTypes: [],
+  triggers: {},
+  features: [],
+};
+
+beforeEach(() => {
+  vi.spyOn(AutomationService, "getCapabilities").mockResolvedValue(
+    CAPABILITIES_WITHOUT_GITHUB,
+  );
+});
+
 describe("DetailHeader", () => {
   it("shows the unsupported-trigger badge next to the active status for a github event automation", () => {
-    render(
+    renderWithQueryClient(
       <DetailHeader
         automation={baseAutomation}
         onToggle={vi.fn()}
@@ -39,13 +68,11 @@ describe("DetailHeader", () => {
       />,
     );
 
-    expect(
-      screen.getByTestId("unsupported-trigger-badge"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("unsupported-trigger-badge")).toBeInTheDocument();
   });
 
   it("does not show the unsupported-trigger badge for a schedule automation", () => {
-    render(
+    renderWithQueryClient(
       <DetailHeader
         automation={{ ...baseAutomation, trigger: { type: "cron" } }}
         onToggle={vi.fn()}
@@ -64,7 +91,7 @@ describe("DetailHeader", () => {
     mockUseHasPermission.mockReturnValue(false);
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <DetailHeader
         automation={baseAutomation}
         onToggle={vi.fn()}

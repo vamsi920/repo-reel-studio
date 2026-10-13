@@ -33,6 +33,7 @@
  *                            (falls back to the same persisted key file
  *                            `npm run dev` already generates/uses)
  */
+import { repoSlug } from "./automation-event-trigger.mjs";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import process from "node:process";
@@ -46,9 +47,7 @@ const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 const JIRA_WEBHOOK_SECRET = process.env.JIRA_WEBHOOK_SECRET || "";
 
 function sessionApiKey() {
-  return (
-    process.env.LOCAL_BACKEND_API_KEY || getOrCreatePersistedApiKeyFile()
-  );
+  return process.env.LOCAL_BACKEND_API_KEY || getOrCreatePersistedApiKeyFile();
 }
 
 function readBody(req) {
@@ -100,7 +99,10 @@ function verifyJiraToken(tokenHeader) {
 /** GitHub `issues` webhook → { repository, shouldFire }. */
 function parseGitHubIssueEvent(payload, githubEventHeader) {
   if (githubEventHeader !== "issues") {
-    return { shouldFire: false, reason: `Ignoring event type "${githubEventHeader}"` };
+    return {
+      shouldFire: false,
+      reason: `Ignoring event type "${githubEventHeader}"`,
+    };
   }
   const action = payload?.action;
   if (action !== "opened" && action !== "labeled") {
@@ -109,7 +111,10 @@ function parseGitHubIssueEvent(payload, githubEventHeader) {
   if (action === "labeled") {
     const labelName = payload?.label?.name?.toLowerCase?.() || "";
     if (!labelName.includes("bug")) {
-      return { shouldFire: false, reason: `Label "${labelName}" is not a bug label` };
+      return {
+        shouldFire: false,
+        reason: `Label "${labelName}" is not a bug label`,
+      };
     }
   }
   const repository = payload?.repository?.full_name;
@@ -119,7 +124,8 @@ function parseGitHubIssueEvent(payload, githubEventHeader) {
   return {
     shouldFire: true,
     repository,
-    issueRef: `#${payload?.issue?.number} ${payload?.issue?.title ?? ""}`.trim(),
+    issueRef:
+      `#${payload?.issue?.number} ${payload?.issue?.title ?? ""}`.trim(),
   };
 }
 
@@ -133,35 +139,61 @@ function parseJiraIssueEvent(payload) {
   const projectKey = payload?.issue?.fields?.project?.key;
   const issueKey = payload?.issue?.key;
   if (!projectKey) {
-    return { shouldFire: false, reason: "Payload has no issue.fields.project.key" };
+    return {
+      shouldFire: false,
+      reason: "Payload has no issue.fields.project.key",
+    };
   }
   return {
     shouldFire: true,
     repository: projectKey,
-    issueRef: `${issueKey ?? ""} ${payload?.issue?.fields?.summary ?? ""}`.trim(),
+    issueRef:
+      `${issueKey ?? ""} ${payload?.issue?.fields?.summary ?? ""}`.trim(),
   };
+}
+
+/**
+ * Whether an automation is the Bug Fixer for this repository (GitHub) or Jira
+ * project. The service keeps repositories in `preset_metadata.repos`, not in
+ * a top-level `repository` (that is filled in client-side only), and a Jira
+ * Bug Fixer names its project in the trigger filter, not as a repository.
+ */
+export function automationTargets(automation, source, key) {
+  if (source === "jira") {
+    return (automation.trigger?.filter ?? "").includes(`'${key}'`);
+  }
+  const repos = automation.preset_metadata?.repos ?? [];
+  const slugs = [automation.repository, ...repos.map((r) => r.url)].map((u) =>
+    repoSlug(u),
+  );
+  return slugs.includes(repoSlug(key));
 }
 
 async function findAndDispatchAutomation(source, repository, issueRef) {
   const headers = { "X-Session-API-Key": sessionApiKey() };
 
-  const listRes = await fetch(`${AGENT_CANVAS_URL}/api/automation/v1?limit=200`, {
-    headers,
-  });
+  const listRes = await fetch(
+    `${AGENT_CANVAS_URL}/api/automation/v1?limit=200`,
+    {
+      headers,
+    },
+  );
   if (!listRes.ok) {
     throw new Error(
       `Failed to list automations: ${listRes.status} ${await listRes.text()}`,
     );
   }
   const listBody = await listRes.json();
-  const automations = Array.isArray(listBody) ? listBody : listBody.automations ?? [];
+  const automations = Array.isArray(listBody)
+    ? listBody
+    : (listBody.automations ?? []);
 
   const matches = automations.filter(
     (a) =>
       a.enabled &&
       a.trigger?.type === "event" &&
       a.trigger?.source === source &&
-      a.repository === repository,
+      automationTargets(a, source, repository),
   );
 
   if (matches.length === 0) {
@@ -234,7 +266,9 @@ async function handleGitHub(req, res) {
 }
 
 async function handleJira(req, res) {
-  const verification = verifyJiraToken(req.headers["x-automation-webhook-token"]);
+  const verification = verifyJiraToken(
+    req.headers["x-automation-webhook-token"],
+  );
   if (!verification.ok) {
     sendJson(res, 401, { error: verification.reason });
     return;
@@ -267,31 +301,44 @@ async function handleJira(req, res) {
   }
 }
 
-const server = createServer((req, res) => {
-  if (req.method === "GET" && req.url === "/healthz") {
-    sendJson(res, 200, { status: "ok" });
-    return;
-  }
-  if (req.method === "POST" && req.url === "/webhooks/github") {
-    handleGitHub(req, res).catch((error) => sendJson(res, 500, { error: error.message }));
-    return;
-  }
-  if (req.method === "POST" && req.url === "/webhooks/jira") {
-    handleJira(req, res).catch((error) => sendJson(res, 500, { error: error.message }));
-    return;
-  }
-  sendJson(res, 404, { error: "Not found" });
-});
+// Started only when run directly, so the matching logic can be imported in tests.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = createServer((req, res) => {
+    if (req.method === "GET" && req.url === "/healthz") {
+      sendJson(res, 200, { status: "ok" });
+      return;
+    }
+    if (req.method === "POST" && req.url === "/webhooks/github") {
+      handleGitHub(req, res).catch((error) =>
+        sendJson(res, 500, { error: error.message }),
+      );
+      return;
+    }
+    if (req.method === "POST" && req.url === "/webhooks/jira") {
+      handleJira(req, res).catch((error) =>
+        sendJson(res, 500, { error: error.message }),
+      );
+      return;
+    }
+    sendJson(res, 404, { error: "Not found" });
+  });
 
-server.listen(PORT, () => {
-  console.log(`Bug Fixer webhook server listening on http://localhost:${PORT}`);
-  console.log(`  GitHub: POST http://localhost:${PORT}/webhooks/github`);
-  console.log(`  Jira:   POST http://localhost:${PORT}/webhooks/jira`);
-  console.log(`  Dispatching against: ${AGENT_CANVAS_URL}`);
-  if (!GITHUB_WEBHOOK_SECRET) {
-    console.warn("  ⚠ GITHUB_WEBHOOK_SECRET not set — GitHub webhooks will be rejected");
-  }
-  if (!JIRA_WEBHOOK_SECRET) {
-    console.warn("  ⚠ JIRA_WEBHOOK_SECRET not set — Jira webhooks will be rejected");
-  }
-});
+  server.listen(PORT, () => {
+    console.log(
+      `Bug Fixer webhook server listening on http://localhost:${PORT}`,
+    );
+    console.log(`  GitHub: POST http://localhost:${PORT}/webhooks/github`);
+    console.log(`  Jira:   POST http://localhost:${PORT}/webhooks/jira`);
+    console.log(`  Dispatching against: ${AGENT_CANVAS_URL}`);
+    if (!GITHUB_WEBHOOK_SECRET) {
+      console.warn(
+        "  ⚠ GITHUB_WEBHOOK_SECRET not set — GitHub webhooks will be rejected",
+      );
+    }
+    if (!JIRA_WEBHOOK_SECRET) {
+      console.warn(
+        "  ⚠ JIRA_WEBHOOK_SECRET not set — Jira webhooks will be rejected",
+      );
+    }
+  });
+}

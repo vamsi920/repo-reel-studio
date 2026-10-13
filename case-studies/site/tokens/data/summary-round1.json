@@ -1,0 +1,166 @@
+{
+  "tasks": {
+    "T1": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 7,
+        "input_tokens": 124428,
+        "output_tokens": 1305,
+        "reasoning_tokens": 691,
+        "total_tokens": 125733,
+        "cost_usd": 0.01798812,
+        "first_call_input": 15582,
+        "mean_total_tokens": 129031.33333333333,
+        "mean_cost_usd": 0.020894823333333333
+      },
+      "layman": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 8,
+        "input_tokens": 124425,
+        "output_tokens": 1386,
+        "reasoning_tokens": 641,
+        "total_tokens": 125785,
+        "cost_usd": 0.01549168,
+        "first_call_input": 14235,
+        "mean_total_tokens": 147030,
+        "mean_cost_usd": 0.015626823333333335
+      }
+    },
+    "T2": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 0.0,
+        "llm_calls": 3,
+        "input_tokens": 47015,
+        "output_tokens": 684,
+        "reasoning_tokens": 348,
+        "total_tokens": 47698,
+        "cost_usd": 0.00778494,
+        "first_call_input": 15424,
+        "mean_total_tokens": 53057,
+        "mean_cost_usd": 0.008214366666666667
+      },
+      "layman": {
+        "runs": 3,
+        "pass_rate": 0.3333333333333333,
+        "llm_calls": 3,
+        "input_tokens": 42980,
+        "output_tokens": 960,
+        "reasoning_tokens": 484,
+        "total_tokens": 43926,
+        "cost_usd": 0.00674808,
+        "first_call_input": 14077,
+        "mean_total_tokens": 43874.333333333336,
+        "mean_cost_usd": 0.00908715
+      }
+    },
+    "T3": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 5,
+        "input_tokens": 93982,
+        "output_tokens": 2225,
+        "reasoning_tokens": 1204,
+        "total_tokens": 96207,
+        "cost_usd": 0.02197257,
+        "first_call_input": 18255,
+        "mean_total_tokens": 90968,
+        "mean_cost_usd": 0.022246536666666667
+      },
+      "layman": {
+        "runs": 3,
+        "pass_rate": 0.6666666666666666,
+        "llm_calls": 5,
+        "input_tokens": 86242,
+        "output_tokens": 2092,
+        "reasoning_tokens": 844,
+        "total_tokens": 88334,
+        "cost_usd": 0.021240489999999997,
+        "first_call_input": 16631,
+        "mean_total_tokens": 112863.33333333333,
+        "mean_cost_usd": 0.02688656333333333
+      }
+    },
+    "T4": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 8,
+        "input_tokens": 150915,
+        "output_tokens": 1588,
+        "reasoning_tokens": 663,
+        "total_tokens": 152476,
+        "cost_usd": 0.026596460000000002,
+        "first_call_input": 18262,
+        "mean_total_tokens": 141069,
+        "mean_cost_usd": 0.023334353333333332
+      },
+      "layman": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 6,
+        "input_tokens": 120943,
+        "output_tokens": 1861,
+        "reasoning_tokens": 706,
+        "total_tokens": 123009,
+        "cost_usd": 0.017971070000000002,
+        "first_call_input": 16639,
+        "mean_total_tokens": 123191,
+        "mean_cost_usd": 0.016896286666666666
+      }
+    },
+    "T5": {
+      "today": {
+        "runs": 3,
+        "pass_rate": 1.0,
+        "llm_calls": 9,
+        "input_tokens": 218269,
+        "output_tokens": 2123,
+        "reasoning_tokens": 588,
+        "total_tokens": 220392,
+        "cost_usd": 0.03575759,
+        "first_call_input": 15459,
+        "mean_total_tokens": 248995.66666666666,
+        "mean_cost_usd": 0.037500643333333326
+      },
+      "layman": {
+        "runs": 3,
+        "pass_rate": 0.3333333333333333,
+        "llm_calls": 18,
+        "input_tokens": 319657,
+        "output_tokens": 3260,
+        "reasoning_tokens": 1214,
+        "total_tokens": 322743,
+        "cost_usd": 0.04965595999999999,
+        "first_call_input": 14113,
+        "mean_total_tokens": 323381.6666666667,
+        "mean_cost_usd": 0.04783742333333334
+      }
+    }
+  },
+  "totals": {
+    "today": {
+      "sum_median_tokens": 642506.0,
+      "sum_median_cost_usd": 0.1101,
+      "sum_mean_tokens": 663121.0,
+      "sum_mean_cost_usd": 0.11219,
+      "passes": 12,
+      "runs": 15
+    },
+    "layman": {
+      "sum_median_tokens": 703797.0,
+      "sum_median_cost_usd": 0.11111,
+      "sum_mean_tokens": 750340.3333333334,
+      "sum_mean_cost_usd": 0.11633,
+      "passes": 10,
+      "runs": 15,
+      "token_saving": -0.09539366169343166,
+      "cost_saving": -0.0091517068896112,
+      "mean_token_saving": -0.1315285345107957,
+      "mean_cost_saving": -0.03693285157831094
+    }
+  }
+}

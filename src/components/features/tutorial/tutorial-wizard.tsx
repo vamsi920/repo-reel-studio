@@ -170,7 +170,14 @@ export function TutorialWizard() {
   React.useEffect(() => {
     if (!isPlaying) return undefined;
     const timer = window.setTimeout(() => {
-      if (isLast) setPlaying(false);
+      // The next step may navigate to its own page, which unmounts whatever
+      // the user is doing. Auto-play once moved from /automations to
+      // /conversations under an open "New automation" form and threw away
+      // what had been typed, so it now pauses instead while the user is busy.
+      const busy =
+        document.querySelector('[role="dialog"][aria-modal="true"]') !== null ||
+        isTypingTarget(document.activeElement);
+      if (isLast || busy) setPlaying(false);
       else goTo(stepIndex + 1, steps.length);
     }, captionDurationMs);
     return () => window.clearTimeout(timer);
