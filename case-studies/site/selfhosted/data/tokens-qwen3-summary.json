@@ -1,0 +1,457 @@
+{
+  "study": "NeoDevEx token benchmark (case-studies/tokens/bench/run_bench.py), self-hosted model re-run",
+  "generated_at": "2026-10-13",
+  "setup": {
+    "model": "openai/qwen3-coder-next (RedHatAI/Qwen3-Coder-Next-NVFP4 on vLLM 0.30.0, 1x RTX PRO 6000 Blackwell, Runpod)",
+    "variant": "qwen3-coder-next",
+    "agent_settings": "out/neo-agent-settings.json + out/neo-automation-tail.txt (the 'neo' variant of round 3, the latest round in out/results.jsonl). It is identical to the current app dump (out/app-agent-settings.json) except that the app dump carries the newer chat-study AGENT_WORKING_RULES text in system_message_suffix; neo was kept so the comparison with the Gemini rows uses byte-identical settings.",
+    "runner": "scratchpad wrapper that imports run_bench.py unchanged and patches only the LLM config (base_url, api_key, caching_prompt=False, no reasoning params, timeout 600). Same tasks, fixture, MAX_ITERATIONS=60, success checks.",
+    "reps": 3,
+    "tasks": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5"
+    ],
+    "concurrency": "3 runner processes in parallel (one per rep), each running T1..T5 sequentially. For the first ~3 minutes the pod was also serving 3 qwen chat-bench processes from another session.",
+    "comparison": "Gemini 2.5 Flash rows from out/results.jsonl (round 3, 4 reps each): 'neo' = same settings as qwen; 'lean' = best Gemini variant overall (17/20, lowest median tokens); 'today' = pre-change baseline.",
+    "success_judging": "run_bench.py TASKS[*].check, unchanged (same as existing results)."
+  },
+  "per_task": {
+    "T1": {
+      "qwen3-coder-next": {
+        "runs": 3,
+        "passes": 3,
+        "pass_rate": 1.0,
+        "median_input_tokens": 135929,
+        "median_output_tokens": 1591,
+        "median_total_tokens": 137312,
+        "mean_total_tokens": 136532,
+        "median_llm_calls": 10,
+        "median_first_call_input": 12173,
+        "median_seconds": 33.0,
+        "mean_seconds": 34.7,
+        "errors": 0
+      },
+      "neo": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 108368.0,
+        "median_output_tokens": 1454.0,
+        "median_total_tokens": 109822.0,
+        "mean_total_tokens": 127655.2,
+        "median_llm_calls": 8.0,
+        "median_first_call_input": 11958.0,
+        "median_seconds": 27.15,
+        "mean_seconds": 27.2,
+        "errors": 0
+      },
+      "lean": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 96121.0,
+        "median_output_tokens": 1369.0,
+        "median_total_tokens": 97451.5,
+        "mean_total_tokens": 99080,
+        "median_llm_calls": 7.0,
+        "median_first_call_input": 11736.5,
+        "median_seconds": 25.450000000000003,
+        "mean_seconds": 25.7,
+        "errors": 0
+      },
+      "today": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 206003.5,
+        "median_output_tokens": 1445.0,
+        "median_total_tokens": 207417.0,
+        "mean_total_tokens": 187342.2,
+        "median_llm_calls": 9.5,
+        "median_first_call_input": 15582.5,
+        "median_seconds": 30.75,
+        "mean_seconds": 32.7,
+        "errors": 0
+      }
+    },
+    "T2": {
+      "qwen3-coder-next": {
+        "runs": 3,
+        "passes": 3,
+        "pass_rate": 1.0,
+        "median_input_tokens": 37341,
+        "median_output_tokens": 804,
+        "median_total_tokens": 38230,
+        "mean_total_tokens": 42285.3,
+        "median_llm_calls": 3,
+        "median_first_call_input": 12029,
+        "median_seconds": 14.4,
+        "mean_seconds": 14.3,
+        "errors": 0
+      },
+      "neo": {
+        "runs": 4,
+        "passes": 0,
+        "pass_rate": 0.0,
+        "median_input_tokens": 36150.5,
+        "median_output_tokens": 747.0,
+        "median_total_tokens": 36897.5,
+        "mean_total_tokens": 39952.8,
+        "median_llm_calls": 3.0,
+        "median_first_call_input": 11799.5,
+        "median_seconds": 12.2,
+        "mean_seconds": 12.4,
+        "errors": 0
+      },
+      "lean": {
+        "runs": 4,
+        "passes": 1,
+        "pass_rate": 0.25,
+        "median_input_tokens": 35474.0,
+        "median_output_tokens": 818.5,
+        "median_total_tokens": 36345.5,
+        "mean_total_tokens": 45326.5,
+        "median_llm_calls": 3.0,
+        "median_first_call_input": 11577.5,
+        "median_seconds": 12.600000000000001,
+        "mean_seconds": 13.2,
+        "errors": 0
+      },
+      "today": {
+        "runs": 4,
+        "passes": 1,
+        "pass_rate": 0.25,
+        "median_input_tokens": 47010.5,
+        "median_output_tokens": 810.5,
+        "median_total_tokens": 47821.0,
+        "mean_total_tokens": 54432.2,
+        "median_llm_calls": 3.5,
+        "median_first_call_input": 15425.0,
+        "median_seconds": 14.55,
+        "mean_seconds": 13.9,
+        "errors": 0
+      }
+    },
+    "T3": {
+      "qwen3-coder-next": {
+        "runs": 3,
+        "passes": 3,
+        "pass_rate": 1.0,
+        "median_input_tokens": 189086,
+        "median_output_tokens": 2851,
+        "median_total_tokens": 191937,
+        "mean_total_tokens": 240661,
+        "median_llm_calls": 11,
+        "median_first_call_input": 14416,
+        "median_seconds": 45.8,
+        "mean_seconds": 49.9,
+        "errors": 0
+      },
+      "neo": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 83881.0,
+        "median_output_tokens": 2795.0,
+        "median_total_tokens": 86676.0,
+        "mean_total_tokens": 86803,
+        "median_llm_calls": 5.5,
+        "median_first_call_input": 14355.0,
+        "median_seconds": 31.2,
+        "mean_seconds": 32.7,
+        "errors": 0
+      },
+      "lean": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 74191.5,
+        "median_output_tokens": 2173.0,
+        "median_total_tokens": 76364.5,
+        "mean_total_tokens": 76230.2,
+        "median_llm_calls": 5.0,
+        "median_first_call_input": 14132.0,
+        "median_seconds": 26.200000000000003,
+        "mean_seconds": 25.5,
+        "errors": 0
+      },
+      "today": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 84854.5,
+        "median_output_tokens": 1779.5,
+        "median_total_tokens": 86487.0,
+        "mean_total_tokens": 86958.2,
+        "median_llm_calls": 4.5,
+        "median_first_call_input": 18254.0,
+        "median_seconds": 23.3,
+        "mean_seconds": 23.1,
+        "errors": 0
+      }
+    },
+    "T4": {
+      "qwen3-coder-next": {
+        "runs": 3,
+        "passes": 3,
+        "pass_rate": 1.0,
+        "median_input_tokens": 335002,
+        "median_output_tokens": 3423,
+        "median_total_tokens": 338302,
+        "mean_total_tokens": 346863.7,
+        "median_llm_calls": 18,
+        "median_first_call_input": 14425,
+        "median_seconds": 65.7,
+        "mean_seconds": 90.6,
+        "errors": 0
+      },
+      "neo": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 116211.0,
+        "median_output_tokens": 1869.5,
+        "median_total_tokens": 118080.5,
+        "mean_total_tokens": 121076.8,
+        "median_llm_calls": 7.0,
+        "median_first_call_input": 14361.0,
+        "median_seconds": 27.35,
+        "mean_seconds": 32.6,
+        "errors": 0
+      },
+      "lean": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 144622.0,
+        "median_output_tokens": 2348.0,
+        "median_total_tokens": 147580.5,
+        "mean_total_tokens": 142982,
+        "median_llm_calls": 9.5,
+        "median_first_call_input": 14140.0,
+        "median_seconds": 39.9,
+        "mean_seconds": 40.8,
+        "errors": 0
+      },
+      "today": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 159627.0,
+        "median_output_tokens": 2182.5,
+        "median_total_tokens": 161430.0,
+        "mean_total_tokens": 163672.5,
+        "median_llm_calls": 7.0,
+        "median_first_call_input": 18261.0,
+        "median_seconds": 29.049999999999997,
+        "mean_seconds": 35.0,
+        "errors": 0
+      }
+    },
+    "T5": {
+      "qwen3-coder-next": {
+        "runs": 3,
+        "passes": 3,
+        "pass_rate": 1.0,
+        "median_input_tokens": 120266,
+        "median_output_tokens": 1401,
+        "median_total_tokens": 121478,
+        "mean_total_tokens": 135986.3,
+        "median_llm_calls": 9,
+        "median_first_call_input": 12059,
+        "median_seconds": 27.9,
+        "mean_seconds": 42.4,
+        "errors": 0
+      },
+      "neo": {
+        "runs": 4,
+        "passes": 1,
+        "pass_rate": 0.25,
+        "median_input_tokens": 229975.0,
+        "median_output_tokens": 4442.0,
+        "median_total_tokens": 234020.5,
+        "mean_total_tokens": 230568.2,
+        "median_llm_calls": 15.0,
+        "median_first_call_input": 11834.5,
+        "median_seconds": 60.45,
+        "mean_seconds": 59.2,
+        "errors": 0
+      },
+      "lean": {
+        "runs": 4,
+        "passes": 4,
+        "pass_rate": 1.0,
+        "median_input_tokens": 166993.0,
+        "median_output_tokens": 2873.5,
+        "median_total_tokens": 169866.5,
+        "mean_total_tokens": 344849,
+        "median_llm_calls": 12.0,
+        "median_first_call_input": 11613.0,
+        "median_seconds": 41.599999999999994,
+        "mean_seconds": 58.0,
+        "errors": 0
+      },
+      "today": {
+        "runs": 4,
+        "passes": 3,
+        "pass_rate": 0.75,
+        "median_input_tokens": 315509.0,
+        "median_output_tokens": 4217.5,
+        "median_total_tokens": 319726.5,
+        "mean_total_tokens": 350758.2,
+        "median_llm_calls": 15.5,
+        "median_first_call_input": 15458.0,
+        "median_seconds": 77.9,
+        "mean_seconds": 89.7,
+        "errors": 0
+      }
+    }
+  },
+  "overall": {
+    "qwen3-coder-next": {
+      "runs": 15,
+      "passes": 15,
+      "pass_rate": 1.0,
+      "input_tokens": 2671807,
+      "output_tokens": 35178,
+      "cache_read_tokens": 0,
+      "llm_calls": 172,
+      "seconds": 695.7,
+      "per_run_mean_total_tokens": 180466,
+      "per_run_mean_llm_calls": 11.47,
+      "per_run_mean_seconds": 46.4
+    },
+    "neo": {
+      "runs": 20,
+      "passes": 13,
+      "pass_rate": 0.65,
+      "input_tokens": 2379891,
+      "output_tokens": 44333,
+      "cache_read_tokens": 1483900,
+      "llm_calls": 152,
+      "seconds": 656.5,
+      "per_run_mean_total_tokens": 121211,
+      "per_run_mean_llm_calls": 7.6,
+      "per_run_mean_seconds": 32.8
+    },
+    "lean": {
+      "runs": 20,
+      "passes": 17,
+      "pass_rate": 0.85,
+      "input_tokens": 2790769,
+      "output_tokens": 43102,
+      "cache_read_tokens": 2030397,
+      "llm_calls": 158,
+      "seconds": 652.6,
+      "per_run_mean_total_tokens": 141694,
+      "per_run_mean_llm_calls": 7.9,
+      "per_run_mean_seconds": 32.6
+    },
+    "today": {
+      "runs": 20,
+      "passes": 16,
+      "pass_rate": 0.8,
+      "input_tokens": 3331023,
+      "output_tokens": 41631,
+      "cache_read_tokens": 2283341,
+      "llm_calls": 162,
+      "seconds": 777.3,
+      "per_run_mean_total_tokens": 168633,
+      "per_run_mean_llm_calls": 8.1,
+      "per_run_mean_seconds": 38.9
+    }
+  },
+  "headline": {
+    "qwen_pass_rate": "15/15 by the harness check (14/15 on manual audit, see findings)",
+    "gemini_neo_pass_rate": "13/20",
+    "gemini_best_lean_pass_rate": "17/20",
+    "mean_tokens_per_run": {
+      "qwen3-coder-next": 180466,
+      "gemini neo": 121211,
+      "gemini lean": 141694
+    },
+    "mean_model_calls_per_run": {
+      "qwen3-coder-next": 11.47,
+      "gemini neo": 7.6,
+      "gemini lean": 7.9
+    },
+    "mean_seconds_per_run": {
+      "qwen3-coder-next": 46.4,
+      "gemini neo": 32.8,
+      "gemini lean": 32.6
+    }
+  },
+  "money": {
+    "price_source": "PRICES table in case-studies/chat/bench/summarize.py (USD per 1M tokens input/output/cached-input): gemini-4-argon 2.00/10.00/0.10 (the frontier model and the app default), gemini-2.5-flash 0.30/2.50/0.03. Formula identical to that file's cost(): (input-cached)*in + cached*cached + output*out.",
+    "note": "qwen runs report 0 cached tokens (vLLM returns no cache usage and caching_prompt was off), so 'at_*_prices_usd_total' charges every qwen input token at the full rate; the '*_assuming_neo_cache_hit_ratio' figures apply Gemini neo's observed 62% cache-read share for a like-for-like comparison. Gemini 'provider_reported' is the cost litellm recorded in the original runs (matches the flash PRICES formula).",
+    "qwen3-coder-next": {
+      "at_gemini_4_argon_prices_usd_total": 5.6954,
+      "at_gemini_2_5_flash_prices_usd_total": 0.8895,
+      "at_gemini_4_argon_prices_usd_per_run": 0.37969,
+      "at_gemini_2_5_flash_prices_usd_per_run": 0.0593,
+      "at_gemini_4_argon_prices_assuming_neo_cache_hit_ratio_usd_total": 2.5302,
+      "at_gemini_2_5_flash_prices_assuming_neo_cache_hit_ratio_usd_total": 0.4397,
+      "assumed_cache_hit_ratio": 0.624
+    },
+    "neo": {
+      "at_gemini_4_argon_prices_usd_total": 2.3837,
+      "at_gemini_2_5_flash_prices_usd_total": 0.4241,
+      "at_gemini_4_argon_prices_usd_per_run": 0.11919,
+      "at_gemini_2_5_flash_prices_usd_per_run": 0.0212,
+      "provider_reported_usd_total": 0.4241,
+      "provider_reported_usd_per_run": 0.0212
+    },
+    "lean": {
+      "at_gemini_4_argon_prices_usd_total": 2.1548,
+      "at_gemini_2_5_flash_prices_usd_total": 0.3968,
+      "at_gemini_4_argon_prices_usd_per_run": 0.10774,
+      "at_gemini_2_5_flash_prices_usd_per_run": 0.01984,
+      "provider_reported_usd_total": 0.3968,
+      "provider_reported_usd_per_run": 0.01984
+    },
+    "today": {
+      "at_gemini_4_argon_prices_usd_total": 2.74,
+      "at_gemini_2_5_flash_prices_usd_total": 0.4869,
+      "at_gemini_4_argon_prices_usd_per_run": 0.137,
+      "at_gemini_2_5_flash_prices_usd_per_run": 0.02434,
+      "provider_reported_usd_total": 0.4869,
+      "provider_reported_usd_per_run": 0.02434
+    }
+  },
+  "gpu_cost": {
+    "rate_usd_per_hour": 1.69,
+    "sum_of_run_seconds": 695.7,
+    "union_of_run_intervals_seconds": 428.5,
+    "first_start_to_last_end_seconds": 457.3,
+    "usd_if_runs_were_sequential_sum_of_seconds": 0.3266,
+    "usd_billed_wall_clock_union": 0.2012,
+    "usd_per_run_sequential": 0.02177,
+    "usd_per_run_union": 0.01341,
+    "method": "Each run records started_epoch/ended_epoch around run_one. usd_billed_wall_clock_union = 1.69 USD/h x union of the 15 run intervals (overlapping time counted once) = the GPU time these runs actually occupied. usd_if_runs_were_sequential = 1.69 x sum of per-run seconds (what it would cost one at a time, ignoring batching gains). Both exclude pod idle time, cold starts and the ~2 minutes of 3 runs that were killed mid-flight (see caveats); the pod bills flat per hour regardless, and part of the window was shared with another session's chat bench, so the marginal cost is at most these figures."
+  },
+  "findings": [
+    "Quality: qwen3-coder-next passed every task check (15/15) vs 13/20 for Gemini 2.5 Flash on identical settings and 17/20 for the best Gemini variant. Its biggest wins are T2 (answer-only question, 3/3 vs 0/4 neo) and T5 (feature + test, 3/3 vs 1/4 neo).",
+    "Harness false positive: T2 rep2 passed the check while stating shippingCents is correct (the check only looks for both function names in the answer). Strictly judged qwen is 14/15 (T2 2/3). The two Gemini T2 passes (today rep1, lean rep3) were audited and do name shippingCents as buggy.",
+    "Token volume: qwen uses ~1.5x the tokens of Gemini neo per run (mean 180k vs 121k) and ~1.5x the model calls (11.5 vs 7.6). The gap is in the automation tasks: T3 (192k vs 87k median, 11 vs 5.5 calls) and T4 (338k vs 118k, 18 vs 7 calls); qwen re-runs tests, adds reproduction commands and reviews pre-existing bugs. On T5 it is cheaper than Gemini (121k vs 234k) because Gemini neo flailed.",
+    "Fixed prefix: first-call prompt is ~12.0k tokens on chat tasks and ~14.4k on automation tasks, essentially the same as Gemini neo (tokenizer differences only).",
+    "Tool-name hallucinations: the logs (including the 3 interrupted runs) show 12 calls to tools that do not exist (read x6, run x3, read_file x2, write x1); the SDK returns an error and the model corrects itself on the next call, costing an extra round-trip each. No runs errored and none hit the 60-iteration cap. No sub-agent (task tool) use was observed in this bench.",
+    "Final messages: 8/15 runs ended without a final agent MessageEvent (finished via the finish tool), so final_message is empty; this does not affect any check except T2, where all three runs did produce a message.",
+    "Speed: mean 46 s per run vs 33 s for Gemini neo, while sharing the GPU with up to 5 other agent loops; T4 rep0 was the slowest at 141 s (25 calls).",
+    "Cost: at frontier (gemini-4-argon) prices qwen's token volume would cost $5.70 for the 15 runs ($0.38/run; $2.53 total / $0.17 per run with Gemini-like caching), versus $0.20-$0.33 of GPU time ($0.013-$0.022/run). Gemini Flash itself charged $0.021/run for neo; Gemini's own neo runs at argon prices would be $0.12/run. So self-hosting is ~same per-run cost as Gemini Flash and roughly 10-28x cheaper than the frontier model at this load, but only while the GPU is kept busy: an idle hour still costs $1.69."
+  ],
+  "caveats": [
+    "3 reps per task for qwen vs 4 for Gemini; small samples.",
+    "Settings are the round-3 'neo' variant, not the very latest app dump (which adds the newer AGENT_WORKING_RULES text).",
+    "Parallel runs (3 processes, plus another session's chat bench for the first minutes) make seconds an upper bound on single-run latency.",
+    "Three in-flight runs (T3 rep0, T5 rep1, T4 rep2) were killed at ~13:40 by an external process kill that also took down another session's qwen chat-bench runners; they were not recorded and were re-run from scratch (the resume logic skips only completed (task, rep) pairs). No pod restarts occurred, so every recorded run has attempts=1.",
+    "Gemini rows are from earlier the same day; provider load/time-of-day differ."
+  ],
+  "files": {
+    "results": "case-studies/tokens/bench/out/qwen3-coder-next-results.jsonl",
+    "wrapper": "(scratchpad) qwen_token_bench.py / run_bench_vllm.py",
+    "summary_builder": "(scratchpad) qwen3_tokens_summary.py"
+  }
+}

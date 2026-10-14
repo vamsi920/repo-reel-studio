@@ -1,0 +1,706 @@
+{
+ "variant": "neodevex-qwen3",
+ "model": "qwen3-coder-next (RedHatAI/Qwen3-Coder-Next-NVFP4, vLLM 0.30.0, 1x RTX PRO 6000 Blackwell, Runpod)",
+ "compared_with": {
+  "best_published_neodevex": "neodevex-v3 (Gemini 2.5 Pro pages/answers, 2.5 Flash ask planner)",
+  "devin": "Devin (DeepWiki / Ask Devin)"
+ },
+ "docs_only_reading": {
+  "neodevex-qwen3": {
+   "overall": {
+    "accuracy_pct": 54.0,
+    "false_claim_pct": 17.3,
+    "not_covered": 1,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 59.0,
+     "false_claim_pct": 12.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 60.0,
+     "false_claim_pct": 12.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 43.0,
+     "false_claim_pct": 28.0,
+     "not_covered": 1,
+     "n": 25
+    }
+   }
+  },
+  "neodevex-v3": {
+   "overall": {
+    "accuracy_pct": 62.7,
+    "false_claim_pct": 12.0,
+    "not_covered": 0,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 74.0,
+     "false_claim_pct": 4.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 59.0,
+     "false_claim_pct": 16.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 55.0,
+     "false_claim_pct": 16.0,
+     "not_covered": 0,
+     "n": 25
+    }
+   }
+  },
+  "devin_published_v3_packets": {
+   "overall": {
+    "accuracy_pct": 52.3,
+    "false_claim_pct": 16.0,
+    "not_covered": 2,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 53.0,
+     "false_claim_pct": 20.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 51.0,
+     "false_claim_pct": 16.0,
+     "not_covered": 1,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 53.0,
+     "false_claim_pct": 12.0,
+     "not_covered": 1,
+     "n": 25
+    }
+   }
+  },
+  "devin_regraded_in_qwen3_packets": {
+   "overall": {
+    "accuracy_pct": 52.0,
+    "false_claim_pct": 21.3,
+    "not_covered": 2,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 56.0,
+     "false_claim_pct": 24.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 47.0,
+     "false_claim_pct": 20.0,
+     "not_covered": 1,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 53.0,
+     "false_claim_pct": 20.0,
+     "not_covered": 1,
+     "n": 25
+    }
+   }
+  },
+  "grader_agreement_pct": {
+   "qwen3": 92.0,
+   "v3": 92.7
+  }
+ },
+ "repository_qa": {
+  "neodevex-qwen3": {
+   "overall": {
+    "accuracy_pct": 71.7,
+    "false_claim_pct": 17.3,
+    "not_covered": 0,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 76.0,
+     "false_claim_pct": 8.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 70.0,
+     "false_claim_pct": 24.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 69.0,
+     "false_claim_pct": 20.0,
+     "not_covered": 0,
+     "n": 25
+    }
+   }
+  },
+  "neodevex-v3": {
+   "overall": {
+    "accuracy_pct": 81.3,
+    "false_claim_pct": 2.7,
+    "not_covered": 0,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 88.0,
+     "false_claim_pct": 0.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 78.0,
+     "false_claim_pct": 8.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 78.0,
+     "false_claim_pct": 0.0,
+     "not_covered": 0,
+     "n": 25
+    }
+   }
+  },
+  "devin_published_v3_packets": {
+   "overall": {
+    "accuracy_pct": 71.3,
+    "false_claim_pct": 22.7,
+    "not_covered": 0,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 88.0,
+     "false_claim_pct": 16.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 75.0,
+     "false_claim_pct": 4.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 51.0,
+     "false_claim_pct": 48.0,
+     "not_covered": 0,
+     "n": 25
+    }
+   }
+  },
+  "devin_regraded_in_qwen3_packets": {
+   "overall": {
+    "accuracy_pct": 71.3,
+    "false_claim_pct": 24.0,
+    "not_covered": 0,
+    "n": 75
+   },
+   "per_repo": {
+    "ky": {
+     "accuracy_pct": 82.0,
+     "false_claim_pct": 16.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "flask": {
+     "accuracy_pct": 74.0,
+     "false_claim_pct": 4.0,
+     "not_covered": 0,
+     "n": 25
+    },
+    "hono": {
+     "accuracy_pct": 58.0,
+     "false_claim_pct": 52.0,
+     "not_covered": 0,
+     "n": 25
+    }
+   }
+  },
+  "grader_agreement_pct": {
+   "qwen3": 94.0,
+   "v3": 96.0
+  }
+ },
+ "wiki_structure_and_citations": {
+  "neodevex-qwen3": {
+   "per_repo": {
+    "ky": {
+     "pages": 19,
+     "words": 81006,
+     "citations": 1197,
+     "citations_valid": 1190,
+     "citation_validity": 0.9942,
+     "unique_files_cited": 51,
+     "inline_citations": 1043,
+     "mermaid_diagrams": 29,
+     "links_pinned_to_commit": 1197,
+     "error_pages": 0
+    },
+    "flask": {
+     "pages": 34,
+     "words": 70821,
+     "citations": 588,
+     "citations_valid": 580,
+     "citation_validity": 0.9864,
+     "unique_files_cited": 79,
+     "inline_citations": 216,
+     "mermaid_diagrams": 52,
+     "links_pinned_to_commit": 588,
+     "error_pages": 0
+    },
+    "hono": {
+     "pages": 71,
+     "words": 234628,
+     "citations": 4705,
+     "citations_valid": 4588,
+     "citation_validity": 0.9751,
+     "unique_files_cited": 310,
+     "inline_citations": 4019,
+     "mermaid_diagrams": 113,
+     "links_pinned_to_commit": 4704,
+     "error_pages": 0
+    }
+   },
+   "overall": {
+    "pages": 124,
+    "words": 386455,
+    "files": 440,
+    "cite_valid": 98.0,
+    "pinned": 6489,
+    "citations": 6490
+   }
+  },
+  "neodevex-v3": {
+   "per_repo": {
+    "ky": {
+     "pages": 22,
+     "words": 43435,
+     "citations": 581,
+     "citations_valid": 581,
+     "citation_validity": 1.0,
+     "unique_files_cited": 46,
+     "inline_citations": 265,
+     "mermaid_diagrams": 47,
+     "links_pinned_to_commit": 581,
+     "error_pages": 0
+    },
+    "flask": {
+     "pages": 45,
+     "words": 80622,
+     "citations": 1034,
+     "citations_valid": 1034,
+     "citation_validity": 1.0,
+     "unique_files_cited": 78,
+     "inline_citations": 429,
+     "mermaid_diagrams": 110,
+     "links_pinned_to_commit": 1034,
+     "error_pages": 0
+    },
+    "hono": {
+     "pages": 69,
+     "words": 146687,
+     "citations": 1776,
+     "citations_valid": 1765,
+     "citation_validity": 0.9938,
+     "unique_files_cited": 336,
+     "inline_citations": 901,
+     "mermaid_diagrams": 162,
+     "links_pinned_to_commit": 1776,
+     "error_pages": 0
+    }
+   },
+   "overall": {
+    "pages": 136,
+    "words": 270744,
+    "files": 460,
+    "cite_valid": 99.7,
+    "pinned": 3391,
+    "citations": 3391
+   }
+  },
+  "devin": {
+   "per_repo": {
+    "ky": {
+     "pages": 35,
+     "words": 41232,
+     "citations": 1259,
+     "citations_valid": 1225,
+     "citation_validity": 0.973,
+     "unique_files_cited": 45,
+     "inline_citations": 584,
+     "mermaid_diagrams": 122,
+     "links_pinned_to_commit": 0,
+     "error_pages": 0
+    },
+    "flask": {
+     "pages": 37,
+     "words": 45204,
+     "citations": 1320,
+     "citations_valid": 1252,
+     "citation_validity": 0.9485,
+     "unique_files_cited": 91,
+     "inline_citations": 613,
+     "mermaid_diagrams": 123,
+     "links_pinned_to_commit": 0,
+     "error_pages": 0
+    },
+    "hono": {
+     "pages": 46,
+     "words": 74107,
+     "citations": 2328,
+     "citations_valid": 2197,
+     "citation_validity": 0.9437,
+     "unique_files_cited": 179,
+     "inline_citations": 1373,
+     "mermaid_diagrams": 172,
+     "links_pinned_to_commit": 0,
+     "error_pages": 0
+    }
+   },
+   "overall": {
+    "pages": 118,
+    "words": 160543,
+    "files": 315,
+    "cite_valid": 95.3,
+    "pinned": 0,
+    "citations": 4907
+   }
+  }
+ },
+ "mermaid_render_pct": {
+  "published": {
+   "devin": 91.6,
+   "neodevex": 63.6,
+   "neodevex-v2": 95.3,
+   "neodevex-v3": 94.4,
+   "neodevex-v3_by_repo": {
+    "ky": [
+     42,
+     47
+    ],
+    "flask": [
+     105,
+     110
+    ],
+    "hono": [
+     154,
+     162
+    ]
+   }
+  },
+  "qwen3": {
+   "neodevex-qwen3": 89.7,
+   "neodevex-qwen3_by_repo": {
+    "ky": [
+     25,
+     29
+    ],
+    "flask": [
+     46,
+     52
+    ],
+    "hono": [
+     103,
+     113
+    ]
+   },
+   "method": "node case-studies/kt/bench/mermaid-check.mjs on ours-qwen3/*.md (mermaid 11), same as mermaid.json"
+  }
+ },
+ "citations_semantic": {
+  "neodevex-v2": 68.6,
+  "neodevex-v2_unsupported": 0.0,
+  "neodevex-v2_n": 102,
+  "devin": 55.0,
+  "devin_unsupported": 22.5,
+  "devin_n": 120,
+  "neodevex-v3": 70.8,
+  "neodevex-v3_unsupported": 0.8,
+  "neodevex-v3_n": 120,
+  "devin_v3_regrade": 55.0,
+  "devin_v3_regrade_unsupported": 22.5
+ },
+ "usage": {
+  "all": {
+   "calls": 348,
+   "errors": 0,
+   "prompt_tokens": 8532335,
+   "completion_tokens": 652034,
+   "model_seconds_sum": 15593.3,
+   "pod_restart_wait_seconds": 2023.0,
+   "length_capped": 5,
+   "busy_wall_seconds": 2790.0,
+   "gemini_list_price_usd_same_tokens": 17.0123,
+   "gpu_cost_usd_busy_time": 1.3097
+  },
+  "ask/all": {
+   "calls": 150,
+   "errors": 0,
+   "prompt_tokens": 4888461,
+   "completion_tokens": 29274,
+   "model_seconds_sum": 1836.0,
+   "pod_restart_wait_seconds": 0.0,
+   "length_capped": 0,
+   "busy_wall_seconds": 347.8,
+   "gemini_list_price_usd_same_tokens": 6.2299,
+   "gpu_cost_usd_busy_time": 0.1633
+  },
+  "ask/flask": {
+   "calls": 50,
+   "errors": 0,
+   "prompt_tokens": 1879028,
+   "completion_tokens": 11885,
+   "model_seconds_sum": 646.5,
+   "pod_restart_wait_seconds": 0.0,
+   "length_capped": 0,
+   "busy_wall_seconds": 342.1,
+   "gemini_list_price_usd_same_tokens": 2.4251,
+   "gpu_cost_usd_busy_time": 0.1606
+  },
+  "ask/hono": {
+   "calls": 50,
+   "errors": 0,
+   "prompt_tokens": 1205418,
+   "completion_tokens": 10492,
+   "model_seconds_sum": 642.2,
+   "pod_restart_wait_seconds": 0.0,
+   "length_capped": 0,
+   "busy_wall_seconds": 336.7,
+   "gemini_list_price_usd_same_tokens": 1.5033,
+   "gpu_cost_usd_busy_time": 0.1581
+  },
+  "ask/ky": {
+   "calls": 50,
+   "errors": 0,
+   "prompt_tokens": 1804015,
+   "completion_tokens": 6897,
+   "model_seconds_sum": 547.2,
+   "pod_restart_wait_seconds": 0.0,
+   "length_capped": 0,
+   "busy_wall_seconds": 285.9,
+   "gemini_list_price_usd_same_tokens": 2.3015,
+   "gpu_cost_usd_busy_time": 0.1342
+  },
+  "generation/all": {
+   "calls": 198,
+   "errors": 0,
+   "prompt_tokens": 3643874,
+   "completion_tokens": 622760,
+   "model_seconds_sum": 13757.3,
+   "pod_restart_wait_seconds": 2023.0,
+   "length_capped": 5,
+   "busy_wall_seconds": 2442.2,
+   "gemini_list_price_usd_same_tokens": 10.7824,
+   "gpu_cost_usd_busy_time": 1.1465
+  },
+  "generation/flask": {
+   "calls": 52,
+   "errors": 0,
+   "prompt_tokens": 1116233,
+   "completion_tokens": 141000,
+   "model_seconds_sum": 3502.3,
+   "pod_restart_wait_seconds": 675.0,
+   "length_capped": 0,
+   "busy_wall_seconds": 1436.4,
+   "gemini_list_price_usd_same_tokens": 2.8053,
+   "gpu_cost_usd_busy_time": 0.6743
+  },
+  "generation/hono": {
+   "calls": 115,
+   "errors": 0,
+   "prompt_tokens": 1823147,
+   "completion_tokens": 346835,
+   "model_seconds_sum": 7003.0,
+   "pod_restart_wait_seconds": 1348.0,
+   "length_capped": 3,
+   "busy_wall_seconds": 2225.5,
+   "gemini_list_price_usd_same_tokens": 5.7473,
+   "gpu_cost_usd_busy_time": 1.0447
+  },
+  "generation/ky": {
+   "calls": 31,
+   "errors": 0,
+   "prompt_tokens": 704494,
+   "completion_tokens": 134925,
+   "model_seconds_sum": 3252.0,
+   "pod_restart_wait_seconds": 0.0,
+   "length_capped": 2,
+   "busy_wall_seconds": 1196.6,
+   "gemini_list_price_usd_same_tokens": 2.2299,
+   "gpu_cost_usd_busy_time": 0.5617
+  }
+ },
+ "run_date": "2026-10-13",
+ "headline": {
+  "docs_only_reading_accuracy_pct": {
+   "neodevex-qwen3": 54.0,
+   "neodevex-v3 (best published, Gemini)": 62.7,
+   "devin": 52.3
+  },
+  "repository_qa_accuracy_pct": {
+   "neodevex-qwen3": 71.7,
+   "neodevex-v3 (best published, Gemini)": 81.3,
+   "devin": 71.3
+  },
+  "repository_qa_false_claim_pct": {
+   "neodevex-qwen3": 17.3,
+   "neodevex-v3 (best published, Gemini)": 2.7,
+   "devin": 22.7
+  },
+  "docs_not_covered_of_75": {
+   "neodevex-qwen3": 1,
+   "neodevex-v3": 0,
+   "devin": 2
+  },
+  "source_files_cited": {
+   "neodevex-qwen3": 440,
+   "neodevex-v3": 460,
+   "devin": 315
+  },
+  "citations_that_resolve_pct": {
+   "neodevex-qwen3": 98.0,
+   "neodevex-v3": 99.7,
+   "devin": 95.3
+  },
+  "citations_that_support_claim_pct": {
+   "neodevex-qwen3": 80.0,
+   "neodevex-v3": 70.8,
+   "devin": 55.0
+  },
+  "diagrams_that_render_pct": {
+   "neodevex-qwen3": 89.7,
+   "neodevex-v3": 94.4,
+   "devin": 91.6
+  },
+  "wiki_pages": {
+   "neodevex-qwen3": 124,
+   "neodevex-v3": 136,
+   "devin": 118
+  }
+ },
+ "what_ran_on_qwen3": [
+  "KT wiki generation (DeepWiki service in vendor/deepwiki-open): structure step, its file-planning call, every page, and every 'other files in this area' supplement call. provider=litellm, model=qwen3-coder-next, temperature 0.3, top_p 0.8 (the same sampling settings generator.json gives gemini-2.5-pro), max_tokens 32768 (the Gemini run's cap).",
+  "Repository Q&A ('ask' mode, /chat/completions/stream): the file-planner call (Gemini 2.5 Flash in the published run) and the answer call (Gemini 2.5 Pro in the published run)."
+ ],
+ "kept_on_original_models": [
+  "Neutral docs reader for the docs-only test: Gemini 2.5 Flash, temperature 0, unchanged answer.py prompt.",
+  "Retrieval embeddings: gemini-embedding-001 (the vLLM pod serves no embedding model). The three repos' existing embedding indexes were reused unchanged (copied from ~/.adalflow), so retrieval is identical to the published run; only the generator changed.",
+  "Blind graders: two independent Claude Opus 5.5 agents per mode with the exact round-3 grading prompts (only the packet names changed). Citation-support check: one blind Claude Opus 5.5 verifier with the round-3 cites prompt, 40 qwen3 + the same 40 Devin citations per repo, shuffled."
+ ],
+ "scoring": "build.py's own mode_stats/combine/wiki_metrics on the -qwen3 packets (correct 1, partial 0.5, mean of two graders; false claim if either grader flags it). Re-scoring the published -v3 packets with the same code reproduces the published 62.7 / 81.3 / 2.7 / 52.3 / 71.3 / 22.7 exactly. Devin was re-graded inside the qwen3 packets as a control: 52.0% docs (published 52.3%), 71.3% Q&A (published 71.3%).",
+ "wall_clock": {
+  "generation_minutes_service_measured": {
+   "ky": 20.3,
+   "flask": 33.7,
+   "hono": 44.1,
+   "note": "all three repos generated concurrently (3 tasks x 4 pages in parallel, same as the published run), so the GPU was busy for 44.1 min in total, not the sum. Includes one ~5.6 min pod outage (337 s, waited out, nothing counted as failed). Gemini v3 per-repo minutes were 6.5 / 13.7 / 24.9."
+  },
+  "ask_minutes": 5.8,
+  "ask_note": "75 questions, three repos in parallel with 2 workers each; mean 22.9-27.9 s per answer including Gemini embedding of the query.",
+  "gpu_cost_usd": {
+   "wall_clock_windows": 1.41,
+   "busy_seconds_union": 1.31,
+   "rate": "1.69 USD/hour flat, 1x RTX PRO 6000 Blackwell (Runpod)",
+   "note": "wall-clock windows = (44.1 + 5.8) min x 1.69/h; busy = union of in-flight model calls (2790 s). Excludes the docs reader and graders, which did not run on the pod."
+  }
+ },
+ "frontier_cost_same_tokens": {
+  "prices_usd_per_1M_tokens": {
+   "gemini-2.5-pro": {
+    "input": 1.25,
+    "output": 10.0,
+    "input_above_200k_prompt": 2.5,
+    "output_above_200k_prompt": 15.0
+   },
+   "gemini-2.5-flash": {
+    "input": 0.3,
+    "output": 2.5
+   }
+  },
+  "price_source": "PRICES table in case-studies/chat/bench/summarize.py (gemini/gemini-2.5-pro 1.25/10.00, gemini/gemini-2.5-flash 0.30/2.50) and MODEL_PRICES in vendor/deepwiki-open/api/usage.py (same figures plus the >200k tier, which no qwen3 call reached). No cache discount applied (the published run used none).",
+  "mapping": "Every qwen3 call priced as gemini-2.5-pro except ask-mode planner calls, priced as gemini-2.5-flash (what the published run used there).",
+  "generation_usd": 10.78,
+  "ask_usd": 6.23,
+  "total_usd": 17.01,
+  "published_gemini_v3_generation_actual_usd": 13.27,
+  "published_note": "The real Gemini v3 generation cost 13.27 USD for the three wikis because Gemini also bills ~418k thinking tokens and used 3.15M prompt tokens; the 10.78 figure prices qwen3's own 3.64M prompt / 0.62M output tokens. The published ask cost was never metered."
+ },
+ "token_counts_note": "From vLLM usage on every call, via a local metering proxy (stream_options.include_usage). Lower bound for generation: calls that were in flight when the proxy was restarted twice during generation (once to stream upstream after Runpod's 100 s 524 cut-off, once to add logging) were re-sent by the KT service and only the re-sent attempt is logged.",
+ "findings": [
+  "Repetition loops: 5 generation calls hit the 32,768-token cap (ky 2 pages, hono 3 pages). ky's 'Request Cancellation' page is 16.5k words, mostly the same four bullets about ky.retry() repeated; 'Default Options' is 11.6k words. These inflate word counts (qwen3 wikis 386k words vs 271k for Gemini v3 and 161k for Devin) without adding coverage. The published Gemini run had none.",
+  "Repository Q&A answers are short and confident but less careful: mean 112-187 words vs 276-359 for Gemini v3, 29k output tokens for 75 answers. False-claim rate rose from 2.7% to 17.3% (13 of 75): e.g. flask-10 lists exception-class lookup before status code (reverse of the code it quotes), flask-17 says only '1'/'true' enable debug, ky-03 says afterResponse hooks do not run and beforeRetry precedes the delay, hono-13 says the c.notFound fallback returns 404, hono-19/20 open with a conclusion the answer later contradicts.",
+  "The ask file-planner sometimes ignores 'return ONLY a JSON array' during wiki generation: the structure-step planner calls produced 5,090 and 7,000 tokens for a list capped at 12 paths. In ask mode it behaved (about 24 output tokens per call).",
+  "Docs-only accuracy fell most on hono (43% vs 55% for Gemini v3, Devin 53%); ky 59% (v3 74%); flask 60% (v3 59%, Devin 51%). Wrong docs answers trace to wrong statements in the generated pages (reversed blueprint hook order on flask, 413 retried without Retry-After on ky, sub-app notFound under a mounted path on hono).",
+  "Citations are strong: 98.0% resolve at the pinned commit and 80.0% of 120 sampled inline citations support their claim (Devin 55.8% in the same blind packet, Gemini v3 70.8% published). hono's 117 unresolved citations are mostly made-up paths.",
+  "Even with the weaker model NeoDevEx stays level with Devin: docs 54.0% vs 52.3%, Q&A 71.7% vs 71.3%, Q&A false claims 17.3% vs 22.7%.",
+  "Speed: qwen3 generation took 44.1 min for three wikis on one GPU vs 24.9 min for the slowest Gemini repo; Q&A answered all 75 questions in 5.8 min."
+ ],
+ "infrastructure_issues_not_counted_as_model_failures": [
+  "The vendored KT service's OpenAI-compatible providers (litellm, openai) do not work with the locked adalflow 1.1.3: api/clients/litellm.py passes chat_completion_parser / env_base_url_name, which adalflow 1.1.3's OpenAIClient no longer accepts, and that client only speaks the Responses API. No vendored file was edited; the qwen3 service was started through a launcher that swaps in a plain Chat Completions client for provider 'litellm' at runtime.",
+  "The litellm chat streamer records no token usage, so token counts come from a metering proxy in front of vLLM, not from the service's own usage meter (the cache files' usage.total_cost_usd shows only the embedding estimate).",
+  "Runpod's HTTP proxy returns 524 on any response silent for ~100 s, so non-streamed long generations fail; the proxy streams from vLLM and buffers.",
+  "One pod outage of ~337 s during generation, waited out; affected calls were re-sent.",
+  "The vendored deepwiki .venv used by bench/run.sh no longer exists; a fresh venv was built from poetry.lock versions (same answer.py, same prompts)."
+ ],
+ "grading_notes": [
+  "Grader agreement on the qwen3 packets: 92.0% (docs) and 94.0% (Q&A); the same calculation on the published v3 packets gives 92.7% and 96.0%.",
+  "One grader wrote the verdict 'c' twice (hono-04 X, hono-23 X in hono.wiki-qwen3.graded-b.json); normalised to 'correct', matching that grader's own reported counts."
+ ],
+ "files": {
+  "wikis": "case-studies/kt/.work/ours-qwen3/<repo>.md and .json",
+  "answers": "case-studies/kt/.work/answers/<repo>.neodevex-qwen3.{wiki,ask}.json",
+  "grading": "case-studies/kt/.work/grading/<repo>.{wiki,ask}-qwen3.{packet,key,graded,graded-b}.json and <repo>.cites-qwen3.{packet,key,graded}.json",
+  "metrics": "case-studies/kt/.work/metrics/<repo>.neodevex-qwen3.json and .cite_sample.json; case-studies/kt/.work/mermaid-qwen3.json",
+  "per_call_log": "case-studies/kt/.work/qwen3-calls.jsonl (phase, repo, kind, seconds, tokens, finish_reason; no prompt text)",
+  "scorer": "case-studies/kt/bench/qwen3_results.py",
+  "harness_change": "case-studies/kt/bench/answer.py: KT_ASK_PROVIDER / KT_ASK_MODEL env overrides (defaults unchanged: google / gemini-2.5-pro)"
+ },
+ "citations_semantic_qwen3": {
+  "neodevex-qwen3": {
+   "supported_pct": 80.0,
+   "unsupported_pct": 2.5,
+   "n": 120,
+   "per_repo_supported_pct": {
+    "ky": 70.0,
+    "flask": 82.5,
+    "hono": 87.5
+   }
+  },
+  "devin_same_packets": {
+   "supported_pct": 55.8,
+   "unsupported_pct": 24.2,
+   "n": 120
+  },
+  "published": {
+   "neodevex-v3": {
+    "supported_pct": 70.8,
+    "unsupported_pct": 0.8
+   },
+   "devin": {
+    "supported_pct": 55.0,
+    "unsupported_pct": 22.5
+   }
+  },
+  "note": "Single blind verifier, as in the published study. Partial verdicts count as not supported."
+ }
+}

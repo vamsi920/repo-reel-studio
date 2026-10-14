@@ -16,5 +16,11 @@
     "title": "Token costs vs Devin",
     "state": "Published",
     "summary": "154 real agent runs on Gemini 2.5 Flash, tokens as reported by the provider. The Layman integration as shipped saved 0 tokens on a fresh install; moved to where tokens go (skills index, automation contract), the same tasks use 36% fewer tokens and cost 35% less with the same pass rate (17/20 vs 16/20). Same triage task: Devin $0.22, NeoDevEx $0.017."
+  },
+  {
+    "href": "selfhosted/",
+    "title": "Self-hosted model vs frontier",
+    "state": "Published",
+    "summary": "Four studies re-run on one rented GPU ($1.69/h) serving open-weight Qwen3-Coder-Next instead of Gemini: $4.80 billed, at least $10 less than what Gemini charged in the original runs, almost all of it in the KT docs study. Best chat test score yet (93% vs 81%) and 14/15 token-bench tasks, but weaker explanations (74% vs 83%), KT Q&A level with Devin rather than Gemini, 8/10 automations with two pushes to main, and about 4x slower."
   }
 ]

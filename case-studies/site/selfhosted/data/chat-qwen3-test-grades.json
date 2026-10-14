@@ -1,0 +1,167 @@
+[
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      true,
+      false
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 0,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 1,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 2,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "qwen3-coder-next",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  }
+]

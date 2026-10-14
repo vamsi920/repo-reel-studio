@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-hosted model vs frontier</title>
+<meta name="description" content="We ran four NeoDevEx case studies again on one rented GPU serving an open-weight coding model (Qwen3-Coder-Next on vLLM) instead of Gemini. Quality, speed and cost, study by study, with the failures included.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .sc-row.five { grid-template-columns: minmax(170px, 1.2fr) repeat(3, minmax(110px, 1fr)) minmax(110px, 0.8fr); }
+  .sc-row .cellnote { font: 400 0.9rem/1.45 var(--body); }
+  .sc-row .cellnote b { font: 600 0.82rem var(--display); display: block; margin-bottom: 2px; }
+  .pass { color: var(--v-correct); }
+  .fail { color: var(--v-wrong); }
+  .part { color: var(--v-partial); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .incidents { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .incidents li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+  .incidents li .tag { font: 600 0.72rem var(--mono); margin-right: 8px; }
+  .incidents li .tag.fixed { color: var(--v-correct); }
+  .incidents li .tag.open { color: var(--v-wrong); }
+  table.money { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  table.money th, table.money td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+  table.money td.n { font: 600 0.92rem var(--mono); text-align: right; }
+  table.money th.n { text-align: right; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 860px) {
+    .sc-row.five { grid-template-columns: 1fr 1fr; }
+    .sc-row.five .sc-metric, .sc-row.five .sc-call { grid-column: 1 / -1; }
+    .stat-strip { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) { .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#studies">Study by study</a><a href="#money">Cost</a><a href="#failures">What went wrong</a><a href="#method">Method</a><a href="#data">Data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <p class="eyebrow">Module 04 · Self-hosted model · 2026-10-13</p>
+    <h1>We ran our case studies again on one rented GPU, <em>with no frontier model in the agent's seat.</em></h1>
+    <p class="lede">Every earlier study ran NeoDevEx on Google's Gemini models, billed per token. This time the agent ran on Qwen3-Coder-Next, an open-weight (Apache-2.0) coding model, served by vLLM on one RTX PRO 6000 GPU rented from Runpod for $1.69 an hour. We changed nothing else: same tasks, same app settings, same graders, and the same Gemini or Claude judges where the original studies used them. The result is mixed, and we report it that way. On a flat-rate GPU the four studies cost about $4 in total. Against what Gemini actually charged in the original runs that saves at least $10, almost all of it in the KT docs study; for chat and the token benchmark the two roughly break even. The same tokens at Gemini list prices with no caching would have cost $23 (2.5 Flash) to $146 (4 Argon), but Gemini uses far fewer tokens and caches, so that is an upper bound. The self-hosted model wrote the best tests NeoDevEx has scored, and it passed more token-bench tasks than Gemini on the same settings. It was weaker at explaining code and writing docs, much slower, and in automations it twice pushed straight to <code>main</code> and once created a GitHub repository nobody asked for.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>~$4</b><span>GPU bill for all four studies, the first model download included</span></div>
+      <div class="stat"><b>≥ $10</b><span>saved against what Gemini actually charged in the original runs ($14.67 on Flash for the studies we could measure, vs $4.80 billed)</span></div>
+      <div class="stat"><b>93%</b><span>chat test score, our best yet (Gemini 2.5 Flash 81%, Devin 100%)</span></div>
+      <div class="stat"><b>3.8×</b><span>slower per chat task than Gemini 2.5 Flash (334 s vs 88 s)</span></div>
+    </div>
+  </section>
+
+  <section id="studies" aria-labelledby="studies-h">
+    <h2 id="studies-h">Study by study</h2>
+    <p class="section-lede">"Gemini" is the best published NeoDevEx result for that study, on the model it used (2.5 Flash for chat and tokens; 2.5 Flash with Pro for one automation; the v3 KT pipeline). Devin figures are from the original studies. Qwen figures are from today's re-runs.</p>
+    <div class="scorecard" role="table" aria-label="Results per study">
+      <div class="sc-row five head" role="row"><span class="sc-metric" role="columnheader">Study</span><span role="columnheader">Self-hosted Qwen</span><span role="columnheader">NeoDevEx on Gemini</span><span role="columnheader">Devin</span><span role="columnheader">Call</span></div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell"><a href="../chat/">Chat agent</a>: write tests that catch planted bugs<small>3 tasks × 3 runs on flask, hono, ky. Score = planted bugs caught out of 3, or 0 if the test fails on the real code.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">93%</b>9 of 9 tests pass on the real code; 25 of 27 planted bugs caught. No file touched outside the request.</span>
+        <span class="cellnote" role="cell"><b class="part">81%</b>8 of 9 tests pass on the real code.</span>
+        <span class="cellnote" role="cell"><b class="pass">100%</b>2 tasks.</span>
+        <span class="sc-call win" role="cell">Qwen ahead of Gemini</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell"><a href="../chat/">Chat agent</a>: explain how the code works<small>3 questions × 3 runs, blind checklist judge (Gemini 2.5 Pro), unchanged from the original study.</small></span>
+        <span class="cellnote" role="cell"><b class="part">74%</b>Strong on hono (88%) and ky (80%). One Flask run stopped after a single call and scored 0; the other two scored 94% and 69%.</span>
+        <span class="cellnote" role="cell"><b class="pass">83%</b></span>
+        <span class="cellnote" role="cell"><b class="pass">94%</b></span>
+        <span class="sc-call lose" role="cell">Gemini ahead</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">Token benchmark<small>5 agent tasks × 3 runs on the automation-bench fixture, with the app's own settings and success checks.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">14 / 15</b>The harness passed all 15; we audited one T2 pass as wrong. 180k tokens and 11.5 calls a run.</span>
+        <span class="cellnote" role="cell"><b class="part">13 / 20</b>Same settings: 121k tokens, 7.6 calls. Best Gemini setup ("lean"): 17 / 20.</span>
+        <span class="cellnote" role="cell"><b>–</b>Not run.</span>
+        <span class="sc-call win" role="cell">Qwen ahead, 1.5× tokens</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell"><a href="../automations/">Automations</a><small>10 scheduled, event, webhook and chat-created automations on a real GitHub repository, judged by the suite's checks.</small></span>
+        <span class="cellnote" role="cell"><b class="part">8 / 10</b>7 / 10 if a "reply, then stop" task that also pushed a fix to <code>main</code> counts as a fail. Often better analysis than Flash, but it overreached.</span>
+        <span class="cellnote" role="cell"><b class="pass">10 / 10</b></span>
+        <span class="cellnote" role="cell"><b class="part">7 / 10</b></span>
+        <span class="sc-call lose" role="cell">Gemini ahead</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell"><a href="../kt/">Knowledge Transfer docs</a>: repository Q&amp;A<small>75 code-verified questions on ky, flask, hono; two blind graders, unchanged.</small></span>
+        <span class="cellnote" role="cell"><b class="part">71.7%</b>17.3% of answers made a false claim. Answers were short and sometimes contradicted the code they quoted.</span>
+        <span class="cellnote" role="cell"><b class="pass">81.3%</b>2.7% false claims.</span>
+        <span class="cellnote" role="cell"><b class="part">71.3%</b>22.7% false claims.</span>
+        <span class="sc-call tie" role="cell">Level with Devin, behind Gemini</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell"><a href="../kt/">Knowledge Transfer docs</a>: reading the docs alone<small>A neutral reader (Gemini 2.5 Flash) answers the same questions from the generated wiki only.</small></span>
+        <span class="cellnote" role="cell"><b class="part">54.0%</b>Citations backed their claim 80% of the time, the best of the three. Five pages hit the output limit in repetition loops.</span>
+        <span class="cellnote" role="cell"><b class="pass">62.7%</b>70.8% of citations backed their claim.</span>
+        <span class="cellnote" role="cell"><b class="part">52.3%</b>55.0% of citations backed their claim.</span>
+        <span class="sc-call tie" role="cell">Level with Devin, behind Gemini</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="money" aria-labelledby="money-h">
+    <h2 id="money-h">What it cost, GPU by the hour against Gemini by the token</h2>
+    <p class="section-lede">The two sides are billed differently, so comparing them takes three steps: turn the GPU's hourly price into a price per token and per task using the throughput we measured, check how busy the GPU has to be to win, and put it next to what Gemini actually charged in the original runs. Token counts come from the model server for every call. Gemini prices are Google's paid list prices on 2026-10-13 (the table in our chat study's summarize.py).</p>
+
+    <h3>How each side is billed</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th></th><th>Self-hosted Qwen on Runpod</th><th>Gemini 2.5 Flash</th><th>Gemini 4 Argon</th></tr></thead>
+      <tbody>
+        <tr><td>Price model</td><td>$1.69 per GPU-hour, flat, busy or idle</td><td>per token</td><td>per token</td></tr>
+        <tr><td>Input / output per 1M tokens</td><td>no per-token price</td><td>$0.30 / $2.50</td><td>$2.00 / $10.00</td></tr>
+        <tr><td>Cached input per 1M tokens</td><td>not reported by the server</td><td>$0.03</td><td>$0.10</td></tr>
+        <tr><td>Fixed costs</td><td>about 6 minutes of model load per start ($0.17), disk about $1 a day while stopped; the pod stops itself after an hour</td><td>none</td><td>none</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Price per 1M tokens, over all four studies</h3>
+    <p>68.2M input and 0.96M output tokens, 69.1M in total, against a $4.00 GPU bill.</p>
+    <div class="scroll"><table class="money">
+      <thead><tr><th></th><th class="n">$ per 1M tokens</th><th class="n">Compared with Qwen all-in</th></tr></thead>
+      <tbody>
+        <tr><td>Qwen, all-in ($4.00 of GPU time)</td><td class="n">$0.058</td><td class="n">1×</td></tr>
+        <tr><td>Qwen, without the 46 minutes of model loading ($2.70)</td><td class="n">$0.039</td><td class="n">0.7×</td></tr>
+        <tr><td>Gemini 2.5 Flash, uncached</td><td class="n">$0.33</td><td class="n">5.7× dearer</td></tr>
+        <tr><td>Gemini 2.5 Flash, 62% of input cached</td><td class="n">$0.17</td><td class="n">2.9× dearer</td></tr>
+        <tr><td>Gemini 4 Argon, uncached</td><td class="n">$2.11</td><td class="n">36× dearer</td></tr>
+        <tr><td>Gemini 4 Argon, 62% of input cached</td><td class="n">$0.95</td><td class="n">16× dearer</td></tr>
+      </tbody>
+    </table></div>
+    <p>62% is the share of input Gemini actually read from cache in the chat and token studies. Per token, the flat-rate GPU is far cheaper.</p>
+
+    <h3>Price per chat task, which is what you pay for in practice</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th></th><th class="n">$ per task</th><th class="n">Tokens per task</th><th class="n">Explain score</th><th class="n">Test score</th></tr></thead>
+      <tbody>
+        <tr><td>Qwen, as billed (GPU bill share ÷ 18 tasks)</td><td class="n">$0.09</td><td class="n">2.24M</td><td class="n">74%</td><td class="n">93%</td></tr>
+        <tr><td>Qwen, GPU fully busy at 3 tasks at once</td><td class="n">$0.052</td><td class="n">2.24M</td><td class="n">74%</td><td class="n">93%</td></tr>
+        <tr><td>Gemini 2.5 Flash (rules v4)</td><td class="n">$0.06</td><td class="n">0.41M</td><td class="n">83%</td><td class="n">81%</td></tr>
+        <tr><td>Gemini 4 Argon (rules v5)</td><td class="n">$0.21</td><td class="n">not measured</td><td class="n">98%</td><td class="n">18 of 18 pass</td></tr>
+        <tr><td>Devin</td><td class="n">$0.38</td><td class="n">–</td><td class="n">94%</td><td class="n">2 of 2 pass</td></tr>
+      </tbody>
+    </table></div>
+    <p>Qwen uses 5.4 times as many tokens per chat task as Gemini Flash, so most of its per-token advantage goes on extra tokens. Against Flash it roughly breaks even. Against Argon it is about two times cheaper, with lower accuracy.</p>
+
+    <h3>How busy the GPU has to be to win</h3>
+    <p>At 3 chat tasks at once Qwen finishes about 32 tasks an hour, so a fully busy GPU costs $0.052 a task.</p>
+    <div class="scroll"><table class="money">
+      <thead><tr><th>Compared with</th><th class="n">Utilization needed for Qwen to be cheaper</th></tr></thead>
+      <tbody>
+        <tr><td>Gemini 2.5 Flash ($0.06 a task)</td><td class="n">87%</td></tr>
+        <tr><td>Gemini 4 Argon ($0.21 a task)</td><td class="n">25%</td></tr>
+        <tr><td>Devin ($0.38 a task)</td><td class="n">14%</td></tr>
+      </tbody>
+    </table></div>
+    <p>Run flat out for a month, the GPU would cost about $1,235 (730 hours) and finish about 23,600 chat tasks. Gemini Flash would charge about $1,420 for the same tasks and Argon about $4,970. An idle hour still costs $1.69, so these savings hold only with steady use. We measured 3 tasks at once; vLLM could batch more, which would lower the cost per task, but we did not test it.</p>
+
+    <h3>Against what Gemini actually charged in the original studies</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th>Study</th><th class="n">Qwen, GPU time used</th><th class="n">Gemini 2.5 Flash, actual</th><th class="n">Gemini 4 Argon, actual</th></tr></thead>
+      <tbody>
+        <tr><td>Chat agent (18 runs)</td><td class="n">~$1.60</td><td class="n">$1.08</td><td class="n">$3.78</td></tr>
+        <tr><td>Token benchmark (15 runs)</td><td class="n">~$0.25</td><td class="n">$0.32</td><td class="n">not measured</td></tr>
+        <tr><td>Automations (11 runs)</td><td class="n">~$1.00</td><td class="n">not measured</td><td class="n">not measured</td></tr>
+        <tr><td>KT docs (3 wikis + 75 Q&amp;A)</td><td class="n">~$1.47</td><td class="n">$13.27</td><td class="n">$13.27</td></tr>
+        <tr><td><b>Studies with a measured Gemini cost</b></td><td class="n">~$3.30</td><td class="n"><b>$14.67</b></td><td class="n"><b>$17.05 or more</b></td></tr>
+        <tr><td><b>Total billed for Qwen, all four studies</b></td><td class="n" colspan="3"><b>$4.80</b>: $2.70 GPU busy, $1.30 model loading, $0.80 disk</td></tr>
+      </tbody>
+    </table></div>
+    <p>The per-study GPU shares overlap because the studies ran at the same time on one GPU, so they add up to more than the time actually billed. Measured Gemini costs alone come to at least $14.67 on Flash and at least $17.05 on Argon, against $4.80 billed for Qwen, so the saving is <b>at least $10 against Flash and at least $12 against Argon</b>. Almost all of it comes from the KT docs study, where Gemini cost $13.27 and Qwen about $1.47. For chat and the token benchmark the two roughly break even. The GPU stopped itself after an hour of uptime each time, so an idle GPU could not keep billing; the disk keeps billing at about $1 a day until the pod is deleted.</p>
+  </section>
+
+  <section id="failures" aria-labelledby="failures-h">
+    <h2 id="failures-h">What went wrong</h2>
+    <ul class="incidents">
+      <li><span class="tag open">AUTOMATIONS</span>Told to work in a repository that does not exist, the agent deleted its clone's <code>.git</code>, ran <code>gh repo create</code> and made the repository instead of reporting the error. Gemini and Devin both reported it.</li>
+      <li><span class="tag open">AUTOMATIONS</span>Twice it pushed commits straight to <code>main</code> instead of opening a pull request: the changelog task, and an issue reply that was meant to stop after replying. It also opened two fix PRs nobody asked for.</li>
+      <li><span class="tag open">AUTOMATIONS</span>Two runs left out the final <code>RESULT:</code> line the delivery contract asks for, so the app would show them as unverified. One PR body lost "$50" to shell expansion and read "exactly 0".</li>
+      <li><span class="tag open">KT DOCS</span>Five pages ran into the 32k-token output limit in repetition loops; one ky page is 16.5k words, mostly four bullets repeated.</li>
+      <li><span class="tag open">KT DOCS</span>Q&amp;A answers averaged 112–187 words against Gemini's 276–359, and some stated the opposite of the code they quoted (the order of Flask's error-handler lookup).</li>
+      <li><span class="tag open">CHAT</span>One Flask explain run ended after a single call: the model handed the work to a sub-agent and never got a usable result back, so it answered nothing.</li>
+      <li><span class="tag open">ALL</span>The model often calls tools by names from its own training (<code>rg</code>, <code>read</code>, <code>cat</code>, <code>write</code>). The agent rejects the call and the model corrects itself on the next turn, which costs a call each time.</li>
+      <li><span class="tag fixed">CHAT</span>Where it did well: it read the code before answering, re-ran its own tests, and never edited a file outside the one it was asked to write.</li>
+      <li><span class="tag fixed">AUTOMATIONS</span>Where it did well: an exact triage fix (<code>item.quantity ?? 1</code>) that Gemini 2.5 Flash got wrong four times out of four, and a PR review backed by a real reproduction (expected 900, got 1000), which before only Gemini 2.5 Pro did.</li>
+    </ul>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <p>Model: RedHatAI/Qwen3-Coder-Next-NVFP4 (Apache-2.0, 4-bit weights) on vLLM 0.30.0 with native tool calling and a 128k context, on one RTX PRO 6000 Blackwell (96 GB) in Runpod Community Cloud. The endpoint is OpenAI-compatible and locked with an API key. NeoDevEx reaches it through an ordinary saved LLM profile, the same way it reaches Gemini.</p>
+    <p>Only the model under test changed. Each study ran its own harness unchanged, with a small wrapper that pointed the agent at the self-hosted endpoint and switched off provider features vLLM does not serve (prompt-cache flags, reasoning effort). Graders, judges, checklists, mutation tests and the KT neutral reader stayed on the models the original studies used. In the KT study, embeddings and search stayed on Gemini because the pod serves no embedding model. Runs cut off by the pod's hourly restart were re-run and not counted as model failures. Automations ran on a separate, isolated copy of the app. Each automation ran once; chat and token tasks ran three times each.</p>
+    <p>Not covered: the onboarding study, which was running on the same machine for another model at the time.</p>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul>
+      <li><a href="data/chat-qwen3-summary.json">Chat agent: summary</a>, <a href="data/chat-qwen3-judge-grades.jsonl">explain grades</a>, <a href="data/chat-qwen3-test-grades.json">test grades</a></li>
+      <li><a href="data/tokens-qwen3-summary.json">Token benchmark: per-task and overall</a></li>
+      <li><a href="data/automations-qwen3-results.json">Automations: per scenario, with GitHub side effects</a></li>
+      <li><a href="data/kt-qwen3-results.json">KT docs: per repository, usage and findings</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

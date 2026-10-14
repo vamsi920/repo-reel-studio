@@ -25,6 +25,9 @@ import devin_mcp
 W = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".work")
 REPOS = {"ky": ("sindresorhus", "ky"), "flask": ("pallets", "flask"), "hono": ("honojs", "hono")}
 DW_URL = os.environ.get("DW_URL", "http://localhost:8011")
+# The system under test for `ask` (defaults: the published Gemini runs).
+ASK_PROVIDER = os.environ.get("KT_ASK_PROVIDER", "google")
+ASK_MODEL = os.environ.get("KT_ASK_MODEL", "gemini-2.5-pro")
 READER_MODEL = "gemini-2.5-flash"
 READER_PROMPT = """You are a new engineer onboarding to a codebase. You have ONLY the documentation below.
 Answer the question using ONLY this documentation. Do not use prior knowledge of the project.
@@ -70,8 +73,8 @@ def devin_ask(owner, repo, q):
 
 def ours_ask(owner, repo, q):
     body = json.dumps({
-        "repo_url": f"https://github.com/{owner}/{repo}", "type": "github", "provider": "google",
-        "model": "gemini-2.5-pro", "messages": [{"role": "user", "content": q}],
+        "repo_url": f"https://github.com/{owner}/{repo}", "type": "github", "provider": ASK_PROVIDER,
+        "model": ASK_MODEL, "messages": [{"role": "user", "content": q}],
     }).encode()
     err = None
     for _ in range(3):
