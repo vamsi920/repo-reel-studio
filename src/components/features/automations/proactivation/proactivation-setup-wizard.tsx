@@ -165,8 +165,12 @@ export function ProactivationSetupWizard({
   // the dropdown would list nothing and the wizard could never be completed
   // -- fall back to typing owner/repo, exactly as `manifest-form-field.tsx`
   // does for repo-picker.
+  // A local connection only lists GitHub repositories, so another provider
+  // falls back to typing owner/repo instead of an empty dropdown (#38).
+  const isCloudBackend = useActiveBackend().backend.kind === "cloud";
   const canListRepositories =
-    useActiveBackend().backend.kind === "cloud" || isLocalGithubConnected();
+    isCloudBackend ||
+    (selectedProvider === "github" && isLocalGithubConnected());
   const [manualRepo, setManualRepo] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<GitRepository[]>([]);
   const [watchAreas, setWatchAreas] = useState<Set<ProactivationWatchArea>>(
