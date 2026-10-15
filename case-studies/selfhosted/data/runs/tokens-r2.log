@@ -1,0 +1,175 @@
+[10/15/26 12:45:18] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/15/26 12:45:18] INFO     Created new conversation               state.py:577
+                             8b5c2817-5c28-496b-99ad-0c27873b2a06               
+[10/15/26 12:45:18] INFO     Registered file-based agent         registry.py:328
+                             'neo-explorer' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             explorer.md                                        
+[10/15/26 12:45:18] INFO     Registered file-based agent         registry.py:328
+                             'neo-implementer' from                             
+                             /Users/vamsi/.openhands/agents/neo-                
+                             implementer.md                                     
+[10/15/26 12:45:18] INFO     Registered file-based agent         registry.py:328
+                             'neo-planner' from                                 
+                             /Users/vamsi/.openhands/agents/neo-                
+                             planner.md                                         
+[10/15/26 12:45:18] INFO     Registered file-based agent         registry.py:328
+                             'neo-researcher' from                              
+                             /Users/vamsi/.openhands/agents/neo-                
+                             researcher.md                                      
+[10/15/26 12:45:18] INFO     Registered file-based agent         registry.py:328
+                             'neo-verifier' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             verifier.md                                        
+[10/15/26 12:45:18] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/15/26 12:45:18] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/token-bench-yp230miq                   
+[10/15/26 12:45:18] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/15/26 12:45:18] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/15/26 12:45:19] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/token-bench-yp230miq,                    
+                             username: None, terminal_type:                     
+                             TerminalSession                                    
+[10/15/26 12:45:19] INFO     Loaded 4 tools from spec                base.py:563
+[10/15/26 12:45:19] INFO     Skill 'npm' triggered by       agent_context.py:539
+                             keyword 'npm'                                      
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/sdk/llm/utils/telemetry.py:291: UserWarning: Cost calculation failed: This model isn't mapped yet. model=deepseek-v4-flash, custom_llm_provider=openai. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+  warnings.warn(f"Cost calculation failed: {e}")
+T1 dsv4f rep2 calls=6 in=86331 out=1678 237.8s err=
+[10/15/26 12:49:17] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/15/26 12:49:17] INFO     Created new conversation               state.py:577
+                             8ff2fd56-7f24-4a62-b5eb-36b2caa0c8d2               
+[10/15/26 12:49:17] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/15/26 12:49:17] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/token-bench-hchxro67                   
+[10/15/26 12:49:17] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/15/26 12:49:17] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/15/26 12:49:18] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/token-bench-hchxro67,                    
+                             username: None, terminal_type:                     
+                             TerminalSession                                    
+[10/15/26 12:49:18] INFO     Loaded 4 tools from spec                base.py:563
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/sdk/llm/utils/telemetry.py:291: UserWarning: Cost calculation failed: This model isn't mapped yet. model=deepseek-v4-flash, custom_llm_provider=openai. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+  warnings.warn(f"Cost calculation failed: {e}")
+T2 dsv4f rep2 calls=7 in=92579 out=3358 94.5s err=
+[10/15/26 12:50:52] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/15/26 12:50:52] INFO     Created new conversation               state.py:577
+                             16bc3812-3e75-4a11-aab7-c2f9b605bf83               
+[10/15/26 12:50:52] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/15/26 12:50:52] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/token-bench-izfmo8q8                   
+[10/15/26 12:50:52] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/15/26 12:50:52] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/15/26 12:50:53] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/token-bench-izfmo8q8,                    
+                             username: None, terminal_type:                     
+                             TerminalSession                                    
+[10/15/26 12:50:53] INFO     Loaded 4 tools from spec                base.py:563
+[10/15/26 12:50:53] INFO     Skill 'github' triggered by    agent_context.py:539
+                             keyword 'github'                                   
+[10/15/26 12:50:53] INFO     Skill 'security' triggered by  agent_context.py:539
+                             keyword 'authorization'                            
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/sdk/llm/utils/telemetry.py:291: UserWarning: Cost calculation failed: This model isn't mapped yet. model=deepseek-v4-flash, custom_llm_provider=openai. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+  warnings.warn(f"Cost calculation failed: {e}")
+T3 dsv4f rep2 calls=31 in=703780 out=12781 333.5s err=
+[10/15/26 12:56:26] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/15/26 12:56:26] INFO     Created new conversation               state.py:577
+                             5e9f14b5-3f66-42c6-9436-9d78fc42c907               
+[10/15/26 12:56:26] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/15/26 12:56:26] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/token-bench-ui_t0uex                   
+[10/15/26 12:56:26] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/15/26 12:56:26] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/15/26 12:56:27] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/token-bench-ui_t0uex,                    
+                             username: None, terminal_type:                     
+                             TerminalSession                                    
+[10/15/26 12:56:27] INFO     Loaded 4 tools from spec                base.py:563
+[10/15/26 12:56:27] INFO     Skill 'github' triggered by    agent_context.py:539
+                             keyword 'github'                                   
+[10/15/26 12:56:27] INFO     Skill 'security' triggered by  agent_context.py:539
+                             keyword 'authorization'                            
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/sdk/llm/utils/telemetry.py:291: UserWarning: Cost calculation failed: This model isn't mapped yet. model=deepseek-v4-flash, custom_llm_provider=openai. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+  warnings.warn(f"Cost calculation failed: {e}")
+T4 dsv4f rep2 calls=10 in=169943 out=3710 106.1s err=
+[10/15/26 12:58:13] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/15/26 12:58:13] INFO     Created new conversation               state.py:577
+                             1f8f92ef-fa29-4595-97ef-e53f80a16475               
+[10/15/26 12:58:13] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/15/26 12:58:13] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/token-bench-nwp3c9qv                   
+[10/15/26 12:58:13] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/15/26 12:58:13] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/15/26 12:58:14] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/token-bench-nwp3c9qv,                    
+                             username: None, terminal_type:                     
+                             TerminalSession                                    
+[10/15/26 12:58:14] INFO     Loaded 4 tools from spec                base.py:563
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/sdk/llm/utils/telemetry.py:291: UserWarning: Cost calculation failed: This model isn't mapped yet. model=deepseek-v4-flash, custom_llm_provider=openai. Add it here - https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json.
+  warnings.warn(f"Cost calculation failed: {e}")
+T5 dsv4f rep2 calls=8 in=121420 out=3464 86.9s err=

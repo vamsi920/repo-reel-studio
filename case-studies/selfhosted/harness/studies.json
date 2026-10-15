@@ -1,0 +1,44 @@
+{
+  "_note": "Sampling per study, applied by gateway.py. DeepSeek's model card recommends temperature 1.0 with top_p 0.95 for agentic use and top_p 1.0 otherwise. Measured on the served 0731 model: with no chat_template_kwargs it does a short reasoning pass by default (31-64 reasoning tokens on one-line questions); thinking=false turns reasoning off completely. chat-nothink forces it off, chat-think asks for high effort, the other studies use the model's default. max_tokens is only set when the harness sends none.",
+  "default": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 32768
+  },
+  "chat-nothink": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 32768,
+    "chat_template_kwargs": {
+      "thinking": false
+    }
+  },
+  "chat-think": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 65536,
+    "chat_template_kwargs": {
+      "thinking": true,
+      "reasoning_effort": "high"
+    }
+  },
+  "tokens": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 32768
+  },
+  "automations": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "max_tokens": 32768
+  },
+  "kt": {
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "max_tokens": 32768
+  },
+  "loadtest": {
+    "temperature": 1.0,
+    "top_p": 0.95
+  }
+}

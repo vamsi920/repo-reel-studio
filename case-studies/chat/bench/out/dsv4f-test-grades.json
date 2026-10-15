@@ -1,0 +1,87 @@
+{
+ "note": "Mutation grading with chat/bench/grade_tests.py on templates rebuilt at the pinned commits; validated by re-grading Qwen round-1 F2 r0 and H2 r0, which reproduced the published 2/3 and 2/3.",
+ "dsv4f-nothink": [
+  {
+   "task": "F2",
+   "rep": 0,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "task": "F2",
+   "rep": 1,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "task": "F2",
+   "rep": 2,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "task": "H2",
+   "rep": 2,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    true
+   ]
+  }
+ ],
+ "dsv4f-think": [
+  {
+   "task": "F2",
+   "rep": 0,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "task": "F2",
+   "rep": 1,
+   "passes_on_real_code": true,
+   "killed": [
+    true,
+    true,
+    true
+   ]
+  }
+ ],
+ "explain_judge": {
+  "dsv4f-nothink": {
+   "F1": [
+    0.94,
+    1.0,
+    1.0
+   ],
+   "H1": [
+    1.0,
+    0.86
+   ]
+  },
+  "dsv4f-think": {
+   "F1": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ }
+}

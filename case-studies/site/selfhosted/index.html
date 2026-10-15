@@ -43,7 +43,7 @@
 <header class="masthead">
   <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
   <nav aria-label="Sections">
-    <a href="#studies">Study by study</a><a href="#money">Cost</a><a href="#failures">What went wrong</a><a href="#method">Method</a><a href="#data">Data</a>
+    <a href="#round2">Round 2</a><a href="#studies">Study by study</a><a href="#money">Cost</a><a href="#failures">What went wrong</a><a href="#method">Method</a><a href="#data">Data</a>
   </nav>
 </header>
 
@@ -58,6 +58,68 @@
       <div class="stat"><b>93%</b><span>chat test score, our best yet (Gemini 2.5 Flash 81%, Devin 100%)</span></div>
       <div class="stat"><b>3.8×</b><span>slower per chat task than Gemini 2.5 Flash (334 s vs 88 s)</span></div>
     </div>
+  </section>
+
+
+  <section id="round2" aria-labelledby="round2-h">
+    <h2 id="round2-h">Round 2: DeepSeek V4 Flash on two H200 GPUs (2026-10-15)</h2>
+    <p class="section-lede">We moved up to a much larger open model: DeepSeek-V4-Flash-0731 (MIT licence, 284B parameters, 13B active per token), served by vLLM 0.30.0 on 2&times; H200 from Runpod at $10.58 an hour. The tasks, app settings and graders are the same as round 1. Chat and the token benchmark ran in full or in part. Automations and KT docs did not finish, so we publish no score for them. The model was the most accurate self-hosted agent we have tested, but at this GPU price it only beats Gemini if the GPUs are kept busy.</p>
+    <div class="stat-strip" aria-label="Round 2 headline numbers">
+      <div class="stat"><b>96&ndash;100%</b><span>explain score (Flash 83%, Argon 98%, Qwen 74%)</span></div>
+      <div class="stat"><b>17 / 18</b><span>planted bugs caught by its tests, 94% (Flash 81%, Qwen 93%)</span></div>
+      <div class="stat"><b>15 / 15</b><span>token-bench tasks passed (Gemini 13&ndash;17 of 20, Qwen 14 of 15)</span></div>
+      <div class="stat"><b>~$29</b><span>GPU bill for the round, $8.55 of it doing study work</span></div>
+    </div>
+
+    <h3>Quality</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th>Study</th><th>DeepSeek V4 Flash</th><th>Qwen (round 1)</th><th>Gemini 2.5 Flash</th><th>Gemini 4 Argon</th><th>Devin</th></tr></thead>
+      <tbody>
+        <tr><td>Chat: explain code (blind Gemini 2.5 Pro judge)</td><td>96% without thinking (5 runs: flask 98%, hono 93%); 100% with high thinking (3 flask runs)</td><td>74%</td><td>83%</td><td>98%</td><td>94%</td></tr>
+        <tr><td>Chat: write tests (planted bugs caught, mutation graded)</td><td>94%: all 6 tests pass on the real code; 11 of 12 bugs caught without thinking, 6 of 6 with</td><td>93%</td><td>81%</td><td>18 of 18 pass</td><td>100%</td></tr>
+        <tr><td>Token benchmark (5 tasks &times; 3 runs, app's own checks)</td><td>15 / 15; the T2 answers were checked by hand</td><td>14 / 15</td><td>13 / 20 same settings, 17 / 20 best</td><td>&ndash;</td><td>&ndash;</td></tr>
+        <tr><td>Automations, KT docs</td><td>Did not finish (111 and 24 model calls made); no score</td><td>8 / 10, 71.7%</td><td>10 / 10, 81.3%</td><td>&ndash;</td><td>7 / 10, 71.3%</td></tr>
+      </tbody>
+    </table></div>
+    <p>Coverage is partial. The chat runs that finished are flask and hono only, 14 of the planned 36. ky (K1, K2) and some reps never ran. The score ranges above are therefore less certain than round 1's.</p>
+
+    <h3>Speed and tokens</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th></th><th>DeepSeek V4 Flash</th><th>Qwen (round 1)</th><th>Gemini 2.5 Flash</th></tr></thead>
+      <tbody>
+        <tr><td>Chat task, median wall time</td><td class="n">209 s (no thinking), 428 s (thinking)</td><td class="n">334 s</td><td class="n">88 s</td></tr>
+        <tr><td>Chat task, tokens (calls)</td><td class="n">584k (25), 796k (32) with thinking</td><td class="n">2.24M</td><td class="n">0.41M</td></tr>
+        <tr><td>Token-bench task, tokens / calls / median time</td><td class="n">213k / 11.3 / 115 s</td><td class="n">180k / 11.5 / 46 s</td><td class="n">121k / 7.6 / 33 s</td></tr>
+        <tr><td>Input served from prefix cache</td><td class="n">68&ndash;93%</td><td class="n">not reported</td><td class="n">62%</td></tr>
+        <tr><td>Time to first token, median</td><td class="n">1.6 s (11.8k-token prompt)</td><td></td><td></td></tr>
+        <tr><td>Output speed per request</td><td class="n">108 tok/s alone, ~50 tok/s while the studies shared the GPUs</td><td></td><td></td></tr>
+      </tbody>
+    </table></div>
+    <p>Serving sweep with the real 11.8k-token first request and 512 output tokens: 80, 158, 258, 550, 808 and 1,474 output tok/s at 1, 2, 4, 8, 16 and 32 requests at once, with zero errors. At those rates the GPUs cost $37.0, $18.6, $11.4, $5.3, $3.6 and $2.0 per 1M output tokens. Cold prefill ran at about 6k tok/s and long prompts at about 11.6k tok/s (112k tokens in 9.6 s). The KV cache held 1.5M tokens.</p>
+
+    <h3>Cost per task, three ways</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th>$ per task</th><th>Chat, no thinking</th><th>Chat, thinking</th><th>Token-bench task</th></tr></thead>
+      <tbody>
+        <tr><td>GPU as we ran it (the $8.55 of study time split by token share, ~$0.41 per 1M tokens)</td><td class="n">$0.24</td><td class="n">$0.33</td><td class="n">$0.087</td></tr>
+        <tr><td>GPU kept fully busy (estimated from the sweep: 32 requests at once, decode plus uncached prefill)</td><td class="n">~$0.034</td><td class="n">~$0.041</td><td class="n">~$0.022</td></tr>
+        <tr><td>Same tokens on DeepSeek's own API ($0.14 in / $0.28 out per 1M, no cache discount)</td><td class="n">$0.083</td><td class="n">$0.11</td><td class="n">$0.030</td></tr>
+        <tr><td>Gemini 2.5 Flash, measured in its own runs</td><td class="n" colspan="2">$0.06 (83% explain, 81% tests)</td><td class="n">~$0.02</td></tr>
+        <tr><td>Gemini 4 Argon, measured</td><td class="n" colspan="2">$0.21 (98%, 18 of 18)</td><td class="n">&ndash;</td></tr>
+        <tr><td>Devin</td><td class="n" colspan="2">$0.38 (94%, 2 of 2)</td><td class="n">&ndash;</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>How busy the GPUs must be to win</b> (chat, no thinking, at ~$0.034 a task when fully busy): at least 57% of full load to beat Gemini Flash, 16% to beat Argon, and 9% to beat Devin. As we actually ran it (about 10 requests at once, $0.24 a task), it beat only Devin. A month flat out is about $7,720 (730 h) for roughly 230,000 chat tasks. Below about 40% load, DeepSeek's own API is cheaper than renting the GPUs.</p>
+    <p><b>Per 10,000 lines of tests written.</b> Each test task produced 64 lines on average (44&ndash;86). That works out to $37 per 10k lines as we ran it, about $5 fully busy, and $13 on DeepSeek's API.</p>
+
+    <h3>What it cost, and what went wrong</h3>
+    <ul class="incidents">
+      <li><span class="tag open">$5.38</span>Two failed pods before the working one. A mislabelled cu129 image had a CUDA 13.0 torch with CUDA 12.9 torchvision. Its startup errors were invisible until we saved the logs to the volume and served them over HTTP.</li>
+      <li><span class="tag fixed">$8.1</span>46 minutes from creating the working pod to the model serving: 167 GB download, then fixes for NCCL (<code>NCCL_NVLS_ENABLE=0</code>, <code>NCCL_CUMEM_ENABLE=0</code>), a CUDA 13 image on a 12.8 driver (<code>VLLM_ENABLE_CUDA_COMPATIBILITY=1</code>), and a 600 s engine start timeout.</li>
+      <li><span class="tag fixed">$8.55</span>48.5 minutes of study work: the serving sweep, 15 token-bench runs, 14 chat runs, and part of automations and KT.</li>
+      <li><span class="tag open">$6.9</span>39 minutes with the GPUs idle at the end. A script meant to run the remaining chat tasks in parallel re-read its own PID file in a loop and started hundreds of processes, the session ended, and the pod kept billing until we stopped it by hand. The 6-hour self-stop was too loose a safety net; next time the stop should trigger on gateway inactivity.</li>
+      <li><span class="tag open">open</span>Layouts we could not use: tensor parallel 3 (64 heads and 256 experts do not split by 3), pipeline parallel (vllm#52761), and the model's DSpark speculative decoding on H200 (vllm#52065, #61806). We used data parallel 2 with expert parallel.</li>
+    </ul>
   </section>
 
   <section id="studies" aria-labelledby="studies-h">
@@ -211,6 +273,7 @@
   <section id="data" aria-labelledby="data-h">
     <h2 id="data-h">Raw data</h2>
     <ul>
+      <li>Round 2: <a href="data/dsv4f-serving.json">serving sweep</a>, <a href="data/tokens-dsv4f-results.jsonl">token benchmark runs</a>, <a href="data/chat-dsv4f-nothink-runs.jsonl">chat runs (no thinking)</a>, <a href="data/chat-dsv4f-think-runs.jsonl">chat runs (thinking)</a>, <a href="data/chat-dsv4f-grades.json">chat grades</a></li>
       <li><a href="data/chat-qwen3-summary.json">Chat agent: summary</a>, <a href="data/chat-qwen3-judge-grades.jsonl">explain grades</a>, <a href="data/chat-qwen3-test-grades.json">test grades</a></li>
       <li><a href="data/tokens-qwen3-summary.json">Token benchmark: per-task and overall</a></li>
       <li><a href="data/automations-qwen3-results.json">Automations: per scenario, with GitHub side effects</a></li>
