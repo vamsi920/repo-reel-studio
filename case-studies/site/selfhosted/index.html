@@ -63,7 +63,7 @@
 
   <section id="round2" aria-labelledby="round2-h">
     <h2 id="round2-h">Round 2: DeepSeek V4 Flash on two H200 GPUs (2026-10-15)</h2>
-    <p class="section-lede">We moved up to a much larger open model: DeepSeek-V4-Flash-0731 (MIT licence, 284B parameters, 13B active per token), served by vLLM 0.30.0 on 2&times; H200 from Runpod at $10.58 an hour. The tasks, app settings and graders are the same as round 1. Chat and the token benchmark ran in full or in part. Automations and KT docs did not finish, so we publish no score for them. The model was the most accurate self-hosted agent we have tested, but at this GPU price it only beats Gemini if the GPUs are kept busy.</p>
+    <p class="section-lede">We moved up to a much larger open model: DeepSeek-V4-Flash-0731 (MIT licence, 284B parameters, 13B active per token), served by vLLM 0.30.0 on 2&times; H200 from Runpod at $10.58 an hour. The tasks, app settings and graders are the same as round 1. The serving benchmark and the token benchmark ran in full, and chat ran on flask and hono (14 of 36 runs). Automations and KT docs did not finish, so we publish no score for them. The model was the most accurate self-hosted agent we have tested, but at this GPU price it only beats Gemini if the GPUs are kept busy.</p>
     <div class="stat-strip" aria-label="Round 2 headline numbers">
       <div class="stat"><b>96&ndash;100%</b><span>explain score (Flash 83%, Argon 98%, Qwen 74%)</span></div>
       <div class="stat"><b>17 / 18</b><span>planted bugs caught by its tests, 94% (Flash 81%, Qwen 93%)</span></div>
@@ -81,7 +81,26 @@
         <tr><td>Automations, KT docs</td><td>Did not finish (111 and 24 model calls made); no score</td><td>8 / 10, 71.7%</td><td>10 / 10, 81.3%</td><td>&ndash;</td><td>7 / 10, 71.3%</td></tr>
       </tbody>
     </table></div>
-    <p>Coverage is partial. The chat runs that finished are flask and hono only, 14 of the planned 36. ky (K1, K2) and some reps never ran. The score ranges above are therefore less certain than round 1's.</p>
+    <h3>What was tested, scenario by scenario</h3>
+    <div class="scroll"><table class="money">
+      <thead><tr><th>Scenario</th><th>Planned</th><th>Ran and graded</th><th>How it was checked</th></tr></thead>
+      <tbody>
+        <tr><td>Serving: 1, 2, 4, 8, 16 and 32 requests at once, cold prefill, 32k / 64k / 128k prompts</td><td class="n">all</td><td class="n">all, 0 errors</td><td>Real 11.8k-token agent prompt; vLLM metrics sampled every 15 s</td></tr>
+        <tr><td>Token bench T1 fix the failing tests</td><td class="n">3</td><td class="n">3 / 3 pass</td><td>App's own check: the test suite passes afterwards</td></tr>
+        <tr><td>Token bench T2 answer a code question, no edits</td><td class="n">3</td><td class="n">3 / 3 pass</td><td>App check, then every answer read by hand: both real bugs named, no file changed</td></tr>
+        <tr><td>Token bench T3 review a pull request</td><td class="n">3</td><td class="n">3 / 3 pass</td><td>App check: REVIEW.md names the real defect (average price divides by item count, not units)</td></tr>
+        <tr><td>Token bench T4 triage a bug report</td><td class="n">3</td><td class="n">3 / 3 pass</td><td>App check: TRIAGE.md names totalWithDiscount and the percent-vs-fraction cause</td></tr>
+        <tr><td>Token bench T5 add a feature with a test</td><td class="n">3</td><td class="n">3 / 3 pass</td><td>App check: new test/tax.test.js exists and the suite passes</td></tr>
+        <tr><td>Chat F1 explain flask (no thinking / thinking)</td><td class="n">3 + 3</td><td class="n">3 + 3: 98%, 100%</td><td>Blind checklist judge, Gemini 2.5 Pro</td></tr>
+        <tr><td>Chat F2 write a flask test (no thinking / thinking)</td><td class="n">3 + 3</td><td class="n">3 + 2: 8 of 9, 6 of 6 bugs</td><td>Mutation grading: the test must pass on real code and fail on each of 3 planted bugs</td></tr>
+        <tr><td>Chat H1 explain hono</td><td class="n">3 + 3</td><td class="n">2 + 0: 93%</td><td>Blind checklist judge</td></tr>
+        <tr><td>Chat H2 write a hono test</td><td class="n">3 + 3</td><td class="n">1 + 0: 3 of 3 bugs</td><td>Mutation grading</td></tr>
+        <tr><td>Chat K1 / K2 explain and test ky</td><td class="n">12</td><td class="n">0</td><td>Not run</td></tr>
+        <tr><td>Automations (10 scenarios on a real GitHub repo)</td><td class="n">10</td><td class="n">0 graded</td><td>Started (111 model calls), stopped before any scenario was judged</td></tr>
+        <tr><td>KT docs (75 questions on 3 repos)</td><td class="n">75</td><td class="n">0 graded</td><td>Wiki generation started (24 calls), stopped before answers</td></tr>
+      </tbody>
+    </table></div>
+    <p>In total, 29 agent runs finished and every one was graded: 15 token-bench runs and 14 chat runs. Every chat test file passes on the unmodified code and touches only the requested file (the hono run also left a <code>package-lock.json</code>, as Qwen's did). We checked the grading setup first: the rebuilt repositories gave Qwen's round-1 tests the same 2 of 3 scores they were published with. The model was never tested on ky, automations or KT docs, so we draw no conclusions about those. The GPU pods and their disks were deleted after this round, so a re-run starts again with the 167 GB download.</p>
 
     <h3>Speed and tokens</h3>
     <div class="scroll"><table class="money">
