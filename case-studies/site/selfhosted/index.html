@@ -43,11 +43,39 @@
 <header class="masthead">
   <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
   <nav aria-label="Sections">
-    <a href="#round2">Round 2</a><a href="#studies">Study by study</a><a href="#money">Cost</a><a href="#failures">What went wrong</a><a href="#method">Method</a><a href="#data">Data</a>
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
   </nav>
 </header>
 
 <main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Running our own AI model · October 2026</p>
+    <h1 id="summary-h">A free AI model on a rented computer can match Gemini on quality, but only saves money if kept busy.</h1>
+    <p class="lede">Instead of paying Google per use for its Gemini model, we ran free, openly published AI models on a powerful computer rented by the hour, and repeated our tests. Round one used Qwen3-Coder-Next; round two the larger DeepSeek V4 Flash.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>96&ndash;100%</b><span>DeepSeek's score explaining code (our default Gemini model 98%, Devin 94%)</span></li>
+      <li><b>17 / 18</b><span>hidden bugs caught by DeepSeek's tests</span></li>
+      <li><b>~$4</b><span>round one's rental, at least $10 below Gemini's bill</span></li>
+      <li><b>57%</b><span>how busy round two's computer must be to beat Gemini's cheapest model on cost (16% to beat our default Gemini model)</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>DeepSeek explained code as well as our best Gemini setup.</li>
+      <li>Both free models wrote better tests than Gemini's cheaper model: 93% and 94% of hidden bugs caught, against 81%.</li>
+      <li>Round one's saving came almost all from the documentation study; for chat, costs roughly matched.</li>
+      <li>As run in round two, a chat task cost $0.24: cheaper than Devin ($0.38), but dearer than our default Gemini model ($0.21).</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>Slower: 209 to 334 seconds per chat task, against 88 for Gemini.</li>
+      <li>Qwen twice changed the main codebase without review and made something up in 17.3% of documentation answers (Gemini 2.7%).</li>
+      <li>DeepSeek never finished the automation and documentation tests.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> Free models are now good enough. Renting our own computer pays off only with steady, heavy use; for light use, paying Google per use is cheaper.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
   <section class="hero">
     <p class="eyebrow">Module 04 · Self-hosted model · 2026-10-13</p>
     <h1>We ran our case studies again on one rented GPU, <em>with no frontier model in the agent's seat.</em></h1>
@@ -299,6 +327,19 @@
       <li><a href="data/kt-qwen3-results.json">KT docs: per repository, usage and findings</a></li>
     </ul>
   </section>
+  </details>
 </main>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
 </body>
 </html>

@@ -194,3 +194,21 @@ h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 10px; }
   .row .who, .row .pct { font-size: 0.7rem; }
 }
 @media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+
+/* Plain-English summary at the top of each study, for non-technical readers. */
+.plain { padding: 56px 0 40px; }
+.plain h1 { max-width: 22ch; }
+.plain .lede { max-width: 56ch; }
+.big-numbers { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.big-numbers li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; }
+.big-numbers b { display: block; font: 600 2rem/1.1 var(--display); color: var(--neo); margin-bottom: 6px; }
+.big-numbers span { font-size: 1rem; }
+.plain h2 { font-size: clamp(1.25rem, 2vw, 1.6rem); margin: 40px 0 12px; }
+.plain p, .plain li { font-size: 1.12rem; line-height: 1.55; max-width: 64ch; }
+.plain ul.simple { padding-left: 1.2em; margin: 0; display: grid; gap: 8px; }
+.plain .verdict { background: var(--neo-soft); border-radius: 12px; padding: 18px 22px; margin-top: 36px; max-width: 64ch; }
+.plain .verdict p { margin: 0; }
+details.tech { border-top: 1px solid var(--rule); padding: 28px 0 0; }
+details.tech > summary { cursor: pointer; font: 600 1.05rem var(--display); color: var(--muted); padding: 8px 0 28px; }
+details.tech > summary:hover { color: var(--ink); }
+details.tech[open] > summary { color: var(--ink); }

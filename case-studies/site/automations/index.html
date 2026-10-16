@@ -49,11 +49,39 @@
 <header class="masthead">
   <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
   <nav aria-label="Sections">
-    <a href="#scenarios">Scenarios</a><a href="#quality">Quality</a><a href="#usability">Usability</a><a href="#speed">Speed</a><a href="#reliability">Reliability</a><a href="#gaps">Gaps we fixed</a><a href="#round3">Round 3</a><a href="#open">Still open</a><a href="#method">Method</a>
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
   </nav>
 </header>
 
 <main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Automations · October 2026</p>
+    <h1 id="summary-h">Our automations now pass all 10 tests we could run. Devin passes 7.</h1>
+    <p class="lede">We gave NeoDevEx and Devin the same unattended jobs, such as fixing a bug, and let real events on a test codebase start them. Nobody watches these jobs, so they must deliver what they claim.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>10 / 10</b><span>tests we pass now (2 of 7 at the start)</span></li>
+      <li><b>7 / 10</b><span>tests Devin passes (one not measured)</span></li>
+      <li><b>54</b><span>problems we found in our product and fixed</span></li>
+      <li><b>2 s</b><span>wait before a scheduled job starts, down from 52&ndash;59 s (Devin: 0 s)</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>At first, one job claimed work it never did. Every job now shows whether it delivered.</li>
+      <li>We set up a job from one sentence in 45 seconds. Devin drafted it but never saved it.</li>
+      <li>When a job fails, we say so. Devin listed a failed job as a success.</li>
+      <li>With Google's stronger Gemini 2.5 Pro AI model, our reviews are as correct as Devin's, and only ours show proof.</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>Devin is faster to a finished code change: 57 s against our 100 s.</li>
+      <li>On our cheaper default model, Gemini 2.5 Flash, reviews are shallower and one suggested fix was wrong.</li>
+      <li>Devin is always on in its cloud. Ours needs the computer to stay on.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> we now match Devin on getting the job done and are more honest about failures. Devin is still faster and always on.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
   <section class="hero">
     <p class="eyebrow">Module 02 · Automations · four rounds, 2026-10-08 to 2026-10-12</p>
     <h1>We built the same automations on both tools and <em>let them loose on a real repository.</em></h1>
@@ -381,10 +409,23 @@
       <li><a href="https://github.com/vamsi920/automation-bench/pulls?q=is%3Apr">The pull requests and comments<small>Every PR, review and triage comment both products posted (private repository; ask for access).</small></a></li>
     </ul>
   </section>
+  </details>
 </main>
 
 <footer class="foot">
   <p>Devin is a product of Cognition. NeoDevEx is not affiliated with Cognition. Devin was used through the account owner's own subscription on a private test repository.</p>
 </footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
 </body>
 </html>

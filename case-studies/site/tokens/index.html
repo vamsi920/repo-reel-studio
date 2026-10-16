@@ -45,11 +45,39 @@
 <header class="masthead">
   <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
   <nav aria-label="Sections">
-    <a href="#where">Where tokens go</a><a href="#layman">Layman, as integrated</a><a href="#changes">What we changed</a><a href="#results">Results</a><a href="#devin">vs Devin</a><a href="#rounds">Rounds</a><a href="#method">Method</a><a href="#data">Data</a>
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
   </nav>
 </header>
 
 <main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">AI costs · October 2026</p>
+    <h1 id="summary-h">We cut our AI bill per task by about a third, and the work still gets done.</h1>
+    <p class="lede">Every time our agent works on a task, we pay the AI provider for how much text it reads and writes. We ran five everyday coding tasks 154 times, counted exactly what each one cost, and compared the same job on Devin.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>36%</b><span>less AI usage per task after our changes (35% lower cost)</span></li>
+      <li><b>17 of 20</b><span>tasks done correctly after, 16 of 20 before, so no loss in quality</span></li>
+      <li><b>$0.017</b><span>our cost to investigate a bug report. Devin: $0.22, about 13 times more</span></li>
+      <li><b>$3.47</b><span>total cost of all 154 test runs</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>The cost-saving tool we had added (Layman) was saving nothing on a new install, because it only shortened something that starts out empty.</li>
+      <li>Most of the cost was the same background text being resent to the AI on every step, such as a long list of every skill the agent has.</li>
+      <li>Shortening that list and the standing instructions made every step cheaper, and the two biggest tasks used about half as much.</li>
+      <li>Telling the AI to "write less" backfired: it got sloppier and took more steps. We switched it off.</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>Devin ran the bug-report task once; its answer was more complete (it also spotted a second bug).</li>
+      <li>We tested one AI model on one small codebase. On large codebases the saving will be smaller.</li>
+      <li>Scheduled automations get only part of the saving so far.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> the same work now costs about a third less, and we are far cheaper per task than Devin, partly because we use a cheaper AI model.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
   <section class="hero">
     <p class="eyebrow">Module 04 · Token costs · three rounds, 2026-10-13</p>
     <h1>We counted every token our agent spends, found the Layman integration saving <em>nothing</em>, and fixed it.</h1>
@@ -205,10 +233,23 @@
       <li><a href="data/contract-validation.json">contract-validation.json<small>Layman's validator on contract v6 vs v5.</small></a></li>
     </ul>
   </section>
+  </details>
 </main>
 
 <footer class="foot">
   <p>Layman is MIT licensed, by its authors. Devin is a product of Cognition. NeoDevEx is not affiliated with Cognition. Devin was used through the account owner's own subscription on a private test repository.</p>
 </footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
 </body>
 </html>
