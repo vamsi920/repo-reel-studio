@@ -25,6 +25,13 @@ export const APPEARANCE_MODES: readonly AppearanceMode[] = [
 ];
 const STYLE_ID = "oh-appearance-dark";
 
+/**
+ * Neo's own look is the light theme (the Neo-DeepSea palette), so that is
+ * what a new user sees whatever their OS is set to. Dark and "match system"
+ * are opt-in from Settings ▸ App ▸ Appearance or the desktop View menu.
+ */
+export const DEFAULT_APPEARANCE: AppearanceMode = "light";
+
 export function isAppearanceMode(value: unknown): value is AppearanceMode {
   return (
     typeof value === "string" && (APPEARANCE_MODES as string[]).includes(value)
@@ -34,9 +41,9 @@ export function isAppearanceMode(value: unknown): value is AppearanceMode {
 export function readPersistedAppearance(): AppearanceMode {
   try {
     const raw = globalThis.localStorage?.getItem(APPEARANCE_STORAGE_KEY);
-    return isAppearanceMode(raw) ? raw : "system";
+    return isAppearanceMode(raw) ? raw : DEFAULT_APPEARANCE;
   } catch {
-    return "system";
+    return DEFAULT_APPEARANCE;
   }
 }
 

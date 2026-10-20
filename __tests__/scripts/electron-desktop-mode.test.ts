@@ -30,6 +30,7 @@ import {
   buildAppMenuTemplate,
 } from "../../electron/app-menu.mjs";
 import { DESKTOP_APP_UA_TOKEN } from "../../src/utils/utils";
+import { DEFAULT_APPEARANCE } from "../../src/themes/appearance";
 
 describe("desktop mode preferences", () => {
   const dirs: string[] = [];
@@ -43,6 +44,8 @@ describe("desktop mode preferences", () => {
     const path = join(dir, "nested", "desktop-mode.json");
 
     expect(DEFAULT_DESKTOP_PREFS.mode).toBe("remote");
+    // Same default as the web app, so the shell and page never disagree.
+    expect(DEFAULT_DESKTOP_PREFS.appearance).toBe(DEFAULT_APPEARANCE);
     expect(loadDesktopPrefs(path)).toEqual(DEFAULT_DESKTOP_PREFS);
 
     saveDesktopPrefs(path, {

@@ -28,8 +28,10 @@ export const DEFAULT_DESKTOP_PREFS = Object.freeze({
   mode: "remote",
   /** ISO timestamp of the last background update check. */
   lastUpdateCheckAt: null,
-  /** Light/dark preference for the shell (nativeTheme) and the web app. */
-  appearance: "system",
+  /** Light/dark preference for the shell (nativeTheme) and the web app.
+   *  Light by default: Neo's own theme (see DEFAULT_APPEARANCE in
+   *  src/themes/appearance.ts; keep the two equal). */
+  appearance: "light",
 });
 
 /** Fallback when config/defaults.json has no `desktop.remoteAppUrl`. */

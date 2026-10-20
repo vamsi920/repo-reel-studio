@@ -132,7 +132,7 @@ function desktopPrefsPath() {
 let desktopPrefs = {
   mode: "remote",
   lastUpdateCheckAt: null,
-  appearance: "system",
+  appearance: "light",
 };
 
 /** Window chrome colour for the current appearance (pre-paint, no flash). */

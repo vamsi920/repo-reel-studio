@@ -29,12 +29,12 @@ describe("appearance", () => {
     },
   );
 
-  it("persists a valid mode and falls back to system for garbage", () => {
-    expect(readPersistedAppearance()).toBe("system");
+  it("defaults to light (Neo's theme), persists a choice, and ignores garbage", () => {
+    expect(readPersistedAppearance()).toBe("light");
     persistAppearance("dark");
     expect(readPersistedAppearance()).toBe("dark");
     localStorage.setItem(APPEARANCE_STORAGE_KEY, "sepia");
-    expect(readPersistedAppearance()).toBe("system");
+    expect(readPersistedAppearance()).toBe("light");
   });
 
   it("the dark ramp is the light ramp inverted, declared on the scope roots", () => {
