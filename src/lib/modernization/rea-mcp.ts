@@ -1,4 +1,8 @@
-import type { MCPConfig, StdioMCPServer } from "@openhands/typescript-client";
+import type {
+  MCPConfig,
+  MCPConfigPatch,
+  StdioMCPServer,
+} from "@openhands/typescript-client";
 import SettingsService from "#/api/settings-service/settings-service.api";
 
 /**
@@ -60,8 +64,14 @@ export async function ensureReaMcpServer(): Promise<
     const settings = await SettingsService.getSettings();
     const current = (settings?.mcp_config ?? {}) as MCPConfig;
     if (hasReaMcpServer(current)) return "present";
-    // Name-keyed merge patch: the server owns the stored catalog (and keeps
-    // other servers' secrets), exactly like the MCP page's add-server path.
+    // Name-keyed RFC 7386 merge patches: a stale entry is removed first,
+    // because a merge cannot drop keys (an old `env` would survive a plain
+    // re-add) and the settings GET redacts env, so it cannot be diffed.
+    if (current[REA_MCP_SERVER_NAME]) {
+      await SettingsService.patchMcpConfig({
+        [REA_MCP_SERVER_NAME]: null,
+      } as unknown as MCPConfigPatch);
+    }
     await SettingsService.patchMcpConfig({
       [REA_MCP_SERVER_NAME]: REA_MCP_SERVER,
     });
