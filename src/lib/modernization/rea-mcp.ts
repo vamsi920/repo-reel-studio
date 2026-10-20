@@ -24,17 +24,26 @@ export const REA_MCP_SERVER: StdioMCPServer = {
   args: ["-y", `${REA_PACKAGE}@${REA_VERSION}`, "mcp"],
   description:
     "Reverse Engineer Anything — evidence-backed analysis of the legacy app",
-  // Large analyses are paged by REA itself; cap single responses so the
-  // model never receives a 2 MB blob.
-  env: { REA_MCP_MAX_RESPONSE_BYTES: "200000" },
+  // No REA_MCP_MAX_RESPONSE_BYTES override: REA validates it (>= 10 MiB) and
+  // an invalid value makes the agent-server fail conversation creation.
+  // REA pages large results itself (inspect_analysis_view).
   timeout: 120,
 };
 
-/** True when the stored MCP config already carries the pinned REA server. */
+/**
+ * True when the stored MCP config carries exactly the pinned REA server.
+ * Compared field by field (not just the version) so a stale entry with a
+ * different env or args is rewritten by `ensureReaMcpServer`.
+ */
 export function hasReaMcpServer(config: MCPConfig | undefined | null): boolean {
   const entry = config?.[REA_MCP_SERVER_NAME];
   if (entry?.transport !== "stdio") return false;
-  return (entry.args ?? []).includes(`${REA_PACKAGE}@${REA_VERSION}`);
+  const sameArgs =
+    JSON.stringify(entry.args ?? []) === JSON.stringify(REA_MCP_SERVER.args);
+  const sameEnv =
+    JSON.stringify(entry.env ?? {}) ===
+    JSON.stringify(REA_MCP_SERVER.env ?? {});
+  return entry.command === REA_MCP_SERVER.command && sameArgs && sameEnv;
 }
 
 /**

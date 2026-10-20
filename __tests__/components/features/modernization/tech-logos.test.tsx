@@ -84,6 +84,15 @@ describe("REA MCP registration", () => {
         rea: { ...REA_MCP_SERVER, args: ["-y", "rea-agents@1.0.0", "mcp"] },
       }),
     ).toBe(false);
+    expect(
+      hasReaMcpServer({
+        rea: {
+          ...REA_MCP_SERVER,
+          env: { REA_MCP_MAX_RESPONSE_BYTES: "200000" },
+        },
+      }),
+    ).toBe(false);
+    expect(REA_MCP_SERVER.env).toBeUndefined();
     expect(REA_MCP_SERVER.command).toBe("npx");
   });
 });
