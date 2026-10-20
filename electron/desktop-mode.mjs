@@ -21,11 +21,15 @@ import { dirname } from "node:path";
 
 export const DESKTOP_MODES = Object.freeze(["remote", "local"]);
 
+export const APPEARANCE_MODES = Object.freeze(["system", "light", "dark"]);
+
 export const DEFAULT_DESKTOP_PREFS = Object.freeze({
   /** @type {DesktopMode} */
   mode: "remote",
   /** ISO timestamp of the last background update check. */
   lastUpdateCheckAt: null,
+  /** Light/dark preference for the shell (nativeTheme) and the web app. */
+  appearance: "system",
 });
 
 /** Fallback when config/defaults.json has no `desktop.remoteAppUrl`. */
@@ -45,7 +49,7 @@ export const MIN_SPLASH_MS = 1900;
 
 /**
  * @param {string} path
- * @returns {{ mode: DesktopMode, lastUpdateCheckAt: string | null }}
+ * @returns {{ mode: DesktopMode, lastUpdateCheckAt: string | null, appearance: "system" | "light" | "dark" }}
  */
 export function loadDesktopPrefs(path) {
   try {
@@ -59,6 +63,9 @@ export function loadDesktopPrefs(path) {
         typeof stored.lastUpdateCheckAt === "string"
           ? stored.lastUpdateCheckAt
           : null,
+      appearance: APPEARANCE_MODES.includes(stored.appearance)
+        ? stored.appearance
+        : DEFAULT_DESKTOP_PREFS.appearance,
     };
   } catch {
     return { ...DEFAULT_DESKTOP_PREFS };
@@ -67,7 +74,7 @@ export function loadDesktopPrefs(path) {
 
 /**
  * @param {string} path
- * @param {{ mode: DesktopMode, lastUpdateCheckAt: string | null }} prefs
+ * @param {{ mode: DesktopMode, lastUpdateCheckAt: string | null, appearance?: "system" | "light" | "dark" }} prefs
  */
 export function saveDesktopPrefs(path, prefs) {
   try {

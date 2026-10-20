@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CANVAS_UI_CLIENT_TOOL_NAME } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
 import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
+import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 
 import {
   ACP_SERVER_TAG_KEY,
@@ -820,6 +821,7 @@ describe("buildStartConversationRequest", () => {
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
         ONBOARDING_CONTROL_TOOL_NAME,
+        MODERNIZATION_CONTROL_TOOL_NAME,
       ]);
     });
 
@@ -834,6 +836,7 @@ describe("buildStartConversationRequest", () => {
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
         ONBOARDING_CONTROL_TOOL_NAME,
+        MODERNIZATION_CONTROL_TOOL_NAME,
       ]);
     });
 
@@ -1356,6 +1359,73 @@ describe("agent_settings runtime services suffix", () => {
     );
   });
 
+  // Benchmarked against Devin's chat agent (case-studies/chat): without
+  // these, code questions were answered from memory and tests did not fail
+  // when the behaviour they claimed to check broke.
+  it("gives every conversation the working rules", () => {
+    const payload = buildStartConversationRequest({
+      settings: DEFAULT_SETTINGS,
+      query: "hello",
+    }) as {
+      agent_settings: { agent_context: Record<string, unknown> };
+    };
+
+    expect(
+      payload.agent_settings.agent_context.system_message_suffix as string,
+    ).toContain("<WORKING_RULES>");
+  });
+
+  // case-studies/chat: on Gemini 4 Argon the Layman output style and medium
+  // thinking cut tokens per task with no accuracy loss; on Gemini 2.5 Flash
+  // the output style cost task success, so light models get neither.
+  it.each([
+    ["gemini/gemini-4-argon", true],
+    ["gemini/gemini-2.5-flash", false],
+  ])(
+    "gives %s the Layman output style and medium thinking: %s",
+    (model, expected) => {
+      const payload = buildStartConversationRequest({
+        settings: {
+          ...DEFAULT_SETTINGS,
+          agent_settings: {
+            ...DEFAULT_SETTINGS.agent_settings,
+            llm: { model },
+          },
+        },
+        query: "hello",
+      }) as unknown as {
+        agent_settings: {
+          agent_context: Record<string, unknown>;
+          llm: Record<string, unknown>;
+        };
+      };
+
+      expect(
+        (
+          payload.agent_settings.agent_context.system_message_suffix as string
+        ).includes("<OUTPUT_STYLE>"),
+      ).toBe(expected);
+      expect(payload.agent_settings.llm.reasoning_effort).toBe(
+        expected ? "medium" : undefined,
+      );
+    },
+  );
+
+  it("keeps a user's own reasoning effort", () => {
+    const payload = buildStartConversationRequest({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        agent_settings: {
+          ...DEFAULT_SETTINGS.agent_settings,
+          llm: { model: "gemini/gemini-4-argon", reasoning_effort: "high" },
+        },
+      },
+      query: "hello",
+    }) as unknown as { agent_settings: { llm: Record<string, unknown> } };
+
+    expect(payload.agent_settings.llm.reasoning_effort).toBe("high");
+  });
+
   it("sets system_message_suffix when backend runtime info is provided", () => {
     const payload = buildStartConversationRequest({
       settings: DEFAULT_SETTINGS,
@@ -1416,7 +1486,7 @@ describe("agent_settings KT docs suffix", () => {
 
     expect(
       payload.agent_settings.agent_context.system_message_suffix,
-    ).toBeUndefined();
+    ).not.toContain("<KT_DOCS>");
   });
 });
 

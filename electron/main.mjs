@@ -61,6 +61,7 @@ import {
   TOGGLE_SIDEBAR_SCRIPT,
   buildDesktopChromeCss,
   buildNavigateScript,
+  buildSetAppearanceScript,
   deepLinkToPath,
 } from "./renderer-chrome.mjs";
 import {
@@ -127,8 +128,36 @@ try {
 function desktopPrefsPath() {
   return join(app.getPath("userData"), "desktop-mode.json");
 }
-/** @type {{ mode: "remote" | "local", lastUpdateCheckAt: string | null }} */
-let desktopPrefs = { mode: "remote", lastUpdateCheckAt: null };
+/** @type {{ mode: "remote" | "local", lastUpdateCheckAt: string | null, appearance: "system" | "light" | "dark" }} */
+let desktopPrefs = {
+  mode: "remote",
+  lastUpdateCheckAt: null,
+  appearance: "system",
+};
+
+/** Window chrome colour for the current appearance (pre-paint, no flash). */
+function windowBackgroundColor() {
+  return nativeTheme.shouldUseDarkColors ? "#0b0e14" : "#f7f9fc";
+}
+
+/** Apply the appearance preference to the shell and tell the web app. */
+function applyAppearance(mode, { notifyPage = true } = {}) {
+  nativeTheme.themeSource = mode;
+  if (notifyPage && mainWin && !mainWin.isDestroyed()) {
+    mainWin.setBackgroundColor(windowBackgroundColor());
+    mainWin.webContents
+      .executeJavaScript(buildSetAppearanceScript(mode), true)
+      .catch(() => {});
+  }
+}
+
+function setAppearance(mode) {
+  if (!["system", "light", "dark"].includes(mode)) return;
+  desktopPrefs = { ...desktopPrefs, appearance: mode };
+  saveDesktopPrefs(desktopPrefsPath(), desktopPrefs);
+  applyAppearance(mode);
+  installAppMenus();
+}
 const REMOTE_APP_URL = resolveRemoteAppUrl({ defaults });
 const GITHUB_REPO =
   defaults?.desktop?.githubRepo ?? "vamsi920/repo-reel-studio";
@@ -447,6 +476,30 @@ function createLoadingWindow() {
   loadingWin.once("ready-to-show", () => loadingWin?.show());
 }
 
+let rendererCrashedOnce = false;
+
+/** Replace the main window's content with the shell's offline/error page. */
+function showOfflinePage(detail) {
+  if (!mainWin || mainWin.isDestroyed()) return;
+  mainWin
+    .loadFile(join(__dirname, "offline.html"), {
+      query: { detail: String(detail ?? ""), mode: desktopPrefs.mode },
+    })
+    .catch(() => {});
+}
+
+// Offline-page actions (preload-shell.cjs); guarded to the main window.
+ipcMain.handle("shell:retry", (event) => {
+  if (!mainWin || mainWin.isDestroyed() || event.sender !== mainWin.webContents)
+    return;
+  mainWin.loadURL(appEntryUrl()).catch(() => {});
+});
+ipcMain.handle("shell:switch-mode", (event, mode) => {
+  if (!mainWin || mainWin.isDestroyed() || event.sender !== mainWin.webContents)
+    return;
+  if (mode === "remote" || mode === "local") switchDesktopMode(mode);
+});
+
 /** Persisted main-window bounds live next to the background-mode prefs. */
 function windowStatePath() {
   return join(app.getPath("userData"), "window-state.json");
@@ -507,9 +560,9 @@ function createMainWindow() {
     minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     title: APP_NAME,
-    // App-shell background (--oh-background in src/index.css) — avoids white
-    // flashes while the first paint happens behind the splash.
-    backgroundColor: "#0b0e14",
+    // Pre-paint colour matching the appearance (light app shell by default)
+    // so neither theme flashes the other while the first paint happens.
+    backgroundColor: windowBackgroundColor(),
     // Native-looking chrome: no title bar, traffic lights inset over the
     // sidebar (which renderer-chrome.mjs pads and makes draggable).
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
@@ -520,13 +573,70 @@ function createMainWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       spellcheck: true,
+      // Bridge for the shell's own file:// pages (offline.html) only; the
+      // preload exposes nothing on http(s) origins.
+      preload: join(__dirname, "preload-shell.cjs"),
     },
+  });
+
+  // ── Resilience: offline page, renderer crash, hang ─────────────────────
+  // A dropped connection (remote mode) or a dead local stack would otherwise
+  // leave a bare Chromium error page. Show the shell's own page with retry /
+  // switch-mode actions, and auto-recover from renderer crashes.
+  mainWin.webContents.on(
+    "did-fail-load",
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      // -3 = ERR_ABORTED (navigation superseded) — not a failure.
+      if (!isMainFrame || errorCode === -3) return;
+      if (!isAppUrl(validatedURL, appOrigins())) return;
+      console.warn(
+        `[desktop] load failed (${errorCode} ${errorDescription}) for ${validatedURL}`,
+      );
+      showOfflinePage(`${errorDescription} (${errorCode})`);
+    },
+  );
+  mainWin.webContents.on("render-process-gone", (_event, details) => {
+    console.error("[desktop] renderer gone:", details.reason);
+    if (details.reason === "clean-exit" || details.reason === "killed") return;
+    // One automatic reload; a second crash shows the offline page so the
+    // user can choose rather than looping.
+    if (!rendererCrashedOnce) {
+      rendererCrashedOnce = true;
+      mainWin?.webContents.reload();
+    } else {
+      showOfflinePage(`The app stopped unexpectedly (${details.reason}).`);
+    }
+  });
+  mainWin.webContents.on("did-finish-load", () => {
+    const url = mainWin?.webContents.getURL() ?? "";
+    if (isAppUrl(url, appOrigins())) rendererCrashedOnce = false;
+  });
+  mainWin.on("unresponsive", async () => {
+    if (!mainWin || mainWin.isDestroyed()) return;
+    const { response } = await dialog.showMessageBox(mainWin, {
+      type: "warning",
+      title: APP_NAME,
+      message: `${APP_NAME} is not responding.`,
+      detail: "You can wait for it to recover or reload the window.",
+      buttons: ["Wait", "Reload"],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (response === 1) mainWin.webContents.forcefullyCrashRenderer();
   });
 
   // The web app only ever sees the desktop CSS, never the other way round.
   const chromeCss = buildDesktopChromeCss({ platform: process.platform });
   mainWin.webContents.on("did-finish-load", () => {
     mainWin?.webContents.insertCSS(chromeCss).catch(() => {});
+    if (isAppUrl(mainWin?.webContents.getURL() ?? "", appOrigins())) {
+      mainWin?.webContents
+        .executeJavaScript(
+          buildSetAppearanceScript(desktopPrefs.appearance),
+          true,
+        )
+        .catch(() => {});
+    }
   });
 
   // Keep the OS window title stable — the SPA swaps document.title per route.
@@ -910,6 +1020,8 @@ function installAppMenus() {
     checkForUpdates: () => checkForUpdates({ interactive: true }),
     setMode: (mode) => switchDesktopMode(mode),
     currentMode: () => desktopPrefs.mode,
+    setAppearance,
+    currentAppearance: () => desktopPrefs.appearance,
   };
 
   app.setAboutPanelOptions({
@@ -1067,9 +1179,9 @@ function scheduleBackgroundUpdateCheck() {
 }
 
 app.whenReady().then(async () => {
-  nativeTheme.themeSource = "dark";
   app.setName(APP_NAME);
   desktopPrefs = loadDesktopPrefs(desktopPrefsPath());
+  applyAppearance(desktopPrefs.appearance, { notifyPage: false });
   installAppMenus();
 
   // Set the dock icon explicitly on macOS so `npm run desktop` shows the

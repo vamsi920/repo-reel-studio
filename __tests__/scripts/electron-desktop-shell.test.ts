@@ -51,6 +51,8 @@ function makeActions() {
     checkForUpdates: vi.fn(),
     setMode: vi.fn(),
     currentMode: () => "remote" as const,
+    setAppearance: vi.fn(),
+    currentAppearance: () => "system" as const,
   };
 }
 

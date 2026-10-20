@@ -22,6 +22,7 @@ export const MENU_ROUTES = Object.freeze({
   agentOps: "/agentops",
   usage: "/usage",
   settings: "/settings",
+  signOut: "/logout",
 });
 
 export const HELP_LINKS = Object.freeze({
@@ -43,6 +44,8 @@ export const HELP_LINKS = Object.freeze({
  *   checkForUpdates: () => void,
  *   setMode: (mode: "remote" | "local") => void,
  *   currentMode: () => "remote" | "local",
+ *   setAppearance: (mode: "system" | "light" | "dark") => void,
+ *   currentAppearance: () => "system" | "light" | "dark",
  * }} MenuActions
  */
 
@@ -69,6 +72,28 @@ function agentServerMenu(actions) {
       type: "radio",
       checked: current === mode,
       click: () => actions.setMode(mode),
+    })),
+  };
+}
+
+export const APPEARANCE_LABELS = Object.freeze({
+  system: "Match System",
+  light: "Light",
+  dark: "Dark",
+});
+
+/** View ▸ Appearance: radio items driving nativeTheme + the web app's setting. */
+function appearanceMenu(actions) {
+  const current = actions.currentAppearance?.() ?? "system";
+  return {
+    id: "appearance",
+    label: "Appearance",
+    submenu: ["system", "light", "dark"].map((mode) => ({
+      id: `appearance-${mode}`,
+      label: APPEARANCE_LABELS[mode],
+      type: "radio",
+      checked: current === mode,
+      click: () => actions.setAppearance(mode),
     })),
   };
 }
@@ -110,6 +135,12 @@ export function buildAppMenuTemplate({
       },
       agentServerMenu(actions),
       { type: "separator" },
+      {
+        id: "sign-out",
+        label: "Sign Out…",
+        click: go(MENU_ROUTES.signOut),
+      },
+      { type: "separator" },
       { role: "services" },
       { type: "separator" },
       { role: "hide" },
@@ -147,6 +178,11 @@ export function buildAppMenuTemplate({
               click: go(MENU_ROUTES.settings),
             },
             agentServerMenu(actions),
+            {
+              id: "sign-out",
+              label: "Sign Out…",
+              click: go(MENU_ROUTES.signOut),
+            },
             { type: "separator" },
             {
               id: "check-updates",
@@ -194,6 +230,7 @@ export function buildAppMenuTemplate({
         accelerator: "CmdOrCtrl+B",
         click: () => actions.toggleSidebar(),
       },
+      appearanceMenu(actions),
       { type: "separator" },
       {
         id: "reload",

@@ -40,6 +40,7 @@ import {
   isCanvasUIActionEvent,
   isLaunchChildConversationActionEvent,
   isOnboardingControlActionEvent,
+  isModernizationControlActionEvent,
 } from "#/types/agent-server/type-guards";
 import { handleCanvasUIAction } from "#/services/canvas-ui";
 import { handleLaunchChildConversationAction } from "#/services/child-conversation-launch";
@@ -47,6 +48,7 @@ import {
   createConversationResultPoster,
   handleOnboardingControlAction,
 } from "#/services/onboarding-control";
+import { handleModernizationControlAction } from "#/services/modernization-control";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
   ConversationErrorEvent,
@@ -72,6 +74,13 @@ import EventService from "#/api/event-service/event-service.api";
 import { getAgentServerClientOptions } from "#/api/agent-server-client-options";
 import { useConversationStore } from "#/stores/conversation-store";
 import { trackError } from "#/utils/error-handler";
+import {
+  handleLlmErrorForRouting,
+  noteConversationLlmSuccess,
+} from "#/lib/model-routing/runtime";
+import { displaySuccessToast } from "#/utils/custom-toast-handlers";
+import i18n from "#/i18n";
+import { I18nKey } from "#/i18n/declaration";
 import { useReadConversationFile } from "#/hooks/mutation/use-read-conversation-file";
 import useMetricsStore, { type MetricsState } from "#/stores/metrics-store";
 import { useConversationHistory } from "#/hooks/query/use-conversation-history";
@@ -84,10 +93,7 @@ import {
   invalidateConversationQueries,
   updateConversationLlmModelInCache,
 } from "#/hooks/mutation/conversation-mutation-utils";
-import {
-  getStoredConversationMetadata,
-  setStoredConversationMetadata,
-} from "#/api/conversation-metadata-store";
+import { patchStoredConversationMetadata } from "#/api/conversation-metadata-store";
 
 export type WebSocketConnectionState =
   | "CONNECTING"
@@ -710,6 +716,26 @@ export function ConversationWebSocketProvider({
               },
             });
             setErrorMessage(errorEvent.detail, "conversation", errorEvent.code);
+            if (conversationId) {
+              // Model routing: every LLM error feeds the profile's health
+              // circuit; in Auto mode it also fails over to a healthy profile
+              // and resumes the run, which clears the banner.
+              handleLlmErrorForRouting({
+                conversationId,
+                code: errorEvent.code,
+                detail: errorEvent.detail,
+                queryClient,
+              }).then((outcome) => {
+                if (outcome?.recovered && outcome.decision?.profileName) {
+                  removeErrorMessage();
+                  displaySuccessToast(
+                    i18n.t(I18nKey.MODEL_ROUTING$FALLBACK_SWITCHED, {
+                      name: outcome.decision.profileName,
+                    }),
+                  );
+                }
+              });
+            }
           } else {
             handleNonErrorEvent();
           }
@@ -767,6 +793,7 @@ export function ConversationWebSocketProvider({
             }
             if (isStatsConversationStateUpdateEvent(event)) {
               updateMetricsFromStats(event);
+              if (conversationId) noteConversationLlmSuccess(conversationId);
             }
             // Mirror goal status into the store. Intentionally duplicated across
             // the main and planning WebSocket handlers (like the execution_status
@@ -823,16 +850,8 @@ export function ConversationWebSocketProvider({
             // Mirror the user-driven `/model` path: persist the profile so the
             // chat-header switcher shows the right name after a reload, even
             // when several profiles share a model (#1082).
-            const prevMetadata = getStoredConversationMetadata(conversationId);
-            setStoredConversationMetadata(conversationId, {
-              selected_repository: prevMetadata?.selected_repository ?? null,
-              selected_branch: prevMetadata?.selected_branch ?? null,
-              git_provider: prevMetadata?.git_provider ?? null,
-              selected_workspace: prevMetadata?.selected_workspace ?? null,
+            patchStoredConversationMetadata(conversationId, {
               active_profile: switchLLMObservation.observation.profile_name,
-              // Full-object replace: carry the plugins snapshot forward so the
-              // in-conversation plugins view survives a profile switch.
-              plugins: prevMetadata?.plugins ?? null,
             });
 
             if (switchLLMObservation.observation.active_model) {
@@ -865,6 +884,15 @@ export function ConversationWebSocketProvider({
             });
           }
 
+          // Neo ME: the modernization agent driving the studio workbench
+          // (discovery, choice cards, plan, live progress, checkpoints).
+          if (conversationId && isModernizationControlActionEvent(event)) {
+            void handleModernizationControlAction(event.action, {
+              postResult: createConversationResultPoster(conversationId),
+              conversationId,
+            });
+          }
+
           // Same client-tool pattern, but the work is a network call: launch
           // the requested child conversation and post the outcome back so the
           // agent learns the id the server-side acknowledgement can't carry.
@@ -883,6 +911,7 @@ export function ConversationWebSocketProvider({
     [
       addEvent,
       setErrorMessage,
+      removeErrorMessage,
       consumeMatchingPendingMessage,
       queryClient,
       conversationId,

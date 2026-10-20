@@ -160,6 +160,7 @@ export function BackendSelector({
   const conversationMatch = useMatch("/conversations/:conversationId");
   const automationDetailMatch = useMatch("/automations/:automationId");
   const environmentSetupMatch = useMatch("/environment/setup");
+  const modernizeMatch = useMatch("/modernize/:projectId");
   const [addBackendModalOpen, setAddBackendModalOpen] = React.useState(false);
   const [manageBackendsModalOpen, setManageBackendsModalOpen] =
     React.useState(false);
@@ -360,6 +361,7 @@ export function BackendSelector({
       if (conversationMatch) navigate("/conversations");
       else if (automationDetailMatch) navigate("/automations");
       else if (environmentSetupMatch) navigate("/environment");
+      else if (modernizeMatch) navigate("/modernize");
 
       setActive(target.id, orgId);
       onSelectOption?.();
@@ -370,6 +372,7 @@ export function BackendSelector({
       conversationMatch,
       automationDetailMatch,
       environmentSetupMatch,
+      modernizeMatch,
       navigate,
       options,
       setActive,

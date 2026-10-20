@@ -38,7 +38,12 @@ import {
   findKnowledgeForConversation,
 } from "#/lib/knowledge/kt-agent-context";
 import LLMSubscriptionService from "./llm-subscription-service";
-import { compactSkillDescription } from "#/lib/layman/token-saver";
+import {
+  compactSkillDescription,
+  LAYMAN_OUTPUT_STYLE,
+} from "#/lib/layman/token-saver";
+import { lookupModelCapabilities } from "#/lib/model-routing/catalog";
+import { AGENT_WORKING_RULES } from "#/lib/agent/working-rules";
 import {
   LLM_AUTH_TYPE_SUBSCRIPTION,
   OPENAI_SUBSCRIPTION_VENDOR,
@@ -54,6 +59,10 @@ import {
   ONBOARDING_CONTROL_CLIENT_TOOL,
   ONBOARDING_CONTROL_TOOL_NAME,
 } from "./onboarding-control-client-tool";
+import {
+  MODERNIZATION_CONTROL_CLIENT_TOOL,
+  MODERNIZATION_CONTROL_TOOL_NAME,
+} from "./modernization-control-client-tool";
 import {
   LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
   LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
@@ -834,12 +843,17 @@ export function buildWorkspaceMemorySystemSuffix(
   return context.text || undefined;
 }
 
+function isFrontierModel(model: string | null): boolean {
+  return Boolean(model) && lookupModelCapabilities(model).tier === "frontier";
+}
+
 function buildAgentContext(
   agentSettings: SettingsRecord,
   runtimeServicesInfo?: RuntimeServicesInfo | null,
   disabledSkills: string[] = [],
   workspaceId: string | null = null,
   extraSystemSuffix: string | null = null,
+  llmModel: string | null = null,
 ): SettingsRecord {
   const runtimeServicesSuffix =
     buildRuntimeServicesSystemSuffix(runtimeServicesInfo);
@@ -850,7 +864,16 @@ function buildAgentContext(
   // title. A long standing brief passed that way shows up as a 2 kB title and
   // gets diluted out of context over a long conversation.
   const systemMessageSuffix =
-    [runtimeServicesSuffix, workspaceMemorySuffix, extraSystemSuffix]
+    [
+      AGENT_WORKING_RULES,
+      // Measured in case-studies/chat: terse narration saves output tokens
+      // on frontier models without losing accuracy, but cost task success on
+      // a light model (Gemini 2.5 Flash), so it is gated on the tier.
+      isFrontierModel(llmModel) ? LAYMAN_OUTPUT_STYLE : null,
+      runtimeServicesSuffix,
+      workspaceMemorySuffix,
+      extraSystemSuffix,
+    ]
       .filter(Boolean)
       .join("\n\n") || undefined;
   const existingContext = toRecord(agentSettings.agent_context);
@@ -1011,6 +1034,18 @@ function buildConfiguredOpenHandsAgentSettings(
   // emits StreamingDeltaEvents for SDK LLM agents when an LLM has stream=True.
   llm.stream = true;
 
+  // The SDK thinks at reasoning_effort "high" unless told otherwise. On
+  // Gemini 4 Argon, "medium" (with the Layman output style) cut cost per
+  // task 19% with no loss in accuracy (case-studies/chat). Only Gemini
+  // frontier models, where it was measured; a user's explicit setting wins.
+  if (
+    isFrontierModel(llm.model as string) &&
+    /gemini/i.test(llm.model as string) &&
+    (typeof llm.reasoning_effort !== "string" || !llm.reasoning_effort)
+  ) {
+    llm.reasoning_effort = "medium";
+  }
+
   const apiKey = normalizeSecretString(llm.api_key);
   if (apiKey) {
     llm.api_key = apiKey;
@@ -1058,6 +1093,7 @@ function buildConfiguredOpenHandsAgentSettings(
       settings.disabled_skills,
       workspaceId,
       extraSystemSuffix,
+      llm.model as string,
     ),
     tools: getAgentTools(agentSettings),
   };
@@ -1272,6 +1308,7 @@ export function buildStartConversationRequest(
             CANVAS_UI_CLIENT_TOOL,
             LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
             ONBOARDING_CONTROL_CLIENT_TOOL,
+            MODERNIZATION_CONTROL_CLIENT_TOOL,
           ]
         : [],
     confirmation_policy:
@@ -1343,6 +1380,7 @@ export function buildStartConversationRequest(
   delete toolModuleQualnames[CANVAS_UI_CLIENT_TOOL_NAME];
   delete toolModuleQualnames[LAUNCH_CHILD_CONVERSATION_TOOL_NAME];
   delete toolModuleQualnames[ONBOARDING_CONTROL_TOOL_NAME];
+  delete toolModuleQualnames[MODERNIZATION_CONTROL_TOOL_NAME];
   if (Object.keys(toolModuleQualnames).length > 0) {
     payload.tool_module_qualnames = toolModuleQualnames;
   }

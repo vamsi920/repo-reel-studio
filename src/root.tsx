@@ -57,6 +57,21 @@ import {
 } from "#/themes/color-themes";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import { useSupabaseSession } from "#/hooks/query/use-supabase-session";
+import { useApplyAppearance } from "#/hooks/use-appearance";
+
+/**
+ * Drives light/dark: resolves the persisted appearance (or the OS setting),
+ * applies the dark ramp to the scope roots, and feeds `AgentServerUIRoot`
+ * the HeroUI theme class.
+ */
+function ThemedRoot({ children }: { children: React.ReactNode }) {
+  const appearance = useApplyAppearance();
+  return (
+    <AgentServerUIRoot contentClassName="min-h-screen" theme={appearance}>
+      {children}
+    </AgentServerUIRoot>
+  );
+}
 
 /** Applies the persisted color-theme palette to document.body on mount. */
 function ColorThemeApplier() {
@@ -105,12 +120,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body data-agent-server-ui="" className="m-0">
-        <AgentServerUIRoot contentClassName="min-h-screen">
+        <ThemedRoot>
           <ColorThemeApplier />
           {children}
           <Toaster toastOptions={TOAST_OPTIONS} />
           <div id="modal-portal-exit" />
-        </AgentServerUIRoot>
+        </ThemedRoot>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -290,7 +305,9 @@ export default function App() {
   // /reset-password is reached from an emailed link before any session the
   // rest of the app expects exists -- same standalone treatment as /login.
   const isStandaloneAuthPage =
-    location.pathname === "/login" || location.pathname === "/reset-password";
+    location.pathname === "/login" ||
+    location.pathname === "/logout" ||
+    location.pathname === "/reset-password";
   const { status: supabaseSessionStatus } = useSupabaseSession();
 
   // Flag-based gate: in public mode (VITE_AUTH_REQUIRED=true) with no

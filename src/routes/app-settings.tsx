@@ -12,6 +12,7 @@ import { SettingsInput } from "#/components/features/settings/settings-input";
 import { I18nKey } from "#/i18n/declaration";
 import { LanguageInput } from "#/components/features/settings/app-settings/language-input";
 import { ThemeInput } from "#/components/features/settings/app-settings/theme-input";
+import { AppearanceInput } from "#/components/features/settings/app-settings/appearance-input";
 import {
   displayErrorToast,
   displaySuccessToast,
@@ -246,6 +247,8 @@ export function AppSettingsScreen() {
             defaultKey={settings.language}
             onChange={checkIfLanguageInputHasChanged}
           />
+
+          <AppearanceInput />
 
           <ThemeInput />
 

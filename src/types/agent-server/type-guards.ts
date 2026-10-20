@@ -4,6 +4,7 @@ import {
 } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
 import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
+import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 
 import {
   OpenHandsEvent,
@@ -19,6 +20,7 @@ import {
   SwitchLLMObservation,
   CanvasUIAction,
   OnboardingControlAction,
+  ModernizationControlAction,
   LaunchChildConversationAction,
 } from "./core";
 import { AgentErrorEvent } from "./core/events/observation-event";
@@ -211,6 +213,12 @@ export const isOnboardingControlActionEvent = (
   event: OpenHandsEvent,
 ): event is ActionEvent<OnboardingControlAction> =>
   isActionEvent(event) && event.tool_name === ONBOARDING_CONTROL_TOOL_NAME;
+
+/** Neo ME studio control (see `src/services/modernization-control.ts`). */
+export const isModernizationControlActionEvent = (
+  event: OpenHandsEvent,
+): event is ActionEvent<ModernizationControlAction> =>
+  isActionEvent(event) && event.tool_name === MODERNIZATION_CONTROL_TOOL_NAME;
 
 /**
  * Type guard function to check if an event is a system prompt event

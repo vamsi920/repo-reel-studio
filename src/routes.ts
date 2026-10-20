@@ -8,6 +8,7 @@ import {
 export default [
   index("routes/welcome.tsx"),
   route("login", "routes/login.tsx"),
+  route("logout", "routes/logout.tsx"),
   route("reset-password", "routes/reset-password.tsx"),
   layout("routes/root-layout.tsx", [
     route("conversations", "routes/home.tsx"),
@@ -48,6 +49,8 @@ export default [
     // it is never mounted at the same time as `conversations/:conversationId`
     // -- two live conversation sockets would fight over the global event store.
     route("environment/setup", "routes/environment-setup.tsx"),
+    route("modernize", "routes/modernize.tsx"),
+    route("modernize/:projectId", "routes/modernize-project.tsx"),
     route("environment", "routes/environment.tsx", [
       index("routes/environment-overview.tsx"),
       route("connections", "routes/environment-connections.tsx"),

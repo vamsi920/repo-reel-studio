@@ -1,5 +1,6 @@
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { ONBOARDING_CONTROL_ACTION_KIND } from "#/constants/onboarding-control";
+import { MODERNIZATION_CONTROL_ACTION_KIND } from "#/constants/modernization-control";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -355,6 +356,20 @@ export interface LaunchChildConversationAction extends ActionBase<
  * boundary -- a secret cannot reach the model through a shape that has
  * nowhere to put one.
  */
+/**
+ * Neo ME (modernization studio) control action, intercepted by
+ * handleModernizationControlAction. Same envelope philosophy as
+ * OnboardingControlAction: `command` + untyped `payload`, so new commands
+ * never change the registered schema.
+ */
+export interface ModernizationControlAction extends ActionBase<
+  typeof MODERNIZATION_CONTROL_ACTION_KIND
+> {
+  command: string;
+  payload?: Record<string, unknown> | null;
+  rationale?: string | null;
+}
+
 export interface OnboardingControlAction extends ActionBase<
   typeof ONBOARDING_CONTROL_ACTION_KIND
 > {
@@ -405,4 +420,5 @@ export type Action =
   | SwitchLLMAction
   | CanvasUIAction
   | OnboardingControlAction
+  | ModernizationControlAction
   | LaunchChildConversationAction;

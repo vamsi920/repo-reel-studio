@@ -11,6 +11,7 @@ import {
   Gauge,
   PlugZap,
   ShieldCheck,
+  Replace,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
@@ -234,6 +235,14 @@ export function SidebarRailBody({
           collapsed={collapsed}
           forceActive={isEnvironmentActive}
           icon={<PlugZap width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/modernize"
+          label={t(I18nKey.SIDEBAR$NEOME)}
+          testId="sidebar-neome-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/modernize")}
+          icon={<Replace width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
           to="/agentops"

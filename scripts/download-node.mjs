@@ -80,7 +80,7 @@ const outDir = join(
 // Override at build time with NODE_VERSION=… (e.g. to test against a
 // newer release). Major version >=22 only; engines.node in npm 10.x
 // requires ^18.17.0 || >=20.5.0.
-const NODE_BUNDLE_VERSION = "22.12.0";
+const NODE_BUNDLE_VERSION = "22.23.3";
 
 // ── Platform detection ───────────────────────────────────────────────────────
 

@@ -48,10 +48,12 @@ describe("desktop mode preferences", () => {
     saveDesktopPrefs(path, {
       mode: "local",
       lastUpdateCheckAt: "2026-10-20T00:00:00Z",
+      appearance: "dark",
     });
     expect(loadDesktopPrefs(path)).toEqual({
       mode: "local",
       lastUpdateCheckAt: "2026-10-20T00:00:00Z",
+      appearance: "dark",
     });
 
     writeFileSync(path, JSON.stringify({ mode: "cloud?" }));
@@ -143,6 +145,8 @@ describe("agent server menu", () => {
     checkForUpdates: vi.fn(),
     setMode: vi.fn(),
     currentMode: () => mode,
+    setAppearance: vi.fn(),
+    currentAppearance: () => "system" as const,
   });
 
   it("offers Neo Cloud and local as radio items with the current one checked", () => {

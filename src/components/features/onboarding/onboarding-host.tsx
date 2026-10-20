@@ -1,4 +1,4 @@
-import { useLocation } from "react-router";
+import { useLocation, useMatch } from "react-router";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useSettings } from "#/hooks/query/use-settings";
 import { hasUsableCloudLlm } from "./cloud-llm-readiness";
@@ -32,9 +32,13 @@ export function OnboardingHost() {
   const { backend } = useActiveBackend();
   const settings = useSettings();
   const isCloudBackend = backend.kind === "cloud";
+  // The setup studio is itself the onboarding; this modal opened over it and
+  // blocked its "Begin" button (case-studies/onboarding). Not marked
+  // completed, so it still appears on the next ordinary page.
+  const isSetupStudio = useMatch("/environment/setup") !== null;
 
   if (!isPreview) {
-    if (isCompleted) return null;
+    if (isCompleted || isSetupStudio) return null;
     if (isCloudBackend && settings.isLoading) return null;
     if (isCloudBackend && hasUsableCloudLlm(settings.data)) {
       return null;

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0e14; --fg: #eef2f7; --muted: #a3b0c4; --dim: #7e8a9e;
+      --border: #4b5468; --primary: #0b81b7; --glow: #2ab2ee;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #f5f7fa; --fg: #0f172a; --muted: #475569; --dim: #64748b; --border: #cbd5e1; }
+    }
+    html, body {
+      height: 100%; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, "SF Pro", BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased; user-select: none;
+    }
+    body { display: flex; align-items: center; justify-content: center; }
+    .titlebar { position: fixed; top: 0; left: 0; right: 0; height: 38px; -webkit-app-region: drag; }
+    .card { text-align: center; max-width: 420px; padding: 24px; }
+    .mark { width: 56px; height: 56px; margin: 0 auto 18px; color: var(--primary); }
+    h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 8px; }
+    p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .detail { margin-top: 8px; font-size: 11px; color: var(--dim); word-break: break-word; }
+    .actions { margin-top: 22px; display: flex; gap: 10px; justify-content: center; }
+    button {
+      font: inherit; font-size: 13px; padding: 7px 16px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--fg);
+    }
+    button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    button:hover { filter: brightness(1.08); }
+    .status { margin-top: 14px; font-size: 11px; color: var(--dim); min-height: 14px; }
+  </style>
+</head>
+<body>
+  <div class="titlebar"></div>
+  <div class="card">
+    <svg class="mark" viewBox="0 0 1024 1024" aria-hidden="true">
+      <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M394 152H630C822.278 152 978 307.722 978 500V872C978 905.137 951.137 932 918 932C884.863 932 858 905.137 858 872V500C858 373.452 755.548 271 630 271H394C267.452 271 165 373.452 165 500V872C165 905.137 138.137 932 105 932C71.8629 932 45 905.137 45 872V500C45 307.722 200.722 152 394 152Z"/>
+    </svg>
+    <h1 id="title">Can't reach Neo</h1>
+    <p id="message">Check your internet connection. Neo will reconnect automatically as soon as it can.</p>
+    <p id="detail" class="detail"></p>
+    <div class="actions">
+      <button id="retry" class="primary" type="button">Try again</button>
+      <button id="local" type="button">Use local agent server</button>
+    </div>
+    <p id="status" class="status"></p>
+  </div>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var detail = params.get("detail") || "";
+      var mode = params.get("mode") || "remote";
+      document.getElementById("detail").textContent = detail;
+      var localBtn = document.getElementById("local");
+      if (mode === "local") {
+        document.getElementById("title").textContent = "Local agent server stopped responding";
+        document.getElementById("message").textContent =
+          "The agent server on this computer is not answering. Try again, or switch to Neo Cloud.";
+        localBtn.textContent = "Use Neo Cloud instead";
+      }
+      var shell = window.desktopShell;
+      document.getElementById("retry").addEventListener("click", function () {
+        document.getElementById("status").textContent = "Reconnecting…";
+        if (shell) shell.retry();
+      });
+      localBtn.addEventListener("click", function () {
+        if (shell) shell.switchMode(mode === "local" ? "remote" : "local");
+      });
+      // Auto-retry when the browser reports connectivity is back.
+      window.addEventListener("online", function () {
+        document.getElementById("status").textContent = "Connection restored, reconnecting…";
+        if (shell) shell.retry();
+      });
+    })();
+  </script>
+</body>
+</html>

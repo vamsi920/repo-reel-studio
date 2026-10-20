@@ -70,12 +70,12 @@ header a, header button, header input {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
+  background: rgba(128,128,128,0.35);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.55); background-clip: padding-box; }
 `;
 }
 
@@ -93,6 +93,20 @@ export function buildNavigateScript(path) {
     `if(location.pathname===p){return;}` +
     `history.pushState({},"",p);` +
     `dispatchEvent(new PopStateEvent("popstate",{state:{}}));})();`
+  );
+}
+
+/**
+ * JS that stores the appearance choice where the web app reads it
+ * (src/themes/appearance.ts) and notifies it, so View ▸ Appearance and the
+ * in-app setting stay one preference.
+ * @param {"system" | "light" | "dark"} mode
+ */
+export function buildSetAppearanceScript(mode) {
+  const safe = JSON.stringify(mode);
+  return (
+    `(function(){try{localStorage.setItem("openhands-appearance",${safe});}catch(e){}` +
+    `dispatchEvent(new Event("openhands-appearance-change"));})();`
   );
 }
 

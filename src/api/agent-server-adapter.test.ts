@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CANVAS_UI_CLIENT_TOOL_NAME } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
 import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
+import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 import { DEFAULT_SETTINGS } from "#/services/settings";
 import type { Settings } from "#/types/settings";
 import { buildStartConversationRequest } from "./agent-server-adapter";
@@ -194,6 +195,7 @@ describe("buildStartConversationRequest — agentProfileId path", () => {
       CANVAS_UI_CLIENT_TOOL_NAME,
       LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
       ONBOARDING_CONTROL_TOOL_NAME,
+      MODERNIZATION_CONTROL_TOOL_NAME,
     ]);
   });
 

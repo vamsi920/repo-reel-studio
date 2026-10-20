@@ -7,7 +7,7 @@ export default heroui({
   // the cool-grey ramp below is index.css's dark ramp with its lightness
   // order inverted (see index.css comment), so every existing dark-mode
   // selector keeps working unchanged while the app renders light end-to-end.
-  defaultTheme: "dark",
+  defaultTheme: "light",
   layout: {
     radius: {
       small: "5px",
@@ -15,7 +15,7 @@ export default heroui({
     },
   },
   themes: {
-    dark: {
+    light: {
       colors: {
         primary: "#0B81B7", // Neo cyan-blue
 
@@ -64,6 +64,47 @@ export default heroui({
           "900": "#2C313F", // cool-grey-300 (light)
           DEFAULT: "#A3B0C4", // cool-grey-800 (light) — hover/selected tint
           foreground: "#05070A", // cool-grey-50 (light) — text on default bg
+        },
+      },
+    },
+    // Dark palette: the light ramp inverted back to its original order (see
+    // src/themes/appearance.ts DARK_COOL_GREY). Selected by the `dark`
+    // class that AgentServerUIRoot sets when the appearance resolves to dark.
+    dark: {
+      colors: {
+        primary: "#22E0FF",
+        background: { DEFAULT: "#0B0E14", foreground: "#EEF2F7" },
+        foreground: {
+          DEFAULT: "#C3CDDC",
+          "50": "#05070A",
+          "100": "#0B0E14",
+          "200": "#21252F",
+          "300": "#2C313F",
+          "400": "#383F50",
+          "500": "#4B5468",
+          "600": "#626D82",
+          "700": "#7E8A9E",
+          "800": "#A3B0C4",
+          "900": "#C3CDDC",
+        },
+        content1: { DEFAULT: "#21252F", foreground: "#EEF2F7" },
+        content2: { DEFAULT: "#2C313F", foreground: "#DCE3EE" },
+        content3: { DEFAULT: "#383F50", foreground: "#C3CDDC" },
+        content4: { DEFAULT: "#4B5468", foreground: "#A3B0C4" },
+        focus: { DEFAULT: "#22E0FF" },
+        default: {
+          "50": "#05070A",
+          "100": "#0B0E14",
+          "200": "#21252F",
+          "300": "#2C313F",
+          "400": "#383F50",
+          "500": "#4B5468",
+          "600": "#626D82",
+          "700": "#7E8A9E",
+          "800": "#A3B0C4",
+          "900": "#C3CDDC",
+          DEFAULT: "#383F50",
+          foreground: "#EEF2F7",
         },
       },
     },
