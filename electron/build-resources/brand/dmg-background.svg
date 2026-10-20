@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 380" width="540" height="380">
+  <!-- DMG installer window background (540×380 pt; rendered at 1x and 2x). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1420"/>
+      <stop offset="1" stop-color="#070b12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.2" cy="0" r="0.8">
+      <stop offset="0" stop-color="#0b81b7" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0b81b7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="teal" cx="1" cy="1" r="0.7">
+      <stop offset="0" stop-color="#27867d" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#27867d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="540" height="380" fill="url(#bg)"/>
+  <rect width="540" height="380" fill="url(#glow)"/>
+  <rect width="540" height="380" fill="url(#teal)"/>
+  <!-- watermark arch -->
+  <g transform="translate(140 -40) scale(0.5)" opacity="0.05">
+    <path fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd" d="M394 152H630C822.278 152 978 307.722 978 500V872C978 905.137 951.137 932 918 932C884.863 932 858 905.137 858 872V500C858 373.452 755.548 271 630 271H394C267.452 271 165 373.452 165 500V872C165 905.137 138.137 932 105 932C71.8629 932 45 905.137 45 872V500C45 307.722 200.722 152 394 152Z"/>
+  </g>
+  <!-- arrow between the app icon (x=130) and the Applications link (x=410) -->
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M215 220H322"/>
+    <path d="M308 208L322 220L308 232"/>
+  </g>
+  <text x="270" y="318" text-anchor="middle" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" fill="#ffffff" fill-opacity="0.7">Drag Neo to the Applications folder</text>
+  <text x="270" y="56" text-anchor="middle" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.3" fill="#ffffff" fill-opacity="0.92">Neo</text>
+  <text x="270" y="76" text-anchor="middle" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#ffffff" fill-opacity="0.5">AI coding agents, on your Mac</text>
+</svg>

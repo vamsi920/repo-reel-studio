@@ -122,6 +122,7 @@
     "download-uv": "node scripts/download-uv.mjs",
     "download-node": "node scripts/download-node.mjs",
     "generate-icons": "node scripts/generate-icons.mjs",
+    "render-brand-assets": "node scripts/render-brand-assets.mjs && node scripts/generate-icons.mjs",
     "build:codegraph-analyzer": "node scripts/build-codegraph-analyzer.mjs",
     "docs:env": "node scripts/generate-environment-docs.mjs",
     "make-connector-registry": "node scripts/generate-connector-registry.mjs",

@@ -108,3 +108,7 @@ test-results-auth/
 # stryker mutation testing
 .stryker-tmp/
 reports/
+
+# Electron desktop build inputs/outputs (downloaded by scripts/download-{uv,node}.mjs, packaged by electron-builder)
+resources/
+dist-electron/

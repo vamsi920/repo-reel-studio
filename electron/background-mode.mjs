@@ -171,9 +171,17 @@ export function setupBackgroundMode({
   }
 
   try {
-    const image = nativeImage
-      .createFromPath(iconPath)
-      .resize({ width: 18, height: 18 });
+    let image = nativeImage.createFromPath(iconPath);
+    if (process.platform === "darwin") {
+      // A `…Template.png` file is already 22×22 (+@2x) and monochrome; mark
+      // it so the menu bar tints it. Anything else is scaled to fit.
+      if (!image.isTemplateImage()) {
+        image = image.resize({ width: 18, height: 18 });
+        image.setTemplateImage(true);
+      }
+    } else {
+      image = image.resize({ width: 18, height: 18 });
+    }
     tray = new Tray(image);
     tray.setToolTip("Neo");
     // Windows and most Linux trays open the app on a plain click; macOS

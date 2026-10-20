@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    Neo macOS app icon master. Follows Apple's macOS icon grid: the squircle
+    occupies 824×824 inside the 1024 canvas, leaving room for the baked-in
+    drop shadow. Rendered to icon.png by scripts/render-brand-assets.mjs.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1596d4"/>
+      <stop offset="0.55" stop-color="#0b6fa3"/>
+      <stop offset="1" stop-color="#053a5a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.22" cy="0.12" r="0.9">
+      <stop offset="0" stop-color="#5fd0ff" stop-opacity="0.75"/>
+      <stop offset="0.45" stop-color="#2ab2ee" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#2ab2ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="teal" cx="0.9" cy="1" r="0.8">
+      <stop offset="0" stop-color="#27867d" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#27867d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d6f1ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
+      <feOffset dy="26" result="b"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.45"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="markShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14"/>
+      <feOffset dy="14" result="b"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="squircle">
+      <rect x="100" y="100" width="824" height="824" rx="186"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  </g>
+  <g clip-path="url(#squircle)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
+    <rect x="100" y="100" width="824" height="824" fill="url(#teal)"/>
+    <!-- faint grid lines: the "canvas" -->
+    <g stroke="#ffffff" stroke-opacity="0.045" stroke-width="2">
+      <path d="M100 306H924M100 512H924M100 718H924"/>
+      <path d="M306 100V924M512 100V924M718 100V924"/>
+    </g>
+    <rect x="100" y="100" width="824" height="412" fill="url(#gloss)"/>
+    <!-- inner rim -->
+    <rect x="103" y="103" width="818" height="818" rx="183" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="4"/>
+  </g>
+
+  <!-- Arch mark: 933×780 native box scaled to ~520px wide, centred. -->
+  <g filter="url(#markShadow)" transform="translate(227 296) scale(0.557)">
+    <path fill="url(#mark)" fill-rule="evenodd" clip-rule="evenodd" d="M394 152H630C822.278 152 978 307.722 978 500V872C978 905.137 951.137 932 918 932C884.863 932 858 905.137 858 872V500C858 373.452 755.548 271 630 271H394C267.452 271 165 373.452 165 500V872C165 905.137 138.137 932 105 932C71.8629 932 45 905.137 45 872V500C45 307.722 200.722 152 394 152Z" transform="translate(0 -152)"/>
+  </g>
+</svg>

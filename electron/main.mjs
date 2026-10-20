@@ -42,10 +42,12 @@ import {
   nativeImage,
   nativeTheme,
   Notification,
+  screen,
   shell,
   Tray,
 } from "electron";
 import { chmodSync, existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -53,6 +55,25 @@ import {
   launchedInBackground,
   setupBackgroundMode,
 } from "./background-mode.mjs";
+import { buildAppMenuTemplate, buildDockMenuTemplate } from "./app-menu.mjs";
+import { buildContextMenuTemplate } from "./context-menu.mjs";
+import {
+  TOGGLE_SIDEBAR_SCRIPT,
+  buildDesktopChromeCss,
+  buildNavigateScript,
+  deepLinkToPath,
+} from "./renderer-chrome.mjs";
+import {
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+  loadWindowState,
+  trackWindowState,
+} from "./window-state.mjs";
+
+const APP_NAME = "Neo";
+const APP_URL = "http://localhost:8000";
+/** Custom URL scheme: `neo://open/settings` focuses the app and navigates. */
+const DEEP_LINK_PROTOCOL = "neo";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -81,6 +102,15 @@ const appIconPath = join(
   "build-resources",
   process.platform === "win32" ? "icon.ico" : "icon.png",
 );
+
+// macOS menu-bar icon: a monochrome "template" image (black + alpha) that
+// the system tints for light/dark menu bars and the pressed state. The
+// `Template` suffix makes Electron mark it as such; the @2x sibling is
+// picked up automatically for Retina. Other platforms keep the colour icon.
+const trayIconPath =
+  process.platform === "darwin"
+    ? join(__dirname, "build-resources", "trayTemplate.png")
+    : appIconPath;
 
 // electron-builder's NSIS shortcuts are stamped with AppUserModelId
 // ${APP_ID} (WinShell::SetLnkAUMI in installer.nsh). Declare the same id so
@@ -276,9 +306,13 @@ let mainWin = null;
 
 // Collapsed splash size — loading.html's .container height must match. The
 // expanded height reveals the startup-log console below it ("Show details").
-const LOADING_WIN_WIDTH = 460;
-const LOADING_WIN_HEIGHT = 360;
-const LOADING_WIN_EXPANDED_HEIGHT = 560;
+const LOADING_WIN_WIDTH = 480;
+const LOADING_WIN_HEIGHT = 380;
+const LOADING_WIN_EXPANDED_HEIGHT = 600;
+
+// Where the macOS traffic lights sit when the title bar is hidden; the
+// injected sidebar padding (renderer-chrome.mjs TITLEBAR_HEIGHT_PX) clears it.
+const TRAFFIC_LIGHT_POSITION = { x: 14, y: 13 };
 
 /**
  * Grow or shrink the loading window to reveal/hide the startup-log console.
@@ -310,11 +344,17 @@ function createLoadingWindow() {
     // Pre-paint window color; must match --oh-background in loading.html.
     backgroundColor: "#0b0e14",
     icon: appIconPath,
+    // Frameless + roundedCorners gives the macOS 11+ splash shape; the
+    // system drop shadow stays on.
+    roundedCorners: true,
+    hasShadow: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       // Bridges the startup-log console over IPC (see preload.cjs).
       preload: join(__dirname, "preload.cjs"),
+      // Read by preload.cjs so the splash can print the app version.
+      additionalArguments: [`--neo-app-version=${app.getVersion()}`],
     },
   });
 
@@ -338,32 +378,126 @@ function createLoadingWindow() {
   loadingWin.once("ready-to-show", () => loadingWin?.show());
 }
 
+/** Persisted main-window bounds live next to the background-mode prefs. */
+function windowStatePath() {
+  return join(app.getPath("userData"), "window-state.json");
+}
+
+/**
+ * Reveal a window with a short opacity fade (macOS/Windows honour
+ * setOpacity; Linux ignores it, so the window just appears). Keeps the
+ * splash → app hand-off from feeling like a hard cut.
+ */
+function fadeInWindow(win, durationMs = 220) {
+  if (!win || win.isDestroyed()) return;
+  const supportsOpacity = process.platform !== "linux";
+  if (!supportsOpacity) {
+    win.show();
+    return;
+  }
+  win.setOpacity(0);
+  win.show();
+  const steps = 12;
+  let i = 0;
+  const tick = () => {
+    if (!win || win.isDestroyed()) return;
+    i += 1;
+    const t = Math.min(1, i / steps);
+    // ease-out
+    win.setOpacity(1 - (1 - t) * (1 - t));
+    if (t < 1) setTimeout(tick, durationMs / steps);
+  };
+  setTimeout(tick, 0);
+}
+
+/** Run an in-app navigation in the main window, opening it first if needed. */
+function navigateMainWindow(path) {
+  showMainWindow();
+  if (!mainWin || mainWin.isDestroyed()) return;
+  const run = () =>
+    mainWin?.webContents
+      .executeJavaScript(buildNavigateScript(path), true)
+      .catch(() => {});
+  if (mainWin.webContents.isLoading()) {
+    mainWin.webContents.once("did-finish-load", run);
+  } else {
+    run();
+  }
+}
+
 function createMainWindow() {
+  const displays = screen.getAllDisplays().map((d) => d.workArea);
+  const state = loadWindowState(windowStatePath(), displays);
+
   mainWin = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 800,
-    minHeight: 600,
+    width: state.width,
+    height: state.height,
+    x: state.x,
+    y: state.y,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
+    title: APP_NAME,
     // App-shell background (--oh-background in src/index.css) — avoids white
-    // flashes during the show → maximize repaint after the splash closes.
+    // flashes while the first paint happens behind the splash.
     backgroundColor: "#0b0e14",
+    // Native-looking chrome: no title bar, traffic lights inset over the
+    // sidebar (which renderer-chrome.mjs pads and makes draggable).
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
+    trafficLightPosition:
+      process.platform === "darwin" ? TRAFFIC_LIGHT_POSITION : undefined,
     icon: appIconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      spellcheck: true,
     },
   });
 
-  mainWin.loadURL("http://localhost:8000");
+  // The web app only ever sees the desktop CSS, never the other way round.
+  const chromeCss = buildDesktopChromeCss({ platform: process.platform });
+  mainWin.webContents.on("did-finish-load", () => {
+    mainWin?.webContents.insertCSS(chromeCss).catch(() => {});
+  });
+
+  // Keep the OS window title stable — the SPA swaps document.title per route.
+  mainWin.on("page-title-updated", (event) => event.preventDefault());
+
+  // Native right-click menu (Electron ships none).
+  mainWin.webContents.on("context-menu", (_event, params) => {
+    const wc = mainWin?.webContents;
+    if (!wc) return;
+    const template = buildContextMenuTemplate(
+      params,
+      {
+        openExternal: (url) => shell.openExternal(url),
+        copyText: (text) => clipboard.writeText(text),
+        copyImage: (url) => wc.copyImageAt(params.x, params.y) ?? url,
+        replaceMisspelling: (word) => wc.replaceMisspelling(word),
+        addToDictionary: (word) =>
+          wc.session.addWordToSpellCheckerDictionary(word),
+        inspectElement: (x, y) => wc.inspectElement(x, y),
+        reload: () => wc.reload(),
+      },
+      { isPackaged: app.isPackaged },
+    );
+    Menu.buildFromTemplate(template).popup({ window: mainWin ?? undefined });
+  });
+
+  mainWin.loadURL(APP_URL);
 
   mainWin.once("ready-to-show", () => {
-    loadingWin?.destroy();
-    loadingWin = null;
-    mainWin?.show();
-    mainWin?.maximize();
+    if (state.maximized) mainWin?.maximize();
+    fadeInWindow(mainWin);
+    // Let the app's first frame land before the splash disappears so the
+    // hand-off reads as a cross-fade rather than a flash.
+    setTimeout(() => {
+      loadingWin?.destroy();
+      loadingWin = null;
+    }, 180);
   });
+
+  trackWindowState(mainWin, windowStatePath());
 
   // Route window.open() calls appropriately.
   mainWin.webContents.setWindowOpenHandler(({ url }) => {
@@ -640,6 +774,96 @@ async function startStack() {
 /** @type {{ shouldStayInBackground: () => boolean } | null} */
 let background = null;
 
+// One Neo at a time: the stack binds fixed ports (8000/18000/18001), so a
+// second launch would only fail at startup. Hand the activation (and any
+// neo:// link in its argv) to the running instance and exit.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const link = argv.find((a) => a.startsWith(`${DEEP_LINK_PROTOCOL}://`));
+    const path = link ? deepLinkToPath(link) : null;
+    if (path) navigateMainWindow(path);
+    else showMainWindow();
+  });
+}
+
+// neo://… links (macOS delivers them via open-url, Windows/Linux via argv).
+if (app.isPackaged) {
+  app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL);
+}
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  const path = deepLinkToPath(url);
+  if (path) navigateMainWindow(path);
+  else showMainWindow();
+});
+
+/** Folder the launcher's winston file logger writes to. */
+function logsFolder() {
+  return join(homedir(), ".openhands", "agent-canvas", "logs");
+}
+
+function diagnosticInfo() {
+  return [
+    `${APP_NAME} ${app.getVersion()}`,
+    `Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}`,
+    `Platform ${process.platform} ${process.arch} · ${process.getSystemVersion?.() ?? ""}`,
+    `Packaged: ${app.isPackaged}`,
+    `User data: ${app.getPath("userData")}`,
+    `Logs: ${logsFolder()}`,
+  ].join("\n");
+}
+
+/** Native menu bar + dock menu + About panel. */
+function installAppMenus() {
+  const actions = {
+    navigate: navigateMainWindow,
+    openExternal: (url) => shell.openExternal(url),
+    showAbout: () => app.showAboutPanel(),
+    showMainWindow,
+    openLogsFolder: () => shell.openPath(logsFolder()),
+    copyDiagnostics: () => clipboard.writeText(diagnosticInfo()),
+    toggleSidebar: () => {
+      showMainWindow();
+      mainWin?.webContents
+        .executeJavaScript(TOGGLE_SIDEBAR_SCRIPT, true)
+        .catch(() => {});
+    },
+    reloadApp: () => mainWin?.webContents.reload(),
+  };
+
+  app.setAboutPanelOptions({
+    applicationName: APP_NAME,
+    applicationVersion: app.getVersion(),
+    version: `Electron ${process.versions.electron}`,
+    copyright: "© 2026 NeoDevEx",
+    credits:
+      "AI coding agents, on your Mac.\nBuilt on the OpenHands agent SDK.",
+    iconPath: appIconPath,
+    website: "https://neo.neodevex.com",
+  });
+
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate(
+      buildAppMenuTemplate({
+        platform: process.platform,
+        appName: APP_NAME,
+        version: app.getVersion(),
+        actions,
+        isPackaged: app.isPackaged,
+      }),
+    ),
+  );
+
+  if (process.platform === "darwin" && app.dock) {
+    app.dock.setMenu(Menu.buildFromTemplate(buildDockMenuTemplate(actions)));
+  }
+}
+
+/** True once the backend stack answered; the main window needs it. */
+let stackReady = false;
+
 /** Show the main window, creating it again after it was closed. */
 function showMainWindow() {
   app.dock?.show();
@@ -648,11 +872,23 @@ function showMainWindow() {
     mainWin.focus();
     return;
   }
+  // Still booting (second launch / dock click / neo:// link during the
+  // splash): bring the splash forward instead of opening a window that
+  // would only show a connection error.
+  if (!stackReady) {
+    if (loadingWin && !loadingWin.isDestroyed()) {
+      loadingWin.show();
+      loadingWin.focus();
+    }
+    return;
+  }
   createMainWindow();
 }
 
 app.whenReady().then(async () => {
   nativeTheme.themeSource = "dark";
+  app.setName(APP_NAME);
+  installAppMenus();
 
   // Set the dock icon explicitly on macOS so `npm run desktop` shows the
   // Neo logo instead of the default Electron logo. In a packaged
@@ -703,13 +939,14 @@ app.whenReady().then(async () => {
     await waitForAgentServer("http://localhost:8000/server_info", 60_000);
 
     setBootPhase("Ready.");
+    stackReady = true;
     background = setupBackgroundMode({
       app,
       Tray,
       Menu,
       Notification,
       nativeImage,
-      iconPath: appIconPath,
+      iconPath: trayIconPath,
       prefsPath: join(app.getPath("userData"), "background-mode.json"),
       openWindow: showMainWindow,
     });
@@ -730,7 +967,7 @@ app.whenReady().then(async () => {
     const errorTail = recentServiceErrors.length
       ? `\n\nRecent service errors:\n${recentServiceErrors.join("\n")}`
       : "";
-    dialog.showErrorBox("Neo failed to start", summary + errorTail);
+    dialog.showErrorBox(`${APP_NAME} failed to start`, summary + errorTail);
     app.quit();
   }
 });

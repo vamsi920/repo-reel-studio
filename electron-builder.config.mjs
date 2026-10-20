@@ -210,7 +210,11 @@ function getDirSizeBytes(dir) {
 const config = {
   appId: "dev.neodevex.agent-canvas",
   productName: "Neo",
-  copyright: "Copyright © 2025 All Hands AI",
+  copyright: "Copyright © 2026 NeoDevEx",
+
+  // neo://… deep links (handled in electron/main.mjs via open-url /
+  // second-instance). Registered in Info.plist so macOS routes them here.
+  protocols: [{ name: "Neo", schemes: ["neo"] }],
 
   // Stamp the packaged app with the released version (see rootPackageJson
   // note above).
@@ -250,6 +254,14 @@ const config = {
     "build-resources/icon.png",
     // Windows runtime BrowserWindow icon (main.mjs picks .ico on win32).
     "build-resources/icon.ico",
+    // macOS menu-bar template icon (+@2x), see background-mode.mjs.
+    "build-resources/trayTemplate.png",
+    "build-resources/trayTemplate@2x.png",
+    // Build-only inputs: SVG masters and the DMG artwork never ship inside
+    // the app bundle.
+    "!build-resources/brand/**",
+    "!build-resources/dmg-background*",
+    "!build-resources/icon.icns",
     // Scripts from project root. Mostly Node built-ins; the two spawned
     // servers additionally need RUNTIME_PACKAGES, restored into
     // Resources/app/node_modules by the afterPack hook.
@@ -298,6 +310,21 @@ const config = {
   //
   mac: {
     category: "public.app-category.developer-tools",
+    darkModeSupport: true,
+    // Local builds are unsigned (ad-hoc on Apple Silicon); release signing
+    // is opt-in through the standard CSC_* environment variables.
+    hardenedRuntime: false,
+    gatekeeperAssess: false,
+    extendInfo: {
+      NSHumanReadableCopyright: "Copyright © 2026 NeoDevEx",
+      // The app only talks to its own local stack; opt out of the
+      // light-only appearance so vibrancy / menus follow the dark theme.
+      NSRequiresAquaSystemAppearance: false,
+      // Keep the shell responsive when the window is minimised: the agent
+      // stack runs inside this process tree and must not be App-Napped.
+      NSAppSleepDisabled: true,
+      LSMinimumSystemVersion: "12.0.0",
+    },
     target: [
       {
         target: "dmg",
@@ -313,6 +340,12 @@ const config = {
 
   dmg: {
     title: "Neo",
+    // Branded installer window (1x + 2x merged into one TIFF by
+    // scripts/render-brand-assets.mjs; the arrow is drawn between the two
+    // icon slots below).
+    background: "electron/build-resources/dmg-background.tiff",
+    icon: "electron/build-resources/icon.icns",
+    iconSize: 128,
     contents: [
       { x: 130, y: 220 },
       { x: 410, y: 220, type: "link", path: "/Applications" },

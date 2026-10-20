@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Neo arch mark. Same geometry as public/favicon.svg; fill inherits currentColor. -->
+  <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M394 152H630C822.278 152 978 307.722 978 500V872C978 905.137 951.137 932 918 932C884.863 932 858 905.137 858 872V500C858 373.452 755.548 271 630 271H394C267.452 271 165 373.452 165 500V872C165 905.137 138.137 932 105 932C71.8629 932 45 905.137 45 872V500C45 307.722 200.722 152 394 152Z"/>
+</svg>

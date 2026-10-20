@@ -10,7 +10,17 @@
  */
 const { contextBridge, ipcRenderer } = require("electron");
 
+// main.mjs passes the app version through additionalArguments so the splash
+// can show it (sandboxed preloads cannot reach `app`).
+const VERSION_FLAG = "--neo-app-version=";
+const version =
+  (process.argv.find((arg) => arg.startsWith(VERSION_FLAG)) ?? "").slice(
+    VERSION_FLAG.length,
+  ) || "";
+
 contextBridge.exposeInMainWorld("desktopBoot", {
+  /** App version string (empty when unknown). */
+  version,
   /** Subscribe to batched startup-log lines: cb([{name, line, level}, …]). */
   onLogBatch(cb) {
     if (typeof cb !== "function") return;
