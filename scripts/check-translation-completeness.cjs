@@ -13,6 +13,15 @@ const path = require("path");
 // protocol/technical terms, placeholder-only format strings). Add a key here
 // only when the English value is genuinely correct for all languages.
 const IDENTICAL_VALUE_ALLOWLIST = new Set([
+  // Neo ME: the product name, a brand-name format string, and prompts that
+  // are sent to the model rather than shown to people.
+  "SIDEBAR$NEOME",
+  "NEOME$TITLE",
+  "NEOME$STUDIO_CONVERSATION_TITLE",
+  "NEOME$START_PROMPT",
+  "NEOME$RESUME_PROMPT",
+  "NEOME$RESTART_PROMPT",
+  "NEOME$START_MIGRATION_MESSAGE",
   "SIDEBAR$ENVIRONMENT_SETUP",
   // "Ask Neo" is the feature's product name, kept in English like "Neo".
   "COMMAND_MENU$AI_GUIDE_TITLE",

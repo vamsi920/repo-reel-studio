@@ -299,6 +299,131 @@ function StudioShell({
   );
 }
 
+/* ── Conversation launch (new project and restart share it) ────────────── */
+
+type CreateVariables = Parameters<
+  ReturnType<typeof useCreateConversation>["mutateAsync"]
+>[0];
+
+/** Where the agent works, rebuilt from the project's stored source. */
+function variablesForSource(source: ProjectSource): CreateVariables {
+  if (source.kind === "folder") return { workingDir: source.name };
+  return {
+    repository: {
+      name: source.name,
+      gitProvider: (source.gitProvider ?? "github") as Provider,
+      branch: source.branch,
+    },
+  };
+}
+
+/**
+ * Registers REA, starts a Neo ME conversation for `project` and attaches it.
+ * Throws on failure; the caller decides what to undo.
+ */
+function useLaunchNeoMeConversation() {
+  const { t } = useTranslation("openhands");
+  const { mutateAsync: createConversation } = useCreateConversation();
+  const setConversationId = useModernizationStudioStore(
+    (s) => s.setConversationId,
+  );
+  return React.useCallback(
+    async (project: ModernizationProject, query: string) => {
+      // REA first, so the conversation's MCP tool list already includes it.
+      const rea = await ensureReaMcpServer();
+      if (rea === "failed") displayErrorToast(t(I18nKey.NEOME$REA_FAILED));
+      else if (rea === "added") displaySuccessToast(t(I18nKey.NEOME$REA_READY));
+
+      const created = await createConversation({
+        ...variablesForSource(project.source),
+        query,
+        extraSystemSuffix: NEOME_SYSTEM_BRIEF,
+        entryPoint: "neome_studio",
+      });
+      setConversationId(project.id, created.conversation_id);
+      void AgentServerConversationService.updateConversationTitle(
+        created.conversation_id,
+        t(I18nKey.NEOME$STUDIO_CONVERSATION_TITLE, { name: project.name }),
+      ).catch(() => {});
+      return created.conversation_id;
+    },
+    [createConversation, setConversationId, t],
+  );
+}
+
+/**
+ * The project's conversation is gone (agent-server restart or deploy): start
+ * a fresh one on the same source. The plan, answers and checkpoints are kept
+ * in the store and handed back by `describe`, so the agent resumes instead of
+ * starting over.
+ */
+function RestartConversation({ project }: { project: ModernizationProject }) {
+  const { t } = useTranslation("openhands");
+  const navigate = useNavigate();
+  const launch = useLaunchNeoMeConversation();
+  const setStatus = useModernizationStudioStore((s) => s.setStatus);
+  const [restarting, setRestarting] = React.useState(false);
+
+  const restart = async () => {
+    setRestarting(true);
+    try {
+      await launch(project, t(I18nKey.NEOME$RESTART_PROMPT));
+      setStatus(
+        project.id,
+        project.report
+          ? "done"
+          : project.plan.length
+            ? "planned"
+            : project.components.length
+              ? "interviewing"
+              : "discovering",
+      );
+    } catch (error) {
+      displayErrorToast(
+        error instanceof Error && error.message
+          ? error.message
+          : t(I18nKey.NEOME$START_ERROR),
+      );
+    } finally {
+      setRestarting(false);
+    }
+  };
+
+  return (
+    <main
+      data-testid="neome-conversation-missing"
+      className="flex flex-col items-center justify-center gap-4 p-10 text-center"
+    >
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+        {project.name}
+      </h1>
+      <p className="max-w-[52ch] text-sm text-[var(--text-secondary)]">
+        {t(I18nKey.NEOME$CONVERSATION_MISSING)}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => navigate("/modernize")}
+          className="ame-btn-secondary ame-btn-sm"
+        >
+          {t(I18nKey.NEOME$PROJECTS)}
+        </button>
+        <button
+          type="button"
+          data-testid="neome-restart-conversation"
+          disabled={restarting}
+          onClick={() => void restart()}
+          className="ame-btn-primary ame-btn-sm"
+        >
+          {restarting
+            ? t(I18nKey.NEOME$STARTING)
+            : t(I18nKey.NEOME$RESTART_CONVERSATION)}
+        </button>
+      </div>
+    </main>
+  );
+}
+
 /* ── Project list / intake ─────────────────────────────────────────────── */
 
 function sourceLabel(source: ProjectSource): string {
@@ -314,11 +439,7 @@ function ProjectsScreen() {
   const projects = useModernizationStudioStore((s) => s.projects);
   const createProject = useModernizationStudioStore((s) => s.createProject);
   const removeProject = useModernizationStudioStore((s) => s.removeProject);
-  const setConversationId = useModernizationStudioStore(
-    (s) => s.setConversationId,
-  );
-  const { mutateAsync: createConversation, isPending: creating } =
-    useCreateConversation();
+  const launch = useLaunchNeoMeConversation();
   const [repoDialogOpen, setRepoDialogOpen] = React.useState(false);
   const [folderOpen, setFolderOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
@@ -331,30 +452,11 @@ function ProjectsScreen() {
     [projects],
   );
 
-  const startProject = async (
-    name: string,
-    source: ProjectSource,
-    variables: Parameters<typeof createConversation>[0],
-  ) => {
+  const startProject = async (name: string, source: ProjectSource) => {
     setStarting(true);
     const project = createProject({ name, source });
     try {
-      // REA first, so the conversation's MCP tool list already includes it.
-      const rea = await ensureReaMcpServer();
-      if (rea === "failed") displayErrorToast(t(I18nKey.NEOME$REA_FAILED));
-      else if (rea === "added") displaySuccessToast(t(I18nKey.NEOME$REA_READY));
-
-      const created = await createConversation({
-        ...variables,
-        query: t(I18nKey.NEOME$START_PROMPT),
-        extraSystemSuffix: NEOME_SYSTEM_BRIEF,
-        entryPoint: "neome_studio",
-      });
-      setConversationId(project.id, created.conversation_id);
-      void AgentServerConversationService.updateConversationTitle(
-        created.conversation_id,
-        t(I18nKey.NEOME$STUDIO_CONVERSATION_TITLE, { name }),
-      ).catch(() => {});
+      await launch(project, t(I18nKey.NEOME$START_PROMPT));
       navigate(`/modernize/${project.id}`);
     } catch (error) {
       removeProject(project.id);
@@ -377,36 +479,22 @@ function ProjectsScreen() {
     const name =
       selection.repository.full_name.split("/").pop() ??
       selection.repository.full_name;
-    void startProject(
-      name,
-      {
-        kind: "repository",
-        name: selection.repository.full_name,
-        branch: selection.branch.name,
-        gitProvider: selection.provider ?? selection.repository.git_provider,
-      },
-      {
-        repository: {
-          name: selection.repository.full_name,
-          gitProvider: selection.provider ?? selection.repository.git_provider,
-          branch: selection.branch.name,
-        },
-      },
-    );
+    void startProject(name, {
+      kind: "repository",
+      name: selection.repository.full_name,
+      branch: selection.branch.name,
+      gitProvider: selection.provider ?? selection.repository.git_provider,
+    });
   };
 
   const onFolder = (items: LocalWorkspace[]) => {
     setFolderOpen(false);
     const folder = items[0];
     if (!folder) return;
-    void startProject(
-      folder.name,
-      { kind: "folder", name: folder.path },
-      { workingDir: folder.path },
-    );
+    void startProject(folder.name, { kind: "folder", name: folder.path });
   };
 
-  const busy = creating || starting;
+  const busy = starting;
 
   if (active.backend.kind === "cloud") {
     return (
@@ -567,7 +655,6 @@ function ProjectsScreen() {
  * stores are global and two live sockets would wipe each other.
  */
 function ModernizeScreen() {
-  const { t } = useTranslation("openhands");
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId?: string }>();
   const outerNavigation = useNavigation();
@@ -618,26 +705,7 @@ function ModernizeScreen() {
   }
 
   if (!project.conversationId || conversationMissing) {
-    return (
-      <main
-        data-testid="neome-conversation-missing"
-        className="flex flex-col items-center justify-center gap-4 p-10 text-center"
-      >
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">
-          {project.name}
-        </h1>
-        <p className="max-w-[52ch] text-sm text-[var(--text-secondary)]">
-          {t(I18nKey.NEOME$CONVERSATION_MISSING)}
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/modernize")}
-          className="ame-btn-secondary ame-btn-sm"
-        >
-          {t(I18nKey.NEOME$PROJECTS)}
-        </button>
-      </main>
-    );
+    return <RestartConversation project={project} />;
   }
 
   return <StudioShell project={project} outerNavigation={outerNavigation} />;

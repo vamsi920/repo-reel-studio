@@ -64991,7 +64991,7 @@
     "uk": "Не вдалося. Спробуйте ще раз."
   },
   "NEOME$CONVERSATION_MISSING": {
-    "en": "This project's conversation no longer exists on the agent server (it may have restarted). The plan and checkpoints are kept; start a new conversation from the project list to resume.",
+    "en": "This project's conversation no longer exists on the agent server (it may have restarted). The plan, your answers and the checkpoints are kept: start a new conversation and Neo ME resumes from the last checkpoint.",
     "ja": "このプロジェクトの会話はエージェントサーバーに存在しません（再起動の可能性があります）。計画とチェックポイントは保持されています。プロジェクト一覧から新しい会話を開始して再開してください。",
     "zh-CN": "该项目的会话已不在智能体服务器上（可能已重启）。计划和检查点已保留；从项目列表启动新会话以继续。",
     "zh-TW": "該專案的對話已不在代理伺服器上（可能已重新啟動）。計畫和檢查點已保留；從專案清單啟動新對話以繼續。",
@@ -65295,5 +65295,39 @@
     "ca": "Fosc",
     "tr": "Koyu",
     "uk": "Темна"
+  },
+  "NEOME$RESTART_CONVERSATION": {
+    "en": "Start a new conversation",
+    "ja": "新しい会話を開始",
+    "zh-CN": "开始新会话",
+    "zh-TW": "開始新對話",
+    "ko-KR": "새 대화 시작",
+    "no": "Start en ny samtale",
+    "ar": "ابدأ محادثة جديدة",
+    "de": "Neue Konversation starten",
+    "fr": "Démarrer une nouvelle conversation",
+    "it": "Avvia una nuova conversazione",
+    "pt": "Iniciar uma nova conversa",
+    "es": "Iniciar una nueva conversación",
+    "ca": "Inicia una conversa nova",
+    "tr": "Yeni sohbet başlat",
+    "uk": "Почати нову розмову"
+  },
+  "NEOME$RESTART_PROMPT": {
+    "en": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "ja": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "zh-CN": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "zh-TW": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "ko-KR": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "no": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "ar": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "de": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "fr": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "it": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "pt": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "es": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "ca": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "tr": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered.",
+    "uk": "The previous Neo ME conversation for this project was lost when the agent server restarted. Call describe first: the discovered stack, my answers, the plan and the last checkpoint are all kept. This is a fresh checkout, so check the working tree and git history to see which steps' work survived (committed or pushed work survives, uncommitted work does not), redo anything missing, then continue from the last checkpoint. Do not re-ask questions that are already answered."
   }
 }

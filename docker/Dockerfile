@@ -68,6 +68,20 @@ RUN node -e " \
   require('fs').writeFileSync('/tmp/defaults.env', lines.join('\n') + '\n'); \
 "
 
+# ── Stage 1c: REA (Reverse Engineer Anything) for Neo ME ─────────────────────
+# Pre-installed so the agent-server's MCP tool listing does not have to wait
+# for `npx -y rea-agents` to download on a fresh machine (it overran the 30 s
+# limit after every deploy and Neo ME conversations failed to start). REA
+# needs Node >= 22.19, so it ships with its own Node binary instead of relying
+# on whatever the agent-server base image carries. Keep REA_VERSION equal to
+# REA_VERSION in src/lib/modernization/rea-mcp.ts (a test asserts it).
+FROM node:24-slim AS rea
+ARG REA_VERSION=6.7.0
+RUN npm install --prefix /opt/rea --omit=dev --no-audit --no-fund \
+      "rea-agents@${REA_VERSION}" \
+ && cp "$(command -v node)" /opt/rea/node \
+ && /opt/rea/node /opt/rea/node_modules/rea-agents/scripts/rea.mjs --version
+
 # ── Stage 2: Combined image ──────────────────────────────────────────────────
 FROM ${AGENT_SERVER_IMAGE} AS final
 
@@ -114,6 +128,13 @@ RUN if [ -n "${AGENT_SERVER_SDK_GIT_REF}" ]; then \
         "${BASE_GIT_URL}#subdirectory=openhands-tools" \
         "${BASE_GIT_URL}#subdirectory=openhands-workspace"; \
     fi
+
+# REA for Neo ME (see the `rea` stage). `rea mcp` is what the app registers
+# as the MCP server command when /server_info reports mode "docker".
+COPY --from=rea /opt/rea /opt/rea
+RUN printf '#!/bin/sh\nexec /opt/rea/node /opt/rea/node_modules/rea-agents/scripts/rea.mjs "$@"\n' \
+      > /usr/local/bin/rea \
+ && chmod +x /usr/local/bin/rea
 
 # Copy the frontend build output.
 # react-router.config.ts unpacks build/client/ into build/ for non-Vercel builds.

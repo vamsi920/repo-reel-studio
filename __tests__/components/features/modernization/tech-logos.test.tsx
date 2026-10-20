@@ -9,9 +9,13 @@ import {
 import { NEOME_SYSTEM_BRIEF } from "#/components/features/modernization/brief";
 import { MODERNIZATION_CONTROL_CLIENT_TOOL } from "#/api/modernization-control-client-tool";
 import { MODERNIZATION_CONTROL_COMMANDS } from "#/constants/modernization-control";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   hasReaMcpServer,
+  reaServerForMode,
   REA_MCP_SERVER,
+  REA_MCP_SERVER_BAKED,
   REA_VERSION,
 } from "#/lib/modernization/rea-mcp";
 
@@ -75,6 +79,32 @@ describe("modernization_control schema", () => {
 });
 
 describe("REA MCP registration", () => {
+  it("uses the pre-installed rea binary on Docker backends and npx elsewhere", () => {
+    expect(reaServerForMode("docker")).toEqual(REA_MCP_SERVER_BAKED);
+    expect(REA_MCP_SERVER_BAKED).toMatchObject({
+      command: "rea",
+      args: ["mcp"],
+    });
+    expect(reaServerForMode("dev:automation")).toEqual(REA_MCP_SERVER);
+    expect(reaServerForMode(null)).toEqual(REA_MCP_SERVER);
+    // A stored npx entry is stale on a Docker backend and gets rewritten.
+    expect(hasReaMcpServer({ rea: REA_MCP_SERVER }, REA_MCP_SERVER_BAKED)).toBe(
+      false,
+    );
+    expect(
+      hasReaMcpServer({ rea: REA_MCP_SERVER_BAKED }, REA_MCP_SERVER_BAKED),
+    ).toBe(true);
+  });
+
+  it("bakes the same REA version into the Docker image the app pins", () => {
+    const dockerfile = readFileSync(
+      resolve(__dirname, "../../../../docker/Dockerfile"),
+      "utf8",
+    );
+    expect(dockerfile).toContain(`ARG REA_VERSION=${REA_VERSION}`);
+    expect(dockerfile).toContain("/usr/local/bin/rea");
+  });
+
   it("detects the pinned stdio server and nothing else", () => {
     expect(hasReaMcpServer({ rea: REA_MCP_SERVER })).toBe(true);
     expect(hasReaMcpServer({})).toBe(false);
