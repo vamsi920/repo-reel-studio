@@ -213,6 +213,23 @@ describe("modernization_control dispatcher", () => {
     expect(bad).toMatchObject({ status: "rejected", reason: "unknown_step" });
 
     await dispatch("update_progress", { step_id: "spec", status: "done" });
+    // Building without an approval is refused; the Start button (or a
+    // request_approval the user accepted) unlocks it.
+    const [noApproval] = await dispatch("update_progress", {
+      step_id: "port",
+      status: "active",
+    });
+    expect(noApproval).toMatchObject({
+      status: "rejected",
+      reason: "approval_required",
+    });
+    await dispatch("request_approval", {
+      approval_id: "go",
+      what: "Start building",
+    });
+    useModernizationStudioStore
+      .getState()
+      .resolveApproval(projectId, "go", "approved");
     const [mig] = await dispatch("update_progress", {
       step_id: "port",
       status: "active",
@@ -243,6 +260,24 @@ describe("modernization_control dispatcher", () => {
     expect(
       useModernizationStudioStore.getState().projects[projectId].status,
     ).toBe("verifying");
+
+    // Verify is only done with a green run reported in the same call.
+    const [notGreen] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: { tests_total: 20, tests_passing: 19 },
+    });
+    expect(notGreen).toMatchObject({
+      status: "rejected",
+      reason: "verification_not_green",
+      detail: "tests_failing:1",
+    });
+    const [green] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: { tests_total: 20, tests_passing: 20 },
+    });
+    expect(green.status).toBe("ok");
   });
 
   it("log is fire-and-forget, checkpoint persists state and refuses secrets, complete requires all steps settled", async () => {
@@ -273,16 +308,35 @@ describe("modernization_control dispatcher", () => {
       components: [{ name: "UI", kind: "frontend", evidence: ["src/"] }],
     });
     await dispatch("set_plan", {
-      steps: [{ id: "spec", phase: "specify", title: "Spec" }],
+      steps: [
+        { id: "spec", phase: "specify", title: "Spec" },
+        { id: "check", phase: "verify", title: "Verify" },
+      ],
     });
     const [tooEarly] = await dispatch("complete", { summary: "done" });
     expect(tooEarly).toMatchObject({
       status: "rejected",
       reason: "steps_pending",
-      pending: ["spec"],
+      pending: ["spec", "check"],
     });
 
     await dispatch("update_progress", { step_id: "spec", status: "done" });
+    await dispatch("update_progress", {
+      step_id: "check",
+      status: "skipped",
+      note: "no",
+    });
+    const [unverified] = await dispatch("complete", { summary: "done" });
+    expect(unverified).toMatchObject({
+      status: "rejected",
+      reason: "verification_required",
+      missing: ["verify_step_done", "no_tests_reported"],
+    });
+    await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: { tests_total: 3, tests_passing: 3 },
+    });
     const [done] = await dispatch("complete", {
       summary: "Migrated.",
       verification: { tests: "20/20" },

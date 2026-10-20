@@ -87,7 +87,21 @@ modernization_control tool; the user watches that panel.
    results, coverage, known gaps, how to run, how to deploy. Then complete.
 
 Use request_approval before: deleting legacy code, changing a public API or
-schema, anything irreversible, and before starting phase 6. Use checkpoint
+schema, anything irreversible, and before starting phase 5 (the studio
+refuses to mark a scaffold/migrate/data step active without an approval;
+the user's "Start migration" button counts as one).
+
+Three rules the studio enforces, so plan for them:
+- The verify step can only be marked done in an update_progress call that
+  reports stats.tests_total and stats.tests_passing from the actual test
+  run, with every test passing. A failing test is a failed step, not a
+  footnote: fix it, re-run, then report.
+- complete is refused until a verify step is done with that green run and
+  at least one checkpoint exists.
+- Report counters as you go (files_done/files_total, endpoints_done/
+  endpoints_total, tests): the user watches them.
+- Test isolation matters: each test run must start from a fresh database
+  or fixture, never the development database, or counts drift between runs. Use checkpoint
 after every finished step and before any long-running command, with the
 state you need to resume (what is done, what is next, commands to re-run).
 Use log for what you are doing right now (one short line) so the live box

@@ -26,6 +26,7 @@ import { OpenRepositoryDialog } from "#/components/features/home/open-repository
 import { FolderBrowserModal } from "#/components/features/home/workspace-dropdown/folder-browser-modal";
 import { isModernizationReceiptEvent } from "#/utils/modernization-receipt";
 import {
+  START_MIGRATION_APPROVAL_ID,
   createModernizationResultPoster,
   receipt,
 } from "#/services/modernization-control";
@@ -77,6 +78,7 @@ function StudioPanes({ project }: { project: ModernizationProject }) {
   );
   const [busy, setBusy] = React.useState(false);
   const setStatus = useModernizationStudioStore((s) => s.setStatus);
+  const requestApproval = useModernizationStudioStore((s) => s.requestApproval);
   const conversationId = project.conversationId!;
   // Every turn's spend lands in usage_events like a normal conversation.
   useTrackRealUsage();
@@ -105,6 +107,14 @@ function StudioPanes({ project }: { project: ModernizationProject }) {
   const onStart = React.useCallback(async () => {
     setBusy(true);
     try {
+      // The button is the user's approval to start building; the dispatcher
+      // refuses scaffold/migrate/data steps without one.
+      requestApproval(project.id, {
+        id: START_MIGRATION_APPROVAL_ID,
+        what: t(I18nKey.NEOME$START_MIGRATION),
+        status: "approved",
+        at: new Date().toISOString(),
+      });
       await sendUserMessage(t(I18nKey.NEOME$START_MIGRATION_MESSAGE));
       setStatus(project.id, "migrating");
     } catch {
@@ -112,7 +122,7 @@ function StudioPanes({ project }: { project: ModernizationProject }) {
     } finally {
       setBusy(false);
     }
-  }, [sendUserMessage, setStatus, project.id, t]);
+  }, [sendUserMessage, setStatus, requestApproval, project.id, t]);
 
   const onPause = React.useCallback(async () => {
     setBusy(true);

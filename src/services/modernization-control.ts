@@ -147,6 +147,43 @@ export function findProjectForConversation(
   return activeProjectId ? (projects[activeProjectId] ?? null) : null;
 }
 
+/** Phases that change the codebase; they need an approval first. */
+const BUILD_PHASES: readonly MigrationPhase[] = ["scaffold", "migrate", "data"];
+
+/** The Start migration button records this approval on the user's behalf. */
+export const START_MIGRATION_APPROVAL_ID = "start-migration";
+
+function hasApproval(projectId: string): boolean {
+  const project = useModernizationStudioStore.getState().projects[projectId];
+  return Boolean(project?.approvals.some((a) => a.status === "approved"));
+}
+
+/** A real, green test run: counts reported and nothing failing. */
+export function verificationIsGreen(stats: ProgressStats): {
+  ok: boolean;
+  reason?: string;
+} {
+  const total = stats.testsTotal ?? 0;
+  const passing = stats.testsPassing ?? 0;
+  if (total <= 0) return { ok: false, reason: "no_tests_reported" };
+  if (passing < total) {
+    return { ok: false, reason: `tests_failing:${total - passing}` };
+  }
+  return { ok: true };
+}
+
+/** What still blocks `complete`, in the words the receipt uses. */
+export function completionBlockers(project: ModernizationProject): string[] {
+  const missing: string[] = [];
+  if (!project.plan.some((s) => s.phase === "verify" && s.status === "done")) {
+    missing.push("verify_step_done");
+  }
+  const green = verificationIsGreen(project.stats);
+  if (!green.ok) missing.push(green.reason ?? "tests");
+  if (project.checkpoints.length === 0) missing.push("checkpoint");
+  return missing;
+}
+
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
   describe: "{}",
@@ -530,6 +567,38 @@ export async function handleModernizationControlAction(
           });
           return;
         }
+        const step = project.plan.find((s) => s.id === stepId);
+        // No shortcuts, enforced: building starts only after an approval
+        // (request_approval, or the user's Start migration button) and
+        // verification is only "done" when a real test run is green.
+        if (
+          status === "active" &&
+          step &&
+          BUILD_PHASES.includes(step.phase) &&
+          !hasApproval(projectId)
+        ) {
+          postReceipt(context, {
+            status: "rejected",
+            reason: "approval_required",
+            guidance:
+              "Call request_approval (what: start building the target) and wait for the approved receipt, or let the user press Start migration.",
+          });
+          return;
+        }
+        if (status === "done" && step?.phase === "verify") {
+          const merged = { ...project.stats, ...(stats ?? {}) };
+          const green = verificationIsGreen(merged);
+          if (!green.ok) {
+            postReceipt(context, {
+              status: "rejected",
+              reason: "verification_not_green",
+              detail: green.reason,
+              guidance:
+                "Run the full test suite and report stats.tests_total / tests_passing from that run in this same call; fix failures before marking verify done.",
+            });
+            return;
+          }
+        }
         if (status || note) {
           store.updateStep(projectId, stepId, {
             ...(status ? { status } : {}),
@@ -658,6 +727,17 @@ export async function handleModernizationControlAction(
           status: "rejected",
           reason: "missing_summary",
           shape: COMMAND_SHAPES.complete,
+        });
+        return;
+      }
+      const missing = completionBlockers(project);
+      if (missing.length > 0) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "verification_required",
+          missing,
+          guidance:
+            "A migration is complete only when a verify-phase step is done with a green test run reported in stats (tests_passing == tests_total > 0) and at least one checkpoint exists.",
         });
         return;
       }
