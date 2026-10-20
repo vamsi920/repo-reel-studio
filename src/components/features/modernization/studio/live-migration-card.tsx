@@ -157,6 +157,19 @@ function ProgressRing({ ratio }: { ratio: number }) {
   );
 }
 
+/** HH:MM:SS in the viewer's local time, whatever the timestamp's zone. */
+function formatClock(at: string): string {
+  const d = new Date(at);
+  return Number.isNaN(d.getTime())
+    ? at.slice(11, 19)
+    : d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+}
+
 const LEVEL_CLASS: Record<LogEntry["level"], string> = {
   info: "text-[var(--text-secondary)]",
   warn: "text-[var(--warning-600,#b45309)]",
@@ -190,7 +203,9 @@ export function LiveMigrationCard({
       })),
       ...eventLines,
     ];
-    merged.sort((a, b) => a.at.localeCompare(b.at));
+    // Agent-server event timestamps are naive local time while the store
+    // writes ISO UTC; compare by parsed Date so the stream stays in order.
+    merged.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
     return merged.slice(-200);
   }, [project.log, eventLines]);
 
@@ -304,7 +319,7 @@ export function LiveMigrationCard({
                 )}
               >
                 <span className="mr-2 text-[var(--text-tertiary)]">
-                  {line.at.slice(11, 19)}
+                  {formatClock(line.at)}
                 </span>
                 {line.text}
               </li>

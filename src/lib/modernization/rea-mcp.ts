@@ -51,8 +51,10 @@ export async function ensureReaMcpServer(): Promise<
     const settings = await SettingsService.getSettings();
     const current = (settings?.mcp_config ?? {}) as MCPConfig;
     if (hasReaMcpServer(current)) return "present";
-    await SettingsService.saveSettings({
-      mcp_config: { ...current, [REA_MCP_SERVER_NAME]: REA_MCP_SERVER },
+    // Name-keyed merge patch: the server owns the stored catalog (and keeps
+    // other servers' secrets), exactly like the MCP page's add-server path.
+    await SettingsService.patchMcpConfig({
+      [REA_MCP_SERVER_NAME]: REA_MCP_SERVER,
     });
     return "added";
   } catch {
