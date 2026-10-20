@@ -9,8 +9,9 @@
     "minimumAgentServer": "1.28.0"
   },
   "constraints": {
-    "_comment": "Temporary upper bound on the agent-client-protocol (acp) transitive dependency. openhands-sdk 1.35.0 requires agent-client-protocol>=0.10.1 with no upper bound, but acp 0.11.0 reordered the ACP prompt() arguments and breaks the SDK's ACP client (a PromptRequest validation error surfaces as 'ACP error: 2 validation errors for PromptRequest'). Pin acp <0.11 until a fixed openhands-sdk ships. Consumed by scripts/dev-safe.mjs (agent-server uvx install) and .github/workflows/mock-llm-e2e.yml (mock ACP server venv).",
-    "agentClientProtocol": "agent-client-protocol<0.11"
+    "_comment": "Temporary upper bound on the agent-client-protocol (acp) transitive dependency. openhands-sdk 1.35.0 requires agent-client-protocol>=0.10.1 with no upper bound, but acp 0.11.0 reordered the ACP prompt() arguments and breaks the SDK's ACP client (a PromptRequest validation error surfaces as 'ACP error: 2 validation errors for PromptRequest'). Pin acp <0.11 until a fixed openhands-sdk ships. Consumed by scripts/dev-safe.mjs (agent-server uvx install) and .github/workflows/mock-llm-e2e.yml (mock ACP server venv). fastapi: FastAPI 0.153-0.156 (all released 2026-10-20) dropped the deprecated `lte=` alias that openhands-agent-server 1.42.1's bash_router still passes to Query(), so a fresh uvx resolve crashed on import (`TypeError: Query() got an unexpected keyword argument 'lte'`). Pin fastapi <0.153 until an agent-server release uses `le=`.",
+    "agentClientProtocol": "agent-client-protocol<0.11",
+    "fastapi": "fastapi<0.153"
   },
   "images": {
     "agentServer": "ghcr.io/openhands/agent-server",

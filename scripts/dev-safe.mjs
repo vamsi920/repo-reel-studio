@@ -54,6 +54,9 @@ const DEFAULT_AGENT_SERVER_VERSION = SHARED_DEFAULTS.versions.agentServer;
 // the SDK's ACP client. Hold acp <0.11 until a fixed SDK ships. See config/defaults.json.
 const AGENT_CLIENT_PROTOCOL_CONSTRAINT =
   SHARED_DEFAULTS.constraints?.agentClientProtocol;
+// FastAPI removed the deprecated `lte=` Query alias in 0.153+ (2026-10-20);
+// agent-server 1.42.1 still uses it and fails to import. See config/defaults.json.
+const FASTAPI_CONSTRAINT = SHARED_DEFAULTS.constraints?.fastapi;
 const DEFAULT_AGENT_SERVER_TELEMETRY_POSTHOG_API_KEY =
   SHARED_DEFAULTS.telemetry.posthogApiKey;
 const DEFAULT_AGENT_SERVER_TELEMETRY_POSTHOG_HOST =
@@ -488,6 +491,9 @@ export function buildAgentServerCommand(env = process.env) {
     if (AGENT_CLIENT_PROTOCOL_CONSTRAINT) {
       uvxArgs.push("--with", AGENT_CLIENT_PROTOCOL_CONSTRAINT);
     }
+    if (FASTAPI_CONSTRAINT) {
+      uvxArgs.push("--with", FASTAPI_CONSTRAINT);
+    }
     uvxArgs.push("--with", AGENT_SERVER_POSTHOG_CONSTRAINT);
     uvxArgs.push("agent-server");
     source = `PyPI (${version})`;
@@ -506,6 +512,9 @@ export function buildAgentServerCommand(env = process.env) {
     );
     if (AGENT_CLIENT_PROTOCOL_CONSTRAINT) {
       uvxArgs.push("--with", AGENT_CLIENT_PROTOCOL_CONSTRAINT);
+    }
+    if (FASTAPI_CONSTRAINT) {
+      uvxArgs.push("--with", FASTAPI_CONSTRAINT);
     }
     uvxArgs.push("--with", AGENT_SERVER_POSTHOG_CONSTRAINT);
     uvxArgs.push("agent-server");

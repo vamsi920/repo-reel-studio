@@ -4,20 +4,109 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "dev-nologin",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SUPABASE_URL=",
+        "VITE_SUPABASE_PUBLISHABLE_KEY=",
+        "VITE_SUPABASE_ANON_KEY=",
+        "npm",
+        "run",
+        "dev"
+      ],
       "port": 8000
     },
     {
       "name": "dev-minimal",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:minimal"],
+      "runtimeArgs": [
+        "run",
+        "dev:minimal"
+      ],
       "port": 3001
     },
     {
       "name": "legacy",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 8080
+    },
+    {
+      "name": "case-studies",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "case-studies/serve.mjs",
+        "8790"
+      ],
+      "port": 8790
+    },
+    {
+      "name": "dev-mock",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_SUPABASE_URL=",
+        "VITE_SUPABASE_PUBLISHABLE_KEY=",
+        "VITE_SUPABASE_ANON_KEY=",
+        "npm",
+        "run",
+        "dev:mock"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "dev-bench",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "OH_CANVAS_SAFE_VITE_PORT=3021",
+        "npm",
+        "run",
+        "dev"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "ui-nologin",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "VITE_SUPABASE_URL= VITE_SUPABASE_PUBLISHABLE_KEY= VITE_SESSION_API_KEY=\"$(cat ~/.openhands/agent-canvas/api-key.txt)\" exec npx vite --port 3031 --strictPort"
+      ],
+      "port": 3031
+    },
+    {
+      "name": "onboarding-study",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "OH_CANVAS_SAFE_STATE_DIR=.tmp/onboarding-study/state",
+        "NEODEVEX_DESKTOP_NOTIFICATIONS=0",
+        "http_proxy=http://svc-neo:nw-proxy-test-7731@127.0.0.1:18890",
+        "no_proxy=localhost,127.0.0.1,::1",
+        "NO_PROXY=localhost,127.0.0.1,::1",
+        "npm",
+        "run",
+        "dev:static"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "northwind-bank",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "case-studies/onboarding/env/northwind-bank.mjs",
+        "--port",
+        "18890"
+      ],
+      "port": 18890
     }
   ]
 }

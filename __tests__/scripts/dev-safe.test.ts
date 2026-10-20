@@ -471,6 +471,8 @@ describe("buildAgentServerCommand", () => {
       "--with",
       "agent-client-protocol<0.11",
       "--with",
+      "fastapi<0.153",
+      "--with",
       "posthog>=6,<7",
       "agent-server",
     ]);
@@ -494,6 +496,8 @@ describe("buildAgentServerCommand", () => {
       "openhands-workspace==1.18.0",
       "--with",
       "agent-client-protocol<0.11",
+      "--with",
+      "fastapi<0.153",
       "--with",
       "posthog>=6,<7",
       "agent-server",
