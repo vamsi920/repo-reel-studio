@@ -40,8 +40,38 @@ export const HELP_LINKS = Object.freeze({
  *   copyDiagnostics: () => void,
  *   toggleSidebar: () => void,
  *   reloadApp: () => void,
+ *   checkForUpdates: () => void,
+ *   setMode: (mode: "remote" | "local") => void,
+ *   currentMode: () => "remote" | "local",
  * }} MenuActions
  */
+
+/** Labels for the agent-server mode radio items (see electron/desktop-mode.mjs). */
+export const AGENT_SERVER_MODE_LABELS = Object.freeze({
+  remote: "Neo Cloud (recommended)",
+  local: "Run on this computer",
+});
+
+/**
+ * "Agent Server" submenu: where the agent runs. Radio items, the current
+ * mode checked; choosing the other one relaunches into it.
+ * @param {MenuActions} actions
+ * @returns {import("electron").MenuItemConstructorOptions}
+ */
+function agentServerMenu(actions) {
+  const current = actions.currentMode?.() ?? "remote";
+  return {
+    id: "agent-server",
+    label: "Agent Server",
+    submenu: ["remote", "local"].map((mode) => ({
+      id: `mode-${mode}`,
+      label: AGENT_SERVER_MODE_LABELS[mode],
+      type: "radio",
+      checked: current === mode,
+      click: () => actions.setMode(mode),
+    })),
+  };
+}
 
 /**
  * @param {{ platform: NodeJS.Platform, appName: string, version: string, actions: MenuActions, isPackaged?: boolean }} options
@@ -69,7 +99,7 @@ export function buildAppMenuTemplate({
       {
         id: "check-updates",
         label: "Check for Updates…",
-        click: () => actions.openExternal(HELP_LINKS.releases),
+        click: () => actions.checkForUpdates(),
       },
       { type: "separator" },
       {
@@ -78,6 +108,7 @@ export function buildAppMenuTemplate({
         accelerator: "CmdOrCtrl+,",
         click: go(MENU_ROUTES.settings),
       },
+      agentServerMenu(actions),
       { type: "separator" },
       { role: "services" },
       { type: "separator" },
@@ -114,6 +145,13 @@ export function buildAppMenuTemplate({
               label: "Settings…",
               accelerator: "CmdOrCtrl+,",
               click: go(MENU_ROUTES.settings),
+            },
+            agentServerMenu(actions),
+            { type: "separator" },
+            {
+              id: "check-updates",
+              label: "Check for Updates…",
+              click: () => actions.checkForUpdates(),
             },
             { type: "separator" },
             { role: "quit" },

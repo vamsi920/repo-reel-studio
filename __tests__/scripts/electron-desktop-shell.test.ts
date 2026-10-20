@@ -48,6 +48,9 @@ function makeActions() {
     copyDiagnostics: vi.fn(),
     toggleSidebar: vi.fn(),
     reloadApp: vi.fn(),
+    checkForUpdates: vi.fn(),
+    setMode: vi.fn(),
+    currentMode: () => "remote" as const,
   };
 }
 

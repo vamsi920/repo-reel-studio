@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getStatusText } from "#/utils/utils";
+import { getStatusText, isDesktopApp } from "#/utils/utils";
 import { AgentState } from "#/types/agent-state";
 import { I18nKey } from "#/i18n/declaration";
 
@@ -166,5 +166,21 @@ describe("getStatusText", () => {
     });
 
     expect(result).toBe(t(I18nKey.COMMON$RUNNING));
+  });
+});
+
+describe("isDesktopApp", () => {
+  it.each([
+    [
+      "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/142.0 Electron/42.3.3 Safari/537.36 NeoDesktop/1.13.0",
+      true,
+    ],
+    [
+      "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/142.0 Safari/537.36",
+      false,
+    ],
+    ["NeoDesktopish/1.0", false],
+  ])("detects the desktop shell from %s", (ua, expected) => {
+    expect(isDesktopApp(ua)).toBe(expected);
   });
 });

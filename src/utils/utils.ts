@@ -62,6 +62,20 @@ export const setStyleHeightPx = (el: HTMLElement, height: number): void => {
 };
 
 /**
+ * User-agent token the Electron desktop shell appends (see
+ * electron/desktop-mode.mjs `DESKTOP_UA_TOKEN`). Keep the two in sync.
+ */
+export const DESKTOP_APP_UA_TOKEN = "NeoDesktop";
+
+/**
+ * True when the app is rendered inside the Neo desktop app. The marketing
+ * landing page is web-only; the desktop shell goes straight to the console.
+ */
+export const isDesktopApp = (
+  userAgent: string = navigator.userAgent,
+): boolean => userAgent.includes(`${DESKTOP_APP_UA_TOKEN}/`);
+
+/**
  * Detect a phone/tablet user agent (Android, iPhone, iPad, …).
  * Unlike isMobileDevice, this ignores touch capability, so a desktop OS with
  * a touchscreen (e.g. a Windows 2-in-1) is NOT matched. Use this when the

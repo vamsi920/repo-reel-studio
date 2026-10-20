@@ -381,11 +381,19 @@
       opacity: 1;
       animation: none;
     }
-    .quit-button {
+    .quit-button,
+    .retry-button,
+    .switch-button {
       display: none;
     }
-    body.failed .quit-button {
+    body.failed .quit-button,
+    body.failed .retry-button,
+    body.failed .switch-button {
       display: inline-block;
+    }
+    /* Remote mode: nothing is installed, so the first-run hint is noise. */
+    body.remote .hint {
+      display: none;
     }
 
     /* ── Reduced motion: land on the finished frame immediately ────────── */
@@ -451,12 +459,18 @@
     <h1 aria-label="Neo"><span>N</span><span>e</span><span>o</span></h1>
     <p class="tagline">AI coding agents, on your Mac</p>
     <div class="progress" aria-hidden="true"></div>
-    <p id="status" class="status">Starting services<span class="dots"></span></p>
+    <p id="status" class="status">Connecting to Neo<span class="dots"></span></p>
     <p class="hint">
       First launch downloads Python + the agent server.<br />
       This can take a few minutes on a fresh machine.
     </p>
     <div class="actions">
+      <button id="retry-button" type="button" class="ghost-button retry-button">
+        Try again
+      </button>
+      <button id="switch-button" type="button" class="ghost-button switch-button">
+        Use local agent server
+      </button>
       <button id="details-toggle" type="button" class="ghost-button">
         Show details
       </button>
@@ -497,11 +511,21 @@
       var toggleBtn = document.getElementById("details-toggle");
       var copyBtn = document.getElementById("copy-logs");
       var quitBtn = document.getElementById("quit-button");
+      var retryBtn = document.getElementById("retry-button");
+      var switchBtn = document.getElementById("switch-button");
       var versionEl = document.getElementById("version");
 
       if (boot && typeof boot.version === "string" && boot.version) {
         versionEl.textContent = "v" + boot.version;
       }
+      // Mode-specific copy: remote mode connects to the hosted Neo, local
+      // mode installs and starts the stack here.
+      var mode = boot && boot.mode === "local" ? "local" : "remote";
+      document.body.classList.add(mode);
+      statusEl.firstChild.nodeValue =
+        mode === "local" ? "Starting the local agent server" : "Connecting to Neo";
+      switchBtn.textContent =
+        mode === "local" ? "Use Neo Cloud instead" : "Use local agent server";
 
       // Cap DOM rows so an hours-long install can't grow layout cost;
       // matches the main process's BOOT_LOG_MAX_LINES buffer cap.
@@ -560,6 +584,12 @@
 
       quitBtn.addEventListener("click", function () {
         if (boot) boot.quit();
+      });
+      retryBtn.addEventListener("click", function () {
+        if (boot) boot.retry();
+      });
+      switchBtn.addEventListener("click", function () {
+        if (boot) boot.switchMode(mode === "local" ? "remote" : "local");
       });
 
       if (boot) {

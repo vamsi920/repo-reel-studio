@@ -206,6 +206,26 @@ function getDirSizeBytes(dir) {
   return total;
 }
 
+// Native CPU arch for day-to-day macOS builds; ELECTRON_ARCH overrides
+// (see the mac target note below).
+const MAC_ARCH =
+  process.env.ELECTRON_ARCH ?? (process.arch === "arm64" ? "arm64" : "x64");
+
+/**
+ * Bundled prerequisites for one target, placed in <Resources>/ so Electron
+ * can put them on PATH before starting the local stack:
+ *   bin/   — uv + uvx (scripts/download-uv.mjs)
+ *   node/  — official Node.js distribution; provides node plus npm/npx for
+ *            stdio MCP servers spawned via `npx -y …` (scripts/download-node.mjs)
+ * `from` is relative to the project root (not directories.app).
+ */
+function runtimeResources(targetDir) {
+  return [
+    { from: `resources/${targetDir}/bin/`, to: "bin/", filter: ["**/*"] },
+    { from: `resources/${targetDir}/node/`, to: "node/", filter: ["**/*"] },
+  ];
+}
+
 /** @type {import('electron-builder').Configuration} */
 const config = {
   appId: "dev.neodevex.agent-canvas",
@@ -286,10 +306,9 @@ const config = {
   //            `npm run download-node`)
   // `from` is relative to the project root (not directories.app).
   // build:desktop calls both download scripts before invoking electron-builder.
-  extraResources: [
-    { from: "resources/bin/", to: "bin/", filter: ["**/*"] },
-    { from: "resources/node/", to: "node/", filter: ["**/*"] },
-  ],
+  // Each platform target reads its own runtime set from
+  // resources/<os>-<arch>/ (download scripts honour TARGET_PLATFORM /
+  // TARGET_ARCH, so a Mac can prepare the Windows bundle too).
 
   // ── macOS ──────────────────────────────────────────────────────────────────
   //
@@ -310,6 +329,7 @@ const config = {
   //
   mac: {
     category: "public.app-category.developer-tools",
+    extraResources: runtimeResources(`mac-${MAC_ARCH}`),
     darkModeSupport: true,
     // Local builds are unsigned (ad-hoc on Apple Silicon); release signing
     // is opt-in through the standard CSC_* environment variables.
@@ -360,6 +380,9 @@ const config = {
   // ── Windows ────────────────────────────────────────────────────────────────
   win: {
     target: [{ target: "nsis", arch: ["x64"] }],
+    extraResources: runtimeResources("win-x64"),
+    // No code signing certificate: don't demand a signed update binary.
+    verifyUpdateCodeSignature: false,
     // Icon auto-discovered from directories.buildResources/icon.ico
     // (committed; regenerate with `npm run generate-icons`). Also used for
     // the NSIS installer/uninstaller and the rcedit exe icon resource.
@@ -383,6 +406,7 @@ const config = {
       { target: "AppImage", arch: ["x64"] },
       { target: "deb", arch: ["x64"] },
     ],
+    extraResources: runtimeResources("linux-x64"),
     category: "Development",
     // Icon auto-discovered from directories.buildResources/icon.png.
   },

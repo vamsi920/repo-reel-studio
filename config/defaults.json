@@ -38,5 +38,10 @@
   "telemetry": {
     "posthogApiKey": "phc_kBtz5nKmxVRRQ7HtPwr2QX9eMC5j65zE86QKocVNwb4U",
     "posthogHost": "https://us.i.posthog.com"
+  },
+  "desktop": {
+    "_comment": "Electron desktop shell. remoteAppUrl is the hosted web app the app loads in its default (remote) mode; githubRepo is where 'Check for Updates' looks for releases. Override the URL at runtime with NEO_DESKTOP_REMOTE_URL.",
+    "remoteAppUrl": "https://neo.neodevex.com",
+    "githubRepo": "vamsi920/repo-reel-studio"
   }
 }

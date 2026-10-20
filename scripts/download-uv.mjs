@@ -31,12 +31,23 @@ import { execFileSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
-const outDir = join(projectRoot, "resources", "bin");
+
+// Target platform/arch: defaults to the build host, overridable so a Mac can
+// prepare the Windows bundle (`TARGET_PLATFORM=win32 TARGET_ARCH=x64`).
+// Output goes to resources/<os>-<arch>/bin, which electron-builder picks up
+// per target through the ${os}-${arch} macros in extraResources.
+const PLATFORM = process.env.TARGET_PLATFORM || process.platform; // 'darwin' | 'linux' | 'win32'
+const ARCH = process.env.TARGET_ARCH || process.arch; // 'x64' | 'arm64'
+export const RESOURCES_OS_NAME = { darwin: "mac", win32: "win", linux: "linux" };
+const outDir = join(
+  projectRoot,
+  "resources",
+  `${RESOURCES_OS_NAME[PLATFORM] ?? PLATFORM}-${ARCH}`,
+  "bin",
+);
 
 // ── Platform detection ─────────────────────────────────────────────────────────
 
-const PLATFORM = process.platform; // 'darwin' | 'linux' | 'win32'
-const ARCH = process.arch;         // 'x64' | 'arm64'
 
 function getPlatformSpec() {
   if (PLATFORM === "darwin") {
@@ -183,7 +194,7 @@ async function main() {
       // copyFileSync works across filesystems (unlike renameSync with EXDEV)
       copyFileSync(src, dest);
 
-      if (process.platform !== "win32") {
+      if (PLATFORM !== "win32") {
         chmodSync(dest, 0o755);
       }
 

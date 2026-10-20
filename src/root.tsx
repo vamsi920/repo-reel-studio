@@ -47,6 +47,7 @@ import { QUERY_KEYS } from "#/hooks/query/query-keys";
 import { AgentServerUIRoot } from "#/components/providers";
 import { TelemetryConsentBanner } from "#/components/features/analytics/telemetry-consent-banner";
 import { buildAgentCanvasPath } from "#/utils/base-path";
+import { isDesktopApp } from "#/utils/utils";
 import { useOnboardingCompletion } from "#/components/features/onboarding/use-onboarding-completion";
 import { useSeedGeminiDefaultProfile } from "#/hooks/use-seed-gemini-default-profile";
 import { NavigationProvider } from "#/context/navigation-context";
@@ -277,6 +278,15 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isWelcomePage = location.pathname === "/";
+
+  // The landing page is web-only. Inside the desktop app "/" means "open the
+  // console" (the shell itself opens /conversations; this covers in-app links
+  // back to the root and deep links).
+  React.useEffect(() => {
+    if (isWelcomePage && isDesktopApp()) {
+      navigate("/conversations", { replace: true });
+    }
+  }, [isWelcomePage, navigate]);
   // /reset-password is reached from an emailed link before any session the
   // rest of the app expects exists -- same standalone treatment as /login.
   const isStandaloneAuthPage =

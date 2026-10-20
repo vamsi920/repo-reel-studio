@@ -55,7 +55,20 @@ import { execFileSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
-const outDir = join(projectRoot, "resources", "node");
+
+// Target platform/arch: defaults to the build host, overridable so a Mac can
+// prepare the Windows bundle (`TARGET_PLATFORM=win32 TARGET_ARCH=x64`).
+// Output goes to resources/<os>-<arch>/node, matching download-uv.mjs and
+// the ${os}-${arch} extraResources macros in electron-builder.config.mjs.
+const PLATFORM = process.env.TARGET_PLATFORM || process.platform; // 'darwin' | 'linux' | 'win32'
+const ARCH = process.env.TARGET_ARCH || process.arch; // 'x64' | 'arm64' | 'ia32'
+const RESOURCES_OS_NAME = { darwin: "mac", win32: "win", linux: "linux" };
+const outDir = join(
+  projectRoot,
+  "resources",
+  `${RESOURCES_OS_NAME[PLATFORM] ?? PLATFORM}-${ARCH}`,
+  "node",
+);
 
 // Pinned Node version. Electron 42 ships Node 22, so we bundle a 22.x
 // LTS release to match the embedded runtime's ABI/native-module surface.
@@ -71,8 +84,6 @@ const NODE_BUNDLE_VERSION = "22.12.0";
 
 // ── Platform detection ───────────────────────────────────────────────────────
 
-const PLATFORM = process.platform; // 'darwin' | 'linux' | 'win32'
-const ARCH = process.arch; // 'x64' | 'arm64' | 'ia32'
 
 /**
  * Map (platform, arch) → Node's published distribution name.
@@ -152,7 +163,7 @@ function extract(archivePath, targetDir, ext) {
 }
 
 function ensureExecutable(p) {
-  if (process.platform === "win32") return;
+  if (PLATFORM === "win32") return;
   try {
     chmodSync(p, 0o755);
   } catch {}

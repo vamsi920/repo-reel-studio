@@ -46,7 +46,7 @@ import {
   shell,
   Tray,
 } from "electron";
-import { chmodSync, existsSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -69,9 +69,26 @@ import {
   loadWindowState,
   trackWindowState,
 } from "./window-state.mjs";
+import {
+  MIN_SPLASH_MS,
+  buildDesktopUserAgent,
+  friendlyBootStatus,
+  isAppUrl,
+  loadDesktopPrefs,
+  remoteEntryUrl,
+  resolveRemoteAppUrl,
+  saveDesktopPrefs,
+} from "./desktop-mode.mjs";
+import {
+  fetchLatestRelease,
+  isNewerVersion,
+  isUpdateCheckDue,
+  pickReleaseAsset,
+} from "./updates.mjs";
 
 const APP_NAME = "Neo";
-const APP_URL = "http://localhost:8000";
+/** The bundled local stack's ingress (local mode). */
+const LOCAL_APP_URL = "http://localhost:8000";
 /** Custom URL scheme: `neo://open/settings` focuses the app and navigates. */
 const DEEP_LINK_PROTOCOL = "neo";
 
@@ -89,6 +106,55 @@ const __dirname = dirname(__filename);
 const projectRoot = app.isPackaged ? __dirname : join(__dirname, "..");
 const buildDir = join(projectRoot, "build");
 const scriptsDir = join(projectRoot, "scripts");
+
+/** config/defaults.json (desktop.remoteAppUrl, desktop.githubRepo, …). */
+let defaults = {};
+try {
+  defaults = JSON.parse(
+    readFileSync(join(projectRoot, "config", "defaults.json"), "utf8"),
+  );
+} catch {
+  // Missing config: the fallbacks in desktop-mode.mjs apply.
+}
+
+// ── Agent-server mode (remote = hosted Neo, local = bundled stack) ───────────
+//
+// Remote is the default: the window loads the hosted web app, which already
+// talks to the production agent server — nothing is installed or started on
+// this machine, and first launch is a sign-in screen. Local mode (opt-in from
+// the Neo ▸ Agent Server menu) boots the bundled uv/node stack as before.
+
+function desktopPrefsPath() {
+  return join(app.getPath("userData"), "desktop-mode.json");
+}
+/** @type {{ mode: "remote" | "local", lastUpdateCheckAt: string | null }} */
+let desktopPrefs = { mode: "remote", lastUpdateCheckAt: null };
+const REMOTE_APP_URL = resolveRemoteAppUrl({ defaults });
+const GITHUB_REPO =
+  defaults?.desktop?.githubRepo ?? "vamsi920/repo-reel-studio";
+
+function isLocalMode() {
+  return desktopPrefs.mode === "local";
+}
+
+/** URL the main window opens for the current mode. */
+function appEntryUrl() {
+  return isLocalMode() ? LOCAL_APP_URL : remoteEntryUrl(REMOTE_APP_URL);
+}
+
+/** Origins that stay inside the window; everything else opens in the browser. */
+function appOrigins() {
+  return [REMOTE_APP_URL, LOCAL_APP_URL, "http://127.0.0.1:8000"];
+}
+
+/** Persist a mode change and relaunch into it (the local stack must be torn down / brought up). */
+function switchDesktopMode(mode) {
+  if (mode === desktopPrefs.mode) return;
+  desktopPrefs = { ...desktopPrefs, mode };
+  saveDesktopPrefs(desktopPrefsPath(), desktopPrefs);
+  app.relaunch();
+  app.quit();
+}
 
 // Neo app icon, used as the BrowserWindow.icon option.
 // Windows gets the multi-size icon.ico (16→256, small sizes as classic BMP
@@ -354,7 +420,10 @@ function createLoadingWindow() {
       // Bridges the startup-log console over IPC (see preload.cjs).
       preload: join(__dirname, "preload.cjs"),
       // Read by preload.cjs so the splash can print the app version.
-      additionalArguments: [`--neo-app-version=${app.getVersion()}`],
+      additionalArguments: [
+        `--neo-app-version=${app.getVersion()}`,
+        `--neo-desktop-mode=${desktopPrefs.mode}`,
+      ],
     },
   });
 
@@ -484,7 +553,12 @@ function createMainWindow() {
     Menu.buildFromTemplate(template).popup({ window: mainWin ?? undefined });
   });
 
-  mainWin.loadURL(APP_URL);
+  // Let the web app recognise the shell (it then skips the landing page).
+  mainWin.webContents.setUserAgent(
+    buildDesktopUserAgent(mainWin.webContents.getUserAgent(), app.getVersion()),
+  );
+
+  mainWin.loadURL(appEntryUrl());
 
   mainWin.once("ready-to-show", () => {
     if (state.maximized) mainWin?.maximize();
@@ -513,10 +587,7 @@ function createMainWindow() {
       };
     }
     // All other external URLs open directly in the system browser.
-    if (
-      !url.startsWith("http://localhost") &&
-      !url.startsWith("http://127.0.0.1")
-    ) {
+    if (!isAppUrl(url, appOrigins())) {
       shell.openExternal(url);
       return { action: "deny" };
     }
@@ -529,11 +600,7 @@ function createMainWindow() {
   // now-unneeded Electron popup.
   mainWin.webContents.on("did-create-window", (popupWin) => {
     popupWin.webContents.on("will-navigate", (_event, url) => {
-      if (
-        url !== "about:blank" &&
-        !url.startsWith("http://localhost") &&
-        !url.startsWith("http://127.0.0.1")
-      ) {
+      if (url !== "about:blank" && !isAppUrl(url, appOrigins())) {
         _event.preventDefault();
         shell.openExternal(url);
         popupWin.close();
@@ -656,6 +723,18 @@ ipcMain.handle("boot-log:quit", (event) => {
   app.quit();
 });
 
+ipcMain.handle("boot-log:retry", (event) => {
+  if (!isLoadingWinEvent(event)) return;
+  app.relaunch();
+  app.quit();
+});
+
+// Failure-state escape hatch: switch to the other agent-server mode.
+ipcMain.handle("boot-log:switch-mode", (event, mode) => {
+  if (!isLoadingWinEvent(event)) return;
+  if (mode === "remote" || mode === "local") switchDesktopMode(mode);
+});
+
 // ── Backend stack ─────────────────────────────────────────────────────────────
 
 /**
@@ -716,16 +795,13 @@ function handleServiceLog(name, line, level) {
   // Full-fidelity stream: every service and level goes to the console buffer.
   // The one-line headline below stays filtered to the interesting services.
   appendBootLog(name, clean, level);
-  if (name === "agent-server" || name === "automation") {
-    setLoadingStatus(`${name}: ${clean}`);
-  }
+  // The headline shows a short human phase, never raw pip/uvicorn output —
+  // the full stream is one "Show details" click away.
+  const phase = friendlyBootStatus(name, clean);
+  if (phase) setLoadingStatus(phase);
   // Mirror errors to a `[desktop]` terminal line so dev runs stay grep-friendly.
   if (level === "error") {
     console.error(`[desktop] [${name}] ${clean}`);
-    // Errors from ANY service (including ingress/static, which the headline
-    // filter above skips) are worth showing — a dead ingress is exactly the
-    // case where the user would otherwise stare at a silent 120 s timeout.
-    setLoadingStatus(`${name}: ${clean}`);
     recentServiceErrors.push(`${name}: ${clean}`);
     if (recentServiceErrors.length > 5) recentServiceErrors.shift();
   }
@@ -831,6 +907,9 @@ function installAppMenus() {
         .catch(() => {});
     },
     reloadApp: () => mainWin?.webContents.reload(),
+    checkForUpdates: () => checkForUpdates({ interactive: true }),
+    setMode: (mode) => switchDesktopMode(mode),
+    currentMode: () => desktopPrefs.mode,
   };
 
   app.setAboutPanelOptions({
@@ -885,9 +964,112 @@ function showMainWindow() {
   createMainWindow();
 }
 
+/**
+ * Remote mode readiness: the hosted app must answer before the window opens,
+ * so an offline laptop gets the splash's clear failure state instead of a
+ * Chromium error page.
+ */
+async function waitForRemoteApp(url, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, {
+        method: "HEAD",
+        redirect: "follow",
+        signal: controller.signal,
+      });
+      clearTimeout(t);
+      if (res.status < 500) return;
+      lastError = new Error(`${url} answered ${res.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(
+    `Could not reach ${new URL(url).host}${lastError ? ` (${lastError.message})` : ""}.`,
+  );
+}
+
+// ── Updates ───────────────────────────────────────────────────────────────────
+
+let updateCheckInFlight = false;
+
+/**
+ * Compare the running version with the latest GitHub release. Interactive
+ * (menu) checks always report; the background check only speaks up when a
+ * newer version exists.
+ */
+async function checkForUpdates({ interactive }) {
+  if (updateCheckInFlight) return;
+  updateCheckInFlight = true;
+  try {
+    const release = await fetchLatestRelease(GITHUB_REPO);
+    desktopPrefs = {
+      ...desktopPrefs,
+      lastUpdateCheckAt: new Date().toISOString(),
+    };
+    saveDesktopPrefs(desktopPrefsPath(), desktopPrefs);
+
+    if (!release) {
+      if (interactive) {
+        dialog.showMessageBox({
+          type: "info",
+          title: "Check for Updates",
+          message: "Could not check for updates right now.",
+          detail: "Check your internet connection and try again.",
+        });
+      }
+      return;
+    }
+    const current = app.getVersion();
+    if (!isNewerVersion(release.version, current)) {
+      if (interactive) {
+        dialog.showMessageBox({
+          type: "info",
+          title: "Check for Updates",
+          message: `${APP_NAME} ${current} is up to date.`,
+        });
+      }
+      return;
+    }
+    const asset = pickReleaseAsset(
+      release.assets,
+      process.platform,
+      process.arch,
+    );
+    const downloadUrl = asset?.browser_download_url || release.url;
+    const { response } = await dialog.showMessageBox({
+      type: "info",
+      title: "Update Available",
+      message: `${APP_NAME} ${release.version.replace(/^v/, "")} is available.`,
+      detail: `You have ${current}. Download the new version to get the latest desktop features.`,
+      buttons: ["Download", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0 && downloadUrl) shell.openExternal(downloadUrl);
+  } finally {
+    updateCheckInFlight = false;
+  }
+}
+
+function scheduleBackgroundUpdateCheck() {
+  if (!app.isPackaged) return;
+  if (!isUpdateCheckDue(desktopPrefs.lastUpdateCheckAt)) return;
+  const t = setTimeout(() => {
+    checkForUpdates({ interactive: false }).catch(() => {});
+  }, 15_000);
+  if (t.unref) t.unref();
+}
+
 app.whenReady().then(async () => {
   nativeTheme.themeSource = "dark";
   app.setName(APP_NAME);
+  desktopPrefs = loadDesktopPrefs(desktopPrefsPath());
   installAppMenus();
 
   // Set the dock icon explicitly on macOS so `npm run desktop` shows the
@@ -902,7 +1084,7 @@ app.whenReady().then(async () => {
   injectBundledUv();
   injectBundledNode();
 
-  if (!uvxAvailable()) {
+  if (isLocalMode() && !uvxAvailable()) {
     dialog.showErrorBox(
       "Missing prerequisite: uv",
       app.isPackaged
@@ -914,47 +1096,59 @@ app.whenReady().then(async () => {
   }
 
   // Started by the "Open at login" item: bring the stack up without a
-  // window, so automations run from the moment the user signs in.
-  const startHidden = launchedInBackground(
-    process.argv,
-    app.getLoginItemSettings(),
-  );
+  // window, so automations run from the moment the user signs in. Only
+  // meaningful in local mode — the hosted backend runs automations itself.
+  const startHidden =
+    isLocalMode() &&
+    launchedInBackground(process.argv, app.getLoginItemSettings());
   if (startHidden) app.dock?.hide();
   else createLoadingWindow();
+  const splashShownAt = Date.now();
 
   try {
-    setBootPhase("Starting backend services…");
-    await startStack();
+    if (isLocalMode()) {
+      setBootPhase("Starting the local agent server…");
+      await startStack();
 
-    // Stage 1: ingress proxy is bound (anything < 500 on /).
-    setBootPhase("Waiting for proxy…");
-    await waitForUrl("http://localhost:8000");
+      // Stage 1: ingress proxy is bound (anything < 500 on /).
+      setBootPhase("Almost there…");
+      await waitForUrl(LOCAL_APP_URL);
 
-    // Stage 2: the agent-server behind the proxy is actually serving
-    // requests. `startStack()` already waited for this internally, but we
-    // re-probe end-to-end here so that if the user closes the splash race
-    // window between processes binding, we still open the main window with
-    // a live backend. Cheap (a single 200 response) when everything is up.
-    setBootPhase("Connecting to agent server…");
-    await waitForAgentServer("http://localhost:8000/server_info", 60_000);
+      // Stage 2: the agent-server behind the proxy is actually serving
+      // requests. `startStack()` already waited for this internally, but we
+      // re-probe end-to-end here so that if the user closes the splash race
+      // window between processes binding, we still open the main window with
+      // a live backend. Cheap (a single 200 response) when everything is up.
+      await waitForAgentServer(`${LOCAL_APP_URL}/server_info`, 60_000);
+
+      background = setupBackgroundMode({
+        app,
+        Tray,
+        Menu,
+        Notification,
+        nativeImage,
+        iconPath: trayIconPath,
+        prefsPath: join(app.getPath("userData"), "background-mode.json"),
+        openWindow: showMainWindow,
+      });
+    } else {
+      setBootPhase("Connecting to Neo…");
+      await waitForRemoteApp(REMOTE_APP_URL, 15_000);
+    }
 
     setBootPhase("Ready.");
     stackReady = true;
-    background = setupBackgroundMode({
-      app,
-      Tray,
-      Menu,
-      Notification,
-      nativeImage,
-      iconPath: trayIconPath,
-      prefsPath: join(app.getPath("userData"), "background-mode.json"),
-      openWindow: showMainWindow,
-    });
+    // Let the opening animation finish before the hand-off.
+    const remaining = MIN_SPLASH_MS - (Date.now() - splashShownAt);
+    if (remaining > 0 && !startHidden) {
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+    }
     if (!startHidden) createMainWindow();
+    scheduleBackgroundUpdateCheck();
   } catch (err) {
-    const summary =
-      err.message +
-      " Ensure ports 8000, 18000, and 18001 are free, then try again.";
+    const summary = isLocalMode()
+      ? `${err.message} Ensure ports 8000, 18000, and 18001 are free, then try again.`
+      : `${err.message} Check your internet connection and try again, or switch to a local agent server from the Neo menu.`;
     // Record the failure in the terminal and the startup-log buffer so it
     // shows (and copies) as the final console line.
     console.error("[desktop] Startup failed:", err);
