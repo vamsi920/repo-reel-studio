@@ -184,6 +184,42 @@ export function completionBlockers(project: ModernizationProject): string[] {
   return missing;
 }
 
+/**
+ * Auto-continue after a card is answered.
+ *
+ * A receipt can land while the model is mid-turn; the model then answers the
+ * turn it was already composing ("waiting for your approval…") and ends,
+ * leaving the run idle although its input is already there. Seen on the
+ * second live run. When the agent goes idle shortly after a receipt and the
+ * studio has nothing else pending, one nudge gets it moving; never more than
+ * one per receipt, never while something is still waiting on the user.
+ */
+export const AUTO_CONTINUE_WINDOW_MS = 120_000;
+export const AUTO_CONTINUE_MESSAGE =
+  "Your input arrived in the receipt above (the card was answered). Call describe to re-read the project state, then continue with the next step now.";
+
+export function shouldAutoContinue({
+  agentIdle,
+  lastReceiptAt,
+  nudgedForReceiptAt,
+  now,
+  project,
+}: {
+  agentIdle: boolean;
+  lastReceiptAt: number | null;
+  nudgedForReceiptAt: number | null;
+  now: number;
+  project: Pick<ModernizationProject, "status" | "questions" | "approvals">;
+}): boolean {
+  if (!agentIdle || lastReceiptAt === null) return false;
+  if (nudgedForReceiptAt === lastReceiptAt) return false;
+  if (now - lastReceiptAt > AUTO_CONTINUE_WINDOW_MS) return false;
+  if (project.status === "done" || project.status === "paused") return false;
+  if (project.questions.some((q) => q.status === "open")) return false;
+  if (project.approvals.some((a) => a.status === "pending")) return false;
+  return true;
+}
+
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
   describe: "{}",

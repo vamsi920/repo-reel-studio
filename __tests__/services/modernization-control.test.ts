@@ -367,3 +367,45 @@ describe("modernization_control dispatcher", () => {
     expect(withNextStep(kept)).toBe(kept);
   });
 });
+
+describe("auto-continue after a card is answered", () => {
+  const base = {
+    agentIdle: true,
+    lastReceiptAt: 1_000,
+    nudgedForReceiptAt: null,
+    now: 5_000,
+    project: {
+      status: "migrating" as const,
+      questions: [],
+      approvals: [],
+    },
+  };
+  it("nudges once when the agent idles shortly after a receipt with nothing pending", async () => {
+    const { shouldAutoContinue, AUTO_CONTINUE_WINDOW_MS } =
+      await import("#/services/modernization-control");
+    expect(shouldAutoContinue(base)).toBe(true);
+    expect(shouldAutoContinue({ ...base, nudgedForReceiptAt: 1_000 })).toBe(
+      false,
+    );
+    expect(shouldAutoContinue({ ...base, agentIdle: false })).toBe(false);
+    expect(shouldAutoContinue({ ...base, lastReceiptAt: null })).toBe(false);
+    expect(
+      shouldAutoContinue({ ...base, now: 1_000 + AUTO_CONTINUE_WINDOW_MS + 1 }),
+    ).toBe(false);
+    expect(
+      shouldAutoContinue({
+        ...base,
+        project: {
+          ...base.project,
+          approvals: [{ id: "a", what: "x", status: "pending", at: "t" }],
+        },
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoContinue({
+        ...base,
+        project: { ...base.project, status: "paused" },
+      }),
+    ).toBe(false);
+  });
+});

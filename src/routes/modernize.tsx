@@ -26,10 +26,14 @@ import { OpenRepositoryDialog } from "#/components/features/home/open-repository
 import { FolderBrowserModal } from "#/components/features/home/workspace-dropdown/folder-browser-modal";
 import { isModernizationReceiptEvent } from "#/utils/modernization-receipt";
 import {
+  AUTO_CONTINUE_MESSAGE,
   START_MIGRATION_APPROVAL_ID,
   createModernizationResultPoster,
   receipt,
+  shouldAutoContinue,
 } from "#/services/modernization-control";
+import { useAgentStore } from "#/stores/agent-store";
+import { AgentState } from "#/types/agent-state";
 import {
   useModernizationStudioStore,
   type ModernizationProject,
@@ -70,6 +74,60 @@ function StudioChat() {
   );
 }
 
+/**
+ * Nudge the agent once when it goes idle right after the user answered a
+ * card (see shouldAutoContinue). Receipt times come from the store: a
+ * question flipping to answered or an approval being resolved.
+ */
+function useStudioAutoContinue(
+  project: ModernizationProject,
+  sendUserMessage: (text: string) => Promise<unknown>,
+) {
+  const agentState = useAgentStore((s) => s.curAgentState);
+  const lastReceiptAtRef = React.useRef<number | null>(null);
+  const nudgedForRef = React.useRef<number | null>(null);
+  const answeredCount = project.questions.filter(
+    (q) => q.status === "answered",
+  ).length;
+  const resolvedCount = project.approvals.filter(
+    (a) => a.status !== "pending",
+  ).length;
+  const seenRef = React.useRef({ answeredCount, resolvedCount });
+  React.useEffect(() => {
+    const seen = seenRef.current;
+    if (
+      answeredCount > seen.answeredCount ||
+      resolvedCount > seen.resolvedCount
+    ) {
+      lastReceiptAtRef.current = Date.now();
+    }
+    seenRef.current = { answeredCount, resolvedCount };
+  }, [answeredCount, resolvedCount]);
+  React.useEffect(() => {
+    const agentIdle =
+      agentState === AgentState.FINISHED ||
+      agentState === AgentState.AWAITING_USER_INPUT;
+    const lastReceiptAt = lastReceiptAtRef.current;
+    if (
+      shouldAutoContinue({
+        agentIdle,
+        lastReceiptAt,
+        nudgedForReceiptAt: nudgedForRef.current,
+        now: Date.now(),
+        project,
+      })
+    ) {
+      nudgedForRef.current = lastReceiptAt;
+      // Give the receipt a moment to be delivered before nudging.
+      const t = setTimeout(() => {
+        void sendUserMessage(AUTO_CONTINUE_MESSAGE).catch(() => {});
+      }, 2500);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [agentState, project, sendUserMessage]);
+}
+
 function StudioPanes({ project }: { project: ModernizationProject }) {
   const { t } = useTranslation("openhands");
   const isMobile = useBreakpoint();
@@ -103,6 +161,8 @@ function StudioPanes({ project }: { project: ModernizationProject }) {
       }),
     [conversationId],
   );
+
+  useStudioAutoContinue(project, sendUserMessage);
 
   const onStart = React.useCallback(async () => {
     setBusy(true);
