@@ -1,0 +1,644 @@
+[
+ {
+  "id": "ky-01",
+  "category": "architecture",
+  "question": "How does a call like `ky.get(url, opts)` get from the public entry point to an actual fetch? Name the functions/classes involved.",
+  "reference_answer": "source/index.ts createInstance() builds the `ky` function and per-method shortcuts; each merges instance defaults with call options via validateAndMerge() and calls the static Ky.create(input, options). Ky.create runs init hooks, constructs a Ky instance (which normalizes options and builds a Request), then an async pipeline runs beforeRequest hooks, #retry(() => #fetch()), afterResponse hooks, HTTPError/retry handling, and returns a ResponsePromise decorated with body shortcuts.",
+  "key_facts": [
+   "createInstance in source/index.ts creates ky and method shortcuts that call Ky.create",
+   "Options are merged with validateAndMerge(defaults, options, {method})",
+   "Ky.create (source/core/Ky.ts) runs init hooks, constructs new Ky, then runs beforeRequest -> #retry(#fetch) -> afterResponse",
+   "The result is a ResponsePromise with .json()/.text() etc. attached"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/index.ts",
+    "lines": "10-32"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "143-337"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "A call to `ky.get(url, opts)` is a shortcut that ultimately invokes the `fetch` API after processing through several internal functions and classes. Here is the step-by-step flow:\n\n### 1. `createInstance` Function\n\nThe `ky` object, including its method shortcuts like `.get()`, is created by the `createInstance` function.\n\n- **File**: `source/index.ts`\n- **Logic**:\n    - A default `ky` instance is created via `const ky = createInstance();` (`source/index.ts:34`).\n    - The `createInstance` function iterates over a list of `requestMethods`, which includes `'get'` (`source/index.ts:14`).\n    - For each method, it assigns a function to the `ky` object. For `.get()`, this function is:\n      ```typescript\n      // source/index.ts:16\n      ky[method] = (input: Input, options?: Options) => Ky.create(input, validateAndMerge(defaults, options, {method}));\n      ```\n    - Therefore, `ky.get(url, opts)` calls the static method `Ky.create`, passing the input, merged options, and `{method: 'get'}`.\n\n### 2. `Ky.create` Static Method\n\nThis static method is the main entry point for creating and executing a request.\n\n- **File**: `source/core/Ky.ts`\n- **Logic**:\n    - It receives the `input` and merged `options` (`source/core/Ky.ts:143`).\n    - It runs any configured `init` hooks, which can synchronously modify the options (`source/core/Ky.ts:147-149`).\n    - It instantiates the `Ky` class: `const ky = new Ky(input, initHookOptions);` (`source/core/Ky.ts:151`).\n    - It defines an async `function_` that contains the core request lifecycle logic (`source/core/Ky.ts:153-253`).\n    - This `function_` is immediately invoked, and its result is returned as a `ResponsePromise` (`source/core/Ky.ts:255-337`).\n\n### 3. `Ky` Class Constructor\n\nThe constructor prepares the request by normalizing all options and creating a `Request` object.\n\n- **File**: `source/core/Ky.ts`\n- **Logic**:\n    - The constructor takes the `input` and `options` (`source/core/Ky.ts:364`).\n    - It merges and normalizes all options, setting defaults for `method`, `timeout`, `retry`, etc., and stores them in `this.#options` (`source/core/Ky.ts:370-383`). The `method` is normalized to uppercase (`source/utils/normalize.ts:5-6`).\n    - It resolves the final URL by applying `prefix` and `baseUrl` options (`source/core/Ky.ts:389-406`).\n    - It creates the final `Request` object: `this.request = new globalThis.Request(this.#input, this.#options);` (`source/core/Ky.ts:435`).\n    - It applies `searchParams` and may recreate the `Request` object if the URL changes (`source/core/Ky.ts:437-476`).\n\n### 4. `function_` Execution and Hooks\n\nInside `Ky.create`, the `function_` orchestrates the request lifecycle.\n\n- **File**: `source/core/Ky.ts`\n- **Logic**:\n    - It runs `beforeRequest` hooks via `ky.#runBeforeRequestHooks()` (`source/core/Ky.ts:164`). These hooks can modify the `request` or return a `Response` to bypass the actual fetch.\n    - If no `Response` is returned from the hooks, it calls `ky.#retry(async () => ky.#fetch())` (`source/core/Ky.ts:165`). This wraps the fetch call in retry logic.\n\n### 5. `#retry` and `#fetch` Methods\n\nThe `#retry` method manages the retry logic, and the `#fetch` method performs the actual network request.\n\n- **File**: `source/core/Ky.ts`\n- **Logic**:\n    - `#retry` (`source/core/Ky.ts:844-850`): Executes the passed function (which calls `#fetch`). If it throws an error, the error is passed to `#retryFromError` to determine if a retry should occur.\n    - `#fetch` (`source/core/Ky.ts:936-984`):\n        - It finds any non-Ky options to pass directly to `fetch` using `findUnknownOptions` (`source/core/Ky.ts:945`).\n        - It determines the effective timeout for the attempt (`source/core/Ky.ts:963-967`).\n        - If a timeout is set, it calls the `timeout` utility function (`source/core/Ky.ts:971`).\n        - Otherwise, it directly calls the configured fetch function: `await this.#options.fetch(request, nonRequestOptions)` (`source/core/Ky.ts:970`). The `fetch` option defaults to `globalThis.fetch` (`source/core/Ky.ts:381`).\n\n### 6. `timeout` Utility Function\n\nIf a `timeout` is specified in the options, this utility wraps the `fetch` call to enforce it.\n\n- **File**: `source/utils/timeout.ts`\n- **Logic**:\n    - It wraps the `options.fetch(request, init)` call in a `Promise` (`source/utils/timeout.ts:15`).\n    - It uses `setTimeout` to create a timer. If the timer fires before the fetch completes, it aborts the request via the `AbortController` and rejects the promise with a `TimeoutError` (`source/utils/timeout.ts:16-22`).\n    - This effectively creates a race between the network request and the timer."
+ },
+ {
+  "id": "ky-02",
+  "category": "architecture",
+  "question": "How do `ky.create()` and `ky.extend()` differ in how they treat the parent instance's defaults?",
+  "reference_answer": "`create(newDefaults)` builds a fresh instance from only newDefaults (validateAndMerge(newDefaults)), ignoring the parent; `extend(newDefaults)` merges parent defaults with newDefaults (validateAndMerge(defaults, newDefaults)), and also accepts a function receiving the parent defaults.",
+  "key_facts": [
+   "create ignores the parent instance defaults",
+   "extend deep-merges parent defaults with the new ones",
+   "extend accepts a function (parentDefaults) => options"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/index.ts",
+    "lines": "19-26"
+   }
+  ],
+  "X": "`ky.extend()` creates a new `ky` instance that inherits and merges its defaults with the parent instance's defaults. In contrast, `ky.create()` creates a new `ky` instance with a completely new set of defaults, without inheriting from any parent instance.\n\n### `ky.extend(defaultOptions)`\n\n`ky.extend()` creates a new instance by merging the provided `defaultOptions` with the defaults from the parent instance it is called on.\n\n- **Behavior**: Inherits and merges defaults.\n- **Documentation**: \"In contrast to `ky.create()`, `ky.extend()` inherits defaults from its parent.\" (`readme.md:944`)\n- **Implementation**: The `extend` method merges the parent's `defaults` with the `newDefaults`.\n  ```typescript\n  // source/index.ts:20-26\n  ky.extend = (newDefaults?: Partial<Options> | ((parentDefaults: Partial<Options>) => Partial<Options>)) => {\n  \tif (typeof newDefaults === 'function') {\n  \t\tnewDefaults = newDefaults(defaults ?? {});\n  \t}\n\n  \treturn createInstance(validateAndMerge(defaults, newDefaults));\n  };\n  ```\n- **Example**:\n  ```javascript\n  // readme.md:993-1003\n  import ky from 'ky';\n\n  const api = ky.create({prefix: 'https://example.com/api'});\n\n  const usersApi = api.extend((options) => ({prefix: `${options.prefix}/users`}));\n\n  const response = await usersApi.get('123');\n  //=> 'https://example.com/api/users/123'\n\n  const response = await api.get('version');\n  //=> 'https://example.com/api/version'\n  ```\n\n### `ky.create(defaultOptions)`\n\n`ky.create()` creates a new, isolated instance with its own set of defaults, completely ignoring any defaults from the instance it was called on.\n\n- **Behavior**: Creates a new instance with fresh defaults, no inheritance.\n- **Documentation**: \"Create a new Ky instance with complete new defaults, without inheriting from any parent instance.\" (`readme.md:1028`)\n- **Implementation**: The `create` method calls `createInstance` with only the `newDefaults`, without passing the parent's `defaults`.\n  ```typescript\n  // source/index.ts:19\n  ky.create = (newDefaults?: Partial<Options>) => createInstance(validateAndMerge(newDefaults));\n  ```\n- **Example**:\n  ```javascript\n  // readme.md:1031-1041\n  import ky from 'ky';\n\n  // On https://my-site.com\n\n  const api = ky.create({baseUrl: 'https://example.com/api/'});\n\n  const response = await api.get('users/123');\n  //=> 'https://example.com/api/users/123'\n\n  const response = await api.get('status', {baseUrl: ''});\n  //=> 'https://my-site.com/status'\n  ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-03",
+  "category": "architecture",
+  "question": "Describe the order in which hook types run during a request lifecycle that ends in a retried HTTP error and eventual failure.",
+  "reference_answer": "init (synchronous, in Ky.create before the Ky constructor) -> beforeRequest (once, retryCount 0) -> fetch -> afterResponse (runs before the throwHttpErrors check) -> HTTPError built and data populated -> beforeRetry (before each retry, after the delay) -> fetch -> afterResponse ... -> when retries are exhausted, beforeError hooks run on the final error before it is thrown.",
+  "key_facts": [
+   "init hooks run first, synchronously, before the Ky instance is constructed",
+   "beforeRequest runs once before the retry loop (not per retry)",
+   "afterResponse hooks run before the non-2xx/HTTPError check",
+   "beforeRetry runs after the retry delay, before the next attempt; beforeError runs only on the final thrown error"
+  ],
+  "wrong_but_plausible": "beforeRequest runs before every retry attempt",
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "143-151"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "163-226"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "255-287"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "852-927"
+   }
+  ],
+  "X": "Based on a request lifecycle that results in an initial HTTP error, one retry, and a final failure, the hooks execute in the following order:\n\n1.  ### `init`\n    This synchronous hook runs first to modify the request `Options` before the `Request` object is created.\n    *   **File:** `source/core/Ky.ts:147-149`\n    *   **State:** Receives the mutable `options` object.\n    *   **Type:** `(options: Options) => void` (`source/types/hooks.ts:28`)\n\n2.  ### `beforeRequest`\n    This hook runs once before the first `fetch` attempt. It can modify the `Request` object or bypass the network call by returning a `Response`.\n    *   **File:** `source/core/Ky.ts:164`, `source/core/Ky.ts:767-784`\n    *   **State:** Receives `request`, `options`, and `retryCount` (which is always `0` at this stage).\n    *   **Type:** `(state: BeforeRequestState) => Request | Response | void | Promise<Request | Response | void>` (`source/types/hooks.ts:40`)\n\n3.  ### `afterResponse` (First Attempt)\n    After the initial `fetch` receives a response with a non-2xx status code (e.g., 500), this hook runs.\n    *   **File:** `source/core/Ky.ts:179`, `source/core/Ky.ts:786-842`\n    *   **State:** Receives `request`, `options`, the failing `response`, and `retryCount` (which is `0` for the initial request).\n    *   **Type:** `(state: AfterResponseState) => Response | RetryMarker | void | Promise<Response | RetryMarker | void>` (`source/types/hooks.ts:86`)\n\n4.  ### `beforeRetry`\n    Ky determines that the HTTP error is retriable. Before the next `fetch` attempt, this hook runs. It can modify the request for the retry, prevent the retry by returning `ky.stop` or throwing, or skip the retry by returning a `Response`.\n    *   **File:** `source/core/Ky.ts:886-922`\n    *   **State:** Receives `request`, `options`, the `error` that triggered the retry, and `retryCount` (which is `1` for the first retry).\n    *   **Type:** `(state: BeforeRetryState) => Request | Response | typeof stop | void | Promise<Request | Response | typeof stop | void>` (`source/types/hooks.ts:53`)\n\n5.  ### `afterResponse` (Second Attempt)\n    The retried request is made, and it also fails with a non-2xx status. This hook runs again with the new response.\n    *   **File:** `source/core/Ky.ts:179`, `source/core/Ky.ts:786-842`\n    *   **State:** Receives `request`, `options`, the second failing `response`, and `retryCount` (which is now `1`).\n    *   **Type:** `(state: AfterResponseState) => Response | RetryMarker | void | Promise<Response | RetryMarker | void>` (`source/types/hooks.ts:86`)\n\n6.  ### `beforeError`\n    Ky determines the retry limit has been reached and will now throw the final `HTTPError`. Before the `ky()` promise rejects, this hook runs, allowing for modification of the final error.\n    *   **File:** `source/core/Ky.ts:270-285`\n    *   **State:** Receives `request`, `options`, the final `error`, and `retryCount` (which is `1`, the total number of retries attempted).\n    *   **Type:** `(state: BeforeErrorState) => Error | Promise<Error>` (`source/types/hooks.ts:71`)",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-04",
+  "category": "architecture",
+  "question": "How does Ky combine a user-provided AbortSignal with its own timeout cancellation?",
+  "reference_answer": "If AbortController and AbortSignal.any exist, the constructor stores the user signal (options.signal or the input Request's signal), creates an internal AbortController, and sets options.signal = AbortSignal.any([userSignal, internal.signal]) (or just the internal signal). The timeout() helper aborts the internal controller; on the next attempt #fetch replaces an aborted controller and recreates the Request with a new managed signal. Retry delays listen only to the user signal.",
+  "key_facts": [
+   "User signal and internal AbortController signal are merged with AbortSignal.any",
+   "timeout() aborts the internal controller and rejects with TimeoutError",
+   "#fetch recreates the controller/Request if the previous one was aborted",
+   "Retry delay uses only the user-provided signal"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "408-412"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "754-758"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "936-943"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "856-872"
+   },
+   {
+    "path": "source/utils/timeout.ts",
+    "lines": "9-32"
+   }
+  ],
+  "X": "Ky combines a user-provided `AbortSignal` with its own timeout cancellation by creating a composite signal using `AbortSignal.any()`.\n\n### Signal Combination\n\n1.  In the `Ky` class constructor, if the environment supports `AbortController` and `AbortSignal`, Ky creates its own internal `AbortController` instance (`this.#abortController`) (`source/core/Ky.ts:408-410`).\n2.  It checks for a user-provided signal in `options.signal` or on the input `Request` object and stores it in `this.#userProvidedAbortSignal` (`source/core/Ky.ts:409`).\n3.  The `#createManagedSignal` method is called to generate the final signal passed to `fetch` (`source/core/Ky.ts:411`, `source/core/Ky.ts:754-758`).\n    *   If a user-provided signal exists, `AbortSignal.any()` is used to combine the user's signal and the internal `AbortController`'s signal. The resulting signal will be aborted if *either* of the source signals is aborted (`source/core/Ky.ts:755-756`).\n    *   If no user signal is provided, only the internal `AbortController`'s signal is used (`source/core/Ky.ts:757`).\n\n```typescript\n// source/core/Ky.ts:754-758\n\t#createManagedSignal(): AbortSignal {\n\t\treturn this.#userProvidedAbortSignal\n\t\t\t? AbortSignal.any([this.#userProvidedAbortSignal, this.#abortController!.signal])\n\t\t\t: this.#abortController!.signal;\n\t}\n```\n\n### Timeout Cancellation\n\n1.  When a request is made with a `timeout` option, Ky uses a `timeout` utility function (`source/core/Ky.ts:971`).\n2.  This utility sets up a `setTimeout` (`source/utils/timeout.ts:16`).\n3.  If the timeout duration is reached before the request completes, the timeout callback calls `abortController.abort()` on Ky's internal `AbortController` (`source/utils/timeout.ts:18`).\n4.  This action aborts the internal signal. Because of `AbortSignal.any()`, the composite signal is also aborted, which cancels the underlying `fetch` request and causes it to reject with a `TimeoutError` (`source/utils/timeout.ts:21`).\n\n```typescript\n// source/utils/timeout.ts:15-22\n\treturn new Promise((resolve, reject) => {\n\t\tconst timeoutId = setTimeout(() => {\n\t\t\tif (abortController) {\n\t\t\t\tabortController.abort();\n\t\t\t}\n\n\t\t\treject(new TimeoutError(request));\n\t\t}, options.timeout);\n```\n\n### Behavior on Retries\n\nIf a request times out and is retried, a new internal `AbortController` is created for the next attempt, but it is still combined with the original user-provided signal. This ensures that each retry attempt gets its own timeout while still allowing the user to cancel the entire operation at any point (`source/core/Ky.ts:937-943`).",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-05",
+  "category": "architecture",
+  "question": "How do Ky-specific options get separated from options passed through to the underlying fetch call?",
+  "reference_answer": "In #fetch, findUnknownOptions(this.#options) (source/utils/options.ts) collects every own key that is in neither requestOptionsRegistry (standard RequestInit keys already applied to the Request) nor kyOptionKeys (Ky's own options), and passes that object as fetch's second argument. This forwards fetch-only extensions like `dispatcher`, `priority`, or Next.js `next`.",
+  "key_facts": [
+   "findUnknownOptions in source/utils/options.ts does the filtering",
+   "Keys in requestOptionsRegistry and kyOptionKeys (source/core/constants.ts) are excluded",
+   "All remaining keys are passed as the second argument to fetch(request, init)"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/options.ts",
+    "lines": "5-27"
+   },
+   {
+    "path": "source/core/constants.ts",
+    "lines": "246-284"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "945"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "969-974"
+   }
+  ],
+  "X": "Ky separates its specific options from the standard `fetch` options using the `findUnknownOptions` utility function. This function identifies and collects any options that are not part of Ky's own configuration or the standard `RequestInit` properties. These \"unknown\" options are then passed directly to the underlying `fetch` call.\n\n### Option Separation Process\n\n1.  Inside the private `#fetch` method of the `Ky` class, the `findUnknownOptions` function is called with the instance's options (`this.#options`).\n    ```typescript\n    // source/core/Ky.ts:945\n    const nonRequestOptions = findUnknownOptions(this.#options);\n    ```\n\n2.  The `findUnknownOptions` function iterates over the keys of the provided options object.\n    ```typescript\n    // source/utils/options.ts:10-24\n    for (const key in options) {\n    \t// Skip inherited properties\n    \tif (!Object.hasOwn(options, key)) {\n    \t\tcontinue;\n    \t}\n\n    \t// Forward every non-standard, non-Ky option to fetch().\n    \t// We intentionally do not check whether the key also exists on `Request`, because some runtimes\n    \t// patch `Request.prototype` with fetch-only extensions. For example, Next.js adds `next`, and the\n    \t// old `key in request` heuristic dropped it unless Ky kept a special-case allowlist.\n    \t// Passing all non-standard keys makes that allowlist unnecessary and preserves future fetch extensions too.\n    \tif (!(key in requestOptionsRegistry) && !(key in kyOptionKeys)) {\n    \t\tunknownOptions[key] = options[key];\n    \t}\n    }\n    ```\n    For each option key, it checks if the key exists in either `requestOptionsRegistry` (for standard `fetch` options) or `kyOptionKeys` (for Ky-specific options).\n\n3.  If a key is **not** found in either of these registries, it is considered a non-standard or passthrough option and is added to the `unknownOptions` object (`source/utils/options.ts:22`).\n\n4.  The returned `unknownOptions` object, now named `nonRequestOptions`, is then passed as the `init` object to the `fetch` call.\n    ```typescript\n    // source/core/Ky.ts:969-974\n    const response = effectiveTimeout === undefined\n    \t? await this.#options.fetch(request, nonRequestOptions)\n    \t: await timeout(request, nonRequestOptions, this.#abortController, {\n    \t\ttimeout: effectiveTimeout,\n    \t\tfetch: this.#options.fetch,\n    \t});\n    ```\n\nThis mechanism ensures that Ky-specific options like `hooks`, `retry`, and `timeout` are handled internally by Ky and not passed to `fetch`, while allowing any other non-standard options (e.g., `dispatcher` in Node.js or `next` in Next.js) to be passed through correctly.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-06",
+  "category": "behavior",
+  "question": "What are the default retry settings (limit, methods, status codes, afterStatusCodes, delay formula)?",
+  "reference_answer": "limit 2; methods get, put, head, delete, options, trace; statusCodes 408, 413, 429, 500, 502, 503, 504; afterStatusCodes 413, 429, 503; maxRetryAfter and backoffLimit Infinity; delay = 0.3 * 2^(attemptCount-1) * 1000 ms (300, 600, ...); jitter undefined; retryOnTimeout false.",
+  "key_facts": [
+   "limit defaults to 2",
+   "methods: get, put, head, delete, options, trace (no post/patch)",
+   "statusCodes: 408, 413, 429, 500, 502, 503, 504; afterStatusCodes: 413, 429, 503",
+   "delay: 0.3 * 2 ** (attemptCount - 1) * 1000 ms"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/normalize.ts",
+    "lines": "8-26"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The default retry settings are defined in `source/utils/normalize.ts:16-26`.\n\n*   **`limit`**: `2`\n    *   `source/utils/normalize.ts:17`\n*   **`methods`**: `['get', 'put', 'head', 'delete', 'options', 'trace']`\n    *   `source/utils/normalize.ts:8,18`\n*   **`statusCodes`**: `[408, 413, 429, 500, 502, 503, 504]`\n    *   `source/utils/normalize.ts:10,19`\n*   **`afterStatusCodes`**: `[413, 429, 503]`\n    *   `source/utils/normalize.ts:12,20`\n*   **`delay` formula**:\n    ```javascript\n    attemptCount => 0.3 * (2 ** (attemptCount - 1)) * 1000\n    ```\n    *   `source/utils/normalize.ts:23`"
+ },
+ {
+  "id": "ky-07",
+  "category": "behavior",
+  "question": "What is the default per-attempt `timeout`, the default `totalTimeout`, and what happens if timeout exceeds the max?",
+  "reference_answer": "timeout defaults to 10000 ms per attempt; totalTimeout defaults to false (disabled). If either is a number greater than 2147483647, the request promise rejects with a RangeError.",
+  "key_facts": [
+   "timeout default is 10_000 ms and applies per attempt",
+   "totalTimeout default is false",
+   "Values > 2147483647 (maxSafeTimeout) cause a RangeError"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "379-380"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "154-160"
+   },
+   {
+    "path": "source/core/constants.ts",
+    "lines": "58"
+   }
+  ],
+  "X": "The default per-attempt `timeout` is 10,000 milliseconds. The default `totalTimeout` is `false`, which means there is no overall timeout. If either `timeout` or `totalTimeout` is set to a number greater than 2,147,483,647, a `RangeError` is thrown.\n\n### Default Timeouts\n\n*   **`timeout`**: The default per-attempt timeout is `10000` milliseconds.\n    *   `readme.md:413`\n    *   `source/types/options.ts:201`\n    *   This is set in the `Ky` class constructor: `timeout: options.timeout ?? 10_000` (`source/core/Ky.ts:379`).\n*   **`totalTimeout`**: The default overall timeout is `false`.\n    *   `readme.md:422`\n    *   `source/types/options.ts:210`\n    *   This is set in the `Ky` class constructor: `totalTimeout: options.totalTimeout ?? false` (`source/core/Ky.ts:380`).\n\n### Maximum Timeout Value\n\nIf either the `timeout` or `totalTimeout` option is set to a number greater than `2147483647`, a `RangeError` will be thrown.\n\n*   The maximum value is defined as `maxSafeTimeout` (`source/core/constants.ts:58`).\n*   The check for `timeout` is performed in `Ky.create`:\n    ```typescript\n    if (typeof ky.#options.timeout === 'number' && ky.#options.timeout > maxSafeTimeout) {\n    \tthrow new RangeError(`The \\`timeout\\` option cannot be greater than ${maxSafeTimeout}`);\n    }\n    ```\n    `source/core/Ky.ts:154-156`\n*   The check for `totalTimeout` is also performed in `Ky.create`:\n    ```typescript\n    if (typeof ky.#options.totalTimeout === 'number' && ky.#options.totalTimeout > maxSafeTimeout) {\n    \tthrow new RangeError(`The \\`totalTimeout\\` option cannot be greater than ${maxSafeTimeout}`);\n    }\n    ```\n    `source/core/Ky.ts:158-160`",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-08",
+  "category": "behavior",
+  "question": "When is a timed-out request retried by default, and what error type is thrown on timeout?",
+  "reference_answer": "A timeout throws TimeoutError (extends KyError). By default it is NOT retried because retryOnTimeout is false; it is retried only if retry.retryOnTimeout is true or a shouldRetry function returns true.",
+  "key_facts": [
+   "Timeouts throw TimeoutError",
+   "Default retryOnTimeout is false so timeouts are not retried",
+   "shouldRetry returning true overrides this and retries"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/timeout.ts",
+    "lines": "16-22"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "522-546"
+   },
+   {
+    "path": "source/utils/normalize.ts",
+    "lines": "25"
+   }
+  ],
+  "X": "By default, a timed-out request is not retried. This behavior is controlled by the `retryOnTimeout` option within the `retry` configuration, which defaults to `false`.\n\n-   **`retryOnTimeout` default**: `false` (`readme.md:287`, `source/types/retry.ts:112`, `source/utils/normalize.ts:25`)\n-   **Description**: \"The `retryOnTimeout` option determines whether to retry when a request times out. By default, retries are not triggered following a timeout.\" (`readme.md:310-311`)\n\nTo enable retries on timeout, `retryOnTimeout` must be explicitly set to `true`.\n\n```js\nimport ky from 'ky';\n\nconst json = await ky('https://example.com', {\n\ttimeout: 5000,\n\tretry: {\n\t\tlimit: 3,\n\t\tretryOnTimeout: true\n\t}\n}).json();\n```\n(`readme.md:340-350`)\n\nWhen a request times out, Ky throws a `TimeoutError`. This applies to both per-attempt timeouts (`timeout` option) and overall operation timeouts (`totalTimeout` option).\n\n-   **Error Type**: `TimeoutError` (`readme.md:1306`, `source/errors/TimeoutError.ts:7`)\n-   **Instantiation**: The `TimeoutError` is created and thrown when a timeout occurs.\n    -   In the per-attempt timeout logic: `reject(new TimeoutError(request));` (`source/utils/timeout.ts:21`)\n    -   In the total timeout logic: `throw new TimeoutError(this.request);` (`source/core/Ky.ts:643`, `source/core/Ky.ts:861`, `source/core/Ky.ts:867`, `source/core/Ky.ts:960`)\n-   **Properties**: The `TimeoutError` instance includes a `request` property containing the `Request` object that timed out. (`readme.md:1308`, `source/errors/TimeoutError.ts:9-14`)",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-09",
+  "category": "behavior",
+  "question": "In what order are checks performed when deciding whether to retry a non-forced error?",
+  "reference_answer": "#calculateRetryDelay: (1) if retryCount >= limit, throw; (2) ForceRetryError short-circuits with custom/computed delay; (3) if request method not in retry.methods, throw; (4) user shouldRetry: false -> throw, true -> retry, other -> fall through; (5) TimeoutError retried only if retryOnTimeout; (6) HTTPError retried only if status in statusCodes, honoring Retry-After for afterStatusCodes; (7) otherwise only NetworkError is retried, all other errors thrown.",
+  "key_facts": [
+   "Limit check comes first, then ForceRetryError bypass, then method check",
+   "shouldRetry is consulted after the method check and before status/timeout checks",
+   "Only exact true/false from shouldRetry are special; other values fall through to defaults",
+   "Errors that are not Timeout/HTTP/Network errors are not retried"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "504-590"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "When deciding whether to retry a request that did not fail due to a `ForceRetryError`, checks are performed in the following order inside the `#calculateRetryDelay` method:\n\n1.  **Retry Limit**: The current retry count is checked against the configured `retry.limit`. If the limit has been reached, the error is thrown, and no further checks are performed.\n    ```typescript\n    // source/core/Ky.ts:505-507\n    if (this.#retryCount >= this.#options.retry.limit) {\n    \tthrow error;\n    }\n    ```\n\n2.  **HTTP Method**: The request's method is checked against the list of allowed methods in `retry.methods`. If the method is not in the list, the error is thrown.\n    ```typescript\n    // source/core/Ky.ts:518-520\n    if (!this.#options.retry.methods.includes(this.request.method.toLowerCase())) {\n    \tthrow error;\n    }\n    ```\n\n3.  **`shouldRetry` Hook**: If the `retry.shouldRetry` option is provided, it is executed. This hook's return value takes precedence over the default retry logic.\n    *   If it returns `false`, the error is thrown, and the retry is prevented. (`source/core/Ky.ts:527-529`)\n    *   If it returns `true`, a retry is forced, and all subsequent default checks (for timeouts, status codes, etc.) are skipped. (`source/core/Ky.ts:531-534`)\n    *   If it returns `undefined` or any other value, the logic falls through to the default checks below. (`source/core/Ky.ts:536`)\n\n4.  **Default Error Type Checks**: If `shouldRetry` was not provided or did not return a strict boolean, the following default logic is applied based on the error type:\n    *   **`TimeoutError`**: It checks if the error is a `TimeoutError`. If it is, it then checks if `retry.retryOnTimeout` is `true`. If `retryOnTimeout` is `false` (the default), the error is thrown.\n        ```typescript\n        // source/core/Ky.ts:540-543\n        if (isTimeoutError(error)) {\n        \tif (!this.#options.retry.retryOnTimeout) {\n        \t\tthrow error;\n        \t}\n        ```\n    *   **`HTTPError`**: It checks if the error is an `HTTPError`.\n        *   First, it checks if the response's status code is included in the `retry.statusCodes` array. If not, the error is thrown.\n            ```typescript\n            // source/core/Ky.ts:549-551\n            if (!this.#options.retry.statusCodes.includes(error.response.status)) {\n            \tthrow error;\n            }\n            ```\n        *   Next, there is a special case for status code `413` (Payload Too Large). If the status is `413`, the error is thrown, preventing a retry. This occurs *after* the check for a `Retry-After` header, meaning a `413` response is only retried if it includes a `Retry-After` header and its status code is in `retry.afterStatusCodes`.\n            ```typescript\n            // source/core/Ky.ts:577-579\n            if (error.response.status === 413) {\n            \tthrow error;\n            }\n            ```\n    *   **Other Errors**: Finally, it checks if the error is a known retriable type. If the error is not an instance of `NetworkError`, it is thrown. This prevents retries on unknown errors, like programming mistakes.\n        ```typescript\n        // source/core/Ky.ts:585-587\n        if (!isNetworkError(error)) {\n        \tthrow error;\n        }\n        ```\n        If the error is a `NetworkError`, the check passes, and a retry is attempted."
+ },
+ {
+  "id": "ky-10",
+  "category": "behavior",
+  "question": "Which response headers does Ky consult for the retry delay, in what order, and how is a numeric value interpreted?",
+  "reference_answer": "For statuses in afterStatusCodes it checks Retry-After, then RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset. A numeric value is seconds (multiplied by 1000); if that product is >= Date.parse('2024-01-01') it is treated as an epoch timestamp and Date.now() is subtracted. Non-numeric values are parsed as HTTP dates. The result is clamped at >= 0 and capped by maxRetryAfter, with no jitter applied.",
+  "key_facts": [
+   "Header order: Retry-After, RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset",
+   "Numbers are seconds*1000; values >= Date.parse('2024-01-01') are treated as timestamps",
+   "Non-numeric values are parsed as dates",
+   "Delay capped by maxRetryAfter and jitter is not applied"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "553-575"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Ky consults response headers for retry delay information when the response status code is included in the `retry.afterStatusCodes` option, which defaults to `[413, 429, 503]` (`source/utils/normalize.ts:12-12`, `source/utils/normalize.ts:20-20`).\n\nThe headers are checked in the following order of precedence:\n\n1.  `Retry-After` (`source/core/Ky.ts:553-553`)\n2.  `RateLimit-Reset` (`source/core/Ky.ts:554-554`)\n3.  `X-RateLimit-Retry-After` (Used by Symfony) (`source/core/Ky.ts:555-555`)\n4.  `X-RateLimit-Reset` (Used by GitHub) (`source/core/Ky.ts:556-556`)\n5.  `X-Rate-Limit-Reset` (Used by Twitter) (`source/core/Ky.ts:557-557`)\n\n### Value Interpretation\n\nThe value from the first matched header is interpreted as follows:\n\n1.  The value is first parsed as a number.\n2.  If it is a valid number and its value in milliseconds is less than the timestamp for January 1, 2024, it is treated as a delay in seconds. The value is multiplied by 1000 to get the delay in milliseconds (`source/core/Ky.ts:559-559`).\n3.  If it is a valid number but its value in milliseconds is greater than or equal to the timestamp for January 1, 2024, it is treated as a Unix timestamp in milliseconds. The delay is calculated by subtracting the current time (`Date.now()`) from this timestamp (`source/core/Ky.ts:562-564`).\n4.  If the value is not a valid number (e.g., an HTTP-date string), it is parsed as a date. The delay is calculated by subtracting the current time (`Date.now()`) from the parsed date's timestamp (`source/core/Ky.ts:560-561`).\n\n### Delay Bounding\n\nThe calculated delay is then adjusted:\n*   It is clamped to a minimum of 0 (`source/core/Ky.ts:571-571`).\n*   The final delay is capped by the `retry.maxRetryAfter` option, which defaults to `Infinity` (`source/core/Ky.ts:574-574`, `source/types/retry.ts:47-47`, `source/utils/normalize.ts:21-21`).\n\nIf a `Retry-After` header is used, jitter is not applied to the delay (`readme.md:308-308`). If no valid header is found or the status code is not in `afterStatusCodes`, Ky falls back to its exponential backoff delay calculation (`source/core/Ky.ts:581-581`)."
+ },
+ {
+  "id": "ky-11",
+  "category": "behavior",
+  "question": "What is the exact message format of an HTTPError, and what is `error.data`?",
+  "reference_answer": "Message: `Request failed with status code <status> <statusText>: <METHOD> <url>` (falls back to 'an unknown error' if no status). error.data is the pre-read response body: parsed JSON (via parseJson or JSON.parse) when Content-Type is a JSON subtype, otherwise text; undefined if empty, parse failure, over 10 MiB, or the read times out.",
+  "key_facts": [
+   "Message format 'Request failed with status code {code} {statusText}: {method} {url}'",
+   "data is JSON-parsed for JSON content types (incl. +json subtypes), else text",
+   "data is undefined when empty, unparseable, >10 MiB, or read timed out"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/errors/HTTPError.ts",
+    "lines": "22-33"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "609-653"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "44"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### HTTPError Message Format\n\nThe `HTTPError` message is constructed using the format: `Request failed with <reason>: <request.method> <request.url>`.\n\nThe `<reason>` part is determined as follows (`source/errors/HTTPError.ts:23-28`):\n-   If the `response.status` is available (including `0`), the reason is `status code {response.status} {response.statusText}`. The `statusText` will be an empty string if it's not provided on the response.\n-   If `response.status` is not available, the reason is `an unknown error`.\n\n**Examples:**\n-   With status `500` and `statusText: 'Internal Server Error'`: `Request failed with status code 500 Internal Server Error: GET https://example.com`\n-   With status `500` and `statusText: undefined`: `Request failed with status code 500: GET https://example.com` (`test/http-error.ts:28`)\n-   With status `undefined`: `Request failed with an unknown error: GET https://example.com` (`test/http-error.ts:40`)\n\n### `error.data` Property\n\nThe `error.data` property on an `HTTPError` instance contains the pre-parsed body of the error response (`source/errors/HTTPError.ts:9`). The body is automatically consumed to populate this property, which means methods like `error.response.json()` will fail because the body has already been read (`source/errors/HTTPError.ts:11`, `test/http-error.ts:422-423`).\n\nThe content of `error.data` depends on the response's `Content-Type` header:\n\n-   **JSON Responses**: If the `Content-Type` is a JSON-like MIME type (e.g., `application/json`, `application/problem+json`, `application/vnd.api+json`), Ky attempts to parse the response body as JSON (`source/core/Ky.ts:622`, `source/core/Ky.ts:649-653`).\n    -   If a custom `options.parseJson` function is provided, it will be used for parsing (`source/core/Ky.ts:723-724`).\n    -   Otherwise, `JSON.parse()` is used by default (`source/core/Ky.ts:725`).\n-   **Non-JSON Responses**: For any other `Content-Type`, `error.data` is the response body as a plain string (`source/core/Ky.ts:623`).\n\nThe `error.data` property will be `undefined` under the following conditions:\n-   The response body is empty (`source/core/Ky.ts:618-620`).\n-   JSON parsing fails (e.g., invalid JSON or the `parseJson` function throws an error) (`source/core/Ky.ts:733-734`).\n-   Reading or parsing the response body times out. The timeout is determined by the `timeout` option or the remaining `totalTimeout` (`source/core/Ky.ts:613`, `source/core/Ky.ts:627-629`).\n-   The response body size exceeds a 10 MiB limit (`source/core/Ky.ts:44`, `source/core/Ky.ts:687-689`).\n-   The response body stream is already locked by another consumer (`source/core/Ky.ts:667-670`).\n\nThe `data` property is populated before `beforeError` hooks are executed, making it accessible within those hooks (`source/errors/HTTPError.ts:9`, `test/http-error.ts:245-267`)."
+ },
+ {
+  "id": "ky-12",
+  "category": "behavior",
+  "question": "What does the `.json()` shortcut on the response promise do with headers and with an empty body?",
+  "reference_answer": "It sets the Accept header to 'application/json' unless an Accept header is already set (the fetch is deferred by `await Promise.resolve()` so this happens first). On an empty body without a schema it calls JSON.parse('') which throws a SyntaxError; with a schema it validates `undefined`. A schema failure throws SchemaValidationError.",
+  "key_facts": [
+   "Accept is set to application/json only if not already present",
+   "An empty body without a schema throws (JSON.parse(''))",
+   "With a Standard Schema, failed validation throws SchemaValidationError"
+  ],
+  "wrong_but_plausible": ".json() returns undefined/null for an empty body",
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "162-163"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "309-333"
+   },
+   {
+    "path": "source/core/constants.ts",
+    "lines": "46-55"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "When the `.json()` shortcut is used on a `ResponsePromise`, it has the following behavior regarding headers and empty response bodies:\n\n### Headers\n\nWhen `.json()` is called, it ensures an appropriate `Accept` header is set on the request.\n\n-   If no `Accept` header is already set on the request, `.json()` sets it to `application/json` (`source/core/Ky.ts:311`).\n-   If a custom `Accept` header is provided in the options, that header is used instead and is not overridden by the shortcut (`test/main.ts:246-248`).\n\n```typescript\n// test/main.ts:93-94\nlet headers = await ky.get(server.url).json<IncomingHttpHeaders>();\nt.is(headers.accept, 'application/json');\n\n// test/main.ts:246-248\nconst responseJson = await ky(server.url, {\n\theaders: {accept: 'foo/bar'},\n}).json();\n// Request header `accept` will be 'foo/bar'\n```\n\n### Empty Body\n\nThe behavior for an empty response body depends on whether a schema is provided to the `.json()` method.\n\n-   **Without a schema (`.json()`):** If the response body is empty or the status code is `204` (No Content), calling `.json()` will throw a `SyntaxError` because it attempts to parse an empty string (`source/core/Ky.ts:325`, `test/main.ts:293-295`, `test/main.ts:307-309`). The documentation explicitly states this behavior (`readme.md:119`).\n\n    ```typescript\n    // source/core/Ky.ts:320-325\n    if (text === '') {\n        if (schema !== undefined) {\n            return validateJsonWithSchema(undefined, schema);\n        }\n\n        return JSON.parse(text); // This throws on an empty string\n    }\n    ```\n\n-   **With a schema (`.json(schema)`):** If the response body is empty, `undefined` is passed to the schema validator instead of attempting to parse the body. The schema can then handle the `undefined` value, potentially returning a default or transformed value without throwing an error (`source/core/Ky.ts:321-323`, `test/main.ts:660-673`).\n\n    ```typescript\n    // test/main.ts:666-670\n    const schema = createSchema<string>(value => ({\n    \tvalue: value === undefined ? 'empty:undefined' : 'non-empty',\n    }));\n\n    const responseJson = await ky.get(server.url).json(schema);\n    // responseJson will be 'empty:undefined'\n    ```"
+ },
+ {
+  "id": "ky-13",
+  "category": "behavior",
+  "question": "How is the final error passed through `beforeError` hooks, and which errors bypass them?",
+  "reference_answer": "Each beforeError hook is awaited in order with {request, options, error, retryCount}; if a hook returns an Error instance it replaces the error for subsequent hooks and the final throw, otherwise the previous error is kept. Non-Error thrown values and errors thrown by beforeRetry hooks bypass beforeError entirely. init hook errors are synchronous and not caught either.",
+  "key_facts": [
+   "Hooks run sequentially; only a returned Error instance replaces the error",
+   "Errors thrown from beforeRetry hooks propagate unchanged, skipping beforeError",
+   "Non-Error thrown values (e.g. strings) skip beforeError"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "255-287"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "896-903"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "### Error Processing by `beforeError` Hooks\n\nWhen an error occurs during the request lifecycle, it is passed through an array of `beforeError` hooks. These hooks are executed serially.\n\n1.  The first hook in the `hooks.beforeError` array receives the original error.\n2.  Each hook receives a state object containing the `request`, `options`, `error`, and `retryCount` (`source/core/Ky.ts:274`).\n3.  A hook can return a new `Error` instance. If it does, this new error is passed to the next hook in the array (`source/core/Ky.ts:282-284`). If the hook does not return an `Error` instance (e.g., it returns `undefined` or the original error), the error from the previous step is passed to the next hook.\n4.  After all `beforeError` hooks have run, the final resulting error is thrown (`source/core/Ky.ts:287`).\n\nThis process is defined in the main `catch` block of the request pipeline:\n\n```typescript\n// source/core/Ky.ts:269-288\n\t\t\t\tlet processedError: Error = error;\n\t\t\t\tfor (const hook of ky.#options.hooks.beforeError) {\n\t\t\t\t\t// `request` is the current failing request. `options` intentionally remains the\n\t\t\t\t\t// stable normalized Ky options snapshot for the same reason as `HTTPError` above.\n\t\t\t\t\t// eslint-disable-next-line no-await-in-loop\n\t\t\t\t\tconst hookResult: unknown = await hook({\n\t\t\t\t\t\trequest: ky.request,\n\t\t\t\t\t\toptions: ky.#getNormalizedOptions(),\n\t\t\t\t\t\terror: processedError,\n\t\t\t\t\t\tretryCount: ky.#retryCount,\n\t\t\t\t\t});\n\n\t\t\t\t\t// Only overwrite if the hook returns a valid Error instance.\n\t\t\t\t\tif (hookResult instanceof Error) {\n\t\t\t\t\t\tprocessedError = hookResult;\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tthrow processedError;\n```\n\nThe `beforeError` hook is designed to process all Ky-specific errors, including `HTTPError`, `NetworkError`, `TimeoutError`, and `ForceRetryError`, as well as errors thrown from `beforeRequest` hooks (`source/types/hooks.ts:254`, `test/hooks.ts:2102-2121`).\n\n### Errors that Bypass `beforeError` Hooks\n\nCertain types of errors are not processed by `beforeError` hooks and are thrown immediately.\n\n*   **Non-Error Throws**: If a value that is not an instance of `Error` is thrown (e.g., a string or a plain object), it bypasses the `beforeError` hook pipeline and is re-thrown as-is. This is handled by a check at the beginning of the `catch` block (`source/core/Ky.ts:259-262`).\n\n*   **Errors from `beforeRetry` Hooks**: Any error thrown from a `beforeRetry` hook is considered a deliberate action to stop the retry process. These errors are tracked in a `WeakSet` (`#beforeRetryHookErrors`) and are re-thrown without being passed to the `beforeError` hooks (`source/core/Ky.ts:265-267`, `source/core/Ky.ts:896-902`). This ensures that logic intended to stop a retry is not accidentally modified.\n\n*   **Errors from `init` Hooks**: `init` hooks are synchronous and execute before the main asynchronous request pipeline begins. Any error thrown within an `init` hook will propagate synchronously and will not be caught by the `try...catch` block that invokes the `beforeError` hooks (`source/types/hooks.ts:8`, `source/core/Ky.ts:147-149`)."
+ },
+ {
+  "id": "ky-14",
+  "category": "where",
+  "question": "Where is network-error detection implemented and how does it decide something is a network error?",
+  "reference_answer": "source/utils/is-network-error.ts, isRawNetworkError() (inlined from is-network-error v1.3.1). It requires a TypeError and matches runtime-specific messages (e.g. 'Failed to fetch', 'fetch failed', 'terminated', 'NetworkError when attempting to fetch resource.', Deno 'error sending request for url', Safari 'Load failed' with no stack). Ky#fetch wraps matches in NetworkError with the original as cause.",
+  "key_facts": [
+   "Implemented in isRawNetworkError in source/utils/is-network-error.ts",
+   "Only TypeErrors with known runtime-specific messages qualify",
+   "Ky#fetch wraps them in NetworkError({cause})"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/is-network-error.ts",
+    "lines": "1-49"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "977-983"
+   }
+  ],
+  "X": "Network error detection is implemented in `source/utils/is-network-error.ts`. This file exports a function `isRawNetworkError` that uses runtime-specific heuristics to determine if a thrown error from `fetch` is a network error.\n\nThe detection logic is as follows:\n\n1.  It first performs a basic validation to check if the thrown value is an `Error` instance with the name `TypeError` and a `string` message (`source/utils/is-network-error.ts:18-26`).\n2.  If the basic validation passes, it checks the error `message` and `stack` against known patterns from different JavaScript environments.\n\n### Specific Checks\n\n*   **Safari 17+**: A message of `'Load failed'` is considered a network error if the `stack` property is `undefined` or if the error object has a `__sentry_captured__` property (`source/utils/is-network-error.ts:31-35`).\n*   **Deno**: Messages starting with `'error sending request for url'` are treated as network errors (`source/utils/is-network-error.ts:38-40`).\n*   **Chrome**: A message that is exactly `'Failed to fetch'` or starts with `'Failed to fetch ('` and ends with `')'` is considered a network error (`source/utils/is-network-error.ts:43-45`).\n*   **Other Runtimes**: The function checks the error message against a `Set` of known network error strings (`source/utils/is-network-error.ts:7-16`):\n    ```javascript\n    const errorMessages = new Set([\n    \t'network error', // Chrome\n    \t'NetworkError when attempting to fetch resource.', // Firefox\n    \t'The Internet connection appears to be offline.', // Safari 16\n    \t'Network request failed', // `cross-fetch`\n    \t'fetch failed', // Undici (Node.js)\n    \t'terminated', // Undici (Node.js)\n    \t' A network error occurred.', // Bun (WebKit) - leading space is intentional\n    \t'Network connection lost', // Cloudflare Workers (fetch)\n    ]);\n    ```\n\nIf `isRawNetworkError` returns `true`, Ky wraps the original error in a `NetworkError` instance, which is defined in `source/errors/NetworkError.ts:11-19`. This `NetworkError` class extends `KyError` and stores the original `Request` object and the original error in its `cause` property.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-15",
+  "category": "where",
+  "question": "Where is the per-attempt timeout implemented?",
+  "reference_answer": "source/utils/timeout.ts default export timeout(request, init, abortController, options): a Promise wrapper (Promise.race workaround) that sets a setTimeout to abort the controller and reject with TimeoutError, clearing it when fetch settles. It is called from Ky#fetch with effectiveTimeout = min(timeout, remaining totalTimeout).",
+  "key_facts": [
+   "source/utils/timeout.ts default-exported timeout() function",
+   "Rejects with TimeoutError and aborts the AbortController",
+   "Called from Ky#fetch with timeout capped by remaining totalTimeout"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/timeout.ts",
+    "lines": "9-32"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "963-974"
+   }
+  ],
+  "X": "The per-attempt timeout is implemented in `source/utils/timeout.ts`. This utility function wraps the `fetch` call to create a race condition between the request and a timer.\n\n### Implementation Details\n\n1.  **Timeout Wrapper Function**: The core logic resides in the `timeout` function in `source/utils/timeout.ts:9-32`. It wraps the actual `fetch` call inside a `Promise`.\n\n2.  **Timer Creation**: A `setTimeout` is initiated with the specified `timeout` duration from the options (`source/utils/timeout.ts:16-22`).\n    *   If this timer completes before the `fetch` call, it rejects the promise with a `TimeoutError` (`source/errors/TimeoutError.ts:7-15`).\n    *   It also aborts the underlying request by calling `abortController.abort()` (`source/utils/timeout.ts:18`).\n\n3.  **Fetch Execution**: The `fetch` call is executed concurrently (`source/utils/timeout.ts:25`).\n    *   If the `fetch` promise resolves or rejects before the timeout, a `finally` block (`.then()`) clears the timer using `clearTimeout(timeoutId)` to prevent the `TimeoutError` from being thrown (`source/utils/timeout.ts:28-30`).\n\n### Invocation and Retry Logic\n\nThe `timeout` utility is called from the `#fetch` method within the `Ky` class.\n\n*   **Calculating Timeout**: In `source/core/Ky.ts:958-968`, an `effectiveTimeout` is calculated for each attempt. It considers the per-attempt `timeout` option and the remaining time from the `totalTimeout` option, if set.\n\n*   **Calling the Wrapper**: If an `effectiveTimeout` is determined, the `timeout` wrapper is called to execute the fetch request (`source/core/Ky.ts:971-974`). Otherwise, `fetch` is called directly.\n\n    ```typescript\n    // source/core/Ky.ts:969-974\n    const response = effectiveTimeout === undefined\n    \t? await this.#options.fetch(request, nonRequestOptions)\n    \t: await timeout(request, nonRequestOptions, this.#abortController, {\n    \t\ttimeout: effectiveTimeout,\n    \t\tfetch: this.#options.fetch,\n    \t});\n    ```\n\n*   **Retry Handling**: When a `TimeoutError` is thrown, it's caught by the retry mechanism.\n    *   The `#calculateRetryDelay` method checks if the error is a `TimeoutError` and if the `retry.retryOnTimeout` option is `true` (`source/core/Ky.ts:540-546`).\n    *   Before a new attempt is made, the `#fetch` method checks if the `AbortController` was previously aborted (as it would be on a timeout) and resets it, creating a new signal for the new request (`source/core/Ky.ts:937-943`). This ensures the timeout is applied independently to each retry attempt.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-16",
+  "category": "where",
+  "question": "Where is the deep-merging of options (headers, hooks, searchParams, context, signal) for extend/instances implemented?",
+  "reference_answer": "source/utils/merge.ts: validateAndMerge() validates sources then calls deepMerge(); deepMerge special-cases signal (combined via AbortSignal.any), context (shallow merge), searchParams (appendSearchParameters), hooks (mergeHooks, concatenating arrays), and headers (mergeHeaderContainers/mergeHeaders). replaceOption() marks a value to replace instead of merge.",
+  "key_facts": [
+   "validateAndMerge and deepMerge in source/utils/merge.ts",
+   "Hooks arrays are concatenated via mergeHooks; context is shallow-merged",
+   "Multiple signals are combined with AbortSignal.any",
+   "replaceOption() opts out of merging"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/merge.ts",
+    "lines": "49-62"
+   },
+   {
+    "path": "source/utils/merge.ts",
+    "lines": "130-144"
+   },
+   {
+    "path": "source/utils/merge.ts",
+    "lines": "207-312"
+   }
+  ],
+  "X": "The deep-merging of options for `ky` instances and `extend` calls is implemented in the `deepMerge` function.\n\n**File**: `source/utils/merge.ts`\n\nThe `deepMerge` function (`source/utils/merge.ts:207-312`) iterates through provided option objects and merges them. It contains specific logic for handling `headers`, `hooks`, `searchParams`, `context`, and `signal`.\n\n### `headers`\n- **Location**: `source/utils/merge.ts:283-290`\n- **Logic**:\n    - If `replaceOption` is used, the headers object is replaced entirely.\n    - Otherwise, headers are merged using the `mergeHeaderContainers` function (`source/utils/merge.ts:122-128`).\n    - `mergeHeaderContainers` merges plain objects directly. For `Headers` instances or mixed types, it uses `mergeHeaders` (`source/utils/merge.ts:64-78`), which iterates through the new headers and sets them on a `Headers` object. Setting a header value to `undefined` deletes it.\n\n### `hooks`\n- **Location**: `source/utils/merge.ts:274-281`\n- **Logic**:\n    - If `replaceOption` is used, all existing hooks are replaced with the new ones.\n    - Otherwise, the `mergeHooks` function (`source/utils/merge.ts:136-144`) is called.\n    - This function merges each array of hooks (e.g., `beforeRequest`, `afterResponse`) individually. New hooks are appended to the existing ones. If a hook property is set to `undefined` (e.g., `hooks: {beforeRequest: undefined}`), it clears that specific hook array (`source/utils/merge.ts:131-133`).\n\n### `searchParams`\n- **Location**: `source/utils/merge.ts:252-265`\n- **Logic**:\n    - If `replaceOption` is used, the `searchParams` are replaced.\n    - If the value is `undefined` or `null`, `searchParams` are removed.\n    - Otherwise, the `appendSearchParameters` function (`source/utils/merge.ts:148-204`) is used to merge the parameters. It handles various input types (string, object, `URLSearchParams`, array) and combines them into a single `URLSearchParams` instance. When an object is provided, a value of `undefined` deletes the corresponding parameter.\n\n### `context`\n- **Location**: `source/utils/merge.ts:234-249`\n- **Logic**:\n    - The `context` object is shallow-merged.\n    - If `replaceOption` is used, the entire `context` object is replaced.\n    - Otherwise, the properties from the new `context` object are merged into the existing one. Nested objects are not merged deeply; they are replaced.\n\n### `signal`\n- **Location**: `source/utils/merge.ts:224-227` and `source/utils/merge.ts:298-309`\n- **Logic**:\n    - All `AbortSignal` instances from the option sources are collected into an array (`source/utils/merge.ts:225`).\n    - After processing all sources, if multiple signals were provided and the environment supports `AbortSignal.any`, they are combined into a single signal that aborts when any of the source signals abort (`source/utils/merge.ts:301-302`).\n    - If `AbortSignal.any` is not supported, the last provided signal is used (`source/utils/merge.ts:307`).",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-17",
+  "category": "where",
+  "question": "Where are upload and download progress implemented?",
+  "reference_answer": "source/utils/body.ts: streamResponse() (download, used in Ky.create when onDownloadProgress is set) and streamRequest() (upload, used by Ky#wrapRequestWithUploadProgress), both piping through withProgress() TransformStream; getBodySize() estimates upload size. Progress reports percent capped below 1 until the stream flushes.",
+  "key_facts": [
+   "streamResponse / streamRequest in source/utils/body.ts",
+   "Both use withProgress() TransformStream",
+   "Upload total size estimated by getBodySize() (FormData approximated with a 40-byte boundary)"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "source/utils/body.ts",
+    "lines": "7-112"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "237-250"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "1035-1041"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "Upload and download progress are implemented through the `onUploadProgress` and `onDownloadProgress` options, respectively. The core logic for both resides in `source/utils/body.ts`, which uses a `TransformStream` to monitor data flow.\n\n### Download Progress (`onDownloadProgress`)\n\nThe implementation for download progress is initiated within the main request pipeline in `source/core/Ky.ts`.\n\n1.  **Option Check**: In the `Ky.create` static method, the code checks if the `onDownloadProgress` option is provided and is a function (`source/core/Ky.ts:238-241`).\n2.  **Stream Support Check**: It verifies that `ReadableStream` is supported in the environment (`source/core/Ky.ts:243-245`).\n3.  **Response Streaming**: The original response is cloned, its body is cancelled to prevent it from being consumed elsewhere, and the cloned response is passed to `streamResponse` (`source/core/Ky.ts:247-249`).\n4.  **`streamResponse` Function**: Located in `source/utils/body.ts`, this function handles the progress reporting.\n    *   It retrieves the `content-length` header to determine the `totalBytes` for progress calculation (`source/utils/body.ts:94-94`).\n    *   It creates a new `Response` object, wrapping the original response body with the `withProgress` utility function (`source/utils/body.ts:95-95`).\n    *   For `204 No Content` responses, it returns a new `Response` with a `null` body, and no progress is reported (`source/utils/body.ts:90-92`).\n\n### Upload Progress (`onUploadProgress`)\n\nThe implementation for upload progress is initiated before the `fetch` call is made.\n\n1.  **Option Check**: The `Ky` constructor validates that `onUploadProgress` is a function if provided (`source/core/Ky.ts:478-480`).\n2.  **Request Wrapping**: Inside the `#fetch` method, the request is passed to `#wrapRequestWithUploadProgress` before being sent (`source/core/Ky.ts:947-947`).\n3.  **`#wrapRequestWithUploadProgress` Method**: This method in `source/core/Ky.ts` checks if `onUploadProgress` is set, the request has a body, and request streams are supported. If so, it calls `streamRequest` (`source/core/Ky.ts:1035-1041`).\n4.  **`streamRequest` Function**: Located in `source/utils/body.ts`, this function handles the upload progress reporting.\n    *   It calculates the total size of the request body by calling `getBodySize` (`source/utils/body.ts:105-105`). This is necessary because `request.body` is already a stream.\n    *   It creates a new `Request`, wrapping the request's body stream with the `withProgress` utility function (`source/utils/body.ts:107-111`).\n\n### Core Progress Logic (`withProgress`)\n\nThe `withProgress` function in `source/utils/body.ts` contains the shared logic for both upload and download progress reporting.\n\n*   **`TransformStream`**: It pipes the provided stream (`ReadableStream<Uint8Array>`) through a `TransformStream` to intercept data chunks as they pass through (`source/utils/body.ts:50-76`).\n*   **`transform` Method**: For each chunk, it:\n    *   Updates the `transferredBytes` count (`source/utils/body.ts:55-55`).\n    *   Calculates the completion `percent` (`source/utils/body.ts:57-57`). To avoid reporting 100% before the stream is fully consumed, the percentage is capped just below 1 (`source/utils/body.ts:59-63`).\n    *   Calls the `onProgress` callback with a `Progress` object and the current chunk (`source/utils/body.ts:65-65`).\n*   **`flush` Method**: When the stream is closed, the `flush` method is called. It performs a final update to `transferredBytes` and calls the `onProgress` callback one last time with `percent: 1` to signal completion (`source/utils/body.ts:70-75`).\n\n### Body Size Calculation for Uploads\n\nThe `getBodySize` function in `source/utils/body.ts` is used to determine the `totalBytes` for upload progress. It calculates the size for various `BodyInit` types:\n*   `FormData`: Approximates the size by iterating over its entries (`source/utils/body.ts:12-25`).\n*   `Blob`: Uses `body.size` (`source/utils/body.ts:27-29`).\n*   `ArrayBuffer` or `ArrayBufferView`: Uses `body.byteLength` (`source/utils/body.ts:31-33`).\n*   `string`: Encodes the string to bytes and returns the length (`source/utils/body.ts:35-37`).\n*   `URLSearchParams`: Converts to a string, encodes it, and returns the length (`source/utils/body.ts:39-41`).\n*   If the body type is not recognized or is `null`, it returns `0` (`source/utils/body.ts:8-10`, `source/utils/body.ts:43-43`)."
+ },
+ {
+  "id": "ky-18",
+  "category": "edge_case",
+  "question": "A POST request gets a 503. Does Ky retry it by default?",
+  "reference_answer": "No. 'post' is not in the default retry.methods (get, put, head, delete, options, trace), so the method check throws the HTTPError without retrying, even though 503 is a retriable status.",
+  "key_facts": [
+   "POST is not in default retry methods",
+   "Method check happens before status code check, so the HTTPError is thrown immediately"
+  ],
+  "wrong_but_plausible": "Yes, 503 is in the retry statusCodes so it is retried",
+  "evidence": [
+   {
+    "path": "source/utils/normalize.ts",
+    "lines": "8"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "517-520"
+   }
+  ],
+  "X": "No. By default, `ky` does not retry `POST` requests.\n\nThe retry logic first checks if the request's method is in the list of retriable methods. The default list does not include `POST`.\n\n### Default Retry Configuration\n\n*   **`methods`**: The default HTTP methods that are allowed to be retried are `get`, `put`, `head`, `delete`, `options`, and `trace`. `POST` is not included in this list.\n    *   `readme.md:280`\n    *   `source/types/retry.ts:26-28`\n*   **`statusCodes`**: While `503` is included in the list of default status codes that trigger a retry, the method check takes precedence.\n    *   `readme.md:281`\n\n### Control Flow\n\nThe internal retry logic in the `#calculateRetryDelay` method checks the method before checking the status code. If the method is not in the allowed list, it throws the error immediately without proceeding to the status code check.\n\n```typescript\n// source/core/Ky.ts:517-520\n// Check if method is retriable for non-forced retries\nif (!this.#options.retry.methods.includes(this.request.method.toLowerCase())) {\n\tthrow error;\n}\n```\n\nA test case confirms this behavior, showing that a `POST` request that fails with a 500 status is only attempted once.\n\n*   `test/retry.ts:72-90`",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-19",
+  "category": "edge_case",
+  "question": "A GET receives 413 without any Retry-After-style header. Is it retried?",
+  "reference_answer": "No. 413 is in statusCodes, but without a retry-after header Ky explicitly throws for 413; it is only retried when a Retry-After (or equivalent) header is present, since 413 is also in afterStatusCodes.",
+  "key_facts": [
+   "413 without Retry-After/rate-limit header is not retried",
+   "413 is retried only when a retry-after header is present"
+  ],
+  "wrong_but_plausible": "Yes, 413 is in the default retry status codes so it retries with exponential backoff",
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "553-581"
+   }
+  ],
+  "X": "No, a `GET` request that receives a `413 Payload Too Large` status code without a `Retry-After` header is not retried.\n\nWhile `413` is included in the default list of retriable status codes, there is a specific check that prevents a retry for this status code if a `Retry-After` header is not present.\n\n### Retry Logic Analysis\n\nThe retry logic is handled in the `#calculateRetryDelay` method in `source/core/Ky.ts`.\n\n1.  The method first checks if the error is an `HTTPError`, which it is in this case (`source/core/Ky.ts:548`).\n2.  It then verifies if the response status code is in the `retry.statusCodes` list. The default list includes `413` (`source/types/retry.ts:33`), so this check passes.\n3.  Next, it checks for a `Retry-After` header. Since none is provided, this block is skipped (`source/core/Ky.ts:553-575`).\n4.  Finally, it encounters a specific condition for status `413`:\n    ```typescript\n    // source/core/Ky.ts:577-579\n    if (error.response.status === 413) {\n    \tthrow error;\n    }\n    ```\n    This code explicitly throws the `HTTPError`, preventing any further retry attempts.\n\n### Supporting Test Case\n\nThis behavior is confirmed by a test case:\n\n*   **`test/retry.ts:232-245`**: The test named `doesn't retry on 413 without Retry-After header` sets up a server that responds with a `413` status and no `Retry-After` header. It asserts that the request count is `1`, confirming that no retry was attempted.",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-20",
+  "category": "edge_case",
+  "question": "With `retry: 2` (default limit), how many total HTTP attempts can happen, and does `retry: {limit: 0}` change body handling?",
+  "reference_answer": "Up to 3 attempts (1 initial + 2 retries), since retry stops when retryCount >= limit. With limit 0, Ky skips request.clone() before fetching, avoiding ReadableStream tee() buffering of streaming bodies.",
+  "key_facts": [
+   "limit counts retries, not total attempts: limit 2 = up to 3 requests",
+   "When limit is 0, the request is not cloned before fetch (avoids tee buffering)"
+  ],
+  "wrong_but_plausible": "limit 2 means 2 total attempts",
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "505-507"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "946-955"
+   }
+  ],
+  "X": "With the default `retry` limit of `2`, a total of **3** HTTP attempts can occur: one initial request followed by up to two retries.\n\n-   The default retry limit is `2` as defined in `source/utils/normalize.ts:17` and documented in `readme.md:279`.\n-   The total number of attempts is the initial request plus the number of retries (`limit`). This is demonstrated in a test where a `limit` of `3` results in `4` total requests (`test/retry.ts:280-289`).\n\n---\n\nSetting `retry: {limit: 0}` **does** change how the request body is handled. It prevents Ky from cloning the request body.\n\n-   When retries are enabled (`limit > 0`), Ky clones the request body using `ReadableStream.tee()` to ensure the body can be re-sent on a subsequent attempt. This process buffers the entire stream in memory (`readme.md:405-406`, `readme.md:1578-1579`).\n-   By setting `retry: {limit: 0}`, the request is not cloned. This avoids buffering and is recommended for sending large streaming bodies when retries are not needed (`readme.md:406`, `readme.md:1579`).\n-   The implementation for this logic is in `source/core/Ky.ts`:\n    ```typescript\n    // source/core/Ky.ts:946-951\n    const retryRequest = this.#options.retry.limit > 0 ? this.request.clone() : undefined;\n    const request = this.#wrapRequestWithUploadProgress(this.request, this.#options.body ?? undefined);\n\n    // Cloning is done here to prepare in advance for retries.\n    // Skip cloning when retries are disabled - cloning a streaming body calls ReadableStream#tee()\n    // which buffers the entire stream in memory, causing excessive memory usage for large uploads.\n    ```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-21",
+  "category": "edge_case",
+  "question": "If a beforeRequest hook returns a Response with status 500, will Ky retry it?",
+  "reference_answer": "No. Ky skips fetch and the retry loop; because the response came from a hook (responseFromHook), a non-OK response still goes through afterResponse hooks and then throws HTTPError immediately without retrying (same for a Response returned from beforeRetry).",
+  "key_facts": [
+   "A Response from beforeRequest skips the fetch",
+   "A non-2xx hook-provided Response throws HTTPError without being retried"
+  ],
+  "wrong_but_plausible": "Yes, it is treated like any 500 and retried",
+  "evidence": [
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "164-167"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "208-215"
+   },
+   {
+    "path": "source/core/Ky.ts",
+    "lines": "776-780"
+   }
+  ],
+  "X": "No, Ky will not retry the request.\n\nWhen a `beforeRequest` hook returns a `Response` object, it bypasses the entire fetch and retry logic. Ky treats this `Response` as the final result of the operation.\n\n- The `beforeRequest` hook is designed to \"completely avoid making an HTTP request\" by returning a `Response` (`readme.md:486`).\n- The internal logic in `Ky.ts` shows that if `beforeRequest` returns a response, the `ky.#retry` block is skipped (`source/core/Ky.ts:165`).\n- If the returned `Response` has a non-2xx status code (like 500) and `throwHttpErrors` is enabled, Ky will create an `HTTPError` and throw it immediately without attempting a retry (`source/core/Ky.ts:213-214`).\n\nThis behavior is confirmed by a test case which asserts that the retry logic is not triggered when a `beforeRequest` hook returns a response with a 500 status:\n\n```typescript\n// test/hooks.ts:1443-1458\ntest('beforeRequest hook returning non-ok Response does not re-enter retry handling', async t => {\n\tlet shouldRetryCalled = false;\n\n\tconst error = await t.throwsAsync(\n\t\tky.get('https://example.com', {\n\t\t\tretry: {\n\t\t\t\tlimit: 2,\n\t\t\t\tshouldRetry() {\n\t\t\t\t\tshouldRetryCalled = true;\n\t\t\t\t\treturn true;\n\t\t\t\t},\n\t\t\t},\n\t\t\thooks: {\n\t\t\t\tbeforeRequest: [() => new Response('hook-fallback-error', {status: 500})],\n\t\t\t},\n\t\t}),\n\t);\n\n\tt.true(isHTTPError(error));\n\tt.is(error.response.status, 500);\n\tt.false(shouldRetryCalled);\n});\n```",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-22",
+  "category": "dev_workflow",
+  "question": "What does `npm test` run?",
+  "reference_answer": "`xo && npm run build && ava`: lint with xo, build (del-cli distribution && tsc --project tsconfig.dist.json), then AVA tests. AVA loads .ts files as modules via `--import=tsx/esm`, with workerThreads disabled.",
+  "key_facts": [
+   "npm test = xo, then npm run build, then ava",
+   "AVA runs TypeScript tests via the tsx/esm loader",
+   "AVA workerThreads is false"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "package.json",
+    "lines": "24-30"
+   },
+   {
+    "path": "package.json",
+    "lines": "90-100"
+   }
+  ],
+  "X": "The `npm test` command executes the following sequence of commands: `xo && npm run build && ava`.\n\n*   **`xo`**: This command runs the XO linter to check the code for style and quality issues (`package.json:25`, `package.json:71`). The configuration for XO is located in the `xo` property of `package.json` (`package.json:73-89`).\n*   **`npm run build`**: This command builds the project by first deleting the `distribution` directory using `del-cli` and then compiling the TypeScript source files from the `source` directory into JavaScript in the `distribution` directory using `tsc` with the `tsconfig.dist.json` configuration (`package.json:28`).\n*   **`ava`**: This command runs the test suite using the AVA test runner (`package.json:25`, `package.json:62`). The configuration for AVA is in the `ava` property of `package.json` (`package.json:90-98`), which specifies using `tsx` to execute TypeScript test files (`package.json:95`).\n\n### Continuous Integration\n\nThe CI workflow defined in `.github/workflows/main.yml` also executes `npm test` (`.github/workflows/main.yml:24`). The workflow runs on `macos-latest` against Node.js versions `latest`, `24`, and `22` (`.github/workflows/main.yml:8`, `.github/workflows/main.yml:12-15`). Before running the tests, it installs Playwright browsers with the command `npx playwright install --with-deps` (`.github/workflows/main.yml:23`), as some tests use Playwright (`test/helpers/with-page.ts:9`).",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-23",
+  "category": "dev_workflow",
+  "question": "Why must the project be built before tests run, and which browsers do browser tests use?",
+  "reference_answer": "Browser tests (test/browser.ts) serve the compiled `distribution/` directory via express and import '/distribution/index.js' in Playwright pages, so `npm run build` must run first. defaultBrowsersTest runs on chromium, firefox and webkit (some tests target only chromium).",
+  "key_facts": [
+   "test/browser.ts imports the built distribution/index.js",
+   "Playwright default browsers are chromium, firefox, webkit"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "test/browser.ts",
+    "lines": "23-37"
+   },
+   {
+    "path": "test/helpers/with-page.ts",
+    "lines": "14"
+   },
+   {
+    "path": "test/helpers/with-page.ts",
+    "lines": "81"
+   }
+  ],
+  "X": "The project must be built before tests run because the browser tests load the compiled JavaScript from the `distribution` directory, not the source TypeScript files.\n\n- The `test` script in `package.json` executes `npm run build` before running the test suite with `ava` (`package.json:25`).\n- The `build` script compiles the TypeScript files from the `source` directory into JavaScript in the `distribution` directory (`package.json:28`, `tsconfig.dist.json:6-7`).\n- The browser test setup creates a server that statically serves the `distribution` directory (`test/browser.ts:24-26`).\n- The test pages then import `ky` from this served directory (`test/browser.ts:37`).\n\n### Browser Tests\n\nThe browser tests use Playwright to run against Chromium, Firefox, and WebKit.\n\n- The test helper file `test/helpers/with-page.ts` imports `chromium`, `firefox`, and `webkit` from `playwright` (`test/helpers/with-page.ts:4-8`).\n- A constant `DEFAULT_BROWSERS` is defined containing these three browsers (`test/helpers/with-page.ts:14`).\n- A helper function `defaultBrowsersTest` is used by most browser tests, which runs them against this default set of browsers (`test/helpers/with-page.ts:80-82`, `test/browser.ts:55`).\n- Some specific tests run on a subset of these three, for example, only Chromium (`test/browser.ts:215`) or only Firefox and WebKit (`test/browser.ts:351`).\n- The CI workflow installs the default Playwright browsers, which include Chromium, Firefox, and WebKit (`.github/workflows/main.yml:23`).",
+  "Y": "[Devin answer not redistributed; re-collect with bench/answer.py]"
+ },
+ {
+  "id": "ky-24",
+  "category": "dev_workflow",
+  "question": "What is the CI matrix?",
+  "reference_answer": "GitHub Actions workflow .github/workflows/main.yml runs on push and pull_request, on macos-latest, with Node.js latest, 24 and 22 (fail-fast false); steps: npm install, npx playwright install --with-deps, npm test.",
+  "key_facts": [
+   "Runs on macos-latest",
+   "Node versions: latest, 24, 22",
+   "Installs Playwright browsers then runs npm test"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": ".github/workflows/main.yml",
+    "lines": "1-24"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The CI pipeline is defined in `.github/workflows/main.yml` and runs a single job named `test`. This job uses a matrix strategy to test against multiple Node.js versions.\n\n*   **Operating System:** `macos-latest` (`.github/workflows/main.yml:8`)\n*   **`fail-fast`:** `false` (`.github/workflows/main.yml:10`)\n*   **Node.js Versions:**\n    *   `latest` (`.github/workflows/main.yml:13`)\n    *   `24` (`.github/workflows/main.yml:14`)\n    *   `22` (`.github/workflows/main.yml:15`)\n\nThe matrix configuration is defined as follows:\n\n```yaml\n# .github/workflows/main.yml:9-15\nstrategy:\n  fail-fast: false\n  matrix:\n    node-version:\n      - latest\n      - 24\n      - 22\n```"
+ },
+ {
+  "id": "ky-25",
+  "category": "dev_workflow",
+  "question": "What Node.js version and module format does the package support, and where does the build output go?",
+  "reference_answer": "engines.node >=22; package is ESM-only (`type: module`, exports default ./distribution/index.js with types ./distribution/index.d.ts). tsc compiles source/ to distribution/ per tsconfig.dist.json (rootDir ./source, outDir ./distribution, sourcemaps).",
+  "key_facts": [
+   "Requires Node >= 22",
+   "ESM-only package (type: module)",
+   "Build output in distribution/ from source/ via tsconfig.dist.json"
+  ],
+  "wrong_but_plausible": null,
+  "evidence": [
+   {
+    "path": "package.json",
+    "lines": "13-22"
+   },
+   {
+    "path": "package.json",
+    "lines": "26"
+   },
+   {
+    "path": "tsconfig.dist.json",
+    "lines": "1-11"
+   }
+  ],
+  "X": "[Devin answer not redistributed; re-collect with bench/answer.py]",
+  "Y": "The package supports Node.js version 22 and later, uses the ES Module (ESM) format, and outputs its build artifacts to the `distribution` directory.\n\n### Node.js Version\n\nThe `package.json` file specifies the required Node.js version in the `engines` field.\n\n```json\n\"engines\": {\n  \"node\": \">=22\"\n}\n```\n*`package.json:21-23`*\n\nThis is corroborated by the documentation and CI configuration:\n-   The `readme.md` states \"Node.js 22 and later\" (`readme.md:1856`).\n-   The CI workflow tests against Node.js versions `latest`, `24`, and `22` (`.github/workflows/main.yml:13-15`).\n\n### Module Format\n\nThe package is configured as an ES Module, as indicated by the `type` field in `package.json`.\n\n```json\n\"type\": \"module\"\n```\n*`package.json:13`*\n\nThe `exports` field also defines the entry points for ESM consumers (`package.json:14-17`).\n\n### Build Output\n\nThe build process outputs files to the `./distribution` directory. This is configured in `tsconfig.dist.json` via the `outDir` compiler option.\n\n```json\n\"compilerOptions\": {\n  \"outDir\": \"./distribution\"\n}\n```\n*`tsconfig.dist.json:3-8`*\n\nThe `build` script in `package.json` executes this compilation, first cleaning the `distribution` directory (`package.json:28`). The `files` field in `package.json` also confirms that only the `distribution` directory is included in the published package (`package.json:31-33`)."
+ }
+]

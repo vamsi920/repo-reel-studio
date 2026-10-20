@@ -530,7 +530,7 @@ export function LlmSettingsLocalView() {
           viewMode === "edit" && editingProfile?.initialValues
             ? // Edit mode: use the existing profile values
               editingProfile.initialValues
-            : // Create mode: prefill the model with Canvas' free default,
+            : // Create mode: prefill the model with the app default,
               // while keeping secret/base URL fields blank for a fresh profile.
               {
                 "llm.model": DEFAULT_SETTINGS.llm_model,

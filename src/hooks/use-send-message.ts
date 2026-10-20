@@ -5,6 +5,7 @@ import { MessageContent } from "#/api/conversation-service/agent-server-conversa
 import { containsMemoryBlock } from "#/lib/workspace-memory";
 import { KT_DOCS_BLOCK_START } from "#/lib/knowledge/kt-format";
 import { useWorkspaceMemoryContext } from "#/hooks/use-workspace-memory-context";
+import { useAutoModelRouting } from "#/hooks/use-auto-model-routing";
 
 interface SendResult {
   queued: boolean; // true if message was queued for later delivery
@@ -26,6 +27,7 @@ export function useSendMessage() {
   // Get agent-server context (null outside a conversation provider)
   const conversationContext = useConversationWebSocket();
   const buildMemoryContext = useWorkspaceMemoryContext();
+  const routeTurn = useAutoModelRouting();
 
   const send = useCallback(
     async (event: Record<string, unknown>): Promise<SendResult> => {
@@ -49,6 +51,18 @@ export function useSendMessage() {
             args.content.includes(KT_DOCS_BLOCK_START)
               ? ""
               : buildMemoryContext(args.content);
+
+          // Auto mode: pick the model for this turn (and switch to it) before
+          // sending. Scored on the user's own text, never the memory block.
+          // Never blocks the send: on any failure the turn uses the current
+          // model.
+          if (conversationId) {
+            await routeTurn({
+              conversationId,
+              text: args.content,
+              hasImages: (args.image_urls?.length ?? 0) > 0,
+            });
+          }
 
           // Build agent-server message content array
           const content: Array<MessageContent> = [
@@ -77,7 +91,7 @@ export function useSendMessage() {
       }
       return { queued: false };
     },
-    [conversationContext, conversationId, buildMemoryContext],
+    [conversationContext, conversationId, buildMemoryContext, routeTurn],
   );
 
   return { send };

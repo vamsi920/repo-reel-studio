@@ -14,6 +14,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import { chatInputPillButtonClassName } from "#/utils/form-control-classes";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
+import { ROUTE_REASON_LABEL, primaryReason } from "#/lib/model-routing/labels";
 
 const PROFILE_LABEL_MAX_CHARS = 18;
 
@@ -49,7 +50,11 @@ export function ChatInputLlmProfileMenuContent({
     currentProfileModel,
     canSwitchProfile,
     selectProfile,
+    isAuto,
+    lastDecision,
+    selectAuto,
   } = useChatInputLlmProfileState();
+  const lastReason = lastDecision ? primaryReason(lastDecision.reasons) : null;
   // Read-only surfaces (a cloud member on the home page, or a start-task route)
   // still name the active profile — the same shape ChatInputModelMenuContent
   // uses when the ACP picker is gated off.
@@ -72,8 +77,44 @@ export function ChatInputLlmProfileMenuContent({
               {t(I18nKey.SETTINGS$AVAILABLE_PROFILES)}
             </Typography.Text>
           </li>
+          <ContextMenuListItem
+            testId="chat-input-llm-profile-option-auto"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              selectAuto();
+              onClose();
+            }}
+            className={cn(
+              "flex flex-col items-stretch gap-0.5",
+              isAuto && "bg-[var(--oh-interactive-hover)]",
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <span className="flex-1 truncate text-sm leading-5">
+                {t(I18nKey.MODEL_ROUTING$AUTO)}
+              </span>
+              {isAuto && (
+                <CheckIcon
+                  width={14}
+                  height={14}
+                  className="shrink-0"
+                  aria-hidden
+                />
+              )}
+            </span>
+            <span className="block truncate text-xs leading-4 text-[var(--oh-muted)]">
+              {isAuto && lastDecision?.profileName && lastReason
+                ? t(I18nKey.MODEL_ROUTING$LAST_DECISION, {
+                    name: lastDecision.profileName,
+                    reason: t(ROUTE_REASON_LABEL[lastReason]),
+                  })
+                : t(I18nKey.MODEL_ROUTING$AUTO_DESCRIPTION)}
+            </span>
+          </ContextMenuListItem>
           {profiles.map((profile) => {
-            const isCurrent = profile.name === currentProfileName;
+            // In Auto the router owns the choice; only Auto is checked.
+            const isCurrent = !isAuto && profile.name === currentProfileName;
             const displayModel = formatModelNameForDisplay(profile.model);
             return (
               <ContextMenuListItem
@@ -160,7 +201,7 @@ export function ChatInputLlmProfileMenuContent({
 
 export function ChatInputLlmProfilePicker() {
   const { t } = useTranslation("openhands");
-  const { profiles, currentProfileName, isLoading, isSwitching } =
+  const { profiles, currentProfileName, isLoading, isSwitching, isAuto } =
     useChatInputLlmProfileState();
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -175,7 +216,17 @@ export function ChatInputLlmProfilePicker() {
     return null;
   }
 
-  const label = currentProfileName ?? t(I18nKey.LLM$SELECT_MODEL_PLACEHOLDER);
+  const profileLabel =
+    currentProfileName ?? t(I18nKey.LLM$SELECT_MODEL_PLACEHOLDER);
+  // In Auto, truncate only the profile name so "Auto ·" always stays visible.
+  let label = truncateLabel(profileLabel);
+  if (isAuto) {
+    label = currentProfileName
+      ? t(I18nKey.MODEL_ROUTING$AUTO_PILL_LABEL, {
+          name: truncateLabel(currentProfileName),
+        })
+      : t(I18nKey.MODEL_ROUTING$AUTO);
+  }
 
   return (
     <div className="relative min-w-0">
@@ -196,7 +247,7 @@ export function ChatInputLlmProfilePicker() {
           setIsPopoverOpen((open) => !open);
         }}
       >
-        <span className="truncate">{truncateLabel(label)}</span>
+        <span className="truncate">{label}</span>
         <ComboboxCaretInline isOpen={isPopoverOpen} />
       </button>
 

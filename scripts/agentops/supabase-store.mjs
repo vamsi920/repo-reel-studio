@@ -388,8 +388,16 @@ export class SupabaseAgentOpsStore {
 
   async appendSpans(runId, spans) {
     if (!spans.length) return;
+    // Postgres rejects an upsert that touches the same row twice ("ON
+    // CONFLICT DO UPDATE command cannot affect row a second time"). A poll
+    // batch can carry an open span and its closing update together, so keep
+    // only the latest version of each span_id; otherwise the whole batch was
+    // dropped and the run kept retrying it every poll.
+    const latest = new Map();
+    for (const span of spans)
+      latest.set(span.spanId ?? span.span_id ?? span.id, span);
     const { error } = await this.client.from("agentops_spans").upsert(
-      spans.map((span) => spanToRow(span, runId)),
+      [...latest.values()].map((span) => spanToRow(span, runId)),
       { onConflict: "span_id" },
     );
     if (error) throw new Error(`appendSpans failed: ${error.message}`);

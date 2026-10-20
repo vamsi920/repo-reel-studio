@@ -1,0 +1,1361 @@
+[
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "mutants": 3,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "changed_files": [
+      " D uv.lock",
+      "?? tests/test_teardown_bench.py"
+    ]
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 1,
+    "mutants": 3,
+    "killed": [
+      false,
+      false,
+      true
+    ],
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ]
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "mutants": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "changed_files": [
+      " M tests/conftest.py",
+      "?? tests/test_teardown_bench.py"
+    ]
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "mutants": 3,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ]
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "mutants": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ]
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 0,
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "mutants": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ]
+  },
+  {
+    "task": "F2",
+    "agent": "devin",
+    "variant": "devin",
+    "rep": 0,
+    "changed_files": [],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "devin",
+    "variant": "devin",
+    "rep": 0,
+    "changed_files": [],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 0,
+    "changed_files": [
+      " M package.json",
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      false,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 1,
+    "changed_files": [
+      " M tests/conftest.py",
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "rc/flask/app.py\", line 990, in dispatch_request\n    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-F2-fz_bue70/tests/test_teardown_bench.py\", line 29, in index\n    raise ValueError(\"View error\")\nValueError: View error\n=========================== short test summary info ============================\nFAILED tests/test_teardown_bench.py::test_teardown_request_exception_handling\n1 failed in 0.02s\n"
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 1,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "rules-pro",
+    "rep": 1,
+    "changed_files": [
+      " M package.json",
+      "?? test/helpers/create-ky.js",
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "hooks:189:26)\n      at resolveBaseSync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-u8kbzave/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:11092)\n      at resolveDirectorySync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-u8kbzave/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:12398)\n      at resolveTsPathsSync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-u8kbzave/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:13605)\n\n  \u2718 test/retry-after-bench.ts exited with a non-zero exit code: 1\n  \u2500\n\n  1 uncaught exception\n"
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 1,
+    "changed_files": [
+      " M bun.lock",
+      " M package.json",
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "les  1 failed (1)\n      Tests  no tests\n   Start at  12:15:33\n   Duration  306ms (transform 27ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)\n\n\n\u23af\u23af\u23af\u23af\u23af\u23af Failed Suites 1 \u23af\u23af\u23af\u23af\u23af\u23af\u23af\n\n FAIL  |main| src/router/smart-router/bench.test.ts [ src/router/smart-router/bench.test.ts ]\nError: Failed to resolve entry for package \"hono\". The package may have incorrect main/module/exports specified in its package.json.\n \u276f src/router/smart-router/bench.test.ts:1:1\n      1| import { Hono } from 'hono'\n       | ^\n      2| import { describe, expect, it } from 'vitest'\n      3|\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[1/1]\u23af\n\n"
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "rules",
+    "rep": 1,
+    "changed_files": [
+      " M package.json",
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "hooks:189:26)\n      at resolveBaseSync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-yn6a4oqb/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:11092)\n      at resolveDirectorySync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-yn6a4oqb/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:12398)\n      at resolveTsPathsSync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-yn6a4oqb/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:13605)\n\n  \u2718 test/retry-after-bench.ts exited with a non-zero exit code: 1\n  \u2500\n\n  1 uncaught exception\n"
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 0,
+    "changed_files": [
+      " M source/core/Ky.ts",
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "retry.maxRetryAfter is clamped to maxRetryAfter\n  \u2714 when Retry-After is missing, the RateLimit-Reset header is used instead (135ms)\n  \u2500\n\n  a Retry-After value larger than retry.maxRetryAfter is clamped to maxRetryAfter\n\n  test/retry-after-bench.ts:43\n\n   42:   const duration = (endTime - startTime) / 1000;                         \n   43:   t.true(duration >= maxRetryAfter && duration < maxRetryAfter + 0.3); /\u2026\n   44:                                                                          \n\n  Value is not `true`:\n\n  false\n\n  \u203a <anonymous> (test/retry-after-bench.ts:43:4)\n\n  \u2500\n\n  1 test failed\n"
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      true,
+      false
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 1,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "base",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "v3-pro",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "-l79s6v3h/src/flask/app.py\", line 990, in dispatch_request\n    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-F2-l79s6v3h/tests/test_teardown_bench.py\", line 30, in index\n    raise ValueError(\"view\")\nValueError: view\n=========================== short test summary info ============================\nFAILED tests/test_teardown_bench.py::test_teardown_request_with_view_exception\n1 failed in 0.03s\n"
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "v3-pro",
+    "rep": 0,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "router/bench.test.ts > SmartRouter > Should fall back to TrieRouter for complex routes and handle requests correctly\nAssertionError: expected 'RegExpRouter' to be 'TrieRouter' // Object.is equality\n\nExpected: \"TrieRouter\"\nReceived: \"RegExpRouter\"\n\n \u276f src/router/smart-router/bench.test.ts:22:42\n     20|     await app.request('/') // This request is to determine the router\n     21|\n     22|     expect(app.router.activeRouter.name).toBe('TrieRouter')\n       |                                          ^\n     23|\n     24|     // Test if both routes are still working\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[1/1]\u23af\n\n"
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "v3-pro",
+    "rep": 0,
+    "changed_files": [
+      " D test/helpers/create-http-test-server.ts",
+      " D test/helpers/create-large-file.ts",
+      " D test/helpers/index.ts",
+      " D test/helpers/parse-body.ts",
+      " D test/helpers/with-page.ts",
+      " D test/helpers/with-performance.ts",
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": false,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": "nyXW-TH3.mjs:2:11092)\n      at resolveDirectorySync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-mv04ds7m/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:12398)\n      at resolveTsPathsSync (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-mv04ds7m/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:13605)\n      at resolve (file:///private/var/folders/2c/yw6jt2pj61v121jqy2kc2p8m0000gn/T/grade-K2-mv04ds7m/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:16832)\n\n  \u2718 test/retry-after-bench.ts exited with a non-zero exit code: 1\n  \u2500\n\n  1 uncaught exception\n"
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "v3",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "v3",
+    "rep": 0,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "v3",
+    "rep": 0,
+    "changed_files": [],
+    "file_written": false,
+    "passes_on_real_code": false,
+    "mutants_killed": 0,
+    "killed": []
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 0,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 1,
+    "changed_files": [],
+    "file_written": false,
+    "passes_on_real_code": false,
+    "mutants_killed": 0,
+    "killed": []
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 1,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 2,
+    "changed_files": [
+      "?? package-lock.json",
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 2,
+    "killed": [
+      true,
+      false,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "v4",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "probe-gemini-3.1-pro-preview",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "probe-gemini-3.8-flash",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "probe-gemini-4-argon",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "probe-gemini-pro-latest",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 0,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 1,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 2,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v4",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 0,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 1,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 2,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman-med",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 0,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 1,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 2,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5-caveman",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 0,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 0,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 0,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 1,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 1,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 1,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "F2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 2,
+    "changed_files": [
+      "?? tests/test_teardown_bench.py"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "H2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 2,
+    "changed_files": [
+      "?? src/router/smart-router/bench.test.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  },
+  {
+    "task": "K2",
+    "agent": "neodevex",
+    "variant": "argon-v5",
+    "rep": 2,
+    "changed_files": [
+      "?? test/retry-after-bench.ts"
+    ],
+    "file_written": true,
+    "passes_on_real_code": true,
+    "mutants_killed": 3,
+    "killed": [
+      true,
+      true,
+      true
+    ],
+    "baseline_log": ""
+  }
+]

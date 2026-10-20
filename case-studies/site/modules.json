@@ -1,26 +1,38 @@
 [
   {
     "href": "kt/",
-    "title": "Knowledge Transfer docs vs Devin Wiki",
+    "title": "Codebase guides vs Devin's",
     "state": "Published",
-    "summary": "75 code-verified questions on ky, flask and hono. Docs-only reading 62.7% vs Devin 52.3%; repository Q&A 81.3% vs 71.3% with 2.7% false claims vs 22.7%; 460 files cited vs 315, 0 uncovered questions vs 2."
+    "summary": "We tested the guides our AI writes to explain a codebase against Devin's, on 75 questions checked against the code. Ours answered more correctly (63% vs 52%) and made things up far less often (3% vs 23%)."
   },
   {
     "href": "automations/",
     "title": "Automations vs Devin",
     "state": "Published",
-    "summary": "Twelve automations, four rounds, one real repository. NeoDevEx went from 2/7 to 10/10 passing after 54 fixes the study and two code audits found: GitHub, CI and PR triggers; schedules within 2 s; repo-scoped triggers; verified delivery; run recovery; spend and rate limits; failure alerts; webhooks set up in the app; background running. Devin passes 7/10 and goes deeper on the default model; with Gemini 2.5 Pro our reviews match it on correctness and show executed proof."
+    "summary": "We gave NeoDevEx and Devin the same unattended jobs on a test codebase. We now pass all 10 tests we could run and Devin passes 7, but Devin is still faster and always on."
+  },
+  {
+    "href": "chat/",
+    "title": "Chat agent vs Devin",
+    "state": "Published",
+    "summary": "Six real coding tasks for both. Ours now gets 98% of facts right (Devin 94%) and costs $0.21 a task against Devin's $0.38. Devin is still faster."
   },
   {
     "href": "tokens/",
-    "title": "Token costs vs Devin",
+    "title": "AI costs vs Devin",
     "state": "Published",
-    "summary": "154 real agent runs on Gemini 2.5 Flash, tokens as reported by the provider. The Layman integration as shipped saved 0 tokens on a fresh install; moved to where tokens go (skills index, automation contract), the same tasks use 36% fewer tokens and cost 35% less with the same pass rate (17/20 vs 16/20). Same triage task: Devin $0.22, NeoDevEx $0.017."
+    "summary": "We cut our AI bill per task by about a third with no drop in quality. Investigating the same bug report cost us $0.017 and Devin $0.22."
   },
   {
     "href": "selfhosted/",
-    "title": "Self-hosted model vs frontier",
+    "title": "Running our own AI model",
     "state": "Published",
-    "summary": "Four studies re-run on one rented GPU ($1.69/h) serving open-weight Qwen3-Coder-Next instead of Gemini: $4.80 billed, at least $10 less than what Gemini charged in the original runs, almost all of it in the KT docs study. Best chat test score yet (93% vs 81%) and 14/15 token-bench tasks, but weaker explanations (74% vs 83%), KT Q&A level with Devin rather than Gemini, 8/10 automations with two pushes to main, and about 4x slower."
+    "summary": "We ran free AI models on a computer we rent by the hour instead of paying Google per use. Quality now matches Gemini, but it is slower and only saves money if the computer is kept busy."
+  },
+  {
+    "href": "onboarding/",
+    "title": "Setting up at a bank",
+    "state": "Published",
+    "summary": "Our setup assistant learned a simulated bank's tools and rules and connected its private code system in every final run, up from none at first. It no longer claims connections it never made, but results still vary run to run."
   }
 ]

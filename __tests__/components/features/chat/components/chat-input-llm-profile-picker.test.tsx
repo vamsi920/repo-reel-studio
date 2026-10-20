@@ -8,7 +8,6 @@ vi.mock("#/hooks/use-chat-input-llm-profile-state", () => ({
   useChatInputLlmProfileState: () => useChatInputLlmProfileStateMock(),
 }));
 
-// eslint-disable-next-line import/first
 import { ChatInputLlmProfilePicker } from "#/components/features/chat/components/chat-input-llm-profile-picker";
 
 const PROFILES = [
@@ -27,6 +26,7 @@ const PROFILES = [
 ];
 
 const selectProfile = vi.fn();
+const selectAuto = vi.fn();
 
 function state(overrides = {}) {
   return {
@@ -37,6 +37,10 @@ function state(overrides = {}) {
     isSwitching: false,
     canSwitchProfile: true,
     selectProfile,
+    routingMode: "manual",
+    isAuto: false,
+    lastDecision: null,
+    selectAuto,
     ...overrides,
   };
 }
@@ -44,6 +48,7 @@ function state(overrides = {}) {
 describe("ChatInputLlmProfilePicker", () => {
   beforeEach(() => {
     selectProfile.mockReset();
+    selectAuto.mockReset();
     useChatInputLlmProfileStateMock.mockReset();
     useChatInputLlmProfileStateMock.mockReturnValue(state());
   });
@@ -140,5 +145,29 @@ describe("ChatInputLlmProfilePicker", () => {
     expect(
       container.ownerDocument.querySelector('a[href="/settings/llm"]'),
     ).not.toBeNull();
+  });
+
+  // @spec MR-017 — Routing mode resolution
+  it("offers Auto above the profiles and turns it on", () => {
+    renderWithProviders(<ChatInputLlmProfilePicker />);
+    fireEvent.click(screen.getByTestId("chat-input-llm-profile"));
+    fireEvent.click(screen.getByTestId("chat-input-llm-profile-option-auto"));
+
+    expect(selectAuto).toHaveBeenCalled();
+    expect(selectProfile).not.toHaveBeenCalled();
+  });
+
+  it("labels the pill as Auto and lets a profile pick take back control", () => {
+    useChatInputLlmProfileStateMock.mockReturnValue(
+      state({ isAuto: true, routingMode: "auto" }),
+    );
+    renderWithProviders(<ChatInputLlmProfilePicker />);
+
+    expect(screen.getByTestId("chat-input-llm-profile")).toHaveTextContent(
+      "MODEL_ROUTING$AUTO_PILL_LABEL",
+    );
+    fireEvent.click(screen.getByTestId("chat-input-llm-profile"));
+    fireEvent.click(screen.getByTestId("chat-input-llm-profile-option-Fast"));
+    expect(selectProfile).toHaveBeenCalledWith("Fast");
   });
 });

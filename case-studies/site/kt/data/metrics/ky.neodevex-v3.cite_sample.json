@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Timeouts",
+  "path": "source/core/Ky.ts",
+  "start": 46,
+  "end": 46,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L46",
+  "ok": true,
+  "inline": true,
+  "claim": "s:637-646](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L637-L646)`\n-   A special symbol, `timedOutResponseData`, is used internally to signal that reading or parsing the body timed out. If this occurs, `ky` checks if the `totalTimeout` was the cause and throws accordingly; otherwise, it returns `undefined` for the response data.\n    `Sources: "
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/retry.ts",
+  "start": 1016,
+  "end": 1040,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L1016-L1040",
+  "ok": true,
+  "inline": true,
+  "claim": "ndresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L335-L385)` |\n| `jitter` | If `true`, applies full jitter. Can also be a function `(delay) => jitteredDelay`. | `false` | `[test/retry.ts:825-976](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L825-L976)` |\n| `retryOnTimeout` | Whether to retry on `TimeoutError`. | `false` | `"
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 45,
+  "end": 45,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L45",
+  "ok": true,
+  "inline": true,
+  "claim": "-   **Renamed Option**: The `prefixUrl` option was renamed to `prefix` in v2. Using `prefixUrl` will throw an error.\n    *Sources: "
+ },
+ {
+  "page": "Upload and Download Progress",
+  "path": "source/core/Ky.ts",
+  "start": 947,
+  "end": 947,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L947",
+  "ok": true,
+  "inline": true,
+  "claim": " constructor, a check ensures that if `onUploadProgress` is provided, it is a function. A `TypeError` is thrown otherwise.\n    `Sources: [source/core/Ky.ts:478-480](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L478-L480)`\n2.  **Stream Wrapping**: During the `#fetch` call, the request is passed to `#wrapRequestWithUploadProgress`.\n    `Sources: "
+ },
+ {
+  "page": "Custom Error Types",
+  "path": "source/errors/SchemaValidationError.ts",
+  "start": 6,
+  "end": 7,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/errors/SchemaValidationError.ts#L6-L7",
+  "ok": true,
+  "inline": true,
+  "claim": "or`**: As mentioned, this error does not inherit from `KyError` and will not be caught by `catch (error) { if (error instanceof KyError) ... }`. This is because the HTTP request succeeded, but the response data did not match the expected format.\n    *Sources: [source/errors/KyError.ts:6](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/errors/KyError.ts#L6), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 364,
+  "end": 485,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L364-L485",
+  "ok": true,
+  "inline": true,
+  "claim": "imeout` (10,000ms), `throwHttpErrors` (true), etc.\n    *   Processes URL-related options like `prefix` and `baseUrl`.\n    *   Sets up an `AbortController` to manage timeouts and user-provided abort signals.\n    *   Serializes the `json` option into the request `body` and sets the `Content-Type` header.\n    *   Builds the final `Request` object, applying all processed `searchParams`.\n    *Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/constants.ts",
+  "start": 162,
+  "end": 244,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/constants.ts#L162-L244",
+  "ok": true,
+  "inline": true,
+  "claim": "Return a new `Response`.\n    *   Trigger a forced retry by returning `ky.retry()`, which throws a `ForceRetryError`.\n    *Sources: [source/core/Ky.ts:179](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L179), [source/core/Ky.ts:786-842](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842), "
+ },
+ {
+  "page": "Testing Strategy",
+  "path": "test/body-size.ts",
+  "start": 88,
+  "end": 91,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L88-L91",
+  "ok": true,
+  "inline": true,
+  "claim": "st/body-size.ts:4-10](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L4-L10), [test/body-size.ts:22-24](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L22-L24), [test/body-size.ts:59-61](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L59-L61), "
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/index.ts",
+  "start": 28,
+  "end": 28,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L28",
+  "ok": true,
+  "inline": true,
+  "claim": "                                                                                               |\n|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|\n| `ky.stop`   | A special symbol that can be returned from a `beforeRetry` hook to prevent further retries. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 518,
+  "end": 520,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L518-L520",
+  "ok": true,
+  "inline": true,
+  "claim": "*Sources: [source/core/Ky.ts:505-507](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L505-L507), "
+ },
+ {
+  "page": "Upload and Download Progress",
+  "path": "source/core/Ky.ts",
+  "start": 243,
+  "end": 245,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L243-L245",
+  "ok": true,
+  "inline": true,
+  "claim": " `ky` checks if `onDownloadProgress` is a function. If not, it throws a `TypeError`.\n    `Sources: [source/core/Ky.ts:238-241](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L238-L241)`\n2.  **Stream Support Check**: It verifies that the environment supports response streams (`supportsResponseStreams`). If not, an `Error` is thrown.\n    `Sources: "
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/core/Ky.ts",
+  "start": 200,
+  "end": 200,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L200",
+  "ok": true,
+  "inline": true,
+  "claim": "n the options. `Sources: [source/core/Ky.ts:424-433](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L424-L433)`\n- **Opaque Responses**: Responses with `type: 'opaque'` (typically from `no-cors` requests) will not trigger an `HTTPError`, even if their status is `0` and `ok` is `false`, because the actual status is hidden by the browser. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 767,
+  "end": 784,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784",
+  "ok": true,
+  "inline": true,
+  "claim": "1.  **`beforeRequest` Hooks**: These hooks are executed in order. They can modify the `Request` object or return a `Response` instance to bypass the actual fetch operation entirely.\n    *Sources: [source/core/Ky.ts:164](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L164), "
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/http-error.ts",
+  "start": 291,
+  "end": 300,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L291-L300",
+  "ok": true,
+  "inline": true,
+  "claim": "p-error.ts:313-322](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L313-L322)` |\n| `application/json-seq` | Plain text string (not parsed) | `[test/http-error.ts:302-311](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L302-L311)` |\n| `text/plain; note=json` | Plain text string (not parsed) | `"
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/types/options.ts",
+  "start": 14,
+  "end": 14,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/options.ts#L14",
+  "ok": true,
+  "inline": true,
+  "claim": "**Signature:**\n```typescript\n(input: Input, options?: Options) => ResponsePromise\n```\n- `input`: The request resource, which can be a `string`, `URL`, or `Request` object. `Sources: "
+ },
+ {
+  "page": "Retry Mechanism",
+  "path": "source/types/common.ts",
+  "start": 6,
+  "end": 8,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/common.ts#L6-L8",
+  "ok": true,
+  "inline": true,
+  "claim": "](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/common.ts#L4-L4)`.\n-   **`LiteralUnion<LiteralType, BaseType>`**: A type that allows for a specific set of literal values (`LiteralType`) while also accepting any value of a base primitive type (`BaseType`). This is achieved by creating a union of `LiteralType` and `(BaseType & {_?: never})`. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/index.ts",
+  "start": 25,
+  "end": 25,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L25",
+  "ok": true,
+  "inline": true,
+  "claim": "ur:\n1.  **Option Merging**: Defaults from an extended instance (if any) are merged with the per-request options using `validateAndMerge`.\n    *Sources: [source/index.ts:12](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L12), [source/index.ts:16](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L16), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 300,
+  "end": 334,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L300-L334",
+  "ok": true,
+  "inline": true,
+  "claim": "\n4.  **Response Decoration**: A successful `Response` is decorated with convenience methods like `.json()`, `.text()`, etc., before the `ResponsePromise` resolves. These methods set the `Accept` header on the original request before awaiting the response.\n    *Sources: [source/core/Ky.ts:235](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L235), "
+ },
+ {
+  "page": "Upload and Download Progress",
+  "path": "source/utils/body.ts",
+  "start": 31,
+  "end": 33,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/body.ts#L31-L33",
+  "ok": true,
+  "inline": true,
+  "claim": "r file size). | `[source/utils/body.ts:12-25](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/body.ts#L12-L25)` |\n| `Blob` | Uses `body.size`. | `[source/utils/body.ts:27-29](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/body.ts#L27-L29)` |\n| `ArrayBuffer` / `ArrayBufferView` | Uses `body.byteLength`. | `"
+ },
+ {
+  "page": "Upload and Download Progress",
+  "path": "source/core/Ky.ts",
+  "start": 1035,
+  "end": 1041,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L1035-L1041",
+  "ok": true,
+  "inline": true,
+  "claim": "uest.body, totalBytes, callback)\n    Progress-->>Streamer: transformedStream\n    Streamer-->>Wrapper: new Request({body: transformedStream})\n    Wrapper-->>Fetch: new Request\n    Fetch-->>Ky: Executes fetch with new Request\n    Ky-->>User: ResponsePromise\n```\n*Sources: [source/core/Ky.ts:947](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L947), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 786,
+  "end": 842,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842",
+  "ok": true,
+  "inline": true,
+  "claim": "ks**: After a response is received, `afterResponse` hooks are executed. These hooks can:\n    *   Inspect or modify the `Response`.\n    *   Return a new `Response`.\n    *   Trigger a forced retry by returning `ky.retry()`, which throws a `ForceRetryError`.\n    *Sources: [source/core/Ky.ts:179](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L179), "
+ },
+ {
+  "page": "Timeouts",
+  "path": "source/utils/timeout.ts",
+  "start": 9,
+  "end": 32,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/timeout.ts#L9-L32",
+  "ok": true,
+  "inline": true,
+  "claim": "etch is faster\n        F-->>T: Resolves with Response\n        T->>Timer: clearTimeout()\n        T-->>Ky: Resolves with Response\n    else timeout is faster\n        Timer-->>T: Fires callback\n        T->>T: abortController.abort()\n        T->>xKy: Rejects with TimeoutError\n        F-->>T: Rejects (due to abort)\n        T->>T: Catches rejection\n        T->>Timer: clearTimeout()\n    end\n```\n`Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 504,
+  "end": 590,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L504-L590",
+  "ok": true,
+  "inline": true,
+  "claim": "*Sources: [source/core/Ky.ts:852-928](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L852-L928), "
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/index.ts",
+  "start": 72,
+  "end": 72,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L72",
+  "ok": true,
+  "inline": true,
+  "claim": "tps://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L29), [source/core/Ky.ts:812](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L812)`                       |\n| `HTTPError` | An error thrown for non-2xx responses when `throwHttpErrors` is `true`. Contains the `request` and `response` objects. `Sources: "
+ },
+ {
+  "page": "Upload and Download Progress",
+  "path": "source/utils/body.ts",
+  "start": 99,
+  "end": 112,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/utils/body.ts#L99-L112",
+  "ok": true,
+  "inline": true,
+  "claim": "  Wrapper-->>Fetch: new Request\n    Fetch-->>Ky: Executes fetch with new Request\n    Ky-->>User: ResponsePromise\n```\n*Sources: [source/core/Ky.ts:947](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L947), [source/core/Ky.ts:1035-1041](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L1035-L1041), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 936,
+  "end": 984,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L936-L984",
+  "ok": true,
+  "inline": true,
+  "claim": "`#fetch` method is called, wrapped in the `#retry` logic.\n    *   It calculates the effective timeout, considering both `timeout` and the remaining `totalTimeout`.\n    *   It calls the underlying `fetch` function, using a `timeout` utility to race it against a timer.\n    *   If retries are enabled, the request is cloned before being sent to preserve its body for subsequent attempts.\n    *Sources: "
+ },
+ {
+  "page": "Testing Strategy",
+  "path": "test/body-size.ts",
+  "start": 26,
+  "end": 29,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L26-L29",
+  "ok": true,
+  "inline": true,
+  "claim": "28e4b7b87ccae6bb727b1/test/body-size.ts#L59-L61), [test/body-size.ts:88-91](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/body-size.ts#L88-L91), [test/body-size.ts:93-96]`).\n*   **Returns byte length for:**\n    *   Strings (correctly handling multi-byte UTF-8 characters) (`Sources: [test/body-size.ts:12-20]`).\n    *   `ArrayBuffer` and `DataView` (`Sources: "
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/core/Ky.ts",
+  "start": 643,
+  "end": 643,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L643",
+  "ok": true,
+  "inline": true,
+  "claim": "ae6bb727b1/source/index.ts#L72), [source/core/Ky.ts:208](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L208)` |\n| `TimeoutError`| An error thrown when a request exceeds the configured `timeout` or `totalTimeout`. `Sources: [source/index.ts:75](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/index.ts#L75), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 269,
+  "end": 287,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L269-L287",
+  "ok": true,
+  "inline": true,
+  "claim": "s:767-784](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L767-L784), [source/core/Ky.ts:786-842](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L786-L842), [source/core/Ky.ts:886-922](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L886-L922), "
+ },
+ {
+  "page": "Retry Mechanism",
+  "path": "source/types/request.ts",
+  "start": 2,
+  "end": 2,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/request.ts#L2-L2",
+  "ok": true,
+  "inline": true,
+  "claim": "ce. `Sources: [source/types/request.ts:1-3](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/request.ts#L1-L3)`. It adds a `json` method.\n    -   **`json`**: A generic method, `<J = T>() => Promise<J>`, that returns a promise resolving to the JSON-parsed body of the request. The return type `J` defaults to the generic type `T` of `KyRequest`. `Sources: "
+ },
+ {
+  "page": "API: ky.stop and ky.retry()",
+  "path": "source/core/Ky.ts",
+  "start": 912,
+  "end": 916,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L912-L916",
+  "ok": true,
+  "inline": true,
+  "claim": "1/source/core/Ky.ts#L919-L921) |\n| `Request` instance | The retry proceeds using the returned `Request` object instead of the original one. | [source/core/Ky.ts:905-909](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L905-L909) |\n| `Response` instance | Aborts the retry process and resolves the main promise with the returned `Response` object. | "
+ },
+ {
+  "page": "API: ky.stop and ky.retry()",
+  "path": "source/core/Ky.ts",
+  "start": 905,
+  "end": 909,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L905-L909",
+  "ok": true,
+  "inline": true,
+  "claim": "| Return Value | Behavior | Source |\n| :--- | :--- | :--- |\n| `ky.stop` | Aborts the retry process. The main promise resolves with `undefined`. | [source/core/Ky.ts:919-921](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L919-L921) |\n| `Request` instance | The retry proceeds using the returned `Request` object instead of the original one. | "
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/http-error.ts",
+  "start": 92,
+  "end": 100,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L92-L100",
+  "ok": true,
+  "inline": true,
+  "claim": "note=json` | Plain text string (not parsed) | `[test/http-error.ts:291-300](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L291-L300)` |\n| Not present | Plain text string | `[test/http-error.ts:324-333](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/http-error.ts#L324-L333)` |\n| Empty body | `undefined` | `"
+ },
+ {
+  "page": "test: module reference (part 1)",
+  "path": "test/hooks.ts",
+  "start": 790,
+  "end": 819,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/hooks.ts#L790-L819",
+  "ok": true,
+  "inline": true,
+  "claim": "ttps://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/hooks.ts#L2573-L2607) - |\n| `beforeRetry`     | `{request, options, error, retryCount}`            | Runs before a retry attempt. Can modify the `Request` for the next attempt. Can prevent the retry by returning `ky.stop`. Can also return a `Response` to stop the retry loop and use that response instead. Sources: "
+ },
+ {
+  "page": "API: ky() and Method Shortcuts",
+  "path": "source/core/Ky.ts",
+  "start": 154,
+  "end": 160,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L154-L160",
+  "ok": true,
+  "inline": true,
+  "claim": "- **Renamed Option**: The `prefixUrl` option has been renamed to `prefix`. Using `prefixUrl` will throw an error. `Sources: [source/core/Ky.ts:45, 366-368]()`\n- **Timeout Limits**: The `timeout` and `totalTimeout` options cannot be set to a value greater than `2147483647` (`maxSafeTimeout`). Doing so will throw a `RangeError`. `Sources: "
+ },
+ {
+  "page": "Testing Strategy",
+  "path": "test/bytes.ts",
+  "start": 17,
+  "end": 21,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/bytes.ts#L17-L21",
+  "ok": true,
+  "inline": true,
+  "claim": "The most important thing for a new engineer to understand is that these tests are conditional. If run in an environment that lacks `Response.prototype.bytes()`, the tests will pass but will not actually be testing the functionality (`Sources: "
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/retry.ts",
+  "start": 36,
+  "end": 52,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L36-L52",
+  "ok": true,
+  "inline": true,
+  "claim": "s for delay\n    Ky->>Server: GET / (Retry 1)\n    Server-->>Ky: 500 Internal Server Error\n    Ky->>Ky: Error matches retryable status code (500)\n    Ky->>Ky: Calculate delay (e.g., 600ms)\n    Note over Ky: Waits for delay\n    Ky->>Server: GET / (Retry 2)\n    Server-->>Ky: 200 OK\n    Ky-->>Client: Response Promise resolves\n```\n*This diagram shows a typical retry sequence for a 500 error.*\n`Sources: "
+ },
+ {
+  "page": "test: module reference (part 2)",
+  "path": "test/retry.ts",
+  "start": 335,
+  "end": 385,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L335-L385",
+  "ok": true,
+  "inline": true,
+  "claim": "27b1/test/retry.ts#L794-L823)` |\n| `backoffLimit` | The maximum delay between retries, in milliseconds. | `Infinity` | `[test/retry.ts:716-759](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/test/retry.ts#L716-L759)` |\n| `maxRetryAfter` | The maximum allowed `Retry-After` header value. If the header exceeds this, the request is not retried. | `options.timeout` | `"
+ },
+ {
+  "page": "Retry Mechanism",
+  "path": "source/types/request.ts",
+  "start": 1,
+  "end": 3,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/types/request.ts#L1-L3",
+  "ok": true,
+  "inline": true,
+  "claim": "-   **`KyRequest<T = unknown>`**: This is an intersection type that extends the standard `Request` interface. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "source/core/Ky.ts",
+  "start": 96,
+  "end": 110,
+  "link": "https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L96-L110",
+  "ok": true,
+  "inline": true,
+  "claim": "The static `Ky.create` method is called. It first clones mutable options (`json`, `context`, `headers`, `searchParams`, `retry`) to prevent state leakage between requests. Then, it executes all `init` hooks, which can modify these cloned options.\n    *Sources: [source/core/Ky.ts:143-149](https://github.com/sindresorhus/ky/blob/e0fcf780de2bd69af2528e4b7b87ccae6bb727b1/source/core/Ky.ts#L143-L149), "
+ }
+]

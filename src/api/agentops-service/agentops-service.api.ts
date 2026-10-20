@@ -165,6 +165,18 @@ async function request<T>(
   return JSON.parse(text) as T;
 }
 
+export interface AgentOpsRoutingAnnotation {
+  action: "model.routed" | "model.fallback";
+  profile?: string | null;
+  model?: string | null;
+  tier?: string | null;
+  source?: string | null;
+  reasons?: string[];
+  score?: number | null;
+  fromProfile?: string | null;
+  errorKind?: string | null;
+}
+
 class AgentOpsService {
   /** Unauthenticated on purpose: it distinguishes "not running" from "401". */
   static async getHealth(): Promise<{ status: string }> {
@@ -210,6 +222,21 @@ class AgentOpsService {
     await request(`/runs/${encodeURIComponent(runId)}/${action}`, {
       method: "POST",
       body: JSON.stringify({}),
+    });
+  }
+
+  /**
+   * Records a model-routing decision (Auto mode) against a run's audit trail.
+   * Allowlisted short fields only — the collector rejects anything else and
+   * never receives prompt text.
+   */
+  static async recordRouting(
+    runId: string,
+    annotation: AgentOpsRoutingAnnotation,
+  ): Promise<void> {
+    await request(`/runs/${encodeURIComponent(runId)}/routing`, {
+      method: "POST",
+      body: JSON.stringify(annotation),
     });
   }
 

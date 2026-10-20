@@ -1,0 +1,27 @@
+{
+ "repo": "hono",
+ "system": "neodevex-v3",
+ "pages": 69,
+ "words": 146687,
+ "citations": 1776,
+ "citations_valid": 1765,
+ "citation_validity": 0.9938,
+ "unique_files_cited": 336,
+ "inline_citations": 901,
+ "mermaid_diagrams": 162,
+ "links_pinned_to_commit": 1776,
+ "error_pages": 0,
+ "invalid_examples": [
+  "src/request/body.ts:5-5 (missing file)",
+  "src/request/body.ts:4-10 (missing file)",
+  "src/request/parse-body.ts:10-25 (missing file)",
+  "src/request/body.ts:6-9 (missing file)",
+  "src/request/parse-body.ts:10-25 (missing file)",
+  "src/request/validator.ts:4-10 (missing file)",
+  "src/request/validator.ts:4-10 (missing file)",
+  "src/request/validator.ts:5-7 (missing file)",
+  "src/request/body.ts:6-9 (missing file)",
+  "src/request/validator.ts:8-8 (missing file)",
+  "src/request/parse-body.ts:24-24 (missing file)"
+ ]
+}

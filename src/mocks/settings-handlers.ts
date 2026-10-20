@@ -981,6 +981,10 @@ export const SETTINGS_HANDLERS = [
       git_user_email: null,
       title_llm_profile: null,
       disabled_skills: [],
+      model_routing_mode: null,
+      model_routing_policy: null,
+      model_routing_budget_usd: null,
+      model_routing_excluded_profiles: [],
     };
 
     if (!settings) {

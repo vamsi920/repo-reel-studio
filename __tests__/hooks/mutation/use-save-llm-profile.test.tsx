@@ -5,14 +5,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSaveLlmProfile } from "#/hooks/mutation/use-save-llm-profile";
 import ProfilesService from "#/api/profiles-service/profiles-service.api";
 import SettingsService from "#/api/settings-service/settings-service.api";
-import { LLM_PROFILES_QUERY_KEYS, SETTINGS_QUERY_KEYS } from "#/hooks/query/query-keys";
+import {
+  LLM_PROFILES_QUERY_KEYS,
+  SETTINGS_QUERY_KEYS,
+} from "#/hooks/query/query-keys";
+import { useModelRoutingStore } from "#/stores/model-routing-store";
 
 vi.mock("#/api/profiles-service/profiles-service.api");
 vi.mock("#/api/settings-service/settings-service.api");
 
 describe("useSaveLlmProfile", () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactElement;
+  let wrapper: ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -80,10 +88,13 @@ describe("useSaveLlmProfile", () => {
       });
     });
 
-    expect(ProfilesService.saveProfile).toHaveBeenCalledWith("snapshot-profile", {
-      llm: { model: "openai/gpt-4" },
-      include_secrets: true,
-    });
+    expect(ProfilesService.saveProfile).toHaveBeenCalledWith(
+      "snapshot-profile",
+      {
+        llm: { model: "openai/gpt-4" },
+        include_secrets: true,
+      },
+    );
   });
 
   it("invalidates all relevant caches on success", async () => {
@@ -134,5 +145,31 @@ describe("useSaveLlmProfile", () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+
+  it("clears a rejected-key verdict for the saved profile so it is retried", async () => {
+    // Arrange: the provider rejected this profile's key mid-conversation.
+    useModelRoutingStore.getState().markFailure("my-profile", "auth");
+    expect(
+      useModelRoutingStore.getState().health["my-profile"]?.misconfigured,
+    ).toBe(true);
+    vi.mocked(ProfilesService.saveProfile).mockResolvedValue({
+      name: "my-profile",
+      message: "Profile saved",
+    });
+    const { result } = renderHook(() => useSaveLlmProfile(), { wrapper });
+
+    // Act: the user saves the profile (typically with a new key).
+    await act(async () => {
+      await result.current.mutateAsync({
+        name: "my-profile",
+        request: { llm: { model: "openai/gpt-4", api_key: "sk-new" } },
+      });
+    });
+
+    // Assert
+    expect(
+      useModelRoutingStore.getState().health["my-profile"]?.misconfigured,
+    ).toBe(false);
   });
 });

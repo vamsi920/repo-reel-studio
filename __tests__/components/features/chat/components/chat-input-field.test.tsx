@@ -3,6 +3,7 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "test-utils";
 import { ChatInputField } from "#/components/features/chat/components/chat-input-field";
+import { ChatSurfaceProvider } from "#/context/chat-surface-context";
 
 function Harness({ disabled }: { disabled: boolean }) {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -37,5 +38,24 @@ describe("ChatInputField auto-focus", () => {
     rerender(<Harness disabled={false} />);
 
     expect(screen.getByTestId("chat-input")).not.toBe(document.activeElement);
+  });
+});
+
+// Case study (case-studies/onboarding): the environment setup studio showed
+// "What do you want to build?" to someone describing their company.
+describe("ChatInputField placeholder", () => {
+  it("uses the surface's placeholder when one is provided", () => {
+    renderWithProviders(
+      <ChatSurfaceProvider
+        value={{ showGitControls: false, placeholder: "Describe your setup" }}
+      >
+        <Harness disabled={false} />
+      </ChatSurfaceProvider>,
+    );
+
+    expect(screen.getByTestId("chat-input")).toHaveAttribute(
+      "data-placeholder",
+      "Describe your setup",
+    );
   });
 });

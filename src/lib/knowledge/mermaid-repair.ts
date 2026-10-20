@@ -1,5 +1,6 @@
 import mermaid from "mermaid";
 import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
+import { withAppRoute } from "#/lib/model-routing/app-side";
 import {
   applyDiagramsToContent,
   type KnowledgeRepository,
@@ -74,18 +75,21 @@ export async function repairInvalidDiagrams(
           attemptedCount += 1;
           try {
             const target = await getTarget();
-            const response = await DeepWikiService.chatCompletion({
-              repo_url: target.repo_url,
-              type: target.type,
-              token: target.token,
-              provider: "google",
-              messages: [
-                {
-                  role: "user",
-                  content: `The following Mermaid diagram fails to parse with this exact error:\n\n${error}\n\nOriginal diagram:\n\`\`\`mermaid\n${diagram.mermaid}\n\`\`\`\n\nReturn ONLY a corrected Mermaid diagram (same diagram type and content, fixing only the syntax error) in a single \`\`\`mermaid code fence. No explanation.`,
-                },
-              ],
-            });
+            const response = await withAppRoute("mermaid_repair", (route) =>
+              DeepWikiService.chatCompletion({
+                repo_url: target.repo_url,
+                type: target.type,
+                token: target.token,
+                provider: route.provider,
+                model: route.model,
+                messages: [
+                  {
+                    role: "user",
+                    content: `The following Mermaid diagram fails to parse with this exact error:\n\n${error}\n\nOriginal diagram:\n\`\`\`mermaid\n${diagram.mermaid}\n\`\`\`\n\nReturn ONLY a corrected Mermaid diagram (same diagram type and content, fixing only the syntax error) in a single \`\`\`mermaid code fence. No explanation.`,
+                  },
+                ],
+              }),
+            );
             const repaired = extractRepairedBlock(response);
             const repairError = repaired
               ? await isValid(repaired)

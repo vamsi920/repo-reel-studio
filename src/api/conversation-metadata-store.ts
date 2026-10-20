@@ -1,4 +1,5 @@
 import { Provider } from "#/types/settings";
+import type { RoutingMode } from "#/lib/model-routing/types";
 import type { PluginSpec } from "#/api/conversation-service/agent-server-conversation-service.types";
 
 const STORAGE_KEY = "openhands-agent-server-conversation-metadata";
@@ -35,6 +36,11 @@ export interface ConversationMetadata {
    * is ambiguous (issue #1082).
    */
   active_profile?: string | null;
+  /**
+   * Per-conversation model-routing override ("auto" | "manual"). Null/absent
+   * means "follow the global default" (`model_routing_mode`).
+   */
+  routing_mode?: RoutingMode | null;
   /** Store plugin coordinates only; parameters may contain secrets. */
   plugins?: PluginSpec[] | null;
 }
@@ -84,6 +90,26 @@ export const setStoredConversationMetadata = (
 ): void => {
   const all = readAll();
   all[conversationId] = metadata;
+  writeAll(all);
+};
+
+/**
+ * Merges `patch` into the stored metadata instead of replacing it, so a writer
+ * that only knows one field (e.g. the active profile) cannot silently drop
+ * the others (`workspace_mode`, `routing_mode`, …).
+ */
+export const patchStoredConversationMetadata = (
+  conversationId: string,
+  patch: Partial<ConversationMetadata>,
+): void => {
+  const all = readAll();
+  const prev = all[conversationId];
+  const base: ConversationMetadata = prev ?? {
+    selected_repository: null,
+    selected_branch: null,
+    git_provider: null,
+  };
+  all[conversationId] = { ...base, ...patch };
   writeAll(all);
 };
 

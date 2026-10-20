@@ -1,0 +1,55 @@
+{
+  "_note": "Written from the source at the pinned commits before grading. Each fact scores 1 (stated correctly), 0.5 (partly) or 0 (missing or wrong). Each listed wrong claim the answer makes costs 1 point. Score = (facts - wrong claims) / number of facts, floored at 0.",
+  "F1": {
+    "facts": [
+      "Entry is Flask.__call__ -> wsgi_app (src/flask/app.py); at this commit one AppContext carries the request (no separate RequestContext)",
+      "full_dispatch_request sends request_started, runs preprocess_request (before_request), then dispatch_request calls the view",
+      "handle_user_exception looks for a registered error handler; with none it re-raises",
+      "wsgi_app's except Exception sets error and calls handle_exception",
+      "got_request_exception is sent inside handle_exception, first, before the PROPAGATE check and logging",
+      "PROPAGATE_EXCEPTIONS (None -> testing or debug) re-raises; otherwise log_exception, InternalServerError(original_exception=e), 500 handler if any",
+      "finalize_request(from_error_handler=True) -> process_response runs after_request functions on the 500 response",
+      "finally: ctx.pop(error) -> do_teardown_request (reverse order, each gets the original exception), request close, then do_teardown_appcontext (reverse, same exception); callbacks all run and errors are collected"
+    ],
+    "wrong_claims": [
+      "got_request_exception fires in handle_user_exception",
+      "after_request functions are skipped for an unhandled exception",
+      "a separate RequestContext is pushed/popped at this commit",
+      "teardown runs before the response is produced"
+    ]
+  },
+  "H1": {
+    "facts": [
+      "Default router is SmartRouter with [RegExpRouter, TrieRouter] (src/hono.ts)",
+      "SmartRouter.add only buffers routes (#routes); the underlying routers see nothing yet",
+      "On the first match it replays all routes into each router in order and calls match",
+      "It falls back on UnsupportedPathError (the router cannot express the route set), not on a missed match",
+      "Names at least one real cause (duplicate path, capturing group or .* in a custom regex, ambiguous sibling patterns)",
+      "After choosing: match is rebound to the chosen router, the list shrinks to it, routes are dropped, name becomes 'SmartRouter + X'",
+      "Adding a route after the first request throws MESSAGE_MATCHER_IS_ALREADY_BUILT ('Can not add a route since the matcher is already built.')"
+    ],
+    "wrong_claims": [
+      "routes are added to every underlying router as they are registered",
+      "it falls back when a router fails to match the request",
+      "the late-add error is 'No active router has been determined yet.'"
+    ]
+  },
+  "K1": {
+    "facts": [
+      "Retries only while retryCount < limit, and only for methods in retry.methods (POST/PATCH not by default)",
+      "The status must be in retry.statusCodes (defaults 408, 413, 429, 500, 502, 503, 504)",
+      "A shouldRetry function is consulted first and can force or forbid a retry",
+      "Header order: Retry-After, RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset",
+      "Server-provided wait is used only for retry.afterStatusCodes (413, 429, 503)",
+      "Formats: seconds; HTTP date (Date.parse - now); large numbers treated as a timestamp (threshold 2024-01-01); negative clamped to 0; unparseable falls back to computed backoff",
+      "Server wait is min(maxRetryAfter, after) with no jitter and no backoffLimit",
+      "Computed backoff: retry.delay(n) (default 0.3 * 2^(n-1) * 1000), jitter true = random * delay or a function (invalid result ignored), then min(backoffLimit)",
+      "A 413 without the Retry-After path is not retried"
+    ],
+    "wrong_claims": [
+      "jitter or backoffLimit apply to the Retry-After wait",
+      "Retry-After is honoured for every retried status code",
+      "invents a header or option that does not exist"
+    ]
+  }
+}

@@ -1,0 +1,564 @@
+{
+  "scenario": "S5-return-visit",
+  "conversationId": "277a8583-ff84-4dd6-b88e-0047e3343814",
+  "seconds": 109,
+  "completed": false,
+  "executionStatus": "running",
+  "stats": {
+    "usage_to_metrics": {
+      "default": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "accumulated_cost": 0.10485034,
+        "max_budget_per_task": null,
+        "accumulated_token_usage": {
+          "model": "gemini/gemini-2.5-flash",
+          "prompt_tokens": 635663,
+          "completion_tokens": 1984,
+          "cache_read_tokens": 336328,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 945,
+          "context_window": 1048576,
+          "per_turn_token": 66528,
+          "response_id": ""
+        },
+        "costs": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0165641,
+            "timestamp": 1791914446.06561
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0165555,
+            "timestamp": 1791914447.870483
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0211189,
+            "timestamp": 1791914456.7784882
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.008229499999999999,
+            "timestamp": 1791914469.5282612
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025535999999999996,
+            "timestamp": 1791914479.849505
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0053086999999999995,
+            "timestamp": 1791914482.395196
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00628855,
+            "timestamp": 1791914494.759416
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0202333,
+            "timestamp": 1791914511.5229208
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00250172,
+            "timestamp": 1791914512.474163
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00549647,
+            "timestamp": 1791914516.546369
+          }
+        ],
+        "response_latencies": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.241075038909912,
+            "response_id": "y3HOarPrBb6U_uMPjuy22QQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.7756237983703613,
+            "response_id": "znHOauCrIJqj_PUP0Pen4Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 5.471940040588379,
+            "response_id": "03HOapW7Ja2N_PUPz7v_mAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.9627671241760254,
+            "response_id": "4nHOaq_ONPbO_uMP28HmkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.0178029537200928,
+            "response_id": "7XHOaqDYB_Hc_uMPqe_imQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.5237648487091064,
+            "response_id": "8HHOas7RBc2S_uMP_bmAmQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.140005111694336,
+            "response_id": "-3HOavHgM6S3_PUP88iO-Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.345892906188965,
+            "response_id": "DXLOas-vHMC1_PUPqJqvqAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.9339931011199951,
+            "response_id": "D3LOaryNLZDE_PUPjoTjmQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.1789181232452393,
+            "response_id": "EnLOatHCJKWV_uMPie6-mAs"
+          }
+        ],
+        "token_usages": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 54047,
+            "completion_tokens": 140,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 117,
+            "context_window": 1048576,
+            "per_turn_token": 54187,
+            "response_id": "y3HOarPrBb6U_uMPjuy22QQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 54210,
+            "completion_tokens": 117,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 54327,
+            "response_id": "znHOauCrIJqj_PUP0Pen4Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 65138,
+            "completion_tokens": 631,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 377,
+            "context_window": 1048576,
+            "per_turn_token": 65769,
+            "response_id": "03HOapW7Ja2N_PUPz7v_mAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 65456,
+            "completion_tokens": 269,
+            "cache_read_tokens": 44740,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 78,
+            "context_window": 1048576,
+            "per_turn_token": 65725,
+            "response_id": "4nHOaq_ONPbO_uMP28HmkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 65675,
+            "completion_tokens": 168,
+            "cache_read_tokens": 65070,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 90,
+            "context_window": 1048576,
+            "per_turn_token": 65843,
+            "response_id": "7XHOaqDYB_Hc_uMPqe_imQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 65776,
+            "completion_tokens": 44,
+            "cache_read_tokens": 53830,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 65820,
+            "response_id": "8HHOas7RBc2S_uMP_bmAmQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66082,
+            "completion_tokens": 403,
+            "cache_read_tokens": 53865,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 217,
+            "context_window": 1048576,
+            "per_turn_token": 66485,
+            "response_id": "-3HOavHgM6S3_PUP88iO-Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66311,
+            "completion_tokens": 136,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 66,
+            "context_window": 1048576,
+            "per_turn_token": 66447,
+            "response_id": "DXLOas-vHMC1_PUPqJqvqAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66469,
+            "completion_tokens": 47,
+            "cache_read_tokens": 65024,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66516,
+            "response_id": "D3LOaryNLZDE_PUPjoTjmQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66499,
+            "completion_tokens": 29,
+            "cache_read_tokens": 53799,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66528,
+            "response_id": "EnLOatHCJKWV_uMPie6-mAs"
+          }
+        ]
+      },
+      "condenser": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "accumulated_cost": 0,
+        "max_budget_per_task": null,
+        "accumulated_token_usage": {
+          "model": "gemini/gemini-2.5-flash",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "context_window": 0,
+          "per_turn_token": 0,
+          "response_id": ""
+        },
+        "costs": [],
+        "response_latencies": [],
+        "token_usages": []
+      }
+    }
+  },
+  "transcript": [
+    {
+      "role": "agent",
+      "text": "Okay, I'm ready to help you set up NeoDevEx for your company. To start, I need to understand a bit about your current environment and how your team works.\n\nI'll begin by asking some questions about your company's setup. I'll ask one question at a time, and based on your answers, I'll ask follow-up questions to get a clear picture.\n\nLet's start with a general overview. What does your company build, and what technologies (programming languages, frameworks, databases, etc.) do you primarily use?"
+    },
+    {
+      "role": "agent",
+      "text": "I have a good overview of your current setup.\n\n**Connected Systems:**\n*   Jira Cloud (issue tracking)\n*   Jira Data Center (on-prem issue tracking)\n*   GitLab Self-Managed (source control)\n\n**Needs Reconnection:**\n*   GitHub\n\n**Company Overview:**\n*   **Builds:** A new payments ledger.\n*   **Backend:** Java 21, Spring Boot, Gradle.\n*   **Frontend:** TypeScript, React, npm.\n*   **Code Review:** GitLab merge requests, two approvals.\n*   **CI/CD:** GitLab CI, CAB approval for production.\n*   **Network:** Authenticated corporate proxy (`proxy.northwind.internal:18890`), TLS inspection, Nexus npm mirror, no inbound internet access.\n*   **Constraints:** PCI-DSS compliant, all data and model traffic must stay within the EU.\n*   **Team:** ~40 engineers, London and Pune.\n\nYour GitHub connection needs to be reconnected. If you still use GitHub, please let me know.\n\nBefore we plan, do you have any specific coding conventions, style guides, or documentation standards that NeoDevEx should adhere to?"
+    },
+    {
+      "role": "user",
+      "text": "I told you yesterday that we use our self-managed GitLab at `gitlab.northwind.internal`, not GitHub.\n\nRegarding coding conventions, we follow standard Spring Boot and React best practices. We don't have specific custom style guides that NeoDevEx would need to enforce beyond that."
+    },
+    {
+      "role": "agent",
+      "text": "You are absolutely right! My apologies for that oversight. You clearly stated yesterday that you use self-managed GitLab at `gitlab.northwind.internal` for source control, and not GitHub. I've updated my understanding to reflect that.\n\nSince you follow standard Spring Boot and React best practices and don't have additional custom style guides, I have a good understanding of your conventions.\n\nNow, based on what you've told me, here's a proposed plan for setting up NeoDevEx:\n\n1.  **Configure LLM Provider:** Select and configure an LLM provider that meets your EU data residency requirements.\n2.  **Verify GitLab Connection:** Ensure the existing GitLab Self-Managed connection is fully functional and accessible.\n3.  **Verify Jira Data Center Connection:** Ensure the existing Jira Data Center connection is fully functional and accessible.\n\nDoes this plan sound good to you? We can adjust it if needed."
+    },
+    {
+      "role": "user",
+      "text": "Yes, that plan sounds good. Ensuring data residency for the LLM is critical for us due to PCI-DSS compliance."
+    },
+    {
+      "role": "agent",
+      "text": "I'm opening the LLM provider picker now. Please choose an LLM provider from the list that appears in the UI. Remember to select one that supports EU data residency to meet your PCI-DSS compliance requirements."
+    },
+    {
+      "role": "user",
+      "text": "I can't see a UI here in our chat. Could you list the available LLM providers that support EU data residency, so I can choose one?"
+    },
+    {
+      "role": "agent",
+      "text": "I apologize for the confusion. You are correct, you cannot see a UI in this chat interface.\n\nBased on your strict EU data residency and PCI-DSS compliance requirements, self-hosted options are generally the most straightforward way to ensure data control. Here are the self-hosted LLM providers from the list:\n\n*   **Azure OpenAI** (maturity: beta)\n*   **AWS Bedrock** (maturity: beta)\n*   **Ollama** (maturity: beta)\n*   **LiteLLM** (maturity: beta)\n\nThe other providers (Google Gemini, OpenAI, Anthropic) are cloud-based, and while they might offer EU regions, their specific data residency guarantees would need to be thoroughly vetted against your PCI-DSS compliance.\n\nWhich of these self-hosted options, or another provider you've already vetted for EU data residency, would you like to proceed with?"
+    },
+    {
+      "role": "user",
+      "text": "Given our strict PCI-DSS and EU data residency requirements, let's go with **Azure OpenAI**. It's a managed service that can be configured to keep data and model traffic within the EU."
+    },
+    {
+      "role": "agent",
+      "text": "I'm opening the connection form for Azure OpenAI now. Please fill in the details in the UI to configure it. This will help us ensure all LLM traffic and data remain within the EU, meeting your PCI-DSS compliance."
+    },
+    {
+      "role": "agent",
+      "text": "It looks like the Azure OpenAI connection form was cancelled. Did you encounter any issues, or would you like to try a different LLM provider?"
+    },
+    {
+      "role": "user",
+      "text": "I'm sorry, but I can't fill out a form in this chat interface. I don't have access to a UI.\n\nCould you please tell me what details you need for the Azure OpenAI connection, and I can provide them?"
+    }
+  ],
+  "credentialEvents": [
+    {
+      "providerId": "azure-openai",
+      "where": "workbench",
+      "filled": false
+    }
+  ],
+  "studio": {
+    "state": {
+      "conversationId": "277a8583-ff84-4dd6-b88e-0047e3343814",
+      "facts": [
+        {
+          "at": "2026-10-13T17:53:08.726Z",
+          "key": "issue-tracker-jira-cloud-connected",
+          "text": "Jira Cloud is connected for issue tracking.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "inferred"
+        },
+        {
+          "at": "2026-10-13T17:53:13.507Z",
+          "key": "github-needs-reconnect",
+          "text": "GitHub connection needs to be reconnected.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "inferred"
+        },
+        {
+          "at": "2026-10-13T17:53:15.980Z",
+          "key": "company-builds",
+          "text": "User asked about what the company builds, languages, frameworks, and build tooling.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "org",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:28.787Z",
+          "key": "company-builds-payments-ledger",
+          "text": "The company is building a new payments ledger.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "org",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:28.787Z",
+          "key": "backend-stack",
+          "text": "Backend uses Java 21 with Spring Boot and Gradle.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "stack",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:28.787Z",
+          "key": "frontend-stack",
+          "text": "Frontend uses TypeScript and React, built with npm.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "stack",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:32.352Z",
+          "key": "development-workflow-question",
+          "text": "User asked about how changes are reviewed and shipped, and CI/CD process.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:45.008Z",
+          "key": "code-review-process",
+          "text": "Uses merge requests in GitLab with two approvals.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:45.008Z",
+          "key": "ci-cd-process",
+          "text": "Uses GitLab CI. Production releases require CAB approval.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:53:49.129Z",
+          "key": "systems-question",
+          "text": "User asked about source control, CI, issue tracking, package registries/mirrors, and databases, specifying cloud or self-hosted.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:03.833Z",
+          "key": "source-control-system",
+          "text": "Self-managed GitLab at gitlab.northwind.internal.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:03.833Z",
+          "key": "ci-system",
+          "text": "GitLab CI.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:03.833Z",
+          "key": "issue-tracking-system",
+          "text": "Jira Data Center on-prem at jira.northwind.internal.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:06.177Z",
+          "key": "network-question",
+          "text": "User asked about proxy, authentication, TLS inspection, internal mirrors, and internet accessibility.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:17.600Z",
+          "key": "corporate-proxy",
+          "text": "All outbound traffic goes through an authenticated corporate proxy at proxy.northwind.internal:18890.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:17.600Z",
+          "key": "tls-inspection",
+          "text": "TLS inspection is in place.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:17.600Z",
+          "key": "npm-mirror",
+          "text": "Uses a Nexus mirror for npm packages.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:17.600Z",
+          "key": "internet-accessibility",
+          "text": "Nothing can reach systems from the internet.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:22.481Z",
+          "key": "constraints-question",
+          "text": "User asked about compliance, data-residency, or air-gap constraints.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:36.249Z",
+          "key": "pci-dss-compliant",
+          "text": "PCI-DSS compliant.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:36.249Z",
+          "key": "data-residency-eu",
+          "text": "All data must stay within the EU.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:36.249Z",
+          "key": "model-traffic-eu",
+          "text": "All model traffic must not leave the EU.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:38.398Z",
+          "key": "team-size-location-question",
+          "text": "User asked about team size and location.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:50.738Z",
+          "key": "team-size",
+          "text": "Approximately 40 engineers.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:54:50.738Z",
+          "key": "team-location",
+          "text": "Split between London and Pune.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T17:57:21.893Z",
+          "key": "llm-eu-data-residency-recommendation",
+          "text": "Recommended LLM provider with EU data residency due to constraints.",
+          "source": "4634ba28-0bbd-4ed1-b8f5-3c33eed1055f",
+          "section": "constraints",
+          "confidence": "inferred"
+        }
+      ],
+      "steps": [],
+      "currentStepId": null,
+      "runtimeChecks": [
+        {
+          "at": "2026-10-13T17:55:43.047Z",
+          "ok": true,
+          "scheme": "http",
+          "envNames": [
+            "GITLAB_SELF_MANAGED_INSTANCE_HOST",
+            "GITLAB_SELF_MANAGED_ACCESS_TOKEN"
+          ],
+          "capability": "source-control",
+          "providerId": "gitlab-self-managed",
+          "instanceKey": "default"
+        },
+        {
+          "at": "2026-10-13T17:57:12.442Z",
+          "ok": true,
+          "scheme": "http",
+          "envNames": [
+            "JIRA_DC_INSTANCE_HOST",
+            "JIRA_DC_ACCESS_TOKEN"
+          ],
+          "capability": "issue-tracker",
+          "providerId": "jira-dc",
+          "instanceKey": "default"
+        }
+      ]
+    },
+    "version": 1
+  },
+  "connectionsText": "Environment\n\nWhat this install is connected to, what it still needs, and what is failing right now.\n\nOverview\nConnections\nNetwork\nRequirements\nRunbook\n\nOne provider per capability, or several when you run more than one.\n\nSOURCE CONTROL\nGH\nGitHub\n\nRead repositories, branches and pull requests from github.com.\n\nAccess revoked\nvamsi920\nThis connection stopped working and needs to be reconnected.\nReconnect\nTest\nDisconnect\nView docs\nGE\nGitHub Enterprise Server\n\nA self-hosted GitHub instance. Needs its own OAuth application registered on that server.\n\nConnect\nView docs\nGL\nGitLab\nBeta\n\nRead projects, branches and merge requests from gitlab.com.\n\nConnect\nView docs\nGL\nGitLab (self-managed)\nBeta\n\nA GitLab instance you run, authenticated with a personal or group access token.\n\nFailing\nTest\nDisconnect\nView docs\nBB\nBitbucket Cloud\nBeta\n\nRead repositories and pull requests from bitbucket.org.\n\nConnect\nView docs\nBB\nBitbucket Data Center\nExperimental\n\nA self-hosted Bitbucket, authenticated with an HTTP access token.\n\nConnect\nView docs\nISSUE TRACKER\nJR\nJira Cloud\n\nRead issues and drive automations from an Atlassian Cloud site.\n\nConnected\nhttps://neodevex.atlassian.net\nMissing: offline_access\nCredential expires: 10/13/2026\nTest\nDisconnect\nView docs\nJR\nJira Data Center\nExperimental\n\nA self-hosted Jira, authenticated with a personal access token.\n\nFailing\nTest\nDisconnect\nView docs\nLN\nLinear\nBeta\n\nRead and update Linear issues through the GraphQL API.\n\nConnect\nView docs\nMODEL PROVIDER\nGM\nGoogle Gemini\n\nGoogle's hosted models. The default provider for a new install.\n\nConnect\nView docs\nOA\nOpenAI\n\nGPT models through the OpenAI platform API.\n\nConnect\nView docs\nAN\nAnthropic\n\nClaude models through the Anthropic API.\n\nConnect\nView docs\nAZ\nAzure OpenAI\nBeta\n\nOpenAI models deployed into your own Azure region. Satisfies a data-residency requirement that the public API cannot.\n\nConnect\nView docs\nBR\nAWS Bedrock\nBeta\n\nFoundation models inside your AWS account and region.\n\nConnect\nView docs\nOL\nOllama\nBeta\n\nModels running on your own hardware. The only option that works with no outbound internet access.\n\nConnect\nView docs\nLL\nLiteLLM proxy\nBeta\n\nYour own LiteLLM gateway, fronting whichever providers you have approved.\n\nConnect\nView docs\nRETRIEVAL\nPV\nSupabase pgvector\n\nVector search inside the database this app already uses. No extra service to run.\n\nConnect\nView docs\nPC\nPinecone\nBeta\n\nManaged vector search. Queries are proxied server-side so the index key never reaches the browser.\n\nConnect\nView docs\nQD\nQdrant\nBeta\n\nVector search, hosted by Qdrant Cloud or run on your own infrastructure.\n\nConnect\nView docs\nWV\nWeaviate\nBeta\n\nVector search with a schema, hosted or self-run.\n\nConnect\nView docs\nES\nElasticsearch\nExperimental\n\nkNN search on an existing Elasticsearch cluster.\n\nConnect\nView docs\nTG\nTigerGraph\nExperimental\n\nGraph-backed retrieval through an installed query on your TigerGraph instance.\n\nConnect\nView docs\nOBJECT STORAGE\nSB\nSupabase Storage\n\nPrivate buckets for workspace artifacts and generated audio.\n\nConnect\nView docs\nS3\nAmazon S3\nBeta\n\nS3 or any S3-compatible endpoint you control.\n\nConnect\nView docs\nAZ\nAzure Blob Storage\nExperimental\n\nA blob container, accessed with a shared access signature.\n\nConnect\nView docs\nDATABASE\nSB\nSupabase Postgres\n\nThe managed Postgres this deployment already runs on.\n\nConnect\nView docs\nPG\nPostgreSQL\nExperimental\n\nYour own Postgres server. Verified by opening a real connection from the workload host.\n\nConnect\nView docs\nSECRETS\nVT\nHashiCorp Vault\nExperimental\n\nKeep credentials in your own Vault and store only a reference here.\n\nConnect\nView docs\nAW\nAWS Secrets Manager\nExperimental\n\nKeep credentials in your AWS account and store only a reference here.\n\nConnect\nView docs\nOBSERVABILITY\nPH\nPostHog\n\nProduct analytics. Can be pointed at a self-hosted instance, or turned off entirely.\n\nConnect\nView docs\nDD\nDatadog\nBeta\n\nForward agent run metrics and logs to your Datadog site.\n\nConnect\nView docs\nNOTIFICATIONS\nSL\nSlack\nBeta\n\nPost run results and approval requests into a Slack channel.\n\nConnect\nView docs\nMT\nMicrosoft Teams\nExperimental\n\nPost run results into a Teams channel through an incoming webhook.\n\nConnect\nView docs\nCONTINUOUS INTEGRATION\nGH\nGitHub Actions\nBeta\n\nRead workflow runs and dispatch workflows using your existing GitHub connection.\n\nConnect\nView docs\nJK\nJenkins\nExperimental\n\nRead job status from a Jenkins controller you host.\n\nConnect\nView docs\nIDENTITY\nOK\nOkta\nExperimental\n\nDirectory lookups for user and group mapping.\n\nConnect\nView docs\nEN\nMicrosoft Entra ID\nExperimental\n\nDirectory lookups through Microsoft Graph, using an app registration.\n\nConnect\nView docs\nRECENT CONNECTION ACTIVITY\nJira Data Center connected\n10/13/2026, 1:57:11 PM\nGitLab (self-managed) connected\n10/13/2026, 1:55:42 PM\nJira Cloud access renewed\n10/13/2026, 1:41:02 PM\nJira Data Center connected\n10/13/2026, 1:32:01 PM\nGitLab (self-managed) connected\n10/13/2026, 1:30:32 PM\nGitLab (self-managed) connected\n10/13/2026, 1:20:57 PM\nJira Data Center connected\n10/13/2026, 12:58:46 PM\nGitLab (self-managed) connected\n10/13/2026, 12:57:16 PM\nJira Cloud access renewed\n10/13/2026, 12:41:02 PM\nJira Data Center connected\n10/13/2026, 12:31:59 PM\nGitLab (self-managed) connected\n10/13/2026, 12:30:29 PM\nJira Cloud access renewed\n10/13/2026, 11:41:02 AM\nJira Cloud access renewed\n10/13/2026, 10:41:02 AM\nJira Cloud access renewed\n10/13/2026, 9:41:02 AM\nJira Cloud access renewed\n10/13/2026, 8:41:03 AM\nJira Cloud access renewed\n10/13/2026, 7:41:02 AM\nJira Cloud access renewed\n10/13/2026, 6:41:02 AM\nJira Cloud access renewed\n10/13/2026, 5:41:03 AM\nJira Cloud access renewed\n10/13/2026, 4:41:02 AM\nJira Cloud access renewed\n10/13/2026, 3:41:02 AM"
+}

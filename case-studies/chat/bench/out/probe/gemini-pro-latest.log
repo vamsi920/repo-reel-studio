@@ -1,0 +1,72 @@
+[10/13/26 12:41:54] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 12:41:54] INFO     Created new conversation               state.py:577
+                             4db46353-2aca-476c-968d-69959d072cd5               
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-explorer' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             explorer.md                                        
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-implementer' from                             
+                             /Users/vamsi/.openhands/agents/neo-                
+                             implementer.md                                     
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-planner' from                                 
+                             /Users/vamsi/.openhands/agents/neo-                
+                             planner.md                                         
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-researcher' from                              
+                             /Users/vamsi/.openhands/agents/neo-                
+                             researcher.md                                      
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-verifier' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             verifier.md                                        
+[10/13/26 12:41:54] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 12:41:54] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-F1-3qw3n374                       
+[10/13/26 12:41:54] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 12:41:54] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 12:41:55] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-F1-3qw3n374, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 12:41:55] INFO     Loaded 4 tools from spec                base.py:563
+F1 probe-gemini-pro-latest rep0 calls=27 in=525987 out=7908 $0.3409 196.5s test_file=no
+[10/13/26 12:45:14] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 12:45:14] INFO     Created new conversation               state.py:577
+                             ac0120d4-7ade-43d4-a83e-7fbff663aa8d               
+[10/13/26 12:45:14] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 12:45:14] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-K2-nflnry1p                       
+[10/13/26 12:45:14] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 12:45:14] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 12:45:15] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-K2-nflnry1p, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 12:45:15] INFO     Loaded 4 tools from spec                base.py:563
+K2 probe-gemini-pro-latest rep0 calls=14 in=448390 out=6844 $0.3382 127.6s test_file=yes

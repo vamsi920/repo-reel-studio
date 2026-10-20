@@ -388,3 +388,33 @@ describe("getAgentBudget", () => {
     expect(await store.getAgentBudget("agent-1")).toBe(10);
   });
 });
+
+describe("appendSpans", () => {
+  it("sends each span_id once per batch, keeping the latest version", async () => {
+    const store = new SupabaseAgentOpsStore({
+      url: "http://supabase.test",
+      serviceRoleKey: "test-key",
+    });
+    const upserts: Record<string, unknown>[][] = [];
+    store.client = {
+      from: () => ({
+        upsert: async (rows: Record<string, unknown>[]) => {
+          upserts.push(rows);
+          return { error: null };
+        },
+      }),
+    } as unknown as typeof store.client;
+    const open = { spanId: "s1", name: "terminal", status: "running" };
+    const closed = { ...open, status: "ok" };
+
+    await store.appendSpans("run-1", [
+      open,
+      { spanId: "s2", name: "llm" },
+      closed,
+    ]);
+
+    expect(upserts).toHaveLength(1);
+    expect(upserts[0].map((r) => r.span_id)).toEqual(["s1", "s2"]);
+    expect(upserts[0][0].status).toBe("ok");
+  });
+});

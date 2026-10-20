@@ -4,6 +4,7 @@ import type {
   ConnectorManifest,
   RedactionRule,
 } from "./types/capability";
+import { isPrivateNetworkHost } from "./runtime-connection";
 
 export type ConnectorFieldErrors = Record<string, ConnectorFieldError>;
 export type ConnectorFormValues = Record<string, string>;
@@ -191,7 +192,13 @@ export function validateConnectorValues(
         errors[field.name] = { code: "notAHost" };
         continue;
       }
-      if (isBlockedHost(value, manifest.id)) {
+      // A self-hosted provider on the company network (`gitlab.bank.internal`)
+      // is allowed: the Edge Function still refuses to call it, and the check
+      // runs from the agent's runtime instead (runtime-connection.ts).
+      const runtimeOnly =
+        manifest.hostOverride?.field === field.name &&
+        isPrivateNetworkHost(value);
+      if (!runtimeOnly && isBlockedHost(value, manifest.id)) {
         errors[field.name] = { code: "blockedHost" };
         continue;
       }

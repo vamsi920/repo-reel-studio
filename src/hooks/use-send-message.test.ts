@@ -23,6 +23,11 @@ vi.mock("#/hooks/use-workspace-memory-context", () => ({
   useWorkspaceMemoryContext: () => buildMemoryContext,
 }));
 
+const routeTurn = vi.fn(async (_args: unknown) => null);
+vi.mock("#/hooks/use-auto-model-routing", () => ({
+  useAutoModelRouting: () => routeTurn,
+}));
+
 import { useSendMessage } from "./use-send-message";
 
 const MEMORY_BLOCK = `${MEMORY_BLOCK_START}\n## Workspace memory\n- **fact**: Payments moved to gRPC.\n<!-- neodevex:workspace-memory:end -->`;
@@ -41,6 +46,7 @@ function sentText(): string {
 
 beforeEach(() => {
   sendMessage.mockClear();
+  routeTurn.mockClear();
   buildMemoryContext.mockReset();
   buildMemoryContext.mockReturnValue("");
 });
@@ -100,5 +106,32 @@ describe("useSendMessage", () => {
 
     const [message] = lastCall<[{ content: Array<{ type: string }> }]>();
     expect(message.content.map((part) => part.type)).toEqual(["text", "image"]);
+  });
+
+  // @spec MR-014 — Route before send
+  it("routes the turn on the user's own text before sending it", async () => {
+    buildMemoryContext.mockReturnValue(MEMORY_BLOCK);
+    const order: string[] = [];
+    routeTurn.mockImplementationOnce(async () => {
+      order.push("route");
+      return null;
+    });
+    sendMessage.mockImplementationOnce(async () => {
+      order.push("send");
+      return { queued: false };
+    });
+    const { result } = renderHook(() => useSendMessage());
+
+    await result.current.send({
+      action: "message",
+      args: { content: "fix it", image_urls: ["data:image/png;base64,x"] },
+    });
+
+    expect(order).toEqual(["route", "send"]);
+    expect(routeTurn).toHaveBeenCalledWith({
+      conversationId: "conv-1",
+      text: "fix it",
+      hasImages: true,
+    });
   });
 });

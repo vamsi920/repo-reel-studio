@@ -9,7 +9,8 @@ import { I18nKey } from "#/i18n/declaration";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useModelStore } from "#/stores/model-store";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
-import { MODEL_COMMAND } from "#/utils/constants";
+import { MODEL_AUTO_ARG, MODEL_COMMAND } from "#/utils/constants";
+import { useRoutingMode } from "#/hooks/use-routing-mode";
 
 const MODEL_PREFIX = `${MODEL_COMMAND} `;
 
@@ -17,7 +18,10 @@ const MODEL_PREFIX = `${MODEL_COMMAND} `;
  * Intercepts "/model" submissions (both local and cloud backends manage the
  * LLM through saved profiles):
  *   - "/model"        → render an inline list of saved profiles in the chat
- *   - "/model <name>" → switch the running conversation's LLM profile
+ *   - "/model auto"   → turn on Auto model routing (this chat, or globally
+ *                       on the home page)
+ *   - "/model <name>" → switch the running conversation's LLM profile (and
+ *                       turn Auto off — a manual pick always wins)
  * Anything that isn't a "/model" command falls through to `onSubmit`.
  */
 export const useModelInterceptor = (
@@ -29,6 +33,7 @@ export const useModelInterceptor = (
   const { switchAndLog } = useSwitchLlmProfileAndLog();
   const { backend, orgId } = useActiveBackend();
   const { t } = useTranslation();
+  const { setRoutingMode } = useRoutingMode(conversationId);
 
   return useCallback(
     (message: string) => {
@@ -42,7 +47,13 @@ export const useModelInterceptor = (
 
       const arg = trimmed.slice(MODEL_COMMAND.length).trim();
 
+      if (arg.toLowerCase() === MODEL_AUTO_ARG) {
+        setRoutingMode("auto");
+        return;
+      }
+
       if (arg) {
+        setRoutingMode("manual");
         // Switch the running conversation when one is open; otherwise activate
         // the profile globally so the next conversation starts with it.
         switchAndLog(conversationId ?? null, arg);
@@ -84,6 +95,7 @@ export const useModelInterceptor = (
       showProfiles,
       queryClient,
       switchAndLog,
+      setRoutingMode,
       backend.id,
       orgId,
       t,

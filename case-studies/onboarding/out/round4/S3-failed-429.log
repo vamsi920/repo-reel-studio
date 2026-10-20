@@ -1,0 +1,60 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S3-pasted-secret
+[chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S3-pasted-secret
+[nav] http://localhost:8000/login
+
+[nav] http://localhost:8000/login
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[nav] http://localhost:8000/conversations
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 1s logged-in
+
+[nav] http://localhost:8000/environment/setup
+
+[nav] http://localhost:8000/environment/setup
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 17s setup-page
+
+[study] 17s begin-visible
+
+[study] 17s begun
+
+[study] 19s studio
+
+[study] turn 0 state=finished
+
+  1) [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S3-pasted-secret 
+
+    Error: user simulator -> 429
+
+      178 |     },
+      179 |   );
+    > 180 |   if (!res.ok) throw new Error(`user simulator -> ${res.status}`);
+          |                      ^
+      181 |   const body = await res.json();
+      182 |   return String(body.candidates?.[0]?.content?.parts?.[0]?.text ?? "ok").trim();
+      183 | }
+        at simulateUser (/Users/vamsi/Desktop/neodevex/repo-reel-studio/tests/e2e/auth/onboarding-agent-study.spec.ts:180:22)
+        at /Users/vamsi/Desktop/neodevex/repo-reel-studio/tests/e2e/auth/onboarding-agent-study.spec.ts:416:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results-auth/onboarding-agent-study-onb-cde27-gent-study-S3-pasted-secret-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results-auth/onboarding-agent-study-onb-cde27-gent-study-S3-pasted-secret-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S3-pasted-secret 

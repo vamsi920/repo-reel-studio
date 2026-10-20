@@ -16,6 +16,7 @@ import {
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
 import { parseMcpConfig } from "#/utils/mcp-config";
 import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
+import { useModelRoutingStore } from "#/stores/model-routing-store";
 import { useGithubCredentialHealth } from "#/hooks/query/use-github-credential-health";
 
 /**
@@ -26,6 +27,7 @@ import { useGithubCredentialHealth } from "#/hooks/query/use-github-credential-h
  * - org connections the server marked expired/revoked (Realtime-pushed);
  * - org connections whose non-renewable token lapses within three days;
  * - MCP servers whose last test rejected their credentials;
+ * - saved LLM profiles whose key the provider rejected mid-conversation;
  * - the GitHub credential automation runs use, when GitHub rejects it.
  *
  * `key` changes when the underlying problem changes (it embeds the
@@ -36,6 +38,7 @@ export type HealthIssueKind =
   | "connection-reconnect"
   | "connection-expiring"
   | "mcp-credentials"
+  | "llm-auth"
   | "github-credential";
 
 export interface HealthIssue {
@@ -49,6 +52,7 @@ export interface HealthIssue {
 }
 
 export const MCP_FIX_PATH = "/mcp";
+export const LLM_FIX_PATH = "/settings";
 export const GITHUB_FIX_PATH = "/settings/connections";
 
 export function useHealthIssues(): HealthIssue[] {
@@ -60,6 +64,8 @@ export function useHealthIssues(): HealthIssue[] {
     getMcpHealthSnapshot,
     getMcpHealthSnapshot,
   );
+  const llmHealth = useModelRoutingStore((state) => state.health);
+  const llmProfiles = useModelRoutingStore((state) => state.profiles);
   const githubCredential = useGithubCredentialHealth();
 
   return React.useMemo(() => {
@@ -108,6 +114,22 @@ export function useHealthIssues(): HealthIssue[] {
       }
     }
 
+    const knownProfiles = new Set(llmProfiles.map((profile) => profile.name));
+    for (const [name, health] of Object.entries(llmHealth)) {
+      if (
+        knownProfiles.has(name) &&
+        health.misconfigured &&
+        health.lastErrorKind === "auth"
+      ) {
+        issues.push({
+          key: `llm:${name}:${health.lastChangedAt}`,
+          kind: "llm-auth",
+          message: t(I18nKey.ENVIRONMENT$LLM_AUTH_BANNER, { profile: name }),
+          fixPath: LLM_FIX_PATH,
+        });
+      }
+    }
+
     if (githubCredential === "rejected") {
       issues.push({
         key: "github-credential:rejected",
@@ -118,5 +140,13 @@ export function useHealthIssues(): HealthIssue[] {
     }
 
     return issues;
-  }, [connections, settings, mcpHealth, githubCredential, t]);
+  }, [
+    connections,
+    settings,
+    mcpHealth,
+    llmHealth,
+    llmProfiles,
+    githubCredential,
+    t,
+  ]);
 }

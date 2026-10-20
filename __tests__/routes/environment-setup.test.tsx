@@ -41,6 +41,7 @@ const state = vi.hoisted(() => ({
   endSession: vi.fn(),
   createConversation: vi.fn(),
   deleteConversation: vi.fn().mockResolvedValue(undefined),
+  updateConversationTitle: vi.fn().mockResolvedValue(undefined),
   activeConversation: undefined as { id: string } | null | undefined,
   activeConversationFetched: false,
   activeConversationError: null as Error | null,
@@ -80,7 +81,10 @@ vi.mock("#/hooks/mutation/use-create-conversation", () => ({
 vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
   () => ({
-    default: { deleteConversation: state.deleteConversation },
+    default: {
+      deleteConversation: state.deleteConversation,
+      updateConversationTitle: state.updateConversationTitle,
+    },
   }),
 );
 
@@ -602,6 +606,27 @@ describe("Environment setup session start failure", () => {
 
     await waitFor(() =>
       expect(state.deleteConversation).toHaveBeenCalledWith("conv-orphan"),
+    );
+  });
+
+  // Case study (case-studies/onboarding): the setup conversation was titled
+  // by the backend from a later "[onboarding result]" receipt.
+  it("names the setup conversation when it starts", async () => {
+    state.sessionLoading = false;
+    state.session = null;
+    state.createConversation.mockImplementation((_input, options) => {
+      options.onSuccess({ conversation_id: "conv-setup" });
+    });
+
+    renderScreen("/environment/setup");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("environment-setup-begin"));
+
+    await waitFor(() =>
+      expect(state.updateConversationTitle).toHaveBeenCalledWith(
+        "conv-setup",
+        "ENVIRONMENT$STUDIO_TITLE",
+      ),
     );
   });
 

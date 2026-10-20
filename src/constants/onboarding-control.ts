@@ -109,6 +109,8 @@ export const DISCOVERY_SECTIONS = [
   "org",
   "stack",
   "delivery",
+  "systems",
+  "network",
   "team",
   "constraints",
   "conventions",

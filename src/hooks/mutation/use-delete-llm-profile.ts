@@ -18,6 +18,12 @@ export function useDeleteLlmProfile() {
         if (settings?.title_llm_profile === name) {
           await SettingsService.saveSettings({ title_llm_profile: null });
         }
+        const excluded = settings?.model_routing_excluded_profiles ?? [];
+        if (excluded.includes(name)) {
+          await SettingsService.saveSettings({
+            model_routing_excluded_profiles: excluded.filter((p) => p !== name),
+          });
+        }
       }
       // Invalidate the SettingsService internal cache so getSettingsForConversation
       // fetches fresh settings after the profile is deleted (backend may have

@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "claim": "----------|\n| Cloudflare Workers | `export default app` | No | Native Fetch [src/adapter/cloudflare-workers/index.ts:1-9]() |\n| Deno | `Deno.serve(app.fetch)` | Optional | Native Fetch [src/adapter/deno/index.ts:1-10]() |\n| Bun | `Bun.serve({ fetch: app.fetch })` | Optional | Native Fetch [src/adapter/bun/index.ts:1-12]() |\n| Node.js | Via `@hono/node-server` | Yes | Adapter [package.json:5-7](),",
+  "cited": "bun.lock:9-9"
+ },
+ {
+  "n": 1,
+  "claim": "```typescript\nexport interface Accept {\n  type: string\n  params: Record<string, string>\n  q: number\n}\n```\n*Sources:",
+  "cited": "src/utils/accept.ts:1-5"
+ },
+ {
+  "n": 2,
+  "claim": "blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/index.ts#L6-L11) |\n| **Deno** | `serveStatic`, `toSSG`, `denoFileSystemModule`, `upgradeWebSocket`, `getConnInfo` | [src/adapter/deno/index.ts:6-9](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/deno/index.ts#L6-L9) |\n| **Cloudflare Workers** | `serveStatic`, `upgradeWebSocket`, `getConnInfo` |",
+  "cited": "src/adapter/cloudflare-workers/index.ts:6-8"
+ },
+ {
+  "n": 3,
+  "claim": "| Function | Role |\n|----------|------|\n| `replaceUrlParam` | Replaces `:param` placeholders in strings with actual values",
+  "cited": "src/client/utils.ts:18-24"
+ },
+ {
+  "n": 4,
+  "claim": "`Sources: [src/hono-base.ts:399-404](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L399-L404), [src/hono-base.ts:436-438](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L436-L438),",
+  "cited": "src/hono-base.ts:462-464"
+ },
+ {
+  "n": 5,
+  "claim": "The rendering system categorizes updates into priority levels using the `PendingType` enumeration stored in the `Context` array",
+  "cited": "src/jsx/dom/render.ts:82-85"
+ },
+ {
+  "n": 6,
+  "claim": "**Hook Index Tracking**: Each functional component maintains a `hookIndex` at `node[DOM_STASH][0]` that increments with each hook call during the render phase [src/jsx/dom/render.ts:55-62](). This index determines which array slot stores that hook's data, ensuring consistent hook ordering across re-renders",
+  "cited": "src/jsx/hooks/index.ts:195-197"
+ },
+ {
+  "n": 7,
+  "claim": "ps://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L7), [src/router/smart-router/router.ts:48](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L48) |\n| `constructor()` | `(init: { routers: Router<T>[] })` | Initializes the `SmartRouter` with a list of candidate routers. Sources:",
+  "cited": "src/router/smart-router/router.ts:9-11"
+ },
+ {
+  "n": 8,
+  "claim": "| Path Pattern | Format | Purpose |\n|--------------|--------|---------|\n| `dist/*.js` | ESM | Top-level ES modules [build/build.ts:89]() |\n| `dist/middleware/**/*.js` | ESM | Middleware modules |\n| `dist/helper/**/*.js` | ESM | Helper utilities |\n| `dist/cjs/**/*.js` | CJS | CommonJS equivalents",
+  "cited": "build/build.ts:81-81"
+ },
+ {
+  "n": 9,
+  "claim": "ntext headers. The status code can also be overridden. (Sources: [src/context.test.ts:247-281](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L247-L281)).\n    *   Response helpers can also accept a `Response` or `ResponseInit` object as the second argument, inheriting status and headers from it but overriding the `Content-Type` and body. (Sources:",
+  "cited": "src/context.test.ts:497-566"
+ },
+ {
+  "n": 10,
+  "claim": "ill resolve any type containing a `bigint` to `never`, preventing its use. This is because `JSON.stringify` throws an error for `bigint` values. This behavior can be disabled by setting the second generic argument to `never`: `JSONParsed<MyType, never>`.\n  *Sources: [src/utils/types.ts:46-52](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/types.ts#L46-L52),",
+  "cited": "src/utils/types.ts:70-70"
+ },
+ {
+  "n": 11,
+  "claim": "*   **Rendering**:\n    *   `c.render()`: Uses a renderer to create a response. The tests verify a default renderer and the ability to set a custom one via `c.setRenderer()`. (Sources:",
+  "cited": "src/context.test.ts:574-597"
+ },
+ {
+  "n": 12,
+  "claim": "tests:\n*   When `c.res` is reassigned (e.g., `c.res = new Response(...)`), headers from the previous `c.res` object are automatically merged into the new one. This is especially true for `set-cookie` headers, which are preserved across reassignments. (Sources: [src/context.test.ts:283-294](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L283-L294),",
+  "cited": "src/context.test.ts:413-428"
+ },
+ {
+  "n": 13,
+  "claim": "TD\n    A[\"getFilePath(options)\"] --> B{filename ends with '/'?};\n    B -- Yes --> C[filename += defaultDocument];\n    B -- No --> D{filename has no extension?};\n    D -- Yes --> E[filename += '/' + defaultDocument];\n    D -- No --> F[Use original filename];\n    C --> G[Call getFilePathWithoutDefaultDocument];\n    E --> G;\n    F --> G;\n    G --> H[Return sanitized path or undefined];\n```\n*Sources:",
+  "cited": "src/utils/filepath.ts:12-30"
+ },
+ {
+  "n": 14,
+  "claim": "**Preset Differences**:\n- **`hono/quick`**: Optimized for performance using `SmartRouter` [package.json:63-67]().\n- **`hono/tiny`**: Uses `PatternRouter` for minimal footprint [package.json:58-62](),",
+  "cited": "README.md:44-44"
+ },
+ {
+  "n": 15,
+  "claim": "app.get('/', (c) => {\n  return c.text('a'.repeat(2000)) // This response will be compressed\n})\n```\n`Sources: [src/middleware/compress/index.ts:58-62](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.ts#L58-L62),",
+  "cited": "src/middleware/compress/index.test.ts:8-9"
+ },
+ {
+  "n": 16,
+  "claim": "t.ts:33-35](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/dom/client.ts#L33-L35). The returned `Root` object has two methods:\n    -   `render(children)`: Renders the provided JSX into the root element. Subsequent calls will update the rendered content. It throws an `Error` with the message \"Cannot update an unmounted root\" if called after `unmount`. Sources:",
+  "cited": "src/jsx/dom/client.ts:38-59"
+ },
+ {
+  "n": 17,
+  "claim": "|\n| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |\n| `PatternRouter<T>`  | The main class that implements the `Router<T>` interface. It contains the logic for adding and matching routes.                          | `",
+  "cited": "src/router/pattern-router/router.ts:8-8"
+ },
+ {
+  "n": 18,
+  "claim": "`Sources: [src/request.ts:220-239](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L220-L239),",
+  "cited": "src/request.test.ts:245-365"
+ },
+ {
+  "n": 19,
+  "claim": "e`, and an environment variable `NAME: 'Node'`. `Sources: [runtime-tests/lambda/vitest.config.ts:3-10](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/lambda/vitest.config.ts#L3-L10)` |\n| `tsconfig.json` | TypeScript configuration for the test suite. | Extends the base `tsconfig.base.json`, enables `noEmit`, and includes `vitest/globals` types. `Sources:",
+  "cited": "runtime-tests/lambda/tsconfig.json:1-10"
+ },
+ {
+  "n": 20,
+  "claim": "-   **Path Parameters**: A zero-length path parameter match (e.g., a wildcard `*` matching an empty path segment) will correctly result in an empty string `''` from `req.param()`, not `undefined`. `Sources:",
+  "cited": "src/request.test.ts:42-56"
+ },
+ {
+  "n": 21,
+  "claim": "Normalizes file paths and prevents directory traversal attacks by checking for `..` segments",
+  "cited": "src/utils/filepath.ts:38-40"
+ },
+ {
+  "n": 22,
+  "claim": "The granular exports structure enables effective tree-shaking. For example, using the `hono/tiny` preset allows for a bundle under 12KB by using a simpler router implementation",
+  "cited": "README.md:44-44"
+ },
+ {
+  "n": 23,
+  "claim": "- `write(data)`: Writes a chunk of data (string or `Uint8Array`) to the stream [src/utils/stream.ts:48-58]().\n- `writeln(data)`: Writes a chunk followed by a newline [src/utils/stream.ts:60-63]().\n- `sleep(ms)`: A convenience method to pause execution in the streaming loop",
+  "cited": "src/utils/stream.ts:65-67"
+ },
+ {
+  "n": 24,
+  "claim": "*   **`query`**: It uses `c.req.queries()`. If a query parameter has only one value, it's converted from a single-element array to a string.\n    `Sources:",
+  "cited": "src/validator/validator.ts:144-150"
+ },
+ {
+  "n": 25,
+  "claim": "handler definition [src/types.ts:168-182](), [src/types.test.ts:150-175]().\n2. **Middleware Composition**: Multiple middlewares can contribute to the `Env` (Variables) and `Input` types through intersection types like `IntersectNonAnyTypes` [src/types.ts:198-210]().\n3. **Schema Mapping**: The final return type of the handler is captured in the `Schema` using `ToSchema` and response merging logic",
+  "cited": "src/types.ts:144-144"
+ },
+ {
+  "n": 26,
+  "claim": "A watch mode is available for development, which uses `esbuild` contexts to rebuild on file changes",
+  "cited": "build/build.ts:18-18"
+ },
+ {
+  "n": 27,
+  "claim": "User->>getQueryParams: getQueryParams(url, 'name')\n    getQueryParams->>_getQueryParam: _getQueryParam(url, 'name', true)\n    _getQueryParam-->>getQueryParams: [\"first_value\", \"second_value\"]\n    getQueryParams-->>User: [\"first_value\", \"second_value\"]\n```\n*Sources: [src/utils/url.ts:219-315](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/url.ts#L219-L315),",
+  "cited": "src/utils/url.test.ts:259-362"
+ },
+ {
+  "n": 28,
+  "claim": "iption |\n|--------|------|---------|-------------|\n| `strict` | `boolean` | `true` | Whether to distinguish trailing slashes (`/hello` vs `/hello/`) [src/hono-base.ts:54]() |\n| `router` | `Router<[H, RouterRoute]>` | `SmartRouter` (Hono only) | Router implementation to use [src/hono-base.ts:65]() |\n| `getPath` | `GetPath<E>` | `getPath` or `getPathNoStrict` | Function to extract path from request",
+  "cited": "src/hono-base.ts:86-86"
+ },
+ {
+  "n": 29,
+  "claim": "```typescript\n// Example from hono-base.ts documentation\napp.onError((err, c) => {\n  console.error(`${err}`)\n  return c.text('Custom Error Message', 500)\n})\n```\n`Sources:",
+  "cited": "src/hono-base.ts:256-274"
+ },
+ {
+  "n": 30,
+  "claim": "1. **Pre-processing**: Code before `await next()` runs in the order the middleware was registered [src/compose.test.ts:17-20]().\n2. **Downstream**: The chain continues until the final handler or a middleware returns a `Response` without calling `next()`.\n3. **Post-processing**: Code after `await next()` runs in reverse order as the stack unwinds",
+  "cited": "src/compose.test.ts:22-25"
+ },
+ {
+  "n": 31,
+  "claim": "hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L8-L16)`\n-   Paths with parent directory references (`..`). `Sources: [src/middleware/serve-static/path.test.ts:17-22](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L17-L22)`\n-   Paths with current directory references (`.`). `Sources:",
+  "cited": "src/middleware/serve-static/path.test.ts:24-29"
+ },
+ {
+  "n": 32,
+  "claim": "named parameters (`:id`), regex-constrained parameters (`:id{[0-9]+}`), or wildcards (`*`).\n    `Sources: [src/router/trie-router/node.ts:29](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/trie-router/node.ts#L29)`\n-   `#order`: A number that increments with each insertion, used to determine the score of a handler for sorting matched routes.\n    `Sources:",
+  "cited": "src/router/trie-router/node.ts:30-30"
+ },
+ {
+  "n": 33,
+  "claim": "udes security to prevent CSS injection by dropping properties or values containing semicolons. Sources: [src/jsx/index.test.tsx:499-628](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/index.test.tsx#L499-L628).\n    *   **XSS Prevention**: Skips rendering attributes if their *keys* contain unsafe characters such as `\"`, `>`, `<`, spaces, or backticks. Sources:",
+  "cited": "src/jsx/index.test.tsx:638-706"
+ },
+ {
+  "n": 34,
+  "claim": "The dual JSX system supports:\n- **Server JSX** (`./jsx/*`): Server-side rendering and streaming [jsr.json:32-35]().\n- **DOM JSX** (`./jsx/dom/*`): Client-side rendering with hooks and virtual DOM reconciliation",
+  "cited": "jsr.json:37-42"
+ },
+ {
+  "n": 35,
+  "claim": "`Sources: [src/validator/utils.ts](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/validator/utils.ts),",
+  "cited": "src/validator/validator.ts:64-82"
+ },
+ {
+  "n": 36,
+  "claim": "A new engineer might be surprised by the following behaviors verified in the tests:\n*   When `c.res` is reassigned (e.g., `c.res = new Response(...)`), headers from the previous `c.res` object are automatically merged into the new one. This is especially true for `set-cookie` headers, which are preserved across reassignments. (Sources:",
+  "cited": "src/context.test.ts:283-294"
+ },
+ {
+  "n": 37,
+  "claim": "- **FC (Functional Component)**: A function that accepts props and returns a `JSXNode`, `HtmlEscapedString`, `Promise`, or `null`",
+  "cited": "src/jsx/base.ts:28-32"
+ },
+ {
+  "n": 38,
+  "claim": "*   **`isContentTypeBinary` function**\n    *   Correctly identifies binary MIME types such as `image/png` and `font/woff2` as `true`. Sources:",
+  "cited": "src/adapter/lambda-edge/handler.test.ts:11-12"
+ },
+ {
+  "n": 39,
+  "claim": "*   **Implementation**: Defined as the `Context` class in [src/context.ts:446-455]().\n*   **Key Methods**:\n    *   `c.text()`: Returns a plain text response [src/context.ts:586-595]().\n    *   `c.json()`: Returns a JSON response with appropriate headers [src/context.ts:607-624]().\n    *   `c.set()` / `c.get()`: Manages state within the lifecycle of a single request",
+  "cited": "src/context.ts:747-756"
+ },
+ {
+  "n": 40,
+  "claim": "A comprehensive set of test cases is used to compare the output of `defaultJoin` against `posixJoin`. These cases cover:\n-   Basic path joining. `Sources:",
+  "cited": "src/middleware/serve-static/path.test.ts:8-16"
+ },
+ {
+  "n": 41,
+  "claim": "The `fetch()` method delegates to the internal `#dispatch()` method, passing the request, execution context, environment bindings, and the HTTP method",
+  "cited": "src/hono-base.ts:482-491"
+ },
+ {
+  "n": 42,
+  "claim": "The JSON target uses a flexible regex pattern `jsonRegex` at [src/validator/validator.ts:24]() that matches standard `application/json`, JSON with charset parameters, and JSON subtypes like `application/merge-patch+json` or `application/vnd.api+json`",
+  "cited": "src/validator/validator.test.ts:182-204"
+ },
+ {
+  "n": 43,
+  "claim": "| Method / Property | Description |\n|-------------------|-------------|\n| `get`, `post`, `put`, `delete` | HTTP method route registration",
+  "cited": "src/hono-base.ts:104-107"
+ },
+ {
+  "n": 44,
+  "claim": "c/middleware/ip-restriction/index.ts:30](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L30), [src/middleware/ip-restriction/index.ts:34](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L34).\n        -   CIDR notation (e.g., `192.168.2.0/24`, `::1/10`). Sources:",
+  "cited": "src/middleware/ip-restriction/index.ts:31-31"
+ },
+ {
+  "n": 45,
+  "claim": "**Request Building Process:**\n-   **Query Parameters**: Uses `buildSearchParams` to serialize the query object",
+  "cited": "src/client/client.ts:60-62"
+ },
+ {
+  "n": 46,
+  "claim": "tion**: Correctly builds the request URL using the `Host` header from the CloudFront event. Sources: [src/adapter/lambda-edge/handler.test.ts:81-91](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/lambda-edge/handler.test.ts#L81-L91).\n    *   **Multi-value Headers**: Preserves all values from a multi-value request header by joining them with `, `. Sources:",
+  "cited": "src/adapter/lambda-edge/handler.test.ts:93-121"
+ },
+ {
+  "n": 47,
+  "claim": "a `<style>` block [src/helper/css/index.ts:192-203]().\n-   **Contextual Styling**: `createCssContext` [src/helper/css/index.ts:72-215]() allows for isolated style buckets, providing unique IDs for style elements.\n-   **DOM Integration**: Includes `createCssJsxDomObjects` [src/helper/css/index.ts:81]() for client-side rendering where styles are inserted directly into the DOM via the `DOM_RENDERER`",
+  "cited": "src/helper/css/index.ts:206-206"
+ },
+ {
+  "n": 48,
+  "claim": "- `Bindings`: Platform-specific resources like Cloudflare Bindings or environment variables [src/types.ts:26-26]().\n- `Variables`: User-defined state stored in `Context` and accessible via `c.get()` [src/types.ts:27-27]().\n- `Env`: A container for both `Bindings` and `Variables`",
+  "cited": "src/types.ts:30-33"
+ },
+ {
+  "n": 49,
+  "claim": "#### Nested Value Handling\nWhen the `dot` option is enabled, `handleParsingNestedValues` [src/utils/body.ts:206-233]() recursively builds objects. It includes protection against prototype pollution by skipping keys containing `__proto__.`",
+  "cited": "src/utils/body.ts:211-213"
+ },
+ {
+  "n": 50,
+  "claim": "ream)` runs asynchronously within a try-catch block [src/helper/streaming/stream.ts:26-42]().\n3. **Piping**: Data written via `stream.write()` is pushed to the underlying writable stream via the `StreamingApi` writer [src/utils/stream.ts:48-58]().\n4. **Termination**: The stream is closed in the `finally` block of the execution wrapper via `stream.close()` [src/helper/streaming/stream.ts:39-41](),",
+  "cited": "src/helper/streaming/sse.ts:65-67"
+ },
+ {
+  "n": 51,
+  "claim": "KV) and Variables. | [src/types.ts:30-33]() |\n| **TypedResponse** | Typed Response | A Response object that carries type information about its body and status. | [src/types.ts:70-73]() |\n| **JSX** | JavaScript XML | Hono's built-in engine for rendering UI components. | [src/jsx/index.ts:1-10]() |\n| **VNode** | Virtual Node | An object representing a DOM element in Hono's JSX/DOM implementation. |",
+  "cited": "src/jsx/dom/render.ts:80-80"
+ },
+ {
+  "n": 52,
+  "claim": "`Sources: [src/utils/jwt/jws.ts:27](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/jwt/jws.ts#L27), [src/utils/jwt/jws.ts:54-76](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/jwt/jws.ts#L54-L76),",
+  "cited": "src/utils/jwt/jws.ts:78-105"
+ },
+ {
+  "n": 53,
+  "claim": "The function sets the global `updateHook` variable, which is captured by `useState` update functions and passed to the `update()` function",
+  "cited": "src/jsx/hooks/index.ts:200-200"
+ },
+ {
+  "n": 54,
+  "claim": "ean \\| Record<string, string>` | Enables streaming rendering. If `false` (default), the response is buffered. If `true`, enables streaming with default headers. If an object is provided, it's used to set custom response headers. Sources: [src/middleware/jsx-renderer/index.ts:20](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/jsx-renderer/index.ts#L20),",
+  "cited": "src/middleware/jsx-renderer/index.ts:66-75"
+ },
+ {
+  "n": 55,
+  "claim": "| File | Key Configuration | Purpose | Source |\n| :--- | :--- | :--- | :--- |\n| `vitest.config.ts` | `name: 'workerd'` | Defines the name of the Vitest project. | `",
+  "cited": "runtime-tests/workerd/vitest.config.ts:6-6"
+ },
+ {
+  "n": 56,
+  "claim": "Hono uses two strategies for parameters depending on the router:\n1.  **Direct Value**: The parameter value is stored directly in the match result map [src/request.ts:107-107]().\n2.  **ParamStash**: The match result contains an index, and the value is retrieved from a separate stash array",
+  "cited": "src/request.ts:126-128"
+ },
+ {
+  "n": 57,
+  "claim": "message. On `message`, it verifies the echoed data and closes the connection.\n        *Sources: [runtime-tests/workerd/index.test.ts:49-66](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/workerd/index.test.ts#L49-L66)*\n    *   **Assertions**: It verifies that the `open`, `message` (with `'Hello'`), and `close` handlers were all called.\n        *Sources:",
+  "cited": "runtime-tests/workerd/index.test.ts:71-73"
+ },
+ {
+  "n": 58,
+  "claim": "`.` separator [src/utils/cookie.ts:44-49]().\n3.  **Prefix Options**: The helper supports `__Host-` and `__Secure-` prefixes [src/utils/cookie.ts:29](). Using these prefixes triggers strict validation in the internal `_serialize` function:\n    -   `__Secure-` requires the `secure` attribute [src/utils/cookie.ts:174-177]().\n    -   `__Host-` requires `secure`, `path: '/'`, and no `domain` attribute",
+  "cited": "src/utils/cookie.ts:179-192"
+ },
+ {
+  "n": 59,
+  "claim": "-   `constructor()`: Initializes the root `#node`.\n    `Sources:",
+  "cited": "src/router/trie-router/router.ts:9-11"
+ },
+ {
+  "n": 60,
+  "claim": "`Sources: [src/request.ts:212-218](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L212-L218),",
+  "cited": "src/request.ts:253-331"
+ },
+ {
+  "n": 61,
+  "claim": "| Option | Type | Description |\n|--------|------|-------------|\n| `env` | `E['Bindings']` | Environment bindings (e.g., Cloudflare Workers bindings) [src/hono-base.ts:419]() |\n| `executionCtx` | `ExecutionContext` | Execution context for async operations [src/context.ts:31-52]() |\n| `path` | `string` | Resolved path from the request",
+  "cited": "src/hono-base.ts:415-415"
+ },
+ {
+  "n": 62,
+  "claim": "ub-page | Component | Primary Source |\n|----------|-----------|-------------|\n| [Hono Application Class and HonoBase](#2.1) | `Hono` / `HonoBase` application class | [src/hono.ts:16-34](), [src/hono-base.ts:98-112]() |\n| [Context Object](#2.2) | `Context` class and response helpers | [src/context.ts:293-305]() |\n| [HonoRequest and Request Parsing](#2.3) | `HonoRequest` class and request parsing |",
+  "cited": "src/request.ts:36-80"
+ },
+ {
+  "n": 63,
+  "claim": "| Runtime | Source of Connection Info |\n|---------|---------------------------|\n| **Cloudflare Pages** | `getConnInfo` helper [src/adapter/cloudflare-pages/index.ts:7]() |\n| **Vercel** | `getConnInfo` helper",
+  "cited": "src/adapter/vercel/index.ts:6-6"
+ },
+ {
+  "n": 64,
+  "claim": "**Algorithm:**\n1. Locate the first `/` after the protocol [src/utils/url.ts:108]().\n2. Scan for `%` (37), `?` (63), or `#` (35) [src/utils/url.ts:110-132]().\n3. If `%` is found, it performs a `tryDecodeURI` on the slice",
+  "cited": "src/utils/url.ts:127-127"
+ },
+ {
+  "n": 65,
+  "claim": "- `createRoot(element)`: Returns a `Root` object with `render()` and `unmount()` methods [src/jsx/dom/client.ts:37-65]().\n- `hydrateRoot(element, reactNode)`: Equivalent to `render` in Hono's implementation, it initializes the root and immediately renders the node",
+  "cited": "src/jsx/dom/client.ts:76-84"
+ },
+ {
+  "n": 66,
+  "claim": "**Sources**: [src/context.ts:1-52](), [src/hono-base.ts:1-120](), [src/request.ts:1-100](),",
+  "cited": "src/types.ts:1-100"
+ },
+ {
+  "n": 67,
+  "claim": "-   **Main Settings:**\n    -   `composite`: `true` enables TypeScript's project references feature, which is used in the root `tsconfig.json`. (Sources:",
+  "cited": "tsconfig.base.json:3-3"
+ },
+ {
+  "n": 68,
+  "claim": "oth default to an empty array `[]`. Sources: [src/middleware/ip-restriction/index.ts:220](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L220).\n    3.  `onError`: An optional custom error handler. If not provided, the middleware throws an `HTTPException` with a 403 status and \"Forbidden\" message when blocking a request. Sources:",
+  "cited": "src/middleware/ip-restriction/index.ts:221-224"
+ },
+ {
+  "n": 69,
+  "claim": "| Input Type | `JSONParsed` Output | Behavior |\n| :--- | :--- | :--- |\n| `number`, `string`, `boolean`, `null` | Same | Primitives pass through unchanged [src/utils/types.ts:61-62]() |\n| `undefined`, `symbol`, `function` | `never` | Non-serializable values are removed from objects",
+  "cited": "src/utils/types.ts:73-74"
+ },
+ {
+  "n": 70,
+  "claim": "ame and password authentication. `Sources: [runtime-tests/bun/index.test.tsx:57-87](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/bun/index.test.tsx#L57-L87)`\n*   **JWT**: Protects routes using JSON Web Tokens. Bun's support for the Web Crypto API (since v0.2.2) allows this middleware to function without polyfills, unlike some other runtimes. `Sources:",
+  "cited": "runtime-tests/bun/index.test.tsx:179-202"
+ },
+ {
+  "n": 71,
+  "claim": "### Type Safety\nThe factory ensures that the `Env` (Bindings and Variables) defined at the factory level flows through all handlers in the chain [src/helper/factory/index.test.ts:41-65](). It supports up to 10 chained handlers with full type inference for input validation (json, query, param, etc.) and output types",
+  "cited": "src/helper/factory/index.ts:20-213"
+ },
+ {
+  "n": 72,
+  "claim": "**Hook Integration**: The `buildDataStack` global variable stores the current `[context, node]` pair [src/jsx/dom/render.ts:106-106](), which hooks access via `buildDataStack.at(-1)` to retrieve their storage location",
+  "cited": "src/jsx/hooks/index.ts:188-192"
+ },
+ {
+  "n": 73,
+  "claim": "*   **`tag`**: Either a string for intrinsic elements (e.g., `\"div\"`) or a function for components (`FC`). [src/jsx/base.ts:147-154]()\n*   **`props`**: A dictionary containing attributes, including special handling for `style` objects via `styleObjectForEach` and `dangerouslySetInnerHTML`.",
+  "cited": "src/jsx/base.ts:190-225"
+ },
+ {
+  "n": 74,
+  "claim": "tors (e.g., `.${className} { h1 { ... } }`) if the environment supports it (`support.nest`). `Sources: [src/helper/css/common.case.test.tsx:205-230](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/helper/css/common.case.test.tsx#L205-L230)`\n*   **Global Styles**:\n    *   Recognizes the `:-hono-global` pseudo-selector to inject unscoped, global CSS rules. `Sources:",
+  "cited": "src/helper/css/common.case.test.tsx:232-254"
+ },
+ {
+  "n": 75,
+  "claim": "*   Calling `write()` after the stream has been closed does not throw an error. `Sources:",
+  "cited": "src/utils/stream.test.ts:68-74"
+ },
+ {
+  "n": 76,
+  "claim": "t/index.test.ts#L13-L17)*\n-   **Middleware Architecture**: The CSRF middleware is a standard Hono `MiddlewareHandler`. It follows the `(c, next)` pattern, where it can perform actions before (`await next()`) and/or after the next handler in the chain. Other middleware like `poweredBy` demonstrate a simpler pattern where they only act after the handler has run to modify the response.\n    *Sources:",
+  "cited": "src/middleware/csrf/index.ts:138-138"
+ },
+ {
+  "n": 77,
+  "claim": "Hono provides a configuration for the JSR registry in `jsr.json`, mapping internal source files directly to public entry points [jsr.json:1-106](). The build system ensures these exports are valid by comparing `package.json` and `jsr.json` contents using `validateExports`",
+  "cited": "build/build.ts:25-26"
+ },
+ {
+  "n": 78,
+  "claim": "-   `#methods`: An array of objects, where each object maps a method name (e.g., 'GET', 'POST', or `METHOD_NAME_ALL`) to a `HandlerSet`. A node can have multiple handlers for the same method.\n    `Sources:",
+  "cited": "src/router/trie-router/node.ts:26-26"
+ },
+ {
+  "n": 79,
+  "claim": "### Common Behaviors\nBoth routers share certain behaviors defined in the Hono routing contract:\n- **Trailing Slashes**: Both routers allow trailing slashes by default, often matching `/book` to `/book/` [src/router/pattern-router/router.test.ts:36-40](),",
+  "cited": "src/router/linear-router/router.test.ts:50-54"
+ }
+]

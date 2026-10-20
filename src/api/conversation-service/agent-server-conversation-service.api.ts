@@ -62,8 +62,13 @@ import {
   getStoredConversationMetadata,
   removeStoredConversationMetadata,
   setStoredConversationMetadata,
+  patchStoredConversationMetadata,
   type WorkspaceMode,
 } from "../conversation-metadata-store";
+import {
+  recordConversationStartDecision,
+  routeConversationStart,
+} from "#/lib/model-routing/start";
 import { resolveTitleLlmProfile } from "#/utils/title-llm-profile";
 import type {
   GetHooksResponse,
@@ -493,10 +498,44 @@ class AgentServerConversationService {
       return createCloudAppConversation(request);
     }
 
-    const [settings, profiles] = await Promise.all([
+    const [baseSettings, profiles] = await Promise.all([
       SettingsService.getSettings(),
       ProfilesService.listProfiles().catch(() => undefined),
     ]);
+    // Auto model routing: pick the profile for the first message up front
+    // and start the run on it. Agent-profile launches resolve their own LLM
+    // server-side, and ACP agents don't use LLM profiles, so both skip it.
+    const isAcpLaunch =
+      (baseSettings.agent_settings as Record<string, unknown> | null)
+        ?.agent_kind === "acp";
+    const startDecision =
+      agentProfileId || isAcpLaunch
+        ? null
+        : routeConversationStart({
+            text: initialUserMsg,
+            activeProfile: profiles?.active_profile ?? null,
+          });
+    let settings = baseSettings;
+    let routedProfile: string | null = null;
+    if (startDecision?.switched && startDecision.profileName) {
+      try {
+        const detail = await ProfilesService.getProfile(
+          startDecision.profileName,
+          "encrypted",
+        );
+        settings = {
+          ...baseSettings,
+          agent_settings: {
+            ...baseSettings.agent_settings,
+            llm: detail.config,
+          },
+        } as typeof baseSettings;
+        routedProfile = startDecision.profileName;
+      } catch {
+        // Without the encrypted config (e.g. no OH_SECRET_KEY) the run starts
+        // on the active profile, exactly as in manual mode.
+      }
+    }
     const titleLlmProfile = resolveTitleLlmProfile(
       settings.title_llm_profile,
       profiles,
@@ -558,6 +597,25 @@ class AgentServerConversationService {
         selected_workspace: workingDirOverride ?? null,
         workspace_mode: resolvedWorkspaceMode,
       });
+    }
+
+    if (startDecision) {
+      recordConversationStartDecision(
+        data.id,
+        routedProfile
+          ? startDecision
+          : {
+              ...startDecision,
+              profileName:
+                profiles?.active_profile ?? startDecision.profileName,
+              switched: false,
+            },
+      );
+      if (routedProfile) {
+        patchStoredConversationMetadata(data.id, {
+          active_profile: routedProfile,
+        });
+      }
     }
 
     return {
@@ -982,6 +1040,20 @@ class AgentServerConversationService {
       // Avoid stale first-write-wins entries in the backend LLM registry.
       usage_id: `profile:${profileName}:${uuidv4()}`,
     } as LLMConfig);
+  }
+
+  /**
+   * Resumes the agent loop (POST /run) without sending a new message. Used by
+   * Auto-mode fallback after an LLM error: switch to a healthy profile, then
+   * re-run so the failed step is retried on the new model. Local backends
+   * only — cloud returns false and the user retries manually.
+   */
+  static async resumeConversation(conversationId: string): Promise<boolean> {
+    if (getActiveBackend().backend.kind === "cloud") return false;
+    await new ConversationClient(getAgentServerClientOptions()).runConversation(
+      conversationId,
+    );
+    return true;
   }
 
   /**

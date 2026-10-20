@@ -347,7 +347,7 @@ describe("LlmSettingsLocalView", () => {
   });
 
   describe("create mode form initialization", () => {
-    it("prefills the free OpenHands default when creating a new profile", async () => {
+    it("prefills the default model when creating a new profile", async () => {
       const user = userEvent.setup();
       renderWithProviders(<LlmSettingsLocalView />);
 
@@ -357,12 +357,12 @@ describe("LlmSettingsLocalView", () => {
       // Should be in create view
       expect(screen.getByTestId("profile-name-input")).toBeInTheDocument();
 
-      // The profile name is auto-derived from the prefilled free default model.
+      // The profile name is auto-derived from the prefilled default model.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("glm-5.2");
+      expect(nameInput).toHaveValue("gemini-4-argon");
 
       expect(screen.getByTestId("mock-basic-model-input")).toHaveValue(
-        "openhands/glm-5.2",
+        "gemini/gemini-4-argon",
       );
     });
 
@@ -374,9 +374,9 @@ describe("LlmSettingsLocalView", () => {
       await user.click(screen.getByTestId("add-llm-profile"));
       expect(screen.getByTestId("profile-name-input")).toBeInTheDocument();
 
-      // The profile name starts from the free-model derived default.
+      // The profile name starts from the default-model derived default.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("glm-5.2");
+      expect(nameInput).toHaveValue("gemini-4-argon");
 
       // Go back to list
       await user.click(screen.getByTestId("back-to-profiles"));
@@ -385,10 +385,10 @@ describe("LlmSettingsLocalView", () => {
       // Navigate to create view again
       await user.click(screen.getByTestId("add-llm-profile"));
 
-      // The profile name should return to the free-model derived default
+      // The profile name should return to the default-model derived default
       // again (fresh form).
       const freshNameInput = screen.getByTestId("profile-name-input");
-      expect(freshNameInput).toHaveValue("glm-5.2");
+      expect(freshNameInput).toHaveValue("gemini-4-argon");
     });
 
     it("does not carry over values from edit mode to create mode", async () => {
@@ -401,9 +401,9 @@ describe("LlmSettingsLocalView", () => {
       // Navigate directly to create view (not edit)
       await user.click(screen.getByTestId("add-llm-profile"));
 
-      // Should be in create view with the free-model derived profile name.
+      // Should be in create view with the default-model derived profile name.
       const nameInput = screen.getByTestId("profile-name-input");
-      expect(nameInput).toHaveValue("glm-5.2");
+      expect(nameInput).toHaveValue("gemini-4-argon");
 
       // The key "new-profile" should be used, ensuring a fresh form mount
       // that doesn't inherit any existing profile data

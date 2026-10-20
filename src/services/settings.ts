@@ -1,9 +1,13 @@
 import { Settings } from "#/types/settings";
+import {
+  DEFAULT_ROUTING_MODE,
+  DEFAULT_ROUTING_POLICY,
+} from "#/lib/model-routing/types";
 
 export const LATEST_SETTINGS_VERSION = 5;
 
 export const DEFAULT_SETTINGS: Settings = {
-  llm_model: "openhands/glm-5.2",
+  llm_model: "gemini/gemini-4-argon",
   llm_base_url: "",
   agent: "CodeActAgent",
   language: "en",
@@ -31,13 +35,17 @@ export const DEFAULT_SETTINGS: Settings = {
   git_user_name: "openhands",
   git_user_email: "openhands@all-hands.dev",
   title_llm_profile: null,
+  model_routing_mode: DEFAULT_ROUTING_MODE,
+  model_routing_policy: DEFAULT_ROUTING_POLICY,
+  model_routing_budget_usd: null,
+  model_routing_excluded_profiles: [],
   agent_settings_schema: null,
   agent_settings: {
     schema_version: 6,
     agent_kind: "openhands",
     agent: "CodeActAgent",
     llm: {
-      model: "openhands/glm-5.2",
+      model: "gemini/gemini-4-argon",
     },
     condenser: {
       enabled: true,

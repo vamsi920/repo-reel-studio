@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat agent vs Devin</title>
+<meta name="description" content="Six chat tasks on flask, hono and ky, asked of NeoDevEx and Devin: explain the code, then write tests that must catch real bugs. What we lagged on, what we fixed, and the numbers before and after.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .sc-row.five { grid-template-columns: minmax(170px, 1.2fr) repeat(3, minmax(110px, 1fr)) minmax(110px, 0.8fr); }
+  .sc-row.eight { grid-template-columns: minmax(150px, 1.3fr) repeat(7, minmax(70px, 1fr)); }
+  .sc-row .cellnote { font: 400 0.9rem/1.45 var(--body); }
+  .sc-row .cellnote b { font: 600 0.82rem var(--display); display: block; margin-bottom: 2px; }
+  .num { font: 600 0.95rem var(--mono); }
+  .pass { color: var(--v-correct); }
+  .fail { color: var(--v-wrong); }
+  .part { color: var(--v-partial); }
+  .na { color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .incidents { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .incidents li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+  .incidents li .tag { font: 600 0.72rem var(--mono); margin-right: 8px; }
+  .incidents li .tag.fixed { color: var(--v-correct); }
+  .incidents li .tag.open { color: var(--v-wrong); }
+  .incidents li .tag.vendor { color: var(--devin); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  .rules { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 18px; font: 400 0.88rem/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+  @media (max-width: 860px) {
+    .sc-row.five { grid-template-columns: 1fr 1fr; }
+    .sc-row.five .sc-metric, .sc-row.five .sc-call { grid-column: 1 / -1; }
+    .sc-row.eight { min-width: 720px; }
+    .two-col, .stat-strip { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) { .two-col, .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Chat agent · October 2026</p>
+    <h1 id="summary-h">Our chat agent now matches Devin on code questions and tests, for 45% less.</h1>
+    <p class="lede">We gave our chat agent and Devin the same six tasks on three open-source codebases: explain how some code works, or write tests for it. We checked every answer against the code, because developers only trust an assistant that does not guess.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>98%</b><span>of facts right in our explanations, up from 27% (Devin 94%)</span></li>
+      <li><b>18 / 18</b><span>of our test runs caught every bug we planted (Devin 2 / 2)</span></li>
+      <li><b>$0.21</b><span>our cost per task (Devin $0.38)</span></li>
+      <li><b>59%</b><span>less AI usage (what AI providers bill us for) per task</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>At first our agent answered from memory and made things up.</li>
+      <li>Short standing instructions to read and quote the real code, plus Google's newer Gemini 4 Argon AI model, fixed that.</li>
+      <li>Its tests now pass on the real code and fail when we break it.</li>
+      <li>Reading less and writing shorter notes cut cost from $0.44 to $0.21 a task, with no loss in accuracy.</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>Devin is faster: 78 seconds per task against our 129.</li>
+      <li>Graded by hand instead of by AI, Devin's explanations score 100%, slightly ahead of our 98%.</li>
+      <li>The AI model's price doubles on 1 December, putting our cost near $0.42 a task, about Devin's.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> We now match Devin on quality and cost less today. Speed and the coming price rise are the gaps to close.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
+  <section class="hero">
+    <p class="eyebrow">Module 03 · Chat agent · 2026-10-12 to 2026-10-13</p>
+    <h1>We asked both chat agents the same questions about real code, <em>then checked every answer against the source.</em></h1>
+    <p class="lede">Six tasks on three open-source repositories (flask, hono, ky) at pinned commits: three "explain how this works" questions and three "write tests for this behaviour" requests. Answers were scored against fact checklists written from the source before any answer was read. Tests counted only if they passed on the real code and failed when we planted a bug. At the start, NeoDevEx answered from memory and wrote tests that missed planted bugs (27% and 56%). We fixed the instructions every conversation starts with, moved the default model to Gemini 4 Argon, and turned on Layman's output compression for it. NeoDevEx now scores 98% on explanations (Devin 94%), and all 18 of its test runs catch every planted bug (Devin 2 of 2). It costs $0.21 a task to Devin's $0.38. Devin is still faster: 78 s of its own "worked" time against our 129 s median wall-clock.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>98%</b><span>NeoDevEx explain accuracy, up from 27% (Devin 94%)</span></div>
+      <div class="stat"><b>18 / 18</b><span>NeoDevEx test runs catching every planted bug (Devin 2 / 2)</span></div>
+      <div class="stat"><b>$0.21</b><span>NeoDevEx cost per task (Devin $0.38, 45% more)</span></div>
+      <div class="stat"><b>−59%</b><span>tokens per task from Layman and lean reading, same model, same accuracy</span></div>
+    </div>
+  </section>
+
+  <section id="tasks" aria-labelledby="tasks-h">
+    <h2 id="tasks-h">Task by task</h2>
+    <p class="section-lede">Explain score = facts stated correctly minus wrong claims, over the checklist size (floored at 0). Test score = planted bugs caught out of 3, or 0 if the test fails on the real code. "At start" is NeoDevEx with no working rules on Gemini 2.5 Flash, 2 runs per task. "Now" is the shipped setup, Gemini 4 Argon with the working rules and Layman output style, 3 runs per task, with mean cost and time. Devin ran each task once on its own model.</p>
+    <div class="scorecard" role="table" aria-label="Per-task results">
+      <div class="sc-row five head" role="row"><span class="sc-metric" role="columnheader">Task</span><span role="columnheader">Devin</span><span role="columnheader">NeoDevEx at start</span><span role="columnheader">NeoDevEx now</span><span role="columnheader">Call</span></div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">F1 · Flask: an unhandled view exception, WSGI call to response<small>Methods and order, the got_request_exception signal, after_request, teardown.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">100%</b>Every fact with line ranges; ran a script to confirm the order. $0.40, 87 s.</span>
+        <span class="cellnote" role="cell"><b class="fail">9%</b>Answered from memory in 2–3 calls: a separate RequestContext, the signal in the wrong method, after_request "skipped". All wrong for this version.</span>
+        <span class="cellnote" role="cell"><b class="pass">94%</b>Every step in order with path:line. Each run left out part of the teardown detail (reverse order, errors collected). $0.25, 132 s.</span>
+        <span class="sc-call lose" role="cell">Devin slightly ahead</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">H1 · Hono: how the default router picks a router<small>Adding routes, first request, fallback, after choosing, late adds.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">100%</b>Complete, with the exact fallback conditions and the late-add error text. $0.35, 58 s.</span>
+        <span class="cellnote" role="cell"><b class="fail">39%</b>One run said routes go to every router as they are added and fallback happens on a missed match. Both wrong.</span>
+        <span class="cellnote" role="cell"><b class="pass">100%</b>All three runs complete, with the exact error text. $0.15, 76 s.</span>
+        <span class="sc-call tie" role="cell">Tie</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">K1 · ky: when to retry and how long to wait<small>Retry-After formats and fallback headers, maxRetryAfter, backoffLimit, jitter, special status codes.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">83%</b>Complete, including the timestamp threshold. The judge marked one fallback detail wrong; our hand grade gave 100%. $0.38, 52 s.</span>
+        <span class="cellnote" role="cell"><b class="fail">33%</b>One run did not open the code ("tool limitations") and invented an X-Retry-After header.</span>
+        <span class="cellnote" role="cell"><b class="pass">100%</b>All five headers in order, every format, the clamp, the 413 rule. $0.17, 90 s.</span>
+        <span class="sc-call win" role="cell">NeoDevEx ahead</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">F2 · Flask: tests for teardown order and error collection<small>Reverse order, each teardown gets the exception, a failing teardown does not stop the rest.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">3 / 3</b>Caught every planted bug. $0.38, 104 s.</span>
+        <span class="cellnote" role="cell"><b class="part">2 / 3</b>Missed "teardown receives None". One run deleted <code>uv.lock</code>.</span>
+        <span class="cellnote" role="cell"><b class="pass">3 / 3</b>All three runs, including the Python 3.11 ExceptionGroup path. $0.25, 160 s.</span>
+        <span class="sc-call tie" role="cell">Tie</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">H2 · Hono: tests for router fallback<small>RegExpRouter by default, TrieRouter fallback, late add throws.</small></span>
+        <span class="cellnote" role="cell"><b class="na">Not run</b>Devin credit ran out (about $0.26 left, below one test session).</span>
+        <span class="cellnote" role="cell"><b class="part">1.5 / 3</b>Missed the fallback and the name change.</span>
+        <span class="cellnote" role="cell"><b class="pass">3 / 3</b>All three runs. $0.30, 212 s.</span>
+        <span class="sc-call " role="cell">No comparison</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">K2 · ky: tests for Retry-After<small>Past HTTP date, clamp to maxRetryAfter, RateLimit-Reset fallback.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">3 / 3</b>Caught every planted bug. $0.37, 91 s.</span>
+        <span class="cellnote" role="cell"><b class="part">1.5 / 3</b>One run edited ky's own source (<code>source/core/Ky.ts</code>) and its test failed on the real code.</span>
+        <span class="cellnote" role="cell"><b class="pass">3 / 3</b>All three runs. $0.13, 120 s.</span>
+        <span class="sc-call tie" role="cell">Tie, NeoDevEx cheaper</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="rounds" aria-labelledby="rounds-h">
+    <h2 id="rounds-h">Round by round</h2>
+    <p class="section-lede">Each round changed one thing and re-ran all six tasks. "Passes real code" and "In scope" (nothing changed except the requested file) count test runs. Cost and time are means per task.</p>
+    <div class="scroll">
+    <div class="scorecard" role="table" aria-label="Results per round">
+      <div class="sc-row eight head" role="row"><span class="sc-metric" role="columnheader">Variant</span><span role="columnheader">Explain</span><span role="columnheader">Tests</span><span role="columnheader">Passes real code</span><span role="columnheader">In scope</span><span role="columnheader">Cost</span><span role="columnheader">Time</span><span role="columnheader">Runs</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Devin<small>its own model</small></span><span class="num pass" role="cell">94%</span><span class="num pass" role="cell">100%</span><span class="num" role="cell">2 / 2</span><span class="num" role="cell">2 / 2</span><span class="num" role="cell">$0.38</span><span class="num" role="cell">78 s*</span><span class="num" role="cell">5</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">At start<small>2.5 Flash, no rules</small></span><span class="num fail" role="cell">27%</span><span class="num part" role="cell">56%</span><span class="num" role="cell">5 / 6</span><span class="num" role="cell">4 / 6</span><span class="num" role="cell">$0.13</span><span class="num" role="cell">177 s</span><span class="num" role="cell">12</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 1<small>2.5 Flash; read the code, cite, prove the test</small></span><span class="num part" role="cell">74%</span><span class="num fail" role="cell">44%</span><span class="num" role="cell">3 / 6</span><span class="num" role="cell">3 / 6</span><span class="num" role="cell">$0.11</span><span class="num" role="cell">146 s</span><span class="num" role="cell">12</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 2<small>2.5 Flash; + use the project's own environment</small></span><span class="num part" role="cell">61%</span><span class="num part" role="cell">67%</span><span class="num" role="cell">2 / 3</span><span class="num" role="cell">3 / 3</span><span class="num" role="cell">$0.04</span><span class="num" role="cell">55 s</span><span class="num" role="cell">6</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 3<small>2.5 Flash; + always write the file, clean up, re-run</small></span><span class="num pass" role="cell">83%</span><span class="num pass" role="cell">81%</span><span class="num" role="cell">8 / 9</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">$0.06</span><span class="num" role="cell">88 s</span><span class="num" role="cell">18</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 1 and 2 on 2.5 Pro<small>a bigger model of the same generation</small></span><span class="num fail" role="cell">25–49%</span><span class="num fail" role="cell">0–22%</span><span class="num" role="cell">2 / 9</span><span class="num" role="cell">5 / 9</span><span class="num" role="cell">$0.29–0.41</span><span class="num" role="cell">113–160 s</span><span class="num" role="cell">18</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 3 on Gemini 4 Argon<small>new default model</small></span><span class="num pass" role="cell">96%</span><span class="num pass" role="cell">100%</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">$0.44</span><span class="num" role="cell">342 s</span><span class="num" role="cell">18</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 4<small>Argon; + read only the lines you need</small></span><span class="num pass" role="cell">96%</span><span class="num pass" role="cell">100%</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">$0.32</span><span class="num" role="cell">209 s</span><span class="num" role="cell">18</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">+ Layman output style<small>Argon; terse narration, full answers</small></span><span class="num pass" role="cell">99%</span><span class="num pass" role="cell">100%</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">$0.26</span><span class="num" role="cell">176 s</span><span class="num" role="cell">18</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">+ medium thinking (shipped)<small>Argon; SDK default is high</small></span><span class="num pass" role="cell">98%</span><span class="num pass" role="cell">100%</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">9 / 9</span><span class="num" role="cell">$0.21</span><span class="num" role="cell">132 s</span><span class="num" role="cell">18</span></div>
+    </div>
+    </div>
+    <p class="section-lede">* Devin's own "worked for" time; NeoDevEx times are wall-clock for the whole run. One Argon "Rules 3" run took 48 minutes over 24 model calls, which drags that row's mean (median 183 s). Before the switch we also probed Gemini 3.8 Flash, 3.1 Pro and pro-latest on F1 and K2: all scored 88–100% and 3 / 3, at similar cost to Argon.</p>
+  </section>
+
+  <section id="tokens" aria-labelledby="tokens-h">
+    <h2 id="tokens-h">Where the tokens went</h2>
+    <p class="section-lede">Same model (Gemini 4 Argon), same tasks, same accuracy. Means per task over 18 runs. Layman's input compression (skills index, delivery contract, runtime block) was already on; on Argon that fixed prefix is cached and costs $0.10 per million tokens, so the savings had to come from what changes on every call: what the agent reads, writes and thinks.</p>
+    <div class="scroll">
+    <div class="scorecard" role="table" aria-label="Tokens per task">
+      <div class="sc-row eight head" role="row"><span class="sc-metric" role="columnheader">Variant</span><span role="columnheader">Input</span><span role="columnheader">Uncached input</span><span role="columnheader">Output</span><span role="columnheader">Thinking</span><span role="columnheader">Calls</span><span role="columnheader">Cost</span><span role="columnheader">vs start</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">Rules 3<small>reads whole files</small></span><span class="num" role="cell">859k</span><span class="num" role="cell">108k</span><span class="num" role="cell">14.5k</span><span class="num" role="cell">6.8k</span><span class="num" role="cell">14.8</span><span class="num" role="cell">$0.44</span><span class="num" role="cell">–</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">+ read only needed lines<small>Rules 4</small></span><span class="num" role="cell">555k</span><span class="num" role="cell">71k</span><span class="num" role="cell">12.8k</span><span class="num" role="cell">5.9k</span><span class="num" role="cell">14.1</span><span class="num" role="cell">$0.32</span><span class="num pass" role="cell">−27%</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">+ Layman output style<small>caveman narration</small></span><span class="num" role="cell">454k</span><span class="num" role="cell">61k</span><span class="num" role="cell">9.6k</span><span class="num" role="cell">3.3k</span><span class="num" role="cell">13.1</span><span class="num" role="cell">$0.26</span><span class="num pass" role="cell">−41%</span></div>
+      <div class="sc-row eight" role="row"><span class="sc-metric" role="cell">+ medium thinking<small>shipped</small></span><span class="num" role="cell">349k</span><span class="num" role="cell">53k</span><span class="num" role="cell">7.1k</span><span class="num" role="cell">1.6k</span><span class="num" role="cell">11.2</span><span class="num" role="cell">$0.21</span><span class="num pass" role="cell">−52%</span></div>
+    </div>
+    </div>
+    <div class="two-col">
+      <div>
+        <h3>Why it works</h3>
+        <ul class="caveats">
+          <li><b>Reading.</b> Every file the agent prints is resent on every later call. Printing flask's 1,625-line <code>app.py</code> once added about 70k tokens to each call after it. Locating with <code>grep -n</code> and viewing line ranges cut input 35%.</li>
+          <li><b>Writing.</b> Layman's caveman style drops preamble, plan narration and restated tool output between calls, but never code, tests, commands or the final answer's facts. Output fell 25%, and the shorter history shrank later inputs too.</li>
+          <li><b>Thinking.</b> With terse narration, medium thinking was enough: thinking tokens fell another 52% with no accuracy change.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Where Layman does not help</h3>
+        <ul class="caveats">
+          <li>On Gemini 2.5 Flash an output-brevity directive lowered task success (token study, rounds 1–2). The app only sends the output style to frontier-tier models, and medium thinking only to Gemini frontier models, where it was measured.</li>
+          <li>Compressing the fixed prompt further saves little on Argon: it is cached after the first call.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="gaps" aria-labelledby="gaps-h">
+    <h2 id="gaps-h">Where we lagged, and what we changed</h2>
+    <div class="two-col">
+      <div>
+        <h3>Gaps the study found</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span><b>Answering from memory.</b> On the Flask question the base agent made 2–3 calls and described an older Flask: a RequestContext that no longer exists, the signal in the wrong method, after_request "typically skipped". Devin opened every function and ran a script.</li>
+          <li><span class="tag fixed">fixed</span><b>Not opening the code at all.</b> One ky answer said it could not inspect the files "due to tool limitations" and invented a header.</li>
+          <li><span class="tag fixed">fixed</span><b>Tests that don't catch bugs.</b> Base tests passed, but missed 1–2 of 3 planted bugs: they checked that something ran, not the order or the arguments.</li>
+          <li><span class="tag fixed">fixed</span><b>Wrong environment.</b> Rules 1 runs created new virtualenvs, ran tox with a newer pytest, or ran <code>npm install</code>, then "fixed" the resulting failures by editing <code>conftest.py</code> or <code>package.json</code>.</li>
+          <li><span class="tag fixed">fixed</span><b>Tests that only pass on the agent's own edits.</b> The test passed in the agent's tree but failed on a clean checkout, because it relied on a changed <code>package.json</code>, conftest, deleted helpers or even ky's source.</li>
+          <li><span class="tag fixed">fixed</span><b>No file at the end.</b> One run spent its budget and never wrote the requested test file.</li>
+          <li><span class="tag fixed">fixed</span><b>Model generation.</b> Gemini 2.5 Flash still made version mistakes with every rule in place (a RequestContext that no longer exists). The default is now Gemini 4 Argon.</li>
+          <li><span class="tag fixed">fixed</span><b>Cost on the stronger model.</b> Argon cost $0.44 a task, more than Devin. Lean reading, Layman output style and medium thinking brought it to $0.21.</li>
+          <li><span class="tag fixed">fixed</span><b>Blank model in Settings.</b> A model missing from the agent-server's model list (Gemini 4 Argon is) showed as an empty field, and saving dropped it. The picker now keeps the current model.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>The fix: working rules on every conversation</h3>
+        <p>A short <code>&lt;WORKING_RULES&gt;</code> block now starts every NeoDevEx conversation's system prompt (<code>src/lib/agent/working-rules.ts</code>). It asks for what Devin did: read the checked-out code, cite path:line, confirm behaviour by running it, use the project's own environment, prove each test fails when the behaviour breaks, and clean up before finishing. It is about 470 tokens. Frontier models also get Layman's output style (about 115 tokens). Both sit in the cached prefix.</p>
+        <div class="rules">Questions: answer from the checked-out files, not memory. Open every function you describe, cite path:line, confirm order by running it.
+Read efficiently: grep -n, then view only the line ranges you need.
+Find how the project runs (ls -a); use its own env. No new virtualenv, tox or npm install; never install this project from a registry.
+Always create the requested file. Never edit other files to make it pass.
+Tests must fail when the behaviour breaks: break the source, see it fail, restore, see it pass. Report real output.
+Before finishing: git status --short, undo anything not asked for, re-run the test on the clean tree.</div>
+        <p class="section-lede">A paraphrase. The exact text is in the source file.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="open" aria-labelledby="open-h">
+    <h2 id="open-h">Where Devin is still ahead</h2>
+    <ul class="caveats">
+      <li><b>Speed.</b> Devin reports 52–104 s of work per task. Our median is 129 s wall-clock (76–212 s by task), including environment discovery and each test's prove-it-fails run.</li>
+      <li><b>Flask teardown detail.</b> F1 is the one explain task where Devin scored higher (100% vs 94%): our answers name the teardown order but not that errors are collected.</li>
+      <li><b>Hosted and always on.</b> Devin runs in its cloud; NeoDevEx runs where it is installed.</li>
+    </ul>
+    <p>Where we are ahead now: explanation accuracy (98% vs 94%), every test run proven against planted bugs (18 / 18), and 45% cheaper per task ($0.21 vs $0.38).</p>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <ul class="method-list">
+      <li>Repositories at pinned commits: pallets/flask <code>258d68b6</code>, honojs/hono <code>24547a6e</code>, sindresorhus/ky <code>e0fcf78</code>, the same three used in the KT docs study. Each run got a fresh copy with dependencies installed.</li>
+      <li>Same prompt on both products. Devin's prompts added the repository and commit to check out, and "do not push or open a pull request" on test tasks.</li>
+      <li>NeoDevEx ran on OpenHands SDK 1.42.1 (the version the app ships). The agent was built from the exact settings the app sends when it starts a conversation, dumped by a test that calls the app's own request builder. Browser tools were off. Gemini 2.5 Flash and 2.5 Pro for the early rounds, Gemini 4 Argon after the default switch.</li>
+      <li>Explain answers were scored by a blind judge (Gemini 2.5 Pro, not told which agent wrote the answer) against fact checklists written from the source before any answer was read. We hand-graded 10 answers first; the judge's scores differed from ours by 0.05 on average.</li>
+      <li>Tests were mutation-graded: run on the real code (must pass), then once against each of 3 planted bugs per task (should fail). A test that fails on the real code scores 0.</li>
+      <li>Costs: Devin from its usage history; NeoDevEx from the SDK's own token and cost metrics, which match Google's list prices on 2026-10-13 (Argon: $2 / $10 / $0.10 per million input / output / cached tokens). Argon's price doubles on 2026-12-01, which would put our cost near $0.42 a task, about Devin's.</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>Small samples: Devin ran each task once, and NeoDevEx 1–3 times per variant. A single run can swing a task's score a lot.</li>
+      <li>Devin's H2 was not run (out of credit), so its test score covers two tasks.</li>
+      <li>The rules were written in response to these six tasks and re-measured on them. They are general (read the code, use the project's environment, prove the test), but a fresh task set would be a stronger test.</li>
+      <li>The judge is a model (Gemini 2.5 Pro). Its K1 score for Devin (83%) is lower than our hand grade (100%). With our hand grade, Devin's explain average is 100%, ahead of our 98%.</li>
+      <li>Devin chose its own model; we compared our model choice against it. The rules, Layman and model changes are what we measured; we cannot separate Devin's model from its agent.</li>
+      <li>NeoDevEx time is wall-clock; Devin's is its own "worked for" figure, which may exclude setup.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/tasks.json">tasks.json<small>The six prompts, repositories and commits.</small></a></li>
+      <li><a href="data/checklists.json">checklists.json<small>Fact checklists and known wrong claims, written from the source.</small></a></li>
+      <li><a href="data/judge-grades.jsonl">judge-grades.jsonl<small>Every explain answer's per-fact score and the wrong claims found.</small></a></li>
+      <li><a href="data/test-grades.json">test-grades.json<small>Every test file: passes on real code, which planted bugs it caught, files changed.</small></a></li>
+      <li><a href="data/summary.json">summary.json<small>The aggregates on this page.</small></a></li>
+      <li><a href="data/devin-sessions.json">devin-sessions.json<small>Devin sessions, worked time and cost.</small></a></li>
+    </ul>
+  </section>
+  </details>
+</main>
+
+<footer class="foot">
+  <p>Devin is a product of Cognition. NeoDevEx is not affiliated with Cognition. Devin was used through the account owner's own subscription. Flask, Hono and ky are their maintainers' open-source projects; we only read and tested them.</p>
+</footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

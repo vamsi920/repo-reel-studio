@@ -91,6 +91,21 @@ describe("host blocking", () => {
     expect(isBlockedHost("[2001:db8::1]", "gitlab-self-managed")).toBe(false);
   });
 
+  // Case study (case-studies/onboarding, "Northwind Bank"): a bank's own
+  // GitLab could not be connected at all. Such a host is checked from the
+  // agent's runtime; the Edge Function still refuses to call it.
+  it.each(["gitlab.northwind.internal", "10.20.0.7", "jira.bank.local"])(
+    "accepts the company-internal host %s for a self-hosted provider",
+    (host) => {
+      const errors = validateConnectorValues(gitlab, {
+        instanceHost: host,
+        accessToken: "token",
+      });
+      expect(errors.instanceHost).toBeUndefined();
+      expect(isBlockedHost(host, "gitlab-self-managed")).toBe(true);
+    },
+  );
+
   it("still allows an ollama host field through validation", () => {
     const errors = validateConnectorValues(ollama, {
       instanceHost: "localhost:11434",

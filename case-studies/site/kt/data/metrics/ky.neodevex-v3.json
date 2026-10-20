@@ -1,0 +1,15 @@
+{
+ "repo": "ky",
+ "system": "neodevex-v3",
+ "pages": 22,
+ "words": 43435,
+ "citations": 581,
+ "citations_valid": 581,
+ "citation_validity": 1.0,
+ "unique_files_cited": 46,
+ "inline_citations": 265,
+ "mermaid_diagrams": 47,
+ "links_pinned_to_commit": 581,
+ "error_pages": 0,
+ "invalid_examples": []
+}

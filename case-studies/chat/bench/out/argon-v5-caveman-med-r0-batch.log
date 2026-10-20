@@ -1,0 +1,176 @@
+[10/13/26 14:34:28] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:34:28] INFO     Created new conversation               state.py:577
+                             d25c3454-dc47-4a2f-8460-1f31c993a388               
+[10/13/26 14:34:28] INFO     Registered file-based agent         registry.py:328
+                             'neo-explorer' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             explorer.md                                        
+[10/13/26 14:34:28] INFO     Registered file-based agent         registry.py:328
+                             'neo-implementer' from                             
+                             /Users/vamsi/.openhands/agents/neo-                
+                             implementer.md                                     
+[10/13/26 14:34:28] INFO     Registered file-based agent         registry.py:328
+                             'neo-planner' from                                 
+                             /Users/vamsi/.openhands/agents/neo-                
+                             planner.md                                         
+[10/13/26 14:34:28] INFO     Registered file-based agent         registry.py:328
+                             'neo-researcher' from                              
+                             /Users/vamsi/.openhands/agents/neo-                
+                             researcher.md                                      
+[10/13/26 14:34:28] INFO     Registered file-based agent         registry.py:328
+                             'neo-verifier' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             verifier.md                                        
+[10/13/26 14:34:28] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:34:28] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-F1-cm3n8o9i                       
+[10/13/26 14:34:28] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:34:28] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:34:29] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-F1-cm3n8o9i, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:34:29] INFO     Loaded 4 tools from spec                base.py:563
+F1 argon-v5-caveman-med rep0 calls=10 in=349746 out=10747 $0.2492 129.4s test_file=no
+[10/13/26 14:36:38] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:36:39] INFO     Created new conversation               state.py:577
+                             aec36f7d-dd2f-4542-9a8b-02a5e398f9bc               
+[10/13/26 14:36:39] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-F2-ov4686bl                       
+[10/13/26 14:36:39] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:36:39] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:36:39] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:36:40] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-F2-ov4686bl, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:36:40] INFO     Loaded 4 tools from spec                base.py:563
+F2 argon-v5-caveman-med rep0 calls=13 in=378020 out=6883 $0.2202 137.7s test_file=yes
+[10/13/26 14:39:23] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:39:23] INFO     Created new conversation               state.py:577
+                             4f94f57e-e629-4928-8100-bff1f68494b8               
+[10/13/26 14:39:23] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:39:23] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-H1-0oa4tx00                       
+[10/13/26 14:39:23] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:39:23] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:39:24] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-H1-0oa4tx00, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:39:24] INFO     Loaded 4 tools from spec                base.py:563
+H1 argon-v5-caveman-med rep0 calls=7 in=177994 out=4351 $0.1348 68.4s test_file=no
+[10/13/26 14:40:58] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:40:58] INFO     Created new conversation               state.py:577
+                             29d34bef-d03f-4ad3-89e2-dc108521fd13               
+[10/13/26 14:40:59] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:40:59] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-H2-5fqzyneb                       
+[10/13/26 14:40:59] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:40:59] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:41:00] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-H2-5fqzyneb, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:41:00] INFO     Loaded 4 tools from spec                base.py:563
+H2 argon-v5-caveman-med rep0 calls=16 in=413235 out=7632 $0.2288 210.8s test_file=yes
+[10/13/26 14:44:54] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:44:54] INFO     Created new conversation               state.py:577
+                             3e9fc50d-c36e-4f3e-8751-979d9a480e49               
+[10/13/26 14:44:54] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:44:54] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-K1-a63aq31i                       
+[10/13/26 14:44:54] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:44:54] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:44:55] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-K1-a63aq31i, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:44:55] INFO     Loaded 4 tools from spec                base.py:563
+K1 argon-v5-caveman-med rep0 calls=7 in=240219 out=5944 $0.1814 91.4s test_file=no
+[10/13/26 14:46:45] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 14:46:45] INFO     Created new conversation               state.py:577
+                             a9335f48-79fc-41bb-a311-ffa980e73a46               
+[10/13/26 14:46:45] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 14:46:45] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-K2-ubrvkp39                       
+[10/13/26 14:46:45] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 14:46:45] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 14:46:46] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-K2-ubrvkp39, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 14:46:46] INFO     Loaded 4 tools from spec                base.py:563
+K2 argon-v5-caveman-med rep0 calls=8 in=178088 out=6967 $0.1566 159.6s test_file=yes

@@ -8,6 +8,7 @@ import {
   setMcpServerHealth,
 } from "#/api/mcp-health/mcp-health-store";
 import { getMcpServerHealthKey } from "#/utils/mcp-server-health-key";
+import { useModelRoutingStore } from "#/stores/model-routing-store";
 import type { ConnectionRecord } from "#/lib/data-platform/repositories/connections-repository";
 import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
 
@@ -75,6 +76,7 @@ beforeEach(() => {
   state.connections = [];
   state.mcpConfig = {};
   __resetMcpHealthStoreForTests();
+  useModelRoutingStore.setState({ health: {}, profiles: [] });
 });
 
 describe("ConnectionHealthBanner", () => {
@@ -136,6 +138,18 @@ describe("ConnectionHealthBanner", () => {
     );
 
     expect(navigate).toHaveBeenCalledWith("/mcp");
+  });
+
+  it("flags an LLM profile whose key a provider rejected", () => {
+    useModelRoutingStore.setState({
+      profiles: [{ name: "work" } as never],
+    });
+    useModelRoutingStore.getState().markFailure("work", "auth");
+    renderBanner();
+    expect(screen.getByTestId("connection-health-banner")).toHaveAttribute(
+      "data-kind",
+      "llm-auth",
+    );
   });
 
   it("stays dismissed for the session once dismissed", async () => {

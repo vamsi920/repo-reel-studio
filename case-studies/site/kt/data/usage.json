@@ -10,18 +10,28 @@
   "ky": {
    "v2_cost_usd": 1.581,
    "v2_minutes": 4.2,
-   "embedding_cost_usd_estimated": 0.027
+   "embedding_cost_usd_estimated": 0.027,
+   "v3_cost_usd": 2.185,
+   "v3_minutes": 6.5
   },
   "flask": {
    "v2_cost_usd": 1.96,
    "v2_minutes": 6.4,
-   "embedding_cost_usd_estimated": 0.033
+   "embedding_cost_usd_estimated": 0.033,
+   "v3_cost_usd": 4.158,
+   "v3_minutes": 13.7
   },
   "hono": {
    "v2_cost_usd": 2.984,
    "v2_minutes": 8.9,
-   "embedding_cost_usd_estimated": 0.116
+   "embedding_cost_usd_estimated": 0.116,
+   "v3_cost_usd": 6.927,
+   "v3_minutes": 24.9
   }
  },
- "notes": "Generation cost = provider-reported prompt/output/thinking tokens priced at Gemini list prices (2.5 Pro .25/ per 1M, >200k prompt .50/) + estimated embedding tokens at /bin/zsh.15/1M. Baseline runs predate thinking-token metering, so their cost is undercounted and not compared. All three repos ran concurrently with 4 pages in parallel per repo."
+ "notes": "Generation cost = provider-reported prompt/output/thinking tokens priced at Gemini list prices (2.5 Pro .25/ per 1M, >200k prompt .50/) + estimated embedding tokens at /bin/zsh.15/1M. Baseline runs predate thinking-token metering, so their cost is undercounted and not compared. All three repos ran concurrently with 4 pages in parallel per repo. v3 roughly doubles page count and adds a follow-up pass that documents every file no page cited, so it costs about 2x v2 per repository. hono's v3 time includes waiting out Gemini per-minute quota errors (the generator now backs off on 429 instead of writing error pages). v3 Q&A cost per answer was not metered.",
+ "v3_cost": 4.42,
+ "v3_minutes": 15.0,
+ "after_cost": 4.42,
+ "after_minutes": 15.0
 }

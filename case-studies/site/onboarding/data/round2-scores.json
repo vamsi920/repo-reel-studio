@@ -1,0 +1,331 @@
+[
+  {
+    "scenario": "S1-northwind-bank",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 6,
+    "seconds": 392,
+    "completed": false,
+    "humanTurns": 20,
+    "agentMessages": 23,
+    "maxQuestionsInOneMessage": 3,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 11,
+      "open_connection_form": 3,
+      "set_setup_plan": 1,
+      "advance_plan": 1
+    },
+    "factsRecorded": 28,
+    "groundTruthRecall": 0.82,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": true
+      },
+      {
+        "id": "npm-mirror",
+        "hit": true
+      },
+      {
+        "id": "database",
+        "hit": false
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"id\":\"configure-llm\",\"title\":\"configure llm provider\",\"capability\":\"llm\"},{\"id\":\"configure-proxy\",\"title\":\"configure proxy settings\"},{\"title\":\"verify network egress\",\"id\":\"verify-egress\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": false
+      },
+      {
+        "cap": "issue-tracker",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "jira-dc",
+      "azure-openai"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 16,
+    "promptTokens": 5007046,
+    "completionTokens": 3966,
+    "costUsd": 0.3739,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "recorded",
+      "cancelled",
+      "recorded",
+      "recorded",
+      "advanced"
+    ]
+  },
+  {
+    "scenario": "S3-pasted-secret",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 227,
+    "completed": false,
+    "humanTurns": 11,
+    "agentMessages": 10,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 29
+    },
+    "factsRecorded": 34,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "scm-gitlab",
+        "hit": true
+      },
+      {
+        "id": "issue-jira",
+        "hit": true
+      }
+    ],
+    "plan": null,
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 27,
+    "promptTokens": 4785198,
+    "completionTokens": 3128,
+    "costUsd": 0.3348,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded"
+    ]
+  },
+  {
+    "scenario": "S4-correction",
+    "toldYouAlready": 0,
+    "fakeReceipts": 5,
+    "verifiedProviders": [],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 1,
+    "seconds": 221,
+    "completed": false,
+    "humanTurns": 13,
+    "agentMessages": 12,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 13,
+      "assign_task": 5
+    },
+    "factsRecorded": 17,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "stack-python",
+        "hit": true
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      }
+    ],
+    "plan": null,
+    "planIncludes": [
+      {
+        "cap": "issue-tracker",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 18,
+    "promptTokens": 3831244,
+    "completionTokens": 3646,
+    "costUsd": 0.2277,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "assigned",
+      "recorded",
+      "assigned",
+      "recorded",
+      "assigned",
+      "recorded",
+      "assigned",
+      "recorded",
+      "recorded",
+      "assigned",
+      "recorded"
+    ]
+  },
+  {
+    "scenario": "S5-return-visit",
+    "toldYouAlready": 1,
+    "fakeReceipts": 0,
+    "verifiedProviders": [],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 154,
+    "completed": false,
+    "humanTurns": 7,
+    "agentMessages": 6,
+    "maxQuestionsInOneMessage": 5,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 2,
+      "record_discovery": 11
+    },
+    "factsRecorded": 29,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "remembers-gitlab",
+        "hit": true
+      },
+      {
+        "id": "remembers-proxy",
+        "hit": true
+      }
+    ],
+    "plan": null,
+    "planIncludes": [],
+    "connectionAttempts": [],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 13,
+    "promptTokens": 2206848,
+    "completionTokens": 2413,
+    "costUsd": 0.1765,
+    "receiptStatuses": [
+      "ok",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded"
+    ]
+  }
+]

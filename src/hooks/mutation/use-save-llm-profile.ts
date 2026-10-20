@@ -7,6 +7,7 @@ import {
   LLM_PROFILES_QUERY_KEYS,
   SETTINGS_QUERY_KEYS,
 } from "#/hooks/query/query-keys";
+import { useModelRoutingStore } from "#/stores/model-routing-store";
 
 interface SaveLlmProfileVariables {
   name: string;
@@ -19,7 +20,11 @@ export function useSaveLlmProfile() {
   return useMutation({
     mutationFn: ({ name, request }: SaveLlmProfileVariables) =>
       ProfilesService.saveProfile(name, request),
-    onSuccess: async () => {
+    onSuccess: async (_data, { name }) => {
+      // A saved profile may carry a new key: clear any "key rejected" verdict
+      // so the app-wide banner and Auto routing give it another chance. The
+      // next real failure marks it again.
+      useModelRoutingStore.getState().resetHealth(name);
       // Invalidate SettingsService internal cache to ensure fresh settings
       // for new conversations (especially if saving the active profile)
       SettingsService.invalidateCache();

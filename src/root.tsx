@@ -50,6 +50,7 @@ import { buildAgentCanvasPath } from "#/utils/base-path";
 import { isDesktopApp } from "#/utils/utils";
 import { useOnboardingCompletion } from "#/components/features/onboarding/use-onboarding-completion";
 import { useSeedGeminiDefaultProfile } from "#/hooks/use-seed-gemini-default-profile";
+import { useModelRoutingSync } from "#/hooks/use-model-routing-sync";
 import { NavigationProvider } from "#/context/navigation-context";
 import {
   applyColorTheme,
@@ -349,6 +350,9 @@ export default function App() {
   // out): seed a default Gemini profile from VITE_GEMINI_API_KEY so a real
   // LLM is active before/regardless of the onboarding wizard's own choices.
   useSeedGeminiDefaultProfile();
+  // Model routing (Auto mode) reads profiles/preferences from a store
+  // snapshot so the WebSocket fallback path and KT calls can route too.
+  useModelRoutingSync();
 
   // In locked-to-Cloud mode the `openhands-onboarded` localStorage flag is
   // not trustworthy: it may have been set during a previous non-locked

@@ -109,6 +109,9 @@ test-results-auth/
 .stryker-tmp/
 reports/
 
+# Onboarding agent case study: isolated stack state (case-studies/onboarding)
+.tmp/onboarding-study/
+
 # Electron desktop build inputs/outputs (downloaded by scripts/download-{uv,node}.mjs, packaged by electron-builder)
 resources/
 dist-electron/

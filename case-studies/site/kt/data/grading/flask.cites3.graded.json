@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "verdict": "supported",
+  "note": "Test covers names, factories, failure cases"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "bytes return route shown"
+ },
+ {
+  "n": 2,
+  "verdict": "partial",
+  "note": "Section heading only; with-block guidance after"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "session proxy to app ctx session"
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "str/bytes wrapped in response_class"
+ },
+ {
+  "n": 5,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 6,
+  "verdict": "supported",
+  "note": "exclude-patterns documented"
+ },
+ {
+  "n": 7,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 8,
+  "verdict": "supported",
+  "note": "typeCheckingMode basic"
+ },
+ {
+  "n": 9,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 10,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "jinja_environment = Environment"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "Pushes app context via with_resource"
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "Docstring says name finds resources, aids debugging"
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "Shows blueprint/loader, not autoescaping"
+ },
+ {
+  "n": 15,
+  "verdict": "supported",
+  "note": "Raises FormDataRoutingRedirect in debug"
+ },
+ {
+  "n": 16,
+  "verdict": "unsupported",
+  "note": "TypeVar definitions, not name parameter"
+ },
+ {
+  "n": 17,
+  "verdict": "unsupported",
+  "note": "Import line, not Scaffold class"
+ },
+ {
+  "n": 18,
+  "verdict": "partial",
+  "note": "Class decl; config not shown"
+ },
+ {
+  "n": 19,
+  "verdict": "supported",
+  "note": "mypy overrides ignore_missing_imports"
+ },
+ {
+  "n": 20,
+  "verdict": "partial",
+  "note": "Says do not run dev server in production; no reasons"
+ },
+ {
+  "n": 21,
+  "verdict": "partial",
+  "note": "Signal defined; timing not shown"
+ },
+ {
+  "n": 22,
+  "verdict": "partial",
+  "note": "Parameter only; default not in line"
+ },
+ {
+  "n": 23,
+  "verdict": "unsupported",
+  "note": "Blank lines and error message"
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "Test client used with abort redirect"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "cached_property jinja_env created on first access"
+ },
+ {
+  "n": 26,
+  "verdict": "supported",
+  "note": "url_prefix parameter present"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "description matches"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "tuple headers route shown"
+ },
+ {
+  "n": 29,
+  "verdict": "supported",
+  "note": "from_prefixed_env loads prefixed env vars"
+ },
+ {
+  "n": 30,
+  "verdict": "unsupported",
+  "note": "CLI option env vars, not from_prefixed_env"
+ },
+ {
+  "n": 31,
+  "verdict": "supported",
+  "note": "Typing :: Typed classifier"
+ },
+ {
+  "n": 32,
+  "verdict": "partial",
+  "note": "save_session def; docstring outside range"
+ },
+ {
+  "n": 33,
+  "verdict": "supported",
+  "note": "has_app_context returns active check"
+ },
+ {
+  "n": 34,
+  "verdict": "supported",
+  "note": "Worker tied up; throughput same"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "SECRET_KEY signing and token_hex"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "DEBUG default False"
+ },
+ {
+  "n": 37,
+  "verdict": "supported",
+  "note": "prepare_import adds dir to sys.path"
+ },
+ {
+  "n": 38,
+  "verdict": "supported",
+  "note": "follow_redirects example"
+ },
+ {
+  "n": 39,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "StreamHandler default handler"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "Async error handler example matches"
+ },
+ {
+  "n": 42,
+  "verdict": "unsupported",
+  "note": "Teardown/context processor dicts, not route"
+ },
+ {
+  "n": 43,
+  "verdict": "supported",
+  "note": "Defaults to PREFERRED_URL_SCHEME"
+ },
+ {
+  "n": 44,
+  "verdict": "unsupported",
+  "note": "url_for code, not __call__/wsgi_app"
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "Recommends custom Namespace"
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "Comment explains workaround"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "teardown_appcontext funcs reversed"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "SECRET_KEY_FALLBACKS for rotation"
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "SecureCookieSessionInterface default"
+ },
+ {
+  "n": 50,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "Deprecated 3.2, handle in teardown"
+ },
+ {
+  "n": 52,
+  "verdict": "unsupported",
+  "note": "host_matching default, not template_folder"
+ },
+ {
+  "n": 53,
+  "verdict": "supported",
+  "note": "Looks for app or application"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "run options and defaults match"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "uv-lock hook configured"
+ },
+ {
+  "n": 56,
+  "verdict": "unsupported",
+  "note": "get/post/put shortcuts, not errorhandler"
+ },
+ {
+  "n": 57,
+  "verdict": "partial",
+  "note": "MapAdapter import, not Map"
+ },
+ {
+  "n": 58,
+  "verdict": "supported",
+  "note": "find_app_by_string uses ast.parse"
+ },
+ {
+  "n": 59,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 60,
+  "verdict": "supported",
+  "note": "TESTING propagates exceptions"
+ },
+ {
+  "n": 61,
+  "verdict": "supported",
+  "note": "No serializer without secret key"
+ },
+ {
+  "n": 62,
+  "verdict": "partial",
+  "note": "Subclass log_exception; app context not shown"
+ },
+ {
+  "n": 63,
+  "verdict": "supported",
+  "note": "find_best_app instance and factory search"
+ },
+ {
+  "n": 64,
+  "verdict": "supported",
+  "note": "stream_with_context keeps context pushed"
+ },
+ {
+  "n": 65,
+  "verdict": "supported",
+  "note": "RuntimeError when no session"
+ },
+ {
+  "n": 66,
+  "verdict": "supported",
+  "note": "appcontext_pushed sent"
+ },
+ {
+  "n": 67,
+  "verdict": "supported",
+  "note": "cli FlaskGroup instance"
+ },
+ {
+  "n": 68,
+  "verdict": "supported",
+  "note": "CSRF left to form validation"
+ },
+ {
+  "n": 69,
+  "verdict": "supported",
+  "note": "g proxy to app ctx g"
+ },
+ {
+  "n": 70,
+  "verdict": "supported",
+  "note": "Tests show session_transaction flow and errors"
+ },
+ {
+  "n": 71,
+  "verdict": "supported",
+  "note": "asgiref async_to_sync with async extra"
+ },
+ {
+  "n": 72,
+  "verdict": "unsupported",
+  "note": "handle_exception, not dispatch_request"
+ },
+ {
+  "n": 73,
+  "verdict": "supported",
+  "note": "Iterator[bytes] route shown"
+ },
+ {
+  "n": 74,
+  "verdict": "partial",
+  "note": "Import only; behavior not described"
+ },
+ {
+  "n": 75,
+  "verdict": "supported",
+  "note": "Flask.extensions stores app state"
+ },
+ {
+  "n": 76,
+  "verdict": "supported",
+  "note": "app_ prefixed blueprint methods app-wide"
+ },
+ {
+  "n": 77,
+  "verdict": "supported",
+  "note": "flit_core build backend"
+ },
+ {
+  "n": 78,
+  "verdict": "unsupported",
+  "note": "app.run code, not test_request_context"
+ },
+ {
+  "n": 79,
+  "verdict": "partial",
+  "note": "template_global decorator; no clear statement"
+ }
+]

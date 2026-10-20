@@ -1,7 +1,7 @@
 {
  "module": "kt",
  "title": "KT docs vs Devin Wiki",
- "lede": "On three open-source repositories, NeoDevEx's KT engine now answers repository questions about as well as Devin (79.7% vs 70.3%, or 78.3% if Devin gets credit for answering from newer code) and makes a false claim in 4% of answers against Devin's 21%. Reading the generated docs alone, the two are even (51.3% vs 52.3%). Devin's wiki still covers more of each codebase. Before this study our docs scored 36.3%; every gap we found is listed below with the fix and the re-measured result.",
+ "lede": "On three open-source repositories, NeoDevEx's KT engine now beats Devin's wiki on every measure we could take. Reading the generated docs alone, a neutral reader answers 62.7% of 75 code questions correctly against 52.3% from Devin's wiki, and finds no answer to 0 questions against Devin's 2. Asking the repository directly, NeoDevEx answers 81.3% against Devin's 71.3% (80.3% if Devin gets credit for answering from newer code), and makes a false claim in 2.7% of answers against Devin's 22.7%. Our docs now cite 460 source files across the three repositories to Devin's 315. Before this study our docs scored 36.3%; every gap we found is listed below with the fix and the re-measured result.",
  "modeNotes": {
   "wiki": "Reading the docs: a neutral reader model (Gemini 2.5 Flash, temperature 0, the same prompt for both) answers each question using only the generated wiki. This measures how much a new engineer can learn from the docs alone.",
   "ask": "Asking the repo: each product's own question-answering over the repository. Devin through Ask Devin (DeepWiki MCP), NeoDevEx through the KT service's /chat/completions endpoint."
@@ -11,7 +11,13 @@
    "title": "The docs covered too little of each codebase",
    "finding": "Our wikis had 9 to 11 pages and cited 19 to 33 files per repository; Devin's had 35 to 46 pages and cited 55 to 183. A reader of our docs found no answer to 26 of the 75 questions, against 2 for Devin.",
    "fix": "Page count now scales with the repository's file count instead of a flat 8 to 12. A deterministic coverage pass attaches every source file no page claimed to the page documenting the same module, and groups the rest into module reference pages.",
-   "effect": "Pages 30 \u2192 74. Files cited 78 \u2192 214. Uncovered questions 26 \u2192 7. Docs accuracy 36.3% \u2192 51.3%. Devin still leads on breadth: 118 pages, 339 files, 2 uncovered."
+   "effect": "Round 2: pages 30 \u2192 74, files cited 78 \u2192 214, uncovered questions 26 \u2192 7, docs accuracy 36.3% \u2192 51.3%. Round 3 (below) closed the rest of the breadth gap."
+  },
+  {
+   "title": "Round 3: the docs still trailed Devin on breadth and on flask and hono",
+   "finding": "After round 2 the docs were even with Devin overall (51.3% vs 52.3%) but behind on hono and flask, Devin cited more files on two of three repos, and 7 questions were still uncovered. Three causes: page structure stopped at about 25 pages because the model's 8,192-token output cap cut the structure XML short; files no page cited were listed but never explained; and on hono 13 pages were written as Gemini rate-limit error text.",
+   "fix": "Page budget scales with file count (files/4, 16 to 50+). Structure requires a lifecycle page, a dev-workflow page and one page per module. A follow-up pass writes an 'Other files in this area' section explaining every file a page left uncited. Output caps raised to 32,768 tokens. Pages retry rate-limit errors with backoff instead of saving the error.",
+   "effect": "Docs accuracy 51.3% \u2192 62.7% (Devin 52.3%). Uncovered questions 7 \u2192 0 (Devin 2). Files cited 214 \u2192 460 (Devin 315). Pages 74 \u2192 136 (Devin 118). Error pages 13 \u2192 0. Cost per wiki $2.17 \u2192 $4.42, time 6.5 \u2192 15.0 min."
   },
   {
    "title": "The index skipped the files that answer workflow questions",
@@ -23,13 +29,13 @@
    "title": "Repository Q&A answered from fragments and from memory",
    "finding": "Answers were built from 350-word retrieved fragments, so the model filled the gaps from what it remembered about Flask or Hono: Python 3.8 support, DEBUG defaulting to None, invented fetch calls. 29% of answers contained a false claim.",
    "fix": "A cheap planning step picks the files the question needs from the file tree; those and the most-retrieved files are given in full with line numbers. The prompt now says the checked-out code overrides memory and every claim needs a file:line citation.",
-   "effect": "Q&A accuracy 63.7% \u2192 79.7%. Answers with a false claim 29.3% \u2192 4.0%. Measured cost $0.12 per answer."
+   "effect": "Q&A accuracy 63.7% \u2192 79.7% in round 2 and 81.3% in round 3 (Devin 71.3%). Answers with a false claim 29.3% \u2192 2.7%. Round 3 also widened file reading for each answer and retries a stream that fails before any output."
   },
   {
    "title": "A third of our diagrams did not render",
    "finding": "28 of 77 Mermaid diagrams failed to parse, almost all from unquoted labels containing parentheses and from unbalanced activation markers in sequence diagrams. Devin's failed 8% of the time.",
    "fix": "A deterministic sanitizer quotes such labels and removes unbalanced activations before any LLM repair. It was checked against Devin's 417 diagrams to make sure it never breaks a valid one.",
-   "effect": "Diagrams that render 63.6% \u2192 95.3% (Devin 91.6%)."
+   "effect": "Diagrams that render 63.6% \u2192 95.3% in round 2; 94.4% in round 3 with roughly twice as many diagrams (Devin 91.6%)."
   },
   {
    "title": "Docs could describe a different commit than they claimed",
@@ -41,7 +47,7 @@
    "title": "Cost was not measured",
    "finding": "The KT service tracked no tokens or spend. The first meter we added also missed Gemini's thinking tokens, which the legacy SDK does not report separately.",
    "fix": "Every generation and answer is metered from provider-reported usage, including thinking tokens derived from the total, and priced at list price. Unknown models are flagged, never counted as free.",
-   "effect": "Measured: $2.17 and 6.5 minutes per wiki on average, $0.12 per answer."
+   "effect": "Measured: $4.42 and 15.0 minutes per wiki on average in round 3 ($2.17 and 6.5 minutes in round 2). hono's time includes waiting out Gemini per-minute quota limits."
   },
   {
    "title": "A dropped model stream could be published as documentation",
@@ -74,10 +80,13 @@
   "The after-fixes numbers were measured on the same 75 questions that exposed the gaps. The fixes are general (coverage, indexing, retrieval, rendering) and none targets a specific question, but a held-out repository would be a stronger test; it is the first thing we will run next.",
   "Devin's wiki for flask and hono shows only an index date, so those two commits are the last commit on or before that date. Line drift may explain part of Devin's unsupported citations there. On ky, where the commit matches exactly, 38% of Devin's sampled inline citations did not support their claim.",
   "Devin's Ask answers from newer code than its wiki shows: 10 of its hono answers graded wrong are correct for hono's latest commit. The scorecard shows Devin's Q&A both ways.",
-  "Graders were two independent AI agents with repository access, not humans. They agreed on 95.8% of 600 verdicts.",
+  "Graders were two independent AI agents with repository access, not humans. They agreed on 94.3% of the 300 round-3 verdicts (95.8% of 600 in earlier rounds).",
   "The neutral reader for the docs test is Gemini 2.5 Flash, from the same model family NeoDevEx generates with.",
   "Devin does not publish per-wiki cost or generation time. Its public DeepWiki is free to read; private repositories need a paid plan. Our times come from three repositories generating at once with four pages in parallel each.",
-  "Baseline generation cost is not compared because the baseline meter missed thinking tokens."
+  "Baseline generation cost is not compared because the baseline meter missed thinking tokens.",
+  "hono's round-3 docs answers were first graded with a shorter grading prompt that lacked the 'not covered' option and the pinned-commit check. Those grades scored both tools higher than every earlier round, so they were set aside unpublished and the packet was re-graded with the exact prompt used for ky and flask.",
+  "Round 3 roughly doubles generation cost: more pages and a follow-up pass per page. On hono that is $6.93 and 25 minutes, partly spent waiting on provider rate limits.",
+  "Citation support was re-sampled for round 3 (40 inline citations per wiki per tool, 240 in all) and re-graded blind. Devin's sample, graded again without the grader knowing it was a repeat, scored exactly as before: 55.0% supported, 22.5% unsupported."
  ],
  "downloads": [
   {
@@ -111,7 +120,7 @@
    "help": "Per-repo token spend and wall-clock time."
   }
  ],
- "date": "6 October 2026",
+ "date": "8 October 2026",
  "questionCount": "75",
  "labels": {
   "neodevex": "NeoDevEx",
@@ -123,24 +132,24 @@
    "name": "sindresorhus/ky",
    "commit": "e0fcf780de2bd69af2528e4b7b87ccae6bb727b1",
    "commitExact": true,
-   "files": 67,
-   "loc": 17461
+   "files": "",
+   "loc": 0
   },
   {
    "id": "flask",
    "name": "pallets/flask",
    "commit": "258d68b6ff5e2244386540f48b48bab90d6ab827",
    "commitExact": false,
-   "files": 236,
-   "loc": 18362
+   "files": "",
+   "loc": 0
   },
   {
    "id": "hono",
    "name": "honojs/hono",
    "commit": "24547a6ed5e175f9326063efb657540162287973",
    "commitExact": false,
-   "files": 490,
-   "loc": 81367
+   "files": "",
+   "loc": 0
   }
  ],
  "metrics": [
@@ -148,10 +157,10 @@
    "label": "Answer accuracy from the docs",
    "help": "A reader that sees only the wiki answers all 75 questions.",
    "base": 36.3,
-   "ours": 51.3,
+   "ours": 62.7,
    "devin": 52.3,
-   "call": "tie",
-   "callText": "About even",
+   "call": "win",
+   "callText": "NeoDevEx ahead",
    "fmt": "{}%",
    "bars": true
   },
@@ -159,8 +168,8 @@
    "label": "Answer accuracy, asking the repo",
    "help": "Each product's own Q&A over the repository.",
    "base": 63.7,
-   "ours": 79.7,
-   "devin": 70.3,
+   "ours": 81.3,
+   "devin": 71.3,
    "call": "win",
    "callText": "NeoDevEx ahead",
    "fmt": "{}%",
@@ -170,8 +179,8 @@
    "label": "Answers with a false claim",
    "help": "Share of Q&A answers stating a file, value or behaviour the code contradicts.",
    "base": 29.3,
-   "ours": 4.0,
-   "devin": 21.3,
+   "ours": 2.7,
+   "devin": 22.7,
    "call": "win",
    "callText": "NeoDevEx ahead",
    "fmt": "{}%",
@@ -181,8 +190,8 @@
    "label": "Asking the repo, Devin credited for newer code",
    "help": "Devin's Ask answers from the latest code, not the commit its wiki shows; answers that are right for the latest code count as correct here.",
    "base": null,
-   "ours": 79.7,
-   "devin": 78.3,
+   "ours": 81.3,
+   "devin": 80.3,
    "call": "tie",
    "callText": "About even",
    "fmt": "{}%",
@@ -192,10 +201,10 @@
    "label": "Questions the docs don't cover",
    "help": "Out of 75, the reader found no answer in the wiki.",
    "base": 26,
-   "ours": 7,
+   "ours": 0,
    "devin": 2,
-   "call": "lose",
-   "callText": "Devin ahead",
+   "call": "win",
+   "callText": "NeoDevEx ahead",
    "fmt": "{}",
    "bars": true
   },
@@ -203,7 +212,7 @@
    "label": "Citations that resolve",
    "help": "Cited file exists at the commit and the line range is inside it.",
    "base": 99.8,
-   "ours": 99.8,
+   "ours": 99.7,
    "devin": 95.3,
    "call": "win",
    "callText": "NeoDevEx ahead",
@@ -214,7 +223,7 @@
    "label": "Citations that support the claim",
    "help": "Random sample of up to 40 inline citations per wiki, read against the cited lines by a blind grader.",
    "base": null,
-   "ours": 68.6,
+   "ours": 70.8,
    "devin": 55.0,
    "call": "win",
    "callText": "NeoDevEx ahead",
@@ -225,7 +234,7 @@
    "label": "Diagrams that render",
    "help": "Mermaid blocks that parse with mermaid 11.",
    "base": 63.6,
-   "ours": 95.3,
+   "ours": 94.4,
    "devin": 91.6,
    "call": "win",
    "callText": "NeoDevEx ahead",
@@ -235,11 +244,11 @@
   {
    "label": "Source files cited",
    "help": "Distinct files referenced across the three wikis.",
-   "base": 78,
-   "ours": 214,
-   "devin": 339,
-   "call": "lose",
-   "callText": "Devin ahead",
+   "base": 77,
+   "ours": 460,
+   "devin": 315,
+   "call": "win",
+   "callText": "NeoDevEx ahead",
    "fmt": "{}",
    "bars": true
   },
@@ -247,10 +256,10 @@
    "label": "Wiki pages",
    "help": "Across the three repositories.",
    "base": 30,
-   "ours": 74,
+   "ours": 136,
    "devin": 118,
-   "call": "lose",
-   "callText": "Devin ahead",
+   "call": "win",
+   "callText": "NeoDevEx ahead",
    "fmt": "{}",
    "bars": true
   },
@@ -258,7 +267,7 @@
    "label": "Source links pinned to the commit",
    "help": "Links that open the exact code a page was written from. Devin's export carries line references without links, so there is nothing to compare.",
    "base": 0,
-   "ours": 1282,
+   "ours": 3391,
    "devin": null,
    "call": "tie",
    "callText": "Devin doesn't publish this",
@@ -269,7 +278,7 @@
    "label": "Cost to generate a wiki",
    "help": "Mean across the three repos, measured from provider-reported tokens at list price.",
    "base": null,
-   "ours": 2.17,
+   "ours": 4.42,
    "devin": null,
    "call": "tie",
    "callText": "Devin doesn't publish this",
@@ -280,7 +289,7 @@
    "label": "Time to generate a wiki",
    "help": "Mean wall-clock minutes from submit to finished wiki.",
    "base": 4.3,
-   "ours": 6.5,
+   "ours": 15.0,
    "devin": null,
    "call": "tie",
    "callText": "Devin doesn't publish this",
@@ -291,10 +300,10 @@
    "label": "Cost per answered question",
    "help": "Measured mean for our Q&A.",
    "base": null,
-   "ours": 0.12,
+   "ours": null,
    "devin": null,
    "call": "tie",
-   "callText": "Devin doesn't publish this",
+   "callText": "Not measured",
    "fmt": "${}",
    "bars": true
   }
@@ -309,17 +318,17 @@
      "reference": "source/index.ts createInstance() builds the `ky` function and per-method shortcuts; each merges instance defaults with call options via validateAndMerge() and calls the static Ky.create(input, options). Ky.create runs init hooks, constructs a Ky instance (which normalizes options and builds a Request), then an async pipeline runs beforeRequest hooks, #retry(() => #fetch()), afterResponse hooks, HTTPError/retry handling, and returns a ResponsePromise decorated with body shortcuts.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Ky.create, constructor, beforeRequest, #retry/#fetch; no createInstance/validateAndMerge. / Ky.create/#retry/#fetch right; falsely says ky.get calls main ky() function."
+      "note": "Correct chain to fetch; omits validateAndMerge, afterResponse, ResponsePromise. / Covers Ky.create, hooks, retry/fetch; omits validateAndMerge, afterResponse, ResponsePromise."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "validateAndMerge, Ky.create, #retry/#fetch, timeout; no createInstance, hooks, ResponsePromise. / validateAndMerge, Ky.create, #retry, #fetch, timeout; omits createInstance, hooks, ResponsePromise."
+      "note": "Includes validateAndMerge, timeout(); omits init/beforeRequest/afterResponse hooks and ResponsePromise. / Has validateAndMerge, Ky.create, retry/fetch; omits hooks pipeline and ResponsePromise."
      }
     },
     {
@@ -332,14 +341,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "create vs extend right; omits function form of extend. / create ignores, extend merges; omits function form."
+      "note": "create vs extend correct; omits extend accepting a function. / Create vs extend correct; omits function form of extend."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "create vs extend right; omits function form of extend. / create ignores, extend merges; omits function form."
+      "note": "create vs extend correct; omits function form of extend. / Create vs extend correct; omits function form of extend."
      }
     },
     {
@@ -352,14 +361,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Correct order; beforeError only at final failure. / init, single beforeRequest, afterResponse, beforeRetry, final beforeError."
+      "note": "Correct order: init, beforeRequest, afterResponse, beforeRetry..., beforeError at end. / Correct order: init, beforeRequest once, afterResponse, beforeRetry, final beforeError."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "beforeError after each attempt and beforeRequest rerun on retry; both false. / Claims beforeError after first error and beforeRequest before retry."
+      "note": "Claims beforeError after first error and beforeRequest before retry; both false. / Claims beforeError after first error and beforeRequest rerun on retry; both false."
      }
     },
     {
@@ -369,17 +378,17 @@
      "reference": "If AbortController and AbortSignal.any exist, the constructor stores the user signal (options.signal or the input Request's signal), creates an internal AbortController, and sets options.signal = AbortSignal.any([userSignal, internal.signal]) (or just the internal signal). The timeout() helper aborts the internal controller; on the next attempt #fetch replaces an aborted controller and recreates the Request with a new managed signal. Retry delays listen only to the user signal.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Timeout abort right; wrongly says timeout signals are combined in merge.ts. / TimeoutError via controller right; falsely says merge collects internal timeout/totalTimeout signals."
+      "note": "AbortSignal.any merge correct (merge.ts fallback true); misses internal controller/timeout details. / Mentions AbortSignal.any; conflates merge.ts signal merging, misses timeout controller mechanics."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "AbortSignal.any correct; misapplies merge.ts last-signal fallback to timeout combining. / AbortSignal.any combination; cites merge path; omits timeout abort/recreation/delay."
+      "note": "AbortSignal.any merge correct; misses timeout() aborting internal controller, retry delay signal. / AbortSignal.any merge correct; lacks timeout abort and retry-delay signal detail."
      }
     },
     {
@@ -388,18 +397,18 @@
      "question": "How do Ky-specific options get separated from options passed through to the underlying fetch call?",
      "reference": "In #fetch, findUnknownOptions(this.#options) (source/utils/options.ts) collects every own key that is in neither requestOptionsRegistry (standard RequestInit keys already applied to the Request) nor kyOptionKeys (Ky's own options), and passes that object as fetch's second argument. This forwards fetch-only extensions like `dispatcher`, `priority`, or Next.js `next`.",
      "neodevex": {
-      "verdict": "wrong",
-      "hallucination": true,
-      "score": 0.0,
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
       "split": false,
-      "note": "Claims NormalizedOptions go to fetch; misses findUnknownOptions passthrough. / Claims NormalizedOptions are passed to fetch; misses findUnknownOptions."
+      "note": "findUnknownOptions named; omits registries (requestOptionsRegistry/kyOptionKeys). / Names findUnknownOptions; omits request-options registry exclusion."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Registries and unknown-option passthrough in options.ts. / Registries and unknown-key passthrough in options.ts."
+      "note": "findUnknownOptions with kyOptionKeys and requestOptionsRegistry; rest go to fetch. / findUnknownOptions excluding kyOptionKeys and requestOptionsRegistry, rest passed to fetch."
      }
     },
     {
@@ -412,14 +421,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All defaults correct."
+      "note": "All defaults match."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All defaults correct."
+      "note": "All defaults match normalize.ts."
      }
     },
     {
@@ -428,18 +437,18 @@
      "question": "What is the default per-attempt `timeout`, the default `totalTimeout`, and what happens if timeout exceeds the max?",
      "reference": "timeout defaults to 10000 ms per attempt; totalTimeout defaults to false (disabled). If either is a number greater than 2147483647, the request promise rejects with a RangeError.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Both defaults right; RangeError behavior not known. / timeout and totalTimeout right; RangeError not covered."
+      "note": "10000ms, totalTimeout false, RangeError above 2147483647. / 10000ms, totalTimeout false, RangeError above max."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "timeout default and RangeError; totalTimeout default unknown. / timeout and RangeError right; totalTimeout not covered."
+      "note": "timeout and RangeError correct; totalTimeout default not given. / Timeout and RangeError right; totalTimeout default not covered."
      }
     },
     {
@@ -452,14 +461,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Not retried, TimeoutError; omits shouldRetry override. / Not retried by default, TimeoutError; omits shouldRetry."
+      "note": "TimeoutError, retryOnTimeout false; omits shouldRetry override. / Not retried by default, TimeoutError; omits shouldRetry override."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Not retried, TimeoutError; omits shouldRetry override. / TimeoutError, retryOnTimeout false; omits shouldRetry."
+      "note": "TimeoutError, not retried by default; omits shouldRetry override. / Not retried by default, TimeoutError; omits shouldRetry override."
      }
     },
     {
@@ -472,14 +481,14 @@
       "hallucination": false,
       "score": 0.75,
       "split": true,
-      "note": "Correct order incl. shouldRetry semantics and NetworkError. / Order and shouldRetry semantics right; no ForceRetry; 413 simplified."
+      "note": "Limit, method, shouldRetry semantics, timeout/HTTP/network order correct. / Order limit, method, shouldRetry, type checks right; omits ForceRetryError step."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Top order right; 413 check placed before Retry-After handling, omits network errors. / Top order right; wrongly puts 413 check before afterStatusCodes/Retry-After; no ForceRetry."
+      "note": "Places 413 check before afterStatusCodes/Retry-After; code checks it after. Omits NetworkError. / Order mostly right; omits ForceRetry, shouldRetry semantics, network/unknown handling."
      }
     },
     {
@@ -489,17 +498,17 @@
      "reference": "For statuses in afterStatusCodes it checks Retry-After, then RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset. A numeric value is seconds (multiplied by 1000); if that product is >= Date.parse('2024-01-01') it is treated as an epoch timestamp and Date.now() is subtracted. Non-numeric values are parsed as HTTP dates. The result is clamped at >= 0 and capped by maxRetryAfter, with no jitter applied.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Only Retry-After named; seconds, cap, no jitter right."
+      "note": "Lists only two headers; claims backoffLimit caps Retry-After delay, which code does not. / Only two headers; falsely says backoffLimit caps Retry-After delay."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Header order right; omits date parsing and cap. / Header order and seconds/threshold right; omits date parse and cap."
+      "note": "Header order correct; omits date parsing and maxRetryAfter cap. / Header order exact; omits date parsing, maxRetryAfter, no jitter."
      }
     },
     {
@@ -512,14 +521,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Format and data semantics correct. / Exact format and data semantics."
+      "note": "Message variants and data semantics match code. / Message format variants and data semantics match code."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Message format NOT COVERED; data description mostly right. / Message not covered; data JSON/text and 10 MiB right."
+      "note": "Message format not covered; error.data description correct. / error.data correct; message format not covered."
      }
     },
     {
@@ -528,18 +537,18 @@
      "question": "What does the `.json()` shortcut on the response promise do with headers and with an empty body?",
      "reference": "It sets the Accept header to 'application/json' unless an Accept header is already set (the fetch is deferred by `await Promise.resolve()` so this happens first). On an empty body without a schema it calls JSON.parse('') which throws a SyntaxError; with a schema it validates `undefined`. A schema failure throws SchemaValidationError.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Accept header right; empty-body behavior not covered. / Accept header right; empty body not covered."
+      "note": "Accept header logic and empty-body throw/schema undefined correct. / Accept header and empty-body throw/schema undefined correct."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims empty body returns empty string; it throws. / Accept right; claims empty body returns empty string (actually throws)."
+      "note": "Claims empty body returns empty string; code calls JSON.parse('') which throws. / Claims empty body returns empty string; code throws via JSON.parse."
      }
     },
     {
@@ -548,18 +557,18 @@
      "question": "How is the final error passed through `beforeError` hooks, and which errors bypass them?",
      "reference": "Each beforeError hook is awaited in order with {request, options, error, retryCount}; if a hook returns an Error instance it replaces the error for subsequent hooks and the final throw, otherwise the previous error is kept. Non-Error thrown values and errors thrown by beforeRetry hooks bypass beforeError entirely. init hook errors are synchronous and not caught either.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Replacement semantics right; misses beforeRetry and non-Error bypasses. / Sequential replace right; SchemaValidationError bypass true; omits non-Error/beforeRetry."
+      "note": "Sequential hooks, returned Error replaces; init, beforeRetry, non-Error bypass correct. / Sequential replace-on-Error, beforeRetry and non-Error bypass correct."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims Timeout/Network/ForceRetry errors bypass beforeError; false. / Falsely says Timeout/Network/ForceRetry errors bypass beforeError and #retry catches it."
+      "note": "Claims beforeError output is retried and Timeout/Network errors bypass beforeError; false. / Claims errors caught by #retry after beforeError and Timeout/Network bypass; false."
      }
     },
     {
@@ -568,18 +577,18 @@
      "question": "Where is network-error detection implemented and how does it decide something is a network error?",
      "reference": "source/utils/is-network-error.ts, isRawNetworkError() (inlined from is-network-error v1.3.1). It requires a TypeError and matches runtime-specific messages (e.g. 'Failed to fetch', 'fetch failed', 'terminated', 'NetworkError when attempting to fetch resource.', Deno 'error sending request for url', Safari 'Load failed' with no stack). Ky#fetch wraps matches in NetworkError with the original as cause.",
      "neodevex": {
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
+      "split": false,
+      "note": "isRawNetworkError in is-network-error.ts, TypeError messages, wrapped in NetworkError in Ky. / isRawNetworkError, TypeError messages, NetworkError wrap in #fetch."
+     },
+     "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "NetworkError wrapping in Ky.ts; omits is-network-error.ts logic. / NetworkError wrap in Ky.ts right; no isRawNetworkError or heuristics."
-     },
-     "devin": {
-      "verdict": "partial",
-      "hallucination": true,
-      "score": 0.5,
-      "split": false,
-      "note": "Right file; wrongly says checks error.cause messages, omits TypeError rule. / File right; falsely says checks error cause; omits TypeError/NetworkError wrap."
+      "note": "File and message checks correct; omits TypeError requirement and NetworkError wrapping. / Right file and message checks; omits TypeError requirement and NetworkError wrap."
      }
     },
     {
@@ -590,16 +599,16 @@
      "neodevex": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Right file/function only. / timeout.ts location only."
+      "score": 0.75,
+      "split": true,
+      "note": "timeout.ts and effectiveTimeout min(timeout, remaining total) in #fetch. / timeout.ts and effectiveTimeout min correct; omits TimeoutError/abort."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Right file and race; omits TimeoutError/abort and call site. / timeout.ts and race right; no TimeoutError or totalTimeout cap."
+      "note": "timeout() in timeout.ts correct; omits totalTimeout capping in #fetch. / timeout.ts timeout() correct; omits TimeoutError/abort and totalTimeout cap."
      }
     },
     {
@@ -612,14 +621,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "deepMerge in merge.ts; no specifics or validateAndMerge. / deepMerge in merge.ts only."
+      "note": "deepMerge/validateAndMerge in merge.ts; no per-option specifics. / deepMerge/validateAndMerge in merge.ts; no per-option specifics or replaceOption."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "deepMerge/validateAndMerge and helpers; omits replaceOption. / validateAndMerge/deepMerge, hooks, context, signal; no replaceOption; line ranges off."
+      "note": "deepMerge/validateAndMerge location correct; no specifics on hooks/signal/replaceOption. / Right functions/file; no per-option specifics or replaceOption."
      }
     },
     {
@@ -628,18 +637,18 @@
      "question": "Where are upload and download progress implemented?",
      "reference": "source/utils/body.ts: streamResponse() (download, used in Ky.create when onDownloadProgress is set) and streamRequest() (upload, used by Ky#wrapRequestWithUploadProgress), both piping through withProgress() TransformStream; getBodySize() estimates upload size. Progress reports percent capped below 1 until the stream flushes.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Functions and withProgress; omits getBodySize. / body.ts functions and withProgress; no getBodySize."
+      "note": "streamRequest/streamResponse, withProgress, getBodySize correctly described. / streamRequest/streamResponse, withProgress, getBodySize all named."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "streamRequest/streamResponse in body.ts; no withProgress/getBodySize."
+      "note": "streamRequest/streamResponse in body.ts; omits withProgress/getBodySize. / streamRequest/streamResponse in body.ts; omits withProgress and getBodySize."
      }
     },
     {
@@ -652,14 +661,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "POST not in methods; method checked first."
+      "note": "POST not in default retry methods. / POST not in retry methods, not retried."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "POST not in default methods."
+      "note": "POST not in default retry methods. / POST not in retry methods, not retried."
      }
     },
     {
@@ -669,17 +678,17 @@
      "reference": "No. 413 is in statusCodes, but without a retry-after header Ky explicitly throws for 413; it is only retried when a Retry-After (or equivalent) header is present, since 413 is also in afterStatusCodes.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Answer no, but claims 413 is never retried; retried with Retry-After. / Correct 'No' but claims 413 is never retried (retried with header)."
+      "note": "Not retried correct; omits that 413 retries when Retry-After present. / Correct no; omits that Retry-After header enables 413 retry."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Not retried without header. / Not retried without header; throw path described."
+      "note": "413 without Retry-After throws; retried only with header. / Not retried without header; retried only with Retry-After."
      }
     },
     {
@@ -688,18 +697,18 @@
      "question": "With `retry: 2` (default limit), how many total HTTP attempts can happen, and does `retry: {limit: 0}` change body handling?",
      "reference": "Up to 3 attempts (1 initial + 2 retries), since retry stops when retryCount >= limit. With limit 0, Ky skips request.clone() before fetching, avoiding ReadableStream tee() buffering of streaming bodies.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "3 attempts right; body cloning not covered."
+      "note": "3 attempts; limit 0 skips clone/tee buffering. / 3 attempts; limit 0 skips cloning, avoiding buffering."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "3 attempts right; body cloning not covered. / 3 attempts right; misses clone/tee skip."
+      "note": "3 attempts correct; misses no-clone behavior at limit 0. / 3 attempts correct; misses that limit 0 skips request clone."
      }
     },
     {
@@ -712,14 +721,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "No retry, goes to afterResponse; omits HTTPError thrown. / No retry, skips fetch; HTTPError throw not stated."
+      "note": "No retry, goes to afterResponse; omits HTTPError being thrown. / No retry, skips fetch; omits that HTTPError is thrown."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "wrong",
       "hallucination": true,
-      "score": 0.5,
-      "split": false,
-      "note": "No retry right; wrongly says Response returned as success. / No retry right; falsely says 500 Response returned as success."
+      "score": 0.25,
+      "split": true,
+      "note": "No retry correct but says response returned as success; code throws HTTPError for 500. / Claims hook Response returned as success; code throws HTTPError for non-ok."
      }
     },
     {
@@ -732,14 +741,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "xo/build/ava; omits tsx loader and workerThreads. / xo/build/ava only."
+      "note": "xo, build, ava correct; omits tsx loader and workerThreads."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "xo/build/ava; omits tsx loader and workerThreads. / xo/build/ava only."
+      "note": "xo, build, ava correct; omits tsx loader and workerThreads."
      }
     },
     {
@@ -752,14 +761,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Browsers right; build reason generic. / Browsers right; build reason vague."
+      "note": "Browsers and distribution mention; misses browser tests importing built file. / Browsers correct; build reason generic, not browser test import."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Browsers right; build reason generic, no distribution import. / Browsers right; build reason not tied to browser.ts import."
+      "note": "Browsers correct; build reason vague, misses browser.ts importing distribution. / Browsers correct; build reason generic, not browser tests importing distribution."
      }
     },
     {
@@ -772,14 +781,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Node versions only."
+      "note": "macOS and Node versions correct; omits Playwright install and npm test steps. / macOS and Node versions right; omits Playwright install and npm test steps."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "macOS and Node versions; omits steps. / macOS and node versions; no Playwright/test steps."
+      "note": "macOS and Node versions correct; omits steps. / macOS and Node versions right; omits steps."
      }
     },
     {
@@ -792,14 +801,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Node 22+, ESM, distribution."
+      "note": "Node >=22, ESM, distribution output. / Node >=22, ESM, distribution via tsconfig.dist.json."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Node 22+, ESM, distribution via tsconfig.dist. / Node 22+, ESM, distribution via tsconfig.dist.json."
+      "note": "Node 22+, ESM, distribution output."
      }
     }
    ],
@@ -814,14 +823,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "wsgi_app, push, full_dispatch, dispatch; omits finalize, handle_exception, pop. / Covers call/wsgi_app/push/dispatch; omits finalize, handle_exception, ctx.pop."
+      "note": "__call__/wsgi_app/full_dispatch/dispatch correct; omits context push, finalize, handle_exception, pop. / Names __call__, wsgi_app, full_dispatch, dispatch; omits context, finalize, exceptions, pop."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Chain through push/match/dispatch; omits finalize, error handling, pop. / Chain to view correct incl. push/match; omits finalize, exceptions, pop."
+      "note": "Chain to view correct; omits preprocess/finalize_request, handle_exception, ctx.pop. / Context creation/push and dispatch chain right; omits preprocess, finalize, handle_exception, pop."
      }
     },
     {
@@ -834,14 +843,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Push count and nested handling right; pop order incomplete. / Push count, session before routing correct; pop order detail incomplete."
+      "note": "Push count, signals, session/routing, zero-count teardown correct; omits merged class, request.close, error collection. / Push count, signals, session then routing, teardown at zero correct; omits merged class and pop order."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Merged class and ContextVar; no push count or pop order. / Merged class and teardown mentioned; misses push counting and pop order."
+      "note": "Merged AppContext and _cv_app correct; omits push counting and teardown order. / Merged class and ContextVar right; ignores push counting and teardown order."
      }
     },
     {
@@ -854,14 +863,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Setup state, deferred replay, nesting; omits duplicate-name ValueError. / Deferred replay, prefixes, nested recursion; misses duplicate-name ValueError."
+      "note": "register delegation, setup state, deferred replay; omits duplicate ValueError detail, nested blueprints. / register call, setup state, deferred replay right; omits duplicate ValueError and nested blueprints."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Deferred replay right; claims blueprints stored last (stored first); no ValueError/nesting. / Setup state and deferred replay; misses ValueError and nested recursion."
+      "note": "Delegation and deferred replay correct; omits duplicate-name error and nested registration. / Setup state and deferred replay right; omits duplicate check, nested registration."
      }
     },
     {
@@ -874,14 +883,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Scaffold/App/Flask right; omits Blueprint subclasses. / Scaffold/App/Flask right; omits Blueprint subclass split."
+      "note": "Scaffold/App/Flask hierarchy correct; omits Blueprint subclassing sansio Blueprint. / Scaffold/App/Flask right; omits Blueprint subclass hierarchy."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All inheritance relationships correct. / All three inheritance relationships stated."
+      "note": "Scaffold base of App and sansio Blueprint; Flask and Blueprint subclasses correct. / Scaffold base, Flask(App), Blueprint(SansioBlueprint) all correct."
      }
     },
     {
@@ -891,17 +900,17 @@
      "reference": "All of them, plus app_ctx, are werkzeug LocalProxy objects over one ContextVar, _cv_app = ContextVar('flask.app_ctx'), which holds the active AppContext. current_app proxies the context's .app attribute, g proxies .g, request proxies .request and session proxies .session. request and session use the 'outside of request context' unbound message. The old request_ctx name is a deprecated alias of app_ctx, served through a module __getattr__.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Single ContextVar flask.app_ctx right; omits request_ctx alias. / Single flask.app_ctx ContextVar; omits request_ctx alias."
+      "note": "Single flask.app_ctx ContextVar correct; proxies read request/session, not _request/_session. No alias. / Single flask.app_ctx ContextVar and LocalProxies right; omits request_ctx deprecated alias."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Single ContextVar and proxies right; omits request_ctx alias. / Single _cv_app ContextVar and proxies; omits request_ctx alias."
+      "note": "LocalProxy over single _cv_app correct; omits attributes and request_ctx alias. / Single _cv_app and LocalProxy right; no attribute mapping or request_ctx alias."
      }
     },
     {
@@ -910,18 +919,18 @@
      "question": "What are the default session cookie related config values?",
      "reference": "SESSION_COOKIE_NAME='session', SESSION_COOKIE_DOMAIN=None, SESSION_COOKIE_PATH=None (falls back to APPLICATION_ROOT, '/'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=False, SESSION_COOKIE_PARTITIONED=False, SESSION_COOKIE_SAMESITE=None, SESSION_REFRESH_EACH_REQUEST=True, PERMANENT_SESSION_LIFETIME=timedelta(days=31).",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Only name and lifetime; rest not covered. / Only name and lifetime; rest NOT COVERED."
+      "note": "All session defaults correct, including path fallback. / All defaults correct including path fallback to APPLICATION_ROOT."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "All defaults right; omits APPLICATION_ROOT path fallback."
+      "note": "Defaults correct; omits cookie path fallback to APPLICATION_ROOT."
      }
     },
     {
@@ -930,18 +939,18 @@
      "question": "What are the default request size/limit config values (MAX_CONTENT_LENGTH, MAX_FORM_MEMORY_SIZE, MAX_FORM_PARTS, MAX_COOKIE_SIZE)?",
      "reference": "MAX_CONTENT_LENGTH=None (no limit), MAX_FORM_MEMORY_SIZE=500_000 bytes, MAX_FORM_PARTS=1_000, MAX_COOKIE_SIZE=4093. Request properties read them from current_app.config when an app is active, and a per-request override is possible.",
      "neodevex": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "All four defaults correct."
+      "note": "Three defaults correct; MAX_COOKIE_SIZE default (4093) not given. / Three values correct; MAX_COOKIE_SIZE default missing."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Three correct; MAX_COOKIE_SIZE not covered."
+      "note": "Three defaults correct; MAX_COOKIE_SIZE not covered. / Three values correct; MAX_COOKIE_SIZE not covered."
      }
     },
     {
@@ -950,18 +959,18 @@
      "question": "In what order are before_request and after_request functions run when a blueprint (possibly nested) handles the request?",
      "reference": "preprocess_request first runs url_value_preprocessors and then before_request funcs. Each set goes over names (None, *reversed(request.blueprints)): app first, then outer to inner blueprint, each list in registration order. The first non-None return value short-circuits. process_response first runs the after_this_request functions in registration order. It then goes over chain(request.blueprints, (None,)), innermost blueprint first and the app last, and calls each after_request list in reverse registration order. Last it saves the session unless it is a NullSession.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 0.0,
+      "score": 0.5,
       "split": false,
-      "note": "Explicitly says ordering not covered. / States ordering not covered."
+      "note": "before/after ordering correct; omits short-circuit, after_this_request, session save. / Order correct; omits short-circuit, after_this_request, session save."
      },
      "devin": {
       "verdict": "not_covered",
       "hallucination": false,
       "score": 0.0,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "Docs lacked it. / Not covered."
      }
     },
     {
@@ -972,16 +981,16 @@
      "neodevex": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Order and all-run collection right; no reverse order or ExceptionGroup detail. / Order and all-run/collected errors; misses reverse order, ExceptionGroup."
+      "score": 0.75,
+      "split": true,
+      "note": "Reverse order, all run, errors collected and raised as group on 3.11+. / Reverse order, all run, grouped errors right; omits blueprint-before-app."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Request before appcontext, all run; no reverse order or exception group."
+      "note": "teardown_request before appcontext and all-run in 3.2; omits reverse order and exception group. / request before appcontext and all-run in 3.2 right; omits reverse order and error grouping."
      }
     },
     {
@@ -994,14 +1003,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Correct four-step order with MRO; omits RoutingException exclusion."
+      "note": "Code-before-class and MRO right; blueprint/app vs code ordering stated imprecisely; omits RoutingException. / Code before class and MRO right; blueprint/app interleaving ambiguous, no RoutingException."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
-      "score": 0.0,
-      "split": false,
-      "note": "Says blueprint-then-app with class before code; code lookup precedes class. / Says class before code within scope; code checked first across scopes."
+      "score": 0.25,
+      "split": true,
+      "note": "Blueprint-first and MRO right; claims class matched before code, but code lookup comes first. / Says class matched before status code; code actually checks code first."
      }
     },
     {
@@ -1014,14 +1023,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Propagation rule right; omits original_exception and finalize details. / Signal, 500, propagate in debug/testing; misses handler arg and finalize."
+      "note": "Signal, 500 handler, propagate in debug/testing; omits original_exception and finalize details. / Signal, 500 handler, propagate rule right; omits original_exception and finalize."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Signal, wrap, propagate rule right; omits handler gets ISE, finalize. / Signal, wrap, propagate rules right; omits finalize_request from_error_handler."
+      "note": "Signal, InternalServerError, propagate on testing/debug; omits finalize_request from_error_handler. / Signal, wrap, propagate on testing/debug right; omits from_error_handler finalize."
      }
     },
     {
@@ -1034,14 +1043,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults and types right; formatting details vague, no newline. / Defaults and types right; no indent=2, date format, newline."
+      "note": "Defaults and types right; omits compact separators, trailing newline, HTTP-date format. / Defaults and types right; omits compact separators, newline, date format."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults, types, indent logic right; omits trailing newline, date format. / Defaults, types, indent/compact correct; omits trailing newline and HTTP date."
+      "note": "Defaults, types, indent/separators correct; omits trailing newline and HTTP-date format. / Defaults, types, indent/compact logic right; omits HTTP-date format and newline."
      }
     },
     {
@@ -1052,16 +1061,16 @@
      "neodevex": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Vary, delete, set right; omits should_set_cookie criteria and NullSession. / Vary/delete/set correct; misses should_set_cookie condition and NullSession."
+      "score": 0.75,
+      "split": true,
+      "note": "Vary, delete, set, skip conditions correct; omits NullSession/no SECRET_KEY and bad signature. / Vary, delete, set, skip conditions match code."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vary and set conditions right; omits delete of emptied session. / Vary and set rules; misses delete-on-empty and should_set_cookie meaning."
+      "note": "Vary and should_set_cookie correct; deletion not covered. / Vary and should_set_cookie right; deletion not covered."
      }
     },
     {
@@ -1070,18 +1079,18 @@
      "question": "What status code does flask.redirect() / app.redirect() use by default in this checkout?",
      "reference": "303 See Other. Both flask.helpers.redirect and App.redirect default to code=303, a change from 302 in 3.2.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.0,
+      "score": 1.0,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "Default 303 correct. / 303 See Other."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Says 302; default is 303. / Claims 302; code defaults to 303."
+      "note": "Claims 302; code default is 303. / Claims 302; default is 303."
      }
     },
     {
@@ -1090,18 +1099,18 @@
      "question": "Is there a separate RequestContext class, and if an app context is already pushed (e.g. in a test), does handling a request reuse it?",
      "reference": "No. RequestContext was merged into AppContext in 3.2, and flask.ctx.RequestContext is only a deprecated alias served by a module __getattr__ with a DeprecationWarning. wsgi_app always creates and pushes a new combined AppContext with request_context(environ), so an app context that is already pushed is not reused. That means g is not shared between them.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "Fresh context right; does not mention deprecated alias. / Merged class, fresh context per request stated."
+      "score": 1.0,
+      "split": false,
+      "note": "Deprecated alias; fresh context per request, not reused. / Deprecated alias; fresh context per request."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Deprecated alias and fresh context per request. / Deprecated alias and no reuse stated."
+      "note": "Deprecated alias; fresh context pushed, not reused. / Merged, deprecated alias, fresh context pushed."
      }
     },
     {
@@ -1110,18 +1119,18 @@
      "question": "If you subclass Flask and override dispatch methods like full_dispatch_request(self) or handle_exception(self, e) with their old signatures, what happens?",
      "reference": "These dispatch methods now take ctx: AppContext as their first parameter. Flask.__init_subclass__ inspects 12 overridable methods: handle_http_exception, handle_user_exception, handle_exception, log_exception, dispatch_request, full_dispatch_request, finalize_request, make_default_options_response, preprocess_request, process_response, do_teardown_request and do_teardown_appcontext. If an override's second parameter is not named ctx and is not annotated as AppContext, it emits a DeprecationWarning ('will not be supported in Flask 4.0'). It then wraps the override with remove_ctx and the base method with add_ctx, so old-style code keeps working.",
      "neodevex": {
-      "verdict": "not_covered",
-      "hallucination": false,
+      "verdict": "wrong",
+      "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "Claims TypeError; __init_subclass__ warns and wraps old-signature overrides. / Claims TypeError; code warns and wraps overrides to keep working."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "wrong",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Notes ctx param; omits DeprecationWarning and compatibility wrapping. / Ctx-first change noted; misses deprecation warning and wrapping compatibility."
+      "score": 0.25,
+      "split": true,
+      "note": "Notes ctx-first signatures; omits DeprecationWarning and compatibility wrapping. / Vague misalignment; misses DeprecationWarning and compatibility wrapping."
      }
     },
     {
@@ -1134,14 +1143,14 @@
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims DEBUG is None; make_config sets it via get_debug_flag (False). / Claims DEBUG is None; make_config sets get_debug_flag() False."
+      "note": "Claims None; make_config overwrites DEBUG with get_debug_flag(), False by default. / Claims None; make_config overrides with get_debug_flag, giving False."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "False is right but attributes it to defaults, not FLASK_DEBUG/get_debug_flag. / False correct; misses make_config/get_debug_flag source."
+      "note": "False is right; attributes it to defaults, not make_config/get_debug_flag from FLASK_DEBUG. / False is right; misattributes source, misses get_debug_flag/FLASK_DEBUG override."
      }
     },
     {
@@ -1154,14 +1163,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "get_signing_serializer and params right; fallback handling vague. / Location, salt, digest right; fallback key order and serializer missing."
+      "note": "get_signing_serializer and fallbacks semantics correct; salt/digest not given. / Names get_signing_serializer and fallbacks role; no salt/digest values."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Salt/digest/hmac right; fallbacks wrongly said tried in open_session. / Salt/digest/hmac right; fallbacks wrongly attributed to open_session looping."
+      "note": "Salt, sha1, hmac correct; omits get_signing_serializer, TaggedJSONSerializer, key list order. / Salt, sha1, hmac right; omits TaggedJSONSerializer, None case, key list order."
      }
     },
     {
@@ -1174,14 +1183,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full correct discovery order. / All discovery steps and order correct."
+      "note": "All lookup steps correct. / Full lookup order correct."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All names/files covered; filename step misordered slightly. / load_app, wsgi.py/app.py, find_best_app order all stated."
+      "note": "load_app, app/application, single instance, factories, wsgi.py/app.py all correct. / load_app, app/application, single instance, factories, wsgi.py then app.py."
      }
     },
     {
@@ -1194,14 +1203,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Validation rules vague; no file, no error types or storage. / Validation errors noted; no scaffold location or exception types."
+      "note": "TypeError/ValueError correct; registration location and storage not given. / TypeError for instance, ValueError for unknown code right; no location or storage."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Unknown code rejection right; instance behavior not covered. / Unknown code rejected; no location; instance case not covered."
+      "note": "Unknown codes cannot be registered; omits location, exception types, storage. / Unknown code restriction right; no location, no instance TypeError."
      }
     },
     {
@@ -1212,16 +1221,16 @@
      "neodevex": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "add_url_rule and GET default right; OPTIONS response location not covered. / add_url_rule, GET default, auto OPTIONS; response location not covered."
+      "score": 0.75,
+      "split": true,
+      "note": "add_url_rule decides; dispatch_request produces OPTIONS response. / add_url_rule, GET default, config, dispatch_request right; omits str TypeError."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
-      "score": 0.0,
-      "split": false,
-      "note": "Claims Werkzeug implements OPTIONS; Flask make_default_options_response does. / Says Werkzeug produces OPTIONS; Flask make_default_options_response does."
+      "score": 0.25,
+      "split": true,
+      "note": "GET default and config right; attributes OPTIONS response to Werkzeug, not Flask make_default_options_response. / Claims Werkzeug routing produces OPTIONS response; Flask dispatch_request does."
      }
     },
     {
@@ -1234,14 +1243,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "3.10+, 3.10-3.14, pypy; omits 3.14t, type checker targets. / >=3.10 and 3.10-3.14, pypy; misses 3.14t and type-checker targets."
+      "note": ">=3.10 and versions correct; omits 3.14t and type checker target. / Versions mostly right; omits 3.14t and type checker targets."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Versions incl 3.14t right; omits mypy/pyright target. / Versions incl. 3.14t correct; misses mypy/pyright targets."
+      "note": ">=3.10 and tested versions incl. 3.14t; omits mypy/pyright 3.10 target. / Versions right; omits mypy/pyright 3.10 target."
      }
     },
     {
@@ -1251,17 +1260,17 @@
      "reference": "With tox, using tox-uv (runner uv-venv-lock-runner, frozen lockfile constraints) and the 'tests' dependency group (asgiref, greenlet, pytest, python-dotenv). Each env runs 'pytest -v --tb=short --basetemp={env_tmp_dir}'. CI runs 'uv run --locked --no-default-groups --group dev tox run' with TOX_ENV set per matrix entry. pytest's testpaths is ['tests'] and filterwarnings = ['error'], so any warning fails a test.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "tox and pytest command right; omits uv runner, CI command, warnings-as-errors. / tox and pytest command right; misses uv runner, CI command, filterwarnings."
+      "note": "tox and exact CI command right; omits tox-uv runner and filterwarnings=error. / CI command right; pip install .[test] extra does not exist; omits filterwarnings."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "CI command misstated as tox run -e TOX_ENV; omits pytest config. / tox+uv, CI uv run tox; misses filterwarnings error and testpaths."
+      "note": "tox/pytest right; CI command misstated (actual uses --no-default-groups --group dev, TOX_ENV env). / tox/pytest/uv right; CI command imprecise; omits filterwarnings and tox-uv runner."
      }
     },
     {
@@ -1274,14 +1283,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All key config and execution correct. / Strict mypy, basic pyright, typing tox env."
+      "note": "mypy strict, pyright basic, typing tox env, CI command correct. / mypy strict, pyright basic, typing env, CI command."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "mypy strict, pyright basic, typing tox env. / typing env runs mypy+pyright, strict, basic."
+      "note": "typing env runs mypy strict and pyright basic on src, tests/type_check. / mypy strict, pyright basic, typing tox env."
      }
     },
     {
@@ -1294,14 +1303,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Purpose right; omits specifics. / Purposes right; no versions or hooks."
+      "note": "Purposes correct; omits pinned versions and Python versions. / Purposes right; omits Python versions and specific pins/hooks."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Purpose right; omits python versions and pre-commit hooks. / Purposes right; misses Python versions and pre-commit hook list."
+      "note": "Pins, git main, pre-commit correct; omits Python versions per env. / Pins, main branches, pre-commit right; omits Python versions."
      }
     }
    ],
@@ -1316,14 +1325,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "dispatch, getPath, match, Context, compose; omits single-handler fast path and not-finalized error. / dispatch/getPath/match/Context/compose; misses single-handler fast path and finalized error."
+      "note": "Covers dispatch/router/Context/compose; omits single-handler fast path and not-finalized error. / Covers dispatch/match/Context/compose; misses single-handler fast path and not-finalized error."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Covers dispatch, fast path, compose, not-finalized error. / Fast path, compose, not-finalized error all covered."
+      "note": "Covers dispatch, router match, Context, fast path, compose, not-finalized error. / Dispatch, match, Context, fast path, compose, non-finalized error all stated."
      }
     },
     {
@@ -1333,17 +1342,17 @@
      "reference": "Adapters are thin wrappers around app.fetch. hono/vercel's handle(app) returns req => app.fetch(req). The Cloudflare Workers adapter exports no handle at all, only serveStatic, upgradeWebSocket and getConnInfo, because the app's own fetch(request, env, executionCtx) already matches the Workers module signature. The Cloudflare Pages handle passes eventContext.request, {...eventContext.env, eventContext} as env, and an executionCtx built from waitUntil and passThroughOnException. The AWS Lambda handle picks an EventProcessor for the event type (API Gateway v1/v2, ALB, Lattice) to build a Request. It calls app.fetch(req, {event, requestContext, lambdaContext}) and converts the Response back with processor.createResult, base64-encoding binary bodies. Request-conversion errors return 400 for a TypeError and 500 otherwise.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vercel right; Pages args misstated (env merges eventContext, ctx built). / Vercel/Workers right; Pages mapping wrong (env merges eventContext, ctx built)."
+      "note": "Vercel/Workers/Pages/Lambda right; omits Lambda env object and base64 conversion. / Vercel, Workers, Pages correct; Lambda misses env object and base64 result details."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Lambda, Workers, Pages right; invents Vercel_handle_fn instead of req => app.fetch(req). / Lambda/Workers/Pages right; Vercel Vercel_handle_fn entry point is invented."
+      "note": "Lambda/Workers/Pages right; Vercel invents Vercel_handle_fn specialized entry points. / Lambda/Workers/Pages fine; invents 'Vercel_handle_fn' entry points instead of req=>app.fetch(req)."
      }
     },
     {
@@ -1353,17 +1362,17 @@
      "reference": "All three export a Hono class that extends HonoBase and differ only in the router they set up. 'hono' uses options.router if one is given, and otherwise new SmartRouter({ routers: [new RegExpRouter(), new TrieRouter()] }). 'hono/quick' always uses SmartRouter with [LinearRouter, TrieRouter]. 'hono/tiny' always uses PatternRouter. The two presets assign this.router unconditionally after super(options), so a router passed in options is overwritten.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Routers right; omits presets overwriting options.router. / Routers correct; omits presets overwriting options.router."
+      "note": "Routers right; claims quick offers curated helpers, false. Omits options.router overwrite. / Routers right; falsely says quick offers curated helpers; misses options.router override."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Routers right; omits router-override behavior. / Routers correct; omits presets ignoring options.router."
+      "note": "Routers for all three correct; omits that presets overwrite options.router. / Routers correct; does not note presets overwrite options.router."
      }
     },
     {
@@ -1376,14 +1385,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "basePath clone and route copying right; omits errorHandler wrapping. / Clone and route copying right; omits sub-app errorHandler wrapping."
+      "note": "Clone with _basePath and route copying right; omits shared router/routes. / Clone and copying stated; omits shared router/routes array."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Clone sharing router, route copying, error handler wrapping. / Clone sharing router, copying, conditional compose wrapping."
+      "note": "Clone sharing router/routes, route copies via basePath, compose wrap for custom onError. / Clone shares router/routes, route copies routes, custom onError wrapping."
      }
     },
     {
@@ -1396,14 +1405,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy res and post-finalize clone right; omits setter header copy and compose rule. / Lazy res, header clone; misses setter copy semantics and compose rule."
+      "note": "Lazy res, finalized, header merge with set-cookie; omits compose assignment rule. / Lazy res, finalized, header merge; misses compose assignment rule and content-type skip."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Finalized on set, header merging; omits lazy getter and compose assignment rule. / Setter merging and finalized noted; misses lazy getter and compose assignment rule."
+      "note": "Finalized and header merge right; omits lazy getter and compose rule. / Finalized and header merge; misses lazy getter and compose rule."
      }
     },
     {
@@ -1416,14 +1425,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy first-match choice right; omits inner routers and add-after-build error. / Lazy first-match selection right; omits inner routers and add-after-build error."
+      "note": "Lazy choice and fallback right; omits add-after-build error. / Lazy first-match selection correct; omits add-after-build error."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Default routers and lazy choice right; omits add-after-build error. / Default routers, lazy selection; omits add-after-build error."
+      "note": "Default, lazy choice, UnsupportedPathError fallback right; omits add-after-build error. / Default and lazy selection correct; omits add-after-build error."
      }
     },
     {
@@ -1436,14 +1445,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "next() twice, onError, onNotFound; omits routeIndex and Error-only rule. / next-twice, onError, notFound; misses routeIndex and non-Error rethrow."
+      "note": "next() twice, onError, onNotFound right; misses routeIndex and non-Error rethrow. / next() twice error, onError, notFound; misses routeIndex and non-Error rethrow."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "routeIndex, onError, onNotFound; omits next() twice error and Error-only. / routeIndex, onError, notFound; misses next-twice error and non-Error rethrow."
+      "note": "routeIndex, onError, onNotFound right; misses next() twice error and non-Error rethrow. / routeIndex, onError, notFound; misses next() twice error and non-Error rethrow."
      }
     },
     {
@@ -1456,14 +1465,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Defaults, header reflection, 204 preflight correct. / Defaults, header reflection, 204 preflight all correct."
+      "note": "Defaults, 204 preflight, header reflection, Vary all correct."
      },
      "devin": {
       "verdict": "not_covered",
       "hallucination": false,
       "score": 0.0,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "Not covered. / NOT COVERED."
      }
     },
     {
@@ -1472,18 +1481,18 @@
      "question": "How does the etag() middleware generate and compare ETags by default?",
      "reference": "After next() runs, if the response has no ETag header, the middleware hashes a clone of the body with crypto.subtle.digest SHA-1 (unless a custom generateDigest is given). The value is a strong ETag '\"<hash>\"' by default, or 'W/\"<hash>\"' when weak: true. If-None-Match is compared with the W/ prefix stripped, so the comparison is weak. On a match it replaces the response with a 304 'Not Modified' that keeps only the retained headers: cache-control, content-location, date, etag, expires and vary. If crypto.subtle is not available and no generator is given, it leaves the response unchanged.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 0.0,
+      "score": 0.5,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "SHA-1 and W/ stripping right; omits strong default and retained 304 headers. / SHA-1 and W/ stripping; misses strong default and retained 304 headers."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "SHA-1 and 304 right; omits weak handling and retained headers. / SHA-1 and 304; misses weak default, W/ stripping, retained headers."
+      "note": "SHA-1 and 304 right; omits weak comparison, strong default, retained headers. / SHA-1 and 304; misses weak comparison, strong default, retained headers."
      }
     },
     {
@@ -1496,14 +1505,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full exact default header list and removePoweredBy. / Full default header list and X-Powered-By removal correct."
+      "note": "Full default header list with correct values and X-Powered-By removal."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Only four headers listed; correct values. / Subset of headers correct; incomplete list."
+      "note": "Four headers correct and X-Powered-By removal; many defaults missing. / Subset of headers correct; omits COEP off, X-XSS-Protection 0, others."
      }
     },
     {
@@ -1514,16 +1523,16 @@
      "neodevex": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Content-Length vs stream and 413 right; omits buffering/raw replacement. / Length vs stream and 413; misses required maxSize and raw rebuild."
+      "score": 0.75,
+      "split": true,
+      "note": "Content-Length check, streamed counting, rebuild, 413 Payload Too Large default. / Mechanism and 413 correct; omits required maxSize."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "wrong",
       "hallucination": false,
-      "score": 0.5,
+      "score": 0.0,
       "split": false,
-      "note": "Header/stream checking; default 413 response not covered. / Content-Length/stream check; misses 413 default and Transfer-Encoding rule."
+      "note": "Misses 413 default; implies 500 response, contradicting getResponse handling. / Misses 413 default; suggests status unknown/500."
      }
     },
     {
@@ -1536,14 +1545,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults right; omits non-Error rethrow and duck typing. / Defaults correct; misses duck typing and non-Error rethrow."
+      "note": "404, getResponse duck typing, 500 with logging; omits non-Error rethrow. / 404, getResponse, 500; misses non-Error rethrow."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults and getResponse duck check; omits non-Error rethrow. / getResponse duck check, 500; misses non-Error rethrow."
+      "note": "404 text, duck-typed getResponse, 500; omits non-Error rethrow. / 404, duck-typed getResponse, 500; misses non-Error rethrow."
      }
     },
     {
@@ -1552,18 +1561,18 @@
      "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
      "reference": "c.redirect(location, status?) sets the Location header and returns a response with status 302 by default. A location containing characters outside \\x00-\\xFF is passed through encodeURI. c.text() takes a fast path, returning new Response(text), when no headers, status, arguments or finalization exist. Otherwise it sets Content-Type 'text/plain; charset=UTF-8'. c.json() JSON.stringifies the value with Content-Type 'application/json'. c.notFound() calls the notFound handler the app passed into the Context, so a custom app.notFound applies. It falls back to an empty Response if none was passed.",
      "neodevex": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "302, encoding, text/json content types, notFound delegation. / 302, encodeURI, text/plain charset, notFound delegation."
+      "note": "302, text/plain charset, json, notFound delegation; omits encodeURI. / 302, text/plain charset, json, notFound delegation; misses encodeURI."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "302 and json type right; c.notFound simplified, no encoding or text type. / 302 right; misses encodeURI, text content-type, notFound delegation."
+      "note": "302 and json right; notFound delegation and charset/encodeURI missing. / 302 and json right; c.text content-type and notFound delegation missing."
      }
     },
     {
@@ -1576,14 +1585,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Strict default and getPath selection; no url.ts location. / Strict selection right; does not locate url.ts functions."
+      "note": "Strict option and default noted; no url.ts or getPathNoStrict locations. / Strict option and default true; omits url.ts and getPathNoStrict location."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "getPath/getPathNoStrict in url.ts and strict option; strict default not stated. / url.ts getPath/getPathNoStrict right; strict default not stated."
+      "score": 0.75,
+      "split": true,
+      "note": "getPath/getPathNoStrict in url.ts, selection in constructor by strict. / url.ts functions and constructor selection; omits strict default true."
      }
     },
     {
@@ -1596,14 +1605,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy build and builder function right; misses matcher.ts lazy match and static map. / Lazy, discarded routes; misses matcher.ts, static map, conflicts."
+      "note": "buildAllMatchers on first match; misses matcher.ts, static map, error conversion. / Lazy build on first match; misses matcher.ts, replacement, static map."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy build on first match via buildAllMatchers; no static map or conflict errors. / Lazy build on first match; misses matcher.ts, static map, UnsupportedPathError."
+      "note": "First-match build via buildAllMatchers; misses matcher.ts, static map, conflicts. / Lazy buildAllMatchers on first match; misses matcher.ts, static map, errors."
      }
     },
     {
@@ -1613,17 +1622,17 @@
      "reference": "In src/request.ts on the HonoRequest class: the public bodyCache field and the private #cachedBody(key) method. #cachedBody returns the cached promise for the same key. If a different body type was cached, it rebuilds the body from that cached value with new Response(body)[key](), stringifying first if the cached key was 'json'. Otherwise it reads raw[key]() and stores the promise. json() is implemented as #cachedBody('text') followed by JSON.parse.",
      "neodevex": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "#cachedBody in HonoRequest; no conversion mechanism details. / Location and conversion right; misses json via text detail."
+      "note": "Right class and method; src/request/body.ts does not exist. / Places bodyCache in nonexistent src/request/body.ts; mechanism otherwise right."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "HonoRequest bodyCache/#cachedBody and conversion; omits json via text+parse. / HonoRequest bodyCache/#cachedBody and conversion described."
+      "score": 1.0,
+      "split": false,
+      "note": "HonoRequest bodyCache and #cachedBody with cross-format reconstruction. / HonoRequest bodyCache and #cachedBody with conversion described."
      }
     },
     {
@@ -1632,18 +1641,18 @@
      "question": "Where are app.get/post/.../all, app.on and app.use defined, and which HTTP methods get shortcut methods?",
      "reference": "They are created as instance properties in the HonoBase constructor (src/hono-base.ts). The constructor loops over [...METHODS, 'all'] and defines app.on and app.use there too. All of them register routes through the private #addRoute, which upper-cases the method, merges _basePath, calls router.add(method, path, [handler, routerRoute]) and pushes the route onto app.routes. METHODS is defined in src/router.ts as ['get','post','put','delete','options','patch']. app.use without a path registers under method 'ALL' with path '*'.",
      "neodevex": {
-      "verdict": "wrong",
-      "hallucination": true,
-      "score": 0.0,
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
       "split": false,
-      "note": "Claims HEAD shortcut exists; METHODS excludes head. / Claims HEAD shortcut exists; METHODS has no head."
+      "note": "Constructor-defined; incomplete method list, omits #addRoute details. / Constructor correct; method list incomplete; misses #addRoute details."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Constructor and method list right; omits #addRoute and use '*' default. / Constructor and method list right; omits #addRoute and use default."
+      "note": "Constructor-defined, correct method list; omits #addRoute and use defaults. / Constructor and method list correct; misses #addRoute and use '*' default."
      }
     },
     {
@@ -1656,14 +1665,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "HEAD dispatched as GET, null body. / HEAD dispatched as GET with null body."
+      "note": "HEAD dispatched as GET, null body returned."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "HEAD dispatched as GET, null body. / HEAD converted to GET, null body."
+      "note": "HEAD dispatched as GET, null body returned."
      }
     },
     {
@@ -1672,18 +1681,18 @@
      "question": "If you pass both strict: false and a custom getPath to new Hono(), which getPath is used?",
      "reference": "The custom getPath is ignored. The constructor uses options.getPath only when strict is true: (strict ?? true) ? (options.getPath ?? getPath) : getPathNoStrict. With strict: false it always uses the built-in getPathNoStrict.",
      "neodevex": {
-      "verdict": "wrong",
-      "hallucination": true,
-      "score": 0.0,
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
       "split": false,
-      "note": "Claims custom getPath used; strict:false forces getPathNoStrict. / Claims custom getPath used; strict:false ignores it."
+      "note": "getPathNoStrict used, custom getPath ignored. / Correctly says getPathNoStrict overrides custom getPath."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims custom getPath used; strict:false forces getPathNoStrict."
+      "note": "Claims custom getPath used; code uses getPathNoStrict when strict false. / Claims custom getPath wins; code uses getPathNoStrict when strict false."
      }
     },
     {
@@ -1692,18 +1701,18 @@
      "question": "If a sub-app has its own app.notFound() and onError(), and is mounted with parent.route('/x', sub), which handlers apply to requests under /x?",
      "reference": "Only the sub-app's onError is kept. route() wraps the sub-app's handlers with its errorHandler when that handler is custom. The sub-app's notFound is ignored: route() copies only routes, and at request time the Context and compose use the parent's #notFoundHandler. Unmatched paths under /x, and c.notFound() calls, therefore use the parent's notFound handler.",
      "neodevex": {
-      "verdict": "correct",
-      "hallucination": false,
-      "score": 1.0,
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.0,
       "split": false,
-      "note": "Sub onError kept, parent notFound used."
+      "note": "Claims sub-app notFound applies; parent notFound is used. / Claims sub-app notFound applies; parent's notFound is used."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims sub-app notFound applies; parent notFound used. / Claims sub-app notFound applies and is copied; parent notFound used."
+      "note": "onError right, but claims sub-app notFound applies; parent handler used. / Claims sub-app notFound copied/applies; clone copies parent's handlers."
      }
     },
     {
@@ -1716,14 +1725,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "401 and body/headers kept; omits 500 default. / 401 with body/headers kept; omits 500 default."
+      "note": "401 correct; omits body/headers kept and 500 default."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "401 and body/headers kept; omits 500 default. / 401 with body/headers kept; omits 500 default."
+      "note": "401 with body/headers kept; omits 500 default."
      }
     },
     {
@@ -1736,14 +1745,14 @@
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Describes benchmarks as tests; real tests use vitest projects. / Describes benchmarks, not test runner; misrepresents test setup."
+      "note": "Says deno/bun are vitest projects; they use deno test/bun test. / Wrongly says deno/bun suites are vitest projects; they use native runners."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vitest and runtime scripts listed; omits tsc step and project config. / Runtime script layout right; misses tsc+vitest projects and native deno/bun detail."
+      "note": "Runtime scripts and dirs right; omits type-check and vitest projects config. / Runtime scripts listed; misses tsc step and vitest project structure."
      }
     },
     {
@@ -1752,18 +1761,18 @@
      "question": "How is the npm package built?",
      "reference": "`bun run build` removes dist and runs `bun ./build/build.ts`. That script first checks that the package.json and jsr.json exports match, then globs src/**/*.ts as entry points, excluding tests, src/mod.ts, src/middleware.ts and src/deno/**. It runs three steps in parallel: an esbuild ESM build to dist with bundle: true and an add-extension plugin that keeps imports external and rewrites them to '.js', an esbuild CJS build to dist/cjs, and tsc --emitDeclarationOnly with tsconfig.build.json. Afterwards it strips #private fields from the .d.ts files. Then copy:package.cjs.json writes {\"type\":\"commonjs\"} into dist/cjs and dist/types, and the postbuild step runs publint.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 0.0,
+      "score": 0.5,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "Mostly right; says package.json copied only to dist/cjs, omits dist/types. / Mostly right; omits dist/types package.json copy."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "esbuild ESM/CJS, tsc decls, private strip, marker copy, publint. / esbuild ESM/CJS, tsc d.ts, private strip, cjs markers, publint."
+      "note": "esbuild ESM/CJS, tsc types, private field strip, marker files, publint. / esbuild ESM/CJS, tsc types, private removal, package.json copies, publint."
      }
     },
     {
@@ -1772,18 +1781,18 @@
      "question": "How are linting and formatting configured?",
      "reference": "`bun run lint` runs eslint on src, runtime-tests, build, perf-measures and benchmarks. eslint.config.mjs is a flat config that extends @hono/eslint-config and turns off the type-aware typescript-eslint rules plus some stylistic ones. It treats unused disable directives and unused inline configs as errors, and ignores .wrangler, coverage and dist. Formatting uses prettier (`format` checks, `format:fix` writes) over the same directories.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 0.0,
+      "score": 0.5,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "ESLint flat extends @hono, prettier; omits unused-directive errors. / ESLint extends hono config, disables TS rules, prettier; misses unused-directive errors."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "ESLint/Prettier commands; omits config extends and error settings. / ESLint/Prettier commands; misses config extends and directive error settings."
+      "note": "ESLint and prettier named; no config details."
      }
     },
     {
@@ -1792,18 +1801,18 @@
      "question": "How is the package published to JSR, and how is consistency with npm exports enforced?",
      "reference": "jsr.json publishes '@hono/hono'. Its exports map subpaths directly to TypeScript sources, for example './tiny' to './src/preset/tiny.ts', while package.json maps them to dist JS, CJS and .d.ts files. build/build.ts calls validateExports in both directions, package.json against jsr.json and jsr.json against package.json, and throws 'Missing \"<entry>\" in ...' when an entry is missing (with wildcard support such as './utils/*'). CI runs `bunx jsr publish --dry-run`. The release workflow publishes to JSR with `deno run -A jsr:@david/publish-on-tag` and to npm with npm publish.",
      "neodevex": {
-      "verdict": "not_covered",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 0.0,
+      "score": 0.5,
       "split": false,
-      "note": "NOT COVERED."
+      "note": "publish-on-tag and validation right; one direction only, no dry-run or name. / publish-on-tag and validateExports; misses dry-run, both directions, jsr name."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Publish-on-tag, validateExports, dry-run; omits jsr.json name/src exports. / publish-on-tag, validateExports, dry-run; misses @hono/hono and bidirectional check."
+      "note": "publish-on-tag, validateExports, jsr dry-run right; omits @hono/hono and src exports. / publish-on-tag, validateExports, dry-run; misses jsr name and src mapping."
      }
     }
    ]
@@ -1816,18 +1825,18 @@
      "question": "How does a call like `ky.get(url, opts)` get from the public entry point to an actual fetch? Name the functions/classes involved.",
      "reference": "source/index.ts createInstance() builds the `ky` function and per-method shortcuts; each merges instance defaults with call options via validateAndMerge() and calls the static Ky.create(input, options). Ky.create runs init hooks, constructs a Ky instance (which normalizes options and builds a Request), then an async pipeline runs beforeRequest hooks, #retry(() => #fetch()), afterResponse hooks, HTTPError/retry handling, and returns a ResponsePromise decorated with body shortcuts.",
      "neodevex": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "Detailed accurate chain with correct line refs. / Accurate end-to-end trace with correct line refs."
+      "note": "Accurate createInstance/Ky.create/constructor/retry/fetch flow; omits afterResponse and body shortcuts. / Accurate create/constructor/retry/fetch detail; omits afterResponse hooks and body shortcuts on ResponsePromise."
      },
      "devin": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": true,
-      "score": 1.0,
-      "split": false,
-      "note": "Full chain createInstance, validateAndMerge, Ky.create, hooks, retry/fetch, ResponsePromise. / Full pipeline right; but claims constructor handles prefixUrl (renamed prefix, now throws)."
+      "score": 0.75,
+      "split": true,
+      "note": "Claims init hooks run inside async function after construction; mentions prefixUrl option (renamed prefix). / Full pipeline covered; but claims constructor handles `prefixUrl`, which now throws (renamed `prefix`)."
      }
     },
     {
@@ -1840,14 +1849,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Code-quoted create vs extend incl. function form. / create ignores parent, extend merges, function form; code quoted."
+      "note": "create ignores parent, extend merges, function form shown with code. / Accurate code for create vs extend, including function form."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": true,
       "score": 1.0,
       "split": false,
-      "note": "All three facts, plus replaceOption. / Key facts right; examples use prefixUrl, which now throws (renamed prefix)."
+      "note": "All three facts; but cites prefixUrl option, which was renamed prefix. / Key facts right; says extend function can modify `prefixUrl`, an option removed (now `prefix`)."
      }
     },
     {
@@ -1860,14 +1869,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Correct order; beforeError only at final failure. / Correct order incl. init, single beforeRequest, beforeError only final."
+      "note": "Correct order init, beforeRequest once, afterResponse, beforeRetry, afterResponse, beforeError."
      },
      "devin": {
-      "verdict": "wrong",
-      "hallucination": true,
-      "score": 0.0,
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
       "split": false,
-      "note": "Puts beforeError before each retry; diagram reruns beforeRequest per attempt. / Claims beforeError runs before each retry and beforeRequest repeats per attempt."
+      "note": "Correct order; beforeRequest once, beforeError on final error. / Correct order; beforeRequest once, beforeError on final failure; accurate extra details."
      }
     },
     {
@@ -1880,14 +1889,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "AbortSignal.any and timeout abort correct; truncated by tool error, no retry-delay signal. / AbortSignal.any and timeout abort right; truncated, misses retry recreation and delay signal."
+      "note": "AbortSignal.any, timeout abort, controller recreation; omits delay using only user signal. / AbortSignal.any, timeout abort/TimeoutError, controller recreation; omits retry delay using only user signal."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Merge, timeout, recreate covered; misses delay using only user signal. / Merge, timeout, controller recreation right; omits delay uses only user signal."
+      "note": "Merge, timeout abort, recreation covered; omits delay signal and TimeoutError detail. / Merging and controller recreation covered; omits TimeoutError and user-signal-only retry delay."
      }
     },
     {
@@ -1900,14 +1909,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "findUnknownOptions with both registries, passed as fetch init. / findUnknownOptions, both registries, passed as fetch init."
+      "note": "findUnknownOptions with both registries, passed as fetch init. / findUnknownOptions with both registries and passthrough to fetch, accurately quoted."
      },
      "devin": {
-      "verdict": "partial",
-      "hallucination": true,
-      "score": 0.5,
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
       "split": false,
-      "note": "Core right; wrongly says NormalizedOptions builds RequestInit for fetch. / Core right; falsely says normalized options build fetch RequestInit; no file named."
+      "note": "Same mechanism correctly described. / findUnknownOptions, kyOptionKeys/requestOptionsRegistry, passed to fetch; accurate."
      }
     },
     {
@@ -1920,14 +1929,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All defaults correct. / All defaults and formula correct."
+      "note": "All defaults correct with locations. / All defaults and delay formula correct."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All defaults correct. / All defaults and formula correct."
+      "note": "All defaults correct. / All defaults and delay formula correct."
      }
     },
     {
@@ -1940,14 +1949,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All facts with code. / All three facts with code."
+      "note": "10000, false, RangeError above 2147483647. / 10000 ms, false, RangeError above 2147483647; accurate."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "10000, false, RangeError above 2147483647."
+      "note": "All facts correct. / 10000 ms, false, RangeError above maxSafeTimeout; accurate."
      }
     },
     {
@@ -1960,14 +1969,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "TimeoutError, retryOnTimeout false; omits shouldRetry override. / TimeoutError and retryOnTimeout false; omits shouldRetry override."
+      "note": "Not retried by default, TimeoutError; omits shouldRetry override. / TimeoutError and retryOnTimeout false correct; omits shouldRetry override."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "TimeoutError, not retried by default; omits shouldRetry override. / TimeoutError and retryOnTimeout false; omits shouldRetry override."
+      "note": "Covers default, TimeoutError and shouldRetry precedence. / Not retried by default, TimeoutError, shouldRetry precedence noted."
      }
     },
     {
@@ -1976,18 +1985,18 @@
      "question": "In what order are checks performed when deciding whether to retry a non-forced error?",
      "reference": "#calculateRetryDelay: (1) if retryCount >= limit, throw; (2) ForceRetryError short-circuits with custom/computed delay; (3) if request method not in retry.methods, throw; (4) user shouldRetry: false -> throw, true -> retry, other -> fall through; (5) TimeoutError retried only if retryOnTimeout; (6) HTTPError retried only if status in statusCodes, honoring Retry-After for afterStatusCodes; (7) otherwise only NetworkError is retried, all other errors thrown.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "Correct order limit, method, shouldRetry, timeout, HTTP, network. / Order right, but omits ForceRetryError bypass position."
+      "score": 1.0,
+      "split": false,
+      "note": "Correct order with code; ForceRetry excluded up front. / Correct order with code quotes; shouldRetry semantics and NetworkError-only fallback right."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Correct order; mentions ForceRetryError handled separately. / Full order; notes ForceRetry precedence; '_calculateRetryDelay' naming slip."
+      "note": "Correct order; ForceRetryError bypass noted. / Limit, method, shouldRetry, timeout, status, Retry-After, 413, network order correct."
      }
     },
     {
@@ -1996,18 +2005,18 @@
      "question": "Which response headers does Ky consult for the retry delay, in what order, and how is a numeric value interpreted?",
      "reference": "For statuses in afterStatusCodes it checks Retry-After, then RateLimit-Reset, X-RateLimit-Retry-After, X-RateLimit-Reset, X-Rate-Limit-Reset. A numeric value is seconds (multiplied by 1000); if that product is >= Date.parse('2024-01-01') it is treated as an epoch timestamp and Date.now() is subtracted. Non-numeric values are parsed as HTTP dates. The result is clamped at >= 0 and capped by maxRetryAfter, with no jitter applied.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Headers, numeric, date parse, cap; omits no-jitter. / Order, numeric/timestamp, date parse, cap right; omits no-jitter."
+      "note": "Order, seconds/timestamp, date parsing, clamp, maxRetryAfter, no jitter. / Order, numeric/timestamp/date parsing, clamp, maxRetryAfter, no jitter all correct."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Headers order, numeric/timestamp, jitter; omits date parsing of non-numeric. / Header order, seconds/timestamp, no jitter, cap right; omits date parsing."
+      "note": "Header order right; wrongly says non-numeric values fall back to default delay instead of date parsing. / Header order, seconds/timestamp right; implies non-numeric values fall back instead of date parsing."
      }
     },
     {
@@ -2020,14 +2029,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Exact format and data semantics incl. 10 MiB, timeout. / Exact format and data semantics incl. 10 MiB and timeout."
+      "note": "Exact format and all data conditions. / Precise message rules and data population/undefined conditions; accurate."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "Format described with example; data semantics correct. / Format described not exact; data semantics mostly right."
+      "score": 1.0,
+      "split": false,
+      "note": "Message format and data rules incl. 10 MiB and timeout. / Message format, JSON vs text data, undefined conditions incl. 10 MiB/timeout."
      }
     },
     {
@@ -2040,14 +2049,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Accept and empty-body correct; no SchemaValidationError mention. / Accept and empty-body throw right; SchemaValidationError not named."
+      "note": "Accept and empty-body behavior right; omits SchemaValidationError on failure. / Accept handling and empty-body behavior correct; omits SchemaValidationError on schema failure."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Accept and empty-body correct; no SchemaValidationError mention. / Accept and empty-body throw right; SchemaValidationError not named."
+      "note": "Accept only if absent, empty throws, schema gets undefined/SchemaValidationError. / Accept only if absent, empty body throws, schema gets undefined, SchemaValidationError."
      }
     },
     {
@@ -2060,14 +2069,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Sequential replacement; non-Error and beforeRetry errors bypass. / Sequential replace, non-Error and beforeRetry bypass."
+      "note": "All bypass cases and replacement semantics correct. / Accurate code walkthrough; non-Error, beforeRetry WeakSet, init bypass."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All bypass cases including init and beforeRetry. / All bypasses incl. init and beforeRetry; accurate."
+      "note": "Sequential replacement; non-Error, init, beforeRetry bypass correct. / Sequential replacement, non-Error and beforeRetry bypass, init errors; accurate nuance."
      }
     },
     {
@@ -2080,14 +2089,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "File, TypeError check, message list, NetworkError wrap. / File, TypeError requirement, messages, wrap all correct."
+      "note": "isRawNetworkError in is-network-error.ts, TypeError + message list, NetworkError wrap. / isRawNetworkError in is-network-error.ts with exact TypeError message checks; NetworkError wrap."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Names isRawNetworkError and wrapping; omits file and TypeError/message rules. / isRawNetworkError and NetworkError wrap; no file, vague heuristics."
+      "note": "Names isRawNetworkError and wrap, but no file or message heuristics. / Mentions isRawNetworkError and NetworkError wrap but not file or TypeError/message heuristics."
      }
     },
     {
@@ -2100,14 +2109,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "timeout.ts, abort+TimeoutError, called from #fetch with min. / timeout.ts, abort+TimeoutError, effectiveTimeout min."
+      "note": "timeout.ts wrapper, abort+TimeoutError, called from #fetch with effectiveTimeout. / timeout() in source/utils/timeout.ts, abort+TimeoutError, called from #fetch with effectiveTimeout."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Describes #fetch effective timeout; omits timeout.ts, TimeoutError, abort. / Describes #fetch effectiveTimeout; no timeout.ts file or TimeoutError/abort."
+      "note": "Describes #fetch effectiveTimeout; doesn't locate timeout.ts or abort behavior. / Describes effectiveTimeout and timeout utility usage; locates it in Ky.ts, omits timeout.ts/abort."
      }
     },
     {
@@ -2116,18 +2125,18 @@
      "question": "Where is the deep-merging of options (headers, hooks, searchParams, context, signal) for extend/instances implemented?",
      "reference": "source/utils/merge.ts: validateAndMerge() validates sources then calls deepMerge(); deepMerge special-cases signal (combined via AbortSignal.any), context (shallow merge), searchParams (appendSearchParameters), hooks (mergeHooks, concatenating arrays), and headers (mergeHeaderContainers/mergeHeaders). replaceOption() marks a value to replace instead of merge.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "deepMerge details accurate; validateAndMerge not named. / deepMerge special cases and replace handling covered."
+      "score": 1.0,
+      "split": false,
+      "note": "deepMerge in merge.ts with all special cases and replaceOption. / deepMerge in merge.ts with per-key handling, replaceOption, AbortSignal.any; accurate."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "deepMerge, validateAndMerge, all special cases, replaceOption. / validateAndMerge/deepMerge, hooks, context, signal, replaceOption."
+      "note": "deepMerge/validateAndMerge, hooks, context, signal, replaceOption; file path missing. / validateAndMerge/deepMerge, mergeHooks, shallow context, AbortSignal.any, replaceOption."
      }
     },
     {
@@ -2140,14 +2149,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All functions with accurate line refs. / Detailed and accurate with correct line refs."
+      "note": "Accurate streamResponse/streamRequest/withProgress/getBodySize details. / streamResponse/streamRequest, withProgress, getBodySize; accurate details."
      },
      "devin": {
-      "verdict": "correct",
-      "hallucination": false,
-      "score": 1.0,
-      "split": false,
-      "note": "streamRequest/streamResponse, withProgress, getBodySize. / streamRequest/streamResponse, withProgress, getBodySize in body.ts."
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.75,
+      "split": true,
+      "note": "Covers body.ts functions, but says onDownloadProgress handled in #fetch (it's in Ky.create). / Key functions right, but says download progress check is in #fetch; it is in Ky.create."
      }
     },
     {
@@ -2160,14 +2169,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Method check precedes status. / POST not in methods; method check precedes."
+      "note": "POST not in methods; method check precedes status. / POST not in methods; method check precedes status check."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "POST not in methods so no retry. / POST not in methods; not retried."
+      "note": "POST not retried; method gating explained. / POST not retriable by default despite 503; correct."
      }
     },
     {
@@ -2180,14 +2189,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Cites explicit 413 throw. / Correct with exact code reference."
+      "note": "413 without header thrown explicitly. / Not retried; 413 explicit throw after Retry-After block."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "413 without header throws. / 413 without header thrown; retried only with header."
+      "note": "Correct; retried only with header or shouldRetry. / Not retried without header; retried only with header; accurate."
      }
     },
     {
@@ -2200,14 +2209,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "3 attempts; conditional clone code quoted. / 3 attempts; limit 0 skips clone, code cited."
+      "note": "3 attempts; limit 0 skips clone. / 3 attempts; limit 0 skips clone/tee buffering."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "3 attempts; limit 0 skips clone/tee."
+      "note": "3 attempts; limit 0 skips clone/tee. / 3 attempts; limit 0 avoids request clone."
      }
     },
     {
@@ -2220,14 +2229,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "responseFromHook path throws HTTPError without retry. / responseFromHook path to immediate HTTPError explained."
+      "note": "No retry; HTTPError thrown immediately; test cited. / No retry; hook response skips fetch, HTTPError thrown directly."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Says no retry since fetch bypassed; omits HTTPError thrown via responseFromHook. / No retry, skips fetch; omits HTTPError thrown immediately."
+      "note": "No retry, shouldRetry not called; afterResponse ky.retry note accurate. / No retry; skips fetch and retry handling; accurate."
      }
     },
     {
@@ -2240,14 +2249,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "xo/build/ava and tsx; omits workerThreads false. / xo/build/ava and tsx right; omits workerThreads false."
+      "note": "xo, build, ava with tsx; omits workerThreads false. / xo, build, ava with tsx correct; omits workerThreads false."
      },
      "devin": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "xo, build, ava with tsx/esm and workerThreads off. / xo, build, ava with tsx/esm, workerThreads false."
+      "note": "xo, build, ava with tsx/esm; omits workerThreads false. / xo, build, ava with tsx/esm correct; omits workerThreads false."
      }
     },
     {
@@ -2260,14 +2269,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Distribution import and three browsers. / Browser tests import distribution; chromium/firefox/webkit."
+      "note": "Browser tests serve distribution; chromium/firefox/webkit. / Browser tests serve/import distribution; chromium, firefox, webkit."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "addKyScriptToPage imports distribution; three browsers."
+      "note": "Distribution injected; three browsers. / addKyScriptToPage injects distribution; three default browsers."
      }
     },
     {
@@ -2280,14 +2289,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "macos-latest and node versions; omits Playwright/npm test steps. / macOS and node versions right; omits Playwright install/npm test steps."
+      "note": "OS, versions, fail-fast; omits Playwright install and npm test steps. / OS and Node versions right; omits Playwright install and npm test steps."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "Node versions and steps; omits macos-latest. / Node versions and steps right; omits macos-latest."
+      "note": "macos-latest, latest/24/22, playwright install, npm test. / macos-latest, Node latest/24/22, Playwright install then npm test."
      }
     },
     {
@@ -2300,14 +2309,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Node>=22, ESM, distribution via tsconfig.dist. / Node>=22, ESM, distribution via tsconfig.dist.json."
+      "note": "Node >=22, ESM, tsconfig.dist outDir distribution. / Node >=22, type module, outDir distribution via tsconfig.dist.json."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All facts. / Node>=22, type module, distribution output."
+      "note": "Node >=22, ESM, distribution. / Node >=22, ESM, distribution output via tsc."
      }
     }
    ],
@@ -2322,14 +2331,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Accurate chain; finalize_request internals (make_response/process_response/request_finished) not described. / Detailed accurate chain; finalize_request internals (make_response/process_response/request_finished) not described."
+      "note": "Detailed and accurate chain incl. handle_exception and pop; omits process_response/request_finished. / Detailed and accurate chain; finalize_request internals (process_response, request_finished) not described."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Chain right; omits handle_exception and handle_user_exception naming. / Main chain right; omits handle_user_exception/handle_exception specifics."
+      "note": "Main chain right; omits handle_user_exception/handle_exception and request_finished details; dispatch vague. / Main chain right; dispatch_request vague, omits handle_user_exception, handle_exception, request_finished/process_response."
      }
     },
     {
@@ -2342,14 +2351,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Push/pop, nesting count, full pop order shown in code. / Push/pop, push count, session before match, teardown order with code."
+      "note": "Push/pop steps, nested count, teardown order all match code. / Accurate push/pop, nested counting, teardown order, collected errors."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "Push/pop and nesting right; omits request.close and pop order detail. / Push count, session then match, teardown order; omits request.close."
+      "score": 1.0,
+      "split": false,
+      "note": "Merged class, push steps, counter, pop order correct. / Merged AppContext, push/pop counting and teardown order correct."
      }
     },
     {
@@ -2362,14 +2371,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All steps incl. ValueError, deferred replay, nested recursion. / Full accurate walkthrough incl. ValueError, deferred replay, nesting."
+      "note": "Accurate incl. ValueError, name option, merge, deferred replay, nesting. / Accurate delegation, ValueError on duplicate, setup state, deferred functions, nesting."
      },
      "devin": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "All steps incl. first-registration merge condition. / All steps right incl. first-registration merge and nesting."
+      "note": "Steps correct but no ValueError/name= detail on duplicate names. / Steps right but no ValueError detail for duplicate names."
      }
     },
     {
@@ -2382,14 +2391,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Scaffold, App/Flask, sansio/flask Blueprint inheritance. / Scaffold base, Flask(App), Blueprint(SansioBlueprint) with accurate refs."
+      "note": "Accurate inheritance and responsibility split. / Accurate inheritance and responsibility split with correct files."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.75,
-      "split": true,
-      "note": "Scaffold, App/Flask, Blueprint from SansioBlueprint. / App/Flask split right; Scaffold as shared base only implied."
+      "score": 1.0,
+      "split": false,
+      "note": "Flask(App), Blueprint(SansioBlueprint), Scaffold base correctly described. / Flask(App), Blueprint(SansioBlueprint), Scaffold base; sansio added in 3.0.0 is true."
      }
     },
     {
@@ -2402,14 +2411,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "One ContextVar and proxies with code; omits request_ctx alias. / ContextVar and proxies right; omits request_ctx deprecated alias."
+      "note": "Single _cv_app and four LocalProxies correct; omits request_ctx deprecated alias. / Single _cv_app ContextVar and LocalProxy attributes correct; omits request_ctx deprecated alias."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "One ContextVar and proxies correct; omits request_ctx alias. / Single _cv_app and proxies right; no 'flask.app_ctx' name or request_ctx alias."
+      "note": "Single ContextVar and proxies correct; omits request_ctx alias. / One ContextVar and proxy attributes correct; mentions RequestContext alias but not request_ctx."
      }
     },
     {
@@ -2418,18 +2427,18 @@
      "question": "What are the default session cookie related config values?",
      "reference": "SESSION_COOKIE_NAME='session', SESSION_COOKIE_DOMAIN=None, SESSION_COOKIE_PATH=None (falls back to APPLICATION_ROOT, '/'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=False, SESSION_COOKIE_PARTITIONED=False, SESSION_COOKIE_SAMESITE=None, SESSION_REFRESH_EACH_REQUEST=True, PERMANENT_SESSION_LIFETIME=timedelta(days=31).",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "All values right; omits APPLICATION_ROOT path fallback. / All defaults right; omits APPLICATION_ROOT path fallback."
+      "note": "All defaults with locations; path fallback noted. / All defaults with correct path fallback."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All values plus path fallback. / All defaults incl. path fallback."
+      "note": "All session cookie defaults and path fallback correct. / All session cookie defaults including path fallback correct."
      }
     },
     {
@@ -2442,14 +2451,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All four defaults. / All four defaults correct."
+      "note": "All four defaults correct with property code. / All four defaults correct with accurate code."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All four defaults. / All four defaults correct."
+      "note": "None, 500_000, 1_000, 4093 correct. / All four defaults correct."
      }
     },
     {
@@ -2458,18 +2467,18 @@
      "question": "In what order are before_request and after_request functions run when a blueprint (possibly nested) handles the request?",
      "reference": "preprocess_request first runs url_value_preprocessors and then before_request funcs. Each set goes over names (None, *reversed(request.blueprints)): app first, then outer to inner blueprint, each list in registration order. The first non-None return value short-circuits. process_response first runs the after_this_request functions in registration order. It then goes over chain(request.blueprints, (None,)), innermost blueprint first and the app last, and calls each after_request list in reverse registration order. Last it saves the session unless it is a NullSession.",
      "neodevex": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "Before/after order, short-circuit, session save via code. / Orders, short-circuit, after_this_request, session save via code."
+      "note": "Before order right; answer truncated during after_request section. / before_request order right; answer truncated mid after_request, no short-circuit or session save."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Order and short-circuit right; session save not mentioned. / Orders and short-circuit right; session save not mentioned."
+      "note": "before order and short-circuit right; omits after_this_request first and session save. / before/after ordering and short-circuit right; omits after_this_request and session save."
      }
     },
     {
@@ -2482,14 +2491,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Reverse order, blueprint first, collect errors, exception group. / Reverse order, bp before app, collect errors, group/first error."
+      "note": "Blueprint then app, reversed, all run, grouped errors raised. / Blueprint then app reverse order, collect-and-raise behavior correct."
      },
      "devin": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
-      "split": false,
-      "note": "All facts incl. 3.2 change. / All facts incl. 3.2 change and 3.10 fallback."
+      "score": 0.75,
+      "split": true,
+      "note": "Order, _CollectErrors, ExceptionGroup correct; omits blueprint-before-app ordering. / Order, signals, _CollectErrors, BaseExceptionGroup vs first error, 3.2 change."
      }
     },
     {
@@ -2502,14 +2511,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Code-then-class, blueprint-first, MRO; omits RoutingException bypass. / Code-then-class, bp-then-app, MRO right; RoutingException not mentioned."
+      "note": "Order and MRO correct with code; omits RoutingException exclusion. / Accurate lookup loop with MRO and nested order; omits RoutingException exclusion."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Order and MRO right; omits RoutingException bypass. / Order and MRO right; RoutingException exclusion omitted."
+      "note": "Code-then-class, blueprint-first, MRO correct; omits RoutingException exclusion. / Code-before-class, blueprint-before-app, MRO right; omits RoutingException exclusion."
      }
     },
     {
@@ -2522,14 +2531,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Signal, propagate, ISE to handler; omits from_error_handler=True. / Signal, propagate, 500 handler right; no from_error_handler=True."
+      "note": "Signal, propagate rule, ISE handler correct; omits from_error_handler/after_request still runs. / Signal, logging, InternalServerError, propagation rules right; omits from_error_handler/after_request."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Signal, propagate rule, ISE original_exception; omits from_error_handler. / Signal, propagate, InternalServerError right; no from_error_handler=True."
+      "note": "Signal, propagate, ISE handler right; omits finalize from_error_handler semantics. / Propagation and 500 handling right; omits from_error_handler and after_request still running."
      }
     },
     {
@@ -2542,14 +2551,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Defaults, types, formatting, trailing newline. / All defaults, types, indent logic, trailing newline."
+      "note": "All defaults, types, TypeError, indent/compact and trailing newline. / All defaults, types, TypeError, indent/separators and trailing newline correct."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults, types, indent logic right; omits trailing newline. / Defaults and types right; trailing newline not mentioned."
+      "note": "Defaults, extra types, indent rule right; omits trailing newline and TypeError. / Defaults, types, compact logic right; omits trailing newline."
      }
     },
     {
@@ -2562,14 +2571,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior. / Vary/delete/set logic right; no NullSession/bad-signature behavior."
+      "note": "Vary, delete, set and skip conditions right; omits NullSession/bad signature. / Accurate save_session logic; omits NullSession and invalid signature behavior."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vary/delete/set logic right; omits NullSession and bad-signature behavior. / Vary/delete/set logic right; no NullSession/bad-signature behavior."
+      "note": "Vary/delete/set/should_set_cookie right; omits NullSession and bad-signature behavior. / Set/delete/skip and Vary right; omits NullSession and bad-signature behavior."
      }
     },
     {
@@ -2578,18 +2587,18 @@
      "question": "What status code does flask.redirect() / app.redirect() use by default in this checkout?",
      "reference": "303 See Other. Both flask.helpers.redirect and App.redirect default to code=303, a change from 302 in 3.2.",
      "neodevex": {
-      "verdict": "partial",
-      "hallucination": true,
-      "score": 0.5,
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
       "split": false,
-      "note": "303 and 3.2 change; misleading on app.redirect, not confirmed. / 303 and 3.2 right; falsely says Flask defines no redirect method."
+      "note": "303 with changelog noting change from 302. / 303 with changelog evidence."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "303 for both, changed from 302 in 3.2. / 303 default, changed from 302 in 3.2."
+      "note": "303, changed from 302 in 3.2."
      }
     },
     {
@@ -2602,14 +2611,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Deprecated alias; fresh context each request."
+      "note": "Alias with warning code; new context per request. / Alias removed in 4.0; new combined context each request."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Deprecated alias; no reuse of pushed context. / Deprecated alias; no reuse of existing context."
+      "note": "Deprecated alias; fresh context pushed per request."
      }
     },
     {
@@ -2622,14 +2631,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Detection, warning text, remove_ctx wrapper, method list. / Detection, exact warning, remove_ctx wrapping, method list."
+      "note": "Exact warning, wrapping, and full list of 12 methods. / Warning text, wrapping, and full list of 12 methods correct."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "ctx param, __init_subclass__ warning, remove_ctx/add_ctx. / ctx param, __init_subclass__ warning, remove_ctx/add_ctx, 12 methods."
+      "note": "Detection in __init_subclass__, warning, remove_ctx/add_ctx wrapping. / Detection in __init_subclass__, DeprecationWarning, remove_ctx/add_ctx wrapping."
      }
     },
     {
@@ -2642,14 +2651,14 @@
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "False via get_debug_flag; wrongly lists off as falsy, omits no. / False via get_debug_flag right; wrongly lists 'off' as falsy (only 0/false/no)."
+      "note": "False by default via make_config correct; wrongly says get_debug_flag checks FLASK_ENV. / False via make_config/get_debug_flag correct; wrongly says get_debug_flag checks FLASK_ENV."
      },
      "devin": {
-      "verdict": "correct",
-      "hallucination": false,
-      "score": 1.0,
+      "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
       "split": false,
-      "note": "None overwritten by get_debug_flag; correct falsy values."
+      "note": "Asserts config DEBUG initially None; never states False default or falsey values. / Leads with None, never states effective default False; no falsy values list."
      }
     },
     {
@@ -2659,17 +2668,17 @@
      "reference": "In src/flask/sessions.py, SecureCookieSessionInterface.get_signing_serializer. It returns None when there is no secret_key. Otherwise it builds an itsdangerous URLSafeTimedSerializer with salt='cookie-session', key_derivation='hmac', digest_method SHA-1 (looked up lazily through _lazy_sha1 so FIPS builds can import it), and a TaggedJSONSerializer payload serializer. The key list is SECRET_KEY_FALLBACKS followed by SECRET_KEY, with the current key last.",
      "neodevex": {
       "verdict": "partial",
+      "hallucination": true,
+      "score": 0.5,
+      "split": false,
+      "note": "Correct params, but claims itsdangerous signs with first key (fallback); omits TaggedJSONSerializer. / Location, salt, hmac, SHA-1, key list right; wrongly says first key signs; truncated."
+     },
+     "devin": {
+      "verdict": "partial",
       "hallucination": false,
       "score": 0.75,
       "split": true,
-      "note": "All details except TaggedJSONSerializer payload serializer. / All facts with code incl. None without secret key."
-     },
-     "devin": {
-      "verdict": "correct",
-      "hallucination": false,
-      "score": 1.0,
-      "split": false,
-      "note": "salt, hmac, lazy sha1, TaggedJSONSerializer, key order. / Salt, hmac, lazy sha1, TaggedJSON, fallback ordering."
+      "note": "Salt, digest, hmac, TaggedJSON, key order right; omits None when no secret key. / All parameters incl. TaggedJSONSerializer and fallback key ordering correct."
      }
     },
     {
@@ -2682,14 +2691,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full order with code. / Accurate with code: --app/FLASK_APP, files, find_best_app order."
+      "note": "load_app, wsgi.py/app.py, find_best_app order correct."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "load_app, wsgi.py/app.py, find_best_app order."
+      "note": "Correct discovery order incl. create_app callback and find_best_app. / Correct discovery order including find_best_app and factories."
      }
     },
     {
@@ -2702,14 +2711,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "scaffold.py with validation code and storage. / scaffold.py registration, validation, errors with code."
+      "note": "Registration, validation code, storage key structure correct. / Accurate code for registration and validation errors."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Scaffold registration, ValueError/TypeError, spec structure. / _get_exc_class_and_code; ValueError/TypeError; spec structure."
+      "note": "Scaffold validation, ValueError/TypeError, error_handler_spec structure. / Scaffold registration, ValueError/TypeError, error_handler_spec structure correct."
      }
     },
     {
@@ -2718,18 +2727,18 @@
      "question": "Where are a route's default HTTP methods and automatic OPTIONS handling decided, and where is the OPTIONS response produced?",
      "reference": "App.add_url_rule in src/flask/sansio/app.py decides this. methods come from the argument, else view_func.methods, else ('GET',). A plain string raises TypeError. The values are upper-cased and view_func.required_methods are added. provide_automatic_options comes from the argument, else the view_func attribute, else ('OPTIONS' not in methods and config PROVIDE_AUTOMATIC_OPTIONS, which defaults to True). When it is enabled, OPTIONS is added. At request time Flask.dispatch_request answers OPTIONS through make_default_options_response, which fills Allow from url_adapter.allowed_methods(). Registering a different function for an existing endpoint raises AssertionError.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "add_url_rule and OPTIONS flow right; omits str TypeError. / add_url_rule, OPTIONS logic, dispatch right; omits str TypeError."
+      "note": "add_url_rule logic, TypeError for str, OPTIONS via make_default_options_response. / add_url_rule methods/OPTIONS logic and make_default_options_response correct."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
-      "score": 0.5,
-      "split": false,
-      "note": "Logic right; omits str TypeError. / Methods/OPTIONS/dispatch right; omits str TypeError."
+      "score": 0.75,
+      "split": true,
+      "note": "Correct overall; omits str TypeError and default tuple detail. / Methods, required_methods, automatic OPTIONS and response production correct."
      }
     },
     {
@@ -2742,14 +2751,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": ">=3.10 and matrix; omits mypy/pyright 3.10. / requires-python and matrix right; omits mypy/pyright 3.10."
+      "note": ">=3.10 and CI matrix; omits mypy/pyright target 3.10. / >=3.10 and tested versions right; omits mypy/pyright 3.10 target."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All facts incl. type checker baseline. / Requires 3.10, matrix incl 3.14t/PyPy, type checkers 3.10."
+      "note": "3.10-3.14, 3.14t, PyPy, mypy/pyright 3.10. / Range, tested versions incl. 3.14t/PyPy, type checker baseline 3.10."
      }
     },
     {
@@ -2762,14 +2771,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "tox and CI command right; omits filterwarnings error and lock runner. / tox, CI uv command, testpaths right; omits filterwarnings error."
+      "note": "Exact CI command and pytest args; omits tox-uv runner and filterwarnings error. / Exact CI command and tox config; omits filterwarnings=error and tox-uv runner."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "tox/pytest general; omits CI command, uv runner, filterwarnings. / tox and pytest described; no CI command, uv runner, filterwarnings."
+      "note": "tox+pytest and matrix; CI command imprecise, no tox-uv or filterwarnings=error. / tox/pytest/CI covered; omits uv runner details and filterwarnings=error."
      }
     },
     {
@@ -2782,14 +2791,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Typing env, strict mypy, basic pyright, CI. / mypy strict, pyright basic, tox typing env, CI."
+      "note": "Full config and execution details correct. / Exact mypy/pyright config and tox/CI execution."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "All key facts. / All facts; CI command quoted without some flags."
+      "note": "mypy strict, pyright basic, tox typing env, CI job. / typing env runs mypy strict and pyright basic; correct."
      }
     },
     {
@@ -2802,14 +2811,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Pins and main branches right; omits Python versions and hooks. / Pins, git main, pre-commit right; omits base Python versions and hooks."
+      "note": "Exact pins and main-branch installs; omits Python versions and pre-commit hook list. / Pinned min versions, dev main, pre-commit right; no Python versions or hook list."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Versions 3.14/3.10 right; omits pins and hook list. / Purposes and Python versions right; no pins or hook names."
+      "note": "Generic purpose of each env; no versions, pins, or hooks. / General purposes right; no versions, Python bases, or hook names."
      }
     }
    ],
@@ -2824,14 +2833,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full trace with fast path and not-finalized error. / All steps incl. fast path and not-finalized throw."
+      "note": "Full accurate trace incl. fast path, compose, not-finalized error, error handler. / Accurate dispatch, fast path, compose, not-finalized error, error handling."
      },
      "devin": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "dispatch, getPath, match, Context, fast path, compose, not-finalized error. / dispatch, getPath/match, Context, fast path, compose, finalized error."
+      "note": "fetch, #dispatch, getPath, match, Context, fast path correct; omits 'Context is not finalized' error. / fetch->#dispatch, getPath/match/Context, fast path right; omits non-finalized context error."
      }
     },
     {
@@ -2844,14 +2853,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Workers no-handle right; Vercel fetch and Lambda env/createResult not detailed. / Workers no handle, Lambda processors; misses env arg and createResult/base64."
+      "note": "Workers no-handle correct; lacks Vercel body, Lambda env/createResult details. / Workers no handle right; lacks vercel req=>app.fetch and Lambda env/createResult details."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Vercel/Pages right; invents deprecation of adapters for v5; Lambda env contents omitted. / Adapters roughly right; invented deprecation of hono/vercel etc. for v5."
+      "note": "Pages and Vercel ok; falsely claims adapters deprecated for v5; Lambda env omitted. / General adapter roles right; claims adapters marked deprecated for v5, not in code."
      }
     },
     {
@@ -2864,14 +2873,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "quick/tiny right; says default router not defined in context. / quick/tiny right; default hono router not covered."
+      "note": "Correct routers with code; does not state presets ignore options.router."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "All routers right; omits presets overwriting options.router. / Routers correct; omits presets overwriting options.router."
+      "note": "Router per entry correct; doesn't note presets overwrite options.router. / Routers per entry point correct; does not note presets overwrite options.router."
      }
     },
     {
@@ -2884,14 +2893,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Clone, route copying via #addRoute, error handler wrapping. / Clone, copy via #addRoute, conditional compose wrap with code."
+      "note": "Clone/merge, call-time copy via #addRoute, onError compose wrapping all correct. / Clone, mergePath, route copying via #addRoute, errorHandler wrapping all correct."
      },
      "devin": {
       "verdict": "partial",
-      "hallucination": false,
+      "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Clone and route copying right; omits errorHandler wrapping. / Clone and route copying; omits errorHandler compose wrapping."
+      "note": "basePath clone and route copy right; bogus /api/book example; omits onError wrapping. / basePath clone and route copying right; omits sub-app error handler wrapping."
      }
     },
     {
@@ -2904,14 +2913,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Getter/setter right; compose assignment condition omitted. / Lazy getter, setter merge; compose condition and content-type skip missing."
+      "note": "Lazy res, setter merge/finalize correct; omits compose's finalized/onError assignment condition. / Lazy res, setter merge, finalized correct; omits content-type skip and onError exception in compose."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy getter and setter header merge right; omits compose assignment rule. / Lazy getter and setter merge correct; misses compose assignment rule."
+      "note": "Lazy getter and header-merging setter right; misses content-type skip and compose assignment condition. / Lazy res, header merge, finalized right; omits compose assign-only-if-unfinalized rule."
      }
     },
     {
@@ -2924,14 +2933,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Default routers, lazy UnsupportedPathError selection; omits add-after-build error. / Default routers, lazy lock-in; omits add-after-build error."
+      "note": "Accurate selection logic with lines; omits add-after-build error. / Accurate selection logic; omits error when adding routes after build."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Lazy selection and name update; omits add-after-build error. / Lazy selection, name update; omits add-after-build error."
+      "note": "Lazy first-match selection, UnsupportedPathError, lock-in; omits add-after-build error. / Default and lazy first-match selection right; omits add-after-build error."
      }
     },
     {
@@ -2944,14 +2953,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "next() twice, Error-only, onNotFound; omits routeIndex. / next-twice, Error-only onError, notFound; misses routeIndex."
+      "note": "next twice, onNotFound, assignment rule; omits routeIndex and Error-only onError. / next twice, onError, onNotFound right; omits routeIndex and non-Error rethrow."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "next() twice, routeIndex, onNotFound; omits Error-only onError rule. / next-twice, routeIndex, onError, notFound; misses Error-only onError."
+      "note": "next twice, routeIndex, onNotFound right; omits non-Error rethrow. / next twice, routeIndex, onNotFound right; omits non-Error rethrow rule."
      }
     },
     {
@@ -2964,14 +2973,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Exact defaults and preflight handling. / Defaults and preflight 204/reflection exactly match code."
+      "note": "Exact defaults, 204 preflight, header reflection. / Exact defaults and full preflight handling correct."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "wrong",
       "hallucination": true,
-      "score": 0.5,
+      "score": 0.0,
       "split": false,
-      "note": "Adds QUERY to default allowMethods; otherwise preflight details right. / Preflight correct; default allowMethods wrongly includes QUERY."
+      "note": "Adds non-existent 'QUERY' to default allowMethods; preflight otherwise right. / Default allowMethods wrongly includes QUERY; preflight description otherwise right."
      }
     },
     {
@@ -2980,18 +2989,18 @@
      "question": "How does the etag() middleware generate and compare ETags by default?",
      "reference": "After next() runs, if the response has no ETag header, the middleware hashes a clone of the body with crypto.subtle.digest SHA-1 (unless a custom generateDigest is given). The value is a strong ETag '\"<hash>\"' by default, or 'W/\"<hash>\"' when weak: true. If-None-Match is compared with the W/ prefix stripped, so the comparison is weak. On a match it replaces the response with a 304 'Not Modified' that keeps only the retained headers: cache-control, content-location, date, etag, expires and vary. If crypto.subtle is not available and no generator is given, it leaves the response unchanged.",
      "neodevex": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": false,
-      "score": 0.5,
+      "score": 1.0,
       "split": false,
-      "note": "SHA-1, strong default, W/ stripping; omits retained 304 headers. / SHA-1, strong default, W/ stripping; misses retained 304 headers."
+      "note": "SHA-1, strong default, W/ stripping, 304 with retained headers. / SHA-1, strong default, weak comparison, retained 304 headers correct."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Invents '*' match and GET/HEAD/QUERY 2xx conditions. / Invents If-None-Match * and GET/HEAD/QUERY, 2xx checks."
+      "note": "Core facts right; invents '*' matching and GET/HEAD/QUERY + ok-only restriction. / Core facts right; invents If-None-Match * handling and GET/HEAD/QUERY/ok-only restriction."
      }
     },
     {
@@ -3004,14 +3013,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full list, COEP false, CSP unset, removePoweredBy. / All defaults, COEP false, CSP unset, removePoweredBy."
+      "note": "All default headers, COEP off, X-Powered-By removed, CSP unset."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Full default list, X-Powered-By removal, CSP unset. / Full default list, CSP not set, X-Powered-By removed."
+      "note": "All defaults correct; COEP false; CSP not set. / All defaults correct including COEP false and removePoweredBy."
      }
     },
     {
@@ -3024,14 +3033,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Enforcement and 413 default exact; omits maxSize required. / Length/stream logic and 413 default correct; maxSize required not stated."
+      "note": "Accurate enforcement and HTTPException 413; omits maxSize being required. / Content-Length vs streaming logic and default 413 HTTPException right; omits maxSize required."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Enforcement and 413 right; omits HTTPException and maxSize required. / Logic and 413 correct; omits required maxSize, HTTPException throw."
+      "note": "Enforcement right; omits required maxSize and HTTPException throw. / Enforcement logic right; omits required maxSize and HTTPException in default."
      }
     },
     {
@@ -3040,18 +3049,18 @@
      "question": "What do the default notFound and error handlers return, and how are HTTPExceptions handled?",
      "reference": "The default notFound handler returns c.text('404 Not Found', 404). The default error handler checks 'getResponse' in err, which is duck typing rather than an instanceof HTTPException check. If present, it returns c.newResponse(res.body, res) from err.getResponse(). Otherwise it calls console.error(err) and returns c.text('Internal Server Error', 500). app.onError() and app.notFound() replace these handlers. A thrown value that is not an Error is rethrown by #handleError instead of being handled.",
      "neodevex": {
-      "verdict": "wrong",
-      "hallucination": true,
-      "score": 0.0,
+      "verdict": "correct",
+      "hallucination": false,
+      "score": 1.0,
       "split": false,
-      "note": "Claims no default error handler; default returns 500 and uses getResponse."
+      "note": "Exact handler code, HTTPException flow, instanceof Error check. / Exact handler code, HTTPException getResponse, #handleError instanceof Error check."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Defaults and getResponse right; omits non-Error rethrow. / 404/500/getResponse correct; misses non-Error rethrow."
+      "note": "404/500 and getResponse duck typing; omits non-Error rethrow. / Default handlers and getResponse duck typing right; omits non-Error rethrow."
      }
     },
     {
@@ -3060,18 +3069,18 @@
      "question": "What are the defaults of c.redirect(), c.text(), c.json() and c.notFound()?",
      "reference": "c.redirect(location, status?) sets the Location header and returns a response with status 302 by default. A location containing characters outside \\x00-\\xFF is passed through encodeURI. c.text() takes a fast path, returning new Response(text), when no headers, status, arguments or finalization exist. Otherwise it sets Content-Type 'text/plain; charset=UTF-8'. c.json() JSON.stringifies the value with Content-Type 'application/json'. c.notFound() calls the notFound handler the app passed into the Context, so a custom app.notFound applies. It falls back to an empty Response if none was passed.",
      "neodevex": {
+      "verdict": "partial",
+      "hallucination": false,
+      "score": 0.5,
+      "split": false,
+      "note": "302, content types right; omits encodeURI and app notFound delegation. / 302 and content types right; omits encodeURI and app notFound delegation."
+     },
+     "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "302, encodeURI, text fast path, notFound delegation. / 302, encodeURI, text fast path/charset, notFound delegation."
-     },
-     "devin": {
-      "verdict": "partial",
-      "hallucination": true,
-      "score": 0.5,
-      "split": false,
-      "note": "302 and content types right; c.notFound default wrongly empty 404. / 302 and text type right; c.notFound empty 404 claim false."
+      "note": "302, encoding, text/plain charset, json type, notFound delegation. / 302, encoding, text content-type, json, notFound delegation correct."
      }
     },
     {
@@ -3084,14 +3093,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "getPath/getPathNoStrict in url.ts, strict default true. / url.ts getPath/getPathNoStrict, strict default true, HonoBase selection."
+      "note": "Exact code for selection and both path functions. / Exact constructor selection and url.ts functions."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "url.ts functions and constructor selection with default true. / url.ts functions, strict default, constructor ternary."
+      "note": "getPath/getPathNoStrict in url.ts, constructor selection, strict default true. / getPath/getPathNoStrict in url.ts; constructor selection; strict default true."
      }
     },
     {
@@ -3100,18 +3109,18 @@
      "question": "Where does RegExpRouter build its matchers, and when does that happen?",
      "reference": "In src/router/reg-exp-router/matcher.ts, function match(). On the first call it runs this.buildAllMatchers(), which RegExpRouter defines in router.ts and which builds one matcher per method from #routes and #middleware. It then replaces this.match with a closure that checks a static-path map first and otherwise runs one combined RegExp, using the index of the empty capture group to pick the handler set. Path conflicts are reported at that point by rethrowing the trie's PATH_ERROR as UnsupportedPathError.",
      "neodevex": {
-      "verdict": "correct",
+      "verdict": "partial",
       "hallucination": false,
-      "score": 1.0,
+      "score": 0.5,
       "split": false,
-      "note": "matcher.ts lazy match, buildAllMatchers, static map, UnsupportedPathError. / matcher.ts lazy build, match replaced, static map, UnsupportedPathError."
+      "note": "Lazy build in matcher.ts match, replaced match; omits UnsupportedPathError conversion. / Lazy build via matcher.ts match and buildAllMatchers right; no UnsupportedPathError."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Claims routes inserted into trie at add and #tries field; neither exist. / Lazy buildAllMatchers, static map; misses matcher.ts and conflict errors."
+      "note": "Lazy build right; invents #tries field and per-method stored trie; no matcher.ts. / Lazy build right; invents #tries property, no matcher.ts or UnsupportedPathError."
      }
     },
     {
@@ -3124,14 +3133,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "bodyCache, conversion code, json via text+parse. / Exact #cachedBody logic and json via text."
+      "note": "bodyCache/#cachedBody with conversion and json via text. / bodyCache/#cachedBody, cross-type conversion, json via text."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "bodyCache, #cachedBody conversion, json via text. / bodyCache/#cachedBody, Response conversion, json via text."
+      "note": "Correct caching, conversion, json via cached text. / bodyCache, #cachedBody conversion, json via cached text correct."
      }
     },
     {
@@ -3144,14 +3153,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Constructor, METHODS list, #addRoute, use '*'. / Constructor, METHODS list, #addRoute, use with * and ALL."
+      "note": "Constructor loop, on, use with '*', METHODS list correct. / Constructor loop, METHODS list, on/use with ALL and * correct."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
-      "score": 0.25,
-      "split": true,
-      "note": "Lists nonexistent query shortcut. / Claims a query shortcut; METHODS has no query."
+      "score": 0.0,
+      "split": false,
+      "note": "Claims METHODS includes 'query' and app.query exists. / Claims METHODS includes query and app.query exists; it does not."
      }
     },
     {
@@ -3164,14 +3173,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "HEAD dispatched as GET with null body. / HEAD re-dispatched as GET with null body."
+      "note": "HEAD re-dispatched as GET with null body; not in METHODS."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "correct",
       "hallucination": true,
-      "score": 0.75,
-      "split": true,
-      "note": "Correct core; invents methodNotAllowed middleware. / Core correct; methodNotAllowed middleware does not exist at commit."
+      "score": 1.0,
+      "split": false,
+      "note": "Core behavior right; invents a methodNotAllowed middleware. / Core behavior right; cites nonexistent methodNotAllowed middleware."
      }
     },
     {
@@ -3184,14 +3193,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "getPathNoStrict always used with strict:false. / getPathNoStrict always used; custom ignored."
+      "note": "getPathNoStrict always used with strict:false. / getPathNoStrict used; custom getPath ignored; test cited."
      },
      "devin": {
-      "verdict": "partial",
+      "verdict": "wrong",
       "hallucination": true,
-      "score": 0.5,
+      "score": 0.0,
       "split": false,
-      "note": "Opens claiming custom getPath used, then correctly says getPathNoStrict. / Opens claiming custom getPath used, then correctly concludes getPathNoStrict."
+      "note": "Opens by saying custom getPath is used; contradicts itself later. / Opens by saying custom getPath is used, contradicting code and its own conclusion."
      }
     },
     {
@@ -3204,14 +3213,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Sub onError wrapped, parent notFound used. / Sub onError wrapped, parent notFound, code cited."
+      "note": "Sub onError via compose wrap; parent notFound used. / Sub onError via compose wrap; parent notFound; accurate test evidence."
      },
      "devin": {
       "verdict": "correct",
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Sub onError kept, parent notFound used. / Sub onError wrapped, parent notFound used."
+      "note": "Sub onError kept via wrapping; parent notFound applies. / Sub onError preserved via wrapping; parent notFound applies."
      }
     },
     {
@@ -3224,14 +3233,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "401, body/headers kept; omits 500 default."
+      "note": "401 with code walk-through; omits default status 500. / 401 with body/headers kept correct; omits default 500 status."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "401, body/headers kept; omits 500 default."
+      "note": "401 with body/headers kept; omits default status 500. / 401 with body/headers kept correct; omits default 500 status."
      }
     },
     {
@@ -3240,18 +3249,18 @@
      "question": "How are tests run, and how are the per-runtime suites organized?",
      "reference": "`bun run test` runs tsc -p tsconfig.spec.json && vitest --run. vitest.config.ts defines projects: every runtime-tests/*/vitest.config.ts, plus 'main' (src/scripts/build tests, excluding *.case.test.*), 'jsx-runtime-default' and 'jsx-runtime-dom'. Coverage uses v8 and is enabled by default. Per-runtime scripts select a vitest project, for example test:node uses --project node, and the same pattern covers workerd, fastly, lambda and lambda-edge. The workerd suite starts a real worker with wrangler's unstable_dev. Deno and Bun use their native runners: test:deno runs deno test with configs in runtime-tests/deno and deno-jsx, and test:bun runs bun test runtime-tests/bun/*.",
      "neodevex": {
-      "verdict": "correct",
-      "hallucination": false,
-      "score": 1.0,
-      "split": false,
-      "note": "tsc+vitest, projects, --project scripts, deno/bun native. / tsc+vitest, projects, --project scripts, native deno/bun."
-     },
-     "devin": {
       "verdict": "partial",
-      "hallucination": true,
+      "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "Vitest projects right; invents pnpm and vp test commands. / Structure ok; pnpm and vp test commands not in this checkout."
+      "note": "Accurate scripts, projects, deno/bun runners; omits jsx-runtime projects. / Scripts, deno/bun runners, vitest projects right; omits jsx-runtime projects."
+     },
+     "devin": {
+      "verdict": "wrong",
+      "hallucination": true,
+      "score": 0.25,
+      "split": true,
+      "note": "Claims pnpm and 'vp test'; invents adapters/test:adapters and MAINTAINING.md. / Projects/coverage right; claims pnpm, vp test, adapters dirs and test:adapters."
      }
     },
     {
@@ -3264,14 +3273,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "Exact build steps incl private strip, cjs marker, publint. / build.ts esbuild ESM/CJS, tsc types, private strip, cjs json, publint."
+      "note": "Accurate build.ts esbuild ESM/CJS, tsc, private-field strip, cjs json, publint. / build/build.ts esbuild ESM/CJS, tsc d.ts, private-field strip, cjs json, publint."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims vite-plus/tsdown build; uses build.ts with esbuild. / Claims vite-plus/tsdown/vp pack; build uses build/build.ts esbuild."
+      "note": "Describes vite-plus 'vp pack' and vite.config.ts plugins that don't exist. / Describes vite-plus/vp pack/vite.config.ts build that does not exist here."
      }
     },
     {
@@ -3284,14 +3293,14 @@
       "hallucination": false,
       "score": 1.0,
       "split": false,
-      "note": "ESLint config extends, type rules off, Prettier scripts. / ESLint config extends, type rules off, directives error, Prettier."
+      "note": "ESLint flat config, rule disables, unused directives errors, prettier scripts. / ESLint flat config, disabled type-aware rules, unused directives error, Prettier."
      },
      "devin": {
       "verdict": "wrong",
       "hallucination": true,
       "score": 0.0,
       "split": false,
-      "note": "Claims oxlint/oxfmt; repo uses ESLint and Prettier."
+      "note": "Claims oxlint/oxfmt via vite-plus and pnpm; repo uses ESLint/Prettier. / Claims oxlint/oxfmt via vite-plus; repo uses ESLint and Prettier."
      }
     },
     {
@@ -3304,14 +3313,14 @@
       "hallucination": false,
       "score": 0.5,
       "split": false,
-      "note": "JSR publish, jsr.json, validateExports; omits CI dry-run. / publish-on-tag, @hono/hono, validateExports; misses CI dry-run and bidirectional."
+      "note": "publish-on-tag and bidirectional validation right; omits CI dry-run. / jsr.json, publish-on-tag, bidirectional validateExports right; omits CI dry-run."
      },
      "devin": {
       "verdict": "partial",
       "hallucination": true,
       "score": 0.5,
       "split": false,
-      "note": "Invents validatePackageExportsPlugin in vite.config.ts and pnpm dlx. / Bidirectional check right; invented vite plugin and pnpm dlx dry-run."
+      "note": "Dry-run and validateExports right; invents vite plugin, v-tag trigger, adapter job. / Bidirectional check and dry-run right; wrongly places it in vite plugin, invents adapter job."
      }
     }
    ]

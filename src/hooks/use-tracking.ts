@@ -445,7 +445,62 @@ export const useTracking = () => {
     });
   };
 
+  // Model routing (Auto mode). Only tier/source/reason codes and model ids —
+  // never prompt text or user-named profile names.
+  const trackModelRouted = ({
+    task,
+    source,
+    tier,
+    policy,
+    model,
+    switched,
+    classifierUsed,
+  }: {
+    task: string;
+    source: string;
+    tier: string | null;
+    policy: string;
+    model: string | null;
+    switched: boolean;
+    classifierUsed: boolean;
+  }) => {
+    track("model_routed", {
+      task,
+      source,
+      tier,
+      policy,
+      model,
+      switched,
+      classifier_used: classifierUsed,
+    });
+  };
+
+  const trackModelFallback = ({
+    errorKind,
+    recovered,
+    model,
+  }: {
+    errorKind: string;
+    recovered: boolean;
+    model: string | null;
+  }) => {
+    track("model_fallback", { error_kind: errorKind, recovered, model });
+  };
+
+  const trackRoutingModeChanged = ({
+    scope,
+    mode,
+  }: {
+    scope: "conversation" | "global";
+    mode: string;
+  }) => {
+    track("model_routing_mode_changed", { scope, mode });
+  };
+
   return {
+    trackModelRouted,
+    trackModelFallback,
+    trackRoutingModeChanged,
     trackLoginButtonClick,
     trackConversationCreated,
     trackPushButtonClick,

@@ -52,7 +52,16 @@ the interview, then use assign_task and generate_handoff_packet so whoever
 does have the access gets everything they need in one go.
 
 Structured arguments for a command go in \`payload\`. describe tells you the
-shape each command expects.`;
+shape each command expects.
+
+Every call answers "Tool call dispatched to client." at once; the real result
+arrives afterwards as a message starting "[onboarding result]". Never write a
+result yourself, and do not tell the user something happened before its
+result says so.
+
+assign_task only to someone the user named, with the address they gave. If
+they do not know who owns something, ask once; otherwise record it as an
+open question. Never make up an address.`;
 
 /**
  * Client tool the onboarding agent uses to drive the Environment screen.

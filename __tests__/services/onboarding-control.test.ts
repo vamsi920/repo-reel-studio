@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleOnboardingControlAction } from "#/services/onboarding-control";
+import {
+  handleOnboardingControlAction,
+  RECEIPT_NEXT_STEP,
+  withNextStep,
+} from "#/services/onboarding-control";
 import { useOnboardingCopilotStore } from "#/stores/onboarding-copilot-store";
 import { useOnboardingStudioStore } from "#/stores/onboarding-studio-store";
+import { useEventStore } from "#/stores/use-event-store";
 import {
   ONBOARDING_CONTROL_COMMANDS,
   ONBOARDING_CONTROL_ACTION_KIND,
@@ -26,6 +31,7 @@ vi.mock("#/api/environment-service/environment-service.api", () => ({
       markdown: "# packet",
       allowlistCsv: "",
     })),
+    assignTask: vi.fn(async () => undefined),
   },
   EnvironmentServiceError: class extends Error {},
 }));
@@ -43,6 +49,20 @@ const snapshot = vi.hoisted(() => ({
 }));
 vi.mock("#/lib/environment/connection-snapshot", () => ({
   snapshotConnections: vi.fn(async () => snapshot.value),
+}));
+
+const companyProfile = vi.hoisted(() => ({
+  facts: [] as Record<string, unknown>[],
+  mergeFacts: vi.fn(async () => []),
+}));
+vi.mock("#/lib/data-platform/repositories/company-profile-repository", () => ({
+  companyProfileRepository: {
+    get: vi.fn(async () => ({ facts: companyProfile.facts })),
+    mergeFacts: companyProfile.mergeFacts,
+  },
+}));
+vi.mock("#/lib/data-platform/repositories/repository-identity", () => ({
+  resolveOrgId: vi.fn(async () => "org-1"),
 }));
 
 vi.mock("#/hooks/query/use-onboarding-session", () => ({
@@ -64,6 +84,19 @@ const context = {
   postResult: (message: string) => posted.push(message),
   conversationId: "conv-1",
 };
+
+/** What an interview has learned before a plan is allowed. */
+function seedCoreDiscovery() {
+  useOnboardingStudioStore.getState().mergeFacts(
+    (["stack", "delivery", "systems"] as const).map((section) => ({
+      key: `${section}.seed`,
+      section,
+      text: `${section} answer`,
+      confidence: "stated" as const,
+      at: "2026-10-13T00:00:00.000Z",
+    })),
+  );
+}
 
 beforeEach(() => {
   posted = [];
@@ -395,7 +428,9 @@ describe("the interview loop", () => {
     expect(useOnboardingStudioStore.getState().facts).toEqual([]);
   });
 
-  it("rejects a fact in an unknown section rather than inventing one", async () => {
+  // Case study round 3: rejecting an unknown section ("llm") only made the
+  // agent retry the same fact, six times in one session.
+  it("keeps a fact in an unknown section under org instead of refusing it", async () => {
     await handleOnboardingControlAction(
       action({
         command: "record_discovery",
@@ -408,7 +443,10 @@ describe("the interview loop", () => {
       context,
     );
     const payload = JSON.parse(posted[0].replace(ONBOARDING_RESULT_PREFIX, ""));
-    expect(payload.reason).toBe("no_valid_facts");
+    expect(payload.status).toBe("recorded");
+    expect(useOnboardingStudioStore.getState().facts).toEqual([
+      expect.objectContaining({ key: "x", section: "org" }),
+    ]);
   });
 
   it("tells the agent what exists instead of freezing it into the schema", async () => {
@@ -445,7 +483,51 @@ describe("the interview loop", () => {
     expect(payload.can_write_connections).toBe(false);
   });
 
+  it("says when a repeated record_discovery saved nothing new", async () => {
+    const record = action({
+      command: "record_discovery",
+      payload: {
+        facts: [
+          {
+            key: "ci",
+            section: "delivery",
+            text: "GitLab CI",
+            confidence: "stated",
+          },
+        ],
+      },
+    });
+    await handleOnboardingControlAction(record, context);
+    await handleOnboardingControlAction(record, context);
+
+    const receipt = JSON.parse(
+      posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""),
+    );
+    expect(receipt).toMatchObject({ status: "already_recorded", count: 0 });
+  });
+
+  it("refuses a plan before the interview has covered the basics", async () => {
+    await handleOnboardingControlAction(
+      action({
+        command: "set_setup_plan",
+        payload: { steps: [{ id: "a", title: "Connect source control" }] },
+      }),
+      context,
+    );
+
+    const receipt = JSON.parse(
+      posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""),
+    );
+    expect(receipt).toMatchObject({
+      status: "rejected",
+      reason: "discovery_incomplete",
+      missing_sections: ["stack", "delivery", "systems"],
+    });
+    expect(useOnboardingStudioStore.getState().steps).toEqual([]);
+  });
+
   it("plans, then advances to the next outstanding step", async () => {
+    seedCoreDiscovery();
     await handleOnboardingControlAction(
       action({
         command: "set_setup_plan",
@@ -468,6 +550,272 @@ describe("the interview loop", () => {
       context,
     );
     expect(useOnboardingStudioStore.getState().currentStepId).toBe("b");
+  });
+
+  // Case study S2 (case-studies/onboarding): "in_progress" used to count as
+  // done, a connection step finished with nothing connected, and
+  // complete_setup closed the session anyway.
+  describe("does not let unfinished work count as finished", () => {
+    const plan = () => {
+      seedCoreDiscovery();
+      return handleOnboardingControlAction(
+        action({
+          command: "set_setup_plan",
+          payload: {
+            steps: [
+              {
+                id: "scm",
+                title: "Reconnect GitHub",
+                capability: "source-control",
+              },
+              { id: "talk", title: "Agree on conventions" },
+            ],
+          },
+        }),
+        context,
+      );
+    };
+    const lastReceipt = () =>
+      JSON.parse(posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""));
+
+    it("treats in_progress as started, and rejects a status it does not know", async () => {
+      await plan();
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "talk", status: "in_progress" },
+        }),
+        context,
+      );
+      expect(
+        useOnboardingStudioStore.getState().steps.find((s) => s.id === "talk")
+          ?.status,
+      ).toBe("active");
+
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "talk", status: "almost" },
+        }),
+        context,
+      );
+      expect(lastReceipt()).toMatchObject({
+        status: "rejected",
+        reason: "invalid_status",
+      });
+    });
+
+    it("refuses to finish a connection step until that connection works", async () => {
+      await plan();
+      snapshot.value = {
+        connections: [
+          {
+            capability: "source-control",
+            status: "revoked",
+            needs_reconnect: true,
+          },
+        ],
+        can_write_connections: true,
+      };
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "scm", status: "done" },
+        }),
+        context,
+      );
+      expect(lastReceipt()).toMatchObject({
+        status: "rejected",
+        reason: "not_verified",
+      });
+
+      snapshot.value = {
+        connections: [
+          {
+            capability: "source-control",
+            status: "ok",
+            needs_reconnect: false,
+          },
+        ],
+        can_write_connections: true,
+      };
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "scm", status: "done" },
+        }),
+        context,
+      );
+      expect(lastReceipt()).toMatchObject({ status: "advanced" });
+      snapshot.value = { connections: [], can_write_connections: true };
+    });
+
+    it("does not let another provider's connection finish the step", async () => {
+      await plan();
+      useOnboardingStudioStore.getState().pushCard({
+        id: "form:gitlab-self-managed:default",
+        kind: "form",
+        capability: "source-control",
+        providerId: "gitlab-self-managed",
+        instanceKey: "default",
+        fields: "all",
+        status: "open",
+      });
+      snapshot.value = {
+        connections: [
+          {
+            provider: "github",
+            capability: "source-control",
+            status: "ok",
+            needs_reconnect: false,
+          },
+        ],
+        can_write_connections: true,
+      };
+
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "scm", status: "done" },
+        }),
+        context,
+      );
+
+      expect(lastReceipt()).toMatchObject({
+        status: "rejected",
+        reason: "not_verified",
+      });
+      snapshot.value = { connections: [], can_write_connections: true };
+    });
+
+    // A bank's GitLab on gitlab.<bank>.internal: the Edge Function cannot
+    // call it, so its row says "error"; the check from the agent's runtime
+    // is what counts.
+    it("counts a private-network connection that passed from the runtime", async () => {
+      await plan();
+      snapshot.value = {
+        connections: [
+          {
+            provider: "gitlab-self-managed",
+            capability: "source-control",
+            status: "error",
+            needs_reconnect: false,
+          },
+        ],
+        can_write_connections: true,
+      };
+      useOnboardingStudioStore.getState().recordRuntimeCheck({
+        providerId: "gitlab-self-managed",
+        capability: "source-control",
+        instanceKey: "default",
+        ok: true,
+        scheme: "https",
+        envNames: ["GITLAB_SELF_MANAGED_ACCESS_TOKEN"],
+        at: "2026-10-13T00:00:00.000Z",
+      });
+
+      await handleOnboardingControlAction(
+        action({
+          command: "advance_plan",
+          payload: { stepId: "scm", status: "done" },
+        }),
+        context,
+      );
+
+      expect(lastReceipt()).toMatchObject({ status: "advanced" });
+      snapshot.value = { connections: [], can_write_connections: true };
+    });
+
+    it("will not complete setup while steps are still open", async () => {
+      await plan();
+      await handleOnboardingControlAction(
+        action({ command: "complete_setup" }),
+        context,
+      );
+      expect(lastReceipt()).toMatchObject({
+        status: "rejected",
+        reason: "steps_outstanding",
+      });
+      expect(completeOnboardingSessionForConversation).not.toHaveBeenCalled();
+    });
+  });
+});
+
+// Case study S5 (case-studies/onboarding): facts lived only in one tab's
+// localStorage, so a second session asked everything again.
+describe("what the agent learns is kept on the org", () => {
+  afterEach(() => {
+    companyProfile.facts = [];
+  });
+
+  it("saves recorded facts to the company profile, accepting common section names", async () => {
+    await handleOnboardingControlAction(
+      action({
+        command: "record_discovery",
+        payload: {
+          facts: [
+            {
+              key: "ci.system",
+              section: "ci",
+              text: "GitLab CI",
+              confidence: "stated",
+            },
+            {
+              key: "network.proxy",
+              section: "proxy",
+              text: "Authenticated proxy",
+              confidence: "stated",
+            },
+          ],
+        },
+      }),
+      context,
+    );
+
+    expect(companyProfile.mergeFacts).toHaveBeenCalledWith("org-1", [
+      expect.objectContaining({ key: "ci.system", section: "delivery" }),
+      expect.objectContaining({ key: "network.proxy", section: "network" }),
+    ]);
+    const receipt = JSON.parse(
+      posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""),
+    );
+    expect(receipt).toMatchObject({
+      status: "recorded",
+      count: 2,
+      saved_to_company_profile: true,
+    });
+  });
+
+  it("starts a new session from what earlier sessions learned", async () => {
+    companyProfile.facts = [
+      {
+        key: "systems.scm",
+        section: "systems",
+        text: "Self-managed GitLab",
+        confidence: "stated",
+        at: "2026-10-13T00:00:00.000Z",
+      },
+    ];
+
+    await handleOnboardingControlAction(
+      action({ command: "describe" }),
+      context,
+    );
+
+    const receipt = JSON.parse(
+      posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""),
+    );
+    expect(receipt.known_facts).toEqual([
+      expect.objectContaining({
+        key: "systems.scm",
+        text: "Self-managed GitLab",
+      }),
+    ]);
+    expect(receipt).toMatchObject({
+      returning: true,
+      known_sections: ["systems"],
+    });
+    expect(receipt.missing_sections).toContain("network");
   });
 });
 
@@ -497,5 +845,74 @@ describe("the workbench, not the browser", () => {
       .getState()
       .cards.filter((card) => card.kind === "form");
     expect(forms).toHaveLength(1);
+  });
+});
+
+describe("receipts ask for the next step", () => {
+  it("adds a next step to a receipt that has none, and keeps one that does", () => {
+    const plain = withNextStep(
+      `${ONBOARDING_RESULT_PREFIX}{"status":"planned"}`,
+    );
+    expect(JSON.parse(plain.slice(ONBOARDING_RESULT_PREFIX.length))).toEqual({
+      status: "planned",
+      next: RECEIPT_NEXT_STEP,
+    });
+
+    const own = `${ONBOARDING_RESULT_PREFIX}{"status":"completed","next":"Summarise."}`;
+    expect(withNextStep(own)).toBe(own);
+    expect(withNextStep("hello")).toBe("hello");
+  });
+});
+
+// Case study rounds 2-5: work assigned to it-team@, security-team@ and
+// iam-team@ addresses nobody had given the agent.
+describe("tasks go only to people the user named", () => {
+  const assign = (assigneeEmail: string) =>
+    handleOnboardingControlAction(
+      action({
+        command: "assign_task",
+        payload: { requirementId: "proxy-password", assigneeEmail },
+      }),
+      context,
+    );
+  const lastReceipt = () =>
+    JSON.parse(posted.at(-1)!.replace(ONBOARDING_RESULT_PREFIX, ""));
+
+  afterEach(() => {
+    useEventStore.setState({ events: [] });
+  });
+
+  it("refuses an address the user never gave", async () => {
+    await assign("iam-team@northwind.internal");
+
+    expect(lastReceipt()).toMatchObject({
+      status: "rejected",
+      reason: "assignee_not_given_by_user",
+    });
+  });
+
+  it("assigns to an address the user typed", async () => {
+    useEventStore.setState({
+      events: [
+        {
+          id: "u1",
+          timestamp: "2026-10-13T00:00:00.000Z",
+          source: "user",
+          llm_message: {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Ask Sam at sam.iam@northwind.example for the proxy password.",
+              },
+            ],
+          },
+        },
+      ] as never,
+    });
+
+    await assign("sam.iam@northwind.example");
+
+    expect(lastReceipt()).toMatchObject({ status: "assigned" });
   });
 });

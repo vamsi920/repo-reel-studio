@@ -137,6 +137,16 @@ describe("ModelSelector", () => {
     });
   });
 
+  it("keeps a current model the server does not list", async () => {
+    // Newer models (the app default gemini-4-argon) can be missing from the
+    // agent-server's model list; a blank input would drop llm.model on save.
+    renderWithQuery(<ModelSelector currentModel="openai/gpt-9-preview" />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("LLM Model")).toHaveValue("gpt-9-preview");
+    });
+  });
+
   it("should not render placeholder text on the provider or model inputs", () => {
     renderWithQuery(<ModelSelector />);
 

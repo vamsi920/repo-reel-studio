@@ -270,7 +270,9 @@ describe("useSlashCommand", () => {
     act(() => result.current.updateSlashMenu());
 
     expect(result.current.isMenuOpen).toBe(true);
+    // @spec MR-017 — `/model auto` leads the saved profiles.
     expect(result.current.filteredItems.map((i) => i.command)).toEqual([
+      "/model auto",
       "/model haiku",
       "/model gpt",
       "/model free",

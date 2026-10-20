@@ -225,9 +225,7 @@ describe("useSwitchLlmProfile", () => {
       selected_repository: "octocat/hello-world",
       selected_branch: "main",
       git_provider: "github",
-      selected_workspace: null,
       active_profile: "claude-sonnet-4.6",
-      plugins: null,
     });
   });
 

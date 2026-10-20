@@ -6,11 +6,11 @@
  "citations": 2328,
  "citations_valid": 2197,
  "citation_validity": 0.9437,
- "unique_files_cited": 183,
- "citations_per_1k_words": 31.41,
+ "unique_files_cited": 179,
  "inline_citations": 1373,
  "mermaid_diagrams": 172,
  "links_pinned_to_commit": 0,
+ "error_pages": 0,
  "invalid_examples": [
   "README.md:1-86",
   "src/index.ts:1-54",

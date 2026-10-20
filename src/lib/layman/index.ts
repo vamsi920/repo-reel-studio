@@ -56,5 +56,6 @@ export type {
 
 export {
   compactSkillDescription,
+  LAYMAN_OUTPUT_STYLE,
   SKILL_INDEX_DESCRIPTION_MAX,
 } from "./token-saver";

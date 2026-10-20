@@ -32,7 +32,12 @@ import { completeOnboardingSessionForConversation } from "#/hooks/query/use-onbo
 import type { ProbeKind } from "#/lib/environment/types/probe";
 import { scanForSecrets } from "#/lib/environment/discovery-guard";
 import { snapshotConnections } from "#/lib/environment/connection-snapshot";
+import { companyProfileRepository } from "#/lib/data-platform/repositories/company-profile-repository";
+import { resolveOrgId } from "#/lib/data-platform/repositories/repository-identity";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
+import { useEventStore } from "#/stores/use-event-store";
+import { isUserMessageEvent } from "#/types/agent-server/type-guards";
+import { parseMessageFromEvent } from "#/components/conversation-events/chat/event-content-helpers/parse-message-from-event";
 
 /**
  * Dispatcher for the `onboarding_control` client tool.
@@ -73,13 +78,35 @@ interface DispatchContext {
  * result the agent needs -- the same constraint `reportLaunchResult` in
  * `child-conversation-launch.ts` works around.
  */
+/**
+ * Case study (case-studies/onboarding): after most receipts Gemini answered
+ * with an empty turn, which the runtime then had to nudge -- one wasted model
+ * call per step. Every receipt now says what to do next unless it already
+ * does.
+ */
+export const RECEIPT_NEXT_STEP =
+  "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty.";
+
+export function withNextStep(message: string): string {
+  if (!message.startsWith(ONBOARDING_RESULT_PREFIX)) return message;
+  try {
+    const payload = JSON.parse(message.slice(ONBOARDING_RESULT_PREFIX.length));
+    if (!payload || typeof payload !== "object" || "next" in payload) {
+      return message;
+    }
+    return `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({ ...payload, next: RECEIPT_NEXT_STEP })}`;
+  } catch {
+    return message;
+  }
+}
+
 export function createConversationResultPoster(
   conversationId: string,
 ): PostResultFn {
   return (message: string) => {
     void AgentServerConversationService.sendMessage(conversationId, {
       role: "user",
-      content: [{ type: "text", text: message }],
+      content: [{ type: "text", text: withNextStep(message) }],
     }).catch(() => {
       // A receipt that cannot be delivered must not break the dispatch; the
       // user still sees the outcome on screen.
@@ -159,9 +186,164 @@ function isConfidence(value: unknown): value is DiscoveryConfidence {
  * grows every time a connector is added, and baking it into the tool contract
  * would freeze it for the lifetime of every running agent-server.
  */
+/** Plan statuses the agent may send, with the synonyms models actually use. */
+function normalizePlanStatus(
+  value: unknown,
+): "active" | "done" | "skipped" | null {
+  if (typeof value !== "string") return null;
+  const status = value.trim().toLowerCase();
+  if (status === "done" || status === "complete" || status === "completed")
+    return "done";
+  if (status === "skipped" || status === "skip") return "skipped";
+  if (
+    status === "active" ||
+    status === "in_progress" ||
+    status === "in-progress" ||
+    status === "started"
+  )
+    return "active";
+  return null;
+}
+
+/** Section names the agent commonly reaches for, mapped onto real ones. */
+/** Whether the user typed this address in their own messages. */
+function userTypedAddress(address: string): boolean {
+  const needle = address.trim().toLowerCase();
+  return useEventStore
+    .getState()
+    .events.some(
+      (event) =>
+        isUserMessageEvent(event) &&
+        !parseMessageFromEvent(event).startsWith(ONBOARDING_RESULT_PREFIX) &&
+        parseMessageFromEvent(event).toLowerCase().includes(needle),
+    );
+}
+
+/** What has to be known before a setup plan makes sense. */
+const PLAN_REQUIRES_SECTIONS: DiscoverySection[] = [
+  "stack",
+  "delivery",
+  "systems",
+];
+
+const SECTION_ALIASES: Record<string, DiscoverySection> = {
+  ci: "delivery",
+  cicd: "delivery",
+  "ci-cd": "delivery",
+  deployment: "delivery",
+  tooling: "systems",
+  tools: "systems",
+  scm: "systems",
+  vcs: "systems",
+  "source-control": "systems",
+  "issue-tracker": "systems",
+  "issue-tracking": "systems",
+  infrastructure: "systems",
+  databases: "systems",
+  data: "systems",
+  proxy: "network",
+  networking: "network",
+  security: "constraints",
+  compliance: "constraints",
+  people: "team",
+  company: "org",
+  // Round 3 of the case study: every "llm" fact was rejected and retried.
+  llm: "systems",
+  llms: "systems",
+  model: "systems",
+  models: "systems",
+  ai: "systems",
+  providers: "systems",
+  environments: "delivery",
+  envs: "delivery",
+  release: "delivery",
+  releases: "delivery",
+  process: "delivery",
+  location: "team",
+  locations: "team",
+};
+
+function resolveSection(value: unknown): DiscoverySection | null {
+  if (isSection(value)) return value;
+  if (typeof value !== "string") return null;
+  return SECTION_ALIASES[value.trim().toLowerCase()] ?? null;
+}
+
+async function persistFacts(facts: DiscoveryFact[]): Promise<boolean> {
+  try {
+    const orgId = await resolveOrgId();
+    if (!orgId) return false;
+    await companyProfileRepository.mergeFacts(orgId, facts);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Facts learned in earlier sessions, merged into this tab's store so the
+ * workbench and describe both start from them.
+ */
+async function loadPersistedFacts(): Promise<void> {
+  try {
+    const orgId = await resolveOrgId();
+    if (!orgId) return;
+    const profile = await companyProfileRepository.get(orgId);
+    if (profile?.facts.length) {
+      useOnboardingStudioStore.getState().mergeFacts(profile.facts);
+    }
+    const local = useOnboardingStudioStore.getState().runtimeChecks;
+    for (const record of profile?.runtimeChecks ?? []) {
+      const mine = local.find(
+        (existing) =>
+          existing.providerId === record.providerId &&
+          existing.instanceKey === record.instanceKey,
+      );
+      if (!mine || Date.parse(record.at) > Date.parse(mine.at)) {
+        useOnboardingStudioStore.getState().recordRuntimeCheck(record);
+      }
+    }
+  } catch {
+    // Best effort: describe still answers from this session's facts.
+  }
+}
+
+/**
+ * The connection snapshot, with private-network connections that were
+ * checked from the agent's runtime shown as what that check found. The
+ * `connections` row only holds the Edge Function's verdict, which for an
+ * internal host is always "could not call it".
+ */
+async function snapshotWithRuntimeChecks() {
+  const snapshot = await snapshotConnections();
+  const checks = useOnboardingStudioStore.getState().runtimeChecks;
+  return {
+    ...snapshot,
+    connections: snapshot.connections.map((connection) => {
+      const check = checks.find(
+        (record) =>
+          record.providerId === connection.provider &&
+          record.capability === connection.capability,
+      );
+      if (!check) return connection;
+      return {
+        ...connection,
+        status: check.ok ? "ok" : "error",
+        needs_reconnect: check.ok ? false : connection.needs_reconnect,
+        verified_from: "runtime",
+        last_probe_at: check.at,
+        ...(check.scheme === "http" ? { insecure_http: true } : {}),
+        ...(check.failure ? { runtime_failure: check.failure } : {}),
+        env: check.envNames,
+      };
+    }),
+  };
+}
+
 async function describeEnvironment(): Promise<Record<string, unknown>> {
+  await loadPersistedFacts();
   const studio = useOnboardingStudioStore.getState();
-  const connectionState = await snapshotConnections();
+  const connectionState = await snapshotWithRuntimeChecks();
   return {
     // What is ALREADY connected, with health. Check this before asking the
     // user for anything, and offer a reconnect for any `needs_reconnect`.
@@ -183,6 +365,20 @@ async function describeEnvironment(): Promise<Record<string, unknown>> {
         .map((field) => field.name),
       needs_egress: manifest.egress.map((entry) => entry.host),
     })),
+    // Case study S5: with 29 facts loaded from an earlier session the agent
+    // still re-asked every discovery question. Name what is known and what
+    // is missing so a returning user is only asked about the gaps.
+    ...(studio.facts.length > 0
+      ? {
+          returning: true,
+          known_sections: DISCOVERY_SECTIONS.filter((section) =>
+            studio.facts.some((fact) => fact.section === section),
+          ),
+          missing_sections: DISCOVERY_SECTIONS.filter(
+            (section) => !studio.facts.some((fact) => fact.section === section),
+          ),
+        }
+      : {}),
     known_facts: studio.facts.map((fact) => ({
       key: fact.key,
       section: fact.section,
@@ -196,8 +392,10 @@ async function describeEnvironment(): Promise<Record<string, unknown>> {
     })),
     payload_shapes: {
       record_discovery: "facts: [{ key, section, text, confidence }]",
-      set_setup_plan: "steps: [{ id, title, capability?, status? }]",
-      advance_plan: "stepId, status",
+      set_setup_plan:
+        "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+      advance_plan:
+        'stepId, status ("active" | "done" | "skipped"); skipped needs reason. A connection step is only done once its connection works.',
       propose_profile_change: "patch, (rationale on the top-level field)",
       run_probe: "(use probe_kind / targets / vantage top-level fields)",
       show_checklist: "featureIds: string[]",
@@ -263,13 +461,17 @@ export async function handleOnboardingControlAction(
       for (const entry of raw as Record<string, unknown>[]) {
         const key = typeof entry.key === "string" ? entry.key : null;
         const text = typeof entry.text === "string" ? entry.text : null;
-        if (!key || !text || !isSection(entry.section)) {
+        // An unrecognised section is kept under "org" rather than refused:
+        // a rejection only made the agent retry the same fact.
+        const section =
+          resolveSection(entry.section) ?? (key && text ? "org" : null);
+        if (!key || !text || !section) {
           skipped.push(entry);
           continue;
         }
         facts.push({
           key,
-          section: entry.section,
+          section,
           text,
           // Defaults to "inferred", the safer of the two: a fact wrongly
           // labelled as something the user said is how the agent starts
@@ -290,18 +492,58 @@ export async function handleOnboardingControlAction(
         return;
       }
 
+      // Case study round 4: after a receipt, an empty reply and the
+      // runtime's nudge, the agent re-sent the same three facts ~30 times. A
+      // plain "recorded" read as progress; say plainly that nothing changed.
+      const fresh = facts.filter((fact) => {
+        const known = studio.facts.find(
+          (existing) => existing.key === fact.key,
+        );
+        return known?.text !== fact.text || known?.section !== fact.section;
+      });
+      if (fresh.length === 0) {
+        postReceipt(context, {
+          status: "already_recorded",
+          count: 0,
+          next: "Nothing new was saved; these facts were already known. Do not record them again: ask the user your next question now.",
+        });
+        return;
+      }
+
       studio.mergeFacts(facts);
       studio.pushCard({ id: "discovery", kind: "discovery" });
+      // Kept on the org, not only in this tab: a later session, another
+      // device or a colleague starts from what was already learned.
+      const saved = await persistFacts(
+        facts.map((fact) => ({ ...fact, source: context.conversationId })),
+      );
       postReceipt(context, {
         status: "recorded",
         count: facts.length,
         skipped: skipped.length,
         total_known: useOnboardingStudioStore.getState().facts.length,
+        saved_to_company_profile: saved,
       });
       return;
     }
 
     case "set_setup_plan": {
+      // Interview first. Case study round 4: the agent planned before asking
+      // a single question, connected the wrong things, and never learned
+      // which issue tracker the company used.
+      const missingCore = PLAN_REQUIRES_SECTIONS.filter(
+        (section) => !studio.facts.some((fact) => fact.section === section),
+      );
+      if (missingCore.length > 0 && typeof payload.reason !== "string") {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "discovery_incomplete",
+          missing_sections: missingCore,
+          detail:
+            "Ask about these first and record_discovery the answers. If the user asked to skip the interview, pass payload.reason.",
+        });
+        return;
+      }
       const raw = Array.isArray(payload.steps) ? payload.steps : [];
       const steps: SetupStep[] = [];
       raw.forEach((entry, index) => {
@@ -335,14 +577,69 @@ export async function handleOnboardingControlAction(
 
     case "advance_plan": {
       const stepId = typeof payload.stepId === "string" ? payload.stepId : null;
-      const status =
-        payload.status === "done" ||
-        payload.status === "skipped" ||
-        payload.status === "active"
-          ? payload.status
-          : "done";
+      // Any status it did not recognise used to count as "done": the
+      // onboarding case study (case-studies/onboarding, S2) watched the agent
+      // send "in_progress" for two steps it had not started, both came back
+      // finished, and complete_setup then closed a session with nothing
+      // connected.
+      const status = normalizePlanStatus(payload.status);
       if (!stepId) {
         postReceipt(context, { status: "rejected", reason: "no_step_id" });
+        return;
+      }
+      if (!status) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "invalid_status",
+          valid_statuses: ["active", "done", "skipped"],
+        });
+        return;
+      }
+      const step = studio.steps.find((candidate) => candidate.id === stepId);
+      if (!step) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "unknown_step",
+          steps: studio.steps.map((candidate) => candidate.id),
+        });
+        return;
+      }
+      // A connection step is done when a connection for it works, not when
+      // the agent says so.
+      if (status === "done" && step.capability) {
+        // The provider this step is about: the last form opened for its
+        // capability in this session. Case study round 3: an org's old Jira
+        // Cloud connection let a "connect Linear" step pass after the Linear
+        // form was cancelled.
+        const formProviders = studio.cards
+          .filter(
+            (card): card is Extract<typeof card, { kind: "form" }> =>
+              card.kind === "form" && card.capability === step.capability,
+          )
+          .map((card) => card.providerId);
+        const provider = formProviders.at(-1);
+        const snapshot = await snapshotWithRuntimeChecks();
+        const working = snapshot.connections.some(
+          (connection) =>
+            connection.capability === step.capability &&
+            (!provider || connection.provider === provider) &&
+            connection.status === "ok" &&
+            !connection.needs_reconnect,
+        );
+        if (!working && !snapshot.lookup_error) {
+          postReceipt(context, {
+            status: "rejected",
+            reason: "not_verified",
+            detail: `No working ${provider ?? step.capability} connection yet. Connect it with open_connection_form and wait for an ok receipt, or mark this step "skipped" with a reason the user agreed to.`,
+          });
+          return;
+        }
+      }
+      if (status === "skipped" && typeof payload.reason !== "string") {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "skip_needs_reason",
+        });
         return;
       }
       studio.advancePlan(stepId, status);
@@ -633,6 +930,18 @@ export async function handleOnboardingControlAction(
         });
         return;
       }
+      // Case study rounds 2-5: the agent assigned work to addresses nobody
+      // gave it (it-team@, security-team@, iam-team@<company>). An assignee
+      // has to be someone the user named in this conversation.
+      if (assigneeEmail && !userTypedAddress(assigneeEmail)) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "assignee_not_given_by_user",
+          detail:
+            "Ask the user who owns this and their address, or record it as an open question. Never make up an address.",
+        });
+        return;
+      }
       try {
         await EnvironmentService.assignTask({
           requirementId,
@@ -654,6 +963,23 @@ export async function handleOnboardingControlAction(
     }
 
     case "complete_setup": {
+      // Unfinished steps block completion: the agent must finish them, skip
+      // them with a reason, or hand them off (assign_task) first.
+      const outstanding = studio.steps.filter(
+        (step) => step.status === "pending" || step.status === "active",
+      );
+      if (outstanding.length > 0) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "steps_outstanding",
+          outstanding: outstanding.map((step) => ({
+            id: step.id,
+            title: step.title,
+            status: step.status,
+          })),
+        });
+        return;
+      }
       // Awaited, and before the summary card is pushed: that card's own
       // mount effect invalidates and refetches the onboarding-session query,
       // and if that refetch won the race against this write, it cached the
@@ -678,6 +1004,7 @@ export async function handleOnboardingControlAction(
         // The agent does not get to declare victory over blocking work: the
         // summary card renders the real readiness report next to its claim.
         note: "The summary card shows the live readiness report, which may disagree.",
+        next: "Now tell the user, in one short message, what is connected and verified, what was skipped or handed off, and what they should check first.",
       });
       return;
     }

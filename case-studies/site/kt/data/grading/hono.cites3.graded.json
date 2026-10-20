@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "verdict": "partial",
+  "note": "bun.lock shows devDependency only, not adapter role"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "Interface matches exactly"
+ },
+ {
+  "n": 2,
+  "verdict": "supported",
+  "note": "Exports serveStatic, upgradeWebSocket, getConnInfo"
+ },
+ {
+  "n": 3,
+  "verdict": "supported",
+  "note": "replaceUrlParam replaces :param placeholders"
+ },
+ {
+  "n": 4,
+  "verdict": "partial",
+  "note": "Catch delegates to handleError; claim statement not established"
+ },
+ {
+  "n": 5,
+  "verdict": "partial",
+  "note": "PendingType defined; storage in Context array not shown"
+ },
+ {
+  "n": 6,
+  "verdict": "supported",
+  "note": "hookIndex increments per hook call and indexes state array"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "Constructor stores routers list"
+ },
+ {
+  "n": 8,
+  "verdict": "supported",
+  "note": "outdir ./dist/cjs with cjs format"
+ },
+ {
+  "n": 9,
+  "verdict": "supported",
+  "note": "Tests show ResponseInit/Response inheritance with overridden content-type"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "TError branch resolves to never"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "Tests default renderer and setRenderer"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "Test shows set-cookie preserved on reassignment"
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "getFilePath logic matches flowchart"
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "README notes tiny size, not PatternRouter"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "Test applies compress, not the 2000-char example"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "Throws Cannot update an unmounted root"
+ },
+ {
+  "n": 17,
+  "verdict": "supported",
+  "note": "PatternRouter implements Router<T>"
+ },
+ {
+  "n": 18,
+  "verdict": "partial",
+  "note": "Body caching tests; doc statement unclear"
+ },
+ {
+  "n": 19,
+  "verdict": "supported",
+  "note": "Extends base, noEmit, vitest/globals"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "Test asserts empty string for zero-length match"
+ },
+ {
+  "n": 21,
+  "verdict": "supported",
+  "note": "Regex rejects .. segments"
+ },
+ {
+  "n": 22,
+  "verdict": "partial",
+  "note": "Under 12kB stated; router reason not in README"
+ },
+ {
+  "n": 23,
+  "verdict": "supported",
+  "note": "sleep via setTimeout promise"
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "Single-value arrays converted to string"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "ToSchema with MergeTypedResponse in return type"
+ },
+ {
+  "n": 26,
+  "verdict": "partial",
+  "note": "Only isWatch flag; esbuild contexts not shown"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "Tests show getQueryParams returns multiple values"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "getPath option declared with docs"
+ },
+ {
+  "n": 29,
+  "verdict": "supported",
+  "note": "onError example matches"
+ },
+ {
+  "n": 30,
+  "verdict": "partial",
+  "note": "Shows post-next code, not reverse ordering"
+ },
+ {
+  "n": 31,
+  "verdict": "supported",
+  "note": "Current directory reference test cases"
+ },
+ {
+  "n": 32,
+  "verdict": "partial",
+  "note": "Only declaration; increment and scoring not shown"
+ },
+ {
+  "n": 33,
+  "verdict": "supported",
+  "note": "Tests skip keys with quotes, <, >, spaces, backticks"
+ },
+ {
+  "n": 34,
+  "verdict": "supported",
+  "note": "jsr.json exports jsx/dom entries"
+ },
+ {
+  "n": 35,
+  "verdict": "partial",
+  "note": "Validator generics, not validator/utils content"
+ },
+ {
+  "n": 36,
+  "verdict": "supported",
+  "note": "Previous headers appended to new Response"
+ },
+ {
+  "n": 37,
+  "verdict": "partial",
+  "note": "FC returns HtmlEscapedString/Promise/null, not JSXNode"
+ },
+ {
+  "n": 38,
+  "verdict": "supported",
+  "note": "image/png and font/woff2 true"
+ },
+ {
+  "n": 39,
+  "verdict": "unsupported",
+  "note": "Cited redirect, not set/get"
+ },
+ {
+  "n": 40,
+  "verdict": "supported",
+  "note": "Basic path joining test cases"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "fetch calls #dispatch with request, ctx, env, method"
+ },
+ {
+  "n": 42,
+  "verdict": "partial",
+  "note": "Tests accept merge-patch; regex not shown, charset test lacks charset"
+ },
+ {
+  "n": 43,
+  "verdict": "supported",
+  "note": "get/post/put/delete handler interfaces"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "CIDR 192.168.2.0/24 documented"
+ },
+ {
+  "n": 45,
+  "verdict": "supported",
+  "note": "query uses buildSearchParams"
+ },
+ {
+  "n": 46,
+  "verdict": "supported",
+  "note": "Multi-value header joined with comma-space"
+ },
+ {
+  "n": 47,
+  "verdict": "supported",
+  "note": "Style DOM_RENDERER assignment"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "Env holds Bindings and Variables"
+ },
+ {
+  "n": 49,
+  "verdict": "partial",
+  "note": "JSDoc params only; __proto__ guard not shown"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "finally stream.close() in SSE"
+ },
+ {
+  "n": 51,
+  "verdict": "partial",
+  "note": "Node type union, not VNode description"
+ },
+ {
+  "n": 52,
+  "verdict": "partial",
+  "note": "importPublicKey; claim statement unclear"
+ },
+ {
+  "n": 53,
+  "verdict": "partial",
+  "note": "Shows capture of updateHook only"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "stream true sets headers; object sets custom headers"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "name workerd"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "Index lookup into stash array"
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "Asserts open, message Hello, close"
+ },
+ {
+  "n": 58,
+  "verdict": "supported",
+  "note": "__Host- requires secure, path /, no domain"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "Constructor creates root Node"
+ },
+ {
+  "n": 60,
+  "verdict": "partial",
+  "note": "Body methods via cache; claim statement unclear"
+ },
+ {
+  "n": 61,
+  "verdict": "unsupported",
+  "note": "Line is HEAD handling, not path resolution"
+ },
+ {
+  "n": 62,
+  "verdict": "supported",
+  "note": "HonoRequest class definition"
+ },
+ {
+  "n": 63,
+  "verdict": "partial",
+  "note": "Line 6 exports handle; getConnInfo on line 7"
+ },
+ {
+  "n": 64,
+  "verdict": "supported",
+  "note": "tryDecodeURI on slice when % found"
+ },
+ {
+  "n": 65,
+  "verdict": "supported",
+  "note": "hydrateRoot creates root and renders"
+ },
+ {
+  "n": 66,
+  "verdict": "partial",
+  "note": "Types file broad; claim statement unclear"
+ },
+ {
+  "n": 67,
+  "verdict": "supported",
+  "note": "composite true"
+ },
+ {
+  "n": 68,
+  "verdict": "partial",
+  "note": "onError optional shown; 403 default not shown"
+ },
+ {
+  "n": 69,
+  "verdict": "supported",
+  "note": "Invalid keys omitted from object"
+ },
+ {
+  "n": 70,
+  "verdict": "supported",
+  "note": "Comment says Bun WebCrypto since v0.2.2, JWT works"
+ },
+ {
+  "n": 71,
+  "verdict": "partial",
+  "note": "Shows Env intersection up to 8 handlers only"
+ },
+ {
+  "n": 72,
+  "verdict": "supported",
+  "note": "buildDataStack.at(-1) accessed by useState"
+ },
+ {
+  "n": 73,
+  "verdict": "supported",
+  "note": "style via styleObjectForEach and dangerouslySetInnerHTML handled"
+ },
+ {
+  "n": 74,
+  "verdict": "supported",
+  "note": ":-hono-global yields global styles"
+ },
+ {
+  "n": 75,
+  "verdict": "supported",
+  "note": "write after close does not throw"
+ },
+ {
+  "n": 76,
+  "verdict": "partial",
+  "note": "csrf returns (c,next) function; poweredBy not shown"
+ },
+ {
+  "n": 77,
+  "verdict": "supported",
+  "note": "validateExports compares both directions"
+ },
+ {
+  "n": 78,
+  "verdict": "supported",
+  "note": "#methods array of method-to-HandlerSet records"
+ },
+ {
+  "n": 79,
+  "verdict": "supported",
+  "note": "/book/ matches GET /book"
+ }
+]

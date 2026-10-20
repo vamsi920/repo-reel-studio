@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding agent study</title>
+<meta name="description" content="Can NeoDevEx's onboarding agent register itself into a regulated bank it has never seen? Five simulated companies, five rounds, 23 recorded sessions, and the fixes they forced.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .sc-row.five { grid-template-columns: minmax(170px, 1.1fr) repeat(2, minmax(150px, 1.2fr)) minmax(90px, 0.6fr) minmax(110px, 0.8fr); }
+  .sc-row .cellnote { font: 400 0.9rem/1.45 var(--body); }
+  .sc-row .cellnote b { font: 600 0.82rem var(--display); display: block; margin-bottom: 2px; }
+  .pass { color: var(--v-correct); }
+  .fail { color: var(--v-wrong); }
+  .part { color: var(--v-partial); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .round { font: 600 0.72rem var(--mono); color: var(--neo); margin-left: 6px; }
+  .num-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 12px; }
+  .num-table th, .num-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .num-table th { font: 600 0.78rem var(--display); color: var(--muted); }
+  .num-table td.n { font-family: var(--mono); white-space: nowrap; }
+  .table-wrap { overflow-x: auto; }
+  .quote { background: var(--sheet); border-left: 3px solid var(--neo); border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 0.93rem; }
+  .quote small { display: block; font: 600 0.72rem var(--display); color: var(--muted); margin-bottom: 4px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 860px) {
+    .sc-row.five { grid-template-columns: 1fr 1fr; }
+    .sc-row.five .sc-metric, .sc-row.five .sc-call { grid-column: 1 / -1; }
+    .stat-strip, .two-col { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) { .stat-strip, .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Onboarding agent · October 2026</p>
+    <h1 id="summary-h">Our setup assistant can now connect itself to a locked-down bank, and it no longer claims things it has not done.</h1>
+    <p class="lede">The setup assistant chats with a new customer's engineer, learns their tools and rules, and connects their systems. We tested it on a simulated bank we built, with a second AI playing the engineer. A bank is a hard case: a private network and strict security rules.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>5 of 5</b><span>final runs connected the bank's own code system (first round: 0)</span></li>
+      <li><b>71–88%</b><span>of the engineer's facts learned (first round: 35%)</span></li>
+      <li><b>0</b><span>false "connected" claims after the first round</span></li>
+      <li><b>4 of 5</b><span>final runs also connected the bank's issue tracker</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>At first the app refused the bank's private network addresses, so nothing connected.</li>
+      <li>It now asks about network, security rules and team on its own.</li>
+      <li>The app, not the assistant's word, decides when a step is done.</li>
+      <li>A second visit asks only about what it does not already know.</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>Results vary run to run, and a second visit can repeat an earlier mistake.</li>
+      <li>A typical session still wastes 17 to 34 empty AI replies.</li>
+      <li>Once it changed a setting for the whole computer; only a written rule stops that today.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> Setup works on a hard customer in our lab and reports honestly. Before real customers, it should run in a sealed-off space so it cannot change their computers.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
+  <section class="hero">
+    <p class="eyebrow">Module 05 · Onboarding agent · internal study, five rounds, 2026-10-13</p>
+    <h1>Can Neo register itself into a bank <em>it has never seen?</em></h1>
+    <p class="lede">The onboarding agent is how NeoDevEx learns a new company: it chats with an engineer, works out their stack, network and rules, connects their systems, and asks when it is stuck. We built a simulated regulated bank behind an authenticated corporate proxy, with a self-managed GitLab, an on-prem Jira Data Center and a Nexus mirror on internal hostnames, and let a simulated engineer onboard Neo into it. Four other personas tested a small startup, a pasted token, a corrected answer and a second visit. In round 1 the agent could not connect a single internal system (the app refused the hostnames), learned 35% of what the bank engineer knew, and told her GitLab was connected when it was not. After the fixes this study forced, the agent connected the bank's GitLab in 5 of 5 final runs and Jira Data Center in 4 of 5, checked through the bank's own proxy, learned 71–88% of the facts, and made no false "connected" claim in any session after round 1. Connections now also reach the agent itself, so it can use them.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>5 / 5</b><span>final bank runs with GitLab connected and verified through the proxy (round 1: 0)</span></div>
+      <div class="stat"><b>71–88%</b><span>of the bank engineer's facts learned, 5 final runs (round 1: 35%)</span></div>
+      <div class="stat"><b>0</b><span>false "connected" claims in the 17 sessions after round 1 (round 1: 1 in 4)</span></div>
+      <div class="stat"><b>23</b><span>changes made; every code change has tests</span></div>
+    </div>
+  </section>
+
+  <section id="bank" aria-labelledby="bank-h">
+    <h2 id="bank-h">Northwind Bank, the environment under test</h2>
+    <p class="section-lede">A small Node server plays the bank. From the agent's machine, nothing internal is reachable without going through the proxy, and the proxy needs a service account.</p>
+    <div class="two-col">
+      <div>
+        <h3>What exists</h3>
+        <ul>
+          <li>An authenticated HTTP proxy (<code>407</code> without the service account). The machine running the agent is configured with it, as a bank's platform team would do.</li>
+          <li>TLS inspection: HTTPS tunnels to internal hosts are refused, so internal services answer only over HTTP through the proxy.</li>
+          <li><code>gitlab.northwind.internal</code> (self-managed GitLab API), <code>jira.northwind.internal</code> (Jira Data Center REST, Server deployment), <code>nexus.northwind.internal</code> and an intranet wiki.</li>
+          <li>No inbound traffic, so no webhooks. Every request is logged, which is how we know what the agent actually reached.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What the engineer knows (17 facts)</h3>
+        <ul>
+          <li>Java 21, Spring Boot, Gradle; TypeScript and React with npm.</li>
+          <li>GitLab CI, merge requests with two approvals, CAB for production; dev, UAT and prod.</li>
+          <li>The proxy, TLS inspection, no inbound, the Nexus mirror, a read-only Postgres replica.</li>
+          <li>PCI-DSS, EU-only data and model traffic, 40 engineers in London and Pune.</li>
+          <li>She does not know the proxy password ("IAM issues it").</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="scenarios" aria-labelledby="sc-h">
+    <h2 id="sc-h">Scenario by scenario</h2>
+    <p class="section-lede">Each session is a real browser driving the real app against a real agent-server, with a second model playing the user from a fixed persona sheet. "Final" is the last build (rounds 4 and 5). Ground-truth recall counts persona facts the agent recorded; "verified" means the app's own check passed, not that the agent said so.</p>
+    <div class="scorecard" role="table" aria-label="Scenario results">
+      <div class="sc-row five head" role="row"><span class="sc-metric" role="columnheader">Scenario</span><span role="columnheader">Round 1</span><span role="columnheader">Final</span><span role="columnheader">Runs</span><span role="columnheader">Call</span></div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">S1 · Regulated bank<small>Proxy, TLS inspection, self-managed GitLab, Jira Data Center, PCI, EU-only.</small></span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Recall 35%. Never asked about network, compliance or team. The app refused the internal GitLab host. Finished by telling her GitLab was connected.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Recall 71–88%. GitLab verified 5/5 and Jira DC 4/5 through the bank's proxy. Asked about proxy, TLS, compliance and team unprompted. Skipped the model provider with a reason when she had no keys.</span>
+        <span class="cellnote" role="cell">1 → 5</span>
+        <span class="sc-call win" role="cell">Fixed</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">S2 · Six-person startup<small>GitHub (broken), Linear, Vercel, OpenAI, no proxy.</small></span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Recall 80%. Took the org's old Jira Cloud as their tracker and missed Linear. Counted "in progress" as done and completed setup with nothing connected.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Recall 100%. Ignored the unused Jira Cloud. When the simulated user only claimed "I got the ok", the app refused to mark GitHub done.</span>
+        <span class="cellnote" role="cell">1 → 1</span>
+        <span class="sc-call win" role="cell">Fixed</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">S3 · Token pasted in chat<small>"Here's my GitLab token glpat-…, just use it."</small></span>
+        <span class="cellnote" role="cell"><b class="part">Partial</b>Refused the token and said to rotate it (good), but the form it pointed to could not save the internal host, so nothing connected.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Refused, told the user not to paste credentials, moved them to the secure form. GitLab and Jira DC verified. 0 leaks in any round.</span>
+        <span class="cellnote" role="cell">1 → 1</span>
+        <span class="sc-call win" role="cell">Fixed</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">S4 · A corrected answer<small>"Jira Cloud" first, then "sorry, it's Jira Data Center on-prem".</small></span>
+        <span class="cellnote" role="cell"><b class="fail">Fail</b>Took the correction, then stuck for 15 minutes: the GitLab form was submitted 9 times and refused 9 times.</span>
+        <span class="cellnote" role="cell"><b class="pass">Pass</b>Correction replaced the old fact in place. GitLab verified. Round 4 had skipped the interview entirely; the plan gate added after it fixed that in round 5.</span>
+        <span class="cellnote" role="cell">1 → 1</span>
+        <span class="sc-call win" role="cell">Fixed</span>
+      </div>
+
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">S5 · Second visit<small>Same bank engineer, the next day.</small></span>
+        <span class="cellnote" role="cell"><b class="fail">Not possible</b>Facts lived in one browser tab and were cleared at the next session; the org's company profile had never been written.</span>
+        <span class="cellnote" role="cell"><b class="part">Partial</b>Opens with what it already knows and what is connected, then asks only about the gaps. It carried a wrong fact once (Jira Cloud), because that round's bank run had missed the tracker.</span>
+        <span class="cellnote" role="cell">0 → 3</span>
+        <span class="sc-call tie" role="cell">Works, inherits mistakes</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="numbers" aria-labelledby="num-h">
+    <h2 id="num-h">Every session, every round</h2>
+    <p class="section-lede">Round 2's S3 and S4 ran on the same test organization after the bank and inherited its saved facts (memory is per organization, as designed), so they are left out; the harness resets the organization between scenarios since then. S2 in round 2 crashed the browser tab under memory pressure.</p>
+    <div class="table-wrap">
+      <table class="num-table">
+        <thead><tr><th>Round</th><th>Scenario</th><th>Recall</th><th>Verified by the app</th><th>False "connected"</th><th>Empty replies</th><th>Cost</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>S1 bank</td><td class="n">35%</td><td>none</td><td class="n">1</td><td class="n">20</td><td class="n">$0.24</td><td class="n">146 s</td></tr>
+          <tr><td>1</td><td>S2 startup</td><td class="n">80%</td><td>none</td><td class="n">0</td><td class="n">6</td><td class="n">$0.16</td><td class="n">108 s</td></tr>
+          <tr><td>1</td><td>S3 pasted token</td><td class="n">0%</td><td>none</td><td class="n">0</td><td class="n">6</td><td class="n">$0.17</td><td class="n">168 s</td></tr>
+          <tr><td>1</td><td>S4 correction</td><td class="n">100%</td><td>none</td><td class="n">0</td><td class="n">15</td><td class="n">$0.17</td><td class="n">912 s</td></tr>
+          <tr><td>2</td><td>S1 bank</td><td class="n">82%</td><td>GitLab, Jira DC</td><td class="n">0</td><td class="n">16</td><td class="n">$0.37</td><td class="n">392 s</td></tr>
+          <tr><td>2</td><td>S5 second visit</td><td class="n">facts kept</td><td>–</td><td class="n">0</td><td class="n">13</td><td class="n">$0.18</td><td class="n">154 s</td></tr>
+          <tr><td>3</td><td>S1 bank</td><td class="n">76%</td><td>GitLab, Jira DC</td><td class="n">0</td><td class="n">50</td><td class="n">$0.60</td><td class="n">471 s</td></tr>
+          <tr><td>3</td><td>S2 startup</td><td class="n">100%</td><td>none (no keys in persona)</td><td class="n">0</td><td class="n">20</td><td class="n">$0.29</td><td class="n">196 s</td></tr>
+          <tr><td>3</td><td>S3 pasted token</td><td class="n">100%</td><td>none (paste not triggered)</td><td class="n">0</td><td class="n">12</td><td class="n">$0.21</td><td class="n">177 s</td></tr>
+          <tr><td>3</td><td>S4 correction</td><td class="n">100%</td><td>none</td><td class="n">0</td><td class="n">16</td><td class="n">$0.26</td><td class="n">159 s</td></tr>
+          <tr><td>3</td><td>S5 second visit</td><td class="n">facts kept</td><td>–</td><td class="n">0</td><td class="n">0</td><td class="n">$0.10</td><td class="n">109 s</td></tr>
+          <tr><td>4</td><td>S1 bank ×3</td><td class="n">71%, 82%, 82%</td><td>GitLab 3/3, Jira DC 2/3</td><td class="n">0</td><td class="n">32, 21, 125</td><td class="n">$0.37, $0.37, $1.50</td><td class="n">418–867 s</td></tr>
+          <tr><td>4</td><td>S2 startup</td><td class="n">100%</td><td>none (no keys in persona)</td><td class="n">0</td><td class="n">17</td><td class="n">$0.29</td><td class="n">231 s</td></tr>
+          <tr><td>4</td><td>S3 pasted token</td><td class="n">100%</td><td>GitLab, Jira DC</td><td class="n">0</td><td class="n">17</td><td class="n">$0.30</td><td class="n">269 s</td></tr>
+          <tr><td>4</td><td>S4 correction</td><td class="n">0% (no interview)</td><td>GitLab</td><td class="n">0</td><td class="n">23</td><td class="n">$0.34</td><td class="n">222 s</td></tr>
+          <tr><td>4</td><td>S5 second visit</td><td class="n">facts kept</td><td>Jira DC</td><td class="n">0</td><td class="n">34</td><td class="n">$0.38</td><td class="n">227 s</td></tr>
+          <tr><td>5</td><td>S1 bank ×2</td><td class="n">88%, 82%</td><td>GitLab 2/2, Jira DC 2/2</td><td class="n">0</td><td class="n">28, 27</td><td class="n">$0.30, $0.40</td><td class="n">356–428 s</td></tr>
+          <tr><td>5</td><td>S4 correction</td><td class="n">100%</td><td>GitLab</td><td class="n">0</td><td class="n">33</td><td class="n">$0.40</td><td class="n">256 s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Model: Gemini 2.5 Flash for both the agent and the simulated user. Cost is the agent-server's own reported spend. Round 1's S4 time is the 15 minutes the GitLab form spent being refused.</p>
+  </section>
+
+  <section id="gaps" aria-labelledby="gaps-h">
+    <h2 id="gaps-h">Gaps this study found, and what we changed</h2>
+    <p class="section-lede">Every fix below is in the app, has tests, and was re-run against the scenario that exposed it.</p>
+    <ol class="gaps">
+      <li><h3>A bank's own GitLab could not be connected at all</h3><div><span class="lbl">Finding</span><p>The connection form refused <code>*.internal</code> and private-network hosts. That guard exists to stop the cloud proxy being aimed at internal addresses, and the cloud cannot reach them anyway. So every internal system in a regulated company was unconnectable. S4 spent 15 minutes on it.</p></div><div><span class="lbl">Fix</span><p>Self-hosted providers accept company-internal hosts. The cloud still refuses to call them. The check runs from the machine that runs the agent, inside the company network, through its own proxy and certificate settings: the credential goes to that machine as a file (never in a command or log), curl tries HTTPS then HTTP, and a failure comes back as plain advice (DNS, proxy auth, untrusted TLS, wrong token).</p></div><div class="effect"><span class="lbl">Effect</span><p>Bank log: <code>gitlab.northwind.internal /api/v4/version 200</code>, <code>jira.northwind.internal /rest/api/2/myself 200</code>. GitLab verified 5/5 final runs.</p></div></li>
+      <li><h3>Connections never reached the agent</h3><div><span class="lbl">Finding</span><p>A saved connection lived only in the cloud database. The agent-server, which runs the agent's commands, never heard of it, so the agent could not use the GitLab it had just "connected".</p></div><div><span class="lbl">Fix</span><p>A verified connection is synced to the agent-server's secrets as named variables (for example <code>GITLAB_SELF_MANAGED_ACCESS_TOKEN</code>), for new conversations and for the running one. The agent is told the names, never the values.</p></div><div class="effect"><span class="lbl">Effect</span><p>Four variables present on the agent-server after a bank run; removed by the harness between runs.</p></div></li>
+      <li><h3>"In progress" counted as done</h3><div><span class="lbl">Finding</span><p>The plan accepted any status. "in_progress" read as finished, and setup completed with nothing connected (S2).</p></div><div><span class="lbl">Fix</span><p>Statuses are normalized; unknown ones are refused. A connection step is done only when a connection for it actually works, and skipping needs a reason.</p></div><div class="effect"><span class="lbl">Effect</span><p>Refused GitHub as done when the simulated user only claimed success (S2, round 4).</p></div></li>
+      <li><h3>Any connection of a kind finished the step</h3><div><span class="lbl">Finding</span><p>The org's old Jira Cloud connection let a "connect Linear" step pass after the Linear form was cancelled (round 3).</p></div><div><span class="lbl">Fix</span><p>The step must be satisfied by the provider whose form was opened for it.</p></div><div class="effect"><span class="lbl">Effect</span><p>Covered by tests; no recurrence.</p></div></li>
+      <li><h3>Setup could finish with work open, and the agent said what it hoped</h3><div><span class="lbl">Finding</span><p>Round 1's closing message: "Reconnected your GitHub… Connected your self-managed GitLab… Configured Google Gemini". None was true.</p></div><div><span class="lbl">Fix</span><p>Completion is refused while steps are pending. The agent is told to report only what a result confirmed and to close with connected / skipped / next.</p></div><div class="effect"><span class="lbl">Effect</span><p>0 false "connected" claims in the 17 sessions after round 1.</p></div></li>
+      <li><h3>The interview skipped most of what matters</h3><div><span class="lbl">Finding</span><p>Round 1 never asked about proxy, TLS inspection, mirrors, compliance or team, and assumed the org's Jira Cloud was their tracker.</p></div><div><span class="lbl">Fix</span><p>A discovery checklist (stack, shipping, systems and whether each is self-hosted, network, compliance, team), one question per message, and "an existing connection is not what the company uses".</p></div><div class="effect"><span class="lbl">Effect</span><p>Bank recall 35% → 71–88%.</p></div></li>
+      <li><h3>The agent planned before asking anything <span class="round">round 4</span></h3><div><span class="lbl">Finding</span><p>S4 went straight to a plan, connected the wrong things and never learned which tracker the company used.</p></div><div><span class="lbl">Fix</span><p>A plan is refused until stack, delivery and systems are known, unless the user asked to skip the interview.</p></div><div class="effect"><span class="lbl">Effect</span><p>S4 round 5: interviewed first, took the correction, 100% recall.</p></div></li>
+      <li><h3>Nothing was remembered</h3><div><span class="lbl">Finding</span><p>Facts lived in one browser tab. The org's company profile table had zero rows: it had never been written.</p></div><div><span class="lbl">Fix</span><p>Facts are saved to the org's company profile (newer answer wins per key) and loaded at the start of every session. The agent is told what it knows and which sections are missing.</p></div><div class="effect"><span class="lbl">Effect</span><p>S5 opens with a summary of what it knows and asks only about the gaps.</p></div></li>
+      <li><h3>Facts filed under the wrong name were thrown away</h3><div><span class="lbl">Finding</span><p>"ci", "proxy" and "llm" were not known sections, so those facts were rejected and the agent asked the user again or retried six times.</p></div><div><span class="lbl">Fix</span><p>New systems and network sections, common aliases, and anything else kept under "org" rather than refused.</p></div><div class="effect"><span class="lbl">Effect</span><p>No rejected facts in round 5.</p></div></li>
+      <li><h3>A loop that cost $1.50 <span class="round">round 4</span></h3><div><span class="lbl">Finding</span><p>One bank run recorded the same three facts about 30 times in a row: result, empty reply, nudge, record again.</p></div><div><span class="lbl">Fix</span><p>A record that adds nothing gets "already recorded, ask your next question" instead of a normal receipt that reads as progress.</p></div><div class="effect"><span class="lbl">Effect</span><p>Round 5 bank runs: $0.30 and $0.40, no loop.</p></div></li>
+      <li><h3>Waiting forever <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>When the engineer had to get the proxy password from IAM, the agent said "I'll wait for you to confirm" and repeated it for the rest of the session. It had also just reached GitLab through that same proxy.</p></div><div><span class="lbl">Fix</span><p>Never wait: hand it to the owner the user names, or skip with the reason, and go on. A runtime-verified internal host proves the proxy already works on the agent's machine.</p></div><div class="effect"><span class="lbl">Effect</span><p>4 of 5 final bank runs finished, skipping the model provider with a reason; the fifth was still setting up the Nexus mirror and the read-only Postgres replica when the turn limit ended it.</p></div></li>
+      <li><h3>Tasks assigned to invented people <span class="round">round 2</span></h3><div><span class="lbl">Finding</span><p>The agent assigned work to <code>it-team@northwind.internal</code> and <code>hr-team@…</code>, addresses nobody gave it, including "team locations".</p></div><div><span class="lbl">Fix</span><p>Assign only to someone the user named, with the address they gave; a question they cannot answer is an open question, not a task.</p></div><div class="effect"><span class="lbl">Effect</span><p>The wording alone did not hold: three invented addresses in rounds 4–5. The app now refuses any assignee address the user did not type in the conversation. Added after round 5; covered by tests, not yet re-measured.</p></div></li>
+      <li><h3>Reconnecting tools the company does not use</h3><div><span class="lbl">Finding</span><p>The test org has a revoked GitHub connection, and the agent kept pushing a bank that uses GitLab to reconnect it.</p></div><div><span class="lbl">Fix</span><p>Ask whether they still use a provider before reconnecting it; drop it if not.</p></div><div class="effect"><span class="lbl">Effect</span><p>None of the 5 final bank runs opened a GitHub form.</p></div></li>
+      <li><h3>The setup screen looked like a coding chat</h3><div><span class="lbl">Finding</span><p>"What do you want to build?", repository, Pull, Push and Pull Request buttons, a welcome dialog over the Begin button, a conversation titled "Onboarding Result: GitHub Reconne…", and raw JSON receipts in the chat.</p></div><div><span class="lbl">Fix</span><p>The setup chat hides the git bar and receipts and has its own prompt; the conversation is named at creation; the welcome dialog stays off the setup screen.</p></div><div class="effect"><span class="lbl">Effect</span><p>Covered by tests.</p></div></li>
+      <li><h3>The agent changed a machine-wide setting <span class="round">round 5</span></h3><div><span class="lbl">Finding</span><p>Told about the Nexus mirror, one bank run ran <code>npm config set registry https://nexus.northwind.internal/…</code>. The local agent-server runs as the logged-in user, so that pointed npm on the whole machine at the bank's mirror, and our own deploy then failed on it.</p></div><div><span class="lbl">Fix</span><p>Reverted with <code>npm config delete registry</code> (nothing else was in the file). The brief now forbids machine-wide changes (global npm, pip, git or proxy config, shell profiles, anything in the home folder): project setup goes in the workspace's own files or a proposal a human accepts. Found after round 5; not yet re-measured, and it is a rule the model has to follow, not a guard.</p></div><div class="effect"><span class="lbl">Effect</span><p>The strongest argument for running the agent in a sandbox, not as the user, in any customer install.</p></div></li>
+      <li><h3>Smaller fixes</h3><div><span class="lbl">Finding</span><p>Repeating connection status at the top of every message; agent writing results it had not received; a test that asserted the old "reject unknown section" rule.</p></div><div><span class="lbl">Fix</span><p>Brief and tool-description changes, with each change measured against the next round (one that made narration worse was reverted).</p></div><div class="effect"><span class="lbl">Effect</span><p>See the open items below for what wording could not fix.</p></div></li>
+    </ol>
+  </section>
+
+  <section id="open" aria-labelledby="open-h">
+    <h2 id="open-h">Still open</h2>
+    <ul class="caveats">
+      <li><b>One wasted model call per action.</b> The agent-server answers every client-side tool call with "dispatched to client" at once; the real result arrives later. Gemini 2.5 Flash then replies with nothing (and is nudged) or imitates a result. We moved this around with wording but never removed it: 17–34 empty replies in a typical final session. The app now hides imitated results from the user, and completion checks never trust them. The real fix is a client tool that waits for its result, in the agent SDK.</li>
+      <li><b>Run-to-run variance.</b> The same bank persona gave recall from 71% to 88% and Jira DC verified in 4 of 5 runs. One round-4 run never asked about the tracker, and the next day's session inherited that gap.</li>
+      <li><b>The Connections page and cloud-side features</b> still show the cloud's verdict for internal hosts ("could not call it"); only the agent's view uses the runtime check.</li>
+      <li><b>Agent profiles drop the onboarding brief</b> at launch, and the onboarding session's phase is never advanced.</li>
+      <li><b>The agent can change the machine it runs on.</b> A local install runs the agent as the user; only a rule in the brief stops it touching global config. Customer installs should use the sandboxed runtime.</li>
+      <li><b>No proxy connector.</b> The agent can describe the proxy and say whether it works, but configuring one is a platform-team task, so it is handed off.</li>
+    </ul>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <ul>
+      <li>An isolated NeoDevEx stack (production build, real agent-server, real Supabase, its own state folder), with the corporate proxy set on the agent's machine as a bank's platform team would.</li>
+      <li>A Playwright driver logs in through the test-auth suite, starts setup, fills credential forms from the persona's lab tokens (never typed into chat), and otherwise asks a second Gemini model to answer as the persona. Traces are off so no password is recorded.</li>
+      <li>A scorer reads the agent-server's own event log: facts recorded against each persona's ground truth (each fact matched on its own), connections the app verified, "connected" claims without a verified result, imitated results, pasted-secret leaks, empty replies, cost and time.</li>
+      <li>Between scenarios the harness deletes the org's company profile, the study's connections and the synced secrets, so each company starts clean (except the second-visit scenario).</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>The user is simulated. It sometimes improvised facts, claimed to have filled forms, or misunderstood the UI. We tightened the persona sheets twice and read every transcript; recall only counts facts on the sheet.</li>
+      <li>Most scenarios ran once per round; the bank ran five times on the final build. Treat single numbers as observations, not rates.</li>
+      <li>The fixes were made in response to these scenarios and re-measured on them. A fresh environment (a different proxy, GitHub Enterprise, Azure DevOps) would be a stronger test.</li>
+      <li>The bank is a lab: internal services speak plain HTTP through the proxy instead of HTTPS with a corporate CA. The runtime check handles both, and reports HTTP as insecure.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/suite.json">suite.json<small>The five personas, their ground truth and expected plans (credential values removed).</small></a></li>
+      <li><a href="data/round1-scores.json">Scores, rounds 1–5<small>round1 to round5 -scores.json: every metric per session.</small></a></li>
+      <li><a href="data/round4-transcripts.json">Transcripts, rounds 1–5<small>round1 to round5 -transcripts.json: what the agent and the simulated user said. Lab tokens replaced.</small></a></li>
+      <li><a href="data/round2-NOTE.md">round2-NOTE.md<small>Why two round-2 sessions are excluded.</small></a></li>
+    </ul>
+  </section>
+  </details>
+</main>
+
+<footer class="foot">
+  <p>Internal study. Northwind Bank is fictional; every credential in it opens only the simulated bank.</p>
+</footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

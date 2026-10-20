@@ -1,0 +1,10 @@
+{
+  "_note": "Devin (free plan, on-demand credits), sessions started from app.devin.ai with the same prompt as NeoDevEx plus the repository/commit to check out and 'Do not push or open a pull request' on test tasks. Cost from Settings > Usage history (USD), read after the sessions finished; 'worked' is Devin's own 'Worked for' figure. H2 was not run: the remaining credit (about $0.26) was below the cost of a test session.",
+  "sessions": [
+    {"task": "F1", "id": "292ab806ad5d4316babd9a19109c749d", "title": "Trace Flask Exception Lifecycle", "worked_seconds": 87, "cost_usd": 0.40},
+    {"task": "H1", "id": "f92285c27ce84f008985d7ea6676cc5d", "title": "Explain Default Router Selection", "worked_seconds": 58, "cost_usd": 0.35},
+    {"task": "K1", "id": "fd762433045c465db3acbced22eac359", "title": "Explain ky retry behavior", "worked_seconds": 52, "cost_usd": 0.38},
+    {"task": "F2", "id": "0deabf6ffce9408f84f49aa96b3eba95", "title": "Add Flask Teardown Tests", "worked_seconds": 104, "cost_usd": 0.38, "test_file": "out/tests/devin-F2.py"},
+    {"task": "K2", "id": "f57bcbd0d29548c69ba9fb8c3a5ba5c7", "title": "Add Retry-After Tests", "worked_seconds": 91, "cost_usd": 0.37, "test_file": "out/tests/devin-K2.ts"}
+  ]
+}

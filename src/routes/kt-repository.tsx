@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { KnowledgeTabs } from "#/components/features/knowledge/knowledge-tabs";
+import { KtAskPanel } from "#/components/features/knowledge/kt-ask-panel";
 import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
@@ -201,6 +202,8 @@ function KtRepository() {
           {state.snapshot.owner}/{state.snapshot.repo}@
           {state.snapshot.commitSha.slice(0, 7)}
         </p>
+
+        <KtAskPanel snapshot={state.snapshot} />
 
         {knowledge.sections.map((section) => (
           <div key={section.id} className="mb-6">

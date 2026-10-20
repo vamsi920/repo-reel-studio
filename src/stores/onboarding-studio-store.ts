@@ -41,6 +41,25 @@ export interface SetupStep {
   note?: string;
 }
 
+/**
+ * A connection checked from the agent's own machine (a provider on the
+ * company's private network, which the Edge Function cannot reach). The
+ * `connections` row stays as the Edge Function left it; this record is what
+ * says the agent's network reached it. Never holds a credential.
+ */
+export interface RuntimeCheckRecord {
+  providerId: string;
+  capability: Capability;
+  instanceKey: string;
+  ok: boolean;
+  /** "https" or, when only plain HTTP answered, "http" (reported as a warning). */
+  scheme: "https" | "http" | null;
+  failure?: string;
+  /** Environment variable names the connection was synced to. */
+  envNames: string[];
+  at: string;
+}
+
 export type WorkbenchCard =
   | { id: string; kind: "discovery" }
   | { id: string; kind: "plan" }
@@ -83,6 +102,7 @@ interface OnboardingStudioState {
   currentStepId: string | null;
   /** Which workbench view is focused, when the agent asks for one. */
   view: string | null;
+  runtimeChecks: RuntimeCheckRecord[];
 }
 
 interface OnboardingStudioActions {
@@ -94,6 +114,7 @@ interface OnboardingStudioActions {
   setPlan: (steps: SetupStep[], currentStepId: string | null) => void;
   advancePlan: (stepId: string, status: SetupStep["status"]) => void;
   setView: (view: string | null) => void;
+  recordRuntimeCheck: (record: RuntimeCheckRecord) => void;
   reset: () => void;
 }
 
@@ -107,6 +128,7 @@ const EMPTY_STATE: OnboardingStudioState = {
   steps: [],
   currentStepId: null,
   view: null,
+  runtimeChecks: [],
 };
 
 /**
@@ -211,6 +233,18 @@ export const useOnboardingStudioStore = create<OnboardingStudioStore>()(
 
       setView: (view) => set({ view }),
 
+      recordRuntimeCheck: (record) =>
+        set((state) => ({
+          runtimeChecks: [
+            ...state.runtimeChecks.filter(
+              (existing) =>
+                existing.providerId !== record.providerId ||
+                existing.instanceKey !== record.instanceKey,
+            ),
+            record,
+          ],
+        })),
+
       reset: () => set({ ...EMPTY_STATE }),
     }),
     {
@@ -222,6 +256,7 @@ export const useOnboardingStudioStore = create<OnboardingStudioStore>()(
         facts: state.facts,
         steps: state.steps,
         currentStepId: state.currentStepId,
+        runtimeChecks: state.runtimeChecks,
       }),
     },
   ),

@@ -6,11 +6,11 @@
  "citations": 1259,
  "citations_valid": 1225,
  "citation_validity": 0.973,
- "unique_files_cited": 55,
- "citations_per_1k_words": 30.53,
+ "unique_files_cited": 45,
  "inline_citations": 584,
  "mermaid_diagrams": 122,
  "links_pinned_to_commit": 0,
+ "error_pages": 0,
  "invalid_examples": [
   "source/core/constants.js:4-4 (missing file)",
   ".github/workflows/main.yml:1-25",

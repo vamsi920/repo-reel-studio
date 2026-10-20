@@ -2,7 +2,13 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useConversationSkills } from "#/hooks/query/use-conversation-skills";
 import { SkillInfo } from "#/types/settings";
 import { Microagent } from "#/api/open-hands.types";
-import { BUILT_IN_COMMANDS, MODEL_COMMAND } from "#/utils/constants";
+import { useTranslation } from "react-i18next";
+import {
+  BUILT_IN_COMMANDS,
+  MODEL_AUTO_ARG,
+  MODEL_COMMAND,
+} from "#/utils/constants";
+import { I18nKey } from "#/i18n/declaration";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useLlmProfiles } from "#/hooks/query/use-llm-profiles";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
@@ -45,6 +51,7 @@ export const useSlashCommand = (
   const pluginItems = useConversationPluginCommands();
   const isCloud = useActiveBackend().backend.kind === "cloud";
   const { data: profilesData, isLoading: isProfilesLoading } = useLlmProfiles();
+  const { t } = useTranslation("openhands");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [filterText, setFilterText] = useState("");
   const [completionKind, setCompletionKind] =
@@ -91,21 +98,34 @@ export const useSlashCommand = (
   }, [skills, isSkillsLoading, isCloud, pluginItems]);
 
   const modelProfileItems = useMemo<SlashCommandItem[]>(() => {
-    return (profilesData?.profiles ?? []).map((profile) => {
-      const command = `${MODEL_COMMAND} ${profile.name}`;
-      return {
-        command,
-        skill: {
-          name: profile.name,
-          type: "agentskills",
-          content: profile.model
-            ? `Switch to ${formatModelNameForDisplay(profile.model)}`
-            : "Switch to this LLM profile",
-          triggers: [command],
-        },
-      };
-    });
-  }, [profilesData?.profiles]);
+    const autoCommand = `${MODEL_COMMAND} ${MODEL_AUTO_ARG}`;
+    const autoItem: SlashCommandItem = {
+      command: autoCommand,
+      skill: {
+        name: MODEL_AUTO_ARG,
+        type: "agentskills",
+        content: t(I18nKey.MODEL_ROUTING$AUTO_DESCRIPTION),
+        triggers: [autoCommand],
+      },
+    };
+    const profileItems = (profilesData?.profiles ?? []).map(
+      (profile): SlashCommandItem => {
+        const command = `${MODEL_COMMAND} ${profile.name}`;
+        return {
+          command,
+          skill: {
+            name: profile.name,
+            type: "agentskills",
+            content: profile.model
+              ? `Switch to ${formatModelNameForDisplay(profile.model)}`
+              : "Switch to this LLM profile",
+            triggers: [command],
+          },
+        };
+      },
+    );
+    return profileItems.length > 0 ? [autoItem, ...profileItems] : [];
+  }, [profilesData?.profiles, t]);
 
   // Filter items based on user input after "/"
   const filteredItems = useMemo(() => {

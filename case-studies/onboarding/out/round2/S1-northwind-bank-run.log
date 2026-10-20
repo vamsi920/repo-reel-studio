@@ -1,0 +1,96 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S1-northwind-bank
+[chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:292:1 › onboarding agent study: S1-northwind-bank
+[nav] http://localhost:8000/login
+
+[nav] http://localhost:8000/login
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[nav] http://localhost:8000/conversations
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 2s logged-in
+
+[nav] http://localhost:8000/environment/setup
+
+[nav] http://localhost:8000/environment/setup
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 17s setup-page
+
+[study] 17s begin-visible
+
+[study] 17s begun
+
+[study] 19s studio
+
+[study] turn 0 state=finished
+
+[study] turn 1 state=credential
+
+[study] credential {"providerId":"gitlab-self-managed","where":"workbench","filled":true,"status":null}
+
+[study] turn 2 state=finished
+
+[study] turn 3 state=finished
+
+[study] turn 4 state=finished
+
+[study] turn 5 state=credential
+
+[study] credential {"providerId":"jira-dc","where":"workbench","filled":true,"status":null}
+
+[study] turn 6 state=finished
+
+[study] turn 7 state=finished
+
+[study] turn 8 state=finished
+
+[study] turn 9 state=finished
+
+[study] turn 10 state=finished
+
+[study] turn 11 state=credential
+
+[study] credential {"providerId":"azure-openai","where":"workbench","filled":false}
+
+[study] turn 12 state=finished
+
+[study] turn 13 state=finished
+
+[study] turn 14 state=finished
+
+[study] turn 15 state=finished
+
+[study] turn 16 state=finished
+
+[study] turn 17 state=finished
+
+[study] turn 18 state=finished
+
+[study] turn 19 state=finished
+
+[study] turn 20 state=finished
+
+[study] turn 21 state=finished
+
+[nav] http://localhost:8000/environment/connections
+
+[nav] http://localhost:8000/environment/connections
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+  Slow test file: [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts (6.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (6.6m)

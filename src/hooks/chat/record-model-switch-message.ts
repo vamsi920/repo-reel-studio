@@ -1,3 +1,4 @@
+import type { RoutingDecision } from "#/lib/model-routing/types";
 import { getLastRenderableEventId } from "#/hooks/chat/model-command-event-anchor";
 import { useModelStore, SeededSwitch } from "#/stores/model-store";
 import { OpenHandsEvent } from "#/types/agent-server/core";
@@ -8,10 +9,11 @@ export function recordModelSwitchMessage(
   conversationId: string,
   profileName: string,
   anchorEventId: string | null = getLastRenderableEventId(),
+  routing?: RoutingDecision,
 ) {
   useModelStore
     .getState()
-    .recordSwitch(conversationId, anchorEventId, profileName);
+    .recordSwitch(conversationId, anchorEventId, profileName, routing);
 }
 
 /**

@@ -1,0 +1,15 @@
+{
+ "repo": "flask",
+ "system": "neodevex-v3",
+ "pages": 45,
+ "words": 80622,
+ "citations": 1034,
+ "citations_valid": 1034,
+ "citation_validity": 1.0,
+ "unique_files_cited": 78,
+ "inline_citations": 429,
+ "mermaid_diagrams": 110,
+ "links_pinned_to_commit": 1034,
+ "error_pages": 0,
+ "invalid_examples": []
+}

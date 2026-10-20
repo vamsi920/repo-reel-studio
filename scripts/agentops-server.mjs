@@ -58,6 +58,11 @@ import {
   resumeAfterApproval,
 } from "./agentops/run-control.mjs";
 import { applyCorsHeaders, parseAllowedOrigins } from "./agentops/cors.mjs";
+import {
+  RoutingAnnotationError,
+  parseRoutingAnnotation,
+  routingAuditRecord,
+} from "./agentops/routing-annotation.mjs";
 
 const PORT = Number(process.env.AGENTOPS_PORT || 18002);
 const AGENT_SERVER_URL = (
@@ -304,6 +309,29 @@ export function createRouter({ store, client, collector, storeKind }) {
         return true;
       }
       sendJson(res, 200, { spans: await store.listSpans(runId) });
+      return true;
+    }
+
+    // Model-routing decisions reported by the browser's Auto router. Audit
+    // only: routing itself happens in the frontend via switch_llm.
+    const runRoutingMatch = path.match(/^\/runs\/([^/]+)\/routing$/);
+    if (method === "POST" && runRoutingMatch) {
+      const runId = decodeURIComponent(runRoutingMatch[1]);
+      const run = await store.getRun(runId);
+      if (!run) {
+        sendJson(res, 404, { error: `Unknown run ${runId}` });
+        return true;
+      }
+      let annotation;
+      try {
+        annotation = parseRoutingAnnotation(await readBody(req));
+      } catch (error) {
+        if (!(error instanceof RoutingAnnotationError)) throw error;
+        sendJson(res, 400, { error: error.message });
+        return true;
+      }
+      await store.appendAudit(routingAuditRecord({ run, annotation, at: now }));
+      sendJson(res, 200, { recorded: true });
       return true;
     }
 

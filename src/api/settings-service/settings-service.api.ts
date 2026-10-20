@@ -31,6 +31,10 @@ export const APP_PREFERENCE_FIELDS = [
   "git_user_email",
   "title_llm_profile",
   "disabled_skills",
+  "model_routing_mode",
+  "model_routing_policy",
+  "model_routing_budget_usd",
+  "model_routing_excluded_profiles",
 ] as const;
 
 export type AppPreferenceField = (typeof APP_PREFERENCE_FIELDS)[number];

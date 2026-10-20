@@ -1,0 +1,402 @@
+[
+ {
+  "n": 0,
+  "verdict": "supported",
+  "note": "LiteralUnion definition matches"
+ },
+ {
+  "n": 1,
+  "verdict": "supported",
+  "note": "BeforeRetryState fields match"
+ },
+ {
+  "n": 2,
+  "verdict": "unsupported",
+  "note": "Lines are option defaults, not AbortController setup"
+ },
+ {
+  "n": 3,
+  "verdict": "unsupported",
+  "note": "Lines define ReplaceMarked type, no TypeError"
+ },
+ {
+  "n": 4,
+  "verdict": "supported",
+  "note": "createEsmTestServer defined here"
+ },
+ {
+  "n": 5,
+  "verdict": "partial",
+  "note": "ky.retry returns RetryMarker; ForceRetryError thrown elsewhere"
+ },
+ {
+  "n": 6,
+  "verdict": "partial",
+  "note": "beforeError hook loop; claim lists other hook sources"
+ },
+ {
+  "n": 7,
+  "verdict": "supported",
+  "note": "RetryMarker leads to throw ForceRetryError"
+ },
+ {
+  "n": 8,
+  "verdict": "unsupported",
+  "note": "Line is supportsRequestStreams, not requestMethods"
+ },
+ {
+  "n": 9,
+  "verdict": "partial",
+  "note": "Retry method check; no specific statement to verify"
+ },
+ {
+  "n": 10,
+  "verdict": "supported",
+  "note": "Constructor covers defaults, prefix, abort, json, searchParams"
+ },
+ {
+  "n": 11,
+  "verdict": "supported",
+  "note": "Empty body yields undefined data"
+ },
+ {
+  "n": 12,
+  "verdict": "supported",
+  "note": "Test retries 500 until success"
+ },
+ {
+  "n": 13,
+  "verdict": "supported",
+  "note": "Response return ends retry with response"
+ },
+ {
+  "n": 14,
+  "verdict": "partial",
+  "note": "calculateRetryDelay; cited sources concern #retry"
+ },
+ {
+  "n": 15,
+  "verdict": "partial",
+  "note": "Test shows request modification only, not stop/Response"
+ },
+ {
+  "n": 16,
+  "verdict": "supported",
+  "note": "Returned Request assigned for retry"
+ },
+ {
+  "n": 17,
+  "verdict": "unsupported",
+  "note": "Lines are beforeError/finally, not _retry"
+ },
+ {
+  "n": 18,
+  "verdict": "supported",
+  "note": "#fetch timeout, clone, timeout utility shown"
+ },
+ {
+  "n": 19,
+  "verdict": "unsupported",
+  "note": "Blank line in searchParams merge"
+ },
+ {
+  "n": 20,
+  "verdict": "supported",
+  "note": "streamRequest wraps body in new Request"
+ },
+ {
+  "n": 21,
+  "verdict": "partial",
+  "note": "Shows cloning only, not init hook execution"
+ },
+ {
+  "n": 22,
+  "verdict": "partial",
+  "note": "Only totalTimeout exhaustion throw shown"
+ },
+ {
+  "n": 23,
+  "verdict": "partial",
+  "note": "Symbol defined only; usage not shown"
+ },
+ {
+  "n": 24,
+  "verdict": "supported",
+  "note": "Timeout race with abort and TimeoutError"
+ },
+ {
+  "n": 25,
+  "verdict": "supported",
+  "note": "note=json treated as text"
+ },
+ {
+  "n": 26,
+  "verdict": "supported",
+  "note": "build script matches"
+ },
+ {
+  "n": 27,
+  "verdict": "supported",
+  "note": "Doc says does not extend KyError"
+ },
+ {
+  "n": 28,
+  "verdict": "supported",
+  "note": "wrapRequestWithUploadProgress calls streamRequest"
+ },
+ {
+  "n": 29,
+  "verdict": "supported",
+  "note": "Throws Error when streams unsupported"
+ },
+ {
+  "n": 30,
+  "verdict": "supported",
+  "note": "beforeRequest hooks and retry in promise"
+ },
+ {
+  "n": 31,
+  "verdict": "partial",
+  "note": "AfterResponseHook type only, not timing"
+ },
+ {
+  "n": 32,
+  "verdict": "supported",
+  "note": "Main ky function calls Ky.create"
+ },
+ {
+  "n": 33,
+  "verdict": "partial",
+  "note": "Retry doc lacks default limit 2"
+ },
+ {
+  "n": 34,
+  "verdict": "supported",
+  "note": "ArrayBuffer uses byteLength"
+ },
+ {
+  "n": 35,
+  "verdict": "supported",
+  "note": "Type guards exported from type-guards"
+ },
+ {
+  "n": 36,
+  "verdict": "partial",
+  "note": "Export only; throw condition not shown"
+ },
+ {
+  "n": 37,
+  "verdict": "supported",
+  "note": "json method signature matches"
+ },
+ {
+  "n": 38,
+  "verdict": "partial",
+  "note": "ReadableStream size test; no clear statement"
+ },
+ {
+  "n": 39,
+  "verdict": "supported",
+  "note": "ky.retry forced retry documented"
+ },
+ {
+  "n": 40,
+  "verdict": "unsupported",
+  "note": "maxRetryAfter caps delay; requests still retried"
+ },
+ {
+  "n": 41,
+  "verdict": "supported",
+  "note": "beforeRequest hooks can replace request or return Response"
+ },
+ {
+  "n": 42,
+  "verdict": "supported",
+  "note": "KyRequest intersection with Request"
+ },
+ {
+  "n": 43,
+  "verdict": "supported",
+  "note": "retryOnTimeout false default, no retry"
+ },
+ {
+  "n": 44,
+  "verdict": "supported",
+  "note": "RangeError above maxSafeTimeout"
+ },
+ {
+  "n": 45,
+  "verdict": "unsupported",
+  "note": "Lines are prefix/baseUrl, not upload progress"
+ },
+ {
+  "n": 46,
+  "verdict": "partial",
+  "note": "BeforeErrorHook returns Error; retried not shown"
+ },
+ {
+  "n": 47,
+  "verdict": "unsupported",
+  "note": "Lines are body shortcuts, not mergeHooks"
+ },
+ {
+  "n": 48,
+  "verdict": "supported",
+  "note": "stop symbol documented for beforeRetry"
+ },
+ {
+  "n": 49,
+  "verdict": "supported",
+  "note": "xo rules in package.json"
+ },
+ {
+  "n": 50,
+  "verdict": "supported",
+  "note": "Input type string|URL|Request"
+ },
+ {
+  "n": 51,
+  "verdict": "supported",
+  "note": "Doc says Response skips HTTP request"
+ },
+ {
+  "n": 52,
+  "verdict": "partial",
+  "note": "Assignment only; purpose not in lines"
+ },
+ {
+  "n": 53,
+  "verdict": "supported",
+  "note": "calculateRetryDelay shown"
+ },
+ {
+  "n": 54,
+  "verdict": "supported",
+  "note": "#fetch calls wrapRequestWithUploadProgress"
+ },
+ {
+  "n": 55,
+  "verdict": "supported",
+  "note": "test script matches"
+ },
+ {
+  "n": 56,
+  "verdict": "supported",
+  "note": "Test passes trivially without bytes support"
+ },
+ {
+  "n": 57,
+  "verdict": "supported",
+  "note": "Shortcuts set Accept before awaiting"
+ },
+ {
+  "n": 58,
+  "verdict": "partial",
+  "note": "Line is extend merge, not per-request merge"
+ },
+ {
+  "n": 59,
+  "verdict": "supported",
+  "note": "prepare runs build"
+ },
+ {
+  "n": 60,
+  "verdict": "unsupported",
+  "note": "normalizeSearchParams, not signal management"
+ },
+ {
+  "n": 61,
+  "verdict": "unsupported",
+  "note": "getReplaceState, not mergeHooks"
+ },
+ {
+  "n": 62,
+  "verdict": "supported",
+  "note": "Loop attaches method shortcuts"
+ },
+ {
+  "n": 63,
+  "verdict": "unsupported",
+  "note": "Prefix normalization, not streamRequest"
+ },
+ {
+  "n": 64,
+  "verdict": "supported",
+  "note": "Opaque responses excluded from HTTPError"
+ },
+ {
+  "n": 65,
+  "verdict": "partial",
+  "note": "Import only of supportsResponseStreams"
+ },
+ {
+  "n": 66,
+  "verdict": "unsupported",
+  "note": "Response text reading, not beforeError"
+ },
+ {
+  "n": 67,
+  "verdict": "supported",
+  "note": "Readme: HTTPError for non-2xx"
+ },
+ {
+  "n": 68,
+  "verdict": "supported",
+  "note": "KyHeadersInit accepts Headers or record"
+ },
+ {
+  "n": 69,
+  "verdict": "unsupported",
+  "note": "searchParams/init tests, not parseJson"
+ },
+ {
+  "n": 70,
+  "verdict": "unsupported",
+  "note": "decorateResponse, not cancelResponseBody"
+ },
+ {
+  "n": 71,
+  "verdict": "partial",
+  "note": "Message constant; throw site not cited"
+ },
+ {
+  "n": 72,
+  "verdict": "partial",
+  "note": "Concatenation documented; undefined clearing not shown"
+ },
+ {
+  "n": 73,
+  "verdict": "partial",
+  "note": "Import only"
+ },
+ {
+  "n": 74,
+  "verdict": "unsupported",
+  "note": "Option fields, not Options type definition"
+ },
+ {
+  "n": 75,
+  "verdict": "unsupported",
+  "note": "decorateResponse/getResponseData, not #retry"
+ },
+ {
+  "n": 76,
+  "verdict": "partial",
+  "note": "ArrayBuffer only, not DataView"
+ },
+ {
+  "n": 77,
+  "verdict": "supported",
+  "note": "tsconfig includes source"
+ },
+ {
+  "n": 78,
+  "verdict": "supported",
+  "note": "json sets application/json"
+ },
+ {
+  "n": 79,
+  "verdict": "supported",
+  "note": "files lists distribution only"
+ }
+]

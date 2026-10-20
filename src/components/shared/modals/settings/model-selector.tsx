@@ -100,13 +100,34 @@ export function ModelSelector({
     [providersForDisplay],
   );
 
+  // Same reason for the model: a newer model (e.g. gemini-4-argon, the app
+  // default) can be missing from the agent-server's litellm model list. Keep
+  // the current one listed so its input renders and the save keeps llm.model.
+  const modelsForDisplay = React.useMemo(() => {
+    if (
+      !selectedModel ||
+      isLoadingModels ||
+      providerModels.some((m) => m.name === selectedModel)
+    ) {
+      return providerModels;
+    }
+    return [
+      ...providerModels,
+      {
+        provider: selectedProvider ?? "",
+        name: selectedModel,
+        verified: false,
+      },
+    ];
+  }, [providerModels, selectedProvider, selectedModel, isLoadingModels]);
+
   const verifiedModels = React.useMemo(
-    () => providerModels.filter((m) => m.verified),
-    [providerModels],
+    () => modelsForDisplay.filter((m) => m.verified),
+    [modelsForDisplay],
   );
   const unverifiedModels = React.useMemo(
-    () => providerModels.filter((m) => !m.verified),
-    [providerModels],
+    () => modelsForDisplay.filter((m) => !m.verified),
+    [modelsForDisplay],
   );
 
   React.useEffect(() => {

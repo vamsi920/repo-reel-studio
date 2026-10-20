@@ -1,0 +1,105 @@
+{
+  "_note": "Graded by hand against checklists.json (facts written from the source at the pinned commits before any answer was read). facts = sum of 1 / 0.5 / 0 per checklist fact; wrong = number of the checklist's wrong claims the answer makes; score = max(0, facts - wrong) / total facts. 'notes' records anything else that matters: wrong line numbers, invented code.",
+  "grades": [
+    {
+      "task": "F1",
+      "agent": "devin",
+      "variant": "devin",
+      "rep": 0,
+      "facts": 8,
+      "total": 8,
+      "wrong": 0,
+      "notes": "Every fact, correct line ranges, confirmed the order with a script and pasted the observed log."
+    },
+    {
+      "task": "F1",
+      "agent": "neodevex",
+      "variant": "base",
+      "rep": 0,
+      "facts": 2.5,
+      "total": 8,
+      "wrong": 3,
+      "notes": "Answered from memory in 3 calls: separate RequestContext, signal in handle_user_exception, after_request 'typically skipped'. No line numbers."
+    },
+    {
+      "task": "F1",
+      "agent": "neodevex",
+      "variant": "rules",
+      "rep": 0,
+      "facts": 6.5,
+      "total": 8,
+      "wrong": 0,
+      "notes": "Read the code: right methods and order, signal in handle_exception, after_request on the 500. Misses the PROPAGATE None default and the reverse order of teardown; several line numbers wrong (wsgi_app 'line 337')."
+    },
+    {
+      "task": "F1",
+      "agent": "neodevex",
+      "variant": "rules-pro",
+      "rep": 0,
+      "facts": 5.5,
+      "total": 8,
+      "wrong": 0,
+      "notes": "Right structure and teardown path, but invents handle_exception's ending ('return self.handle_http_exception(ctx, InternalServerError())') instead of log_exception + 500 handler + finalize_request(from_error_handler=True)."
+    },
+    {
+      "task": "H1",
+      "agent": "devin",
+      "variant": "devin",
+      "rep": 0,
+      "facts": 7,
+      "total": 7,
+      "wrong": 0,
+      "notes": "Complete, line-level citations, the exact PATH_ERROR conditions and the late-add error text."
+    },
+    {
+      "task": "H1",
+      "agent": "neodevex",
+      "variant": "base",
+      "rep": 0,
+      "facts": 2,
+      "total": 7,
+      "wrong": 3,
+      "notes": "Says routes go to every router when added, fallback on a missed match, and quotes the activeRouter error for late adds. Answer repeated twice."
+    },
+    {
+      "task": "K1",
+      "agent": "devin",
+      "variant": "devin",
+      "rep": 0,
+      "facts": 9,
+      "total": 9,
+      "wrong": 0,
+      "notes": "Complete, including the 2024-01-01 timestamp threshold, empty-header ?? edge case and maxSafeTimeout."
+    },
+    {
+      "task": "K1",
+      "agent": "neodevex",
+      "variant": "base",
+      "rep": 0,
+      "facts": 1.5,
+      "total": 9,
+      "wrong": 1,
+      "notes": "Did not open the code ('unable to directly inspect the ky library files ... due to tool limitations'); invents an X-Retry-After header and guesses file paths."
+    },
+    {
+      "task": "H1",
+      "agent": "neodevex",
+      "variant": "rules",
+      "rep": 0,
+      "facts": 5.5,
+      "total": 7,
+      "wrong": 0,
+      "notes": "Buffering, replay, UnsupportedPathError fallback, rebind and name all correct with line numbers; no real cause given (invents a 'linear router' example), names the constant but not the message."
+    },
+    {
+      "task": "H1",
+      "agent": "neodevex",
+      "variant": "rules-pro",
+      "rep": 0,
+      "facts": 5,
+      "total": 7,
+      "wrong": 1,
+      "notes": "Correct mechanism but gets the fallback backwards: says TrieRouter throws and SmartRouter falls back to RegExpRouter. No router name, no error text."
+    }
+  ]
+}

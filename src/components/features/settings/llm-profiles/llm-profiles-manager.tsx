@@ -4,6 +4,7 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { RenameProfileModal } from "./rename-profile-modal";
 import { DeleteProfileModal } from "./delete-profile-modal";
 import { ProfilesBody } from "./profiles-body";
+import { ModelRoutingSection } from "./model-routing-section";
 import ProfilesService, {
   ProfileInfo,
   type SaveProfileRequest,
@@ -140,6 +141,12 @@ export function LlmProfilesManager({
           isActivating={activateProfile.isPending}
         />
       </div>
+
+      {profiles.length > 0 && (
+        <div className="mt-8">
+          <ModelRoutingSection profiles={profiles} canManage={canManage} />
+        </div>
+      )}
 
       <RenameProfileModal
         profile={profileToRename}

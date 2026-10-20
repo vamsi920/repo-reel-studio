@@ -1,0 +1,402 @@
+[
+ {
+  "page": "JSX Renderer Middleware",
+  "path": "src/middleware/jsx-renderer/index.ts",
+  "start": 66,
+  "end": 75,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/jsx-renderer/index.ts#L66-L75",
+  "ok": true,
+  "inline": true,
+  "claim": "ean \\| Record<string, string>` | Enables streaming rendering. If `false` (default), the response is buffered. If `true`, enables streaming with default headers. If an object is provided, it's used to set custom response headers. Sources: [src/middleware/jsx-renderer/index.ts:20](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/jsx-renderer/index.ts#L20), "
+ },
+ {
+  "page": "JWT Middleware",
+  "path": "src/middleware/ip-restriction/index.ts",
+  "start": 31,
+  "end": 31,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L31",
+  "ok": true,
+  "inline": true,
+  "claim": "c/middleware/ip-restriction/index.ts:30](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L30), [src/middleware/ip-restriction/index.ts:34](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L34).\n        -   CIDR notation (e.g., `192.168.2.0/24`, `::1/10`). Sources: "
+ },
+ {
+  "page": "Validator",
+  "path": "src/validator/validator.ts",
+  "start": 144,
+  "end": 150,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/validator/validator.ts#L144-L150",
+  "ok": true,
+  "inline": true,
+  "claim": "*   **`query`**: It uses `c.req.queries()`. If a query parameter has only one value, it's converted from a single-element array to a string.\n    `Sources: "
+ },
+ {
+  "page": "src/jsx: module reference (part 1)",
+  "path": "src/jsx/index.test.tsx",
+  "start": 638,
+  "end": 706,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/index.test.tsx#L638-L706",
+  "ok": true,
+  "inline": true,
+  "claim": "udes security to prevent CSS injection by dropping properties or values containing semicolons. Sources: [src/jsx/index.test.tsx:499-628](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/index.test.tsx#L499-L628).\n    *   **XSS Prevention**: Skips rendering attributes if their *keys* contain unsafe characters such as `\"`, `>`, `<`, spaces, or backticks. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/context.test.ts",
+  "start": 283,
+  "end": 294,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L283-L294",
+  "ok": true,
+  "inline": true,
+  "claim": "A new engineer might be surprised by the following behaviors verified in the tests:\n*   When `c.res` is reassigned (e.g., `c.res = new Response(...)`), headers from the previous `c.res` object are automatically merged into the new one. This is especially true for `set-cookie` headers, which are preserved across reassignments. (Sources: "
+ },
+ {
+  "page": "HTTP Exception Handling",
+  "path": "src/hono-base.ts",
+  "start": 462,
+  "end": 464,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L462-L464",
+  "ok": true,
+  "inline": true,
+  "claim": "`Sources: [src/hono-base.ts:399-404](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L399-L404), [src/hono-base.ts:436-438](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L436-L438), "
+ },
+ {
+  "page": "src/utils: module reference (part 1)",
+  "path": "src/utils/accept.ts",
+  "start": 1,
+  "end": 5,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/accept.ts#L1-L5",
+  "ok": true,
+  "inline": true,
+  "claim": "```typescript\nexport interface Accept {\n  type: string\n  params: Record<string, string>\n  q: number\n}\n```\n*Sources: "
+ },
+ {
+  "page": "TrieRouter",
+  "path": "src/router/trie-router/node.ts",
+  "start": 30,
+  "end": 30,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/trie-router/node.ts#L30",
+  "ok": true,
+  "inline": true,
+  "claim": " named parameters (`:id`), regex-constrained parameters (`:id{[0-9]+}`), or wildcards (`*`).\n    `Sources: [src/router/trie-router/node.ts:29](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/trie-router/node.ts#L29)`\n-   `#order`: A number that increments with each insertion, used to determine the score of a handler for sorting matched routes.\n    `Sources: "
+ },
+ {
+  "page": "Cookie Helper",
+  "path": "src/helper/css/common.case.test.tsx",
+  "start": 232,
+  "end": 254,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/helper/css/common.case.test.tsx#L232-L254",
+  "ok": true,
+  "inline": true,
+  "claim": "tors (e.g., `.${className} { h1 { ... } }`) if the environment supports it (`support.nest`). `Sources: [src/helper/css/common.case.test.tsx:205-230](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/helper/css/common.case.test.tsx#L205-L230)`\n*   **Global Styles**:\n    *   Recognizes the `:-hono-global` pseudo-selector to inject unscoped, global CSS rules. `Sources: "
+ },
+ {
+  "page": "src/utils: module reference (part 6)",
+  "path": "src/utils/types.ts",
+  "start": 70,
+  "end": 70,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/types.ts#L70",
+  "ok": true,
+  "inline": true,
+  "claim": "ill resolve any type containing a `bigint` to `never`, preventing its use. This is because `JSON.stringify` throws an error for `bigint` values. This behavior can be disabled by setting the second generic argument to `never`: `JSONParsed<MyType, never>`.\n  *Sources: [src/utils/types.ts:46-52](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/types.ts#L46-L52), "
+ },
+ {
+  "page": "The HonoRequest Class",
+  "path": "src/request.ts",
+  "start": 253,
+  "end": 331,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L253-L331",
+  "ok": true,
+  "inline": true,
+  "claim": "`Sources: [src/request.ts:212-218](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L212-L218), "
+ },
+ {
+  "page": "Development Workflow",
+  "path": "tsconfig.base.json",
+  "start": 3,
+  "end": 3,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/tsconfig.base.json#L3-L3",
+  "ok": true,
+  "inline": true,
+  "claim": "-   **Main Settings:**\n    -   `composite`: `true` enables TypeScript's project references feature, which is used in the root `tsconfig.json`. (Sources: "
+ },
+ {
+  "page": "CSRF Middleware",
+  "path": "src/middleware/csrf/index.ts",
+  "start": 138,
+  "end": 138,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/csrf/index.ts#L138",
+  "ok": true,
+  "inline": true,
+  "claim": "t/index.test.ts#L13-L17)*\n-   **Middleware Architecture**: The CSRF middleware is a standard Hono `MiddlewareHandler`. It follows the `(c, next)` pattern, where it can perform actions before (`await next()`) and/or after the next handler in the chain. Other middleware like `poweredBy` demonstrate a simpler pattern where they only act after the handler has run to modify the response.\n    *Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/context.test.ts",
+  "start": 497,
+  "end": 566,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L497-L566",
+  "ok": true,
+  "inline": true,
+  "claim": "ntext headers. The status code can also be overridden. (Sources: [src/context.test.ts:247-281](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L247-L281)).\n    *   Response helpers can also accept a `Response` or `ResponseInit` object as the second argument, inheriting status and headers from it but overriding the `Content-Type` and body. (Sources: "
+ },
+ {
+  "page": "TrieRouter",
+  "path": "src/router/trie-router/router.ts",
+  "start": 9,
+  "end": 11,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/trie-router/router.ts#L9-L11",
+  "ok": true,
+  "inline": true,
+  "claim": "-   `constructor()`: Initializes the root `#node`.\n    `Sources: "
+ },
+ {
+  "page": "Bun Adapter",
+  "path": "runtime-tests/bun/index.test.tsx",
+  "start": 179,
+  "end": 202,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/bun/index.test.tsx#L179-L202",
+  "ok": true,
+  "inline": true,
+  "claim": "ame and password authentication. `Sources: [runtime-tests/bun/index.test.tsx:57-87](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/bun/index.test.tsx#L57-L87)`\n*   **JWT**: Protects routes using JSON Web Tokens. Bun's support for the Web Crypto API (since v0.2.2) allows this middleware to function without polyfills, unlike some other runtimes. `Sources: "
+ },
+ {
+  "page": "Runtime Adapters Overview",
+  "path": "src/adapter/cloudflare-workers/index.ts",
+  "start": 6,
+  "end": 8,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/cloudflare-workers/index.ts#L6-L8",
+  "ok": true,
+  "inline": true,
+  "claim": "blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/bun/index.ts#L6-L11) |\n| **Deno** | `serveStatic`, `toSSG`, `denoFileSystemModule`, `upgradeWebSocket`, `getConnInfo` | [src/adapter/deno/index.ts:6-9](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/deno/index.ts#L6-L9) |\n| **Cloudflare Workers** | `serveStatic`, `upgradeWebSocket`, `getConnInfo` | "
+ },
+ {
+  "page": "HTTP Exception Handling",
+  "path": "src/hono-base.ts",
+  "start": 256,
+  "end": 274,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/hono-base.ts#L256-L274",
+  "ok": true,
+  "inline": true,
+  "claim": "```typescript\n// Example from hono-base.ts documentation\napp.onError((err, c) => {\n  console.error(`${err}`)\n  return c.text('Custom Error Message', 500)\n})\n```\n`Sources: "
+ },
+ {
+  "page": "Compress Middleware",
+  "path": "src/middleware/compress/index.test.ts",
+  "start": 8,
+  "end": 9,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.test.ts#L8-L9",
+  "ok": true,
+  "inline": true,
+  "claim": "app.get('/', (c) => {\n  return c.text('a'.repeat(2000)) // This response will be compressed\n})\n```\n`Sources: [src/middleware/compress/index.ts:58-62](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/compress/index.ts#L58-L62), "
+ },
+ {
+  "page": "TrieRouter",
+  "path": "src/router/trie-router/node.ts",
+  "start": 26,
+  "end": 26,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/trie-router/node.ts#L26",
+  "ok": true,
+  "inline": true,
+  "claim": "-   `#methods`: An array of objects, where each object maps a method name (e.g., 'GET', 'POST', or `METHOD_NAME_ALL`) to a `HandlerSet`. A node can have multiple handlers for the same method.\n    `Sources: "
+ },
+ {
+  "page": "src/utils: module reference (part 3)",
+  "path": "src/utils/filepath.ts",
+  "start": 12,
+  "end": 30,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/filepath.ts#L12-L30",
+  "ok": true,
+  "inline": true,
+  "claim": "TD\n    A[\"getFilePath(options)\"] --> B{filename ends with '/'?};\n    B -- Yes --> C[filename += defaultDocument];\n    B -- No --> D{filename has no extension?};\n    D -- Yes --> E[filename += '/' + defaultDocument];\n    D -- No --> F[Use original filename];\n    C --> G[Call getFilePathWithoutDefaultDocument];\n    E --> G;\n    F --> G;\n    G --> H[Return sanitized path or undefined];\n```\n*Sources: "
+ },
+ {
+  "page": "Cloudflare Workers & Pages Adapter",
+  "path": "src/adapter/lambda-edge/handler.test.ts",
+  "start": 93,
+  "end": 121,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/lambda-edge/handler.test.ts#L93-L121",
+  "ok": true,
+  "inline": true,
+  "claim": "tion**: Correctly builds the request URL using the `Host` header from the CloudFront event. Sources: [src/adapter/lambda-edge/handler.test.ts:81-91](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/lambda-edge/handler.test.ts#L81-L91).\n    *   **Multi-value Headers**: Preserves all values from a multi-value request header by joining them with `, `. Sources: "
+ },
+ {
+  "page": "The HonoRequest Class",
+  "path": "src/request.test.ts",
+  "start": 245,
+  "end": 365,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.test.ts#L245-L365",
+  "ok": true,
+  "inline": true,
+  "claim": "`Sources: [src/request.ts:220-239](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.ts#L220-L239), "
+ },
+ {
+  "page": "src/utils: module reference (part 5)",
+  "path": "src/utils/stream.test.ts",
+  "start": 68,
+  "end": 74,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/stream.test.ts#L68-L74",
+  "ok": true,
+  "inline": true,
+  "claim": "*   Calling `write()` after the stream has been closed does not throw an error. `Sources: "
+ },
+ {
+  "page": "SmartRouter",
+  "path": "src/router/smart-router/router.ts",
+  "start": 9,
+  "end": 11,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L9-L11",
+  "ok": true,
+  "inline": true,
+  "claim": "ps://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L7), [src/router/smart-router/router.ts:48](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/smart-router/router.ts#L48) |\n| `constructor()` | `(init: { routers: Router<T>[] })` | Initializes the `SmartRouter` with a list of candidate routers. Sources: "
+ },
+ {
+  "page": "CSRF Middleware",
+  "path": "src/middleware/serve-static/path.test.ts",
+  "start": 24,
+  "end": 29,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L24-L29",
+  "ok": true,
+  "inline": true,
+  "claim": "hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L8-L16)`\n-   Paths with parent directory references (`..`). `Sources: [src/middleware/serve-static/path.test.ts:17-22](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L17-L22)`\n-   Paths with current directory references (`.`). `Sources: "
+ },
+ {
+  "page": "runtime-tests: module reference (part 2)",
+  "path": "runtime-tests/workerd/vitest.config.ts",
+  "start": 6,
+  "end": 6,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/workerd/vitest.config.ts#L6",
+  "ok": true,
+  "inline": true,
+  "claim": "| File | Key Configuration | Purpose | Source |\n| :--- | :--- | :--- | :--- |\n| `vitest.config.ts` | `name: 'workerd'` | Defines the name of the Vitest project. | `"
+ },
+ {
+  "page": "runtime-tests: module reference (part 2)",
+  "path": "runtime-tests/workerd/index.test.ts",
+  "start": 71,
+  "end": 73,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/workerd/index.test.ts#L71-L73",
+  "ok": true,
+  "inline": true,
+  "claim": "message. On `message`, it verifies the echoed data and closes the connection.\n        *Sources: [runtime-tests/workerd/index.test.ts:49-66](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/workerd/index.test.ts#L49-L66)*\n    *   **Assertions**: It verifies that the `open`, `message` (with `'Hello'`), and `close` handlers were all called.\n        *Sources: "
+ },
+ {
+  "page": "The HonoRequest Class",
+  "path": "src/request.test.ts",
+  "start": 42,
+  "end": 56,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/request.test.ts#L42-L56",
+  "ok": true,
+  "inline": true,
+  "claim": "-   **Path Parameters**: A zero-length path parameter match (e.g., a wildcard `*` matching an empty path segment) will correctly result in an empty string `''` from `req.param()`, not `undefined`. `Sources: "
+ },
+ {
+  "page": "src/utils: module reference (part 6)",
+  "path": "src/utils/url.test.ts",
+  "start": 259,
+  "end": 362,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/url.test.ts#L259-L362",
+  "ok": true,
+  "inline": true,
+  "claim": " User->>getQueryParams: getQueryParams(url, 'name')\n    getQueryParams->>_getQueryParam: _getQueryParam(url, 'name', true)\n    _getQueryParam-->>getQueryParams: [\"first_value\", \"second_value\"]\n    getQueryParams-->>User: [\"first_value\", \"second_value\"]\n```\n*Sources: [src/utils/url.ts:219-315](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/url.ts#L219-L315), "
+ },
+ {
+  "page": "runtime-tests: module reference (part 1)",
+  "path": "runtime-tests/lambda/tsconfig.json",
+  "start": 1,
+  "end": 10,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/lambda/tsconfig.json#L1-L10",
+  "ok": true,
+  "inline": true,
+  "claim": "e`, and an environment variable `NAME: 'Node'`. `Sources: [runtime-tests/lambda/vitest.config.ts:3-10](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/runtime-tests/lambda/vitest.config.ts#L3-L10)` |\n| `tsconfig.json` | TypeScript configuration for the test suite. | Extends the base `tsconfig.base.json`, enables `noEmit`, and includes `vitest/globals` types. `Sources: "
+ },
+ {
+  "page": "Validator",
+  "path": "src/validator/validator.ts",
+  "start": 64,
+  "end": 82,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/validator/validator.ts#L64-L82",
+  "ok": true,
+  "inline": true,
+  "claim": "`Sources: [src/validator/utils.ts](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/validator/utils.ts), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/context.test.ts",
+  "start": 413,
+  "end": 428,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L413-L428",
+  "ok": true,
+  "inline": true,
+  "claim": "tests:\n*   When `c.res` is reassigned (e.g., `c.res = new Response(...)`), headers from the previous `c.res` object are automatically merged into the new one. This is especially true for `set-cookie` headers, which are preserved across reassignments. (Sources: [src/context.test.ts:283-294](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L283-L294), "
+ },
+ {
+  "page": "CSRF Middleware",
+  "path": "src/middleware/serve-static/path.test.ts",
+  "start": 8,
+  "end": 16,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/serve-static/path.test.ts#L8-L16",
+  "ok": true,
+  "inline": true,
+  "claim": "A comprehensive set of test cases is used to compare the output of `defaultJoin` against `posixJoin`. These cases cover:\n-   Basic path joining. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/context.test.ts",
+  "start": 574,
+  "end": 597,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/context.test.ts#L574-L597",
+  "ok": true,
+  "inline": true,
+  "claim": "*   **Rendering**:\n    *   `c.render()`: Uses a renderer to create a response. The tests verify a default renderer and the ability to set a custom one via `c.setRenderer()`. (Sources: "
+ },
+ {
+  "page": "src/utils: module reference (part 4)",
+  "path": "src/utils/jwt/jws.ts",
+  "start": 78,
+  "end": 105,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/jwt/jws.ts#L78-L105",
+  "ok": true,
+  "inline": true,
+  "claim": "`Sources: [src/utils/jwt/jws.ts:27](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/jwt/jws.ts#L27), [src/utils/jwt/jws.ts:54-76](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/utils/jwt/jws.ts#L54-L76), "
+ },
+ {
+  "page": "PatternRouter",
+  "path": "src/router/pattern-router/router.ts",
+  "start": 8,
+  "end": 8,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/router/pattern-router/router.ts#L8",
+  "ok": true,
+  "inline": true,
+  "claim": "   |\n| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |\n| `PatternRouter<T>`  | The main class that implements the `Router<T>` interface. It contains the logic for adding and matching routes.                          | `"
+ },
+ {
+  "page": "DOM and Client-Side JSX",
+  "path": "src/jsx/dom/client.ts",
+  "start": 38,
+  "end": 59,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/dom/client.ts#L38-L59",
+  "ok": true,
+  "inline": true,
+  "claim": "t.ts:33-35](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/jsx/dom/client.ts#L33-L35). The returned `Root` object has two methods:\n    -   `render(children)`: Renders the provided JSX into the root element. Subsequent calls will update the rendered content. It throws an `Error` with the message \"Cannot update an unmounted root\" if called after `unmount`. Sources: "
+ },
+ {
+  "page": "Cloudflare Workers & Pages Adapter",
+  "path": "src/adapter/lambda-edge/handler.test.ts",
+  "start": 11,
+  "end": 12,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/adapter/lambda-edge/handler.test.ts#L11-L12",
+  "ok": true,
+  "inline": true,
+  "claim": "*   **`isContentTypeBinary` function**\n    *   Correctly identifies binary MIME types such as `image/png` and `font/woff2` as `true`. Sources: "
+ },
+ {
+  "page": "JWT Middleware",
+  "path": "src/middleware/ip-restriction/index.ts",
+  "start": 221,
+  "end": 224,
+  "link": "https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L221-L224",
+  "ok": true,
+  "inline": true,
+  "claim": "oth default to an empty array `[]`. Sources: [src/middleware/ip-restriction/index.ts:220](https://github.com/honojs/hono/blob/24547a6ed5e175f9326063efb657540162287973/src/middleware/ip-restriction/index.ts#L220).\n    3.  `onError`: An optional custom error handler. If not provided, the middleware throws an `HTTPException` with a 403 status and \"Forbidden\" message when blocking a request. Sources: "
+ }
+]

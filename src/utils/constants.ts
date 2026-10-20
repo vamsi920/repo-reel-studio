@@ -40,6 +40,8 @@ export const BTW_COMMAND = "/btw";
 
 /** The /model slash command — lists or switches the conversation's LLM profile. */
 export const MODEL_COMMAND = "/model";
+/** `/model auto` turns on Auto model routing. */
+export const MODEL_AUTO_ARG = "auto";
 
 /** The /goal slash command — drives the agent toward an objective, judging completion each round. */
 export const GOAL_COMMAND = "/goal";

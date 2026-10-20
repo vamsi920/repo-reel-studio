@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { toAppConversation } from "#/api/agent-server-adapter";
 import {
   getStoredConversationMetadata,
+  patchStoredConversationMetadata,
   removeStoredConversationMetadata,
   setStoredConversationMetadata,
 } from "#/api/conversation-metadata-store";
@@ -54,6 +55,27 @@ describe("conversation-metadata-store", () => {
     removeStoredConversationMetadata("conv-3");
 
     expect(getStoredConversationMetadata("conv-3")).toBeNull();
-    expect(toAppConversation(directInfo("conv-3")).selected_repository).toBeNull();
+    expect(
+      toAppConversation(directInfo("conv-3")).selected_repository,
+    ).toBeNull();
+  });
+
+  it("patchStoredConversationMetadata keeps fields the caller didn't mention", () => {
+    setStoredConversationMetadata("c-1", {
+      selected_repository: "acme/web",
+      selected_branch: "main",
+      git_provider: null,
+      workspace_mode: "local_repo",
+      routing_mode: "auto",
+    });
+
+    patchStoredConversationMetadata("c-1", { active_profile: "pro" });
+
+    expect(getStoredConversationMetadata("c-1")).toMatchObject({
+      selected_repository: "acme/web",
+      workspace_mode: "local_repo",
+      routing_mode: "auto",
+      active_profile: "pro",
+    });
   });
 });

@@ -6,8 +6,8 @@
   "end": 151,
   "link": "",
   "ok": true,
-  "claim": "| Method | Source | Use Case |\n|---|---|---|\n| `from_envvar` | Environment variable pointing to a file | Production secrets [src/flask/config.py:102-124]() |\n| `from_prefixed_env` | Environment variables starting with prefix | Container/Twelve-Factor apps ",
-  "inline": true
+  "inline": true,
+  "claim": "| Method | Source | Use Case |\n|---|---|---|\n| `from_envvar` | Environment variable pointing to a file | Production secrets [src/flask/config.py:102-124]() |\n| `from_prefixed_env` | Environment variables starting with prefix | Container/Twelve-Factor apps "
  },
  {
   "page": "Blueprints",
@@ -16,8 +16,8 @@
   "end": 315,
   "link": "",
   "ok": true,
-  "claim": "Blueprints support scoped error handling via `@bp.errorhandler` ",
-  "inline": true
+  "inline": true,
+  "claim": "Blueprints support scoped error handling via `@bp.errorhandler` "
  },
  {
   "page": "Custom Commands",
@@ -26,8 +26,8 @@
   "end": 398,
   "link": "",
   "ok": true,
-  "claim": "ogic\nWhen a command decorated with `with_appcontext` is invoked:\n1. It accesses the Click `Context` via `@click.pass_context` [src/flask/cli.py:382]().\n2. It retrieves the `ScriptInfo` object [src/flask/cli.py:394]().\n3. It calls `script_info.load_app()` to ensure the Flask instance is ready [src/flask/cli.py:396]().\n4. It pushes an application context using `ctx.with_resource(app.app_context())` ",
-  "inline": true
+  "inline": true,
+  "claim": "ogic\nWhen a command decorated with `with_appcontext` is invoked:\n1. It accesses the Click `Context` via `@click.pass_context` [src/flask/cli.py:382]().\n2. It retrieves the `ScriptInfo` object [src/flask/cli.py:394]().\n3. It calls `script_info.load_app()` to ensure the Flask instance is ready [src/flask/cli.py:396]().\n4. It pushes an application context using `ctx.with_resource(app.app_context())` "
  },
  {
   "page": "Installation and Setup",
@@ -36,8 +36,8 @@
   "end": 127,
   "link": "",
   "ok": true,
-  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()` ",
-  "inline": true
+  "inline": true,
+  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()` "
  },
  {
   "page": "Core Components",
@@ -46,8 +46,8 @@
   "end": 263,
   "link": "",
   "ok": true,
-  "claim": "- `open_session(app, request)` \u2014 Loads or creates the session [src/flask/sessions.py:249-251]().\n- `save_session(app, session, response)` \u2014 Persists the session state ",
-  "inline": true
+  "inline": true,
+  "claim": "- `open_session(app, request)` \u2014 Loads or creates the session [src/flask/sessions.py:249-251]().\n- `save_session(app, session, response)` \u2014 Persists the session state "
  },
  {
   "page": "Glossary",
@@ -56,8 +56,8 @@
   "end": 12,
   "link": "",
   "ok": true,
-  "claim": "`_AppCtxGlobals`) for storing data during an application context. | [src/flask/ctx.py:30]() |\n| **JSON Provider** | An interface that defines how JSON is serialized and deserialized, allowing replacement of the default library. | [src/flask/json/provider.py:252]() |\n| **Scaffold** | A base class providing common functionality for both `Flask` and `Blueprint` objects, such as route registration. | ",
-  "inline": true
+  "inline": true,
+  "claim": "`_AppCtxGlobals`) for storing data during an application context. | [src/flask/ctx.py:30]() |\n| **JSON Provider** | An interface that defines how JSON is serialized and deserialized, allowing replacement of the default library. | [src/flask/json/provider.py:252]() |\n| **Scaffold** | A base class providing common functionality for both `Flask` and `Blueprint` objects, such as route registration. | "
  },
  {
   "page": "Flask Application Object",
@@ -66,8 +66,8 @@
   "end": 1166,
   "link": "",
   "ok": true,
-  "claim": "The `Flask` object is a WSGI application. When a WSGI server calls the application, it triggers the `__call__` method, which delegates to `wsgi_app` ",
-  "inline": true
+  "inline": true,
+  "claim": "The `Flask` object is a WSGI application. When a WSGI server calls the application, it triggers the `__call__` method, which delegates to `wsgi_app` "
  },
  {
   "page": "Built-in Commands",
@@ -76,8 +76,8 @@
   "end": 11,
   "link": "",
   "ok": true,
-  "claim": "> **Warning:** Do not use `flask run` in production. It uses Werkzeug's built-in server, which is not designed for stability, efficiency, or security under load [docs/server.rst:10-17](), ",
-  "inline": true
+  "inline": true,
+  "claim": "> **Warning:** Do not use `flask run` in production. It uses Werkzeug's built-in server, which is not designed for stability, efficiency, or security under load [docs/server.rst:10-17](), "
  },
  {
   "page": "Design Philosophy",
@@ -86,8 +86,8 @@
   "end": 62,
   "link": "",
   "ok": true,
-  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` | ",
-  "inline": true
+  "inline": true,
+  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` | "
  },
  {
   "page": "Development Environment",
@@ -96,8 +96,8 @@
   "end": 10,
   "link": "",
   "ok": true,
-  "claim": "The lock file (`uv.lock`) pins all transitive dependencies for reproducible installs. The `uv-lock` pre-commit hook ensures `uv.lock` stays in sync whenever `pyproject.toml` changes. [uv.lock:1-10](), ",
-  "inline": true
+  "inline": true,
+  "claim": "The lock file (`uv.lock`) pins all transitive dependencies for reproducible installs. The `uv-lock` pre-commit hook ensures `uv.lock` stays in sync whenever `pyproject.toml` changes. [uv.lock:1-10](), "
  },
  {
   "page": "Security",
@@ -106,8 +106,8 @@
   "end": 145,
   "link": "",
   "ok": true,
-  "claim": "| Config Key | Purpose |\n|---|---|\n| `SECRET_KEY` | Signs session cookies and other security-sensitive values [docs/config.rst:114-126]() |\n| `SECRET_KEY_FALLBACKS` | List of old keys still valid for unsigning (key rotation) ",
-  "inline": true
+  "inline": true,
+  "claim": "| Config Key | Purpose |\n|---|---|\n| `SECRET_KEY` | Signs session cookies and other security-sensitive values [docs/config.rst:114-126]() |\n| `SECRET_KEY_FALLBACKS` | List of old keys still valid for unsigning (key rotation) "
  },
  {
   "page": "Installation and Setup",
@@ -116,8 +116,8 @@
   "end": 60,
   "link": "",
   "ok": true,
-  "claim": "| Discovery Target | Priority / Search Logic |\n| :--- | :--- |\n| **Instance Name** | Looks for an object named `app` or `application` ",
-  "inline": true
+  "inline": true,
+  "claim": "| Discovery Target | Priority / Search Logic |\n| :--- | :--- |\n| **Instance Name** | Looks for an object named `app` or `application` "
  },
  {
   "page": "Flask Application Object",
@@ -126,8 +126,8 @@
   "end": 133,
   "link": "",
   "ok": true,
-  "claim": "The `Flask` constructor requires an `import_name` to resolve resources from the filesystem [src/flask/app.py:115-118](). This name is used to find templates, static files, and can be used by extensions for debugging ",
-  "inline": true
+  "inline": true,
+  "claim": "The `Flask` constructor requires an `import_name` to resolve resources from the filesystem [src/flask/app.py:115-118](). This name is used to find templates, static files, and can be used by extensions for debugging "
  },
  {
   "page": "Deployment",
@@ -136,8 +136,8 @@
   "end": 39,
   "link": "",
   "ok": true,
-  "claim": "talled with `pip install flask[async]`. [docs/async-await.rst:6-11]() However, Flask is still a synchronous WSGI application underneath. Each async request runs an event loop in a thread; one worker is still consumed per request. [docs/async-await.rst:30-33]() This is useful for concurrent I/O within a single request (e.g., multiple database calls), but does not increase total request throughput. ",
-  "inline": true
+  "inline": true,
+  "claim": "talled with `pip install flask[async]`. [docs/async-await.rst:6-11]() However, Flask is still a synchronous WSGI application underneath. Each async request runs an event loop in a thread; one worker is still consumed per request. [docs/async-await.rst:30-33]() This is useful for concurrent I/O within a single request (e.g., multiple database calls), but does not increase total request throughput. "
  },
  {
   "page": "Test Client",
@@ -146,8 +146,8 @@
   "end": 167,
   "link": "",
   "ok": true,
-  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session ",
-  "inline": true
+  "inline": true,
+  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session "
  },
  {
   "page": "Core Components",
@@ -156,8 +156,8 @@
   "end": 26,
   "link": "",
   "ok": true,
-  "claim": "`Blueprint` inherits from `SansioBlueprint` [src/flask/blueprints.py:18-18](). During registration, blueprint routes can be prefixed with a `url_prefix` ",
-  "inline": true
+  "inline": true,
+  "claim": "`Blueprint` inherits from `SansioBlueprint` [src/flask/blueprints.py:18-18](). During registration, blueprint routes can be prefixed with a `url_prefix` "
  },
  {
   "page": "Template Rendering",
@@ -166,8 +166,8 @@
   "end": 188,
   "link": "",
   "ok": true,
-  "claim": "Blueprint-specific registrations (e.g., `@blueprint.app_template_filter`) are available application-wide ",
-  "inline": true
+  "inline": true,
+  "claim": "Blueprint-specific registrations (e.g., `@blueprint.app_template_filter`) are available application-wide "
  },
  {
   "page": "Flask Application Object",
@@ -176,8 +176,8 @@
   "end": 186,
   "link": "",
   "ok": true,
-  "claim": "Description |\n|-----------|------|-------------|\n| `import_name` | `str` | The name of the application package/module [src/flask/app.py:175](). |\n| `static_url_path` | `str` | URL path for static files [src/flask/app.py:176](). |\n| `static_folder` | `str` | Folder containing static files, relative to `root_path` [src/flask/app.py:179](). |\n| `template_folder` | `str` | Folder containing templates ",
-  "inline": true
+  "inline": true,
+  "claim": "Description |\n|-----------|------|-------------|\n| `import_name` | `str` | The name of the application package/module [src/flask/app.py:175](). |\n| `static_url_path` | `str` | URL path for static files [src/flask/app.py:176](). |\n| `static_folder` | `str` | Folder containing static files, relative to `root_path` [src/flask/app.py:179](). |\n| `template_folder` | `str` | Folder containing templates "
  },
  {
   "page": "Testing Techniques",
@@ -186,8 +186,8 @@
   "end": 199,
   "link": "",
   "ok": true,
-  "claim": "| Technique | Implementation | Source |\n| :--- | :--- | :--- |\n| **File Uploads** | Pass `(io.BytesIO, filename)` in `client.post(data=...)` | [docs/testing.rst:138-149]() |\n| **JSON APIs** | Use `client.post(json=...)` and `response.json` | [docs/testing.rst:163-176]() |\n| **Redirects** | Use `client.get(follow_redirects=True)` | ",
-  "inline": true
+  "inline": true,
+  "claim": "| Technique | Implementation | Source |\n| :--- | :--- | :--- |\n| **File Uploads** | Pass `(io.BytesIO, filename)` in `client.post(data=...)` | [docs/testing.rst:138-149]() |\n| **JSON APIs** | Use `client.post(json=...)` and `response.json` | [docs/testing.rst:163-176]() |\n| **Redirects** | Use `client.get(follow_redirects=True)` | "
  },
  {
   "page": "Design Philosophy",
@@ -196,8 +196,8 @@
   "end": 49,
   "link": "",
   "ok": true,
-  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` | [src/flask/globals.py:60-62]() |\n| `g` | `app_ctx.g` | ",
-  "inline": true
+  "inline": true,
+  "claim": "| Proxy | Target | Source |\n|-------|--------|--------|\n| `current_app` | `app_ctx.app` | [src/flask/globals.py:44-46]() |\n| `request` | `app_ctx.request` | [src/flask/globals.py:57-59]() |\n| `session` | `app_ctx.session` | [src/flask/globals.py:60-62]() |\n| `g` | `app_ctx.g` | "
  },
  {
   "page": "Context System",
@@ -206,8 +206,8 @@
   "end": 148,
   "link": "",
   "ok": true,
-  "claim": "### Streaming with Context\nWhen returning a streamed response, the context must be preserved even after the view function returns. `stream_with_context` wraps a generator to ensure the context remains pushed during iteration ",
-  "inline": true
+  "inline": true,
+  "claim": "### Streaming with Context\nWhen returning a streamed response, the context must be preserved even after the view function returns. `stream_with_context` wraps a generator to ensure the context remains pushed during iteration "
  },
  {
   "page": "Template Rendering",
@@ -216,8 +216,8 @@
   "end": 474,
   "link": "",
   "ok": true,
-  "claim": "The Jinja2 environment is created lazily on first access via the `jinja_env` cached property on the `App` class ",
-  "inline": true
+  "inline": true,
+  "claim": "The Jinja2 environment is created lazily on first access via the `jinja_env` cached property on the `App` class "
  },
  {
   "page": "Design Philosophy",
@@ -226,8 +226,8 @@
   "end": 137,
   "link": "",
   "ok": true,
-  "claim": "### What Flask Delegates\n- **Databases**: No built-in ORM; delegates to extensions like Flask-SQLAlchemy. [docs/design.rst:133-151]()\n- **Forms**: No built-in validation; delegates to extensions like Flask-WTF. [docs/design.rst:133-151]()\n- **Security**: Provides basic protections (XSS via Jinja, JSON security) but delegates CSRF to form libraries. ",
-  "inline": true
+  "inline": true,
+  "claim": "### What Flask Delegates\n- **Databases**: No built-in ORM; delegates to extensions like Flask-SQLAlchemy. [docs/design.rst:133-151]()\n- **Forms**: No built-in validation; delegates to extensions like Flask-WTF. [docs/design.rst:133-151]()\n- **Security**: Provides basic protections (XSS via Jinja, JSON security) but delegates CSRF to form libraries. "
  },
  {
   "page": "Custom Commands",
@@ -236,8 +236,8 @@
   "end": 91,
   "link": "",
   "ok": true,
-  "claim": "### Discovery Sequence\n1. **`locate_app`**: Takes an import path (e.g., from `FLASK_APP`) and attempts to import the module [src/flask/cli.py:248-290]().\n2. **`find_best_app`**: Inspects the imported module for a `Flask` instance or a factory function like `create_app` or `make_app` ",
-  "inline": true
+  "inline": true,
+  "claim": "### Discovery Sequence\n1. **`locate_app`**: Takes an import path (e.g., from `FLASK_APP`) and attempts to import the module [src/flask/cli.py:248-290]().\n2. **`find_best_app`**: Inspects the imported module for a `Flask` instance or a factory function like `create_app` or `make_app` "
  },
  {
   "page": "Installation and Setup",
@@ -246,8 +246,8 @@
   "end": 87,
   "link": "",
   "ok": true,
-  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()` [docs/config.rst:114-127]().\n*   `TESTING`: Propagates exceptions for test runners ",
-  "inline": true
+  "inline": true,
+  "claim": "### Critical Config Keys\n*   `DEBUG`: Enables/disables debug mode [docs/config.rst:68-79]().\n*   `SECRET_KEY`: Used for signing session cookies. Generate using `secrets.token_hex()` [docs/config.rst:114-127]().\n*   `TESTING`: Propagates exceptions for test runners "
  },
  {
   "page": "Template Rendering",
@@ -256,8 +256,8 @@
   "end": 49,
   "link": "",
   "ok": true,
-  "claim": "The `Environment` class extends Jinja2's `Environment` with Flask-specific functionality, particularly autoescaping configuration ",
-  "inline": true
+  "inline": true,
+  "claim": "The `Environment` class extends Jinja2's `Environment` with Flask-specific functionality, particularly autoescaping configuration "
  },
  {
   "page": "Installation and Setup",
@@ -266,8 +266,8 @@
   "end": 157,
   "link": "",
   "ok": true,
-  "claim": "### Loading Methods\n*   **Direct Mapping**: `app.config.from_mapping({\"SECRET_KEY\": \"dev\"})` [docs/tutorial/factory.rst:46-49]().\n*   **Python Files**: `app.config.from_pyfile(\"config.py\")` [docs/tutorial/factory.rst:53-53]().\n*   **Environment Variables**: Use `from_prefixed_env()` to load variables starting with `FLASK_` ",
-  "inline": true
+  "inline": true,
+  "claim": "### Loading Methods\n*   **Direct Mapping**: `app.config.from_mapping({\"SECRET_KEY\": \"dev\"})` [docs/tutorial/factory.rst:46-49]().\n*   **Python Files**: `app.config.from_pyfile(\"config.py\")` [docs/tutorial/factory.rst:53-53]().\n*   **Environment Variables**: Use `from_prefixed_env()` to load variables starting with `FLASK_` "
  },
  {
   "page": "Blueprints",
@@ -276,8 +276,8 @@
   "end": 20,
   "link": "",
   "ok": true,
-  "claim": "| Parameter | Type | Purpose |\n|---|---|---|\n| `name` | `str` | Unique identifier. Prefixes all endpoint names ",
-  "inline": true
+  "inline": true,
+  "claim": "| Parameter | Type | Purpose |\n|---|---|---|\n| `name` | `str` | Unique identifier. Prefixes all endpoint names "
  },
  {
   "page": "Configuration Loading",
@@ -286,8 +286,8 @@
   "end": 79,
   "link": "",
   "ok": true,
-  "claim": "| Key | Default | Purpose |\n|---|---|---|\n| `DEBUG` | `False` | Enable debug mode ",
-  "inline": true
+  "inline": true,
+  "claim": "| Key | Default | Purpose |\n|---|---|---|\n| `DEBUG` | `False` | Enable debug mode "
  },
  {
   "page": "Test Client",
@@ -296,8 +296,8 @@
   "end": 202,
   "link": "",
   "ok": true,
-  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session [src/flask/testing.py:167]() |\n| Context variables unavailable after request | Client must be used inside a `with client:` block ",
-  "inline": true
+  "inline": true,
+  "claim": "| Situation | Detail |\n|---|---|\n| `session_transaction` fails with `TypeError` | Client was created with `use_cookies=False` [src/flask/testing.py:155]() |\n| `session_transaction` fails with `RuntimeError` | Session backend did not open a session [src/flask/testing.py:167]() |\n| Context variables unavailable after request | Client must be used inside a `with client:` block "
  },
  {
   "page": "Blueprints",
@@ -306,8 +306,8 @@
   "end": 180,
   "link": "",
   "ok": true,
-  "claim": "Routes on a blueprint are registered via the `route` decorator ",
-  "inline": true
+  "inline": true,
+  "claim": "Routes on a blueprint are registered via the `route` decorator "
  },
  {
   "page": "Glossary",
@@ -316,8 +316,8 @@
   "end": 23,
   "link": "",
   "ok": true,
-  "claim": " in the `Flask` class [src/flask/app.py:109]().\n*   **CLI**: Command Line Interface. Flask uses the `click` library to provide its command-line tools [src/flask/cli.py:17]().\n*   **JSON**: JavaScript Object Notation. Handled via `flask.json` and `JSONProvider` [src/flask/json/provider.py:252]().\n*   **URL**: Uniform Resource Locator. Routes are mapped to endpoints using the `werkzeug.routing.Map` ",
-  "inline": true
+  "inline": true,
+  "claim": " in the `Flask` class [src/flask/app.py:109]().\n*   **CLI**: Command Line Interface. Flask uses the `click` library to provide its command-line tools [src/flask/cli.py:17]().\n*   **JSON**: JavaScript Object Notation. Handled via `flask.json` and `JSONProvider` [src/flask/json/provider.py:252]().\n*   **URL**: Uniform Resource Locator. Routes are mapped to endpoints using the `werkzeug.routing.Map` "
  },
  {
   "page": "Context System",
@@ -326,8 +326,8 @@
   "end": 33,
   "link": "",
   "ok": true,
-  "claim": "*   `_cv_app`: The `ContextVar` holding the active `AppContext` [src/flask/globals.py:24]().\n*   `current_app`: Points to `_cv_app.get().app` ",
-  "inline": true
+  "inline": true,
+  "claim": "*   `_cv_app`: The `ContextVar` holding the active `AppContext` [src/flask/globals.py:24]().\n*   `current_app`: Points to `_cv_app.get().app` "
  },
  {
   "page": "Using Extensions",
@@ -336,8 +336,8 @@
   "end": 96,
   "link": "",
   "ok": true,
-  "claim": "app(app)` method | Allows the extension to be created once and attached to multiple apps [docs/extensiondev.rst:52-55](). |\n| **Per-Deployment Configuration** | `app.config` | Pulls settings from the application's global configuration [docs/extensions.rst:20-23](). |\n| **Per-Application State Storage** | `Flask.extensions` dict | Stores state (like connection pools) specific to a `Flask` instance ",
-  "inline": true
+  "inline": true,
+  "claim": "app(app)` method | Allows the extension to be created once and attached to multiple apps [docs/extensiondev.rst:52-55](). |\n| **Per-Deployment Configuration** | `app.config` | Pulls settings from the application's global configuration [docs/extensions.rst:20-23](). |\n| **Per-Application State Storage** | `Flask.extensions` dict | Stores state (like connection pools) specific to a `Flask` instance "
  },
  {
   "page": "Signals",
@@ -346,8 +346,8 @@
   "end": 8,
   "link": "",
   "ok": true,
-  "claim": " | `app` | _(none)_ | Immediately after an app context is pushed [src/flask/signals.py:15]() |\n| `appcontext_popped` | `app` | _(none)_ | Immediately after an app context is popped [src/flask/signals.py:16]() |\n| `appcontext_tearing_down` | `app` | `exc` | During app context teardown [src/flask/signals.py:14]() |\n| `template_rendered` | `app` | `template`, `context` | After a template is rendered ",
-  "inline": true
+  "inline": true,
+  "claim": " | `app` | _(none)_ | Immediately after an app context is pushed [src/flask/signals.py:15]() |\n| `appcontext_popped` | `app` | _(none)_ | Immediately after an app context is popped [src/flask/signals.py:16]() |\n| `appcontext_tearing_down` | `app` | `exc` | During app context teardown [src/flask/signals.py:14]() |\n| `template_rendered` | `app` | `template`, `context` | After a template is rendered "
  },
  {
   "page": "Flask Application Object",
@@ -356,8 +356,8 @@
   "end": 719,
   "link": "",
   "ok": true,
-  "claim": "instance of `FlaskClient` [src/flask/app.py:721-742](). This allows simulating requests to the application without a live server.\n-   **`test_cli_runner()`**: Returns an instance of `FlaskCliRunner` [src/flask/app.py:744-760](). This is used to test Click-based CLI commands registered with the app.\n-   **`test_request_context()`**: Creates a `RequestContext` for use in a `with` block during tests ",
-  "inline": true
+  "inline": true,
+  "claim": "instance of `FlaskClient` [src/flask/app.py:721-742](). This allows simulating requests to the application without a live server.\n-   **`test_cli_runner()`**: Returns an instance of `FlaskCliRunner` [src/flask/app.py:744-760](). This is used to test Click-based CLI commands registered with the app.\n-   **`test_request_context()`**: Creates a `RequestContext` for use in a `with` block during tests "
  },
  {
   "page": "Signals",
@@ -366,8 +366,8 @@
   "end": 106,
   "link": "",
   "ok": true,
-  "claim": "To create signals in an extension or application, use a custom `Namespace` to avoid collisions ",
-  "inline": true
+  "inline": true,
+  "claim": "To create signals in an extension or application, use a custom `Namespace` to avoid collisions "
  },
  {
   "page": "Built-in Commands",
@@ -376,8 +376,8 @@
   "end": 130,
   "link": "",
   "ok": true,
-  "claim": " debug mode)* | Enable/disable Werkzeug debugger [docs/debugging.rst:42-46]() |\n| `--cert` | *(none)* | SSL certificate path or `\"adhoc\"` |\n| `--key` | *(none)* | SSL private key path (used with `--cert path`) |\n| `--extra-files` | *(none)* | Additional files/dirs for the reloader to watch [docs/cli.rst:119-121]() |\n| `--exclude-patterns` | *(none)* | `fnmatch` patterns for the reloader to ignore ",
-  "inline": true
+  "inline": true,
+  "claim": " debug mode)* | Enable/disable Werkzeug debugger [docs/debugging.rst:42-46]() |\n| `--cert` | *(none)* | SSL certificate path or `\"adhoc\"` |\n| `--key` | *(none)* | SSL private key path (used with `--cert path`) |\n| `--extra-files` | *(none)* | Additional files/dirs for the reloader to watch [docs/cli.rst:119-121]() |\n| `--exclude-patterns` | *(none)* | `fnmatch` patterns for the reloader to ignore "
  },
  {
   "page": "Flask Application Object",
@@ -386,8 +386,8 @@
   "end": 945,
   "link": "",
   "ok": true,
-  "claim": ". It creates a `RequestContext` and pushes it [src/flask/app.py:1138-1153]().\n2.  **`full_dispatch_request`**: Orchestrates the request. It handles the first request setup, triggers `preprocess_request`, dispatches to the view, and finalizes the response [src/flask/app.py:904-922]().\n3.  **`dispatch_request`**: Performs URL matching via `url_adapter.match()` and calls the associated view function ",
-  "inline": true
+  "inline": true,
+  "claim": ". It creates a `RequestContext` and pushes it [src/flask/app.py:1138-1153]().\n2.  **`full_dispatch_request`**: Orchestrates the request. It handles the first request setup, triggers `preprocess_request`, dispatches to the view, and finalizes the response [src/flask/app.py:904-922]().\n3.  **`dispatch_request`**: Performs URL matching via `url_adapter.match()` and calls the associated view function "
  },
  {
   "page": "Core Components",
@@ -396,7 +396,7 @@
   "end": 109,
   "link": "",
   "ok": true,
-  "claim": "- Implements the WSGI callable interface.\n- Maintains the URL map, registered view functions, error handlers, and template context processors.\n- Holds application-level configuration via `app.config` ",
-  "inline": true
+  "inline": true,
+  "claim": "- Implements the WSGI callable interface.\n- Maintains the URL map, registered view functions, error handlers, and template context processors.\n- Holds application-level configuration via `app.config` "
  }
 ]

@@ -25,6 +25,21 @@ import {
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { PostResultFn } from "#/services/onboarding-control";
 import { useConnections } from "#/hooks/query/use-connections";
+import {
+  privateHostOf,
+  RUNTIME_PROBE_ADVICE,
+  type RuntimeProbeFailure,
+} from "#/lib/environment/runtime-connection";
+import {
+  checkConnectionFromRuntime,
+  syncConnectionToRuntime,
+  type RuntimeCheckResult,
+  type RuntimeSyncResult,
+} from "#/services/runtime-connection-check";
+import type { ProbeResult } from "#/lib/environment/types/probe";
+import type { ConnectorManifest } from "#/lib/environment/types/capability";
+import { companyProfileRepository } from "#/lib/data-platform/repositories/company-profile-repository";
+import { resolveOrgId } from "#/lib/data-platform/repositories/repository-identity";
 
 export interface ConnectionCardProps {
   card: Extract<WorkbenchCard, { kind: "form" }>;
@@ -44,6 +59,27 @@ export interface ConnectionCardProps {
  * showing. Clearing it would make the user retype a working host because one
  * key was wrong.
  */
+function runtimeProbeResult(
+  manifest: ConnectorManifest,
+  check: RuntimeCheckResult,
+): ProbeResult {
+  const labels = new Map(
+    manifest.probe.checks.map((spec) => [spec.id, spec.labelKey]),
+  );
+  return {
+    ok: check.status === "ok",
+    vantage: "runtime",
+    latencyMs: 0,
+    checks: (check.attempt?.checks ?? []).map((item) => ({
+      id: item.id,
+      ok: item.ok,
+      labelKey: labels.get(item.id) ?? item.id,
+    })),
+    ...(check.attempt?.version ? { serverVersion: check.attempt.version } : {}),
+    probedAt: new Date().toISOString(),
+  };
+}
+
 export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
@@ -141,9 +177,57 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
         credentials,
       });
 
+      // A provider on the company's private network cannot be reached from
+      // the Edge Function, which refuses to call it. Check it from the
+      // agent's own machine, through the company's network and proxy.
+      const privateHost = privateHostOf(manifest, config);
+      const conversationId = useOnboardingStudioStore.getState().conversationId;
+      let sync: RuntimeSyncResult | null = null;
+      let runtime: RuntimeCheckResult | null = null;
+      if (receipt.probe?.ok || privateHost) {
+        sync = await syncConnectionToRuntime({
+          manifest,
+          config,
+          credentials,
+          conversationId,
+        });
+      }
+      if (privateHost && !receipt.probe?.ok) {
+        runtime = await checkConnectionFromRuntime({
+          manifest,
+          config,
+          credentials,
+        });
+        const record = {
+          providerId: card.providerId,
+          capability: card.capability,
+          instanceKey: card.instanceKey,
+          ok: runtime.status === "ok",
+          scheme: runtime.attempt
+            ? runtime.attempt.url.startsWith("http://")
+              ? ("http" as const)
+              : ("https" as const)
+            : null,
+          ...(runtime.attempt?.failure
+            ? { failure: runtime.attempt.failure }
+            : {}),
+          envNames: sync?.envNames ?? [],
+          at: new Date().toISOString(),
+        };
+        useOnboardingStudioStore.getState().recordRuntimeCheck(record);
+        void resolveOrgId()
+          .then((orgId) =>
+            orgId
+              ? companyProfileRepository.recordRuntimeCheck(orgId, record)
+              : undefined,
+          )
+          .catch(() => undefined);
+      }
+      const verified = Boolean(receipt.probe?.ok) || runtime?.status === "ok";
+
       updateCard(card.id, {
-        status: receipt.probe?.ok ? "ok" : "failed",
-        result: receipt.probe,
+        status: verified ? "ok" : "failed",
+        result: runtime ? runtimeProbeResult(manifest, runtime) : receipt.probe,
       });
       settleDockRequest();
 
@@ -155,19 +239,47 @@ export function ConnectionCard({ card, postResult }: ConnectionCardProps) {
       // Redacted by the server before it ever reached this component.
       postResult(
         `${ONBOARDING_RESULT_PREFIX}${JSON.stringify({
-          status: receipt.status,
+          status: runtime ? (verified ? "ok" : "error") : receipt.status,
           provider: receipt.providerId,
           instance: receipt.instanceKey,
           fingerprint: receipt.fingerprint,
           redacted: receipt.redacted,
           granted_scopes: receipt.grantedScopes,
           missing_scopes: receipt.missingScopes,
-          verified: receipt.probe?.ok ?? false,
-          checks: receipt.probe?.checks.map((check) => ({
-            id: check.id,
-            ok: check.ok,
-          })),
-          remediation: receipt.probe?.remediation?.codeKey,
+          verified,
+          verified_from: runtime ? "runtime" : "edge",
+          checks: (runtime
+            ? (runtime.attempt?.checks ?? [])
+            : (receipt.probe?.checks ?? [])
+          ).map((check) => ({ id: check.id, ok: check.ok })),
+          remediation: runtime
+            ? undefined
+            : receipt.probe?.remediation?.codeKey,
+          ...(runtime
+            ? {
+                private_network_host: privateHost,
+                runtime_check: {
+                  http_status: runtime.attempt?.httpStatus ?? null,
+                  failure: runtime.attempt?.failure ?? null,
+                  advice: runtime.attempt?.failure
+                    ? RUNTIME_PROBE_ADVICE[
+                        runtime.attempt.failure as RuntimeProbeFailure
+                      ]
+                    : null,
+                  insecure_http: runtime.insecureHttp,
+                  server_version: runtime.attempt?.version ?? null,
+                },
+              }
+            : {}),
+          ...(sync
+            ? {
+                // Names only: how the agent uses this connection from its
+                // terminal, e.g. curl -H "PRIVATE-TOKEN: $NAME".
+                env: sync.envNames,
+                env_in_this_conversation: sync.addedToThisConversation,
+                env_in_new_conversations: sync.savedForNewConversations,
+              }
+            : {}),
         })}`,
       );
     } catch (error) {

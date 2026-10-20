@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import type { ProfileInfo } from "#/api/profiles-service/profiles-service.api";
+import type { RoutingDecision } from "#/lib/model-routing/types";
 
 export interface ModelListEntry {
   id: string;
@@ -13,6 +14,8 @@ export interface ModelListEntry {
   anchorEventId: string | null;
   profiles: ProfileInfo[];
   switchedTo?: string;
+  /** Set when Auto (model routing) made this switch — renders the chip. */
+  routing?: RoutingDecision;
 }
 
 /**
@@ -47,6 +50,7 @@ interface ModelActions {
     conversationId: string,
     anchorEventId: string | null,
     profileName: string,
+    routing?: RoutingDecision,
   ) => void;
   /**
    * Seeds "Switched to" entries reconstructed from loaded history. Skips any
@@ -89,13 +93,14 @@ export const useModelStore = create<ModelStore>()(
             profiles,
           }),
         ),
-      recordSwitch: (conversationId, anchorEventId, profileName) =>
+      recordSwitch: (conversationId, anchorEventId, profileName, routing) =>
         set((s) => ({
           ...appendEntry(s, conversationId, {
             id: uuidv4(),
             anchorEventId,
             profiles: [],
             switchedTo: profileName,
+            ...(routing ? { routing } : {}),
           }),
           activeProfileByConversation: {
             ...s.activeProfileByConversation,

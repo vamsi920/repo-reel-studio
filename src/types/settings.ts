@@ -1,3 +1,4 @@
+import type { RoutingMode, RoutingPolicy } from "#/lib/model-routing/types";
 import type { MCPConfig } from "@openhands/typescript-client";
 export type { MCPConfig } from "@openhands/typescript-client";
 import type { SkillCategoryId } from "@openhands/extensions/skills";
@@ -146,6 +147,13 @@ export type Settings = {
   git_user_name?: string;
   git_user_email?: string;
   title_llm_profile?: string | null;
+  /** Model routing ("Auto"): global default mode for new turns/chats. */
+  model_routing_mode?: RoutingMode;
+  model_routing_policy?: RoutingPolicy;
+  /** Soft per-conversation budget (USD) that downshifts Auto; null = off. */
+  model_routing_budget_usd?: number | null;
+  /** Profiles Auto must never pick on its own (manual picks still work). */
+  model_routing_excluded_profiles?: string[];
   agent_settings_schema?: SettingsSchema | null;
   agent_settings?: Record<string, SettingsValue> | null;
   conversation_settings_schema?: SettingsSchema | null;

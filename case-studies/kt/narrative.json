@@ -1,114 +1,123 @@
 {
-  "module": "kt",
-  "title": "KT docs vs Devin Wiki",
-  "lede": "On three open-source repositories, NeoDevEx's KT engine now answers repository questions about as well as Devin (79.7% vs 70.3%, or 78.3% if Devin gets credit for answering from newer code) and makes a false claim in 4% of answers against Devin's 21%. Reading the generated docs alone, the two are even (51.3% vs 52.3%). Devin's wiki still covers more of each codebase. Before this study our docs scored 36.3%; every gap we found is listed below with the fix and the re-measured result.",
-  "modeNotes": {
-    "wiki": "Reading the docs: a neutral reader model (Gemini 2.5 Flash, temperature 0, the same prompt for both) answers each question using only the generated wiki. This measures how much a new engineer can learn from the docs alone.",
-    "ask": "Asking the repo: each product's own question-answering over the repository. Devin through Ask Devin (DeepWiki MCP), NeoDevEx through the KT service's /chat/completions endpoint."
+ "module": "kt",
+ "title": "KT docs vs Devin Wiki",
+ "lede": "On three open-source repositories, NeoDevEx's KT engine now beats Devin's wiki on every measure we could take. Reading the generated docs alone, a neutral reader answers 62.7% of 75 code questions correctly against 52.3% from Devin's wiki, and finds no answer to 0 questions against Devin's 2. Asking the repository directly, NeoDevEx answers 81.3% against Devin's 71.3% (80.3% if Devin gets credit for answering from newer code), and makes a false claim in 2.7% of answers against Devin's 22.7%. Our docs now cite 460 source files across the three repositories to Devin's 315. Before this study our docs scored 36.3%; every gap we found is listed below with the fix and the re-measured result.",
+ "modeNotes": {
+  "wiki": "Reading the docs: a neutral reader model (Gemini 2.5 Flash, temperature 0, the same prompt for both) answers each question using only the generated wiki. This measures how much a new engineer can learn from the docs alone.",
+  "ask": "Asking the repo: each product's own question-answering over the repository. Devin through Ask Devin (DeepWiki MCP), NeoDevEx through the KT service's /chat/completions endpoint."
+ },
+ "gaps": [
+  {
+   "title": "The docs covered too little of each codebase",
+   "finding": "Our wikis had 9 to 11 pages and cited 19 to 33 files per repository; Devin's had 35 to 46 pages and cited 55 to 183. A reader of our docs found no answer to 26 of the 75 questions, against 2 for Devin.",
+   "fix": "Page count now scales with the repository's file count instead of a flat 8 to 12. A deterministic coverage pass attaches every source file no page claimed to the page documenting the same module, and groups the rest into module reference pages.",
+   "effect": "Round 2: pages 30 → 74, files cited 78 → 214, uncovered questions 26 → 7, docs accuracy 36.3% → 51.3%. Round 3 (below) closed the rest of the breadth gap."
   },
-  "gaps": [
-    {
-      "title": "The docs covered too little of each codebase",
-      "finding": "Our wikis had 9 to 11 pages and cited 19 to 33 files per repository; Devin's had 35 to 46 pages and cited 55 to 183. A reader of our docs found no answer to 26 of the 75 questions, against 2 for Devin.",
-      "fix": "Page count now scales with the repository's file count instead of a flat 8 to 12. A deterministic coverage pass attaches every source file no page claimed to the page documenting the same module, and groups the rest into module reference pages.",
-      "effect": "Pages 30 \u2192 74. Files cited 78 \u2192 214. Uncovered questions 26 \u2192 7. Docs accuracy 36.3% \u2192 51.3%. Devin still leads on breadth: 118 pages, 339 files, 2 uncovered."
-    },
-    {
-      "title": "The index skipped the files that answer workflow questions",
-      "finding": "pyproject.toml was excluded by name, .toml, .mjs and .mts files were never indexed, build/ and bin/ were skipped even when they hold real source (hono's build script), and exclusions matched every folder in the absolute path, so a repo under a folder named tmp or build lost all of its files.",
-      "fix": "Files tracked by git are treated as source. Manifests, CI workflows and tool configs are indexed. Exclusions match the repo-relative path only.",
-      "effect": "hono indexed files 409 \u2192 452. Dev-workflow questions: docs 8% \u2192 42%, Q&A 44% \u2192 75%."
-    },
-    {
-      "title": "Repository Q&A answered from fragments and from memory",
-      "finding": "Answers were built from 350-word retrieved fragments, so the model filled the gaps from what it remembered about Flask or Hono: Python 3.8 support, DEBUG defaulting to None, invented fetch calls. 29% of answers contained a false claim.",
-      "fix": "A cheap planning step picks the files the question needs from the file tree; those and the most-retrieved files are given in full with line numbers. The prompt now says the checked-out code overrides memory and every claim needs a file:line citation.",
-      "effect": "Q&A accuracy 63.7% \u2192 79.7%. Answers with a false claim 29.3% \u2192 4.0%. Measured cost $0.12 per answer."
-    },
-    {
-      "title": "A third of our diagrams did not render",
-      "finding": "28 of 77 Mermaid diagrams failed to parse, almost all from unquoted labels containing parentheses and from unbalanced activation markers in sequence diagrams. Devin's failed 8% of the time.",
-      "fix": "A deterministic sanitizer quotes such labels and removes unbalanced activations before any LLM repair. It was checked against Devin's 417 diagrams to make sure it never breaks a valid one.",
-      "effect": "Diagrams that render 63.6% \u2192 95.3% (Devin 91.6%)."
-    },
-    {
-      "title": "Docs could describe a different commit than they claimed",
-      "finding": "When cloning from GitHub the service always took the latest commit, even when asked for a specific one, and every source link pointed at HEAD, so links drifted as the repository changed.",
-      "fix": "The clone is checked out at the requested commit, an index built from another commit is rebuilt, and links point at the commit.",
-      "effect": "Links pinned to the documented commit 0 \u2192 1,282 of 1,282."
-    },
-    {
-      "title": "Cost was not measured",
-      "finding": "The KT service tracked no tokens or spend. The first meter we added also missed Gemini's thinking tokens, which the legacy SDK does not report separately.",
-      "fix": "Every generation and answer is metered from provider-reported usage, including thinking tokens derived from the total, and priced at list price. Unknown models are flagged, never counted as free.",
-      "effect": "Measured: $2.17 and 6.5 minutes per wiki on average, $0.12 per answer."
-    },
-    {
-      "title": "A dropped model stream could be published as documentation",
-      "finding": "When the Gemini stream broke mid-page, the error text was saved as the page's content. One page in the after-fixes run was affected before the fix landed.",
-      "fix": "Wiki generation now raises on a stream error so the page is retried; interactive chat still shows the error to the user.",
-      "effect": "Covered by two regression tests. That one affected page (ky: test module reference) is left in the published data as found."
-    },
-    {
-      "title": "Different local repositories could share one index",
-      "finding": "Local repositories were indexed under their folder name, and every agent workspace defaults to a folder called project.",
-      "fix": "Local repositories are keyed by folder name plus a hash of the absolute path.",
-      "effect": "Covered by a regression test."
-    },
-    {
-      "title": "No way to ask the docs a question",
-      "finding": "Devin shows an Ask box on every wiki. Our KT pages had none, although the service could already answer.",
-      "fix": "KT repository pages now have an Ask panel that answers from the code at the documented commit, with file and line references.",
-      "effect": "Shipped in the KT UI with tests."
-    }
-  ],
-  "method": [
-    "Three public repositories of different shapes: a small TypeScript library, a mid-size Python framework and a large multi-runtime TypeScript framework.",
-    "NeoDevEx was pinned to the commit Devin's wiki was built from. ky shows its exact commit; for flask and hono, which show only a date, we used the last commit on main on or before that date (marked *).",
-    "75 questions (25 per repo) were written by reading only the source code at the pinned commit, before either wiki was opened. Each has a verified answer, atomic key facts and file:line evidence. Mix per repo: 5 architecture, 8 precise behaviour, 4 where-is-it, 4 edge cases, 4 dev workflow.",
-    "Answers were shuffled and labelled X / Y per question. Two independent graders scored every answer without knowing which tool wrote it, checking disputed claims against the code. A question scores 1 for correct, 0.5 for partly right, 0 otherwise, averaged across the two graders.",
-    "Citations were checked two ways: every citation mechanically (the file exists at the commit and the line range is inside it), and a random sample of up to 40 inline citations per wiki by a blind grader reading the cited lines.",
-    "Diagrams were parsed with mermaid 11. Cost comes from provider-reported token counts priced at Gemini list prices; NeoDevEx ran Gemini 2.5 Pro for pages and answers and Gemini 2.5 Flash for file planning."
-  ],
-  "caveats": [
-    "The after-fixes numbers were measured on the same 75 questions that exposed the gaps. The fixes are general (coverage, indexing, retrieval, rendering) and none targets a specific question, but a held-out repository would be a stronger test; it is the first thing we will run next.",
-    "Devin's wiki for flask and hono shows only an index date, so those two commits are the last commit on or before that date. Line drift may explain part of Devin's unsupported citations there. On ky, where the commit matches exactly, 38% of Devin's sampled inline citations did not support their claim.",
-    "Devin's Ask answers from newer code than its wiki shows: 10 of its hono answers graded wrong are correct for hono's latest commit. The scorecard shows Devin's Q&A both ways.",
-    "Graders were two independent AI agents with repository access, not humans. They agreed on 95.8% of 600 verdicts.",
-    "The neutral reader for the docs test is Gemini 2.5 Flash, from the same model family NeoDevEx generates with.",
-    "Devin does not publish per-wiki cost or generation time. Its public DeepWiki is free to read; private repositories need a paid plan. Our times come from three repositories generating at once with four pages in parallel each.",
-    "Baseline generation cost is not compared because the baseline meter missed thinking tokens."
-  ],
-  "downloads": [
-    {
-      "href": "data/case.json",
-      "label": "Everything on this page",
-      "help": "Metrics, ledger and per-question verdicts as JSON."
-    },
-    {
-      "href": "data/kt-benchmark-data.zip",
-      "label": "Full benchmark bundle (zip)",
-      "help": "Questions, blind packets, keys, both graders' verdicts, metrics, our answers and our generated wikis."
-    },
-    {
-      "href": "data/groundtruth/ky.json",
-      "label": "Questions: ky",
-      "help": "25 questions with verified answers and evidence."
-    },
-    {
-      "href": "data/groundtruth/flask.json",
-      "label": "Questions: flask",
-      "help": "25 questions with verified answers and evidence."
-    },
-    {
-      "href": "data/groundtruth/hono.json",
-      "label": "Questions: hono",
-      "help": "25 questions with verified answers and evidence."
-    },
-    {
-      "href": "data/usage.json",
-      "label": "Measured cost and time",
-      "help": "Per-repo token spend and wall-clock time."
-    }
-  ]
+  {
+   "title": "Round 3: the docs still trailed Devin on breadth and on flask and hono",
+   "finding": "After round 2 the docs were even with Devin overall (51.3% vs 52.3%) but behind on hono and flask, Devin cited more files on two of three repos, and 7 questions were still uncovered. Three causes: page structure stopped at about 25 pages because the model's 8,192-token output cap cut the structure XML short; files no page cited were listed but never explained; and on hono 13 pages were written as Gemini rate-limit error text.",
+   "fix": "Page budget scales with file count (files/4, 16 to 50+). Structure requires a lifecycle page, a dev-workflow page and one page per module. A follow-up pass writes an 'Other files in this area' section explaining every file a page left uncited. Output caps raised to 32,768 tokens. Pages retry rate-limit errors with backoff instead of saving the error.",
+   "effect": "Docs accuracy 51.3% → 62.7% (Devin 52.3%). Uncovered questions 7 → 0 (Devin 2). Files cited 214 → 460 (Devin 315). Pages 74 → 136 (Devin 118). Error pages 13 → 0. Cost per wiki $2.17 → $4.42, time 6.5 → 15.0 min."
+  },
+  {
+   "title": "The index skipped the files that answer workflow questions",
+   "finding": "pyproject.toml was excluded by name, .toml, .mjs and .mts files were never indexed, build/ and bin/ were skipped even when they hold real source (hono's build script), and exclusions matched every folder in the absolute path, so a repo under a folder named tmp or build lost all of its files.",
+   "fix": "Files tracked by git are treated as source. Manifests, CI workflows and tool configs are indexed. Exclusions match the repo-relative path only.",
+   "effect": "hono indexed files 409 → 452. Dev-workflow questions: docs 8% → 42%, Q&A 44% → 75%."
+  },
+  {
+   "title": "Repository Q&A answered from fragments and from memory",
+   "finding": "Answers were built from 350-word retrieved fragments, so the model filled the gaps from what it remembered about Flask or Hono: Python 3.8 support, DEBUG defaulting to None, invented fetch calls. 29% of answers contained a false claim.",
+   "fix": "A cheap planning step picks the files the question needs from the file tree; those and the most-retrieved files are given in full with line numbers. The prompt now says the checked-out code overrides memory and every claim needs a file:line citation.",
+   "effect": "Q&A accuracy 63.7% → 79.7% in round 2 and 81.3% in round 3 (Devin 71.3%). Answers with a false claim 29.3% → 2.7%. Round 3 also widened file reading for each answer and retries a stream that fails before any output."
+  },
+  {
+   "title": "A third of our diagrams did not render",
+   "finding": "28 of 77 Mermaid diagrams failed to parse, almost all from unquoted labels containing parentheses and from unbalanced activation markers in sequence diagrams. Devin's failed 8% of the time.",
+   "fix": "A deterministic sanitizer quotes such labels and removes unbalanced activations before any LLM repair. It was checked against Devin's 417 diagrams to make sure it never breaks a valid one.",
+   "effect": "Diagrams that render 63.6% → 95.3% in round 2; 94.4% in round 3 with roughly twice as many diagrams (Devin 91.6%)."
+  },
+  {
+   "title": "Docs could describe a different commit than they claimed",
+   "finding": "When cloning from GitHub the service always took the latest commit, even when asked for a specific one, and every source link pointed at HEAD, so links drifted as the repository changed.",
+   "fix": "The clone is checked out at the requested commit, an index built from another commit is rebuilt, and links point at the commit.",
+   "effect": "Links pinned to the documented commit 0 → 1,282 of 1,282."
+  },
+  {
+   "title": "Cost was not measured",
+   "finding": "The KT service tracked no tokens or spend. The first meter we added also missed Gemini's thinking tokens, which the legacy SDK does not report separately.",
+   "fix": "Every generation and answer is metered from provider-reported usage, including thinking tokens derived from the total, and priced at list price. Unknown models are flagged, never counted as free.",
+   "effect": "Measured: $4.42 and 15.0 minutes per wiki on average in round 3 ($2.17 and 6.5 minutes in round 2). hono's time includes waiting out Gemini per-minute quota limits."
+  },
+  {
+   "title": "A dropped model stream could be published as documentation",
+   "finding": "When the Gemini stream broke mid-page, the error text was saved as the page's content. One page in the after-fixes run was affected before the fix landed.",
+   "fix": "Wiki generation now raises on a stream error so the page is retried; interactive chat still shows the error to the user.",
+   "effect": "Covered by two regression tests. That one affected page (ky: test module reference) is left in the published data as found."
+  },
+  {
+   "title": "Different local repositories could share one index",
+   "finding": "Local repositories were indexed under their folder name, and every agent workspace defaults to a folder called project.",
+   "fix": "Local repositories are keyed by folder name plus a hash of the absolute path.",
+   "effect": "Covered by a regression test."
+  },
+  {
+   "title": "No way to ask the docs a question",
+   "finding": "Devin shows an Ask box on every wiki. Our KT pages had none, although the service could already answer.",
+   "fix": "KT repository pages now have an Ask panel that answers from the code at the documented commit, with file and line references.",
+   "effect": "Shipped in the KT UI with tests."
+  }
+ ],
+ "method": [
+  "Three public repositories of different shapes: a small TypeScript library, a mid-size Python framework and a large multi-runtime TypeScript framework.",
+  "NeoDevEx was pinned to the commit Devin's wiki was built from. ky shows its exact commit; for flask and hono, which show only a date, we used the last commit on main on or before that date (marked *).",
+  "75 questions (25 per repo) were written by reading only the source code at the pinned commit, before either wiki was opened. Each has a verified answer, atomic key facts and file:line evidence. Mix per repo: 5 architecture, 8 precise behaviour, 4 where-is-it, 4 edge cases, 4 dev workflow.",
+  "Answers were shuffled and labelled X / Y per question. Two independent graders scored every answer without knowing which tool wrote it, checking disputed claims against the code. A question scores 1 for correct, 0.5 for partly right, 0 otherwise, averaged across the two graders.",
+  "Citations were checked two ways: every citation mechanically (the file exists at the commit and the line range is inside it), and a random sample of up to 40 inline citations per wiki by a blind grader reading the cited lines.",
+  "Diagrams were parsed with mermaid 11. Cost comes from provider-reported token counts priced at Gemini list prices; NeoDevEx ran Gemini 2.5 Pro for pages and answers and Gemini 2.5 Flash for file planning."
+ ],
+ "caveats": [
+  "The after-fixes numbers were measured on the same 75 questions that exposed the gaps. The fixes are general (coverage, indexing, retrieval, rendering) and none targets a specific question, but a held-out repository would be a stronger test; it is the first thing we will run next.",
+  "Devin's wiki for flask and hono shows only an index date, so those two commits are the last commit on or before that date. Line drift may explain part of Devin's unsupported citations there. On ky, where the commit matches exactly, 38% of Devin's sampled inline citations did not support their claim.",
+  "Devin's Ask answers from newer code than its wiki shows: 10 of its hono answers graded wrong are correct for hono's latest commit. The scorecard shows Devin's Q&A both ways.",
+  "Graders were two independent AI agents with repository access, not humans. They agreed on 94.3% of the 300 round-3 verdicts (95.8% of 600 in earlier rounds).",
+  "The neutral reader for the docs test is Gemini 2.5 Flash, from the same model family NeoDevEx generates with.",
+  "Devin does not publish per-wiki cost or generation time. Its public DeepWiki is free to read; private repositories need a paid plan. Our times come from three repositories generating at once with four pages in parallel each.",
+  "Baseline generation cost is not compared because the baseline meter missed thinking tokens.",
+  "hono's round-3 docs answers were first graded with a shorter grading prompt that lacked the 'not covered' option and the pinned-commit check. Those grades scored both tools higher than every earlier round, so they were set aside unpublished and the packet was re-graded with the exact prompt used for ky and flask.",
+  "Round 3 roughly doubles generation cost: more pages and a follow-up pass per page. On hono that is $6.93 and 25 minutes, partly spent waiting on provider rate limits.",
+  "Citation support was re-sampled for round 3 (40 inline citations per wiki per tool, 240 in all) and re-graded blind. Devin's sample, graded again without the grader knowing it was a repeat, scored exactly as before: 55.0% supported, 22.5% unsupported."
+ ],
+ "downloads": [
+  {
+   "href": "data/case.json",
+   "label": "Everything on this page",
+   "help": "Metrics, ledger and per-question verdicts as JSON."
+  },
+  {
+   "href": "data/kt-benchmark-data.zip",
+   "label": "Full benchmark bundle (zip)",
+   "help": "Questions, blind packets, keys, both graders' verdicts, metrics, our answers and our generated wikis."
+  },
+  {
+   "href": "data/groundtruth/ky.json",
+   "label": "Questions: ky",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/groundtruth/flask.json",
+   "label": "Questions: flask",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/groundtruth/hono.json",
+   "label": "Questions: hono",
+   "help": "25 questions with verified answers and evidence."
+  },
+  {
+   "href": "data/usage.json",
+   "label": "Measured cost and time",
+   "help": "Per-repo token spend and wall-clock time."
+  }
+ ]
 }

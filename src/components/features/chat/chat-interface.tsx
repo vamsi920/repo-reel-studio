@@ -56,6 +56,7 @@ import {
   useChatViewMode,
 } from "#/components/features/thinking-graph/chat-view-toggle";
 import { GraphTranscript } from "#/components/features/thinking-graph/graph-transcript";
+import { useChatSurface } from "#/context/chat-surface-context";
 
 function getEntryPoint(
   hasRepository: boolean | null,
@@ -85,6 +86,14 @@ export function ChatInterface() {
     hasSubstantiveAgentActions,
     userEventsExist,
   } = useFilteredEvents();
+  const { hideEvent } = useChatSurface();
+  const shownEvents = React.useMemo(
+    () =>
+      hideEvent
+        ? renderableEvents.filter((event) => !hideEvent(event))
+        : renderableEvents,
+    [renderableEvents, hideEvent],
+  );
   const enqueuePendingMessage = useOptimisticUserMessageStore(
     (state) => state.enqueuePendingMessage,
   );
@@ -600,16 +609,16 @@ export function ChatInterface() {
           <ModelMessages conversationId={conversationId} anchorEventId={null} />
 
           {showConversationMessages &&
-            renderableEvents.length > 0 &&
+            shownEvents.length > 0 &&
             (isGraphView ? (
               <GraphTranscript
-                renderableEvents={renderableEvents}
+                renderableEvents={shownEvents}
                 allEvents={allConversationEvents}
                 isAgentRunning={curAgentState === AgentState.RUNNING}
               />
             ) : (
               <Messages
-                messages={renderableEvents}
+                messages={shownEvents}
                 allEvents={allConversationEvents}
               />
             ))}

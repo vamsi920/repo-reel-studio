@@ -44,7 +44,7 @@ export function useSeedGeminiDefaultProfile(): void {
 
     const rawModel =
       (import.meta.env.VITE_GEMINI_MODEL as string | undefined) ||
-      "gemini-pro-latest";
+      "gemini-4-argon";
     const model = rawModel.startsWith("gemini/")
       ? rawModel
       : `gemini/${rawModel.replace(/^google:/, "")}`;

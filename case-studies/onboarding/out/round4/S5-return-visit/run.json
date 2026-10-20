@@ -1,0 +1,1932 @@
+{
+  "scenario": "S5-return-visit",
+  "conversationId": "b176830a-39b8-472f-988c-f6b68af9d32b",
+  "seconds": 227,
+  "completed": false,
+  "executionStatus": "running",
+  "stats": {
+    "usage_to_metrics": {
+      "default": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "accumulated_cost": 0.38275783,
+        "max_budget_per_task": null,
+        "accumulated_token_usage": {
+          "model": "gemini/gemini-2.5-flash",
+          "prompt_tokens": 5272756,
+          "completion_tokens": 5785,
+          "cache_read_tokens": 4494561,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 2229,
+          "context_window": 1048576,
+          "per_turn_token": 73587,
+          "response_id": ""
+        },
+        "costs": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0163767,
+            "timestamp": 1791915654.4010081
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00209636,
+            "timestamp": 1791915656.705745
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00547751,
+            "timestamp": 1791915667.043626
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.005258219999999999,
+            "timestamp": 1791915667.8572228
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.020149399999999998,
+            "timestamp": 1791915671.4209301
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00568033,
+            "timestamp": 1791915676.7745988
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.005394329999999999,
+            "timestamp": 1791915682.1419551
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00566789,
+            "timestamp": 1791915684.114346
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0199854,
+            "timestamp": 1791915685.533727
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00573377,
+            "timestamp": 1791915688.00669
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0055144799999999996,
+            "timestamp": 1791915688.937495
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025121299999999996,
+            "timestamp": 1791915690.729154
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0201096,
+            "timestamp": 1791915692.0475972
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00586526,
+            "timestamp": 1791915693.86369
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0020830499999999995,
+            "timestamp": 1791915694.6240351
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0059308699999999995,
+            "timestamp": 1791915696.392983
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00214974,
+            "timestamp": 1791915697.085899
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0205438,
+            "timestamp": 1791915700.040076
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027722399999999996,
+            "timestamp": 1791915700.889942
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025434099999999994,
+            "timestamp": 1791915703.510666
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00585075,
+            "timestamp": 1791915704.3291829
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00616651,
+            "timestamp": 1791915707.4024708
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00591606,
+            "timestamp": 1791915708.29309
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0062426800000000005,
+            "timestamp": 1791915710.91785
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00598077,
+            "timestamp": 1791915711.9219809
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0028231999999999997,
+            "timestamp": 1791915714.5310879
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0022237499999999996,
+            "timestamp": 1791915717.1581051
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0028596199999999993,
+            "timestamp": 1791915723.601988
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0206166,
+            "timestamp": 1791915725.007333
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0026252999999999997,
+            "timestamp": 1791915727.439481
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00234996,
+            "timestamp": 1791915728.2167628
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0029924599999999997,
+            "timestamp": 1791915731.435731
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0024196799999999996,
+            "timestamp": 1791915732.1631181
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0210661,
+            "timestamp": 1791915735.291939
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.006310619999999999,
+            "timestamp": 1791915736.046705
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00253546,
+            "timestamp": 1791915739.068671
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00227598,
+            "timestamp": 1791915739.96132
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00261744,
+            "timestamp": 1791915743.893149
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0028888499999999997,
+            "timestamp": 1791915744.931255
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0029568299999999997,
+            "timestamp": 1791915747.0583959
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0024087899999999996,
+            "timestamp": 1791915747.751026
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027829299999999994,
+            "timestamp": 1791915749.539454
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0022076699999999997,
+            "timestamp": 1791915750.3241851
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025052499999999997,
+            "timestamp": 1791915752.0082638
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025407299999999997,
+            "timestamp": 1791915752.794822
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00849435,
+            "timestamp": 1791915757.8886569
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0032367,
+            "timestamp": 1791915774.5390248
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00243789,
+            "timestamp": 1791915775.339625
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0028943199999999997,
+            "timestamp": 1791915778.281985
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00249141,
+            "timestamp": 1791915779.0130801
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0033410099999999997,
+            "timestamp": 1791915782.40866
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00233532,
+            "timestamp": 1791915783.104529
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0035909199999999996,
+            "timestamp": 1791915786.311072
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00290898,
+            "timestamp": 1791915787.165685
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025990799999999997,
+            "timestamp": 1791915789.549837
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0023768099999999996,
+            "timestamp": 1791915790.578766
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027905399999999998,
+            "timestamp": 1791915793.018463
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00271559,
+            "timestamp": 1791915801.1060731
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00248865,
+            "timestamp": 1791915802.027499
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027677099999999996,
+            "timestamp": 1791915804.4553332
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0022727399999999997,
+            "timestamp": 1791915805.170282
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00754116,
+            "timestamp": 1791915808.1728241
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0023418899999999997,
+            "timestamp": 1791915808.969833
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025857499999999995,
+            "timestamp": 1791915811.271706
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0023920799999999996,
+            "timestamp": 1791915812.0009542
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00744017,
+            "timestamp": 1791915813.660083
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00243042,
+            "timestamp": 1791915814.762121
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027072499999999996,
+            "timestamp": 1791915816.308751
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0025386,
+            "timestamp": 1791915817.075237
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0031525,
+            "timestamp": 1791915820.377577
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027660299999999996,
+            "timestamp": 1791915823.167752
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0026957399999999994,
+            "timestamp": 1791915836.112637
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0023758499999999997,
+            "timestamp": 1791915836.96613
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00291357,
+            "timestamp": 1791915839.3119848
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.00242436,
+            "timestamp": 1791915840.4001799
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "cost": 0.0027019599999999998,
+            "timestamp": 1791915842.768779
+          }
+        ],
+        "response_latencies": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.0725138187408447,
+            "response_id": "hHbOao6MH-KMjMcP28qVqQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.2789180278778076,
+            "response_id": "hnbOap6MJprSjMcPipCQ-Q8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.6474099159240723,
+            "response_id": "kHbOapuPJ9aV_uMP5PGWqAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7885189056396484,
+            "response_id": "k3bOar7RDsLJ-sAPveizoAU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.543012857437134,
+            "response_id": "lHbOarP3AvbPjMcPkNfzGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 5.331453323364258,
+            "response_id": "l3bOaqq3KaKNjMcPj-jsOA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 5.346906900405884,
+            "response_id": "nXbOar67Bbqh1MkPs8fU4Qk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.9413058757781982,
+            "response_id": "onbOaoKLG9GZ_uMPo-OAsAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.3902232646942139,
+            "response_id": "pHbOapOrGMeDjMcPtK-aqAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.4403388500213623,
+            "response_id": "pXbOapihMPbQjMcP64U9"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.9058401584625244,
+            "response_id": "qHbOarbKEsHP_uMP2oiLqAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.7747821807861328,
+            "response_id": "qXbOavaoCOjUjMcPgpWMgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.2963759899139404,
+            "response_id": "qnbOapigO77SjMcP_5fpgQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.79219388961792,
+            "response_id": "rHbOapbvDsmpjMcP28fSgAM"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7253661155700684,
+            "response_id": "rnbOapqtC8jRjMcP_e-P2Qw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.7515439987182617,
+            "response_id": "rnbOaviCNszP_uMPxaLjuQo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6727843284606934,
+            "response_id": "sHbOarOPI7jOjMcP-62fgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.934628963470459,
+            "response_id": "sXbOar3BFpiPjMcPmuHHIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.8184208869934082,
+            "response_id": "tHbOaurZFKaa9MoPmInqoQg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.5945420265197754,
+            "response_id": "tXbOav6-CPTRjMcPoovvMQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.797921895980835,
+            "response_id": "t3bOaoWvLpXXjMcPrsaIIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.0538549423217773,
+            "response_id": "uHbOaprTJIy__PUPmfyywQY"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.8572120666503906,
+            "response_id": "u3bOaojvJb_QjMcPsfK3oAI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.6049139499664307,
+            "response_id": "vHbOauTkIfbO_uMP28HmkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.9839601516723633,
+            "response_id": "v3bOarLDDLuY_uMPnY3uwQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.580315113067627,
+            "response_id": "wHbOao_kBrPVjMcPi5W3GQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.5868937969207764,
+            "response_id": "wnbOao7ILaLyjMcP6daEkQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 6.404165983200073,
+            "response_id": "xXbOatSlFo7TjMcPgtf4-A8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.3736469745635986,
+            "response_id": "y3bOauvJMtjGjMcPxPmY8As"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.4073989391326904,
+            "response_id": "zXbOaqvsDqfe-sAP_ZrioQU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7360517978668213,
+            "response_id": "z3bOapTBKLPQjMcPl46ZKA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.1903090476989746,
+            "response_id": "0HbOarLrHuPL_uMP_KOBuAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6887490749359131,
+            "response_id": "03bOavegJ_bVjMcPko_zCA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.104583978652954,
+            "response_id": "1HbOaqK-GqS3_PUP88iO-Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7308809757232666,
+            "response_id": "13bOau6XHeezjMcPzvTHGA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.9951372146606445,
+            "response_id": "2HbOaq2IM8vSjMcP9dmgMQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.8656940460205078,
+            "response_id": "23bOaovkIfGwjMcPhK39EA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.9045281410217285,
+            "response_id": "3HbOaqvuGPmUjMcPp-buGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.9941003322601318,
+            "response_id": "4HbOaqPdC9fVjMcP3ZmQGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.0881001949310303,
+            "response_id": "4XbOasuYCuXe-sAP16TJoQU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6555860042572021,
+            "response_id": "43bOatuBFfm3_PUPs_DX4Ag"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.764430046081543,
+            "response_id": "5HbOao6pAt3c_uMPiKfIwQo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7461130619049072,
+            "response_id": "5XbOarf2N8qd1MkPi-fh0A0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.652566909790039,
+            "response_id": "5nbOaurmIPvN-sAPu4PmgAE"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7524690628051758,
+            "response_id": "6HbOauWqDdHajMcPqtX1EA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 5.06315803527832,
+            "response_id": "6HbOaprwPImPjMcPr_GDoQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 6.7198967933654785,
+            "response_id": "-HbOaron0dOMxw-KqefxCw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7604248523712158,
+            "response_id": "_nbOapeQLYmUjMcP_bLxEA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.9136252403259277,
+            "response_id": "_3bOasPIJYyS_uMPnbn8uA0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6975431442260742,
+            "response_id": "AnfOaoLTIsC1_PUPqJqvqAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.35563325881958,
+            "response_id": "A3fOarT6DYKYjMcPgYeqGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6621460914611816,
+            "response_id": "BnfOapzmJpyL-sAP1du-8A8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.158545970916748,
+            "response_id": "B3fOav2CJZi0jMcPy8qoyQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.78680419921875,
+            "response_id": "CnfOatPvKYKi_PUPx5rgyAc"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.3346221446990967,
+            "response_id": "C3fOapbdGu3OjMcPl77ImAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.992807149887085,
+            "response_id": "DXfOarStNNXh_uMP3_Wq4Ao"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.4035072326660156,
+            "response_id": "DnfOat24MeKMjMcP28qVqQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.413738965988159,
+            "response_id": "FXfOar2cO5rSjMcPipCQ-Q8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.8792579174041748,
+            "response_id": "GXfOauCRGcLJ-sAPveizoAU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.3970179557800293,
+            "response_id": "GnfOaqWsD_bPjMcPkNfzGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6778659820556641,
+            "response_id": "HHfOau7eJ6KNjMcPj-jsOA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.969532012939453,
+            "response_id": "HXfOapesG7vN_PUP8KbTyA0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7530391216278076,
+            "response_id": "IHfOarzLHceDjMcPtK-aqAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.2728090286254883,
+            "response_id": "IXfOarXMCfbQjMcP64U9"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.6839721202850342,
+            "response_id": "I3fOaq2VHejUjMcPgpWMgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.6281359195709229,
+            "response_id": "JHfOavqvD77SjMcP_5fpgQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.0521762371063232,
+            "response_id": "JnfOav3pDsmpjMcP28fSgAM"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.5159580707550049,
+            "response_id": "J3fOavTtBPWN_uMP7YKhkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7328791618347168,
+            "response_id": "KHfOaoKMH8jRjMcP_e-P2Qw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 3.2664971351623535,
+            "response_id": "KXfOar3vF7jOjMcP-62fgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.3084232807159424,
+            "response_id": "LXfOapaGBpiPjMcPmuHHIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.8090407848358154,
+            "response_id": "OnfOatblJMbO_PUPysKp2Qc"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 0.7967379093170166,
+            "response_id": "PHfOatqXFZXXjMcPrsaIIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.303520917892456,
+            "response_id": "PXfOaqidEb_QjMcPsfK3oAI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 1.0262460708618164,
+            "response_id": "P3fOasPJNrPVjMcPi5W3GQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "latency": 2.333345651626587,
+            "response_id": "QHfOaueFL6LyjMcP6daEkQI"
+          }
+        ],
+        "token_usages": [
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 53964,
+            "completion_tokens": 75,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 49,
+            "context_window": 1048576,
+            "per_turn_token": 54039,
+            "response_id": "hHbOao6MH-KMjMcP28qVqQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 54061,
+            "completion_tokens": 164,
+            "cache_read_tokens": 53822,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 78,
+            "context_window": 1048576,
+            "per_turn_token": 54225,
+            "response_id": "hnbOap6MJprSjMcPipCQ-Q8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 65904,
+            "completion_tokens": 98,
+            "cache_read_tokens": 53847,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66002,
+            "response_id": "kHbOapuPJ9aV_uMP5PGWqAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66023,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53884,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66023,
+            "response_id": "k3bOar7RDsLJ-sAPveizoAU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66048,
+            "completion_tokens": 134,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 37,
+            "context_window": 1048576,
+            "per_turn_token": 66182,
+            "response_id": "lHbOarP3AvbPjMcPkNfzGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66265,
+            "completion_tokens": 133,
+            "cache_read_tokens": 53821,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 36,
+            "context_window": 1048576,
+            "per_turn_token": 66398,
+            "response_id": "l3bOaqq3KaKNjMcPj-jsOA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66447,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53851,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66447,
+            "response_id": "nXbOar67Bbqh1MkPs8fU4Qk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66499,
+            "completion_tokens": 98,
+            "cache_read_tokens": 53803,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66597,
+            "response_id": "onbOaoKLG9GZ_uMPo-OAsAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66618,
+            "completion_tokens": 0,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66618,
+            "response_id": "pHbOapOrGMeDjMcPtK-aqAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66706,
+            "completion_tokens": 98,
+            "cache_read_tokens": 53789,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66804,
+            "response_id": "pXbOapihMPbQjMcP64U9"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66825,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53826,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 66825,
+            "response_id": "qHbOarbKEsHP_uMP2oiLqAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 66913,
+            "completion_tokens": 98,
+            "cache_read_tokens": 65951,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67011,
+            "response_id": "qXbOavaoCOjUjMcPgpWMgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67032,
+            "completion_tokens": 0,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67032,
+            "response_id": "qnbOapigO77SjMcP_5fpgQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67120,
+            "completion_tokens": 98,
+            "cache_read_tokens": 53762,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67218,
+            "response_id": "rHbOapbvDsmpjMcP28fSgAM"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67239,
+            "completion_tokens": 0,
+            "cache_read_tokens": 66995,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67239,
+            "response_id": "rnbOapqtC8jRjMcP_e-P2Qw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67327,
+            "completion_tokens": 98,
+            "cache_read_tokens": 53749,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67425,
+            "response_id": "rnbOaviCNszP_uMPxaLjuQo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67446,
+            "completion_tokens": 0,
+            "cache_read_tokens": 66978,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67446,
+            "response_id": "sHbOarOPI7jOjMcP-62fgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67471,
+            "completion_tokens": 121,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 24,
+            "context_window": 1048576,
+            "per_turn_token": 67592,
+            "response_id": "sXbOar3BFpiPjMcPmuHHIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67676,
+            "completion_tokens": 0,
+            "cache_read_tokens": 64928,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67676,
+            "response_id": "tHbOaurZFKaa9MoPmInqoQg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67677,
+            "completion_tokens": 121,
+            "cache_read_tokens": 66897,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 24,
+            "context_window": 1048576,
+            "per_turn_token": 67798,
+            "response_id": "tXbOav6-CPTRjMcPoovvMQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67882,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53755,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 67882,
+            "response_id": "t3bOaoWvLpXXjMcPrsaIIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 67883,
+            "completion_tokens": 121,
+            "cache_read_tokens": 53707,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 24,
+            "context_window": 1048576,
+            "per_turn_token": 68004,
+            "response_id": "uHbOaprTJIy__PUPmfyywQY"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68088,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53742,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 68088,
+            "response_id": "u3bOaojvJb_QjMcPsfK3oAI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68152,
+            "completion_tokens": 118,
+            "cache_read_tokens": 53696,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 21,
+            "context_window": 1048576,
+            "per_turn_token": 68270,
+            "response_id": "vHbOauTkIfbO_uMP28HmkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68292,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53729,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 68292,
+            "response_id": "v3bOarLDDLuY_uMPnY3uwQk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68359,
+            "completion_tokens": 146,
+            "cache_read_tokens": 66850,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 49,
+            "context_window": 1048576,
+            "per_turn_token": 68505,
+            "response_id": "wHbOao_kBrPVjMcPi5W3GQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68527,
+            "completion_tokens": 0,
+            "cache_read_tokens": 67905,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 68527,
+            "response_id": "wnbOao7ILaLyjMcP6daEkQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68566,
+            "completion_tokens": 134,
+            "cache_read_tokens": 66834,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 37,
+            "context_window": 1048576,
+            "per_turn_token": 68700,
+            "response_id": "xXbOatSlFo7TjMcPgtf4-A8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68722,
+            "completion_tokens": 0,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 68722,
+            "response_id": "y3bOauvJMtjGjMcPxPmY8As"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68773,
+            "completion_tokens": 123,
+            "cache_read_tokens": 67830,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 26,
+            "context_window": 1048576,
+            "per_turn_token": 68896,
+            "response_id": "zXbOaqvsDqfe-sAP_ZrioQU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68918,
+            "completion_tokens": 0,
+            "cache_read_tokens": 67872,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 68918,
+            "response_id": "z3bOapTBKLPQjMcPl46ZKA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 68980,
+            "completion_tokens": 134,
+            "cache_read_tokens": 66802,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 37,
+            "context_window": 1048576,
+            "per_turn_token": 69114,
+            "response_id": "0HbOarLrHuPL_uMP_KOBuAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69136,
+            "completion_tokens": 0,
+            "cache_read_tokens": 67856,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 69136,
+            "response_id": "03bOavegJ_bVjMcPko_zCA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69187,
+            "completion_tokens": 124,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 27,
+            "context_window": 1048576,
+            "per_turn_token": 69311,
+            "response_id": "1HbOaqK-GqS3_PUP88iO-Qg"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69333,
+            "completion_tokens": 0,
+            "cache_read_tokens": 53664,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 69333,
+            "response_id": "13bOau6XHeezjMcPzvTHGA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69331,
+            "completion_tokens": 124,
+            "cache_read_tokens": 68792,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 27,
+            "context_window": 1048576,
+            "per_turn_token": 69455,
+            "response_id": "2HbOaq2IM8vSjMcP9dmgMQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69539,
+            "completion_tokens": 0,
+            "cache_read_tokens": 68836,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 69539,
+            "response_id": "23bOaovkIfGwjMcPhK39EA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69600,
+            "completion_tokens": 123,
+            "cache_read_tokens": 68778,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 26,
+            "context_window": 1048576,
+            "per_turn_token": 69723,
+            "response_id": "3HbOaqvuGPmUjMcPp-buGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69745,
+            "completion_tokens": 0,
+            "cache_read_tokens": 66795,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 69745,
+            "response_id": "4HbOaqPdC9fVjMcP3ZmQGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69807,
+            "completion_tokens": 123,
+            "cache_read_tokens": 67751,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 26,
+            "context_window": 1048576,
+            "per_turn_token": 69930,
+            "response_id": "4XbOasuYCuXe-sAP16TJoQU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 69952,
+            "completion_tokens": 0,
+            "cache_read_tokens": 68803,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 69952,
+            "response_id": "43bOatuBFfm3_PUPs_DX4Ag"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70014,
+            "completion_tokens": 142,
+            "cache_read_tokens": 68801,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 45,
+            "context_window": 1048576,
+            "per_turn_token": 70156,
+            "response_id": "5HbOao6pAt3c_uMPiKfIwQo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70178,
+            "completion_tokens": 0,
+            "cache_read_tokens": 69799,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 70178,
+            "response_id": "5XbOarf2N8qd1MkPi-fh0A0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70158,
+            "completion_tokens": 121,
+            "cache_read_tokens": 69795,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 24,
+            "context_window": 1048576,
+            "per_turn_token": 70279,
+            "response_id": "5nbOaurmIPvN-sAPu4PmgAE"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70363,
+            "completion_tokens": 0,
+            "cache_read_tokens": 68771,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 70363,
+            "response_id": "6HbOauWqDdHajMcPqtX1EA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70364,
+            "completion_tokens": 738,
+            "cache_read_tokens": 53555,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 570,
+            "context_window": 1048576,
+            "per_turn_token": 71102,
+            "response_id": "6HbOaprwPImPjMcPr_GDoQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70653,
+            "completion_tokens": 237,
+            "cache_read_tokens": 68710,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 128,
+            "context_window": 1048576,
+            "per_turn_token": 70890,
+            "response_id": "-HbOaron0dOMxw-KqefxCw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70913,
+            "completion_tokens": 0,
+            "cache_read_tokens": 69763,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 70913,
+            "response_id": "_nbOapeQLYmUjMcP_bLxEA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 70873,
+            "completion_tokens": 181,
+            "cache_read_tokens": 69704,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 72,
+            "context_window": 1048576,
+            "per_turn_token": 71054,
+            "response_id": "_3bOasPIJYyS_uMPnbn8uA0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71077,
+            "completion_tokens": 0,
+            "cache_read_tokens": 69747,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 71077,
+            "response_id": "AnfOaoLTIsC1_PUPqJqvqAo"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71030,
+            "completion_tokens": 339,
+            "cache_read_tokens": 69687,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 286,
+            "context_window": 1048576,
+            "per_turn_token": 71369,
+            "response_id": "A3fOarT6DYKYjMcPgYeqGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71454,
+            "completion_tokens": 0,
+            "cache_read_tokens": 70744,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 71454,
+            "response_id": "BnfOapzmJpyL-sAP1du-8A8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71325,
+            "completion_tokens": 184,
+            "cache_read_tokens": 67654,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 119,
+            "context_window": 1048576,
+            "per_turn_token": 71509,
+            "response_id": "B3fOav2CJZi0jMcPy8qoyQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71532,
+            "completion_tokens": 0,
+            "cache_read_tokens": 68706,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 71532,
+            "response_id": "CnfOatPvKYKi_PUPx5rgyAc"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71438,
+            "completion_tokens": 99,
+            "cache_read_tokens": 70666,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 33,
+            "context_window": 1048576,
+            "per_turn_token": 71537,
+            "response_id": "C3fOapbdGu3OjMcPl77ImAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71559,
+            "completion_tokens": 0,
+            "cache_read_tokens": 70707,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 71559,
+            "response_id": "DXfOarStNNXh_uMP3_Wq4Ao"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71551,
+            "completion_tokens": 51,
+            "cache_read_tokens": 69638,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 31,
+            "context_window": 1048576,
+            "per_turn_token": 71602,
+            "response_id": "DnfOat24MeKMjMcP28qVqQI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71789,
+            "completion_tokens": 101,
+            "cache_read_tokens": 70643,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 35,
+            "context_window": 1048576,
+            "per_turn_token": 71890,
+            "response_id": "FXfOar2cO5rSjMcPipCQ-Q8"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71912,
+            "completion_tokens": 0,
+            "cache_read_tokens": 70685,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 71912,
+            "response_id": "GXfOauCRGcLJ-sAPveizoAU"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 71965,
+            "completion_tokens": 99,
+            "cache_read_tokens": 70627,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 33,
+            "context_window": 1048576,
+            "per_turn_token": 72064,
+            "response_id": "GnfOaqWsD_bPjMcPkNfzGQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72086,
+            "completion_tokens": 0,
+            "cache_read_tokens": 71678,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72086,
+            "response_id": "HHfOau7eJ6KNjMcPj-jsOA"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72078,
+            "completion_tokens": 141,
+            "cache_read_tokens": 53462,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 23,
+            "context_window": 1048576,
+            "per_turn_token": 72219,
+            "response_id": "HXfOapesG7vN_PUP8KbTyA0"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72303,
+            "completion_tokens": 0,
+            "cache_read_tokens": 71663,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72303,
+            "response_id": "IHfOarzLHceDjMcPtK-aqAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72347,
+            "completion_tokens": 86,
+            "cache_read_tokens": 71605,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 27,
+            "context_window": 1048576,
+            "per_turn_token": 72433,
+            "response_id": "IXfOarXMCfbQjMcP64U9"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72455,
+            "completion_tokens": 0,
+            "cache_read_tokens": 71646,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72455,
+            "response_id": "I3fOaq2VHejUjMcPgpWMgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72504,
+            "completion_tokens": 47,
+            "cache_read_tokens": 53439,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72551,
+            "response_id": "JHfOavqvD77SjMcP_5fpgQw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72572,
+            "completion_tokens": 0,
+            "cache_read_tokens": 71634,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72572,
+            "response_id": "JnfOav3pDsmpjMcP28fSgAM"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72825,
+            "completion_tokens": 74,
+            "cache_read_tokens": 71575,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72899,
+            "response_id": "J3fOavTtBPWN_uMP7YKhkAk"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72920,
+            "completion_tokens": 0,
+            "cache_read_tokens": 71620,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 72920,
+            "response_id": "KHfOaoKMH8jRjMcP_e-P2Qw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 72945,
+            "completion_tokens": 127,
+            "cache_read_tokens": 70550,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 108,
+            "context_window": 1048576,
+            "per_turn_token": 73072,
+            "response_id": "KXfOar3vF7jOjMcP-62fgAw"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73016,
+            "completion_tokens": 72,
+            "cache_read_tokens": 71551,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 43,
+            "context_window": 1048576,
+            "per_turn_token": 73088,
+            "response_id": "LXfOapaGBpiPjMcPmuHHIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73083,
+            "completion_tokens": 150,
+            "cache_read_tokens": 72608,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 55,
+            "context_window": 1048576,
+            "per_turn_token": 73233,
+            "response_id": "OnfOatblJMbO_PUPysKp2Qc"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73255,
+            "completion_tokens": 0,
+            "cache_read_tokens": 72595,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 73255,
+            "response_id": "PHfOatqXFZXXjMcPrsaIIQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73288,
+            "completion_tokens": 96,
+            "cache_read_tokens": 71529,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 73384,
+            "response_id": "PXfOaqidEb_QjMcPsfK3oAI"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73405,
+            "completion_tokens": 0,
+            "cache_read_tokens": 72582,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 0,
+            "context_window": 1048576,
+            "per_turn_token": 73405,
+            "response_id": "P3fOasPJNrPVjMcPi5W3GQ"
+          },
+          {
+            "model": "gemini/gemini-2.5-flash",
+            "prompt_tokens": 73493,
+            "completion_tokens": 94,
+            "cache_read_tokens": 72522,
+            "cache_write_tokens": 0,
+            "reasoning_tokens": 49,
+            "context_window": 1048576,
+            "per_turn_token": 73587,
+            "response_id": "QHfOaueFL6LyjMcP6daEkQI"
+          }
+        ]
+      },
+      "condenser": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "accumulated_cost": 0,
+        "max_budget_per_task": null,
+        "accumulated_token_usage": {
+          "model": "gemini/gemini-2.5-flash",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "context_window": 0,
+          "per_turn_token": 0,
+          "response_id": ""
+        },
+        "costs": [],
+        "response_latencies": [],
+        "token_usages": []
+      }
+    }
+  },
+  "transcript": [
+    {
+      "role": "agent",
+      "text": "[onboarding result]\nI'm ready to help you set up NeoDevEx. To start, I need to understand a bit about your company's existing development environment.\n\nWhat kind of products does your company build, and what technologies (programming languages, frameworks, databases) do you typically use?\nWhat kind of products does your company build, and what technologies (programming languages, frameworks, databases) do you typically use?"
+    },
+    {
+      "role": "user",
+      "text": "Hi! We're building a new payments ledger. For the backend, we use Java 21 with Spring Boot and Gradle. The web front end is TypeScript/React, managed with npm."
+    },
+    {
+      "role": "agent",
+      "text": "I've noted that your backend uses Java 21 with Spring Boot and Gradle, and your frontend uses TypeScript/React with npm. You're using GitLab (self-managed) for source control, GitLab CI for continuous integration, and Jira Cloud for issue tracking. Your team consists of 40 engineers located in London and Pune, and you're the platform engineering lead. You also have PCI-DSS compliance and EU data residency requirements, including for model traffic. Your network uses a proxy at `proxy.northwind.internal:18890` with TLS inspection.\n\nI see that your Jira Cloud and GitLab Self-Managed connections are active. However, your GitHub connection needs to be reconnected.\n\nTo continue, could you tell me about your organization's structure and any specific development conventions or guidelines you follow?"
+    },
+    {
+      "role": "user",
+      "text": "I told you this yesterday: we use Jira Data Center, not Jira Cloud, and we don't use GitHub at all, only our self-managed GitLab. Regarding organization structure or general development conventions, I don't have specific details to share for this setup."
+    },
+    {
+      "role": "agent",
+      "text": "I've opened the connection form for Jira Data Center. Please enter your credentials there to connect it."
+    },
+    {
+      "role": "agent",
+      "text": "I've opened the connection form for AWS Bedrock. Please enter your credentials there to connect it."
+    },
+    {
+      "role": "agent",
+      "text": "You cancelled the AWS Bedrock connection. Could you tell me why, and if you'd like to try a different LLM provider or approach?"
+    },
+    {
+      "role": "user",
+      "text": "We cancelled the AWS Bedrock connection because of our strict PCI-DSS compliance and EU data residency requirements. We need to ensure all data and model traffic stays within the EU."
+    },
+    {
+      "role": "agent",
+      "text": "You cancelled the AWS Bedrock connection due to PCI-DSS compliance and EU data residency requirements. Do you have another LLM provider in mind that can meet these requirements, or would you like me to help you explore other options?"
+    },
+    {
+      "role": "user",
+      "text": "I don't have another LLM provider in mind right now. Could you help me explore options that specifically guarantee data and model traffic stays within the EU and meets PCI-DSS compliance?"
+    }
+  ],
+  "credentialEvents": [
+    {
+      "providerId": "jira-dc",
+      "where": "workbench",
+      "filled": true,
+      "status": "open"
+    },
+    {
+      "providerId": "aws-bedrock",
+      "where": "workbench",
+      "filled": false
+    }
+  ],
+  "studio": {
+    "state": {
+      "conversationId": "b176830a-39b8-472f-988c-f6b68af9d32b",
+      "facts": [
+        {
+          "key": "stack.backend",
+          "section": "stack",
+          "text": "Java 21, Spring Boot, Gradle",
+          "confidence": "stated",
+          "at": "2026-10-13T18:22:32.038Z"
+        },
+        {
+          "key": "stack.frontend",
+          "section": "stack",
+          "text": "TypeScript, React, npm",
+          "confidence": "stated",
+          "at": "2026-10-13T18:22:32.038Z"
+        },
+        {
+          "at": "2026-10-13T18:14:27.678Z",
+          "key": "stack.database",
+          "text": "Postgres",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "stack",
+          "confidence": "stated"
+        },
+        {
+          "key": "systems.source-control",
+          "section": "systems",
+          "text": "GitLab (self-managed) only, no GitHub",
+          "confidence": "stated",
+          "at": "2026-10-13T18:22:58.313Z"
+        },
+        {
+          "at": "2026-10-13T18:15:13.992Z",
+          "key": "systems.source-control.host",
+          "text": "gitlab.northwind.internal",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:12.765Z",
+          "key": "delivery.ci",
+          "text": "GitLab CI",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:12.765Z",
+          "key": "delivery.approvals.merge-request",
+          "text": "Two approvals on merge requests",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:12.765Z",
+          "key": "delivery.approvals.production-release",
+          "text": "CAB approval for production releases",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "delivery",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:24.893Z",
+          "key": "team.size",
+          "text": "40 engineers",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:24.893Z",
+          "key": "team.locations",
+          "text": "London, Pune",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:24.893Z",
+          "key": "team.roles.platform-engineering-lead",
+          "text": "User is platform engineering lead",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "team",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "constraints.compliance",
+          "text": "PCI-DSS compliant",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "constraints.data-residency",
+          "text": "All data must stay within the EU",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "constraints.model-traffic-residency",
+          "text": "Model traffic must not leave the EU",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "constraints",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "network.proxy.host",
+          "text": "proxy.northwind.internal",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "network.proxy.port",
+          "text": "18890",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:37.688Z",
+          "key": "network.proxy.tls-inspection",
+          "text": "TLS inspection is enabled",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "network",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:50.140Z",
+          "key": "systems.database.postgres.reporting-replica-host",
+          "text": "reporting.northwind.internal",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:16:50.140Z",
+          "key": "systems.database.postgres.access-level",
+          "text": "Read-only access to reporting replica only",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "at": "2026-10-13T18:17:37.639Z",
+          "key": "llm.provider",
+          "text": "AWS Bedrock",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "systems",
+          "confidence": "inferred"
+        },
+        {
+          "at": "2026-10-13T18:17:37.639Z",
+          "key": "llm.data-residency-strategy",
+          "text": "Leverage existing AWS presence for EU data residency",
+          "source": "32b732c0-20fb-4730-b9ac-085750946c1f",
+          "section": "systems",
+          "confidence": "stated"
+        },
+        {
+          "key": "systems.issue-tracker",
+          "section": "systems",
+          "text": "Jira Data Center",
+          "confidence": "stated",
+          "at": "2026-10-13T18:23:24.506Z"
+        },
+        {
+          "key": "constraints.llm.reason_for_cancellation",
+          "section": "constraints",
+          "text": "AWS Bedrock cancelled due to PCI-DSS compliance and EU data residency requirements.",
+          "confidence": "stated",
+          "at": "2026-10-13T18:23:59.321Z"
+        }
+      ],
+      "steps": [
+        {
+          "id": "connect-llm",
+          "title": "Connect an LLM Provider",
+          "capability": "llm",
+          "status": "active"
+        },
+        {
+          "id": "configure-ci",
+          "title": "Configure CI/CD Integration",
+          "capability": "ci",
+          "status": "pending"
+        }
+      ],
+      "currentStepId": "connect-llm",
+      "runtimeChecks": [
+        {
+          "at": "2026-10-13T18:15:25.647Z",
+          "ok": true,
+          "scheme": "http",
+          "envNames": [
+            "GITLAB_SELF_MANAGED_INSTANCE_HOST",
+            "GITLAB_SELF_MANAGED_ACCESS_TOKEN"
+          ],
+          "capability": "source-control",
+          "providerId": "gitlab-self-managed",
+          "instanceKey": "default"
+        },
+        {
+          "providerId": "jira-dc",
+          "capability": "issue-tracker",
+          "instanceKey": "default",
+          "ok": true,
+          "scheme": "http",
+          "envNames": [
+            "JIRA_DC_INSTANCE_HOST",
+            "JIRA_DC_ACCESS_TOKEN"
+          ],
+          "at": "2026-10-13T18:23:16.760Z"
+        }
+      ]
+    },
+    "version": 1
+  },
+  "connectionsText": "Environment\n\nWhat this install is connected to, what it still needs, and what is failing right now.\n\nOverview\nConnections\nNetwork\nRequirements\nRunbook\n\nOne provider per capability, or several when you run more than one.\n\nSOURCE CONTROL\nGH\nGitHub\n\nRead repositories, branches and pull requests from github.com.\n\nAccess revoked\nvamsi920\nThis connection stopped working and needs to be reconnected.\nReconnect\nTest\nDisconnect\nView docs\nGE\nGitHub Enterprise Server\n\nA self-hosted GitHub instance. Needs its own OAuth application registered on that server.\n\nConnect\nView docs\nGL\nGitLab\nBeta\n\nRead projects, branches and merge requests from gitlab.com.\n\nConnect\nView docs\nGL\nGitLab (self-managed)\nBeta\n\nA GitLab instance you run, authenticated with a personal or group access token.\n\nFailing\nTest\nDisconnect\nView docs\nBB\nBitbucket Cloud\nBeta\n\nRead repositories and pull requests from bitbucket.org.\n\nConnect\nView docs\nBB\nBitbucket Data Center\nExperimental\n\nA self-hosted Bitbucket, authenticated with an HTTP access token.\n\nConnect\nView docs\nISSUE TRACKER\nJR\nJira Cloud\n\nRead issues and drive automations from an Atlassian Cloud site.\n\nConnected\nhttps://neodevex.atlassian.net\nMissing: offline_access\nCredential expires: 10/13/2026\nTest\nDisconnect\nView docs\nJR\nJira Data Center\nExperimental\n\nA self-hosted Jira, authenticated with a personal access token.\n\nFailing\nTest\nDisconnect\nView docs\nLN\nLinear\nBeta\n\nRead and update Linear issues through the GraphQL API.\n\nConnect\nView docs\nMODEL PROVIDER\nGM\nGoogle Gemini\n\nGoogle's hosted models. The default provider for a new install.\n\nConnect\nView docs\nOA\nOpenAI\n\nGPT models through the OpenAI platform API.\n\nConnect\nView docs\nAN\nAnthropic\n\nClaude models through the Anthropic API.\n\nConnect\nView docs\nAZ\nAzure OpenAI\nBeta\n\nOpenAI models deployed into your own Azure region. Satisfies a data-residency requirement that the public API cannot.\n\nConnect\nView docs\nBR\nAWS Bedrock\nBeta\n\nFoundation models inside your AWS account and region.\n\nConnect\nView docs\nOL\nOllama\nBeta\n\nModels running on your own hardware. The only option that works with no outbound internet access.\n\nConnect\nView docs\nLL\nLiteLLM proxy\nBeta\n\nYour own LiteLLM gateway, fronting whichever providers you have approved.\n\nConnect\nView docs\nRETRIEVAL\nPV\nSupabase pgvector\n\nVector search inside the database this app already uses. No extra service to run.\n\nConnect\nView docs\nPC\nPinecone\nBeta\n\nManaged vector search. Queries are proxied server-side so the index key never reaches the browser.\n\nConnect\nView docs\nQD\nQdrant\nBeta\n\nVector search, hosted by Qdrant Cloud or run on your own infrastructure.\n\nConnect\nView docs\nWV\nWeaviate\nBeta\n\nVector search with a schema, hosted or self-run.\n\nConnect\nView docs\nES\nElasticsearch\nExperimental\n\nkNN search on an existing Elasticsearch cluster.\n\nConnect\nView docs\nTG\nTigerGraph\nExperimental\n\nGraph-backed retrieval through an installed query on your TigerGraph instance.\n\nConnect\nView docs\nOBJECT STORAGE\nSB\nSupabase Storage\n\nPrivate buckets for workspace artifacts and generated audio.\n\nConnect\nView docs\nS3\nAmazon S3\nBeta\n\nS3 or any S3-compatible endpoint you control.\n\nConnect\nView docs\nAZ\nAzure Blob Storage\nExperimental\n\nA blob container, accessed with a shared access signature.\n\nConnect\nView docs\nDATABASE\nSB\nSupabase Postgres\n\nThe managed Postgres this deployment already runs on.\n\nConnect\nView docs\nPG\nPostgreSQL\nExperimental\n\nYour own Postgres server. Verified by opening a real connection from the workload host.\n\nConnect\nView docs\nSECRETS\nVT\nHashiCorp Vault\nExperimental\n\nKeep credentials in your own Vault and store only a reference here.\n\nConnect\nView docs\nAW\nAWS Secrets Manager\nExperimental\n\nKeep credentials in your AWS account and store only a reference here.\n\nConnect\nView docs\nOBSERVABILITY\nPH\nPostHog\n\nProduct analytics. Can be pointed at a self-hosted instance, or turned off entirely.\n\nConnect\nView docs\nDD\nDatadog\nBeta\n\nForward agent run metrics and logs to your Datadog site.\n\nConnect\nView docs\nNOTIFICATIONS\nSL\nSlack\nBeta\n\nPost run results and approval requests into a Slack channel.\n\nConnect\nView docs\nMT\nMicrosoft Teams\nExperimental\n\nPost run results into a Teams channel through an incoming webhook.\n\nConnect\nView docs\nCONTINUOUS INTEGRATION\nGH\nGitHub Actions\nBeta\n\nRead workflow runs and dispatch workflows using your existing GitHub connection.\n\nConnect\nView docs\nJK\nJenkins\nExperimental\n\nRead job status from a Jenkins controller you host.\n\nConnect\nView docs\nIDENTITY\nOK\nOkta\nExperimental\n\nDirectory lookups for user and group mapping.\n\nConnect\nView docs\nEN\nMicrosoft Entra ID\nExperimental\n\nDirectory lookups through Microsoft Graph, using an app registration.\n\nConnect\nView docs\nRECENT CONNECTION ACTIVITY\nJira Data Center connected\n10/13/2026, 2:23:16 PM\nGitLab (self-managed) connected\n10/13/2026, 2:15:25 PM\nJira Data Center connected\n10/13/2026, 1:57:11 PM\nGitLab (self-managed) connected\n10/13/2026, 1:55:42 PM\nJira Cloud access renewed\n10/13/2026, 1:41:02 PM\nJira Data Center connected\n10/13/2026, 1:32:01 PM\nGitLab (self-managed) connected\n10/13/2026, 1:30:32 PM\nGitLab (self-managed) connected\n10/13/2026, 1:20:57 PM\nJira Data Center connected\n10/13/2026, 12:58:46 PM\nGitLab (self-managed) connected\n10/13/2026, 12:57:16 PM\nJira Cloud access renewed\n10/13/2026, 12:41:02 PM\nJira Data Center connected\n10/13/2026, 12:31:59 PM\nGitLab (self-managed) connected\n10/13/2026, 12:30:29 PM\nJira Cloud access renewed\n10/13/2026, 11:41:02 AM\nJira Cloud access renewed\n10/13/2026, 10:41:02 AM\nJira Cloud access renewed\n10/13/2026, 9:41:02 AM\nJira Cloud access renewed\n10/13/2026, 8:41:03 AM\nJira Cloud access renewed\n10/13/2026, 7:41:02 AM\nJira Cloud access renewed\n10/13/2026, 6:41:02 AM\nJira Cloud access renewed\n10/13/2026, 5:41:03 AM"
+}

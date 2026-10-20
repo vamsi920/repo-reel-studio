@@ -14,6 +14,8 @@ import { WebSocketProviderWrapper } from "#/contexts/websocket-provider-wrapper"
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { EventHandler } from "#/wrapper/event-handler";
 import { ChatInterface } from "#/components/features/chat/chat-interface";
+import { ChatSurfaceProvider } from "#/context/chat-surface-context";
+import { isOnboardingReceiptEvent } from "#/utils/onboarding-receipt";
 import { ResizeHandle } from "#/components/ui/resize-handle";
 import { useResizablePanels } from "#/hooks/use-resizable-panels";
 import { useBreakpoint } from "#/hooks/use-breakpoint";
@@ -43,6 +45,24 @@ import {
 
 /** Tab ids for the mobile layout; not user-facing text. */
 const MOBILE_TABS = ["chat", "workbench"] as const;
+
+/** The shared chat, without the coding chrome that means nothing here. */
+function SetupChat() {
+  const { t } = useTranslation("openhands");
+  const surface = React.useMemo(
+    () => ({
+      showGitControls: false,
+      placeholder: t(I18nKey.ENVIRONMENT$STUDIO_COMPOSER_PLACEHOLDER),
+      hideEvent: isOnboardingReceiptEvent,
+    }),
+    [t],
+  );
+  return (
+    <ChatSurfaceProvider value={surface}>
+      <ChatInterface />
+    </ChatSurfaceProvider>
+  );
+}
 
 function SetupPanes({ conversationId }: { conversationId: string }) {
   const { t } = useTranslation("openhands");
@@ -91,7 +111,7 @@ function SetupPanes({ conversationId }: { conversationId: string }) {
         </div>
         <div className="min-h-0 flex-1">
           {mobileTab === "chat" ? (
-            <ChatInterface />
+            <SetupChat />
           ) : (
             <OnboardingWorkbench postResult={postResult} />
           )}
@@ -113,7 +133,7 @@ function SetupPanes({ conversationId }: { conversationId: string }) {
           transitionProperty: isDragging ? "none" : "all",
         }}
       >
-        <ChatInterface />
+        <SetupChat />
       </div>
 
       <ResizeHandle onMouseDown={handleMouseDown} isDragging={isDragging} />
@@ -376,7 +396,13 @@ function EnvironmentSetupScreen() {
         entryPoint: "environment_setup_studio",
       },
       {
-        onSuccess: (response) =>
+        onSuccess: (response) => {
+          // Named up front: left to the backend, the title came from a
+          // later message, often an "[onboarding result]" receipt.
+          void AgentServerConversationService.updateConversationTitle(
+            response.conversation_id,
+            t(I18nKey.ENVIRONMENT$STUDIO_TITLE),
+          ).catch(() => {});
           startSession(response.conversation_id, {
             // The conversation now exists, but with no session row nothing
             // ever sets `conversationId`, so this screen silently sat on its
@@ -398,7 +424,8 @@ function EnvironmentSetupScreen() {
                   : t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR),
               );
             },
-          }),
+          });
+        },
         onError: () => {
           restoreSeedOnFailure();
           displayErrorToast(t(I18nKey.ENVIRONMENT$STUDIO_START_ERROR));

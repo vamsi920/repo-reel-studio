@@ -6,11 +6,11 @@
  "citations": 292,
  "citations_valid": 291,
  "citation_validity": 0.9966,
- "unique_files_cited": 24,
- "citations_per_1k_words": 11.32,
+ "unique_files_cited": 23,
  "inline_citations": 22,
  "mermaid_diagrams": 42,
  "links_pinned_to_commit": 292,
+ "error_pages": 1,
  "invalid_examples": [
   "readme.com:1284-1304 (missing file)"
  ]

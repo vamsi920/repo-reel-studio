@@ -67,6 +67,24 @@ const PRICING_TABLE: Record<string, ModelPricing> = {
   "gpt-4o": { inputPerMTok: 2.5, outputPerMTok: 10, cacheReadPerMTok: 1.25 },
   "gpt-4.1": { inputPerMTok: 2, outputPerMTok: 8, cacheReadPerMTok: 0.5 },
   o3: { inputPerMTok: 2, outputPerMTok: 8, cacheReadPerMTok: 0.5 },
+  // Gemini list prices from ai.google.dev/gemini-api/docs/pricing
+  // (2026-10-13). Gemini 4 Argon doubles on 2026-12-01; 3.8 Flash on
+  // 2027-01-01.
+  "gemini-4-argon": {
+    inputPerMTok: 2,
+    outputPerMTok: 10,
+    cacheReadPerMTok: 0.1,
+  },
+  "gemini-3.1-pro": {
+    inputPerMTok: 2,
+    outputPerMTok: 12,
+    cacheReadPerMTok: 0.2,
+  },
+  "gemini-3.8-flash": {
+    inputPerMTok: 0.75,
+    outputPerMTok: 3.75,
+    cacheReadPerMTok: 0.075,
+  },
   "gemini-2.5-pro": {
     inputPerMTok: 1.25,
     outputPerMTok: 10,

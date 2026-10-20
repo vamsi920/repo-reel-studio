@@ -6,11 +6,11 @@
  "citations": 1320,
  "citations_valid": 1252,
  "citation_validity": 0.9485,
- "unique_files_cited": 101,
- "citations_per_1k_words": 29.2,
+ "unique_files_cited": 91,
  "inline_citations": 613,
  "mermaid_diagrams": 123,
  "links_pinned_to_commit": 0,
+ "error_pages": 0,
  "invalid_examples": [
   "src/flask/__init__.py:1-40",
   "src/flask/__init__.py:1-40",

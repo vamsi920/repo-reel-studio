@@ -1,0 +1,864 @@
+[
+  {
+    "scenario": "S1-northwind-bank",
+    "toldYouAlready": 0,
+    "fakeReceipts": 11,
+    "verifiedProviders": [
+      "gitlab-self-managed"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 3,
+    "seconds": 418,
+    "completed": true,
+    "humanTurns": 16,
+    "agentMessages": 20,
+    "maxQuestionsInOneMessage": 3,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 2,
+      "record_discovery": 9,
+      "open_connection_form": 7,
+      "set_setup_plan": 2,
+      "advance_plan": 7,
+      "complete_setup": 4,
+      "get_environment_state": 1
+    },
+    "factsRecorded": 26,
+    "groundTruthRecall": 0.71,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": false
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": false
+      },
+      {
+        "id": "npm-mirror",
+        "hit": false
+      },
+      {
+        "id": "database",
+        "hit": true
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"title\":\"configure llm\",\"capability\":\"llm\",\"status\":\"done\",\"id\":\"configure-llm\"},{\"id\":\"connect-postgres\",\"title\":\"connect postgres\",\"status\":\"done\",\"capability\":\"relational-db\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": false
+      },
+      {
+        "cap": "issue-tracker",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "azure-openai",
+      "aws-bedrock",
+      "aws-bedrock",
+      "postgres",
+      "postgres",
+      "aws-bedrock"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 32,
+    "promptTokens": 5849453,
+    "completionTokens": 13890,
+    "costUsd": 0.3712,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "recorded",
+      "cancelled",
+      "recorded",
+      "cancelled",
+      "rejected",
+      "cancelled",
+      "rejected",
+      "rejected",
+      "rejected",
+      "rejected",
+      "rejected",
+      "rejected",
+      "rejected",
+      "ok",
+      "rejected",
+      "planned",
+      "rejected",
+      "ok",
+      "rejected"
+    ]
+  },
+  {
+    "scenario": "S1-northwind-bank-rep2",
+    "toldYouAlready": 0,
+    "fakeReceipts": 5,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 4,
+    "seconds": 441,
+    "completed": true,
+    "humanTurns": 18,
+    "agentMessages": 21,
+    "maxQuestionsInOneMessage": 4,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 7,
+      "set_setup_plan": 1,
+      "show_provider_picker": 3,
+      "open_connection_form": 5,
+      "advance_plan": 3,
+      "complete_setup": 1
+    },
+    "factsRecorded": 14,
+    "groundTruthRecall": 0.82,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": true
+      },
+      {
+        "id": "npm-mirror",
+        "hit": true
+      },
+      {
+        "id": "database",
+        "hit": false
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"id\":\"connect-gitlab\",\"capability\":\"source-control\",\"title\":\"connect to self-managed gitlab for source control and ci\"},{\"capability\":\"issue-tracker\",\"title\":\"connect to jira data center for issue tracking\",\"id\":\"connect-jira\"},{\"title\":\"configure an llm that meets eu data residency requirements\",\"capability\":\"llm\",\"id\":\"configure-llm\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": true
+      },
+      {
+        "cap": "issue-tracker",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "gitlab-self-managed",
+      "jira-dc",
+      "azure-openai",
+      "azure-openai"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 21,
+    "promptTokens": 4228133,
+    "completionTokens": 6635,
+    "costUsd": 0.3691,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "shown",
+      "ok",
+      "advanced",
+      "shown",
+      "ok",
+      "advanced",
+      "shown",
+      "recorded",
+      "cancelled",
+      "recorded",
+      "advanced",
+      "completed"
+    ]
+  },
+  {
+    "scenario": "S1-northwind-bank-rep3",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 8,
+    "seconds": 867,
+    "completed": true,
+    "humanTurns": 9,
+    "agentMessages": 10,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 6,
+      "record_discovery": 98,
+      "set_setup_plan": 3,
+      "show_provider_picker": 2,
+      "open_connection_form": 2,
+      "advance_plan": 9,
+      "get_environment_state": 5,
+      "propose_profile_change": 1,
+      "complete_setup": 1
+    },
+    "factsRecorded": 164,
+    "groundTruthRecall": 0.82,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": true
+      },
+      {
+        "id": "npm-mirror",
+        "hit": true
+      },
+      {
+        "id": "database",
+        "hit": false
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"title\":\"connect to your self-managed gitlab instance.\",\"id\":\"connect-gitlab\",\"status\":\"todo\"},{\"id\":\"connect-jira\",\"status\":\"todo\",\"title\":\"connect to your jira data center instance.\"},{\"id\":\"configure-network\",\"status\":\"todo\",\"title\":\"configure neodevex to use your corporate proxy and nexus npm mirror.\"},{\"id\":\"configure-compliance\",\"title\":\"ensure neodevex adheres to your pci-dss compliance and eu data residency requirements.\",\"status\":\"todo\"},{\"status\":\"todo\",\"title\":\"set up llm profiles that meet your eu data residency requirements.\",\"id\":\"configure-llm\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": false
+      },
+      {
+        "cap": "issue-tracker",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 125,
+    "promptTokens": 18615762,
+    "completionTokens": 45523,
+    "costUsd": 1.4963,
+    "receiptStatuses": [
+      "ok",
+      "rejected",
+      "ok",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "rejected",
+      "rejected",
+      "ok",
+      "ok",
+      "planned",
+      "shown",
+      "advanced",
+      "ok",
+      "advanced",
+      "shown",
+      "advanced",
+      "ok",
+      "advanced",
+      "ok",
+      "advanced",
+      "ok",
+      "ok",
+      "ok",
+      "ok",
+      "advanced",
+      "ok",
+      "awaiting_user",
+      "advanced",
+      "advanced",
+      "advanced",
+      "completed"
+    ]
+  },
+  {
+    "scenario": "S2-small-startup",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 231,
+    "completed": false,
+    "humanTurns": 12,
+    "agentMessages": 12,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 2,
+      "record_discovery": 9,
+      "set_setup_plan": 1,
+      "advance_plan": 1,
+      "open_connection_form": 4
+    },
+    "factsRecorded": 17,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "stack",
+        "hit": true
+      },
+      {
+        "id": "scm-github",
+        "hit": true
+      },
+      {
+        "id": "issue-linear",
+        "hit": true
+      },
+      {
+        "id": "deploy-vercel",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"capability\":\"source-control\",\"id\":\"github-reconnect\",\"title\":\"reconnect github\"},{\"id\":\"linear-connect\",\"title\":\"connect linear\",\"capability\":\"issue-tracker\"},{\"id\":\"openai-connect\",\"title\":\"connect openai\",\"capability\":\"llm\"}]}",
+    "planIncludes": [
+      {
+        "cap": "issue-tracker",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "github",
+      "linear",
+      "github",
+      "linear"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 17,
+    "promptTokens": 3025097,
+    "completionTokens": 2790,
+    "costUsd": 0.2857,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "rejected",
+      "ok",
+      "cancelled"
+    ]
+  },
+  {
+    "scenario": "S3-pasted-secret",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 1,
+    "seconds": 269,
+    "completed": false,
+    "humanTurns": 9,
+    "agentMessages": 10,
+    "maxQuestionsInOneMessage": 3,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 10,
+      "request_credentials": 2,
+      "open_connection_form": 1,
+      "set_setup_plan": 1,
+      "show_provider_picker": 3
+    },
+    "factsRecorded": 23,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "scm-gitlab",
+        "hit": true
+      },
+      {
+        "id": "issue-jira",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"capability\":\"llm\",\"title\":\"set up llm for code generation and assistance\",\"id\":\"setup-llm\"},{\"id\":\"verify-gitlab\",\"title\":\"verify gitlab connection\",\"capability\":\"source-control\"},{\"id\":\"verify-jira\",\"title\":\"verify jira data center connection\",\"capability\":\"issue-tracker\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-com",
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 17,
+    "promptTokens": 3020299,
+    "completionTokens": 3768,
+    "costUsd": 0.3036,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "not_applicable",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "shown",
+      "shown",
+      "shown"
+    ]
+  },
+  {
+    "scenario": "S4-correction",
+    "toldYouAlready": 0,
+    "fakeReceipts": 1,
+    "verifiedProviders": [
+      "gitlab-self-managed"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 222,
+    "completed": true,
+    "humanTurns": 6,
+    "agentMessages": 8,
+    "maxQuestionsInOneMessage": 1,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 8,
+      "set_setup_plan": 2,
+      "advance_plan": 5,
+      "open_connection_form": 2,
+      "show_provider_picker": 1,
+      "request_credentials": 1,
+      "assign_task": 1,
+      "complete_setup": 2
+    },
+    "factsRecorded": 8,
+    "groundTruthRecall": 0,
+    "groundTruth": [
+      {
+        "id": "stack-python",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": false
+      }
+    ],
+    "plan": "{\"steps\":[{\"id\":\"connect-gitlab\",\"capability\":\"source-control\",\"title\":\"connect gitlab self-managed\"},{\"capability\":\"llm\",\"title\":\"configure llm\",\"id\":\"configure-llm\"}]}",
+    "planIncludes": [
+      {
+        "cap": "issue-tracker",
+        "present": false
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "azure-openai",
+      "azure-openai"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 23,
+    "promptTokens": 3597978,
+    "completionTokens": 3777,
+    "costUsd": 0.3399,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "planned",
+      "advanced",
+      "advanced",
+      "recorded",
+      "planned",
+      "advanced",
+      "ok",
+      "advanced",
+      "shown",
+      "cancelled",
+      "recorded",
+      "assigned",
+      "rejected",
+      "advanced",
+      "completed"
+    ]
+  },
+  {
+    "scenario": "S5-return-visit",
+    "toldYouAlready": 1,
+    "fakeReceipts": 1,
+    "verifiedProviders": [
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 227,
+    "completed": false,
+    "humanTurns": 5,
+    "agentMessages": 6,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 28,
+      "show_provider_picker": 2,
+      "open_connection_form": 3,
+      "set_setup_plan": 1,
+      "advance_plan": 1
+    },
+    "factsRecorded": 52,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "remembers-gitlab",
+        "hit": true
+      },
+      {
+        "id": "remembers-proxy",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"id\":\"connect-llm\",\"capability\":\"llm\",\"title\":\"connect an llm provider\"},{\"id\":\"configure-ci\",\"title\":\"configure ci/cd integration\",\"capability\":\"ci\"}]}",
+    "planIncludes": [],
+    "connectionAttempts": [
+      "jira-dc",
+      "jira-dc",
+      "aws-bedrock"
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 34,
+    "promptTokens": 5272756,
+    "completionTokens": 5785,
+    "costUsd": 0.3828,
+    "receiptStatuses": [
+      "ok",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "recorded",
+      "shown",
+      "ok",
+      "recorded",
+      "recorded",
+      "planned",
+      "advanced",
+      "shown",
+      "cancelled",
+      "recorded",
+      "recorded"
+    ]
+  }
+]

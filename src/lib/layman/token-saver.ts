@@ -7,13 +7,28 @@
  * because that context starts empty, while every model call carried a fixed
  * prefix of about 15k tokens. The biggest part the app controls is the skills
  * index (the name and description of every bundled skill, listed on every
- * call). This module shortens it. An output-side Layman directive (brief
- * narration between tool calls) was measured too and dropped: it saved no
- * tokens overall and cost task success (case-studies/tokens, rounds 1-2).
+ * call). This module shortens it.
+ *
+ * Output side: a Layman "caveman" directive (terse narration between tool
+ * calls, complete final answers) cost task success on Gemini 2.5 Flash
+ * (case-studies/tokens, rounds 1-2), so it is only sent to frontier-tier
+ * models. On Gemini 4 Argon (case-studies/chat) it cut tokens per task 18%
+ * with equal or better accuracy; with medium thinking, 37%.
  *
  * Pure and deterministic: no model calls, no network.
  */
 import { compressForPrompt } from "./compression-core";
+
+/**
+ * Layman output style for frontier models. Compresses what the agent writes
+ * between tool calls; never code, tests, commands or the final answer's facts.
+ */
+export const LAYMAN_OUTPUT_STYLE = [
+  "<OUTPUT_STYLE>",
+  "Terse (Layman caveman). Applies to your messages and thoughts between tool calls: no preamble, no plan narration, no restating tool output; fragments fine; drop articles, filler and pleasantries. Think only as much as the next step needs.",
+  "Never compress: code, test files, commands, paths, error text, numbers, or the facts in your final answer. Final answer: complete and exact, every requested point with path:line, no padding.",
+  "</OUTPUT_STYLE>",
+].join("\n");
 
 /** Longest skill description kept in the index, in characters. */
 export const SKILL_INDEX_DESCRIPTION_MAX = 140;

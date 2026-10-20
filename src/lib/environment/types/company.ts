@@ -109,6 +109,8 @@ export const COMPANY_PROFILE_SECTION_ORDER: DiscoverySection[] = [
   "org",
   "stack",
   "delivery",
+  "systems",
+  "network",
   "team",
   "constraints",
   "conventions",

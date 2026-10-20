@@ -22,6 +22,7 @@ import {
   KT_INDEX_FILE,
   KT_PAGES_DIR,
 } from "./kt-workspace-export";
+import { resolveAppRoute } from "#/lib/model-routing/app-side";
 
 /** Fire-and-forget, mirrors src/api/workspace-memory/workspace-memory-supabase-sync.ts's
  * queueSupabaseMemorySync pattern — never blocks or fails generation. Both
@@ -145,11 +146,12 @@ export async function generateKnowledge(
       conversationUrl,
       sessionApiKey,
     );
+    // Model routing: KT generation is a frontier-tier task; the router picks
+    // the strongest DeepWiki-servable model whose provider is healthy.
+    const ktRoute = resolveAppRoute("kt_generate").route;
     const engine = new DeepWikiKnowledgeEngine({
-      // Left unset, DeepWiki silently resolves to its default model
-      // (gemini-2.5-flash) — pro gives noticeably better grounding on the
-      // per-page generation this pipeline depends on.
-      model: "gemini-2.5-pro",
+      provider: ktRoute.provider,
+      model: ktRoute.model,
       onProgress: (status) =>
         store.setProgress(snapshot.repositoryId, status, attempt),
     });

@@ -8,6 +8,9 @@ import { useCanManageOrgProfiles } from "#/hooks/use-can-manage-org-profiles";
 import { useSwitchLlmProfileAndLog } from "#/hooks/mutation/use-switch-llm-profile-and-log";
 import { SWITCH_LLM_PROFILE_MUTATION_KEY } from "#/hooks/mutation/use-switch-llm-profile";
 import { useModelStore } from "#/stores/model-store";
+import { useModelRoutingStore } from "#/stores/model-routing-store";
+import { useRoutingMode } from "#/hooks/use-routing-mode";
+import type { RoutingDecision, RoutingMode } from "#/lib/model-routing/types";
 
 export interface ChatInputLlmProfileState {
   profiles: ProfileInfo[];
@@ -29,6 +32,16 @@ export interface ChatInputLlmProfileState {
    * conversation) — see {@link useSwitchLlmProfile}.
    */
   selectProfile: (profileName: string) => void;
+  /** Effective routing mode here (chat override → global default). */
+  routingMode: RoutingMode;
+  isAuto: boolean;
+  /** Most recent Auto decision for this conversation, if any. */
+  lastDecision: RoutingDecision | null;
+  /**
+   * Turn Auto on: for this chat when inside a conversation, as the global
+   * default on the home page. Picking a named profile turns it back off.
+   */
+  selectAuto: () => void;
 }
 
 /**
@@ -54,6 +67,14 @@ export function useChatInputLlmProfileState(): ChatInputLlmProfileState {
   // conversation refetch lands the new llm_model.
   const optimisticActiveProfile = useModelStore((s) =>
     conversationId ? s.activeProfileByConversation[conversationId] : undefined,
+  );
+
+  const { routingMode, setRoutingMode: setMode } =
+    useRoutingMode(conversationId);
+  const lastDecision = useModelRoutingStore((s) =>
+    conversationId
+      ? (s.lastDecisionByConversation[conversationId] ?? null)
+      : null,
   );
 
   const profiles = data?.profiles ?? [];
@@ -92,11 +113,25 @@ export function useChatInputLlmProfileState(): ChatInputLlmProfileState {
 
   const selectProfile = useCallback(
     (profileName: string) => {
-      if (!canSwitchProfile || profileName === currentProfileName) return;
+      if (!canSwitchProfile) return;
+      // A manual pick always wins over Auto.
+      setMode("manual");
+      if (profileName === currentProfileName) return;
       switchAndLog(conversationId, profileName);
     },
-    [canSwitchProfile, conversationId, currentProfileName, switchAndLog],
+    [
+      canSwitchProfile,
+      conversationId,
+      currentProfileName,
+      setMode,
+      switchAndLog,
+    ],
   );
+
+  const selectAuto = useCallback(() => {
+    if (!canSwitchProfile) return;
+    setMode("auto");
+  }, [canSwitchProfile, setMode]);
 
   return {
     profiles,
@@ -106,5 +141,9 @@ export function useChatInputLlmProfileState(): ChatInputLlmProfileState {
     isSwitching,
     canSwitchProfile,
     selectProfile,
+    routingMode,
+    isAuto: routingMode === "auto",
+    lastDecision,
+    selectAuto,
   };
 }

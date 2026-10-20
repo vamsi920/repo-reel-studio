@@ -1,0 +1,101 @@
+[10/13/26 12:41:54] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 12:41:54] INFO     Created new conversation               state.py:577
+                             374362ed-56b0-4547-87cd-579602705bba               
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-explorer' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             explorer.md                                        
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-implementer' from                             
+                             /Users/vamsi/.openhands/agents/neo-                
+                             implementer.md                                     
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-planner' from                                 
+                             /Users/vamsi/.openhands/agents/neo-                
+                             planner.md                                         
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-researcher' from                              
+                             /Users/vamsi/.openhands/agents/neo-                
+                             researcher.md                                      
+[10/13/26 12:41:54] INFO     Registered file-based agent         registry.py:328
+                             'neo-verifier' from                                
+                             /Users/vamsi/.openhands/agents/neo-                
+                             verifier.md                                        
+[10/13/26 12:41:54] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 12:41:54] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-F1-p25ytjbt                       
+[10/13/26 12:41:54] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 12:41:54] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 12:41:55] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-F1-p25ytjbt, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 12:41:55] INFO     Loaded 4 tools from spec                base.py:563
+F1 probe-gemini-3.1-pro-preview rep0 calls=27 in=456427 out=10734 $0.3541 219.9s test_file=no
+[10/13/26 12:45:40] WARNING  No persistence_dir provided; falling   state.py:506
+                             back to InMemoryFileStore. EventLog                
+                             data will not persist across requests.             
+[10/13/26 12:45:40] INFO     Created new conversation               state.py:577
+                             bca4838a-f062-492d-8709-a0a19f64a30e               
+[10/13/26 12:45:40] INFO     TaskTrackerExecutor initialized   definition.py:161
+                             with save_dir: None                                
+[10/13/26 12:45:40] INFO     FileEditor initialized with cwd:      editor.py:105
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2              
+                             p8m0000gn/T/chat-K2-otgqs_6z                       
+[10/13/26 12:45:41] WARNING  tmux is not installed. Falling back  factory.py:181
+                             to subprocess-based terminal, which                
+                             may be less stable. For best agent                 
+                             performance, install tmux (e.g.                    
+                             `apt-get install tmux` or `brew                    
+                             install tmux`).                                    
+/private/tmp/claude-501/-Users-vamsi-Desktop-neodevex-repo-reel-studio/fca5ba33-b483-489f-861a-40eb26473371/scratchpad/mock-llm-venv/lib/python3.12/site-packages/openhands/tools/terminal/impl.py:115: UserWarning: tmux is not installed. Falling back to subprocess-based terminal, which may be less stable. For best agent performance, install tmux (e.g. `apt-get install tmux` or `brew install tmux`).
+  self._session = create_terminal_session(
+[10/13/26 12:45:41] INFO     Using shell: /bin/bash   subprocess_terminal.py:142
+[10/13/26 12:45:42] INFO     TerminalExecutor initialized with       impl.py:124
+                             working_dir:                                       
+                             /var/folders/2c/yw6jt2pj61v121jqy2kc2p8            
+                             m0000gn/T/chat-K2-otgqs_6z, username:              
+                             None, terminal_type: TerminalSession               
+[10/13/26 12:45:42] INFO     Loaded 4 tools from spec                base.py:563
+[10/13/26 12:48:04] ERROR    PTY reader thread error: subprocess_terminal.py:291
+                             [Errno 9] Bad file                                 
+                             descriptor                                         
+                             ╭─ Traceback (most rec─╮                           
+                             │ /private/tmp/claude- │                           
+                             │ 501/-Users-vamsi-Des │                           
+                             │ ktop-neodevex-repo-r │                           
+                             │ eel-studio/fca5ba33- │                           
+                             │ b483-489f-861a-40eb2 │                           
+                             │ 6473371/scratchpad/m │                           
+                             │ ock-llm-venv/lib/pyt │                           
+                             │ hon3.12/site-package │                           
+                             │ s/openhands/tools/te │                           
+                             │ rminal/terminal/subp │                           
+                             │ rocess_terminal.py:2 │                           
+                             │ 71 in                │                           
+                             │ _read_output_continu │                           
+                             │ ously_pty            │                           
+                             │                      │                           
+                             │   268 │   │   │   │  │                           
+                             │   269 │   │   │   │  │                           
+                             │   270 │   │   │   │  │                           
+                             │ ❱ 271 │   │   │   │  │                           
+                             │   272 │   │   │   │  │                           
+                             │   273 │   │   │   │  │                           
+                             │   274                │                           
+                             ╰──────────────────────╯                           
+                             OSError: [Errno 9] Bad                             
+                             file descriptor                                    
+K2 probe-gemini-3.1-pro-preview rep0 calls=17 in=403875 out=6590 $0.2800 143.8s test_file=yes

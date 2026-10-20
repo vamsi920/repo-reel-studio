@@ -1,0 +1,352 @@
+[
+ {
+  "id": "hono-01",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "fetch, #dispatch, getPath, match, Context, fast path correct; omits 'Context is not finalized' error."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Full accurate trace incl. fast path, compose, not-finalized error, error handler."
+  }
+ },
+ {
+  "id": "hono-02",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Workers no-handle correct; lacks Vercel body, Lambda env/createResult details."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Pages and Vercel ok; falsely claims adapters deprecated for v5; Lambda env omitted."
+  }
+ },
+ {
+  "id": "hono-03",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Router per entry correct; doesn't note presets overwrite options.router."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Correct routers with code; does not state presets ignore options.router."
+  }
+ },
+ {
+  "id": "hono-04",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "basePath clone and route copy right; bogus /api/book example; omits onError wrapping."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Clone/merge, call-time copy via #addRoute, onError compose wrapping all correct."
+  }
+ },
+ {
+  "id": "hono-05",
+  "category": "architecture",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy getter and header-merging setter right; misses content-type skip and compose assignment condition."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy res, setter merge/finalize correct; omits compose's finalized/onError assignment condition."
+  }
+ },
+ {
+  "id": "hono-06",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy first-match selection, UnsupportedPathError, lock-in; omits add-after-build error."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate selection logic with lines; omits add-after-build error."
+  }
+ },
+ {
+  "id": "hono-07",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "next twice, onNotFound, assignment rule; omits routeIndex and Error-only onError."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "next twice, routeIndex, onNotFound right; omits non-Error rethrow."
+  }
+ },
+ {
+  "id": "hono-08",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact defaults, 204 preflight, header reflection."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Adds non-existent 'QUERY' to default allowMethods; preflight otherwise right."
+  }
+ },
+ {
+  "id": "hono-09",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "SHA-1, strong default, W/ stripping, 304 with retained headers."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Core facts right; invents '*' matching and GET/HEAD/QUERY + ok-only restriction."
+  }
+ },
+ {
+  "id": "hono-10",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All default headers, COEP off, X-Powered-By removed, CSP unset."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "All defaults correct; COEP false; CSP not set."
+  }
+ },
+ {
+  "id": "hono-11",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate enforcement and HTTPException 413; omits maxSize being required."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Enforcement right; omits required maxSize and HTTPException throw."
+  }
+ },
+ {
+  "id": "hono-12",
+  "category": "behavior",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "404/500 and getResponse duck typing; omits non-Error rethrow."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact handler code, HTTPException flow, instanceof Error check."
+  }
+ },
+ {
+  "id": "hono-13",
+  "category": "behavior",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "302, encoding, text/plain charset, json type, notFound delegation."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "302, content types right; omits encodeURI and app notFound delegation."
+  }
+ },
+ {
+  "id": "hono-14",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "getPath/getPathNoStrict in url.ts, constructor selection, strict default true."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Exact code for selection and both path functions."
+  }
+ },
+ {
+  "id": "hono-15",
+  "category": "where",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Lazy build in matcher.ts match, replaced match; omits UnsupportedPathError conversion."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Lazy build right; invents #tries field and per-method stored trie; no matcher.ts."
+  }
+ },
+ {
+  "id": "hono-16",
+  "category": "where",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "bodyCache/#cachedBody with conversion and json via text."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Correct caching, conversion, json via cached text."
+  }
+ },
+ {
+  "id": "hono-17",
+  "category": "where",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims METHODS includes 'query' and app.query exists."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Constructor loop, on, use with '*', METHODS list correct."
+  }
+ },
+ {
+  "id": "hono-18",
+  "category": "gotcha",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "HEAD re-dispatched as GET with null body; not in METHODS."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": true,
+   "note": "Core behavior right; invents a methodNotAllowed middleware."
+  }
+ },
+ {
+  "id": "hono-19",
+  "category": "gotcha",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "getPathNoStrict always used with strict:false."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": false,
+   "note": "Opens by saying custom getPath is used; contradicts itself later."
+  }
+ },
+ {
+  "id": "hono-20",
+  "category": "gotcha",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Sub onError kept via wrapping; parent notFound applies."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Sub onError via compose wrap; parent notFound used."
+  }
+ },
+ {
+  "id": "hono-21",
+  "category": "gotcha",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "401 with body/headers kept; omits default status 500."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "401 with code walk-through; omits default status 500."
+  }
+ },
+ {
+  "id": "hono-22",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "Accurate scripts, projects, deno/bun runners; omits jsx-runtime projects."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims pnpm and 'vp test'; invents adapters/test:adapters and MAINTAINING.md."
+  }
+ },
+ {
+  "id": "hono-23",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Describes vite-plus 'vp pack' and vite.config.ts plugins that don't exist."
+  },
+  "Y": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "Accurate build.ts esbuild ESM/CJS, tsc, private-field strip, cjs json, publint."
+  }
+ },
+ {
+  "id": "hono-24",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "correct",
+   "hallucination": false,
+   "note": "ESLint flat config, rule disables, unused directives errors, prettier scripts."
+  },
+  "Y": {
+   "verdict": "wrong",
+   "hallucination": true,
+   "note": "Claims oxlint/oxfmt via vite-plus and pnpm; repo uses ESLint/Prettier."
+  }
+ },
+ {
+  "id": "hono-25",
+  "category": "dev_workflow",
+  "X": {
+   "verdict": "partial",
+   "hallucination": false,
+   "note": "publish-on-tag and bidirectional validation right; omits CI dry-run."
+  },
+  "Y": {
+   "verdict": "partial",
+   "hallucination": true,
+   "note": "Dry-run and validateExports right; invents vite plugin, v-tag trigger, adapter job."
+  }
+ }
+]

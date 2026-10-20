@@ -24,7 +24,7 @@ vi.mock("#/components/features/onboarding/onboarding-modal", () => ({
   ),
 }));
 
-function renderHost() {
+function renderHost(path = "/") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -36,7 +36,7 @@ function renderHost() {
   };
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={[path]}>
         <ActiveBackendProvider>
           <NavigationProvider value={navigationValue}>
             <OnboardingHost />
@@ -106,6 +106,22 @@ describe("OnboardingHost", () => {
     expect(
       await screen.findByTestId("onboarding-modal-stub"),
     ).toBeInTheDocument();
+  });
+
+  it("stays out of the environment setup studio, which is itself onboarding", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue({
+      ...DEFAULT_SETTINGS,
+      llm_api_key_set: false,
+    });
+
+    renderHost("/environment/setup");
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("onboarding-modal-stub")).toBeNull(),
+    );
+    expect(
+      window.localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY),
+    ).toBeNull();
   });
 
   it("skips the modal when the active Cloud backend has a configured LLM", async () => {

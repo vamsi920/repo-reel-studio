@@ -1,0 +1,6476 @@
+[
+  {
+    "scenario": "S1-northwind-bank",
+    "toldYouAlready": 0,
+    "fakeReceipts": 6,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 428,
+    "completed": false,
+    "humanTurns": 19,
+    "agentMessages": 22,
+    "maxQuestionsInOneMessage": 3,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 11,
+      "set_setup_plan": 1,
+      "advance_plan": 9,
+      "open_connection_form": 4,
+      "show_provider_picker": 2
+    },
+    "factsRecorded": 30,
+    "groundTruthRecall": 0.88,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": true
+      },
+      {
+        "id": "npm-mirror",
+        "hit": true
+      },
+      {
+        "id": "database",
+        "hit": true
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"title\":\"connect gitlab self-managed\",\"id\":\"connect-gitlab\",\"capability\":\"source-control\"},{\"id\":\"connect-jira-dc\",\"title\":\"connect jira data center\",\"capability\":\"issue-tracker\"},{\"title\":\"configure llm provider (eu data residency)\",\"capability\":\"llm\",\"id\":\"configure-llm\"},{\"id\":\"configure-nexus-npm\",\"capability\":\"package-registry\",\"title\":\"configure nexus (npm)\"},{\"id\":\"configure-postgresql\",\"title\":\"configure postgresql\",\"capability\":\"relational-db\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": true
+      },
+      {
+        "cap": "issue-tracker",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "jira-dc",
+      "azure-openai",
+      "postgres"
+    ],
+    "receipts": [
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "known_facts": [],
+        "plan": [],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 3,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 6,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 9,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 11,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 14,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 17,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 19,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 5,
+        "skipped": 0,
+        "total_known": 24,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 27,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 29,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "planned",
+        "steps": 5,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-gitlab",
+        "remaining": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "provider": "gitlab-self-managed",
+        "instance": "default",
+        "fingerprint": "sha256:d197f96ffae1",
+        "redacted": {
+          "instanceHost": "gitlab.northwind.internal",
+          "accessToken": "••••2a1b"
+        },
+        "granted_scopes": [],
+        "missing_scopes": [],
+        "verified": true,
+        "verified_from": "runtime",
+        "checks": [
+          {
+            "id": "auth",
+            "ok": true
+          },
+          {
+            "id": "version",
+            "ok": true
+          }
+        ],
+        "private_network_host": "gitlab.northwind.internal",
+        "runtime_check": {
+          "http_status": 200,
+          "failure": null,
+          "advice": null,
+          "insecure_http": true,
+          "server_version": "17.4.2-ee"
+        },
+        "env": [
+          "GITLAB_SELF_MANAGED_INSTANCE_HOST",
+          "GITLAB_SELF_MANAGED_ACCESS_TOKEN"
+        ],
+        "env_in_this_conversation": true,
+        "env_in_new_conversations": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-jira-dc",
+        "remaining": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-jira-dc",
+        "remaining": 3,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "provider": "jira-dc",
+        "instance": "default",
+        "fingerprint": "sha256:c61f7954ad41",
+        "redacted": {
+          "instanceHost": "jira.northwind.internal",
+          "accessToken": "••••d1e0"
+        },
+        "granted_scopes": [],
+        "missing_scopes": [],
+        "verified": true,
+        "verified_from": "runtime",
+        "checks": [
+          {
+            "id": "auth",
+            "ok": true
+          },
+          {
+            "id": "identity",
+            "ok": true
+          }
+        ],
+        "private_network_host": "jira.northwind.internal",
+        "runtime_check": {
+          "http_status": 200,
+          "failure": null,
+          "advice": null,
+          "insecure_http": true,
+          "server_version": null
+        },
+        "env": [
+          "JIRA_DC_INSTANCE_HOST",
+          "JIRA_DC_ACCESS_TOKEN"
+        ],
+        "env_in_this_conversation": true,
+        "env_in_new_conversations": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-llm",
+        "remaining": 3,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-llm",
+        "remaining": 2,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "llm",
+        "providers": [
+          {
+            "id": "google-gemini",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "cancelled",
+        "provider": "azure-openai",
+        "instance": "default",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-nexus-npm",
+        "remaining": 2,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-nexus-npm",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_capability",
+        "valid_capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 1,
+        "skipped": 0,
+        "total_known": 30,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-postgresql",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-postgresql",
+        "remaining": 0,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "cancelled",
+        "provider": "postgres",
+        "instance": "default",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      }
+    ],
+    "credentialForms": [
+      {
+        "providerId": "gitlab-self-managed",
+        "where": "workbench",
+        "filled": true,
+        "status": "open"
+      },
+      {
+        "providerId": "jira-dc",
+        "where": "workbench",
+        "filled": true,
+        "status": null
+      },
+      {
+        "providerId": "azure-openai",
+        "where": "workbench",
+        "filled": false
+      },
+      {
+        "providerId": "postgres",
+        "where": "workbench",
+        "filled": false
+      }
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 28,
+    "promptTokens": 5345593,
+    "completionTokens": 6678,
+    "costUsd": 0.2966
+  },
+  {
+    "scenario": "S1-northwind-bank-rep2",
+    "toldYouAlready": 0,
+    "fakeReceipts": 1,
+    "verifiedProviders": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 0,
+    "seconds": 356,
+    "completed": true,
+    "humanTurns": 12,
+    "agentMessages": 14,
+    "maxQuestionsInOneMessage": 2,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 1,
+      "record_discovery": 9,
+      "set_setup_plan": 2,
+      "advance_plan": 9,
+      "open_connection_form": 2,
+      "show_provider_picker": 1,
+      "assign_task": 2,
+      "complete_setup": 1
+    },
+    "factsRecorded": 23,
+    "groundTruthRecall": 0.82,
+    "groundTruth": [
+      {
+        "id": "industry",
+        "hit": false
+      },
+      {
+        "id": "language-java",
+        "hit": true
+      },
+      {
+        "id": "build-gradle",
+        "hit": true
+      },
+      {
+        "id": "frontend-ts",
+        "hit": true
+      },
+      {
+        "id": "scm-gitlab-self-managed",
+        "hit": true
+      },
+      {
+        "id": "ci-gitlab",
+        "hit": true
+      },
+      {
+        "id": "review-process",
+        "hit": true
+      },
+      {
+        "id": "environments",
+        "hit": false
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      },
+      {
+        "id": "proxy",
+        "hit": true
+      },
+      {
+        "id": "tls-inspection",
+        "hit": true
+      },
+      {
+        "id": "no-inbound",
+        "hit": true
+      },
+      {
+        "id": "npm-mirror",
+        "hit": true
+      },
+      {
+        "id": "database",
+        "hit": false
+      },
+      {
+        "id": "compliance-pci",
+        "hit": true
+      },
+      {
+        "id": "residency-eu",
+        "hit": true
+      },
+      {
+        "id": "team",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"id\":\"connect-gitlab\",\"capability\":\"source-control\",\"title\":\"connect to gitlab self-managed\"},{\"id\":\"connect-jira-dc\",\"title\":\"connect to jira data center\",\"capability\":\"issue-tracker\"},{\"id\":\"configure-npm-registry\",\"title\":\"configure npm registry to use nexus mirror\"},{\"title\":\"configure llm for eu data residency\",\"capability\":\"llm\",\"id\":\"configure-llm\"},{\"title\":\"configure corporate proxy for neodevex\",\"id\":\"configure-proxy\"}]}",
+    "planIncludes": [
+      {
+        "cap": "source-control",
+        "present": true
+      },
+      {
+        "cap": "issue-tracker",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "gitlab-self-managed",
+      "jira-dc"
+    ],
+    "receipts": [
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "known_facts": [],
+        "plan": [],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 3,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 1,
+        "skipped": 0,
+        "total_known": 4,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 6,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 9,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 3,
+        "skipped": 0,
+        "total_known": 12,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 4,
+        "skipped": 0,
+        "total_known": 16,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 4,
+        "skipped": 0,
+        "total_known": 20,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "planned",
+        "steps": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 22,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "planned",
+        "steps": 5,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-gitlab",
+        "remaining": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "provider": "gitlab-self-managed",
+        "instance": "default",
+        "fingerprint": "sha256:d197f96ffae1",
+        "redacted": {
+          "instanceHost": "gitlab.northwind.internal",
+          "accessToken": "••••2a1b"
+        },
+        "granted_scopes": [],
+        "missing_scopes": [],
+        "verified": true,
+        "verified_from": "runtime",
+        "checks": [
+          {
+            "id": "auth",
+            "ok": true
+          },
+          {
+            "id": "version",
+            "ok": true
+          }
+        ],
+        "private_network_host": "gitlab.northwind.internal",
+        "runtime_check": {
+          "http_status": 200,
+          "failure": null,
+          "advice": null,
+          "insecure_http": true,
+          "server_version": "17.4.2-ee"
+        },
+        "env": [
+          "GITLAB_SELF_MANAGED_INSTANCE_HOST",
+          "GITLAB_SELF_MANAGED_ACCESS_TOKEN"
+        ],
+        "env_in_this_conversation": true,
+        "env_in_new_conversations": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-jira-dc",
+        "remaining": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-jira-dc",
+        "remaining": 3,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "provider": "jira-dc",
+        "instance": "default",
+        "fingerprint": "sha256:c61f7954ad41",
+        "redacted": {
+          "instanceHost": "jira.northwind.internal",
+          "accessToken": "••••d1e0"
+        },
+        "granted_scopes": [],
+        "missing_scopes": [],
+        "verified": true,
+        "verified_from": "runtime",
+        "checks": [
+          {
+            "id": "auth",
+            "ok": true
+          },
+          {
+            "id": "identity",
+            "ok": true
+          }
+        ],
+        "private_network_host": "jira.northwind.internal",
+        "runtime_check": {
+          "http_status": 200,
+          "failure": null,
+          "advice": null,
+          "insecure_http": true,
+          "server_version": null
+        },
+        "env": [
+          "JIRA_DC_INSTANCE_HOST",
+          "JIRA_DC_ACCESS_TOKEN"
+        ],
+        "env_in_this_conversation": true,
+        "env_in_new_conversations": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-npm-registry",
+        "remaining": 3,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-npm-registry",
+        "remaining": 2,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-llm",
+        "remaining": 2,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-llm",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "llm",
+        "providers": [
+          {
+            "id": "google-gemini",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-proxy",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "assigned",
+        "requirement_id": "configure-llm",
+        "assignee": "team@northwind.internal",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-proxy",
+        "remaining": 0,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 1,
+        "skipped": 0,
+        "total_known": 23,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "assigned",
+        "requirement_id": "configure-proxy",
+        "assignee": "iam-team@northwind.internal",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "steps_outstanding",
+        "outstanding": [
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM for EU data residency",
+            "status": "active"
+          },
+          {
+            "id": "configure-proxy",
+            "title": "Configure corporate proxy for NeoDevEx",
+            "status": "active"
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      }
+    ],
+    "credentialForms": [
+      {
+        "providerId": "gitlab-self-managed",
+        "where": "workbench",
+        "filled": true,
+        "status": "open"
+      },
+      {
+        "providerId": "jira-dc",
+        "where": "workbench",
+        "filled": true,
+        "status": null
+      }
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 27,
+    "promptTokens": 4632207,
+    "completionTokens": 6167,
+    "costUsd": 0.3961
+  },
+  {
+    "scenario": "S4-correction",
+    "toldYouAlready": 0,
+    "fakeReceipts": 0,
+    "verifiedProviders": [
+      "gitlab-self-managed"
+    ],
+    "falseConnectionClaims": 0,
+    "repeatedOpenings": 1,
+    "seconds": 256,
+    "completed": true,
+    "humanTurns": 7,
+    "agentMessages": 8,
+    "maxQuestionsInOneMessage": 4,
+    "describeFirst": true,
+    "commandCounts": {
+      "describe": 5,
+      "record_discovery": 7,
+      "set_setup_plan": 1,
+      "advance_plan": 7,
+      "show_provider_picker": 6,
+      "open_connection_form": 5,
+      "request_credentials": 1,
+      "complete_setup": 1
+    },
+    "factsRecorded": 17,
+    "groundTruthRecall": 1,
+    "groundTruth": [
+      {
+        "id": "stack-python",
+        "hit": true
+      },
+      {
+        "id": "issue-jira-dc",
+        "hit": true
+      }
+    ],
+    "plan": "{\"steps\":[{\"capability\":\"source-control\",\"id\":\"connect-gitlab\",\"title\":\"connect gitlab (self-managed)\"},{\"id\":\"connect-jira-dc\",\"capability\":\"issue-tracker\",\"title\":\"connect jira data center\"},{\"id\":\"configure-llm\",\"title\":\"configure llm\",\"capability\":\"llm\"},{\"title\":\"investigate private package registries\",\"id\":\"investigate-package-registries\"}]}",
+    "planIncludes": [
+      {
+        "cap": "issue-tracker",
+        "present": true
+      }
+    ],
+    "connectionAttempts": [
+      "source-control",
+      "source-control",
+      "gitlab-self-managed",
+      "issue-tracker",
+      "issue-tracker",
+      "issue-tracker"
+    ],
+    "receipts": [
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "known_facts": [],
+        "plan": [],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 2,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 4,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 4,
+        "skipped": 0,
+        "total_known": 8,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 5,
+        "skipped": 0,
+        "total_known": 12,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "already_recorded",
+        "count": 0,
+        "next": "Nothing new was saved; these facts were already known. Do not record them again: ask the user your next question now."
+      },
+      {
+        "status": "recorded",
+        "count": 2,
+        "skipped": 0,
+        "total_known": 14,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "planned",
+        "steps": 4,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-gitlab",
+        "remaining": 3,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "source-control",
+        "providers": [
+          {
+            "id": "github",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "maturity": "ga",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "maturity": "experimental",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_provider",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "source-control",
+        "providers": [
+          {
+            "id": "github",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "maturity": "ga",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "maturity": "experimental",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_provider",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "returning": true,
+        "known_sections": [
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints"
+        ],
+        "missing_sections": [
+          "org",
+          "conventions"
+        ],
+        "known_facts": [
+          {
+            "key": "stack.languages",
+            "section": "stack",
+            "text": "Python, Django",
+            "confidence": "stated"
+          },
+          {
+            "key": "stack.databases",
+            "section": "stack",
+            "text": "PostgreSQL",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.review_process",
+            "section": "delivery",
+            "text": "Pull requests for code reviews",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.ci_cd_pipeline",
+            "section": "delivery",
+            "text": "GitLab CI",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.source_control",
+            "section": "systems",
+            "text": "GitLab (self-managed)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.issue_tracking",
+            "section": "systems",
+            "text": "Jira Data Center (on-prem at jira.northwind.internal)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.package_registries",
+            "section": "systems",
+            "text": "Unsure about private package registries",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.databases",
+            "section": "systems",
+            "text": "PostgreSQL (primary)",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.proxy",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.tls_inspection",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.internal_mirrors",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.inbound_traffic",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "team.size_location",
+            "section": "team",
+            "text": "No exact numbers for team size or location",
+            "confidence": "stated"
+          },
+          {
+            "key": "constraints.compliance_data_residency",
+            "section": "constraints",
+            "text": "Significant compliance and data residency constraints, leading to self-managed and on-premise systems",
+            "confidence": "stated"
+          }
+        ],
+        "plan": [
+          {
+            "id": "connect-gitlab",
+            "title": "Connect GitLab (Self-Managed)",
+            "status": "active"
+          },
+          {
+            "id": "connect-jira-dc",
+            "title": "Connect Jira Data Center",
+            "status": "pending"
+          },
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM",
+            "status": "pending"
+          },
+          {
+            "id": "investigate-package-registries",
+            "title": "Investigate Private Package Registries",
+            "status": "pending"
+          }
+        ],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "returning": true,
+        "known_sections": [
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints"
+        ],
+        "missing_sections": [
+          "org",
+          "conventions"
+        ],
+        "known_facts": [
+          {
+            "key": "stack.languages",
+            "section": "stack",
+            "text": "Python, Django",
+            "confidence": "stated"
+          },
+          {
+            "key": "stack.databases",
+            "section": "stack",
+            "text": "PostgreSQL",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.review_process",
+            "section": "delivery",
+            "text": "Pull requests for code reviews",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.ci_cd_pipeline",
+            "section": "delivery",
+            "text": "GitLab CI",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.source_control",
+            "section": "systems",
+            "text": "GitLab (self-managed)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.issue_tracking",
+            "section": "systems",
+            "text": "Jira Data Center (on-prem at jira.northwind.internal)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.package_registries",
+            "section": "systems",
+            "text": "Unsure about private package registries",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.databases",
+            "section": "systems",
+            "text": "PostgreSQL (primary)",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.proxy",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.tls_inspection",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.internal_mirrors",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.inbound_traffic",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "team.size_location",
+            "section": "team",
+            "text": "No exact numbers for team size or location",
+            "confidence": "stated"
+          },
+          {
+            "key": "constraints.compliance_data_residency",
+            "section": "constraints",
+            "text": "Significant compliance and data residency constraints, leading to self-managed and on-premise systems",
+            "confidence": "stated"
+          }
+        ],
+        "plan": [
+          {
+            "id": "connect-gitlab",
+            "title": "Connect GitLab (Self-Managed)",
+            "status": "active"
+          },
+          {
+            "id": "connect-jira-dc",
+            "title": "Connect Jira Data Center",
+            "status": "pending"
+          },
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM",
+            "status": "pending"
+          },
+          {
+            "id": "investigate-package-registries",
+            "title": "Investigate Private Package Registries",
+            "status": "pending"
+          }
+        ],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "connect-jira-dc",
+        "remaining": 2,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_provider",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "returning": true,
+        "known_sections": [
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints"
+        ],
+        "missing_sections": [
+          "org",
+          "conventions"
+        ],
+        "known_facts": [
+          {
+            "key": "stack.languages",
+            "section": "stack",
+            "text": "Python, Django",
+            "confidence": "stated"
+          },
+          {
+            "key": "stack.databases",
+            "section": "stack",
+            "text": "PostgreSQL",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.review_process",
+            "section": "delivery",
+            "text": "Pull requests for code reviews",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.ci_cd_pipeline",
+            "section": "delivery",
+            "text": "GitLab CI",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.source_control",
+            "section": "systems",
+            "text": "GitLab (self-managed)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.issue_tracking",
+            "section": "systems",
+            "text": "Jira Data Center (on-prem at jira.northwind.internal)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.package_registries",
+            "section": "systems",
+            "text": "Unsure about private package registries",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.databases",
+            "section": "systems",
+            "text": "PostgreSQL (primary)",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.proxy",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.tls_inspection",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.internal_mirrors",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.inbound_traffic",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "team.size_location",
+            "section": "team",
+            "text": "No exact numbers for team size or location",
+            "confidence": "stated"
+          },
+          {
+            "key": "constraints.compliance_data_residency",
+            "section": "constraints",
+            "text": "Significant compliance and data residency constraints, leading to self-managed and on-premise systems",
+            "confidence": "stated"
+          }
+        ],
+        "plan": [
+          {
+            "id": "connect-gitlab",
+            "title": "Connect GitLab (Self-Managed)",
+            "status": "active"
+          },
+          {
+            "id": "connect-jira-dc",
+            "title": "Connect Jira Data Center",
+            "status": "active"
+          },
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM",
+            "status": "pending"
+          },
+          {
+            "id": "investigate-package-registries",
+            "title": "Investigate Private Package Registries",
+            "status": "pending"
+          }
+        ],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "connections": [
+          {
+            "provider": "jira-cloud",
+            "capability": "issue-tracker",
+            "status": "ok",
+            "needs_reconnect": false,
+            "account": "https://neodevex.atlassian.net",
+            "granted_scopes": [
+              "read:jira-user",
+              "read:jira-work"
+            ],
+            "last_probe_at": "2026-10-12T19:41:03.332+00:00",
+            "expires_at": "2026-10-13T19:41:01.925+00:00",
+            "connected_by_you": true
+          },
+          {
+            "provider": "github",
+            "capability": "source-control",
+            "status": "revoked",
+            "needs_reconnect": true,
+            "account": "vamsi920",
+            "granted_scopes": [
+              "read:user",
+              "repo"
+            ],
+            "last_probe_at": "2026-10-08T16:41:01.744+00:00",
+            "expires_at": null,
+            "connected_by_you": true
+          }
+        ],
+        "can_write_connections": true,
+        "commands": [
+          "describe",
+          "record_discovery",
+          "set_setup_plan",
+          "advance_plan",
+          "get_environment_state",
+          "show_provider_picker",
+          "open_connection_form",
+          "request_credentials",
+          "run_probe",
+          "show_checklist",
+          "propose_profile_change",
+          "navigate",
+          "generate_handoff_packet",
+          "assign_task",
+          "complete_setup"
+        ],
+        "capabilities": [
+          "source-control",
+          "issue-tracker",
+          "llm",
+          "vector-store",
+          "object-storage",
+          "relational-db",
+          "secrets",
+          "observability",
+          "notifications",
+          "ci",
+          "identity"
+        ],
+        "probe_kinds": [
+          "connection",
+          "egress",
+          "pg-extensions",
+          "backend-key",
+          "webhook-ingress",
+          "clock-skew",
+          "host-prereqs",
+          "deployment-defects"
+        ],
+        "views": [
+          "discovery",
+          "plan",
+          "connections",
+          "network",
+          "requirements",
+          "runbook"
+        ],
+        "discovery_sections": [
+          "org",
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints",
+          "conventions"
+        ],
+        "providers": [
+          {
+            "id": "github",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com",
+              "github.com"
+            ]
+          },
+          {
+            "id": "github-enterprise",
+            "capability": "source-control",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "enterpriseHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "gitlab-com",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "gitlab.com"
+            ]
+          },
+          {
+            "id": "gitlab-self-managed",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "bitbucket-cloud",
+            "capability": "source-control",
+            "maturity": "beta",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.bitbucket.org",
+              "bitbucket.org"
+            ]
+          },
+          {
+            "id": "bitbucket-dc",
+            "capability": "source-control",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "jira-cloud",
+            "capability": "issue-tracker",
+            "maturity": "ga",
+            "oauth": true,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "capability": "issue-tracker",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "capability": "issue-tracker",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          },
+          {
+            "id": "google-gemini",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "model"
+            ],
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "organization"
+            ],
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "capability": "llm",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [],
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "resourceHost",
+              "apiVersion",
+              "deployment"
+            ],
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey",
+              "sessionToken"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [],
+            "config_fields": [
+              "instanceHost",
+              "model"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "capability": "llm",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-pgvector",
+            "capability": "vector-store",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "pinecone",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "indexHost",
+              "namespace"
+            ],
+            "needs_egress": [
+              "*.pinecone.io"
+            ]
+          },
+          {
+            "id": "qdrant",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "collection"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "weaviate",
+            "capability": "vector-store",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "className"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "elasticsearch",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "index"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "tigergraph",
+            "capability": "vector-store",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "accessToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "graphName",
+              "similarityQuery"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "supabase-storage",
+            "capability": "object-storage",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-s3",
+            "capability": "object-storage",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "endpoint",
+              "region",
+              "bucket",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "azure-blob",
+            "capability": "object-storage",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "sasToken"
+            ],
+            "config_fields": [
+              "accountHost",
+              "container"
+            ],
+            "needs_egress": [
+              "*.blob.core.windows.net"
+            ]
+          },
+          {
+            "id": "supabase-postgres",
+            "capability": "relational-db",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": []
+          },
+          {
+            "id": "postgres",
+            "capability": "relational-db",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "password"
+            ],
+            "config_fields": [
+              "host",
+              "database",
+              "username",
+              "sslMode"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "hashicorp-vault",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "token"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "mountPath"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "aws-secrets-manager",
+            "capability": "secrets",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "secretAccessKey"
+            ],
+            "config_fields": [
+              "region",
+              "accessKeyId"
+            ],
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "posthog",
+            "capability": "observability",
+            "maturity": "ga",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "projectApiKey"
+            ],
+            "config_fields": [
+              "instanceHost"
+            ],
+            "needs_egress": [
+              "us.i.posthog.com"
+            ]
+          },
+          {
+            "id": "datadog",
+            "capability": "observability",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiKey",
+              "appKey"
+            ],
+            "config_fields": [
+              "site"
+            ],
+            "needs_egress": [
+              "*.datadoghq.com"
+            ]
+          },
+          {
+            "id": "slack",
+            "capability": "notifications",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "botToken"
+            ],
+            "config_fields": [
+              "defaultChannel"
+            ],
+            "needs_egress": [
+              "slack.com"
+            ]
+          },
+          {
+            "id": "microsoft-teams",
+            "capability": "notifications",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "webhookPath"
+            ],
+            "config_fields": [
+              "webhookHost"
+            ],
+            "needs_egress": [
+              "*.webhook.office.com"
+            ]
+          },
+          {
+            "id": "github-actions",
+            "capability": "ci",
+            "maturity": "beta",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [],
+            "config_fields": [],
+            "needs_egress": [
+              "api.github.com"
+            ]
+          },
+          {
+            "id": "jenkins",
+            "capability": "ci",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "instanceHost",
+              "username"
+            ],
+            "needs_egress": []
+          },
+          {
+            "id": "okta",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": true,
+            "secret_fields": [
+              "apiToken"
+            ],
+            "config_fields": [
+              "orgHost"
+            ],
+            "needs_egress": [
+              "*.okta.com"
+            ]
+          },
+          {
+            "id": "entra-id",
+            "capability": "identity",
+            "maturity": "experimental",
+            "oauth": false,
+            "self_hosted": false,
+            "secret_fields": [
+              "clientSecret"
+            ],
+            "config_fields": [
+              "tenantId",
+              "clientId"
+            ],
+            "needs_egress": [
+              "login.microsoftonline.com",
+              "graph.microsoft.com"
+            ]
+          }
+        ],
+        "returning": true,
+        "known_sections": [
+          "stack",
+          "delivery",
+          "systems",
+          "network",
+          "team",
+          "constraints"
+        ],
+        "missing_sections": [
+          "org",
+          "conventions"
+        ],
+        "known_facts": [
+          {
+            "key": "stack.languages",
+            "section": "stack",
+            "text": "Python, Django",
+            "confidence": "stated"
+          },
+          {
+            "key": "stack.databases",
+            "section": "stack",
+            "text": "PostgreSQL",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.review_process",
+            "section": "delivery",
+            "text": "Pull requests for code reviews",
+            "confidence": "stated"
+          },
+          {
+            "key": "delivery.ci_cd_pipeline",
+            "section": "delivery",
+            "text": "GitLab CI",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.source_control",
+            "section": "systems",
+            "text": "GitLab (self-managed)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.issue_tracking",
+            "section": "systems",
+            "text": "Jira Data Center (on-prem at jira.northwind.internal)",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.package_registries",
+            "section": "systems",
+            "text": "Unsure about private package registries",
+            "confidence": "stated"
+          },
+          {
+            "key": "systems.databases",
+            "section": "systems",
+            "text": "PostgreSQL (primary)",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.proxy",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.tls_inspection",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.internal_mirrors",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "network.inbound_traffic",
+            "section": "network",
+            "text": "No information",
+            "confidence": "stated"
+          },
+          {
+            "key": "team.size_location",
+            "section": "team",
+            "text": "No exact numbers for team size or location",
+            "confidence": "stated"
+          },
+          {
+            "key": "constraints.compliance_data_residency",
+            "section": "constraints",
+            "text": "Significant compliance and data residency constraints, leading to self-managed and on-premise systems",
+            "confidence": "stated"
+          }
+        ],
+        "plan": [
+          {
+            "id": "connect-gitlab",
+            "title": "Connect GitLab (Self-Managed)",
+            "status": "active"
+          },
+          {
+            "id": "connect-jira-dc",
+            "title": "Connect Jira Data Center",
+            "status": "active"
+          },
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM",
+            "status": "pending"
+          },
+          {
+            "id": "investigate-package-registries",
+            "title": "Investigate Private Package Registries",
+            "status": "pending"
+          }
+        ],
+        "payload_shapes": {
+          "record_discovery": "facts: [{ key, section, text, confidence }]",
+          "set_setup_plan": "steps: [{ id, title, capability?, status? }]; refused until stack, delivery and systems are recorded (or reason given)",
+          "advance_plan": "stepId, status (\"active\" | \"done\" | \"skipped\"); skipped needs reason. A connection step is only done once its connection works.",
+          "propose_profile_change": "patch, (rationale on the top-level field)",
+          "run_probe": "(use probe_kind / targets / vantage top-level fields)",
+          "show_checklist": "featureIds: string[]",
+          "assign_task": "requirementId, assigneeEmail",
+          "navigate": "view"
+        },
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "issue-tracker",
+        "providers": [
+          {
+            "id": "jira-cloud",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "maturity": "experimental",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "configure-llm",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "llm",
+        "providers": [
+          {
+            "id": "google-gemini",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "ok",
+        "provider": "gitlab-self-managed",
+        "instance": "default",
+        "fingerprint": "sha256:d197f96ffae1",
+        "redacted": {
+          "instanceHost": "gitlab.northwind.internal",
+          "accessToken": "••••2a1b"
+        },
+        "granted_scopes": [],
+        "missing_scopes": [],
+        "verified": true,
+        "verified_from": "runtime",
+        "checks": [
+          {
+            "id": "auth",
+            "ok": true
+          },
+          {
+            "id": "version",
+            "ok": true
+          }
+        ],
+        "private_network_host": "gitlab.northwind.internal",
+        "runtime_check": {
+          "http_status": 200,
+          "failure": null,
+          "advice": null,
+          "insecure_http": true,
+          "server_version": "17.4.2-ee"
+        },
+        "env": [
+          "GITLAB_SELF_MANAGED_INSTANCE_HOST",
+          "GITLAB_SELF_MANAGED_ACCESS_TOKEN"
+        ],
+        "env_in_this_conversation": true,
+        "env_in_new_conversations": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "investigate-package-registries",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_provider",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "issue-tracker",
+        "providers": [
+          {
+            "id": "jira-cloud",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "auth.atlassian.com",
+              "api.atlassian.com"
+            ]
+          },
+          {
+            "id": "jira-dc",
+            "maturity": "experimental",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "linear",
+            "maturity": "beta",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.linear.app"
+            ]
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "unknown_provider",
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "investigate-package-registries",
+        "remaining": 1,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": "investigate-package-registries",
+        "remaining": 0,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "recorded",
+        "count": 1,
+        "skipped": 0,
+        "total_known": 14,
+        "saved_to_company_profile": true,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "advanced",
+        "current_step": null,
+        "remaining": 0,
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "rejected",
+        "reason": "steps_outstanding",
+        "outstanding": [
+          {
+            "id": "configure-llm",
+            "title": "Configure LLM",
+            "status": "active"
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      },
+      {
+        "status": "shown",
+        "capability": "llm",
+        "providers": [
+          {
+            "id": "google-gemini",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "generativelanguage.googleapis.com"
+            ]
+          },
+          {
+            "id": "openai",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.openai.com"
+            ]
+          },
+          {
+            "id": "anthropic",
+            "maturity": "ga",
+            "self_hosted": false,
+            "needs_egress": [
+              "api.anthropic.com"
+            ]
+          },
+          {
+            "id": "azure-openai",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.openai.azure.com"
+            ]
+          },
+          {
+            "id": "aws-bedrock",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": [
+              "*.amazonaws.com"
+            ]
+          },
+          {
+            "id": "ollama",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          },
+          {
+            "id": "litellm",
+            "maturity": "beta",
+            "self_hosted": true,
+            "needs_egress": []
+          }
+        ],
+        "next": "Act on this now: call the next onboarding_control command, or write to the user. Do not reply empty."
+      }
+    ],
+    "credentialForms": [
+      {
+        "providerId": "gitlab-self-managed",
+        "where": "workbench",
+        "filled": true,
+        "status": null
+      }
+    ],
+    "secretLeaks": 0,
+    "emptyTurnNudges": 33,
+    "promptTokens": 5343796,
+    "completionTokens": 7861,
+    "costUsd": 0.3961
+  }
+]

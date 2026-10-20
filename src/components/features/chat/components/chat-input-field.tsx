@@ -4,6 +4,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useConversationStore } from "#/stores/conversation-store";
 import { focusContentEditableAtEnd } from "#/components/features/chat/utils/chat-input.utils";
 import { cn } from "#/utils/utils";
+import { useChatSurface } from "#/context/chat-surface-context";
 
 interface ChatInputFieldProps {
   chatInputRef: React.RefObject<HTMLDivElement | null>;
@@ -31,6 +32,7 @@ export function ChatInputField({
   );
 
   const isPlanMode = conversationMode === "plan";
+  const surface = useChatSurface();
 
   React.useEffect(() => {
     if (!disabled) {
@@ -54,9 +56,10 @@ export function ChatInputField({
           )}
           contentEditable={!disabled}
           data-placeholder={
-            isPlanMode
+            surface.placeholder ??
+            (isPlanMode
               ? t(I18nKey.COMMON$LET_S_WORK_ON_A_PLAN)
-              : t(I18nKey.SUGGESTIONS$WHAT_TO_BUILD)
+              : t(I18nKey.SUGGESTIONS$WHAT_TO_BUILD))
           }
           data-testid="chat-input"
           onInput={onInput}

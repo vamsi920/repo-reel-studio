@@ -1,0 +1,402 @@
+[
+ {
+  "page": "Sessions and Cookies",
+  "path": "src/flask/sessions.py",
+  "start": 304,
+  "end": 304,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sessions.py#L304",
+  "ok": true,
+  "inline": true,
+  "claim": "| Key                             | Description - |\n| `SECRET_KEY`                      | A secret string used for cryptographically signing the session cookie. This is required for the default session interface. `"
+ },
+ {
+  "page": "Request-Response Lifecycle",
+  "path": "src/flask/app.py",
+  "start": 1315,
+  "end": 1324,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1315-L1324",
+  "ok": true,
+  "inline": true,
+  "claim": "| Return Type | Conversion Logic | Source |\n| :--- | :--- | :--- |\n| `Response` object | Returned as-is. | `[src/flask/app.py:1314-1314](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1314-L1314)` |\n| `str`, `bytes`, `bytearray` | Used as the body of a new `Response` object. | `"
+ },
+ {
+  "page": "CLI Overview",
+  "path": "src/flask/cli.py",
+  "start": 120,
+  "end": 197,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L120-L197",
+  "ok": true,
+  "inline": true,
+  "claim": "7-91](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L87-L91).\n-   **`find_app_by_string(module, app_name)`**: Finds a Flask application in a module using a string identifier. The string can be a variable name or a function call with literal arguments (e.g., `'my_app'` or `'create_app(\"dev\")'`). It uses `ast.parse` to interpret the string. Sources: "
+ },
+ {
+  "page": "The Test Client",
+  "path": "tests/test_testing.py",
+  "start": 157,
+  "end": 198,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_testing.py#L157-L198",
+  "ok": true,
+  "inline": true,
+  "claim": "- No --> Y[Raise RuntimeError];\n    E -- Yes --> F[Yield session to `with` block];\n    F --> G[Test code modifies session];\n    G --> H[Save session to a temporary response];\n    H --> I[Update client cookies from response];\n    I --> Z[End];\n```\n*Sources: [src/flask/testing.py:136-184](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/testing.py#L136-L184), "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/sansio/app.py",
+  "start": 925,
+  "end": 934,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L925-L934",
+  "ok": true,
+  "inline": true,
+  "claim": "allets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1444), [src/flask/app.py:1472](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1472)`\n-   **`should_ignore_error` Deprecation**: The `should_ignore_error` method is deprecated as of Flask 3.2. Error handling should be done within teardown handlers themselves.\n    `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 13,
+  "end": 13,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L13",
+  "ok": true,
+  "inline": true,
+  "claim": "//github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L11))\n    *   `session`: A proxy to the user session object. (Sources: [src/flask/__init__.py:12](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L12))\n*   **Helpers and Utilities:**\n    *   `abort`: Aborts a request with an HTTP error code. (Sources: "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "src/flask/typing.py",
+  "start": 73,
+  "end": 82,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/typing.py#L73-L82",
+  "ok": true,
+  "inline": true,
+  "claim": "A potentially surprising detail is that `ErrorHandlerCallable` is defined with `t.Callable[[t.Any], ...]` instead of a more specific `Exception` type. This is a deliberate workaround for limitations in Python's type system regarding decorating a function multiple times with handlers for different exceptions. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 23,
+  "end": 23,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L23",
+  "ok": true,
+  "inline": true,
+  "claim": "init__.py:22](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L22))\n*   **JSON Support:**\n    *   `json`: The `json` module itself, for direct access. (Sources: [src/flask/__init__.py:1](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L1))\n    *   `jsonify`: Creates a JSON response. (Sources: "
+ },
+ {
+  "page": "Logging",
+  "path": "src/flask/logging.py",
+  "start": 52,
+  "end": 52,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/logging.py#L52",
+  "ok": true,
+  "inline": true,
+  "claim": "| Property      | Value                                                              | Source                               |\n|---------------|--------------------------------------------------------------------|--------------------------------------|\n| **Class**     | `logging.StreamHandler`                                            | "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "pyproject.toml",
+  "start": 146,
+  "end": 146,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L146-L146",
+  "ok": true,
+  "inline": true,
+  "claim": "s/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L144-L144)\n    *   `include = [\"src\", \"tests/type_check\"]`: Defines the paths for Pyright to check. Sources: [pyproject.toml:145-145](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L145-L145)\n    *   `typeCheckingMode = \"basic\"`: Sets the basic level of type checking rules. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 5,
+  "end": 5,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L5",
+  "ok": true,
+  "inline": true,
+  "claim": "k/__init__.py#L3))\n*   **Configuration:**\n    *   `Config`: A dictionary-like object for application configuration. (Sources: [src/flask/__init__.py:4](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L4))\n*   **Context Management:**\n    *   `after_this_request`: A function to register a function to be called after the current request. (Sources: "
+ },
+ {
+  "page": "Async Support",
+  "path": "tests/test_async.py",
+  "start": 50,
+  "end": 56,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L50-L56",
+  "ok": true,
+  "inline": true,
+  "claim": "@app.route(\"/error\")\nasync def error():\n    raise AppError()\n```\n`Sources: [tests/test_async.py:14-15](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_async.py#L14-L15), "
+ },
+ {
+  "page": "The Application Context",
+  "path": "src/flask/ctx.py",
+  "start": 235,
+  "end": 258,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/ctx.py#L235-L258",
+  "ok": true,
+  "inline": true,
+  "claim": "| Function | Description | Source |\n| :--- | :--- | :--- |\n| `has_app_context()` | Returns `True` if an application context is currently active. | "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/app.py",
+  "start": 578,
+  "end": 588,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L578-L588",
+  "ok": true,
+  "inline": true,
+  "claim": "ithub.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L410-L420)`\n-   **Routing Redirects with Form Data**: In debug mode, if a routing redirect (e.g., for a missing trailing slash) would cause a browser to drop POST data (by using a 302 redirect instead of 307/308), Flask will raise a `FormDataRoutingRedirect` exception to warn the developer.\n    `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 20,
+  "end": 20,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L20",
+  "ok": true,
+  "inline": true,
+  "claim": " [src/flask/__init__.py:18](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L18))\n    *   `send_file`: Sends a file to the client. (Sources: [src/flask/__init__.py:19](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L19))\n    *   `send_from_directory`: Sends a file from a directory. (Sources: "
+ },
+ {
+  "page": "CLI Overview",
+  "path": "tests/test_cli.py",
+  "start": 48,
+  "end": 133,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_cli.py#L48-L133",
+  "ok": true,
+  "inline": true,
+  "claim": "-   **Application Discovery**:\n    -   `test_find_best_app`: Verifies that `find_best_app` correctly identifies applications named `app` or `application`, a unique `Flask` instance, or factories named `create_app` or `make_app`. It also tests failure cases like multiple apps or no app found. Sources: "
+ },
+ {
+  "page": "CLI Overview",
+  "path": "src/flask/cli.py",
+  "start": 882,
+  "end": 914,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L882-L914",
+  "ok": true,
+  "inline": true,
+  "claim": "827/src/flask/cli.py#L698-L763).\n-   **`run_command`**: The implementation for the `flask run` command.\n    -   Options include `--host` (default: `'127.0.0.1'`), `--port` (default: `5000`), `--reload`/`--no-reload` (default: `None`, enabled if debug is on), `--debugger`/`--no-debugger` (default: `None`, enabled if debug is on), and `--with-threads`/`--without-threads` (default: `True`). Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 11,
+  "end": 11,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L11",
+  "ok": true,
+  "inline": true,
+  "claim": "nit__.py:9](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L9))\n    *   `g`: An object for storing data during an application context. (Sources: [src/flask/__init__.py:10](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L10))\n    *   `request`: A proxy to the active request object. (Sources: "
+ },
+ {
+  "page": "The Request Context",
+  "path": "src/flask/ctx.py",
+  "start": 434,
+  "end": 434,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/ctx.py#L434",
+  "ok": true,
+  "inline": true,
+  "claim": "ithub.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/ctx.py#L428-L431)`\n2.  The context is stored in a `contextvars.ContextVar` named `_cv_app`, making it the current active context. `Sources: [src/flask/ctx.py:433](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/ctx.py#L433)`\n3.  The `appcontext_pushed` signal is sent. `Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 22,
+  "end": 22,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L22",
+  "ok": true,
+  "inline": true,
+  "claim": "flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L20))\n    *   `stream_with_context`: Wraps a generator to stream a response while maintaining the request context. (Sources: [src/flask/__init__.py:21](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L21))\n    *   `url_for`: Generates a URL for a given endpoint. (Sources: "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "tests/type_check/typing_route.py",
+  "start": 60,
+  "end": 61,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L60-L61",
+  "ok": true,
+  "inline": true,
+  "claim": "sts/type_check/typing_route.py:41-47](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L41-L47)\n*   `t.Generator[str, None, None]`: Sources: [tests/type_check/typing_route.py:51-56](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L51-L56)\n*   `t.Iterator[bytes]`: Sources: "
+ },
+ {
+  "page": "CLI Overview",
+  "path": "src/flask/cli.py",
+  "start": 1110,
+  "end": 1119,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L1110-L1119",
+  "ok": true,
+  "inline": true,
+  "claim": "h displays all registered URL routes.\n    -   `--sort` option defaults to `'endpoint'`. Other choices are `'methods'`, `'domain'`, `'rule'`, `'match'`. Sources: [src/flask/cli.py:1050-1057](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L1050-L1057).\n-   **`cli`**: The main `FlaskGroup` instance exported for the `flask` script entry point. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 6,
+  "end": 6,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L6",
+  "ok": true,
+  "inline": true,
+  "claim": "\n    *   `after_this_request`: A function to register a function to be called after the current request. (Sources: [src/flask/__init__.py:5](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L5))\n    *   `copy_current_request_context`: A function to create a copy of the current request context for use in a different coroutine or thread. (Sources: "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "pyproject.toml",
+  "start": 20,
+  "end": 20,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L20-L20",
+  "ok": true,
+  "inline": true,
+  "claim": "This file configures the Flask project, including its static analysis tools. It declares the project as type-hinted via the `Typing :: Typed` classifier. Sources: "
+ },
+ {
+  "page": "Tutorial: Building a Blog (Flaskr)",
+  "path": "examples/tutorial/pyproject.toml",
+  "start": 19,
+  "end": 21,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/examples/tutorial/pyproject.toml#L19-L21",
+  "ok": true,
+  "inline": true,
+  "claim": "| Tool | Configuration | Source |\n| :--- | :------------ | :----- |\n| **Build System** | Uses `flit_core` as the build backend. | "
+ },
+ {
+  "page": "The Application Context",
+  "path": "tests/test_subclassing.py",
+  "start": 7,
+  "end": 10,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_subclassing.py#L7-L10",
+  "ok": true,
+  "inline": true,
+  "claim": "(https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_regression.py#L20-L30)\n*   **Error Handling**: When an unhandled exception occurs, it is processed within the application context. This allows error handlers and methods like `app.log_exception` to access `current_app` and `g`. Customizing error logging by subclassing Flask relies on this behavior. Sources: "
+ },
+ {
+  "page": "Introduction to Testing",
+  "path": "src/flask/testing.py",
+  "start": 72,
+  "end": 73,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/testing.py#L72-L73",
+  "ok": true,
+  "inline": true,
+  "claim": "rc/flask/testing.py#L69-L70) |\n| `url_scheme` | The URL scheme (e.g., `https`). Defaults to `PREFERRED_URL_SCHEME`. Cannot be used with `base_url`.                                        | `PREFERRED_URL_SCHEME`                                                       | [src/flask/testing.py:55](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/testing.py#L55), "
+ },
+ {
+  "page": "Introduction to Testing",
+  "path": "src/flask/testing.py",
+  "start": 55,
+  "end": 55,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/testing.py#L55",
+  "ok": true,
+  "inline": true,
+  "claim": "flask/testing.py#L54), [src/flask/testing.py:69-70](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/testing.py#L69-L70) |\n| `url_scheme` | The URL scheme (e.g., `https`). Defaults to `PREFERRED_URL_SCHEME`. Cannot be used with `base_url`.                                        | `PREFERRED_URL_SCHEME`                                                       | "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/__init__.py",
+  "start": 7,
+  "end": 7,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L7",
+  "ok": true,
+  "inline": true,
+  "claim": "6ab827/src/flask/__init__.py#L5))\n    *   `copy_current_request_context`: A function to create a copy of the current request context for use in a different coroutine or thread. (Sources: [src/flask/__init__.py:6](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/__init__.py#L6))\n    *   `has_app_context`: Checks if an application context is active. (Sources: "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "pyproject.toml",
+  "start": 134,
+  "end": 141,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L134-L141",
+  "ok": true,
+  "inline": true,
+  "claim": "d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L132-L132)\n    *   `show_error_codes = true` and `pretty = true`: Configure error reporting format. Sources: [pyproject.toml:130-131](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L130-L131)\n    *   It also specifies overrides to `ignore_missing_imports` for several third-party libraries. Sources: "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "pyproject.toml",
+  "start": 241,
+  "end": 241,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/pyproject.toml#L241-L241",
+  "ok": true,
+  "inline": true,
+  "claim": "The `[tool.tox.env.typing]` section defines a `tox` environment for running static analysis.\n*   `description = \"run static type checkers\"`: Describes the environment's purpose. Sources: "
+ },
+ {
+  "page": "CLI Overview",
+  "path": "src/flask/cli.py",
+  "start": 200,
+  "end": 226,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L200-L226",
+  "ok": true,
+  "inline": true,
+  "claim": "l arguments (e.g., `'my_app'` or `'create_app(\"dev\")'`). It uses `ast.parse` to interpret the string. Sources: [src/flask/cli.py:120-197](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/cli.py#L120-L197).\n-   **`prepare_import(path)`**: Converts a file path or dotted name into a Python import string and adds the containing directory to `sys.path`. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/app.py",
+  "start": 1079,
+  "end": 1100,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1079-L1100",
+  "ok": true,
+  "inline": true,
+  "claim": "ves.\n    `Sources: [src/flask/sansio/app.py:925-934](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L925-L934)`\n-   **Async Support**: Flask supports `async` view functions. It uses `asgiref.sync.async_to_sync` to run coroutine functions in a synchronous WSGI environment. This requires installing Flask with the `[async]` extra.\n    `Sources: "
+ },
+ {
+  "page": "The Application Context",
+  "path": "tests/test_regression.py",
+  "start": 20,
+  "end": 30,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/test_regression.py#L20-L30",
+  "ok": true,
+  "inline": true,
+  "claim": "*   **Testing**: The test client (`app.test_client()`) and `app.test_request_context()` work by pushing and popping contexts to simulate requests and other application interactions. This is visible in regression tests where `flask.abort` is used within a test client request. Sources: "
+ },
+ {
+  "page": "Architecture Overview",
+  "path": "src/flask/app.py",
+  "start": 1472,
+  "end": 1472,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1472",
+  "ok": true,
+  "inline": true,
+  "claim": "ered with `after_request`, `teardown_request`, and `teardown_appcontext` are executed in the reverse order of their registration.\n    `Sources: [src/flask/app.py:1412](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1412), [src/flask/app.py:1444](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L1444), "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "tests/type_check/typing_route.py",
+  "start": 81,
+  "end": 82,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L81-L82",
+  "ok": true,
+  "inline": true,
+  "claim": "lets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L65-L66)\n*   `tuple[str, int]` for response body and status code: Sources: [tests/type_check/typing_route.py:71-72](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L71-L72)\n*   `tuple[str, dict[str, str]]` for response body and headers: Sources: "
+ },
+ {
+  "page": "The Flask Application Object",
+  "path": "src/flask/app.py",
+  "start": 252,
+  "end": 252,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L252",
+  "ok": true,
+  "inline": true,
+  "claim": "://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L242) |\n| `response_class` | `flask.Response` | The class for response objects. | [src/flask/app.py:246](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/app.py#L246) |\n| `session_interface` | `SecureCookieSessionInterface` | The object that handles session storage. | "
+ },
+ {
+  "page": "Custom Template Filters, Tests, and Globals",
+  "path": "src/flask/sansio/app.py",
+  "start": 801,
+  "end": 801,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L801",
+  "ok": true,
+  "inline": true,
+  "claim": "p.py:708](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L708), [src/flask/sansio/app.py:747](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L747), [src/flask/sansio/app.py:767](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L767), "
+ },
+ {
+  "page": "The Flask Application Object",
+  "path": "src/flask/sansio/app.py",
+  "start": 169,
+  "end": 169,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L169",
+  "ok": true,
+  "inline": true,
+  "claim": "8b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L260) |\n| `url_rule_class` | `werkzeug.routing.Rule` | The class for individual URL rules. | [src/flask/sansio/app.py:254](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/src/flask/sansio/app.py#L254) |\n| `jinja_environment` | `flask.templating.Environment` | The class for the Jinja2 template environment. | "
+ },
+ {
+  "page": "Type Hinting and Static Analysis",
+  "path": "tests/type_check/typing_route.py",
+  "start": 22,
+  "end": 23,
+  "link": "https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L22-L23",
+  "ok": true,
+  "inline": true,
+  "claim": "*   `str`: Sources: [tests/type_check/typing_route.py:17-18](https://github.com/pallets/flask/blob/258d68b6ff5e2244386540f48b48bab90d6ab827/tests/type_check/typing_route.py#L17-L18)\n*   `bytes`: Sources: "
+ }
+]

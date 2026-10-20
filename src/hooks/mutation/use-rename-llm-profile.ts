@@ -26,6 +26,15 @@ export function useRenameLlmProfile() {
             title_llm_profile: newName,
           });
         }
+        // Keep Auto's exclusion list pointing at the renamed profile.
+        const excluded = settings?.model_routing_excluded_profiles ?? [];
+        if (excluded.includes(name)) {
+          await SettingsService.saveSettings({
+            model_routing_excluded_profiles: excluded.map((p) =>
+              p === name ? newName : p,
+            ),
+          });
+        }
       }
       // Invalidate SettingsService internal cache to ensure fresh settings
       // (backend references in agent_settings may change when renaming active profile)

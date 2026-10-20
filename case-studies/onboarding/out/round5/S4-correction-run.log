@@ -1,0 +1,62 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:302:1 › onboarding agent study: S4-correction
+[chromium] › tests/e2e/auth/onboarding-agent-study.spec.ts:302:1 › onboarding agent study: S4-correction
+[nav] http://localhost:8000/login
+
+[nav] http://localhost:8000/login
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[nav] http://localhost:8000/conversations
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 2s logged-in
+
+[nav] http://localhost:8000/environment/setup
+
+[nav] http://localhost:8000/environment/setup
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[study] 17s setup-page
+
+[study] 17s begin-visible
+
+[study] 17s begun
+
+[study] 20s studio
+
+[study] turn 0 state=finished
+
+[study] turn 1 state=finished
+
+[study] turn 2 state=finished
+
+[study] turn 3 state=finished
+
+[study] turn 4 state=finished
+
+[study] turn 5 state=finished
+
+[study] turn 6 state=credential
+
+[study] credential {"providerId":"gitlab-self-managed","where":"workbench","filled":true,"status":null}
+
+[study] turn 7 state=finished
+
+[nav] http://localhost:8000/environment/connections
+
+[nav] http://localhost:8000/environment/connections
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+[console] Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+  1 passed (4.3m)

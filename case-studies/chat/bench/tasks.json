@@ -1,0 +1,48 @@
+{
+  "repos": {
+    "flask": { "url": "https://github.com/pallets/flask", "commit": "258d68b6" },
+    "hono": { "url": "https://github.com/honojs/hono", "commit": "24547a6e" },
+    "ky": { "url": "https://github.com/sindresorhus/ky", "commit": "e0fcf78" }
+  },
+  "tasks": [
+    {
+      "id": "F1",
+      "repo": "flask",
+      "kind": "explain",
+      "prompt": "When a view function raises an unhandled exception during a request, walk me through exactly what Flask does from the WSGI call until the response is sent: which methods run and in what order, when the got_request_exception signal fires, when after_request functions run, and when teardown_request and teardown_appcontext callbacks run, in what order and with what argument. Cite file paths and function names. Do not change any files."
+    },
+    {
+      "id": "F2",
+      "repo": "flask",
+      "kind": "tests",
+      "test_file": "tests/test_teardown_bench.py",
+      "prompt": "Add tests in a new file tests/test_teardown_bench.py that verify, for a view that raises an exception (with PROPAGATE_EXCEPTIONS set to False): (1) teardown_request functions run in reverse registration order and each receives the exception the view raised, and (2) if one teardown_request function raises, the remaining teardown_request functions still run. Run the new tests and make sure they pass. Do not change any other file. Finish by showing the full content of the test file."
+    },
+    {
+      "id": "H1",
+      "repo": "hono",
+      "kind": "explain",
+      "prompt": "How does Hono's default router decide which underlying router handles requests? Explain what happens when routes are added, what happens on the first request, when and why it falls back from one router to another, what it does after a router is chosen, and what happens if a route is added after the first request. Cite file paths. Do not change any files."
+    },
+    {
+      "id": "H2",
+      "repo": "hono",
+      "kind": "tests",
+      "test_file": "src/router/smart-router/bench.test.ts",
+      "prompt": "Add tests in a new file src/router/smart-router/bench.test.ts that verify, for the default `new Hono()` app: (1) with only ordinary routes it ends up using RegExpRouter, (2) when a route RegExpRouter cannot handle is registered, it falls back to TrieRouter and still answers requests correctly, and (3) adding a route after the first request has been handled throws an error. Check the router choice through the app's router name. Run the new tests with vitest and make sure they pass. Do not change any other file. Finish by showing the full content of the test file."
+    },
+    {
+      "id": "K1",
+      "repo": "ky",
+      "kind": "explain",
+      "prompt": "When a ky request fails with an HTTP error, how does ky decide whether to retry it and how long to wait before the retry? Cover the Retry-After header (all formats it accepts and the fallback headers), maxRetryAfter, backoffLimit, jitter, and any status codes that are treated specially. Cite file paths. Do not change any files."
+    },
+    {
+      "id": "K2",
+      "repo": "ky",
+      "kind": "tests",
+      "test_file": "test/retry-after-bench.ts",
+      "prompt": "Add tests in a new file test/retry-after-bench.ts (same style as test/retry.ts) that verify: (1) a Retry-After header given as an HTTP date in the past makes ky retry immediately, (2) a Retry-After value larger than retry.maxRetryAfter is clamped to maxRetryAfter, and (3) when Retry-After is missing, the RateLimit-Reset header is used instead. Run only the new file with `npx ava test/retry-after-bench.ts` and make sure it passes. Do not change any other file. Finish by showing the full content of the test file."
+    }
+  ]
+}

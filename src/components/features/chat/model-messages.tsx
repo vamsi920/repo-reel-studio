@@ -7,6 +7,7 @@ import InfoCircleIcon from "#/icons/info-circle.svg?react";
 import type { ProfileInfo } from "#/api/profiles-service/profiles-service.api";
 import { formatModelNameForDisplay } from "#/utils/format-model-name";
 import { GenericEventMessage } from "./generic-event-message";
+import { ModelRoutingChip } from "./model-routing-chip";
 
 interface ProfileRowProps {
   profile: ProfileInfo;
@@ -69,6 +70,9 @@ export function ModelMessages({
   return (
     <div data-testid="model-messages" className="flex flex-col w-full">
       {entries.map((entry) => {
+        if (entry.routing) {
+          return <ModelRoutingChip key={entry.id} decision={entry.routing} />;
+        }
         if (entry.switchedTo) {
           return (
             <GenericEventMessage
