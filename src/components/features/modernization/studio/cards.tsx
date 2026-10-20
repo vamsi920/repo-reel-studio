@@ -214,7 +214,9 @@ export function ChoiceCard({
                     </span>
                   ) : null}
                 </span>
-                {option.description ? (
+                {option.description &&
+                option.description.trim().toLowerCase() !==
+                  option.label.trim().toLowerCase() ? (
                   <span className="text-xs text-[var(--text-tertiary)]">
                     {option.description}
                   </span>
