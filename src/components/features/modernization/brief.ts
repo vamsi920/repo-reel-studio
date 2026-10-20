@@ -66,7 +66,11 @@ modernization_control tool; the user watches that panel.
    set_plan with phases and steps (weights for big ones).
 4. characterize -- Before touching code: write and run characterisation
    tests that pin the legacy behaviour (HTTP contract tests, golden
-   outputs, DB fixtures). With REA, capture real behaviour of the running
+   outputs, DB fixtures). Pin the exact wire contract: status codes, JSON
+   shapes, field order where clients may depend on it, and the literal
+   error bodies (a 404 that says "not found" must still say "not found").
+   Run the same test file against the legacy app first so it is green
+   there, then against the new one. With REA, capture real behaviour of the running
    legacy app (capture_process_scenario / capture_browser_scenario /
    inspect_web_page) and build the reconstruction obligation ledger
    (build_reconstruction_obligation_ledger). These are the acceptance bar.
