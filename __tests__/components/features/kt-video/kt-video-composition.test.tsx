@@ -15,9 +15,7 @@ vi.mock("remotion", () => ({
     children?: React.ReactNode;
     style?: React.CSSProperties;
   }) => <div style={style}>{children}</div>,
-  Sequence: ({ children }: { children?: React.ReactNode }) => (
-    <>{children}</>
-  ),
+  Sequence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   interpolate: (_frame: number, _input: number[], output: number[]) =>
     output[0],
   spring: () => 1,
@@ -114,9 +112,7 @@ describe("KtVideoComposition", () => {
   it("shows a translated placeholder when no scenes exist yet", () => {
     render(<KtVideoComposition manifest={manifestOf()} />);
 
-    expect(
-      screen.getByText("KT$VIDEO_NO_ELIGIBLE_SCENES"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("KT$VIDEO_NO_ELIGIBLE_SCENES")).toBeInTheDocument();
   });
 
   it("renders the code panel by default for code/intro/recap scenes", () => {

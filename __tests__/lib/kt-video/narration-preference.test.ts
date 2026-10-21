@@ -17,9 +17,7 @@ describe("narration-preference", () => {
   it("round-trips a written preference", () => {
     writeStoredNarrationPreference(true);
     expect(readStoredNarrationPreference()).toBe(true);
-    expect(window.localStorage.getItem(KT_NARRATION_STORAGE_KEY)).toBe(
-      "true",
-    );
+    expect(window.localStorage.getItem(KT_NARRATION_STORAGE_KEY)).toBe("true");
 
     writeStoredNarrationPreference(false);
     expect(readStoredNarrationPreference()).toBe(false);

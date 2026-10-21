@@ -71,9 +71,7 @@ describe("DiagramPanel", () => {
   });
 
   it("shows a neutral message instead of the error banner when the scene has no diagram source", () => {
-    render(
-      <DiagramPanel scene={diagramScene("")} relativeFrame={0} />,
-    );
+    render(<DiagramPanel scene={diagramScene("")} relativeFrame={0} />);
 
     expect(
       screen.getByText("No diagram source for this scene."),
@@ -109,9 +107,14 @@ describe("DiagramPanel", () => {
     );
 
     const first = render(
-      <DiagramPanel scene={diagramScene("graph TD; first")} relativeFrame={0} />,
+      <DiagramPanel
+        scene={diagramScene("graph TD; first")}
+        relativeFrame={0}
+      />,
     );
-    await waitFor(() => expect(screen.getByTestId("rendered")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("rendered")).toBeInTheDocument(),
+    );
     first.unmount();
 
     for (let i = 0; i < 30; i += 1) {
@@ -121,7 +124,7 @@ describe("DiagramPanel", () => {
           relativeFrame={0}
         />,
       );
-      // eslint-disable-next-line no-await-in-loop -- each render must settle before the next fills the cache
+
       await waitFor(() =>
         expect(screen.getByTestId("rendered")).toBeInTheDocument(),
       );
@@ -130,7 +133,10 @@ describe("DiagramPanel", () => {
 
     renderMock.mockClear();
     render(
-      <DiagramPanel scene={diagramScene("graph TD; first")} relativeFrame={0} />,
+      <DiagramPanel
+        scene={diagramScene("graph TD; first")}
+        relativeFrame={0}
+      />,
     );
 
     await waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));

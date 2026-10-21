@@ -145,10 +145,16 @@ describe("narrateManifest", () => {
       ).join("\n"),
       "src/util.ts": "export function helper() {\n  return 1;\n}\n",
     };
-    const manifest = buildKtManifestFromKnowledgePage(page, fileContents, [], 5, [
-      { path: "src/entry.ts", startLine: 100, endLine: 105, symbol: "start" },
-      { path: "src/util.ts", startLine: 1, endLine: 1, symbol: "helper" },
-    ]);
+    const manifest = buildKtManifestFromKnowledgePage(
+      page,
+      fileContents,
+      [],
+      5,
+      [
+        { path: "src/entry.ts", startLine: 100, endLine: 105, symbol: "start" },
+        { path: "src/util.ts", startLine: 1, endLine: 1, symbol: "helper" },
+      ],
+    );
 
     chatCompletion.mockResolvedValue(JSON.stringify([]));
     await narrateManifest(manifest, snapshot);
@@ -163,9 +169,24 @@ describe("narrateManifest", () => {
     // segments[0] — so the LLM was asked to narrate hops 2+ (named in
     // focus_symbols) without ever seeing their code.
     const segments = [
-      { file_path: "src/step-0.ts", start_line: 1, end_line: 1, code: "hop zero body" },
-      { file_path: "src/step-1.ts", start_line: 1, end_line: 1, code: "hop one body" },
-      { file_path: "src/step-2.ts", start_line: 1, end_line: 1, code: "hop two body" },
+      {
+        file_path: "src/step-0.ts",
+        start_line: 1,
+        end_line: 1,
+        code: "hop zero body",
+      },
+      {
+        file_path: "src/step-1.ts",
+        start_line: 1,
+        end_line: 1,
+        code: "hop one body",
+      },
+      {
+        file_path: "src/step-2.ts",
+        start_line: 1,
+        end_line: 1,
+        code: "hop two body",
+      },
     ];
     const conceptScene = scene({
       id: 0,
@@ -191,12 +212,26 @@ describe("narrateManifest", () => {
     const sentences = [
       {
         sentence: "Follow the flow starting at a in step-0.",
-        source_refs: [{ file_path: "src/step-0.ts", start_line: 1, end_line: 1, symbol_name: "a" }],
+        source_refs: [
+          {
+            file_path: "src/step-0.ts",
+            start_line: 1,
+            end_line: 1,
+            symbol_name: "a",
+          },
+        ],
         on_screen_focus: ["a"],
       },
       {
         sentence: "...which leads to b in step-1.",
-        source_refs: [{ file_path: "src/step-1.ts", start_line: 1, end_line: 1, symbol_name: "b" }],
+        source_refs: [
+          {
+            file_path: "src/step-1.ts",
+            start_line: 1,
+            end_line: 1,
+            symbol_name: "b",
+          },
+        ],
         on_screen_focus: ["b"],
       },
     ];

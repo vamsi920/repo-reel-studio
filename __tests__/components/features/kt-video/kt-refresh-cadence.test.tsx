@@ -3,8 +3,10 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { KtRefreshCadence } from "#/components/features/kt-video/kt-refresh-cadence";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
-import type { RepositorySnapshot } from "#/lib/knowledge/knowledge-engine";
-import type { KnowledgeRepository } from "#/lib/knowledge/knowledge-engine";
+import type {
+  RepositorySnapshot,
+  KnowledgeRepository,
+} from "#/lib/knowledge/knowledge-engine";
 
 const { generateKnowledgeMock, displayErrorToastMock } = vi.hoisted(() => ({
   generateKnowledgeMock: vi.fn(),
@@ -84,16 +86,16 @@ describe("KtRefreshCadence regenerating status", () => {
 
   it("announces regeneration in a live region while it's in flight, and clears it once idle", () => {
     seedReadyEntry();
-    useKnowledgeStore.getState().startGenerating(
-      snapshot,
-      "https://example.test",
-      "session-key",
-    );
+    useKnowledgeStore
+      .getState()
+      .startGenerating(snapshot, "https://example.test", "session-key");
     const { rerender } = render(
       <KtRefreshCadence repositoryId={snapshot.repositoryId} />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent("KT$REGENERATING_STATUS");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "KT$REGENERATING_STATUS",
+    );
 
     useKnowledgeStore.getState().setReady(snapshot.repositoryId, knowledge);
     rerender(<KtRefreshCadence repositoryId={snapshot.repositoryId} />);
@@ -114,7 +116,9 @@ describe("KtRefreshCadence isDue", () => {
   it("flips from Regenerate to Update available purely from time passing, with no other store update", () => {
     vi.useFakeTimers();
     seedReadyEntry();
-    useKnowledgeStore.getState().setRefreshCadence(snapshot.repositoryId, "daily");
+    useKnowledgeStore
+      .getState()
+      .setRefreshCadence(snapshot.repositoryId, "daily");
     render(<KtRefreshCadence repositoryId={snapshot.repositoryId} />);
 
     expect(screen.getByTestId("kt-regenerate-button")).toHaveTextContent(
