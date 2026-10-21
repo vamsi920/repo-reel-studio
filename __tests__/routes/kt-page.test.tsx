@@ -103,6 +103,10 @@ vi.mock("#/lib/kt-video/concept-flow", () => ({
   findConceptFlow: vi.fn(async () => []),
 }));
 
+vi.mock("#/lib/knowledge/github-file-reader", () => ({
+  readGithubFiles: vi.fn(async () => ({ contents: {}, failedPaths: [] })),
+}));
+
 vi.mock("#/lib/knowledge/workspace-file-reader", () => ({
   readSnapshotFiles: vi.fn(async () => ({ contents: {}, failedPaths: [] })),
 }));
@@ -145,6 +149,7 @@ import {
 } from "#/lib/data-platform/repositories/repository-identity";
 import { knowledgePersistenceRepository } from "#/lib/data-platform/repositories/knowledge-repository";
 import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
+import { readGithubFiles } from "#/lib/knowledge/github-file-reader";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 const REPOSITORY_ID = "acme/api@main";
@@ -550,49 +555,7 @@ describe("KtPage", () => {
     );
   });
 
-  it("reflects the narration toggle's on/off state through aria-pressed", async () => {
-    const user = userEvent.setup();
-    mockUseParams.mockReturnValue(paramsFor("page-a"));
-    render(<KtPage />);
-
-    await user.click(screen.getByTestId("kt-page-watch-button"));
-    const narrationToggle = await screen.findByTestId(
-      "kt-page-narration-toggle",
-    );
-    expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
-
-    await user.click(narrationToggle);
-    expect(narrationToggle).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(narrationToggle);
-    expect(narrationToggle).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("remembers the narration toggle across reloads instead of resetting to off every time", async () => {
-    window.localStorage.clear();
-    const user = userEvent.setup();
-    mockUseParams.mockReturnValue(paramsFor("page-a"));
-    const { unmount } = render(<KtPage />);
-
-    await user.click(screen.getByTestId("kt-page-watch-button"));
-    const narrationToggle = await screen.findByTestId(
-      "kt-page-narration-toggle",
-    );
-    await user.click(narrationToggle);
-    expect(narrationToggle).toHaveAttribute("aria-pressed", "true");
-    unmount();
-
-    // Simulates a reload: a fresh mount of the same route should pick the
-    // preference back up instead of starting muted again.
-    render(<KtPage />);
-    await user.click(screen.getByTestId("kt-page-watch-button"));
-    expect(
-      await screen.findByTestId("kt-page-narration-toggle"),
-    ).toHaveAttribute("aria-pressed", "true");
-    window.localStorage.clear();
-  });
-
-  it("tells the user (via i18n) to open the conversation instead of silently doing nothing when Watch KT is clicked on a cold-rehydrated entry", async () => {
+  it("plays saved docs with no live conversation by reading the code from GitHub at the documented commit", async () => {
     useKnowledgeStore.setState({
       byRepositoryId: {
         [REPOSITORY_ID]: {
@@ -616,12 +579,11 @@ describe("KtPage", () => {
     await user.click(screen.getByTestId("kt-page-watch-button"));
 
     await waitFor(() =>
-      expect(displayErrorToast).toHaveBeenCalledWith(
-        I18nKey.KT$WATCH_NEEDS_CONVERSATION,
-      ),
+      expect(screen.getByTestId("kt-video-player")).toBeInTheDocument(),
     );
+    expect(readGithubFiles).toHaveBeenCalledWith(SNAPSHOT, expect.any(Array));
     expect(readSnapshotFiles).not.toHaveBeenCalled();
-    expect(screen.queryByTestId("kt-video-player")).not.toBeInTheDocument();
+    expect(displayErrorToast).not.toHaveBeenCalled();
   });
 
   it("tells the user (via i18n) when every one of a page's source files failed to load, instead of a silent near-empty video", async () => {

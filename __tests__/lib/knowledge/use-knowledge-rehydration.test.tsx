@@ -148,7 +148,47 @@ describe("useKnowledgeRehydration", () => {
     expect(
       useKnowledgeStore.getState().byRepositoryId[repositoryId]?.status,
     ).toBe("ready");
-    expect(resolveOrgIdWithStatus).not.toHaveBeenCalled();
+    expect(generateKnowledge).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows persisted docs for the live conversation's exact commit instead of regenerating them", async () => {
+    useConnectedRepositoriesMock.mockReturnValue({
+      repositories: [
+        {
+          repositoryId,
+          owner: "acme",
+          repo: "api",
+          branch: "main",
+          conversationUrl: "https://conversation.example",
+          sessionApiKey: "session-key",
+          workingDir: "/workspace/acme-api",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+    resolveCommitSha.mockResolvedValue("persisted-sha");
+    resolveOrgIdWithStatus.mockResolvedValue({
+      orgId: "org-1",
+      hadError: false,
+    });
+    findRepositoryUuid.mockResolvedValue("repo-uuid");
+    getLatestGenerationForRepository.mockResolvedValue(persistedKnowledge());
+
+    const { result } = renderHook(() => useKnowledgeRehydration(repositoryId));
+
+    await waitFor(() => expect(result.current).toBe(true));
+    const entry = useKnowledgeStore.getState().byRepositoryId[repositoryId];
+    expect(generateKnowledge).not.toHaveBeenCalled();
+    expect(entry).toMatchObject({
+      status: "ready",
+      conversationUrl: "https://conversation.example",
+      sessionApiKey: "session-key",
+      snapshot: {
+        commitSha: "persisted-sha",
+        localPath: "/workspace/acme-api",
+      },
+    });
   });
 
   it("falls through to cold rehydration when the live generation attempt errors", async () => {

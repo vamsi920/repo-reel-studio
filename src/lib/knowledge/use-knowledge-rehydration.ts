@@ -57,6 +57,9 @@ async function tryColdRehydration(
     qualityFlags: Parameters<
       ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
     >[3],
+    session?: Parameters<
+      ReturnType<typeof useKnowledgeStore.getState>["hydrate"]
+    >[4],
   ) => void,
 ): Promise<ColdRehydrationResult> {
   const result = await loadPersistedKnowledge(
@@ -261,6 +264,40 @@ export function useKnowledgeRehydration(
             liveMatch.sessionApiKey,
           );
           if (cancelled) return;
+          // Docs already persisted for this exact commit are the answer:
+          // show them with the live session attached instead of asking
+          // DeepWiki to regenerate. Regenerating here re-indexed the whole
+          // repo on every visit (and, for a folder DeepWiki can't see from
+          // its own machine, sat in "indexing" forever behind "Starting…").
+          const persisted = await loadPersistedKnowledge(
+            liveMatch.owner,
+            liveMatch.repo,
+            liveMatch.branch,
+          ).catch(() => null);
+          if (cancelled) return;
+          if (
+            persisted?.status === "found" &&
+            persisted.knowledge.commitSha === commitSha
+          ) {
+            hydrate(
+              repositoryId,
+              {
+                repositoryId,
+                owner: liveMatch.owner,
+                repo: liveMatch.repo,
+                branch: liveMatch.branch,
+                commitSha,
+                localPath: liveMatch.workingDir,
+              },
+              persisted.knowledge,
+              [],
+              {
+                conversationUrl: liveMatch.conversationUrl,
+                sessionApiKey: liveMatch.sessionApiKey,
+              },
+            );
+            return;
+          }
           await generateKnowledge(
             {
               repositoryId,

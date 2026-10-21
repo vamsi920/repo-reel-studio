@@ -95,6 +95,9 @@ interface KnowledgeStore {
     snapshot: RepositorySnapshot,
     knowledge: KnowledgeRepository,
     qualityFlags: PageQualityFlag[],
+    /** A live session to attach, when the persisted content is for the
+     * exact commit a live conversation has checked out. */
+    session?: { conversationUrl: string | null; sessionApiKey: string | null },
   ) => void;
   setError: (repositoryId: string, error: string, attempt?: number) => void;
   setRefreshCadence: (repositoryId: string, cadence: RefreshCadence) => void;
@@ -230,7 +233,7 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       };
     }),
 
-  hydrate: (repositoryId, snapshot, knowledge, qualityFlags) =>
+  hydrate: (repositoryId, snapshot, knowledge, qualityFlags, session) =>
     set((state) => {
       const existing = state.byRepositoryId[repositoryId];
       // `hydrate` has no attempt token of its own (it runs outside the
@@ -248,14 +251,22 @@ export const useKnowledgeStore = create<KnowledgeStore>()((set) => ({
       // an entry that just had a live session moments ago. Only ever
       // overwrite when there's nothing here yet, or the last known status
       // was still the "error" this fallback exists to cover.
-      if (existing && existing.status !== "error") return state;
+      // Attaching a live session to persisted content may also upgrade a
+      // session-less (cold) "ready" entry for the same content in place.
+      const upgradingColdEntry =
+        Boolean(session?.conversationUrl) &&
+        existing?.status === "ready" &&
+        !existing.conversationUrl;
+      if (existing && existing.status !== "error" && !upgradingColdEntry) {
+        return state;
+      }
       return {
         byRepositoryId: {
           ...state.byRepositoryId,
           [repositoryId]: {
             snapshot,
-            conversationUrl: null,
-            sessionApiKey: null,
+            conversationUrl: session?.conversationUrl ?? null,
+            sessionApiKey: session?.sessionApiKey ?? null,
             status: "ready",
             progress: null,
             lastNonTerminalStatus: null,

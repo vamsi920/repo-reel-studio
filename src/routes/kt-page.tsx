@@ -9,8 +9,6 @@ import {
   FileText,
   Loader2,
   Video,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { useKnowledgeStore } from "#/stores/knowledge-store";
 import { I18nKey } from "#/i18n/declaration";
@@ -18,9 +16,8 @@ import { MarkdownRenderer } from "#/components/features/markdown/markdown-render
 import { mermaidAwareCode } from "#/components/features/markdown/mermaid-code-block";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
 import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
-import type { KtManifest } from "#/lib/kt-video/build-manifest";
+import { readGithubFiles } from "#/lib/knowledge/github-file-reader";
 import { findConceptFlow } from "#/lib/kt-video/concept-flow";
-import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
 import {
   buildTutorial,
   type TutorialProgress,
@@ -32,15 +29,10 @@ import {
   tutorialCacheKey,
   writePersistedScript,
 } from "#/lib/kt-video/tutorial-cache";
-import { narrationManifestFromTutorial } from "#/lib/kt-video/tutorial-narration";
 import type { KtTutorial } from "#/lib/kt-video/tutorial-types";
 import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
 import { withAppRoute } from "#/lib/model-routing/app-side";
 import { resolveDeepWikiRepoTarget } from "#/lib/knowledge/deepwiki-repo-target";
-import {
-  readStoredNarrationPreference,
-  writeStoredNarrationPreference,
-} from "#/lib/kt-video/narration-preference";
 import { KtTutorialComposition } from "#/components/features/kt-video/tutorial/tutorial-composition";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
@@ -49,14 +41,6 @@ import { workspaceIdForSnapshot } from "#/lib/codegraph/workspace-identity";
 import { useKnowledgeRehydration } from "#/lib/knowledge/use-knowledge-rehydration";
 
 type ViewMode = "read" | "watch";
-
-const EMPTY_MANIFEST: KtManifest = {
-  repo_name: "",
-  scenes: [],
-  totalFrames: 1,
-  fps: 30,
-  repo_files: [],
-};
 
 function KtPage() {
   const { t } = useTranslation("openhands");
@@ -87,14 +71,6 @@ function KtPage() {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(true);
   const playerRef = useRef<PlayerRef>(null);
-  // Remembered across pages/reloads (see narration-preference.ts) -- without
-  // this, re-enabling narration after every single page navigation made the
-  // toggle feel broken rather than like a real setting.
-  const [narrationEnabled, setNarrationEnabled] = useState(() =>
-    readStoredNarrationPreference(),
-  );
-  const speechSupported =
-    typeof window !== "undefined" && "speechSynthesis" in window;
 
   const page = useMemo(
     () =>
@@ -111,22 +87,6 @@ function KtPage() {
 
   const autoWatchStarted = useRef(false);
   const activeGenerationIdRef = useRef(0);
-
-  // Synthesised narration travels inside the video itself; the browser
-  // voice is only the fallback for a tutorial that has no audio clips.
-  const narrationManifest = useMemo(
-    () => (tutorial ? narrationManifestFromTutorial(tutorial) : EMPTY_MANIFEST),
-    [tutorial],
-  );
-  const hasSynthesizedAudio = Boolean(tutorial?.audio);
-  useSceneNarration(
-    narrationManifest,
-    playerRef,
-    narrationEnabled &&
-      speechSupported &&
-      mode === "watch" &&
-      !hasSynthesizedAudio,
-  );
 
   // A cached CodeGraph analysis (from an earlier CodeGraph visit — this
   // never triggers a fresh one) lets Watch KT show a real multi-file flow
@@ -163,14 +123,6 @@ function KtPage() {
       setTutorial(cached);
       return;
     }
-    if (!targetState.conversationUrl || !targetState.sessionApiKey) {
-      // A cold-rehydrated (Supabase) entry has real Docs content but no live
-      // session — Watch KT needs one to download real file content. Real
-      // scope boundary, not a bug: open/reopen this repo's conversation.
-      displayErrorToast(t(I18nKey.KT$WATCH_NEEDS_CONVERSATION));
-      setMode("read");
-      return;
-    }
     // A page switch (or a second click that slips past the disabled button)
     // can start a newer generation before an older one for a previous page
     // has resolved. Without this id, whichever call's `finally` runs first
@@ -183,12 +135,19 @@ function KtPage() {
     setIsGeneratingVideo(true);
     setProgress({ stage: "diagrams" });
     try {
-      const { contents: fileContents } = await readSnapshotFiles(
-        targetState.snapshot,
-        targetState.conversationUrl,
-        targetState.sessionApiKey,
-        targetPage.relevantFiles.map((f) => f.path),
-      );
+      // A live conversation reads the exact checkout; saved (Supabase)
+      // docs have no session, so the code is read from GitHub at the same
+      // commit instead of refusing to play.
+      const relevantPaths = targetPage.relevantFiles.map((f) => f.path);
+      const { contents: fileContents } =
+        targetState.conversationUrl && targetState.sessionApiKey
+          ? await readSnapshotFiles(
+              targetState.snapshot,
+              targetState.conversationUrl,
+              targetState.sessionApiKey,
+              relevantPaths,
+            )
+          : await readGithubFiles(targetState.snapshot, relevantPaths);
       if (isStale()) return;
       if (
         targetPage.relevantFiles.length > 0 &&
@@ -256,6 +215,9 @@ function KtPage() {
             symbol: hop.symbol,
           })),
           chat,
+          // Narration is switched off for now; the TTS pipeline in
+          // tts.ts stays in place for when a voice is chosen.
+          narrate: false,
         },
         (next) => {
           if (!isStale()) setProgress(next);
@@ -409,33 +371,6 @@ function KtPage() {
                 <Captions className="size-3.5" aria-hidden />
               </button>
             ) : null}
-            {mode === "watch" && !hasSynthesizedAudio ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setNarrationEnabled((v) => {
-                    const next = !v;
-                    writeStoredNarrationPreference(next);
-                    return next;
-                  })
-                }
-                disabled={!speechSupported}
-                aria-pressed={narrationEnabled}
-                data-testid="kt-page-narration-toggle"
-                title={
-                  speechSupported
-                    ? t(I18nKey.KT$NARRATION_TOOLTIP_ENABLED)
-                    : t(I18nKey.KT$NARRATION_TOOLTIP_UNSUPPORTED)
-                }
-                className="flex items-center gap-1.5 rounded-md border border-[var(--oh-border)] px-3 py-1.5 text-sm text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {narrationEnabled ? (
-                  <Volume2 className="size-3.5" aria-hidden />
-                ) : (
-                  <VolumeX className="size-3.5" aria-hidden />
-                )}
-              </button>
-            ) : null}
           </div>
         </div>
 
@@ -569,11 +504,6 @@ function KtPage() {
                         0,
                       ),
                     })}
-                  </span>
-                  <span>
-                    {hasSynthesizedAudio
-                      ? t(I18nKey.KT$TUTORIAL_VOICE_GOOGLE)
-                      : t(I18nKey.KT$TUTORIAL_VOICE_BROWSER)}
                   </span>
                   {tutorial.scriptSource === "deterministic" ? (
                     <span className="text-[var(--warning-500)]">
