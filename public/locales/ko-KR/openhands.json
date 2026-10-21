@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "앱에 데이터를 로드하는 중",
   "SYNTH$THINK_TESTING": "테스트를 실행하는 중",
   "SYNTH$THINK_REPORT": "요약을 작성하는 중",
-  "NEOME$STUCK_NOTICE": "같은 작업을 반복해 멈췄습니다. 다른 접근을 요청했습니다"
+  "NEOME$STUCK_NOTICE": "같은 작업을 반복해 멈췄습니다. 다른 접근을 요청했습니다",
+  "NEOME$SPEND_WHAT": "${{limit}}를 넘어 계속할까요?",
+  "NEOME$SPEND_WHY": "이 실행은 ${{spent}}를 사용했고 한도에서 일시 중지되었습니다. ${{next}}까지 허용하려면 승인하고, 여기서 멈추려면 변경을 요청하세요."
 }

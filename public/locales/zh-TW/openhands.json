@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "正在將資料載入應用程式",
   "SYNTH$THINK_TESTING": "正在執行測試",
   "SYNTH$THINK_REPORT": "正在撰寫摘要",
-  "NEOME$STUCK_NOTICE": "因重複相同操作而卡住，已要求其換一種方法"
+  "NEOME$STUCK_NOTICE": "因重複相同操作而卡住，已要求其換一種方法",
+  "NEOME$SPEND_WHAT": "超過 ${{limit}} 後繼續嗎？",
+  "NEOME$SPEND_WHY": "本次執行已花費 ${{spent}}，在您的上限處自動暫停。核准以允許最多 ${{next}}，或要求修改以在此停止。"
 }

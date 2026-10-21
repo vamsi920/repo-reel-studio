@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Laster data inn i appen",
   "SYNTH$THINK_TESTING": "Kjører testene",
   "SYNTH$THINK_REPORT": "Skriver oppsummeringen",
-  "NEOME$STUCK_NOTICE": "Satt fast i gjentakelser, bedt om å endre tilnærming"
+  "NEOME$STUCK_NOTICE": "Satt fast i gjentakelser, bedt om å endre tilnærming",
+  "NEOME$SPEND_WHAT": "Fortsette forbi ${{limit}}?",
+  "NEOME$SPEND_WHY": "Denne kjøringen har brukt ${{spent}} og stoppet ved grensen din. Godkjenn for å tillate opptil ${{next}}, eller be om endringer for å stoppe her."
 }

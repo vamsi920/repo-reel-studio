@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Carregando dados no app",
   "SYNTH$THINK_TESTING": "Executando os testes",
   "SYNTH$THINK_REPORT": "Escrevendo o resumo",
-  "NEOME$STUCK_NOTICE": "Travou repetindo ações, foi pedido que mude de abordagem"
+  "NEOME$STUCK_NOTICE": "Travou repetindo ações, foi pedido que mude de abordagem",
+  "NEOME$SPEND_WHAT": "Continuar além de ${{limit}}?",
+  "NEOME$SPEND_WHY": "Esta execução gastou ${{spent}} e pausou no seu limite. Aprove para permitir até ${{next}} ou peça alterações para parar aqui."
 }

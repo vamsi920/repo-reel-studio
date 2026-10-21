@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Loading data into the app",
   "SYNTH$THINK_TESTING": "Running the tests",
   "SYNTH$THINK_REPORT": "Writing the summary",
-  "NEOME$STUCK_NOTICE": "Stuck repeating itself, asked to change approach"
+  "NEOME$STUCK_NOTICE": "Stuck repeating itself, asked to change approach",
+  "NEOME$SPEND_WHAT": "Keep going past ${{limit}}?",
+  "NEOME$SPEND_WHY": "This run has spent ${{spent}} and paused itself at your limit. Approve to allow up to ${{next}}, or request changes to stop here."
 }

@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Carregant dades a l'app",
   "SYNTH$THINK_TESTING": "Executant les proves",
   "SYNTH$THINK_REPORT": "Escrivint el resum",
-  "NEOME$STUCK_NOTICE": "Encallat repetint-se, se li ha demanat canviar d'enfocament"
+  "NEOME$STUCK_NOTICE": "Encallat repetint-se, se li ha demanat canviar d'enfocament",
+  "NEOME$SPEND_WHAT": "Continuar més enllà de ${{limit}}?",
+  "NEOME$SPEND_WHY": "Aquesta execució ha gastat ${{spent}} i s'ha aturat al teu límit. Aprova per permetre fins a ${{next}} o demana canvis per aturar-te aquí."
 }

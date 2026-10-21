@@ -29,13 +29,17 @@ import {
   AUTO_CONTINUE_MESSAGE,
   MID_PLAN_CONTINUE_MESSAGE,
   START_MIGRATION_APPROVAL_ID,
+  SPEND_STEP_USD,
   STUCK_CONTINUE_MESSAGE,
+  shouldPauseForSpend,
+  spendApprovalId,
   createModernizationResultPoster,
   receipt,
   shouldAutoContinue,
   shouldContinueMidPlan,
 } from "#/services/modernization-control";
 import { useEventStore } from "#/stores/use-event-store";
+import { useLiveConversationMetrics } from "#/hooks/use-live-conversation-metrics";
 import { isMessageEvent } from "#/types/agent-server/type-guards";
 import { parseMessageFromEvent } from "#/components/conversation-events/chat/event-content-helpers/parse-message-from-event";
 import { useConversationStateStore } from "#/stores/conversation-state-store";
@@ -188,6 +192,59 @@ function useStudioAutoContinue(
   }, [agentIdle, idleAt, lastAgentText, project, sendUserMessage, stuck]);
 }
 
+/**
+ * Spend checkpoint (see shouldPauseForSpend): pause the run at the approved
+ * limit and ask; on approval raise the limit by one step and resume.
+ */
+function useStudioSpendLimit(
+  project: ModernizationProject,
+  conversationId: string,
+) {
+  const { t } = useTranslation("openhands");
+  const { cost } = useLiveConversationMetrics();
+  const running =
+    useConversationStateStore((s) => s.execution_status) ===
+    ExecutionStatus.RUNNING;
+  const requestApproval = useModernizationStudioStore((s) => s.requestApproval);
+  const setSpendLimit = useModernizationStudioStore((s) => s.setSpendLimit);
+  const limit = project.spendLimitUsd ?? SPEND_STEP_USD;
+
+  React.useEffect(() => {
+    if (
+      !shouldPauseForSpend({
+        costUsd: cost,
+        limitUsd: limit,
+        running,
+        approvals: project.approvals,
+      })
+    ) {
+      return;
+    }
+    requestApproval(project.id, {
+      id: spendApprovalId(limit),
+      what: t(I18nKey.NEOME$SPEND_WHAT, { limit }),
+      why: t(I18nKey.NEOME$SPEND_WHY, {
+        spent: (cost ?? 0).toFixed(2),
+        next: limit + SPEND_STEP_USD,
+      }),
+      status: "pending",
+      at: new Date().toISOString(),
+    });
+    void pauseConversation(conversationId).catch(() => {});
+  }, [cost, limit, running, project.approvals, project.id, conversationId]);
+
+  const approved = project.approvals.some(
+    (a) => a.id === spendApprovalId(limit) && a.status === "approved",
+  );
+  React.useEffect(() => {
+    if (!approved) return;
+    setSpendLimit(project.id, limit + SPEND_STEP_USD);
+    void AgentServerConversationService.resumeConversation(
+      conversationId,
+    ).catch(() => {});
+  }, [approved]);
+}
+
 function StudioPanes({ project }: { project: ModernizationProject }) {
   const { t } = useTranslation("openhands");
   const isMobile = useBreakpoint();
@@ -223,6 +280,7 @@ function StudioPanes({ project }: { project: ModernizationProject }) {
   );
 
   useStudioAutoContinue(project, sendUserMessage);
+  useStudioSpendLimit(project, conversationId);
 
   const onStart = React.useCallback(async () => {
     setBusy(true);

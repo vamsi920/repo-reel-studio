@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Veri uygulamaya yükleniyor",
   "SYNTH$THINK_TESTING": "Testler çalıştırılıyor",
   "SYNTH$THINK_REPORT": "Özet yazılıyor",
-  "NEOME$STUCK_NOTICE": "Aynı işlemleri tekrarlayarak takıldı, yaklaşımını değiştirmesi istendi"
+  "NEOME$STUCK_NOTICE": "Aynı işlemleri tekrarlayarak takıldı, yaklaşımını değiştirmesi istendi",
+  "NEOME$SPEND_WHAT": "${{limit}} sınırının ötesine devam edilsin mi?",
+  "NEOME$SPEND_WHY": "Bu çalışma ${{spent}} harcadı ve sınırınızda duraklatıldı. ${{next}} değerine kadar izin vermek için onaylayın veya burada durmak için değişiklik isteyin."
 }

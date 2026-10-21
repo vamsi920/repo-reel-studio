@@ -717,6 +717,46 @@ describe("continue mid-plan when the agent stops early", () => {
   });
 });
 
+describe("spend checkpoint", () => {
+  it("pauses a running conversation once it reaches the approved limit, once per limit", async () => {
+    const { shouldPauseForSpend, spendApprovalId } =
+      await import("#/services/modernization-control");
+    const base = { costUsd: 10.2, limitUsd: 10, running: true, approvals: [] };
+    expect(shouldPauseForSpend(base)).toBe(true);
+    expect(shouldPauseForSpend({ ...base, costUsd: 9.99 })).toBe(false);
+    expect(shouldPauseForSpend({ ...base, running: false })).toBe(false);
+    expect(shouldPauseForSpend({ ...base, costUsd: null })).toBe(false);
+    expect(
+      shouldPauseForSpend({
+        ...base,
+        approvals: [{ id: spendApprovalId(10) }],
+      }),
+    ).toBe(false);
+  });
+
+  it("does not let an approved spend checkpoint unlock building", async () => {
+    const projectId = seedProject();
+    const store = useModernizationStudioStore.getState();
+    await dispatch("record_discovery", {
+      components: [{ name: "UI", kind: "frontend", evidence: ["src/"] }],
+    });
+    await dispatch("set_plan", {
+      steps: [{ id: "port", phase: "migrate", title: "Port" }],
+    });
+    store.requestApproval(projectId, {
+      id: "spend-10",
+      what: "Keep going past $10?",
+      status: "approved",
+      at: "2026-10-21T00:00:00Z",
+    });
+    const [refused] = await dispatch("update_progress", {
+      step_id: "port",
+      status: "active",
+    });
+    expect(refused).toMatchObject({ reason: "approval_required" });
+  });
+});
+
 describe("studio transcript filter", () => {
   const message = (source: string, text: string) =>
     ({

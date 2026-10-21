@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Lädt Daten in die App",
   "SYNTH$THINK_TESTING": "Führt die Tests aus",
   "SYNTH$THINK_REPORT": "Schreibt die Zusammenfassung",
-  "NEOME$STUCK_NOTICE": "Hing in Wiederholungen fest, wurde gebeten, den Ansatz zu ändern"
+  "NEOME$STUCK_NOTICE": "Hing in Wiederholungen fest, wurde gebeten, den Ansatz zu ändern",
+  "NEOME$SPEND_WHAT": "Über ${{limit}} hinaus weitermachen?",
+  "NEOME$SPEND_WHY": "Dieser Lauf hat ${{spent}} ausgegeben und an Ihrem Limit pausiert. Genehmigen Sie bis zu ${{next}} oder fordern Sie Änderungen an, um hier aufzuhören."
 }

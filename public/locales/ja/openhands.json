@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "アプリにデータを読み込んでいます",
   "SYNTH$THINK_TESTING": "テストを実行しています",
   "SYNTH$THINK_REPORT": "サマリーを作成しています",
-  "NEOME$STUCK_NOTICE": "同じ操作を繰り返したため、別の方法を試すよう指示しました"
+  "NEOME$STUCK_NOTICE": "同じ操作を繰り返したため、別の方法を試すよう指示しました",
+  "NEOME$SPEND_WHAT": "${{limit}} を超えて続けますか？",
+  "NEOME$SPEND_WHY": "この実行は ${{spent}} を使い、上限で一時停止しました。${{next}} まで許可するには承認、ここで止めるには変更を依頼してください。"
 }

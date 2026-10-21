@@ -32,6 +32,7 @@ import {
   type ChoiceQuestion,
   type ModernizationProject,
   type PlanStep,
+  type ApprovalRequest,
   type ProgressStats,
   type StackComponent,
 } from "#/stores/modernization-studio-store";
@@ -179,7 +180,12 @@ export const START_MIGRATION_APPROVAL_ID = "start-migration";
 
 function hasApproval(projectId: string): boolean {
   const project = useModernizationStudioStore.getState().projects[projectId];
-  return Boolean(project?.approvals.some((a) => a.status === "approved"));
+  // A spend checkpoint approves money, not the start of building.
+  return Boolean(
+    project?.approvals.some(
+      (a) => a.status === "approved" && !a.id.startsWith(SPEND_APPROVAL_PREFIX),
+    ),
+  );
 }
 
 /** A real, green test run: counts reported and nothing failing. */
@@ -323,6 +329,35 @@ export function shouldContinueMidPlan({
   // A question to the user in plain text is a legitimate stop.
   if (lastAgentText?.trim().endsWith("?")) return false;
   return true;
+}
+
+/**
+ * Spend checkpoint. A Gemini run once spent $35 looping on one environment
+ * problem with nobody watching. Each project has an approved spend limit
+ * (SPEND_STEP_USD to start); when a running conversation reaches it, the
+ * studio pauses the run and asks the user before spending another step.
+ */
+export const SPEND_STEP_USD = 10;
+export const SPEND_APPROVAL_PREFIX = "spend-";
+
+export function spendApprovalId(limitUsd: number): string {
+  return `${SPEND_APPROVAL_PREFIX}${limitUsd}`;
+}
+
+export function shouldPauseForSpend({
+  costUsd,
+  limitUsd,
+  running,
+  approvals,
+}: {
+  costUsd: number | null | undefined;
+  limitUsd: number;
+  running: boolean;
+  approvals: Pick<ApprovalRequest, "id">[];
+}): boolean {
+  if (!running || typeof costUsd !== "number") return false;
+  if (costUsd < limitUsd) return false;
+  return !approvals.some((a) => a.id === spendApprovalId(limitUsd));
 }
 
 /** Payload shapes, handed to the agent by `describe`. */

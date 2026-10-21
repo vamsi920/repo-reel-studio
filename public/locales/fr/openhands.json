@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Chargement des données dans l'app",
   "SYNTH$THINK_TESTING": "Exécution des tests",
   "SYNTH$THINK_REPORT": "Rédaction du résumé",
-  "NEOME$STUCK_NOTICE": "Bloqué à se répéter, il lui a été demandé de changer d'approche"
+  "NEOME$STUCK_NOTICE": "Bloqué à se répéter, il lui a été demandé de changer d'approche",
+  "NEOME$SPEND_WHAT": "Continuer au-delà de ${{limit}} ?",
+  "NEOME$SPEND_WHY": "Cette exécution a dépensé ${{spent}} et s'est mise en pause à votre limite. Approuvez pour autoriser jusqu'à ${{next}}, ou demandez des modifications pour s'arrêter ici."
 }

@@ -156,6 +156,8 @@ export interface ModernizationProject {
   log: LogEntry[];
   checkpoints: Checkpoint[];
   report: MigrationReport | null;
+  /** Spend the user approved for this project's runs (USD); see SPEND_STEP_USD. */
+  spendLimitUsd?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,6 +210,7 @@ interface ModernizationStudioActions {
     comment?: string,
   ) => ApprovalRequest | null;
   mergeStats: (projectId: string, stats: ProgressStats) => void;
+  setSpendLimit: (projectId: string, limitUsd: number) => void;
   appendLog: (projectId: string, entry: LogEntry) => void;
   addCheckpoint: (projectId: string, checkpoint: Checkpoint) => void;
   setReport: (projectId: string, report: MigrationReport | null) => void;
@@ -401,6 +404,8 @@ export const useModernizationStudioStore = create<ModernizationStudioStore>()(
             ],
           })),
 
+        setSpendLimit: (projectId, limitUsd) =>
+          patchProject(projectId, (p) => ({ ...p, spendLimitUsd: limitUsd })),
         resolveApproval: (projectId, approvalId, status, comment) => {
           const project = get().projects[projectId];
           const approval = project?.approvals.find((a) => a.id === approvalId);

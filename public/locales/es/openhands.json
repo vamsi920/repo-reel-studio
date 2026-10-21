@@ -3987,5 +3987,7 @@
   "SYNTH$THINK_LOADING": "Cargando datos en la app",
   "SYNTH$THINK_TESTING": "Ejecutando las pruebas",
   "SYNTH$THINK_REPORT": "Escribiendo el resumen",
-  "NEOME$STUCK_NOTICE": "Atascado repitiéndose, se le pidió cambiar de enfoque"
+  "NEOME$STUCK_NOTICE": "Atascado repitiéndose, se le pidió cambiar de enfoque",
+  "NEOME$SPEND_WHAT": "¿Seguir más allá de ${{limit}}?",
+  "NEOME$SPEND_WHY": "Esta ejecución ha gastado ${{spent}} y se pausó en tu límite. Aprueba para permitir hasta ${{next}} o pide cambios para detenerte aquí."
 }

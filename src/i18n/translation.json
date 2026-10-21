@@ -67811,5 +67811,39 @@
     "de": "Hing in Wiederholungen fest, wurde gebeten, den Ansatz zu ändern",
     "uk": "Застряг на повторах, попросили змінити підхід",
     "ca": "Encallat repetint-se, se li ha demanat canviar d'enfocament"
+  },
+  "NEOME$SPEND_WHAT": {
+    "en": "Keep going past ${{limit}}?",
+    "ja": "${{limit}} を超えて続けますか？",
+    "zh-CN": "超过 ${{limit}} 后继续吗？",
+    "zh-TW": "超過 ${{limit}} 後繼續嗎？",
+    "ko-KR": "${{limit}}를 넘어 계속할까요?",
+    "no": "Fortsette forbi ${{limit}}?",
+    "ar": "هل تريد المتابعة بعد ${{limit}}؟",
+    "de": "Über ${{limit}} hinaus weitermachen?",
+    "fr": "Continuer au-delà de ${{limit}} ?",
+    "it": "Continuare oltre ${{limit}}?",
+    "pt": "Continuar além de ${{limit}}?",
+    "es": "¿Seguir más allá de ${{limit}}?",
+    "ca": "Continuar més enllà de ${{limit}}?",
+    "tr": "${{limit}} sınırının ötesine devam edilsin mi?",
+    "uk": "Продовжити понад ${{limit}}?"
+  },
+  "NEOME$SPEND_WHY": {
+    "en": "This run has spent ${{spent}} and paused itself at your limit. Approve to allow up to ${{next}}, or request changes to stop here.",
+    "ja": "この実行は ${{spent}} を使い、上限で一時停止しました。${{next}} まで許可するには承認、ここで止めるには変更を依頼してください。",
+    "zh-CN": "本次运行已花费 ${{spent}}，在您的上限处自动暂停。批准以允许最多 ${{next}}，或请求修改以在此停止。",
+    "zh-TW": "本次執行已花費 ${{spent}}，在您的上限處自動暫停。核准以允許最多 ${{next}}，或要求修改以在此停止。",
+    "ko-KR": "이 실행은 ${{spent}}를 사용했고 한도에서 일시 중지되었습니다. ${{next}}까지 허용하려면 승인하고, 여기서 멈추려면 변경을 요청하세요.",
+    "no": "Denne kjøringen har brukt ${{spent}} og stoppet ved grensen din. Godkjenn for å tillate opptil ${{next}}, eller be om endringer for å stoppe her.",
+    "ar": "أنفق هذا التشغيل ${{spent}} وتوقف مؤقتًا عند حدك. وافق للسماح بما يصل إلى ${{next}}، أو اطلب تغييرات للتوقف هنا.",
+    "de": "Dieser Lauf hat ${{spent}} ausgegeben und an Ihrem Limit pausiert. Genehmigen Sie bis zu ${{next}} oder fordern Sie Änderungen an, um hier aufzuhören.",
+    "fr": "Cette exécution a dépensé ${{spent}} et s'est mise en pause à votre limite. Approuvez pour autoriser jusqu'à ${{next}}, ou demandez des modifications pour s'arrêter ici.",
+    "it": "Questa esecuzione ha speso ${{spent}} e si è messa in pausa al tuo limite. Approva per consentire fino a ${{next}}, oppure chiedi modifiche per fermarti qui.",
+    "pt": "Esta execução gastou ${{spent}} e pausou no seu limite. Aprove para permitir até ${{next}} ou peça alterações para parar aqui.",
+    "es": "Esta ejecución ha gastado ${{spent}} y se pausó en tu límite. Aprueba para permitir hasta ${{next}} o pide cambios para detenerte aquí.",
+    "ca": "Aquesta execució ha gastat ${{spent}} i s'ha aturat al teu límit. Aprova per permetre fins a ${{next}} o demana canvis per aturar-te aquí.",
+    "tr": "Bu çalışma ${{spent}} harcadı ve sınırınızda duraklatıldı. ${{next}} değerine kadar izin vermek için onaylayın veya burada durmak için değişiklik isteyin.",
+    "uk": "Цей запуск витратив ${{spent}} і призупинився на вашому ліміті. Схваліть, щоб дозволити до ${{next}}, або попросіть змін, щоб зупинитися тут."
   }
 }
