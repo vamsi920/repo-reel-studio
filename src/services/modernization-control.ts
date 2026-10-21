@@ -1,7 +1,12 @@
 import type { ModernizationControlAction } from "#/types/agent-server/core";
 import {
+  CHARACTERIZE_REPORT_PATH,
   installReplayHarness,
+  judgeCharacterizeReport,
   judgeReplayReport,
+  REPLAY_APPS_EXAMPLE,
+  REPLAY_APPS_PATH,
+  REPLAY_SCENARIO_EXAMPLE,
   readReplayReport,
   REPLAY_HARNESS_PATH,
   REPLAY_REPORT_PATH,
@@ -549,8 +554,11 @@ export async function handleModernizationControlAction(
                 path: REPLAY_HARNESS_PATH,
                 scenarios_dir: REPLAY_SCENARIOS_DIR,
                 report: REPLAY_REPORT_PATH,
-                usage: `node ${REPLAY_HARNESS_PATH} --apps parity/apps.json ${REPLAY_SCENARIOS_DIR}`,
-                note: "The scenario format is documented at the top of the file. The studio reads the report itself before a verify step can be done.",
+                characterize: `node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}`,
+                usage: `node ${REPLAY_HARNESS_PATH} --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}`,
+                apps_json_example: REPLAY_APPS_EXAMPLE,
+                scenario_example: REPLAY_SCENARIO_EXAMPLE,
+                note: "Use exactly these formats (the harness rejects unknown keys; full reference at the top of the file). Characterize before building: the studio reads .neome/characterize-report.json before a characterize step can be done, and .neome/replay-report.json before a verify step can be done.",
               },
             }
           : {}),
@@ -743,6 +751,30 @@ export async function handleModernizationControlAction(
               "Call request_approval (what: start building the target) and wait for the approved receipt, or let the user press Start migration.",
           });
           return;
+        }
+        if (
+          status === "done" &&
+          step?.phase === "characterize" &&
+          context.runInWorkspace
+        ) {
+          const verdict = judgeCharacterizeReport(
+            await readReplayReport(
+              context.runInWorkspace,
+              CHARACTERIZE_REPORT_PATH,
+            ),
+            { now: (context.now ?? Date.now)() },
+          );
+          if (!verdict.ok) {
+            await installReplayHarness(context.runInWorkspace);
+            postReceipt(context, {
+              status: "rejected",
+              reason: "characterization_not_proven",
+              detail: verdict.reason,
+              differences: verdict.differences,
+              guidance: `Write ${REPLAY_APPS_PATH} (legacy app at least) and scenarios in ${REPLAY_SCENARIOS_DIR} in the formats from describe, then run node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}. Every scenario must give identical results twice against the legacy app on the fresh fixture before building starts.`,
+            });
+            return;
+          }
         }
         if (status === "done" && step?.phase === "verify") {
           const merged = { ...project.stats, ...(stats ?? {}) };

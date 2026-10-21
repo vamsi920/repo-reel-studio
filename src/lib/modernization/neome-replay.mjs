@@ -26,6 +26,12 @@
 // process group. Every scenario therefore starts from the same fresh data in
 // both apps, and no app is left running. Logs: .neome/logs/<legacy|target>.log
 //
+// First, before any migration code exists, characterize the legacy app:
+//   node .neome/replay.mjs --characterize --apps parity/apps.json parity/scenarios
+// replays every scenario twice against the legacy app alone (fresh fixture
+// each time) and writes .neome/characterize-report.json; both runs must be
+// identical (otherwise a scenario or the fixture is non-deterministic).
+//
 // Or point it at apps you run yourself (you must then reset both apps to the
 // same data before every scenario, e.g. by restarting them):
 //   node .neome/replay.mjs --legacy http://127.0.0.1:5000 \
@@ -93,6 +99,7 @@ function parseArgs(argv) {
     else if (a === "--reset-legacy") out.resetLegacy = argv[++i];
     else if (a === "--reset-target") out.resetTarget = argv[++i];
     else if (a === "--apps") out.apps = argv[++i];
+    else if (a === "--characterize") out.characterize = true;
     else out.paths.push(a);
   }
   return out;
@@ -432,18 +439,137 @@ export async function startManagedApp(side, name, { root, fixture }) {
   return stop;
 }
 
+const SIDE_KEYS = ["cwd", "start", "url", "store", "env", "reset", "readyPath"];
+const STEP_KEYS = [
+  "name",
+  "session",
+  "method",
+  "path",
+  "form",
+  "json",
+  "body",
+  "headers",
+  "capture",
+];
+
+/** Problems with parity/apps.json, in words that say how to fix them. */
+export function validateApps(apps, { needTarget = true } = {}) {
+  const errors = [];
+  if (!apps || typeof apps !== "object" || Array.isArray(apps)) {
+    return [
+      'apps.json must be an object: { "fixture"?, "legacy": {...}, "target": {...} }',
+    ];
+  }
+  for (const key of Object.keys(apps)) {
+    if (!["fixture", "legacy", "target"].includes(key)) {
+      errors.push(
+        `apps.json: unknown key "${key}" (use "fixture", "legacy", "target")`,
+      );
+    }
+  }
+  for (const name of needTarget ? ["legacy", "target"] : ["legacy"]) {
+    const side = apps[name];
+    if (!side || typeof side !== "object") {
+      errors.push(`apps.json: missing "${name}" app`);
+      continue;
+    }
+    for (const key of Object.keys(side)) {
+      if (!SIDE_KEYS.includes(key)) {
+        errors.push(
+          `apps.json ${name}: unknown key "${key}" (allowed: ${SIDE_KEYS.join(", ")})`,
+        );
+      }
+    }
+    if (typeof side.start !== "string")
+      errors.push(`apps.json ${name}: "start" (shell command) is required`);
+    if (typeof side.url !== "string" || !/^https?:\/\//.test(side.url)) {
+      errors.push(
+        `apps.json ${name}: "url" (e.g. "http://127.0.0.1:5911") is required`,
+      );
+    }
+  }
+  if (apps.fixture && typeof apps.fixture !== "string") {
+    errors.push('apps.json: "fixture" must be a path');
+  }
+  return errors;
+}
+
+/** Problems with one scenario file. */
+export function validateScenario(scenario, file) {
+  const errors = [];
+  if (!scenario || typeof scenario !== "object" || Array.isArray(scenario)) {
+    return [
+      `${file}: a scenario is an object { "name", "steps": [...] }, not ${Array.isArray(scenario) ? "a list" : typeof scenario}`,
+    ];
+  }
+  if (!Array.isArray(scenario.steps) || scenario.steps.length === 0) {
+    errors.push(`${file}: "steps" must be a non-empty list`);
+    return errors;
+  }
+  scenario.steps.forEach((step, i) => {
+    if (!step || typeof step !== "object") {
+      errors.push(`${file} step ${i + 1}: must be an object`);
+      return;
+    }
+    for (const key of Object.keys(step)) {
+      if (!STEP_KEYS.includes(key)) {
+        errors.push(
+          `${file} step ${i + 1}: unknown key "${key}" (allowed: ${STEP_KEYS.join(", ")})`,
+        );
+      }
+    }
+    if (typeof step.name !== "string")
+      errors.push(`${file} step ${i + 1}: "name" is required`);
+    if (typeof step.path !== "string" || !step.path.startsWith("/")) {
+      errors.push(`${file} step ${i + 1}: "path" must start with "/"`);
+    }
+  });
+  return errors;
+}
+
+function loadScenarios(files) {
+  const errors = [];
+  const scenarios = files.map((file) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(file, "utf8"));
+    } catch (error) {
+      errors.push(`${file}: not valid JSON (${error.message})`);
+      return null;
+    }
+    errors.push(...validateScenario(parsed, file));
+    return parsed;
+  });
+  if (!files.length) errors.push("no scenario files found");
+  if (errors.length) throw new Error(errors.join("\n"));
+  return scenarios;
+}
+
+/**
+ * Characterization: every scenario twice against the LEGACY app alone, each
+ * time on the fresh fixture. Identical runs prove the scenarios exercise the
+ * legacy app deterministically before any migration code exists.
+ */
+export async function characterize({ apps, files, root = process.cwd() }) {
+  const errors = validateApps(apps, { needTarget: false });
+  if (errors.length) throw new Error(errors.join("\n"));
+  const report = await replayManaged({
+    apps: { ...apps, target: apps.legacy },
+    files,
+    root,
+  });
+  return { ...report, kind: "characterize", target: null };
+}
+
 /**
  * Replays scenarios with both apps started fresh by the harness for every
  * scenario (see the header). `apps` is the parsed parity/apps.json.
  */
 export async function replayManaged({ apps, files, root = process.cwd() }) {
+  const errors = validateApps(apps);
+  if (errors.length) throw new Error(errors.join("\n"));
   const shared = { root, fixture: apps.fixture };
   const sides = { legacy: apps.legacy, target: apps.target };
-  for (const [name, side] of Object.entries(sides)) {
-    if (!side?.start || !side?.url) {
-      throw new Error(`apps.json: "${name}" needs "start" and "url"`);
-    }
-  }
   return replay({
     legacy: apps.legacy.url,
     target: apps.target.url,
@@ -490,13 +616,15 @@ export async function replay({
     identical: 0,
     legacyDataCases: 0,
     legacyDataIdentical: 0,
+    kind: "replay",
     freshData: freshData ?? Boolean(resetLegacy && resetTarget),
     managedApps: Boolean(around),
     /** @type {{ scenario: string, step: string, field: string, legacy: unknown, target: unknown }[]} */
     differences: [],
   };
-  for (const file of files) {
-    const scenario = JSON.parse(readFileSync(file, "utf8"));
+  const scenarios = loadScenarios(files);
+  for (const [index, file] of files.entries()) {
+    const scenario = scenarios[index];
     report.scenarios += 1;
     const wrap = around ?? ((_which, run) => run());
     const a = await wrap("legacy", async () => {
@@ -546,6 +674,19 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.apps && !args.legacy && existsSync("parity/apps.json")) {
     args.apps = "parity/apps.json";
+  }
+  if (args.characterize) {
+    const apps = JSON.parse(
+      readFileSync(args.apps ?? "parity/apps.json", "utf8"),
+    );
+    const files = scenarioFiles(args.paths);
+    const report = await characterize({ apps, files });
+    return finish(
+      report,
+      args.report === ".neome/replay-report.json"
+        ? ".neome/characterize-report.json"
+        : args.report,
+    );
   }
   if (args.apps) {
     const apps = JSON.parse(readFileSync(args.apps, "utf8"));
@@ -598,7 +739,7 @@ if (
   process.argv[1]?.endsWith("replay.mjs")
 ) {
   main().catch((error) => {
-    console.error(error);
+    console.error(error?.message ?? error);
     process.exit(2);
   });
 }

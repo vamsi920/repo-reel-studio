@@ -6,7 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // The harness Neo ME installs into project workspaces.
-import { replay, replayManaged } from "#/lib/modernization/neome-replay.mjs";
+import {
+  characterize,
+  replay,
+  replayManaged,
+} from "#/lib/modernization/neome-replay.mjs";
 
 /** A tiny app: login sets a cookie, /me needs it, /items/:id echoes JSON. */
 function app(variant: { dateFormat: "date" | "datetime"; slug: string }) {
@@ -216,5 +220,60 @@ createServer((req, res) => {
       managedApps: true,
     });
     await expect(fetch("http://127.0.0.1:5941")).rejects.toThrow();
+  });
+
+  it("rejects guessed formats with errors that say how to fix them", async () => {
+    await expect(
+      replayManaged({
+        apps: {
+          legacy: { command: "x", url: "http://127.0.0.1:1" },
+          new: {},
+        },
+        files: [scenarioFile(journey)],
+      }),
+    ).rejects.toThrow(/unknown key "new".*\n.*unknown key "command"/s);
+    await expect(
+      replay({
+        legacy,
+        target: twin,
+        files: [scenarioFile([{ path: "/" }])],
+      }),
+    ).rejects.toThrow(/not a list/);
+  });
+
+  it("characterizes the legacy app against itself on fresh data", async () => {
+    const root = mkdtempSync(join(tmpdir(), "neome-char-"));
+    writeFileSync(
+      join(root, "server.mjs"),
+      `import { createServer } from "node:http";
+let n = 0;
+createServer((req, res) => {
+  n += 1;
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(req.url === "/counter" ? "<p>" + n + "</p>" : "<p>hi</p>");
+}).listen(Number(process.env.PORT), "127.0.0.1");`,
+    );
+    const report = await characterize({
+      root,
+      apps: {
+        legacy: { start: "node server.mjs", url: "http://127.0.0.1:5943" },
+      },
+      files: [
+        scenarioFile({
+          name: "counter",
+          steps: [
+            { name: "one", path: "/counter" },
+            { name: "two", path: "/counter" },
+          ],
+        }),
+      ],
+    });
+    // A restart per run makes the in-memory counter repeat exactly.
+    expect(report).toMatchObject({
+      kind: "characterize",
+      total: 2,
+      identical: 2,
+      freshData: true,
+    });
   });
 });

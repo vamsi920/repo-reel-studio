@@ -16,6 +16,51 @@ import AgentServerConversationService from "#/api/conversation-service/agent-ser
  */
 export const REPLAY_HARNESS_PATH = ".neome/replay.mjs";
 export const REPLAY_REPORT_PATH = ".neome/replay-report.json";
+export const CHARACTERIZE_REPORT_PATH = ".neome/characterize-report.json";
+export const REPLAY_APPS_PATH = "parity/apps.json";
+/** Characterization happens before building, so it may be a while old. */
+export const CHARACTERIZE_REPORT_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+/** Handed to the agent in the describe receipt so it never guesses formats. */
+export const REPLAY_APPS_EXAMPLE = {
+  fixture: "parity/fixture.sqlite",
+  legacy: {
+    cwd: ".",
+    start: ".venv/bin/flask --app app run --port 5911",
+    url: "http://127.0.0.1:5911",
+    store: "instance/app.sqlite",
+  },
+  target: {
+    cwd: "new-app",
+    start: "node server.js",
+    url: "http://127.0.0.1:5912",
+    store: "data/app.sqlite",
+    env: { DATABASE_PATH: "data/app.sqlite" },
+  },
+};
+export const REPLAY_SCENARIO_EXAMPLE = {
+  name: "sign up, post, edit",
+  legacyData: false,
+  steps: [
+    {
+      name: "register",
+      session: "alice",
+      method: "POST",
+      path: "/auth/register",
+      form: { username: "alice", password: "pw" },
+    },
+    { name: "home after register", session: "alice", path: "/" },
+    {
+      name: "create via API",
+      session: "alice",
+      method: "POST",
+      path: "/api/items",
+      json: { title: "t" },
+      capture: { id: { json: "item.id" } },
+    },
+    { name: "read it back", session: "alice", path: "/api/items/{{id}}" },
+  ],
+};
 export const REPLAY_SCENARIOS_DIR = "parity/scenarios";
 /** A report older than this does not describe the code being verified. */
 export const REPLAY_REPORT_MAX_AGE_MS = 60 * 60 * 1000;
@@ -33,6 +78,8 @@ export type RunInWorkspace = (
 
 export interface ReplayReport {
   version: number;
+  /** "replay" (legacy vs new) or "characterize" (legacy vs itself). */
+  kind?: "replay" | "characterize";
   generatedAt: string;
   legacy: string;
   target: string;
@@ -78,11 +125,10 @@ export async function installReplayHarness(
 /** Reads the last report, or null when there is none (or it is unreadable). */
 export async function readReplayReport(
   run: RunInWorkspace,
+  path: string = REPLAY_REPORT_PATH,
 ): Promise<ReplayReport | null> {
   try {
-    const result = await run(
-      `test -f ${REPLAY_REPORT_PATH} && cat ${REPLAY_REPORT_PATH} || true`,
-    );
+    const result = await run(`test -f ${path} && cat ${path} || true`);
     const text = result.stdout?.trim();
     if (!text) return null;
     const parsed = JSON.parse(text) as ReplayReport;
@@ -112,6 +158,9 @@ export function judgeReplayReport(
   { now, noPersistentData }: { now: number; noPersistentData: boolean },
 ): ReplayVerdict {
   if (!report) return { ok: false, reason: "replay_report_missing" };
+  if (report.kind === "characterize") {
+    return { ok: false, reason: "replay_report_is_characterization" };
+  }
   const age = now - Date.parse(report.generatedAt);
   if (!Number.isFinite(age) || age > REPLAY_REPORT_MAX_AGE_MS) {
     return { ok: false, reason: "replay_report_stale" };
@@ -164,5 +213,40 @@ export function createWorkspaceRunner(
       await cwd,
       60,
     );
+  };
+}
+
+/**
+ * Whether characterization ran: every scenario replayed twice against the
+ * legacy app alone, on the fresh fixture, with identical results.
+ */
+export function judgeCharacterizeReport(
+  report: ReplayReport | null,
+  { now }: { now: number },
+): ReplayVerdict {
+  if (report?.kind !== "characterize") {
+    return { ok: false, reason: "characterization_not_run" };
+  }
+  const age = now - Date.parse(report.generatedAt);
+  if (!Number.isFinite(age) || age > CHARACTERIZE_REPORT_MAX_AGE_MS) {
+    return { ok: false, reason: "characterization_stale" };
+  }
+  if (report.total <= 0)
+    return { ok: false, reason: "characterization_no_steps" };
+  if (report.freshData !== true) {
+    return { ok: false, reason: "characterization_not_fresh_data" };
+  }
+  if (report.identical < report.total) {
+    return {
+      ok: false,
+      reason: `characterization_nondeterministic:${report.total - report.identical}`,
+      differences: report.differences.slice(0, 12),
+    };
+  }
+  return {
+    ok: true,
+    total: report.total,
+    identical: report.identical,
+    legacyDataCases: report.legacyDataCases,
   };
 }

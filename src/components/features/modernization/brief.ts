@@ -86,7 +86,12 @@ modernization_control tool; the user watches that panel.
    starts the app, waits for it, replays, and stops exactly that process, so
    you never manage the two servers or their data by hand. Build the fixture
    through the legacy app itself (register users, create records with it),
-   so it holds legacy-written data.
+   so it holds legacy-written data. Use exactly the apps.json and scenario
+   formats describe returns (unknown keys are rejected). Before any
+   migration code exists, run
+     node .neome/replay.mjs --characterize --apps parity/apps.json parity/scenarios
+   (every scenario twice against the legacy app alone); the studio will not
+   accept the characterize step until that report is fully identical.
    First list every route x method (and every screen/command) in
    parity/PARITY.md, with how to start each app on fresh data, and give
    each at least one step. Cover happy paths AND every error branch the
@@ -98,9 +103,7 @@ modernization_control tool; the user watches that panel.
    carry its real hash format and dates its real encoding), with the new
    app pointed at a copy of that same store. Normalise only values that are
    legitimately random (generated ids/slugs; JWTs, ISO timestamps and UUIDs
-   are handled) -- never normalise away real output. Run it legacy-vs-legacy
-   (two fresh instances) first: every step must be identical there, or the
-   scenario is non-deterministic. The studio reads .neome/replay-report.json
+   are handled) -- never normalise away real output. The studio reads .neome/replay-report.json
    itself and refuses to finish verify unless the last run (within the hour)
    is identical on every step, started both apps on fresh data (--apps) and
    includes legacy-data steps. Write your own

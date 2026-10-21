@@ -423,7 +423,7 @@ describe("parity proven by Neo ME's own replay", () => {
   const commands: string[] = [];
   const runInWorkspace = vi.fn(async (command: string) => {
     commands.push(command);
-    if (command.includes("replay-report.json")) {
+    if (command.includes("-report.json")) {
       return { exit_code: 0, stdout: report ? JSON.stringify(report) : "" };
     }
     return { exit_code: 0, stdout: "" };
@@ -459,6 +459,31 @@ describe("parity proven by Neo ME's own replay", () => {
     seedProject();
     commands.length = 0;
     report = null;
+  });
+
+  it("refuses to finish characterization until the legacy app was replayed against itself", async () => {
+    await run("record_discovery", {
+      components: [{ name: "API", kind: "backend", evidence: ["app.py"] }],
+    });
+    await run("set_plan", {
+      steps: [{ id: "chars", phase: "characterize", title: "Characterize" }],
+    });
+    await run("update_progress", { step_id: "chars", status: "active" });
+    const [missing] = await run("update_progress", {
+      step_id: "chars",
+      status: "done",
+    });
+    expect(missing).toMatchObject({
+      status: "rejected",
+      reason: "characterization_not_proven",
+      detail: "characterization_not_run",
+    });
+    report = replayReport({ kind: "characterize", target: null });
+    const [ok] = await run("update_progress", {
+      step_id: "chars",
+      status: "done",
+    });
+    expect(ok.status).toBe("ok");
   });
 
   it("installs the harness on describe and decides verify from its report, not from claimed numbers", async () => {
