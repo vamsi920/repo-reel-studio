@@ -388,7 +388,8 @@ export function shouldPauseForSpend({
 
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
-  describe: "{}",
+  describe:
+    "{} | {synth_data: {schema_path: 'parity/schema.sql' (SQL DDL, schema.prisma or OpenAPI JSON of the LEGACY store), scenario?: smoke|realistic|edge_cases (default realistic), counts?: {[entity]: number}, seed?}} -> the project state; with synth_data it also writes parity/synth/{fixture.sql, dataset.json, model.json} and returns rows per entity, validation and sample primary keys",
   record_discovery:
     "{components:[{id?, name, kind: frontend|backend|api|database|mobile|desktop|jobs|messaging|infra|tests|build|auth|other, language?, framework?, version?, logo?, summary?, evidence:[string], target?:{language?, framework?, logo?, note?}}]}",
   ask_choice:
@@ -400,8 +401,6 @@ export const COMMAND_SHAPES = Object.freeze({
   update_progress:
     "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, parity_total?, parity_passing?, parity_differential?: boolean, legacy_data_cases?, no_persistent_data?: boolean, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
   log: "{text, level?: info|warn|error|success, step_id?}",
-  synth_data:
-    "{schema_path: 'parity/schema.sql' (SQL DDL, schema.prisma or OpenAPI JSON of the LEGACY store), scenario?: smoke|realistic|edge_cases (default realistic), counts?: {[entity]: number}, seed?} -> writes parity/synth/{fixture.sql, dataset.json, model.json}; returns rows per entity, validation and sample primary keys",
   checkpoint:
     "{label, step_id?, state:{...anything you need to resume, no secrets}}",
   complete: "{summary, verification?:{...}, artifacts?:[paths]}",
@@ -574,6 +573,161 @@ function parseStats(raw: unknown): ProgressStats | null {
   ) as ProgressStats;
 }
 
+/**
+ * Neo Synth inside Neo ME: a validated dataset generated from the legacy
+ * store's schema, written to parity/synth/ so the harness can load the same
+ * rows into both apps. Rides on describe's payload (see the command list).
+ */
+async function synthData(
+  payload: Record<string, unknown>,
+  project: ModernizationProject,
+  projectId: string,
+  context: DispatchContext,
+  store: ReturnType<typeof useModernizationStudioStore.getState>,
+  now: string,
+): Promise<void> {
+  const schemaPath = str(payload.schema_path);
+  if (!schemaPath) {
+    postReceipt(context, {
+      status: "rejected",
+      reason: "missing_schema_path",
+      shape: COMMAND_SHAPES.describe,
+    });
+    return;
+  }
+  if (!context.runInWorkspace) {
+    postReceipt(context, {
+      status: "rejected",
+      reason: "no_runtime",
+      guidance:
+        "The studio cannot read the workspace right now; retry once the conversation is connected.",
+    });
+    return;
+  }
+  const content = await readWorkspaceFile(context.runInWorkspace, schemaPath);
+  if (content === null) {
+    postReceipt(context, {
+      status: "rejected",
+      reason: "schema_not_found",
+      detail: schemaPath,
+      guidance:
+        "Dump the legacy store's DDL first (e.g. sqlite3 <db> .schema > parity/schema.sql, pg_dump --schema-only, or point at schema.prisma / an OpenAPI JSON), then call synth_data again.",
+    });
+    return;
+  }
+  const parsed = parseSchemaFile(schemaPath, content);
+  const model: DataModel = {
+    entities: parsed.entities.map(withInferredSemantics),
+    rules: [],
+    flows: [],
+  };
+  const problems = modelProblems(model);
+  if (model.entities.length === 0 || problems.length) {
+    postReceipt(context, {
+      status: "rejected",
+      reason: model.entities.length ? "model_problems" : "no_entities",
+      problems,
+      warnings: parsed.warnings.slice(0, 10),
+      guidance:
+        "The schema file did not yield a usable data model. Give synth_data a complete DDL of the legacy store (every table the app reads) and check the warnings.",
+    });
+    return;
+  }
+  const scenarioId = str(payload.scenario) ?? "realistic";
+  const base: Scenario | undefined = builtinScenarios(model).find(
+    (sc) => sc.id === scenarioId,
+  );
+  if (!base) {
+    postReceipt(context, {
+      status: "rejected",
+      reason: "unknown_scenario",
+      valid: builtinScenarios(model).map((sc) => sc.id),
+    });
+    return;
+  }
+  const counts = { ...base.counts };
+  if (payload.counts && typeof payload.counts === "object") {
+    for (const [k, v] of Object.entries(
+      payload.counts as Record<string, unknown>,
+    )) {
+      if (typeof v === "number" && v >= 0) counts[k] = Math.floor(v);
+    }
+  }
+  const seed = num(payload.seed) ?? 20261021;
+  const dataset = generateDataset(model, { ...base, counts }, { seed });
+  const validation = validateDataset(model, dataset);
+  const failed = validation.checks
+    .filter((c) => !c.passed)
+    .slice(0, 10)
+    .map((c) => ({
+      entity: c.entity,
+      check: c.label,
+      failures: c.failures,
+      samples: c.samples.slice(0, 3),
+    }));
+  const sampleIds: Record<string, unknown[]> = {};
+  const rows: Record<string, number> = {};
+  for (const entity of model.entities) {
+    const pk = primaryKeyOf(entity)?.name;
+    const table = dataset.tables[entity.id] ?? [];
+    rows[entity.table ?? entity.name] = table.length;
+    if (pk)
+      sampleIds[entity.table ?? entity.name] = table
+        .slice(0, 3)
+        .map((r) => r[pk]);
+  }
+  const files = [
+    { path: SYNTH_SQL_PATH, content: toSql(model, dataset, "sqlite") },
+    {
+      path: `${SYNTH_DIR}/dataset.json`,
+      content: `${JSON.stringify(dataset, null, 2)}\n`,
+    },
+    {
+      path: `${SYNTH_DIR}/model.json`,
+      content: `${JSON.stringify(model, null, 2)}\n`,
+    },
+  ];
+  const commands = [
+    `mkdir -p ${SYNTH_DIR}`,
+    ...files.flatMap(buildWriteFileCommands),
+  ];
+  for (const command of commands) {
+    const result = await context.runInWorkspace(command);
+    if (result.exit_code !== 0) {
+      postReceipt(context, {
+        status: "rejected",
+        reason: "write_failed",
+        detail: result.stderr?.trim() || command,
+      });
+      return;
+    }
+  }
+  store.appendLog(projectId, {
+    id: newModernizationId("log"),
+    level: "success",
+    text: `Neo Synth: ${Object.values(rows).reduce((a, b) => a + b, 0)} rows across ${model.entities.length} tables written to ${SYNTH_DIR}`,
+    at: now,
+  });
+  store.mergeStats(projectId, {
+    extra: {
+      ...(project.stats.extra ?? {}),
+      "Synth rows": String(Object.values(rows).reduce((a, b) => a + b, 0)),
+    },
+  });
+  postReceipt(context, {
+    status: validation.ok ? "ok" : "rejected",
+    reason: validation.ok ? undefined : "synth_validation_failed",
+    failed_checks: failed.length ? failed : undefined,
+    entities: model.entities.map((e) => e.table ?? e.name),
+    rows,
+    sample_primary_keys: sampleIds,
+    files: files.map((f) => f.path),
+    warnings: parsed.warnings.slice(0, 10),
+    next: `Add "synth": {"sql": "${SYNTH_SQL_PATH}"} to ${REPLAY_APPS_PATH} (the harness loads the rows into every SQLite store after the fixture; for other stores load it from the "reset" command), then write scenarios with "synthData": true that read these rows through the app (list pages, detail pages by the sample ids above, searches). The studio refuses characterize and verify without them.`,
+  });
+  return;
+}
+
 export async function handleModernizationControlAction(
   action: ModernizationControlAction,
   context: DispatchContext,
@@ -605,6 +759,17 @@ export async function handleModernizationControlAction(
 
   switch (action.command) {
     case "describe": {
+      if (payload.synth_data && typeof payload.synth_data === "object") {
+        await synthData(
+          payload.synth_data as Record<string, unknown>,
+          project,
+          projectId,
+          context,
+          store,
+          now,
+        );
+        return;
+      }
       const harness = context.runInWorkspace
         ? await installReplayHarness(context.runInWorkspace)
         : false;
@@ -623,7 +788,7 @@ export async function handleModernizationControlAction(
                 scenario_example: REPLAY_SCENARIO_EXAMPLE,
                 rea_lane: `node ${REPLAY_HARNESS_PATH} --rea --apps ${REPLAY_APPS_PATH} ${REA_SCENARIOS_DIR}  (add --characterize before building)`,
                 rea_browser_scenario_example: REA_BROWSER_SCENARIO_EXAMPLE,
-                synth: `Call synth_data with the legacy schema file first; then put "synth": {"sql": "${SYNTH_SQL_PATH}"} in ${REPLAY_APPS_PATH} and add scenarios with "synthData": true that read the generated rows (ids in ${SYNTH_DIR}/dataset.json) through both apps.`,
+                synth: `Call describe with {synth_data: {schema_path: "<legacy schema file>"}} first; then put "synth": {"sql": "${SYNTH_SQL_PATH}"} in ${REPLAY_APPS_PATH} and add scenarios with "synthData": true that read the generated rows (ids in ${SYNTH_DIR}/dataset.json) through both apps.`,
                 note: "Use exactly these formats (the harness rejects unknown keys; full reference at the top of the file). Characterize before building: the studio reads .neome/characterize-report.json before a characterize step can be done, and .neome/replay-report.json before a verify step can be done.",
               },
             }
@@ -1006,152 +1171,6 @@ export async function handleModernizationControlAction(
         progress: progress
           ? { steps_done: progress.done, steps_total: progress.total }
           : undefined,
-      });
-      return;
-    }
-
-    case "synth_data": {
-      const schemaPath = str(payload.schema_path);
-      if (!schemaPath) {
-        postReceipt(context, {
-          status: "rejected",
-          reason: "missing_schema_path",
-          shape: COMMAND_SHAPES.synth_data,
-        });
-        return;
-      }
-      if (!context.runInWorkspace) {
-        postReceipt(context, {
-          status: "rejected",
-          reason: "no_runtime",
-          guidance:
-            "The studio cannot read the workspace right now; retry once the conversation is connected.",
-        });
-        return;
-      }
-      const content = await readWorkspaceFile(
-        context.runInWorkspace,
-        schemaPath,
-      );
-      if (content === null) {
-        postReceipt(context, {
-          status: "rejected",
-          reason: "schema_not_found",
-          detail: schemaPath,
-          guidance:
-            "Dump the legacy store's DDL first (e.g. sqlite3 <db> .schema > parity/schema.sql, pg_dump --schema-only, or point at schema.prisma / an OpenAPI JSON), then call synth_data again.",
-        });
-        return;
-      }
-      const parsed = parseSchemaFile(schemaPath, content);
-      const model: DataModel = {
-        entities: parsed.entities.map(withInferredSemantics),
-        rules: [],
-        flows: [],
-      };
-      const problems = modelProblems(model);
-      if (model.entities.length === 0 || problems.length) {
-        postReceipt(context, {
-          status: "rejected",
-          reason: model.entities.length ? "model_problems" : "no_entities",
-          problems,
-          warnings: parsed.warnings.slice(0, 10),
-          guidance:
-            "The schema file did not yield a usable data model. Give synth_data a complete DDL of the legacy store (every table the app reads) and check the warnings.",
-        });
-        return;
-      }
-      const scenarioId = str(payload.scenario) ?? "realistic";
-      const base: Scenario | undefined = builtinScenarios(model).find(
-        (sc) => sc.id === scenarioId,
-      );
-      if (!base) {
-        postReceipt(context, {
-          status: "rejected",
-          reason: "unknown_scenario",
-          valid: builtinScenarios(model).map((sc) => sc.id),
-        });
-        return;
-      }
-      const counts = { ...base.counts };
-      if (payload.counts && typeof payload.counts === "object") {
-        for (const [k, v] of Object.entries(
-          payload.counts as Record<string, unknown>,
-        )) {
-          if (typeof v === "number" && v >= 0) counts[k] = Math.floor(v);
-        }
-      }
-      const seed = num(payload.seed) ?? 20261021;
-      const dataset = generateDataset(model, { ...base, counts }, { seed });
-      const validation = validateDataset(model, dataset);
-      const failed = validation.checks
-        .filter((c) => !c.passed)
-        .slice(0, 10)
-        .map((c) => ({
-          entity: c.entity,
-          check: c.label,
-          failures: c.failures,
-          samples: c.samples.slice(0, 3),
-        }));
-      const sampleIds: Record<string, unknown[]> = {};
-      const rows: Record<string, number> = {};
-      for (const entity of model.entities) {
-        const pk = primaryKeyOf(entity)?.name;
-        const table = dataset.tables[entity.id] ?? [];
-        rows[entity.table ?? entity.name] = table.length;
-        if (pk)
-          sampleIds[entity.table ?? entity.name] = table
-            .slice(0, 3)
-            .map((r) => r[pk]);
-      }
-      const files = [
-        { path: SYNTH_SQL_PATH, content: toSql(model, dataset, "sqlite") },
-        {
-          path: `${SYNTH_DIR}/dataset.json`,
-          content: `${JSON.stringify(dataset, null, 2)}\n`,
-        },
-        {
-          path: `${SYNTH_DIR}/model.json`,
-          content: `${JSON.stringify(model, null, 2)}\n`,
-        },
-      ];
-      const commands = [
-        `mkdir -p ${SYNTH_DIR}`,
-        ...files.flatMap(buildWriteFileCommands),
-      ];
-      for (const command of commands) {
-        const result = await context.runInWorkspace(command);
-        if (result.exit_code !== 0) {
-          postReceipt(context, {
-            status: "rejected",
-            reason: "write_failed",
-            detail: result.stderr?.trim() || command,
-          });
-          return;
-        }
-      }
-      store.appendLog(projectId, {
-        id: newModernizationId("log"),
-        level: "success",
-        text: `Neo Synth: ${Object.values(rows).reduce((a, b) => a + b, 0)} rows across ${model.entities.length} tables written to ${SYNTH_DIR}`,
-        at: now,
-      });
-      store.mergeStats(projectId, {
-        extra: {
-          ...(project.stats.extra ?? {}),
-          "Synth rows": String(Object.values(rows).reduce((a, b) => a + b, 0)),
-        },
-      });
-      postReceipt(context, {
-        status: validation.ok ? "ok" : "rejected",
-        reason: validation.ok ? undefined : "synth_validation_failed",
-        failed_checks: failed.length ? failed : undefined,
-        entities: model.entities.map((e) => e.table ?? e.name),
-        rows,
-        sample_primary_keys: sampleIds,
-        files: files.map((f) => f.path),
-        warnings: parsed.warnings.slice(0, 10),
-        next: `Add "synth": {"sql": "${SYNTH_SQL_PATH}"} to ${REPLAY_APPS_PATH} (the harness loads the rows into every SQLite store after the fixture; for other stores load it from the "reset" command), then write scenarios with "synthData": true that read these rows through the app (list pages, detail pages by the sample ids above, searches). The studio refuses characterize and verify without them.`,
       });
       return;
     }

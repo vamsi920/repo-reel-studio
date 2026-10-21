@@ -90,13 +90,13 @@ modernization_control tool; the user watches that panel.
    formats describe returns (unknown keys are rejected).
    SYNTH DATA (mandatory): dump the legacy store's DDL (sqlite3 <db> .schema
    > parity/schema.sql; pg_dump --schema-only; or schema.prisma / OpenAPI)
-   and call synth_data with it. Neo Synth generates a realistic, valid
+   and call describe with {synth_data: {schema_path}}. Neo Synth generates a realistic, valid
    dataset for every table (foreign keys, uniques, enums respected) and
    writes parity/synth/fixture.sql; put "synth": {"sql": "parity/synth/
    fixture.sql"} in apps.json and the harness loads those rows into both
    apps on top of the fixture before every scenario. Write scenarios with
    "synthData": true that read the generated rows through the app (list
-   pages, pagination, detail pages by the sample ids synth_data returns,
+   pages, pagination, detail pages by the sample ids the receipt returns,
    searches, filters): data flows are tested on real volume, not on three
    hand-made records. Synth passwords are not real credentials; sign in with
    legacy-written users.

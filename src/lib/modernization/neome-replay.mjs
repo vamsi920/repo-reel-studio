@@ -696,10 +696,15 @@ export function snapshotSqlite(store) {
  * skipped); secret-like columns count as present/absent only; rows are
  * normalised and compared as unordered sets.
  */
+/**
+ * @param {Record<string, { columns: string[], rows: Record<string, unknown>[] }>} legacy
+ * @param {Record<string, { columns: string[], rows: Record<string, unknown>[] }>} target
+ * @param {{ norm?: (s: string) => string, ignoreColumns?: string[], tableMap?: Record<string, string> }} [options]
+ */
 export function compareStores(
   legacy,
   target,
-  { norm, ignoreColumns = [], tableMap = {} } = {},
+  { norm = (v) => v, ignoreColumns = [], tableMap = {} } = {},
 ) {
   const result = { compared: 0, identical: 0, skipped: [], differences: [] };
   for (const [name, left] of Object.entries(legacy)) {
@@ -1157,6 +1162,7 @@ export async function reaLane({
   const outDir = resolve(root, ".neome/rea");
   mkdirSync(outDir, { recursive: true });
   const port = new URL(apps.legacy.url).port || "80";
+  /** @type {{ version: number, kind: string, generatedAt: string, tool: string, legacy: string, target: string | null, scenarios: number, unchanged: number, freshData: boolean, synthApplied: boolean, harnessNormalization: string[], results: { scenario: string, status: string, error?: string, alignment?: unknown, evidence: Record<string, string>, changed: { step: string | null, artifact: string, status: string, reason?: string | null }[] }[] }} */
   const report = {
     version: VERSION,
     kind: selfCheck ? "rea-characterize" : "rea",
@@ -1175,6 +1181,7 @@ export async function reaLane({
     const scenario = scenarios[index];
     const name = (scenario.name ?? file).replace(/[^\w.-]+/g, "_");
     report.scenarios += 1;
+    /** @type {(typeof report.results)[number]} */
     const entry = {
       scenario: scenario.name ?? file,
       status: "error",

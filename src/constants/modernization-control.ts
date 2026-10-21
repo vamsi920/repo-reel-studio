@@ -31,7 +31,11 @@ export const MODERNIZATION_RESULT_PREFIX = "[neome result] ";
  */
 export const MODERNIZATION_CONTROL_COMMANDS = [
   // Orientation: the current project state, answers so far, plan, progress,
-  // last checkpoint. Call it first, and again after any resume.
+  // last checkpoint. Call it first, and again after any resume. With
+  // payload {synth_data: {...}} it also generates Neo Synth data from the
+  // legacy schema (parity/synth/). New verbs ride on existing commands'
+  // payloads: the agent-server pins this enum from the first conversation
+  // it loads (resumed ones included), so the list can never change.
   "describe",
   // Discovery: components of the legacy application (frontend, backend,
   // database, jobs, infra, tests...) with language/framework/version and the
@@ -48,9 +52,6 @@ export const MODERNIZATION_CONTROL_COMMANDS = [
   "update_progress",
   // A line in the live log (what is being done right now).
   "log",
-  // Neo Synth: generate a realistic dataset from the legacy schema and write
-  // it (SQL + JSON) into parity/synth/ so both apps run on the same rows.
-  "synth_data",
   // Durable resume point: label + arbitrary state the agent will need back.
   "checkpoint",
   // Final report; refused while plan steps are still pending.

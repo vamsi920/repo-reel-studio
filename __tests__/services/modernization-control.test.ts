@@ -558,20 +558,22 @@ describe("parity proven by Neo ME's own replay", () => {
   });
 
   it("generates Synth data from the legacy schema into parity/synth", async () => {
-    const [missing] = await run("synth_data", {});
+    const [missing] = await run("describe", { synth_data: {} });
     expect(missing).toMatchObject({
       status: "rejected",
       reason: "missing_schema_path",
     });
-    const [notFound] = await run("synth_data", {
-      schema_path: "parity/nope.sql",
+    const [notFound] = await run("describe", {
+      synth_data: { schema_path: "parity/nope.sql" },
     });
     expect(notFound).toMatchObject({ reason: "schema_not_found" });
     commands.length = 0;
-    const [ok] = await run("synth_data", {
-      schema_path: "parity/schema.sql",
-      scenario: "smoke",
-      counts: { post: 5 },
+    const [ok] = await run("describe", {
+      synth_data: {
+        schema_path: "parity/schema.sql",
+        scenario: "smoke",
+        counts: { post: 5 },
+      },
     });
     expect(ok.status).toBe("ok");
     expect(ok.entities).toEqual(["author", "post"]);
