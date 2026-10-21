@@ -1080,7 +1080,7 @@ export async function handleSynthControlAction(
       status: "rejected",
       reason: "no_project",
       guidance:
-        "This conversation is not attached to a Neo Synth project. Ask the user to open the studio from the Synth page.",
+        "This conversation is not attached to a Neo Synth project. In a Neo ME migration, generate Synth data with modernization_control describe {synth_data: {schema_path}} instead. Otherwise ask the user to open the studio from the Synth page.",
     });
     return;
   }
