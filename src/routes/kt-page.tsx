@@ -5,6 +5,7 @@ import { Player, type PlayerRef } from "@remotion/player";
 import {
   AlertCircle,
   AlertTriangle,
+  Captions,
   FileText,
   Loader2,
   Video,
@@ -17,18 +18,30 @@ import { MarkdownRenderer } from "#/components/features/markdown/markdown-render
 import { mermaidAwareCode } from "#/components/features/markdown/mermaid-code-block";
 import { KtBreadcrumb } from "#/components/features/kt-video/kt-breadcrumb";
 import { readSnapshotFiles } from "#/lib/knowledge/workspace-file-reader";
-import {
-  buildKtManifestFromKnowledgePage,
-  type KtManifest,
-} from "#/lib/kt-video/build-manifest";
+import type { KtManifest } from "#/lib/kt-video/build-manifest";
 import { findConceptFlow } from "#/lib/kt-video/concept-flow";
-import { narrateManifest } from "#/lib/kt-video/narrate-manifest";
 import { useSceneNarration } from "#/lib/kt-video/use-scene-narration";
+import {
+  buildTutorial,
+  type TutorialProgress,
+} from "#/lib/kt-video/generate-tutorial";
+import {
+  getCachedTutorial,
+  readPersistedScript,
+  setCachedTutorial,
+  tutorialCacheKey,
+  writePersistedScript,
+} from "#/lib/kt-video/tutorial-cache";
+import { narrationManifestFromTutorial } from "#/lib/kt-video/tutorial-narration";
+import type { KtTutorial } from "#/lib/kt-video/tutorial-types";
+import DeepWikiService from "#/api/deepwiki-service/deepwiki-service.api";
+import { withAppRoute } from "#/lib/model-routing/app-side";
+import { resolveDeepWikiRepoTarget } from "#/lib/knowledge/deepwiki-repo-target";
 import {
   readStoredNarrationPreference,
   writeStoredNarrationPreference,
 } from "#/lib/kt-video/narration-preference";
-import { KtVideoComposition } from "#/components/features/kt-video/kt-video-composition";
+import { KtTutorialComposition } from "#/components/features/kt-video/tutorial/tutorial-composition";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useCodeGraphStore } from "#/stores/codegraph-store";
 import { codeGraphKey } from "#/lib/codegraph/codegraph-types";
@@ -69,10 +82,10 @@ function KtPage() {
   const wantsWatch = searchParams.get("view") === "watch";
 
   const [mode, setMode] = useState<ViewMode>(wantsWatch ? "watch" : "read");
-  const [manifest, setManifest] = useState<ReturnType<
-    typeof buildKtManifestFromKnowledgePage
-  > | null>(null);
+  const [tutorial, setTutorial] = useState<KtTutorial | null>(null);
+  const [progress, setProgress] = useState<TutorialProgress | null>(null);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [captionsEnabled, setCaptionsEnabled] = useState(true);
   const playerRef = useRef<PlayerRef>(null);
   // Remembered across pages/reloads (see narration-preference.ts) -- without
   // this, re-enabling narration after every single page navigation made the
@@ -99,10 +112,20 @@ function KtPage() {
   const autoWatchStarted = useRef(false);
   const activeGenerationIdRef = useRef(0);
 
+  // Synthesised narration travels inside the video itself; the browser
+  // voice is only the fallback for a tutorial that has no audio clips.
+  const narrationManifest = useMemo(
+    () => (tutorial ? narrationManifestFromTutorial(tutorial) : EMPTY_MANIFEST),
+    [tutorial],
+  );
+  const hasSynthesizedAudio = Boolean(tutorial?.audio);
   useSceneNarration(
-    manifest ?? EMPTY_MANIFEST,
+    narrationManifest,
     playerRef,
-    narrationEnabled && speechSupported && mode === "watch",
+    narrationEnabled &&
+      speechSupported &&
+      mode === "watch" &&
+      !hasSynthesizedAudio,
   );
 
   // A cached CodeGraph analysis (from an earlier CodeGraph visit — this
@@ -120,16 +143,26 @@ function KtPage() {
 
   // The actual generation work, factored out of handleWatchKt so the
   // page-change effect below can invoke it directly for a page it already
-  // knows needs a fresh manifest — going through handleWatchKt there would
+  // knows needs a fresh tutorial — going through handleWatchKt there would
   // check the `manifest` state closed over at the time that effect fired,
-  // which is one render stale relative to the `setManifest(null)` call just
+  // which is one render stale relative to the `setTutorial(null)` call just
   // above it (state updates don't apply to an already-created closure), so
-  // its `if (manifest) return;` guard would see the *previous* page's
+  // its `if (tutorial) return;` guard would see the *previous* page's
   // manifest and wrongly skip regeneration.
   const generateWatchManifest = async (
     targetPage: NonNullable<typeof page>,
     targetState: NonNullable<typeof state>,
   ) => {
+    const cacheKey = tutorialCacheKey(
+      decodedRepositoryId ?? targetState.snapshot.repositoryId,
+      targetPage.id,
+      targetState.snapshot.commitSha,
+    );
+    const cached = getCachedTutorial(cacheKey);
+    if (cached) {
+      setTutorial(cached);
+      return;
+    }
     if (!targetState.conversationUrl || !targetState.sessionApiKey) {
       // A cold-rehydrated (Supabase) entry has real Docs content but no live
       // session — Watch KT needs one to download real file content. Real
@@ -142,12 +175,13 @@ function KtPage() {
     // can start a newer generation before an older one for a previous page
     // has resolved. Without this id, whichever call's `finally` runs first
     // flips `isGeneratingVideo` back off while the other is still running,
-    // and a slow older call's `setManifest` can land after the newer one's
+    // and a slow older call's `setTutorial` can land after the newer one's
     // and silently show the wrong page's video. Every state write below is
     // gated on this call still being the most recently started one.
     const generationId = ++activeGenerationIdRef.current;
     const isStale = () => activeGenerationIdRef.current !== generationId;
     setIsGeneratingVideo(true);
+    setProgress({ stage: "diagrams" });
     try {
       const { contents: fileContents } = await readSnapshotFiles(
         targetState.snapshot,
@@ -174,22 +208,62 @@ function KtPage() {
           ).catch(() => [])
         : [];
       if (isStale()) return;
-      const builtManifest = buildKtManifestFromKnowledgePage(
-        targetPage,
-        fileContents,
-        Object.keys(fileContents),
-        5,
-        conceptHops,
-      );
-      // Best-effort tutorial-style narration pass — never blocks or fails
-      // video generation; any failure leaves the deterministic template
-      // narration already in the manifest untouched.
-      const narrated = await narrateManifest(
-        builtManifest,
+
+      // The script is written by the same model route the KT docs use,
+      // through DeepWiki (which holds the provider keys). The target is
+      // resolved once; a failure here simply means no LLM, and the
+      // deterministic script takes over inside buildTutorial.
+      const target = await resolveDeepWikiRepoTarget(
         targetState.snapshot,
-      ).catch(() => builtManifest);
+      ).catch(() => null);
+      const chat = target
+        ? (prompt: string) =>
+            withAppRoute("narration", (route) =>
+              DeepWikiService.chatCompletion({
+                repo_url: target.repo_url,
+                type: target.type,
+                token: target.token,
+                provider: route.provider,
+                model: route.model,
+                messages: [{ role: "user", content: prompt }],
+              }),
+            )
+        : null;
+
+      const siblingPageTitles = targetState.knowledge?.pages
+        .filter((p) => p.id !== targetPage.id)
+        .map((p) => p.title);
+      const persistedScript = readPersistedScript(cacheKey);
+      const built = await buildTutorial(
+        {
+          script: persistedScript,
+          onScript: (script) =>
+            writePersistedScript(cacheKey, {
+              chapters: script.chapters,
+              source: script.source,
+              wordCount: script.wordCount,
+            }),
+          repoName: `${targetState.snapshot.owner}/${targetState.snapshot.repo}`,
+          commitSha: targetState.snapshot.commitSha,
+          page: targetPage,
+          repoSummary: targetState.knowledge?.summary,
+          siblingPageTitles,
+          files: fileContents,
+          conceptHops: conceptHops.map((hop) => ({
+            path: hop.path,
+            startLine: hop.startLine,
+            endLine: hop.endLine,
+            symbol: hop.symbol,
+          })),
+          chat,
+        },
+        (next) => {
+          if (!isStale()) setProgress(next);
+        },
+      );
       if (isStale()) return;
-      setManifest(narrated);
+      setCachedTutorial(cacheKey, built);
+      setTutorial(built);
     } catch (error) {
       if (isStale()) return;
       displayErrorToast(error instanceof Error ? error.message : String(error));
@@ -197,6 +271,7 @@ function KtPage() {
     } finally {
       if (!isStale()) {
         setIsGeneratingVideo(false);
+        setProgress(null);
       }
     }
   };
@@ -204,15 +279,15 @@ function KtPage() {
   const handleWatchKt = async () => {
     if (!page || !state) return;
     setMode("watch");
-    if (manifest) return;
+    if (tutorial) return;
     await generateWatchManifest(page, state);
   };
 
   // This route (`kt/:repositoryId/:pageId`) is reused across navigations
   // between pages of the same repo — React doesn't remount just because
-  // `:pageId` changed. Without this, `manifest` from the previous page would
+  // `:pageId` changed. Without this, `tutorial` from the previous page would
   // stay set, so clicking Watch KT (or the auto-watch deep link) for the new
-  // page would hit the `if (manifest) return;` guard below and silently keep
+  // page would hit the `if (tutorial) return;` guard below and silently keep
   // showing the previous page's video under the new page's title. Keyed on
   // repositoryId+pageId together, not pageId alone: two different
   // repositories can generate a page with the same short slug (e.g.
@@ -227,7 +302,7 @@ function KtPage() {
     const isPageChange = previousPageKeyRef.current !== null;
     previousPageKeyRef.current = currentPageKey;
     if (!isPageChange) return;
-    setManifest(null);
+    setTutorial(null);
     autoWatchStarted.current = false;
     if (mode === "watch" && page && state) {
       autoWatchStarted.current = true;
@@ -237,7 +312,7 @@ function KtPage() {
 
   useEffect(() => {
     // `?view=watch` should behave exactly like pressing Watch KT, which means
-    // building the manifest — not just flipping the toggle onto an empty player.
+    // building the tutorial — not just flipping the toggle onto an empty player.
     if (!wantsWatch || autoWatchStarted.current) return;
     if (!page || !state) return;
     autoWatchStarted.current = true;
@@ -319,6 +394,22 @@ function KtPage() {
               {t(I18nKey.KT$WATCH_KT)}
             </button>
             {mode === "watch" ? (
+              <button
+                type="button"
+                onClick={() => setCaptionsEnabled((v) => !v)}
+                aria-pressed={captionsEnabled}
+                data-testid="kt-page-captions-toggle"
+                title={t(I18nKey.KT$TUTORIAL_CAPTIONS)}
+                className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
+                  captionsEnabled
+                    ? "border-[var(--primary-500)] bg-[var(--primary-bg-subtle)] text-[var(--primary-500)]"
+                    : "border-[var(--oh-border)] text-[var(--oh-foreground)] hover:bg-[var(--oh-interactive-hover)]"
+                }`}
+              >
+                <Captions className="size-3.5" aria-hidden />
+              </button>
+            ) : null}
+            {mode === "watch" && !hasSynthesizedAudio ? (
               <button
                 type="button"
                 onClick={() =>
@@ -421,27 +512,76 @@ function KtPage() {
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center bg-black p-4">
-            {isGeneratingVideo || !manifest ? (
-              <p className="flex items-center gap-2 py-16 text-sm text-[var(--oh-muted)]">
+          <div className="flex flex-col items-center justify-center gap-3 bg-black p-4">
+            {isGeneratingVideo || !tutorial ? (
+              <p
+                className="flex items-center gap-2 py-16 text-sm text-[var(--oh-muted)]"
+                data-testid="kt-page-generating"
+                role="status"
+              >
                 <Loader2 className="size-4 animate-spin" aria-hidden />
-                {t(I18nKey.KT$GENERATING_VIDEO)}
+                {progress?.stage === "planning"
+                  ? t(I18nKey.KT$TUTORIAL_PROGRESS_PLANNING)
+                  : progress?.stage === "writing"
+                    ? t(I18nKey.KT$TUTORIAL_PROGRESS_WRITING, {
+                        completed: Math.min(
+                          (progress.completed ?? 0) + 1,
+                          progress.total ?? 1,
+                        ),
+                        total: progress.total ?? 1,
+                      })
+                    : progress?.stage === "narrating"
+                      ? t(I18nKey.KT$TUTORIAL_PROGRESS_NARRATING, {
+                          completed: progress.completed ?? 0,
+                          total: progress.total ?? 0,
+                        })
+                      : progress?.stage === "diagrams"
+                        ? t(I18nKey.KT$TUTORIAL_PROGRESS_DIAGRAMS)
+                        : t(I18nKey.KT$GENERATING_VIDEO)}
               </p>
             ) : (
-              <div className="aspect-video w-full max-w-3xl overflow-hidden rounded-lg shadow-2xl">
-                <Player
-                  ref={playerRef}
-                  component={KtVideoComposition}
-                  inputProps={{ manifest }}
-                  durationInFrames={Math.max(1, manifest.totalFrames)}
-                  compositionWidth={1920}
-                  compositionHeight={1080}
-                  fps={manifest.fps}
-                  style={{ width: "100%", height: "100%" }}
-                  controls
-                  loop
-                />
-              </div>
+              <>
+                <div className="aspect-video w-full max-w-5xl overflow-hidden rounded-lg shadow-2xl">
+                  <Player
+                    ref={playerRef}
+                    component={KtTutorialComposition}
+                    inputProps={{ tutorial, captions: captionsEnabled }}
+                    durationInFrames={Math.max(1, tutorial.totalFrames)}
+                    compositionWidth={1920}
+                    compositionHeight={1080}
+                    fps={tutorial.fps}
+                    style={{ width: "100%", height: "100%" }}
+                    controls
+                  />
+                </div>
+                <p
+                  className="flex w-full max-w-5xl flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--oh-muted)]"
+                  data-testid="kt-page-tutorial-meta"
+                >
+                  <span>
+                    {t(I18nKey.KT$TUTORIAL_META, {
+                      minutes: Math.round(
+                        tutorial.totalFrames / tutorial.fps / 60,
+                      ),
+                      chapters: tutorial.chapters.length,
+                      beats: tutorial.chapters.reduce(
+                        (n, c) => n + c.beats.length,
+                        0,
+                      ),
+                    })}
+                  </span>
+                  <span>
+                    {hasSynthesizedAudio
+                      ? t(I18nKey.KT$TUTORIAL_VOICE_GOOGLE)
+                      : t(I18nKey.KT$TUTORIAL_VOICE_BROWSER)}
+                  </span>
+                  {tutorial.scriptSource === "deterministic" ? (
+                    <span className="text-[var(--warning-500)]">
+                      {t(I18nKey.KT$TUTORIAL_SCRIPT_FALLBACK)}
+                    </span>
+                  ) : null}
+                </p>
+              </>
             )}
           </div>
         )}

@@ -38,42 +38,69 @@ vi.mock("#/components/features/markdown/mermaid-code-block", () => ({
   mermaidAwareCode: () => null,
 }));
 
-vi.mock("@remotion/player", () => ({
-  Player: React.forwardRef(
+vi.mock("@remotion/player", () => {
+  const Player = React.forwardRef(
     (
-      props: { inputProps: { manifest: { repo_name: string } } },
+      props: { inputProps: { tutorial: { repoName: string } } },
       _ref: unknown,
     ) => (
       <div data-testid="kt-video-player">
-        {props.inputProps.manifest.repo_name}
+        {props.inputProps.tutorial.repoName}
       </div>
     ),
-  ),
-}));
+  );
+  Player.displayName = "MockPlayer";
+  return { Player };
+});
 
-vi.mock("#/components/features/kt-video/kt-video-composition", () => ({
-  KtVideoComposition: () => null,
+vi.mock("#/components/features/kt-video/tutorial/tutorial-composition", () => ({
+  KtTutorialComposition: () => null,
 }));
 
 vi.mock("#/lib/kt-video/use-scene-narration", () => ({
   useSceneNarration: vi.fn(),
 }));
 
+// `buildTutorial` receives one input object; the mock is called with the
+// page first so the per-page assertions below read naturally.
 const buildManifestMock = vi.fn();
-vi.mock("#/lib/kt-video/build-manifest", () => ({
-  buildKtManifestFromKnowledgePage: (
-    ...args: Parameters<
-      typeof import("#/lib/kt-video/build-manifest").buildKtManifestFromKnowledgePage
-    >
-  ) => buildManifestMock(...args),
+vi.mock("#/lib/kt-video/generate-tutorial", () => ({
+  buildTutorial: (
+    input: Parameters<
+      typeof import("#/lib/kt-video/generate-tutorial").buildTutorial
+    >[0],
+  ) => buildManifestMock(input.page, input),
+}));
+
+// The real cache would short-circuit regeneration across tests.
+vi.mock("#/lib/kt-video/tutorial-cache", () => ({
+  tutorialCacheKey: (...parts: string[]) => parts.join("::"),
+  getCachedTutorial: () => undefined,
+  setCachedTutorial: vi.fn(),
+  readPersistedScript: () => null,
+  writePersistedScript: vi.fn(),
+}));
+
+vi.mock("#/api/deepwiki-service/deepwiki-service.api", () => ({
+  default: { chatCompletion: vi.fn(async () => "{}") },
+}));
+
+vi.mock("#/lib/model-routing/app-side", () => ({
+  withAppRoute: (
+    _task: string,
+    run: (route: { provider: string; model: string }) => unknown,
+  ) => run({ provider: "google", model: "gemini-2.5-pro" }),
+}));
+
+vi.mock("#/lib/knowledge/deepwiki-repo-target", () => ({
+  resolveDeepWikiRepoTarget: vi.fn(async () => ({
+    repo_url: "/workspace/shop",
+    type: "local",
+  })),
 }));
 
 vi.mock("#/lib/kt-video/concept-flow", () => ({
   findConceptFlow: vi.fn(async () => []),
-}));
-
-vi.mock("#/lib/kt-video/narrate-manifest", () => ({
-  narrateManifest: vi.fn(async (manifest: unknown) => manifest),
 }));
 
 vi.mock("#/lib/knowledge/workspace-file-reader", () => ({
@@ -169,11 +196,18 @@ describe("KtPage", () => {
     vi.stubGlobal("speechSynthesis", {});
     buildManifestMock.mockReset();
     buildManifestMock.mockImplementation((pg: { id: string }) => ({
-      repo_name: `manifest-for-${pg.id}`,
-      scenes: [{ id: `${pg.id}-scene` }],
+      version: 2,
+      repoName: `manifest-for-${pg.id}`,
+      pageTitle: pg.id,
+      commitSha: "abc",
+      chapters: [],
       totalFrames: 30,
       fps: 30,
-      repo_files: [],
+      files: {},
+      fileTree: [],
+      diagrams: {},
+      scriptSource: "llm",
+      wordCount: 0,
     }));
     mockUseSearchParams.mockReturnValue([new URLSearchParams(), vi.fn()]);
     useKnowledgeStore.setState({
@@ -263,13 +297,22 @@ describe("KtPage", () => {
     // Both repos' "page-a" share a page id, so the manifest must be keyed by
     // something repo-distinguishing here to tell a stale manifest apart from
     // a freshly-rebuilt one.
-    buildManifestMock.mockImplementation((pg: { id: string; title: string }) => ({
-      repo_name: `manifest-for-${pg.title}`,
-      scenes: [{ id: `${pg.id}-scene` }],
-      totalFrames: 30,
-      fps: 30,
-      repo_files: [],
-    }));
+    buildManifestMock.mockImplementation(
+      (pg: { id: string; title: string }) => ({
+        version: 2,
+        repoName: `manifest-for-${pg.title}`,
+        pageTitle: pg.title,
+        commitSha: "abc",
+        chapters: [],
+        totalFrames: 30,
+        fps: 30,
+        files: {},
+        fileTree: [],
+        diagrams: {},
+        scriptSource: "llm",
+        wordCount: 0,
+      }),
+    );
 
     const user = userEvent.setup();
     mockUseParams.mockReturnValue(paramsFor("page-a"));
@@ -461,12 +504,14 @@ describe("KtPage", () => {
     const user = userEvent.setup();
 
     render(<KtPage />);
-    expect(await screen.findByTestId("kt-page-quality-flags")).toHaveTextContent(
-      "Page A cites no source files.",
-    );
+    expect(
+      await screen.findByTestId("kt-page-quality-flags"),
+    ).toHaveTextContent("Page A cites no source files.");
 
     await user.click(screen.getByTestId("kt-page-watch-button"));
-    await waitFor(() => expect(screen.getByTestId("kt-video-player")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("kt-video-player")).toBeInTheDocument(),
+    );
 
     expect(screen.getByTestId("kt-page-quality-flags")).toHaveTextContent(
       "Page A cites no source files.",
@@ -593,7 +638,10 @@ describe("KtPage", () => {
           status: "ready",
           progress: null,
           lastNonTerminalStatus: null,
-          knowledge: { ...KNOWLEDGE, pages: [pageWithFiles, page("page-b", "Page B")] },
+          knowledge: {
+            ...KNOWLEDGE,
+            pages: [pageWithFiles, page("page-b", "Page B")],
+          },
           error: null,
           qualityFlags: [],
           refreshCadence: "manual",
@@ -648,12 +696,16 @@ describe("KtPage deep link on a cold store", () => {
     render(<KtPage />);
 
     expect(screen.getByText(I18nKey.KT$STARTING)).toBeInTheDocument();
-    expect(screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND),
+    ).not.toBeInTheDocument();
 
     expect(await screen.findByTestId("kt-page-markdown")).toHaveTextContent(
       "# Page B",
     );
-    expect(screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(I18nKey.KT$PAGE_NOT_FOUND),
+    ).not.toBeInTheDocument();
   });
 
   it("says 'Page not found' only after the lookup found nothing", async () => {
@@ -666,7 +718,9 @@ describe("KtPage deep link on a cold store", () => {
 
     render(<KtPage />);
 
-    expect(await screen.findByText(I18nKey.KT$PAGE_NOT_FOUND)).toBeInTheDocument();
+    expect(
+      await screen.findByText(I18nKey.KT$PAGE_NOT_FOUND),
+    ).toBeInTheDocument();
   });
 
   it("shows why generation failed instead of the generic 'Page not found' message", () => {

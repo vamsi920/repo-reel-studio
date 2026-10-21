@@ -126,7 +126,7 @@ const normalize = (p: string): string =>
 const isSourceFile = (path: string): boolean =>
   SOURCE_EXT.has(extOf(path)) || /readme/i.test(baseName(path));
 
-interface FileSymbol {
+export interface FileSymbol {
   name: string;
   line: number;
   kind:
@@ -304,7 +304,7 @@ function rankFiles(
     .map((x) => x.p);
 }
 
-function extractSymbols(path: string, content: string): FileSymbol[] {
+export function extractSymbols(path: string, content: string): FileSymbol[] {
   const lines = content.split("\n");
   const ext = extOf(path);
   const symbols: FileSymbol[] = [];
