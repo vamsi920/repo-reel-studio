@@ -44,10 +44,17 @@ export async function readGithubFiles(
       next += 1;
       try {
         const encoded = path.split("/").map(encodeURIComponent).join("/");
-        const response = await fetch(
-          `${base}/repos/${encodeURIComponent(snapshot.owner)}/${encodeURIComponent(snapshot.repo)}/contents/${encoded}?ref=${encodeURIComponent(snapshot.commitSha)}`,
-          { headers },
-        );
+        const url = `${base}/repos/${encodeURIComponent(snapshot.owner)}/${encodeURIComponent(snapshot.repo)}/contents/${encoded}?ref=${encodeURIComponent(snapshot.commitSha)}`;
+        let response = await fetch(url, { headers });
+        // A revoked or expired token makes GitHub reject even public
+        // repositories with 401; retry those anonymously.
+        if (
+          (response.status === 401 || response.status === 403) &&
+          headers.authorization
+        ) {
+          delete headers.authorization;
+          response = await fetch(url, { headers });
+        }
         if (!response.ok) throw new Error(String(response.status));
         contents[path] = await response.text();
       } catch {

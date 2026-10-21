@@ -97,9 +97,22 @@ export async function buildTutorial(
     conceptHops: input.conceptHops,
   };
 
+  // A saved script is only reusable when every file it shows was loaded
+  // this time too; otherwise its code scenes would render empty editors.
+  const reusableScript = input.script?.chapters.every((chapter) =>
+    chapter.beats.every((beat) => {
+      const v = beat.visual;
+      if (v.kind === "code") return Boolean(files[v.path]);
+      if (v.kind === "flow")
+        return v.steps.every((st) => Boolean(files[st.path]));
+      return true;
+    }),
+  )
+    ? input.script
+    : null;
   let script: GeneratedScript;
-  if (input.script) {
-    script = input.script;
+  if (reusableScript) {
+    script = reusableScript;
   } else if (input.chat) {
     try {
       script = await generateScript(ctx, input.chat, (p) =>
