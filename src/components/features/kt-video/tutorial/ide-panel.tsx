@@ -323,9 +323,15 @@ export function IdePanel({
   const language = languageForPath(visual.path);
 
   const sameFile = previous?.path === visual.path;
+  // Near the end of a file the scroll clamps above the highlighted range,
+  // so the rendered window must start at least a full viewport above the
+  // last line, or the top of the editor shows empty space.
+  const lastScreenTop = Math.max(1, totalLines - VISIBLE_LINES + 1);
   const windowStart = Math.max(
     1,
-    visual.startLine - CONTEXT_LINES_BEFORE - (sameFile ? 40 : 0),
+    Math.min(visual.startLine, lastScreenTop) -
+      CONTEXT_LINES_BEFORE -
+      (sameFile ? 40 : 0),
   );
   const windowEnd = Math.min(totalLines, visual.endLine + CONTEXT_LINES_AFTER);
   const windowCode = useMemo(

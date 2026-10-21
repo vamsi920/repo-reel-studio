@@ -61,8 +61,15 @@ function cameraFor(diagram: TutorialDiagram, focusNodes: string[]): Camera {
     }
     minY = Math.min(minY, SEQ_TOP);
   } else {
+    // Frame the focused nodes together with their direct neighbours, so
+    // the boxes an explanation mentions ("hands off to …") stay in view.
+    const framed = new Set(focusNodes);
+    for (const e of diagram.edges) {
+      if (focusNodes.includes(e.from)) framed.add(e.to);
+      if (focusNodes.includes(e.to)) framed.add(e.from);
+    }
     for (const n of diagram.nodes) {
-      if (!focusNodes.includes(n.id)) continue;
+      if (!framed.has(n.id)) continue;
       minX = Math.min(minX, n.x);
       minY = Math.min(minY, n.y);
       maxX = Math.max(maxX, n.x + n.width);
