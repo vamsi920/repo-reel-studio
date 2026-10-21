@@ -420,11 +420,31 @@ describe("modernization_control dispatcher", () => {
 describe("parity proven by Neo ME's own replay", () => {
   const NOW = Date.parse("2026-10-21T12:00:00Z");
   let report: Record<string, unknown> | null;
+  let reaReport: Record<string, unknown> | null;
+  let apps: Record<string, unknown> | null;
   const commands: string[] = [];
   const runInWorkspace = vi.fn(async (command: string) => {
     commands.push(command);
+    if (command.includes("rea-") && command.includes("-report.json")) {
+      return {
+        exit_code: 0,
+        stdout: reaReport ? JSON.stringify(reaReport) : "",
+      };
+    }
     if (command.includes("-report.json")) {
       return { exit_code: 0, stdout: report ? JSON.stringify(report) : "" };
+    }
+    if (command.includes("parity/apps.json")) {
+      return { exit_code: 0, stdout: apps ? JSON.stringify(apps) : "" };
+    }
+    if (command.includes("parity/schema.sql")) {
+      return {
+        exit_code: 0,
+        stdout: Buffer.from(
+          "create table author (id integer primary key autoincrement, name text not null, email text unique);\n" +
+            "create table post (id integer primary key autoincrement, author_id integer not null references author(id), title text not null, body text, created datetime);",
+        ).toString("base64"),
+      };
     }
     return { exit_code: 0, stdout: "" };
   });
@@ -452,7 +472,31 @@ describe("parity proven by Neo ME's own replay", () => {
     legacyDataIdentical: 2,
     freshData: true,
     legacyStatuses: { "200": 30, "302": 5, "404": 2 },
+    synthApplied: true,
+    synthDataCases: 4,
+    synthDataIdentical: 4,
+    store: {
+      applicable: true,
+      compared: 3,
+      identical: 3,
+      skipped: [],
+      differences: [],
+    },
     differences: [],
+    ...overrides,
+  });
+  const reaOk = (overrides: Record<string, unknown> = {}) => ({
+    version: 1,
+    kind: "rea",
+    generatedAt: "2026-10-21T11:55:00Z",
+    tool: "rea",
+    legacy: "http://127.0.0.1:5000",
+    target: "http://127.0.0.1:3000",
+    scenarios: 2,
+    unchanged: 2,
+    freshData: true,
+    harnessNormalization: ["drop_response_header_names"],
+    results: [],
     ...overrides,
   });
 
@@ -460,6 +504,8 @@ describe("parity proven by Neo ME's own replay", () => {
     seedProject();
     commands.length = 0;
     report = null;
+    reaReport = null;
+    apps = { rea: { executable_path: "/Applications/Chrome" } };
   });
 
   it("refuses to finish characterization until the legacy app was replayed against itself", async () => {
@@ -480,11 +526,73 @@ describe("parity proven by Neo ME's own replay", () => {
       detail: "characterization_not_run",
     });
     report = replayReport({ kind: "characterize", target: null });
+    const [noRea] = await run("update_progress", {
+      step_id: "chars",
+      status: "done",
+    });
+    expect(noRea).toMatchObject({
+      reason: "rea_characterization_not_proven",
+      detail: "rea_report_missing",
+    });
+    reaReport = reaOk({ kind: "rea-characterize", target: null });
     const [ok] = await run("update_progress", {
       step_id: "chars",
       status: "done",
     });
     expect(ok.status).toBe("ok");
+
+    // Without Synth rows loaded, characterization is not accepted either.
+    report = replayReport({
+      kind: "characterize",
+      target: null,
+      synthApplied: false,
+    });
+    await run("update_progress", { step_id: "chars", status: "active" });
+    const [noSynth] = await run("update_progress", {
+      step_id: "chars",
+      status: "done",
+    });
+    expect(noSynth).toMatchObject({
+      detail: "characterization_without_synth_data",
+    });
+  });
+
+  it("generates Synth data from the legacy schema into parity/synth", async () => {
+    const [missing] = await run("synth_data", {});
+    expect(missing).toMatchObject({
+      status: "rejected",
+      reason: "missing_schema_path",
+    });
+    const [notFound] = await run("synth_data", {
+      schema_path: "parity/nope.sql",
+    });
+    expect(notFound).toMatchObject({ reason: "schema_not_found" });
+    commands.length = 0;
+    const [ok] = await run("synth_data", {
+      schema_path: "parity/schema.sql",
+      scenario: "smoke",
+      counts: { post: 5 },
+    });
+    expect(ok.status).toBe("ok");
+    expect(ok.entities).toEqual(["author", "post"]);
+    expect(ok.rows).toMatchObject({ post: 5 });
+    expect(
+      (ok.sample_primary_keys as Record<string, unknown[]>).author,
+    ).toHaveLength(3);
+    expect(ok.files).toEqual([
+      "parity/synth/fixture.sql",
+      "parity/synth/dataset.json",
+      "parity/synth/model.json",
+    ]);
+    // Written through the runtime as base64, never as raw SQL in a command.
+    expect(commands.some((c) => c.includes("> parity/synth/fixture.sql"))).toBe(
+      true,
+    );
+    expect(commands.some((c) => c.includes("INSERT INTO"))).toBe(false);
+    const project = Object.values(
+      useModernizationStudioStore.getState().projects,
+    )[0];
+    expect(project.stats.extra?.["Synth rows"]).toBeDefined();
   });
 
   it("installs the harness on describe and decides verify from its report, not from claimed numbers", async () => {
@@ -572,7 +680,65 @@ describe("parity proven by Neo ME's own replay", () => {
     });
     expect(noLegacy).toMatchObject({ detail: "replay_no_legacy_data" });
 
+    report = replayReport({ synthDataCases: 0 });
+    const [noSynthSteps] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(noSynthSteps).toMatchObject({
+      detail: "replay_no_synth_data_steps",
+    });
+
+    report = replayReport({
+      store: {
+        applicable: true,
+        compared: 3,
+        identical: 2,
+        skipped: [],
+        differences: [{ table: "post" }],
+      },
+    });
+    const [storeDrift] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(storeDrift).toMatchObject({ detail: "store_differences:1" });
+
     report = replayReport();
+    const [noRea] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(noRea).toMatchObject({
+      reason: "rea_parity_not_proven",
+      detail: "rea_report_missing",
+    });
+
+    reaReport = reaOk({
+      unchanged: 1,
+      results: [
+        {
+          scenario: "login",
+          status: "changed",
+          evidence: {},
+          changed: [{ step: "home", artifact: "dom", status: "changed" }],
+        },
+      ],
+    });
+    const [reaDrift] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(reaDrift).toMatchObject({ detail: "rea_changed:1" });
+    expect(reaDrift.changed).toEqual([
+      { step: "home", artifact: "dom", status: "changed" },
+    ]);
+
+    reaReport = reaOk();
     const [ok] = await run("update_progress", {
       step_id: "check",
       status: "done",
@@ -586,7 +752,23 @@ describe("parity proven by Neo ME's own replay", () => {
       parityTotal: 37,
       parityPassing: 37,
       legacyDataCases: 2,
+      extra: {
+        "Synth-data steps": "4",
+        "Store tables identical": "3/3",
+        "REA browser scenarios": "2/2 unchanged",
+      },
     });
+
+    // A CLI tool may declare the browser lane not applicable, and that is recorded.
+    apps = { rea: { not_applicable: "command-line tool, no browser surface" } };
+    reaReport = null;
+    await run("update_progress", { step_id: "check", status: "active" });
+    const [cli] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(cli.status).toBe("ok");
   });
 });
 

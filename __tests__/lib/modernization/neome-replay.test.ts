@@ -1,16 +1,26 @@
 // @vitest-environment node
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // The harness Neo ME installs into project workspaces.
 import {
   characterize,
+  compareStores,
+  reaLane,
   replay,
   replayManaged,
+  stripResponseHeaderNames,
 } from "#/lib/modernization/neome-replay.mjs";
+import { execFileSync } from "node:child_process";
 
 /** A tiny app: login sets a cookie, /me needs it, /items/:id echoes JSON. */
 function app(variant: { dateFormat: "date" | "datetime"; slug: string }) {
@@ -275,5 +285,187 @@ createServer((req, res) => {
       identical: 2,
       freshData: true,
     });
+  });
+
+  it("loads the Synth rows into both SQLite stores and compares what the apps wrote", async () => {
+    const root = mkdtempSync(join(tmpdir(), "neome-store-"));
+    // A SQLite fixture with one table; each app inserts a row on POST and
+    // lists the table on GET. The target has one extra column of its own.
+    execFileSync("sqlite3", [join(root, "fixture.sqlite")], {
+      input:
+        "create table note (id integer primary key, body text, password text);",
+    });
+    writeFileSync(
+      join(root, "synth.sql"),
+      "insert into note (id, body, password) values (1, 'from synth', 'h1');\n",
+    );
+    writeFileSync(
+      join(root, "server.mjs"),
+      `import { createServer } from "node:http";
+import { execFileSync } from "node:child_process";
+const store = process.env.STORE;
+const q = (sql) => execFileSync("sqlite3", ["-json", store, sql], { encoding: "utf8" });
+createServer((req, res) => {
+  if (req.method === "POST") {
+    q("insert into note (body, password) values ('posted', '" + process.env.HASH + "')");
+  }
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(q("select id, body from note order by id") || "[]");
+}).listen(Number(process.env.PORT), "127.0.0.1");`,
+    );
+    const side = (port: number, store: string, hash: string) => ({
+      start: "node server.mjs",
+      url: `http://127.0.0.1:${port}`,
+      store,
+      env: { STORE: join(root, store), HASH: hash },
+    });
+    const scenario = {
+      name: "write then read",
+      synthData: true,
+      steps: [
+        { name: "read synth", path: "/" },
+        { name: "add", method: "POST", path: "/" },
+        { name: "read", path: "/" },
+      ],
+    };
+    const report = await replayManaged({
+      root,
+      apps: {
+        fixture: "fixture.sqlite",
+        synth: { sql: "synth.sql" },
+        legacy: side(5951, "legacy.sqlite", "scrypt$a"),
+        target: side(5952, "target.sqlite", "pbkdf2$b"),
+      },
+      files: [scenarioFile(scenario)],
+    });
+    expect(report).toMatchObject({
+      total: 3,
+      identical: 3,
+      synthApplied: true,
+      synthDataCases: 3,
+      store: { applicable: true, compared: 1, identical: 1, differences: [] },
+    });
+
+    // Secret-like columns are compared for presence only; a real row
+    // difference is reported with samples from each side.
+    const diff = compareStores(
+      { note: { columns: ["id", "body"], rows: [{ id: 1, body: "a" }] } },
+      {
+        note: { columns: ["id", "body"], rows: [{ id: 1, body: "b" }] },
+        extra: { columns: ["x"], rows: [] },
+      },
+      { norm: (v: string) => v },
+    );
+    expect(diff).toMatchObject({ compared: 1, identical: 0 });
+    expect(diff.differences[0]).toMatchObject({
+      table: "note",
+      legacyRows: 1,
+      targetRows: 1,
+    });
+  });
+
+  it("drives REA against both apps on the same port and keeps its verdict", async () => {
+    const root = mkdtempSync(join(tmpdir(), "neome-rea-"));
+    mkdirSync(join(root, "parity/browser"), { recursive: true });
+    // A stand-in for the REA CLI: records which origin each capture used and
+    // answers compare-web-captures from the DOM hashes it was handed.
+    writeFileSync(
+      join(root, "fake-rea.mjs"),
+      `import { readFileSync, appendFileSync } from "node:fs";
+const [cmd, a, b] = process.argv.slice(2);
+if (cmd === "capture-browser-scenario") {
+  const input = JSON.parse(readFileSync(a, "utf8"));
+  appendFileSync(process.env.REA_LOG, input.start_url.url + " " + input.browser.executable_path + "\\n");
+  const html = await (await fetch(input.start_url.url)).text();
+  console.log(JSON.stringify({ evidence_id: "ev_" + Math.random().toString(16).slice(2),
+    normalized_result: { completeness: { status: "complete" }, dom: html,
+      events: { items: [{ kind: "response", header_names: ["server", "x-powered-by"] }] } } }));
+} else if (cmd === "compare-web-captures") {
+  const x = JSON.parse(readFileSync(a, "utf8")), y = JSON.parse(readFileSync(b, "utf8"));
+  const same = x.dom === y.dom && JSON.stringify(x.events) === JSON.stringify(y.events);
+  console.log(JSON.stringify({ evidence_id: "ev_cmp", normalized_result: {
+    overall_status: same ? "unchanged" : "changed", alignment: { status: "aligned", failures: [] },
+    steps: [{ step_id: "home", artifact_diffs: same ? [] : [{ artifact: "dom", status: "changed", reason: null }] }] } }));
+}`,
+    );
+    writeFileSync(
+      join(root, "server.mjs"),
+      `import { createServer } from "node:http";
+createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end("<h1>" + process.env.BANNER + "</h1>");
+}).listen(Number(process.env.PORT), "127.0.0.1");`,
+    );
+    writeFileSync(
+      join(root, "parity/browser/home.json"),
+      JSON.stringify({
+        name: "home",
+        start_url: { url: "{{BASE}}/" },
+        actions: [
+          {
+            step_id: "home",
+            action: "goto",
+            destination: { url: "{{BASE}}/" },
+            wait_until: "load",
+          },
+        ],
+      }),
+    );
+    const log = join(root, "rea.log");
+    process.env.REA_LOG = log;
+    const side = (port: number, banner: string) => ({
+      start: "node server.mjs",
+      url: `http://127.0.0.1:${port}`,
+      env: { BANNER: banner },
+    });
+    const apps = (banner: string) => ({
+      rea: {
+        executable_path: "/usr/bin/true",
+        command: `node ${join(root, "fake-rea.mjs")}`,
+      },
+      legacy: side(5961, "hello"),
+      target: side(5962, banner),
+    });
+    const same = await reaLane({
+      root,
+      apps: apps("hello"),
+      files: [join(root, "parity/browser/home.json")],
+    });
+    expect(same).toMatchObject({ kind: "rea", scenarios: 1, unchanged: 1 });
+    expect(same.results[0].evidence.compare).toBe("ev_cmp");
+    // Both captures hit the legacy port: REA refuses to compare origins.
+    const lines = readFileSync(log, "utf8").trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(
+      lines.every((l) => l.startsWith("http://127.0.0.1:5961/ /usr/bin/true")),
+    ).toBe(true);
+    expect(existsSync(join(root, ".neome/rea/home-target.evidence.json"))).toBe(
+      true,
+    );
+
+    const drift = await reaLane({
+      root,
+      apps: apps("changed"),
+      files: [join(root, "parity/browser/home.json")],
+    });
+    expect(drift).toMatchObject({ unchanged: 0 });
+    expect(drift.results[0].changed).toEqual([
+      { step: "home", artifact: "dom", status: "changed", reason: null },
+    ]);
+
+    // Response header names are the only thing the harness takes out.
+    const stripped = stripResponseHeaderNames({
+      events: {
+        items: [
+          { kind: "response", header_names: ["server"] },
+          { kind: "request", header_names: ["accept"] },
+        ],
+      },
+    });
+    expect(
+      stripped.events.items.map(
+        (i: { header_names: string[] }) => i.header_names,
+      ),
+    ).toEqual([[], ["accept"]]);
   });
 });

@@ -1,18 +1,44 @@
 import type { ModernizationControlAction } from "#/types/agent-server/core";
 import {
+  CHARACTERIZE_REPORT_MAX_AGE_MS,
   CHARACTERIZE_REPORT_PATH,
   installReplayHarness,
   judgeCharacterizeReport,
+  judgeReaReport,
   judgeReplayReport,
+  REA_BROWSER_SCENARIO_EXAMPLE,
+  REA_CHARACTERIZE_REPORT_PATH,
+  REA_REPORT_PATH,
+  REA_SCENARIOS_DIR,
   REPLAY_APPS_EXAMPLE,
   REPLAY_APPS_PATH,
+  REPLAY_REPORT_MAX_AGE_MS,
   REPLAY_SCENARIO_EXAMPLE,
+  reaNotApplicable,
+  readReaReport,
+  readReplayApps,
   readReplayReport,
   REPLAY_HARNESS_PATH,
   REPLAY_REPORT_PATH,
   REPLAY_SCENARIOS_DIR,
+  SYNTH_DIR,
+  SYNTH_SQL_PATH,
   type RunInWorkspace,
 } from "#/lib/modernization/replay-harness";
+import {
+  builtinScenarios,
+  generateDataset,
+  modelProblems,
+  parseSchemaFile,
+  primaryKeyOf,
+  toSql,
+  validateDataset,
+  withInferredSemantics,
+  type DataModel,
+  type Scenario,
+} from "#/lib/synth";
+import { readWorkspaceFile } from "#/lib/synth/workspace";
+import { buildWriteFileCommands } from "#/lib/knowledge/kt-workspace-export";
 import {
   COMPONENT_KINDS,
   MIGRATION_PHASES,
@@ -374,6 +400,8 @@ export const COMMAND_SHAPES = Object.freeze({
   update_progress:
     "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, parity_total?, parity_passing?, parity_differential?: boolean, legacy_data_cases?, no_persistent_data?: boolean, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
   log: "{text, level?: info|warn|error|success, step_id?}",
+  synth_data:
+    "{schema_path: 'parity/schema.sql' (SQL DDL, schema.prisma or OpenAPI JSON of the LEGACY store), scenario?: smoke|realistic|edge_cases (default realistic), counts?: {[entity]: number}, seed?} -> writes parity/synth/{fixture.sql, dataset.json, model.json}; returns rows per entity, validation and sample primary keys",
   checkpoint:
     "{label, step_id?, state:{...anything you need to resume, no secrets}}",
   complete: "{summary, verification?:{...}, artifacts?:[paths]}",
@@ -593,6 +621,9 @@ export async function handleModernizationControlAction(
                 usage: `node ${REPLAY_HARNESS_PATH} --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}`,
                 apps_json_example: REPLAY_APPS_EXAMPLE,
                 scenario_example: REPLAY_SCENARIO_EXAMPLE,
+                rea_lane: `node ${REPLAY_HARNESS_PATH} --rea --apps ${REPLAY_APPS_PATH} ${REA_SCENARIOS_DIR}  (add --characterize before building)`,
+                rea_browser_scenario_example: REA_BROWSER_SCENARIO_EXAMPLE,
+                synth: `Call synth_data with the legacy schema file first; then put "synth": {"sql": "${SYNTH_SQL_PATH}"} in ${REPLAY_APPS_PATH} and add scenarios with "synthData": true that read the generated rows (ids in ${SYNTH_DIR}/dataset.json) through both apps.`,
                 note: "Use exactly these formats (the harness rejects unknown keys; full reference at the top of the file). Characterize before building: the studio reads .neome/characterize-report.json before a characterize step can be done, and .neome/replay-report.json before a verify step can be done.",
               },
             }
@@ -792,12 +823,14 @@ export async function handleModernizationControlAction(
           step?.phase === "characterize" &&
           context.runInWorkspace
         ) {
+          const noPersistentData =
+            { ...project.stats, ...(stats ?? {}) }.noPersistentData === true;
           const verdict = judgeCharacterizeReport(
             await readReplayReport(
               context.runInWorkspace,
               CHARACTERIZE_REPORT_PATH,
             ),
-            { now: (context.now ?? Date.now)() },
+            { now: (context.now ?? Date.now)(), noPersistentData },
           );
           if (!verdict.ok) {
             await installReplayHarness(context.runInWorkspace);
@@ -806,7 +839,31 @@ export async function handleModernizationControlAction(
               reason: "characterization_not_proven",
               detail: verdict.reason,
               differences: verdict.differences,
-              guidance: `Write ${REPLAY_APPS_PATH} (legacy app at least) and scenarios in ${REPLAY_SCENARIOS_DIR} in the formats from describe, then run node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}. Every scenario must give identical results twice against the legacy app on the fresh fixture before building starts, and the scenarios must reach the legacy app's error paths (4xx pages and responses: missing records, forbidden actions, bad input, wrong methods).`,
+              guidance: `Write ${REPLAY_APPS_PATH} (legacy app at least, with "synth": {"sql": "${SYNTH_SQL_PATH}"} after synth_data) and scenarios in ${REPLAY_SCENARIOS_DIR} in the formats from describe, then run node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}. Every scenario must give identical results twice against the legacy app on the fresh fixture (with the Neo Synth rows loaded) before building starts, and the scenarios must reach the legacy app's error paths (4xx pages and responses: missing records, forbidden actions, bad input, wrong methods).`,
+            });
+            return;
+          }
+          const rea = judgeReaReport(
+            await readReaReport(
+              context.runInWorkspace,
+              REA_CHARACTERIZE_REPORT_PATH,
+            ),
+            {
+              now: (context.now ?? Date.now)(),
+              kind: "rea-characterize",
+              notApplicable: reaNotApplicable(
+                await readReplayApps(context.runInWorkspace),
+              ),
+              maxAgeMs: CHARACTERIZE_REPORT_MAX_AGE_MS,
+            },
+          );
+          if (!rea.ok) {
+            postReceipt(context, {
+              status: "rejected",
+              reason: "rea_characterization_not_proven",
+              detail: rea.reason,
+              changed: rea.changed,
+              guidance: `Record the legacy app's real browser behaviour with REA: write capture_browser_scenario inputs (format from describe, origin as {{BASE}}, no "browser" key) in ${REA_SCENARIOS_DIR} covering the main user journeys, put "rea": {"executable_path": "<absolute path to Chrome or Chromium>"} in ${REPLAY_APPS_PATH}, then run node ${REPLAY_HARNESS_PATH} --rea --characterize --apps ${REPLAY_APPS_PATH} ${REA_SCENARIOS_DIR}. REA must report every scenario unchanged between two fresh runs of the legacy app. Only a tool with no browser-facing surface (a CLI, a library) may set "rea": {"not_applicable": "<reason>"}.`,
             });
             return;
           }
@@ -846,11 +903,42 @@ export async function handleModernizationControlAction(
               });
               return;
             }
+            const rea = judgeReaReport(
+              await readReaReport(context.runInWorkspace, REA_REPORT_PATH),
+              {
+                now: (context.now ?? Date.now)(),
+                kind: "rea",
+                notApplicable: reaNotApplicable(
+                  await readReplayApps(context.runInWorkspace),
+                ),
+                maxAgeMs: REPLAY_REPORT_MAX_AGE_MS,
+              },
+            );
+            if (!rea.ok) {
+              postReceipt(context, {
+                status: "rejected",
+                reason: "rea_parity_not_proven",
+                detail: rea.reason,
+                changed: rea.changed,
+                guidance: `Run node ${REPLAY_HARNESS_PATH} --rea --apps ${REPLAY_APPS_PATH} ${REA_SCENARIOS_DIR}: REA captures every browser scenario in a real browser against the legacy app and the new app on the same port, on the fresh fixture, and compares them (compare-web-captures). Every scenario must come back "unchanged": same pages, same network requests (asset URLs, status codes and reason phrases included), same console. Fix the new app, never the scenario, then mark verify done again within the hour.`,
+              });
+              return;
+            }
             verifiedParity = {
               parityTotal: verdict.total,
               parityPassing: verdict.identical,
               parityDifferential: true,
               legacyDataCases: verdict.legacyDataCases,
+              extra: {
+                ...(merged.extra ?? {}),
+                "Synth-data steps": String(verdict.synthDataCases),
+                "Store tables identical": verdict.storeTables
+                  ? `${verdict.storeTables}/${verdict.storeTables}`
+                  : "n/a",
+                "REA browser scenarios": rea.skipped
+                  ? `n/a (${rea.skipped})`
+                  : `${rea.unchanged}/${rea.scenarios} unchanged`,
+              },
             };
           } else {
             const parity = parityIsComplete(merged);
@@ -918,6 +1006,152 @@ export async function handleModernizationControlAction(
         progress: progress
           ? { steps_done: progress.done, steps_total: progress.total }
           : undefined,
+      });
+      return;
+    }
+
+    case "synth_data": {
+      const schemaPath = str(payload.schema_path);
+      if (!schemaPath) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "missing_schema_path",
+          shape: COMMAND_SHAPES.synth_data,
+        });
+        return;
+      }
+      if (!context.runInWorkspace) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "no_runtime",
+          guidance:
+            "The studio cannot read the workspace right now; retry once the conversation is connected.",
+        });
+        return;
+      }
+      const content = await readWorkspaceFile(
+        context.runInWorkspace,
+        schemaPath,
+      );
+      if (content === null) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "schema_not_found",
+          detail: schemaPath,
+          guidance:
+            "Dump the legacy store's DDL first (e.g. sqlite3 <db> .schema > parity/schema.sql, pg_dump --schema-only, or point at schema.prisma / an OpenAPI JSON), then call synth_data again.",
+        });
+        return;
+      }
+      const parsed = parseSchemaFile(schemaPath, content);
+      const model: DataModel = {
+        entities: parsed.entities.map(withInferredSemantics),
+        rules: [],
+        flows: [],
+      };
+      const problems = modelProblems(model);
+      if (model.entities.length === 0 || problems.length) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: model.entities.length ? "model_problems" : "no_entities",
+          problems,
+          warnings: parsed.warnings.slice(0, 10),
+          guidance:
+            "The schema file did not yield a usable data model. Give synth_data a complete DDL of the legacy store (every table the app reads) and check the warnings.",
+        });
+        return;
+      }
+      const scenarioId = str(payload.scenario) ?? "realistic";
+      const base: Scenario | undefined = builtinScenarios(model).find(
+        (sc) => sc.id === scenarioId,
+      );
+      if (!base) {
+        postReceipt(context, {
+          status: "rejected",
+          reason: "unknown_scenario",
+          valid: builtinScenarios(model).map((sc) => sc.id),
+        });
+        return;
+      }
+      const counts = { ...base.counts };
+      if (payload.counts && typeof payload.counts === "object") {
+        for (const [k, v] of Object.entries(
+          payload.counts as Record<string, unknown>,
+        )) {
+          if (typeof v === "number" && v >= 0) counts[k] = Math.floor(v);
+        }
+      }
+      const seed = num(payload.seed) ?? 20261021;
+      const dataset = generateDataset(model, { ...base, counts }, { seed });
+      const validation = validateDataset(model, dataset);
+      const failed = validation.checks
+        .filter((c) => !c.passed)
+        .slice(0, 10)
+        .map((c) => ({
+          entity: c.entity,
+          check: c.label,
+          failures: c.failures,
+          samples: c.samples.slice(0, 3),
+        }));
+      const sampleIds: Record<string, unknown[]> = {};
+      const rows: Record<string, number> = {};
+      for (const entity of model.entities) {
+        const pk = primaryKeyOf(entity)?.name;
+        const table = dataset.tables[entity.id] ?? [];
+        rows[entity.table ?? entity.name] = table.length;
+        if (pk)
+          sampleIds[entity.table ?? entity.name] = table
+            .slice(0, 3)
+            .map((r) => r[pk]);
+      }
+      const files = [
+        { path: SYNTH_SQL_PATH, content: toSql(model, dataset, "sqlite") },
+        {
+          path: `${SYNTH_DIR}/dataset.json`,
+          content: `${JSON.stringify(dataset, null, 2)}\n`,
+        },
+        {
+          path: `${SYNTH_DIR}/model.json`,
+          content: `${JSON.stringify(model, null, 2)}\n`,
+        },
+      ];
+      const commands = [
+        `mkdir -p ${SYNTH_DIR}`,
+        ...files.flatMap(buildWriteFileCommands),
+      ];
+      for (const command of commands) {
+        const result = await context.runInWorkspace(command);
+        if (result.exit_code !== 0) {
+          postReceipt(context, {
+            status: "rejected",
+            reason: "write_failed",
+            detail: result.stderr?.trim() || command,
+          });
+          return;
+        }
+      }
+      store.appendLog(projectId, {
+        id: newModernizationId("log"),
+        level: "success",
+        text: `Neo Synth: ${Object.values(rows).reduce((a, b) => a + b, 0)} rows across ${model.entities.length} tables written to ${SYNTH_DIR}`,
+        at: now,
+      });
+      store.mergeStats(projectId, {
+        extra: {
+          ...(project.stats.extra ?? {}),
+          "Synth rows": String(Object.values(rows).reduce((a, b) => a + b, 0)),
+        },
+      });
+      postReceipt(context, {
+        status: validation.ok ? "ok" : "rejected",
+        reason: validation.ok ? undefined : "synth_validation_failed",
+        failed_checks: failed.length ? failed : undefined,
+        entities: model.entities.map((e) => e.table ?? e.name),
+        rows,
+        sample_primary_keys: sampleIds,
+        files: files.map((f) => f.path),
+        warnings: parsed.warnings.slice(0, 10),
+        next: `Add "synth": {"sql": "${SYNTH_SQL_PATH}"} to ${REPLAY_APPS_PATH} (the harness loads the rows into every SQLite store after the fixture; for other stores load it from the "reset" command), then write scenarios with "synthData": true that read these rows through the app (list pages, detail pages by the sample ids above, searches). The studio refuses characterize and verify without them.`,
       });
       return;
     }

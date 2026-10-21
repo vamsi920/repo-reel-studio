@@ -87,11 +87,48 @@ modernization_control tool; the user watches that panel.
    you never manage the two servers or their data by hand. Build the fixture
    through the legacy app itself (register users, create records with it),
    so it holds legacy-written data. Use exactly the apps.json and scenario
-   formats describe returns (unknown keys are rejected). Before any
-   migration code exists, run
+   formats describe returns (unknown keys are rejected).
+   SYNTH DATA (mandatory): dump the legacy store's DDL (sqlite3 <db> .schema
+   > parity/schema.sql; pg_dump --schema-only; or schema.prisma / OpenAPI)
+   and call synth_data with it. Neo Synth generates a realistic, valid
+   dataset for every table (foreign keys, uniques, enums respected) and
+   writes parity/synth/fixture.sql; put "synth": {"sql": "parity/synth/
+   fixture.sql"} in apps.json and the harness loads those rows into both
+   apps on top of the fixture before every scenario. Write scenarios with
+   "synthData": true that read the generated rows through the app (list
+   pages, pagination, detail pages by the sample ids synth_data returns,
+   searches, filters): data flows are tested on real volume, not on three
+   hand-made records. Synth passwords are not real credentials; sign in with
+   legacy-written users.
+   STORE PARITY (automatic): after every scenario the harness compares the
+   two SQLite stores table by table (same table and columns on both sides;
+   password/hash/token columns by presence only). What the new app WRITES
+   must match what the legacy app wrote, not only what it shows. Keep the
+   legacy table and column names when the store is kept; otherwise map
+   them in apps.json "storeCompare": {"tableMap": {...}} and keep columns.
+   REA LANE (mandatory for anything with a browser-facing surface): write
+   REA capture_browser_scenario inputs in parity/browser/*.json (format from
+   describe: origin as {{BASE}}, no "browser" key; actions goto / fill /
+   click / press / select_option / check / uncheck / wait_for /
+   wait_for_timeout with css or role locators) for the main user journeys:
+   sign-up, sign-in, create/edit/delete a record, pages that render data,
+   an error page. Put "rea": {"executable_path": "<absolute path to Chrome
+   or Chromium: /Applications/Google Chrome.app/Contents/MacOS/Google
+   Chrome, /usr/bin/google-chrome, /usr/bin/chromium, or Playwright's
+   chromium binary>"} in apps.json. The harness runs each scenario with REA
+   in a real browser against the legacy app and then the new app on the
+   same port and fresh fixture, and asks REA to compare the captures
+   (compare-web-captures): DOM, URLs, console, every network request with
+   its URL, status code and reason phrase. Asset paths, favicons and status
+   texts count: users' bookmarks and browsers see them. Only a tool with no
+   browser-facing surface (CLI, library) may set "rea": {"not_applicable":
+   "<reason>"}.
+   Before any migration code exists, run
      node .neome/replay.mjs --characterize --apps parity/apps.json parity/scenarios
+     node .neome/replay.mjs --rea --characterize --apps parity/apps.json parity/browser
    (every scenario twice against the legacy app alone); the studio will not
-   accept the characterize step until that report is fully identical.
+   accept the characterize step until both reports are fully identical and
+   the Synth rows were loaded.
    First list every route x method (and every screen/command) in
    parity/PARITY.md, with how to start each app on fresh data, and give
    each at least one step. Cover happy paths AND every error branch the
@@ -102,15 +139,14 @@ modernization_control tool; the user watches that panel.
    (register users and create records through the legacy app, so passwords
    carry its real hash format and dates its real encoding), with the new
    app pointed at a copy of that same store. Normalise only values that are
-   legitimately random (generated ids/slugs; JWTs, ISO timestamps and UUIDs
-   are handled) -- never normalise away real output. The studio reads .neome/replay-report.json
-   itself and refuses to finish verify unless the last run (within the hour)
-   is identical on every step, started both apps on fresh data (--apps) and
-   includes legacy-data steps. Write your own
-   unit/contract tests on top as you like; they do not replace the replay.
-   With REA, capture real behaviour of the running legacy app
-   (capture_process_scenario / capture_browser_scenario / inspect_web_page)
-   to find behaviour the code alone does not show, and add it as steps.
+   legitimately random (generated ids/slugs; JWTs, timestamps and UUIDs
+   are handled) -- never normalise away real output. The studio reads
+   .neome/replay-report.json and .neome/rea-report.json itself and refuses
+   to finish verify unless the last runs (within the hour) are identical
+   on every step, started both apps on fresh data with the Synth rows,
+   include legacy-data and synth-data steps, every compared store table
+   matches, and REA reports every browser scenario unchanged. Write your
+   own unit/contract tests on top as you like; they do not replace these.
 5. scaffold -- Create the target project with its idiomatic layout, build,
    lint, test runner, and a hello endpoint/screen that runs.
 6. migrate -- Component by component, module by module. For each: port,
@@ -121,9 +157,10 @@ modernization_control tool; the user watches that panel.
 7. data -- Schema migration scripts, data migration/validation scripts,
    seed data; prove round-trips.
 8. verify -- Run both applications. Run every characterisation and contract
-   test against the new one. Evaluate REA reconstruction coverage
-   (evaluate_reconstruction_coverage / compare_web_captures). Fix until
-   green. Record exact numbers.
+   test against the new one. Run the replay and the REA lane
+   (node .neome/replay.mjs --apps ... parity/scenarios, then --rea ...
+   parity/browser) and read the differences they print: each is a bug in
+   the new app. Fix until both are fully identical. Record exact numbers.
 9. report -- MODERNIZATION_REPORT.md: what changed, mapping table, test
    results, coverage, known gaps, how to run, how to deploy. Then complete.
 
@@ -192,6 +229,23 @@ for big inputs); page through retained results with inspect_analysis_view;
 expand only where a gap remains; use runtime observation only when static
 evidence cannot answer; cite evidence ids; keep a ledger of unknowns and
 close them before verify. Static analysis never implies observed execution.
+
+What to use it for here, phase by phase:
+- understand: inspect_sqlite_database on the legacy store (schema and row
+  samples; needs Node 24.15+ -- if it answers capability_unavailable, note
+  that and use sqlite3 .schema); analyze_web_bundle / inspect_web_page on
+  a running web frontend (routes, endpoints the client calls, vendor
+  fingerprints); analyze_javascript_application for Node/Electron code;
+  inventory_artifact for anything packaged. Put the evidence ids in
+  record_discovery evidence.
+- characterize: capture_browser_scenario against the running legacy app
+  to see what the browser really does (redirect chains, cookies, assets,
+  console errors, the requests a page makes); every finding becomes a
+  replay step or a parity/browser scenario.
+- verify: the harness's --rea lane IS REA's compare-web-captures verdict;
+  add build_reconstruction_obligation_ledger / evaluate_reconstruction_
+  coverage when you have an evidence bundle, and cite the evidence ids in
+  MODERNIZATION_REPORT.md.
 
 ## Cards: logos and options
 

@@ -13,6 +13,11 @@
 // parity/apps.json:
 // {
 //   "fixture": "parity/fixture.sqlite",   // optional: copied into each "store"
+//   "synth": { "sql": "parity/synth/fixture.sql" },   // Neo Synth rows, loaded into
+//                                         // every SQLite store after the fixture
+//   "rea": { "executable_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" },
+//                                         // or { "not_applicable": "<why: e.g. a CLI tool>" }
+//   "storeCompare": { "ignoreColumns": ["updated_at"] },   // optional
 //   "legacy": { "cwd": ".", "start": ".venv/bin/flask --app flaskr run --port 5911",
 //               "url": "http://127.0.0.1:5911", "store": "instance/flaskr.sqlite" },
 //   "target": { "cwd": "express-app", "start": "node index.js",
@@ -25,6 +30,32 @@
 // answers (optional "readyPath"), replays the steps, then stops exactly that
 // process group. Every scenario therefore starts from the same fresh data in
 // both apps, and no app is left running. Logs: .neome/logs/<legacy|target>.log
+//
+// After every scenario the harness also compares the two SQLite stores table
+// by table (same table name and columns on both sides; password/hash/token
+// columns compared for presence only): what each app wrote must match, not
+// only what it showed. The result is report.store.
+//
+// REA lane (real browser, evidence by REA: github.com/morluto/rea):
+//   node .neome/replay.mjs --rea --apps parity/apps.json parity/browser
+// parity/browser/*.json hold REA capture_browser_scenario inputs WITHOUT the
+// "browser" key and with {{BASE}} for the app origin, e.g.
+// { "name": "login", "start_url": { "url": "{{BASE}}/auth/login" },
+//   "actions": [ { "step_id": "user", "action": "fill",
+//                  "locator": { "kind": "css", "selector": "input[name=username]" },
+//                  "value": { "source": "literal", "value": "alice" } },
+//                { "step_id": "go", "action": "click",
+//                  "locator": { "kind": "css", "selector": "input[type=submit]" } },
+//                { "step_id": "home", "action": "goto",
+//                  "destination": { "url": "{{BASE}}/" }, "wait_until": "load" } ] }
+// Each scenario is captured against the legacy app and then the new app on
+// the SAME port (REA refuses to compare different origins), each started on
+// the fresh fixture, and compared with REA's compare-web-captures. Response
+// header names are dropped before the comparison (servers differ there and
+// users never see them); everything else is REA's verdict. Report:
+// .neome/rea-report.json (--characterize: legacy vs itself,
+// .neome/rea-characterize-report.json). Captures and evidence ids are kept
+// under .neome/rea/.
 //
 // First, before any migration code exists, characterize the legacy app:
 //   node .neome/replay.mjs --characterize --apps parity/apps.json parity/scenarios
@@ -76,7 +107,8 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { execSync, spawn } from "node:child_process";
+import { execFileSync, execSync, spawn, spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 const VERSION = 1;
@@ -100,6 +132,7 @@ function parseArgs(argv) {
     else if (a === "--reset-target") out.resetTarget = argv[++i];
     else if (a === "--apps") out.apps = argv[++i];
     else if (a === "--characterize") out.characterize = true;
+    else if (a === "--rea") out.rea = true;
     else out.paths.push(a);
   }
   return out;
@@ -158,7 +191,7 @@ export function formFields(html) {
 const BUILTIN_RULES = [
   [/\b[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "<jwt>"],
   [
-    /\b\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?\b/g,
+    /\b\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?\b/g,
     "<timestamp>",
   ],
   [
@@ -384,7 +417,7 @@ async function waitUntilAnswers(url, child) {
 }
 
 /** Starts one side of apps.json on fresh data; returns a stop function. */
-export async function startManagedApp(side, name, { root, fixture }) {
+export async function startManagedApp(side, name, { root, fixture, synthSql }) {
   const cwd = resolve(root, side.cwd ?? ".");
   if (side.reset) execSync(side.reset, { cwd, stdio: "ignore", shell: true });
   if (fixture && side.store) {
@@ -394,6 +427,13 @@ export async function startManagedApp(side, name, { root, fixture }) {
       rmSync(`${store}${suffix}`, { force: true });
     }
     copyFileSync(resolve(root, fixture), store);
+    if (synthSql && isSqliteStore(store)) {
+      // Neo Synth rows, the same ones in both apps, on top of the fixture.
+      execFileSync("sqlite3", [store], {
+        input: readFileSync(resolve(root, synthSql)),
+        stdio: ["pipe", "ignore", "pipe"],
+      });
+    }
   }
   const port = new URL(side.url).port;
   mkdirSync(resolve(root, ".neome/logs"), { recursive: true });
@@ -440,6 +480,21 @@ export async function startManagedApp(side, name, { root, fixture }) {
 }
 
 const SIDE_KEYS = ["cwd", "start", "url", "store", "env", "reset", "readyPath"];
+const APP_KEYS = [
+  "fixture",
+  "legacy",
+  "target",
+  "synth",
+  "rea",
+  "storeCompare",
+];
+const SQLITE_SUFFIXES = [".sqlite", ".sqlite3", ".db"];
+
+export function isSqliteStore(path) {
+  return (
+    Boolean(path) && SQLITE_SUFFIXES.some((s) => path.toLowerCase().endsWith(s))
+  );
+}
 const STEP_KEYS = [
   "name",
   "session",
@@ -461,9 +516,43 @@ export function validateApps(apps, { needTarget = true } = {}) {
     ];
   }
   for (const key of Object.keys(apps)) {
-    if (!["fixture", "legacy", "target"].includes(key)) {
+    if (!APP_KEYS.includes(key)) {
       errors.push(
-        `apps.json: unknown key "${key}" (use "fixture", "legacy", "target")`,
+        `apps.json: unknown key "${key}" (use ${APP_KEYS.map((k) => `"${k}"`).join(", ")})`,
+      );
+    }
+  }
+  if (apps.synth !== undefined) {
+    if (typeof apps.synth?.sql !== "string") {
+      errors.push(
+        'apps.json: "synth" must be { "sql": "<path to the Neo Synth SQL file>" }',
+      );
+    } else if (!apps.fixture) {
+      errors.push(
+        'apps.json: "synth" needs a "fixture" store to load the rows into',
+      );
+    }
+  }
+  if (apps.rea !== undefined) {
+    const rea = apps.rea;
+    const ok =
+      rea &&
+      typeof rea === "object" &&
+      (typeof rea.not_applicable === "string"
+        ? rea.not_applicable.trim().length > 0
+        : typeof rea.executable_path === "string" &&
+          rea.executable_path.startsWith("/"));
+    if (!ok) {
+      errors.push(
+        'apps.json: "rea" must be { "executable_path": "<absolute path to Chrome/Chromium>" } (optional "command") or { "not_applicable": "<reason>" }',
+      );
+    }
+  }
+  if (apps.storeCompare !== undefined) {
+    const sc = apps.storeCompare;
+    if (!sc || typeof sc !== "object" || Array.isArray(sc)) {
+      errors.push(
+        'apps.json: "storeCompare" must be an object { "ignoreColumns"?: [..], "tableMap"?: {..} }',
       );
     }
   }
@@ -501,6 +590,15 @@ export function validateScenario(scenario, file) {
     return [
       `${file}: a scenario is an object { "name", "steps": [...] }, not ${Array.isArray(scenario) ? "a list" : typeof scenario}`,
     ];
+  }
+  for (const key of Object.keys(scenario)) {
+    if (
+      !["name", "legacyData", "synthData", "normalize", "steps"].includes(key)
+    ) {
+      errors.push(
+        `${file}: unknown key "${key}" (allowed: name, legacyData, synthData, normalize, steps)`,
+      );
+    }
   }
   if (!Array.isArray(scenario.steps) || scenario.steps.length === 0) {
     errors.push(`${file}: "steps" must be a non-empty list`);
@@ -561,6 +659,100 @@ export async function characterize({ apps, files, root = process.cwd() }) {
   return { ...report, kind: "characterize", target: null };
 }
 
+const SECRET_COLUMN = /password|passwd|hash|token|secret|salt/i;
+
+function sqliteJson(store, sql) {
+  const out = execFileSync("sqlite3", ["-json", store, sql], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return out.trim() ? JSON.parse(out) : [];
+}
+
+/** Every ordinary table of a SQLite store with its columns and rows. */
+export function snapshotSqlite(store) {
+  const tables = {};
+  const names = sqliteJson(
+    store,
+    "select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name",
+  ).map((r) => r.name);
+  for (const name of names) {
+    const columns = sqliteJson(
+      store,
+      `pragma table_info("${name.replace(/"/g, '""')}")`,
+    ).map((c) => c.name);
+    const rows = sqliteJson(
+      store,
+      `select * from "${name.replace(/"/g, '""')}"`,
+    );
+    tables[name] = { columns, rows };
+  }
+  return tables;
+}
+
+/**
+ * Table-by-table comparison of what the two apps wrote. Only tables present
+ * on both sides with the same column set are compared (others are listed as
+ * skipped); secret-like columns count as present/absent only; rows are
+ * normalised and compared as unordered sets.
+ */
+export function compareStores(
+  legacy,
+  target,
+  { norm, ignoreColumns = [], tableMap = {} } = {},
+) {
+  const result = { compared: 0, identical: 0, skipped: [], differences: [] };
+  for (const [name, left] of Object.entries(legacy)) {
+    const targetName = tableMap[name] ?? name;
+    const right = target[targetName];
+    if (!right) {
+      result.skipped.push({ table: name, reason: "missing_in_target" });
+      continue;
+    }
+    const cols = left.columns.filter((c) => !ignoreColumns.includes(c));
+    const rcols = right.columns.filter((c) => !ignoreColumns.includes(c));
+    if ([...cols].sort().join(",") !== [...rcols].sort().join(",")) {
+      result.skipped.push({
+        table: name,
+        reason: `columns differ: legacy [${cols.join(", ")}] target [${rcols.join(", ")}]`,
+      });
+      continue;
+    }
+    const canon = (rows) =>
+      rows
+        .map((row) =>
+          JSON.stringify(
+            Object.fromEntries(
+              cols.sort().map((c) => {
+                const v = row[c];
+                if (SECRET_COLUMN.test(c))
+                  return [c, v == null || v === "" ? null : "<secret>"];
+                return [c, typeof v === "string" ? norm(v) : v];
+              }),
+            ),
+          ),
+        )
+        .sort();
+    const a = canon(left.rows);
+    const b = canon(right.rows);
+    result.compared += 1;
+    if (a.length === b.length && a.every((row, i) => row === b[i])) {
+      result.identical += 1;
+    } else {
+      const onlyLegacy = a.filter((r) => !b.includes(r)).slice(0, 3);
+      const onlyTarget = b.filter((r) => !a.includes(r)).slice(0, 3);
+      result.differences.push({
+        table: name,
+        legacyRows: a.length,
+        targetRows: b.length,
+        onlyLegacy,
+        onlyTarget,
+      });
+    }
+  }
+  return result;
+}
+
 /**
  * Replays scenarios with both apps started fresh by the harness for every
  * scenario (see the header). `apps` is the parsed parity/apps.json.
@@ -568,8 +760,21 @@ export async function characterize({ apps, files, root = process.cwd() }) {
 export async function replayManaged({ apps, files, root = process.cwd() }) {
   const errors = validateApps(apps);
   if (errors.length) throw new Error(errors.join("\n"));
-  const shared = { root, fixture: apps.fixture };
+  const shared = { root, fixture: apps.fixture, synthSql: apps.synth?.sql };
   const sides = { legacy: apps.legacy, target: apps.target };
+  const storePath = (side) =>
+    side.store ? resolve(root, side.cwd ?? ".", side.store) : null;
+  const storesComparable =
+    isSqliteStore(storePath(sides.legacy)) &&
+    isSqliteStore(storePath(sides.target));
+  const snapshots = {};
+  const store = {
+    applicable: storesComparable,
+    compared: 0,
+    identical: 0,
+    skipped: [],
+    differences: [],
+  };
   return replay({
     legacy: apps.legacy.url,
     target: apps.target.url,
@@ -582,12 +787,48 @@ export async function replayManaged({ apps, files, root = process.cwd() }) {
         return [{ name: "start", error: String(error?.message ?? error) }];
       }
       try {
-        return await run();
+        const steps = await run();
+        if (storesComparable) {
+          try {
+            snapshots[which] = snapshotSqlite(storePath(sides[which]));
+          } catch (error) {
+            snapshots[which] = { error: String(error?.message ?? error) };
+          }
+        }
+        return steps;
       } finally {
         await stop();
       }
     },
+    afterScenario: (scenario, norm) => {
+      if (!storesComparable) return;
+      const a = snapshots.legacy;
+      const b = snapshots.target;
+      if (!a || !b || a.error || b.error) {
+        store.differences.push({
+          scenario: scenario.name,
+          table: "*",
+          error: a?.error ?? b?.error ?? "no snapshot",
+        });
+        return;
+      }
+      const r = compareStores(a, b, {
+        norm,
+        ignoreColumns: apps.storeCompare?.ignoreColumns ?? [],
+        tableMap: apps.storeCompare?.tableMap ?? {},
+      });
+      store.compared += r.compared;
+      store.identical += r.identical;
+      for (const sk of r.skipped) {
+        if (!store.skipped.some((x) => x.table === sk.table))
+          store.skipped.push(sk);
+      }
+      for (const d of r.differences)
+        store.differences.push({ scenario: scenario.name, ...d });
+    },
     freshData: true,
+    synthApplied: Boolean(apps.synth?.sql && apps.fixture),
+    store,
   });
 }
 
@@ -605,6 +846,9 @@ export async function replay({
   resetTarget,
   around,
   freshData,
+  afterScenario,
+  synthApplied,
+  store,
 }) {
   const report = {
     version: VERSION,
@@ -616,11 +860,21 @@ export async function replay({
     identical: 0,
     legacyDataCases: 0,
     legacyDataIdentical: 0,
+    synthDataCases: 0,
+    synthDataIdentical: 0,
+    synthApplied: Boolean(synthApplied),
     kind: "replay",
     /** Status codes the legacy app answered with, e.g. { "200": 9, "404": 2 }. */
     legacyStatuses: {},
     freshData: freshData ?? Boolean(resetLegacy && resetTarget),
     managedApps: Boolean(around),
+    store: store ?? {
+      applicable: false,
+      compared: 0,
+      identical: 0,
+      skipped: [],
+      differences: [],
+    },
     /** @type {{ scenario: string, step: string, field: string, legacy: unknown, target: unknown }[]} */
     differences: [],
   };
@@ -662,9 +916,11 @@ export async function replay({
       const diffs = diffStep(step, other[i]);
       report.total += 1;
       if (scenario.legacyData) report.legacyDataCases += 1;
+      if (scenario.synthData) report.synthDataCases += 1;
       if (!diffs.length) {
         report.identical += 1;
         if (scenario.legacyData) report.legacyDataIdentical += 1;
+        if (scenario.synthData) report.synthDataIdentical += 1;
       } else {
         for (const d of diffs)
           report.differences.push({
@@ -674,14 +930,366 @@ export async function replay({
           });
       }
     });
+    afterScenario?.(scenario, normaliser(scenario));
   }
   return report;
+}
+
+/* ───────────────────────────── REA lane ───────────────────────────── */
+
+const REA_DEFAULT_CAPTURE = {
+  at_end: ["dom", "url", "screenshot"],
+  events: ["console", "page-errors", "network"],
+};
+const BROWSER_SCENARIO_KEYS = [
+  "name",
+  "start_url",
+  "actions",
+  "environment",
+  "storage",
+  "secrets",
+  "capture",
+];
+
+/** The REA command for this machine: apps.rea.command, `rea` on PATH, or npx. */
+export function resolveReaCommand(rea) {
+  if (rea?.command) return rea.command;
+  const probe = spawnSync("rea", ["--help"], { stdio: "ignore", shell: true });
+  if (probe.status === 0) return "rea";
+  return "npx -y rea-agents@6.7.0";
+}
+
+function runRea(command, args, { cwd, timeoutMs = 10 * 60 * 1000 }) {
+  const r = spawnSync(`${command} ${args.map((a) => `"${a}"`).join(" ")}`, {
+    cwd,
+    shell: true,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+    timeout: timeoutMs,
+  });
+  const text = (r.stdout ?? "").trim();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed || parsed.error || parsed.code) {
+    const message =
+      parsed?.message ??
+      (r.stderr ?? "").trim().split("\n").slice(-3).join(" ") ??
+      "REA failed";
+    const issues = parsed?.details?.issues
+      ? ` ${JSON.stringify(parsed.details.issues).slice(0, 600)}`
+      : "";
+    throw new Error(`rea ${args[0]}: ${message}${issues}`);
+  }
+  return parsed;
+}
+
+/** Problems with one parity/browser scenario file. */
+export function validateBrowserScenario(scenario, file) {
+  const errors = [];
+  if (!scenario || typeof scenario !== "object" || Array.isArray(scenario)) {
+    return [
+      `${file}: a browser scenario is an object { "name", "start_url", "actions" }`,
+    ];
+  }
+  for (const key of Object.keys(scenario)) {
+    if (!BROWSER_SCENARIO_KEYS.includes(key)) {
+      errors.push(
+        `${file}: unknown key "${key}" (allowed: ${BROWSER_SCENARIO_KEYS.join(", ")}); the harness adds "browser" itself`,
+      );
+    }
+  }
+  const url = scenario.start_url?.url;
+  if (typeof url !== "string" || !url.startsWith("{{BASE}}")) {
+    errors.push(
+      `${file}: start_url.url must start with {{BASE}} (the app origin)`,
+    );
+  }
+  if (!Array.isArray(scenario.actions) || scenario.actions.length === 0) {
+    errors.push(
+      `${file}: "actions" must be a non-empty list of REA browser actions`,
+    );
+  } else {
+    scenario.actions.forEach((a, i) => {
+      if (typeof a?.step_id !== "string" || typeof a?.action !== "string") {
+        errors.push(`${file} action ${i + 1}: needs "step_id" and "action"`);
+      }
+      const dest = a?.destination?.url;
+      if (
+        a?.action === "goto" &&
+        (typeof dest !== "string" || !dest.startsWith("{{BASE}}"))
+      ) {
+        errors.push(
+          `${file} action ${i + 1}: goto destination.url must start with {{BASE}}`,
+        );
+      }
+    });
+  }
+  return errors;
+}
+
+function loadBrowserScenarios(files) {
+  const errors = [];
+  const out = files.map((file) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(file, "utf8"));
+    } catch (error) {
+      errors.push(`${file}: not valid JSON (${error.message})`);
+      return null;
+    }
+    errors.push(...validateBrowserScenario(parsed, file));
+    return parsed;
+  });
+  if (!files.length)
+    errors.push("no browser scenario files found (parity/browser/*.json)");
+  if (errors.length) throw new Error(errors.join("\n"));
+  return out;
+}
+
+function substituteBase(value, base) {
+  if (typeof value === "string") return value.split("{{BASE}}").join(base);
+  if (Array.isArray(value)) return value.map((v) => substituteBase(v, base));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, substituteBase(v, base)]),
+    );
+  }
+  return value;
+}
+
+/**
+ * Servers differ in response header names (Werkzeug vs Express) and nobody
+ * sees them; everything else in the capture stays REA's own. Recorded in the
+ * report as harnessNormalization.
+ */
+export function stripResponseHeaderNames(normalized) {
+  const copy = JSON.parse(JSON.stringify(normalized));
+  for (const item of copy?.events?.items ?? []) {
+    if (item.kind === "response" && Array.isArray(item.header_names)) {
+      item.header_names = [];
+    }
+  }
+  return copy;
+}
+
+async function captureSide(
+  side,
+  which,
+  { shared, rea, scenario, name, port, outDir },
+) {
+  const url = new URL(side.url);
+  url.port = String(port);
+  const base = url.origin;
+  const started = await startManagedApp({ ...side, url: base }, which, shared);
+  try {
+    const input = {
+      ...substituteBase(
+        Object.fromEntries(
+          Object.entries(scenario).filter(([k]) => k !== "name"),
+        ),
+        base,
+      ),
+      browser: {
+        mode: "launch",
+        executable_path: rea.executable_path,
+        headless: true,
+      },
+      capture: scenario.capture ?? REA_DEFAULT_CAPTURE,
+    };
+    const tmp = join(
+      tmpdir(),
+      `neome-rea-${process.pid}-${name}-${which}.json`,
+    );
+    writeFileSync(tmp, JSON.stringify(input));
+    try {
+      const evidence = runRea(
+        rea.command,
+        ["capture-browser-scenario", tmp, "--format", "json"],
+        {
+          cwd: shared.root,
+        },
+      );
+      writeFileSync(
+        join(outDir, `${name}-${which}.evidence.json`),
+        `${JSON.stringify(evidence)}\n`,
+      );
+      const normalized = stripResponseHeaderNames(evidence.normalized_result);
+      const normalizedPath = join(outDir, `${name}-${which}.json`);
+      writeFileSync(normalizedPath, `${JSON.stringify(normalized)}\n`);
+      return {
+        evidenceId: evidence.evidence_id,
+        normalizedPath,
+        completeness: normalized.completeness,
+      };
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  } finally {
+    await started();
+  }
+}
+
+/**
+ * Captures every parity/browser scenario with REA against the legacy app and
+ * the target (or the legacy app again, for characterization) on the same
+ * port, and compares them with REA.
+ */
+export async function reaLane({
+  apps,
+  files,
+  root = process.cwd(),
+  characterize: selfCheck = false,
+}) {
+  const errors = validateApps(apps, { needTarget: !selfCheck });
+  if (errors.length) throw new Error(errors.join("\n"));
+  if (!apps.rea || apps.rea.not_applicable) {
+    throw new Error(
+      'apps.json: the REA lane needs "rea": { "executable_path": "<Chrome/Chromium>" }',
+    );
+  }
+  const rea = { ...apps.rea, command: resolveReaCommand(apps.rea) };
+  const scenarios = loadBrowserScenarios(files);
+  const shared = { root, fixture: apps.fixture, synthSql: apps.synth?.sql };
+  const outDir = resolve(root, ".neome/rea");
+  mkdirSync(outDir, { recursive: true });
+  const port = new URL(apps.legacy.url).port || "80";
+  const report = {
+    version: VERSION,
+    kind: selfCheck ? "rea-characterize" : "rea",
+    generatedAt: new Date().toISOString(),
+    tool: rea.command,
+    legacy: apps.legacy.url,
+    target: selfCheck ? null : apps.target.url,
+    scenarios: 0,
+    unchanged: 0,
+    freshData: Boolean(apps.fixture),
+    synthApplied: Boolean(apps.synth?.sql && apps.fixture),
+    harnessNormalization: ["drop_response_header_names"],
+    results: [],
+  };
+  for (const [index, file] of files.entries()) {
+    const scenario = scenarios[index];
+    const name = (scenario.name ?? file).replace(/[^\w.-]+/g, "_");
+    report.scenarios += 1;
+    const entry = {
+      scenario: scenario.name ?? file,
+      status: "error",
+      changed: [],
+      evidence: {},
+    };
+    try {
+      const left = await captureSide(apps.legacy, "legacy", {
+        shared,
+        rea,
+        scenario,
+        name,
+        port,
+        outDir,
+      });
+      const rightSide = selfCheck ? apps.legacy : apps.target;
+      const right = await captureSide(
+        rightSide,
+        selfCheck ? "legacy2" : "target",
+        { shared, rea, scenario, name, port, outDir },
+      );
+      entry.evidence = { legacy: left.evidenceId, target: right.evidenceId };
+      const compare = runRea(
+        rea.command,
+        [
+          "compare-web-captures",
+          left.normalizedPath,
+          right.normalizedPath,
+          "--format",
+          "json",
+        ],
+        { cwd: root },
+      );
+      writeFileSync(
+        join(outDir, `${name}-compare.json`),
+        `${JSON.stringify(compare)}\n`,
+      );
+      entry.evidence.compare = compare.evidence_id;
+      const verdict = compare.normalized_result;
+      entry.status = verdict.overall_status;
+      entry.alignment = verdict.alignment;
+      for (const step of verdict.steps ?? []) {
+        for (const diff of step.artifact_diffs ?? []) {
+          if (diff.status !== "unchanged") {
+            entry.changed.push({
+              step: step.step_id,
+              artifact: diff.artifact,
+              status: diff.status,
+              reason: diff.reason,
+            });
+          }
+        }
+      }
+      for (const f of verdict.alignment?.failures ?? []) {
+        entry.changed.push({
+          step: f.step_id,
+          artifact: "alignment",
+          status: f.code,
+          reason: f.reason,
+        });
+      }
+      if (entry.status === "unchanged") report.unchanged += 1;
+    } catch (error) {
+      entry.error = String(error?.message ?? error);
+    }
+    report.results.push(entry);
+  }
+  return report;
+}
+
+function finishRea(report, reportPath) {
+  mkdirSync(dirname(reportPath), { recursive: true });
+  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  for (const r of report.results) {
+    const head = `${r.status.toUpperCase().padEnd(9)} ${r.scenario}`;
+    console.log(r.error ? `${head}\n  ${r.error}` : head);
+    for (const c of r.changed.slice(0, 20)) {
+      console.log(
+        `  ${c.step ?? "-"} [${c.artifact}] ${c.status}${c.reason ? `: ${c.reason}` : ""}`,
+      );
+    }
+  }
+  console.log(
+    `\n${report.unchanged}/${report.scenarios} browser scenario(s) unchanged under REA. Report: ${reportPath}`,
+  );
+  process.exit(
+    report.scenarios > 0 && report.unchanged === report.scenarios ? 0 : 1,
+  );
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.apps && !args.legacy && existsSync("parity/apps.json")) {
     args.apps = "parity/apps.json";
+  }
+  if (args.rea) {
+    const apps = JSON.parse(
+      readFileSync(args.apps ?? "parity/apps.json", "utf8"),
+    );
+    const files = scenarioFiles(
+      args.paths.length ? args.paths : ["parity/browser"],
+    );
+    const report = await reaLane({
+      apps,
+      files,
+      characterize: Boolean(args.characterize),
+    });
+    return finishRea(
+      report,
+      args.report === ".neome/replay-report.json"
+        ? args.characterize
+          ? ".neome/rea-characterize-report.json"
+          : ".neome/rea-report.json"
+        : args.report,
+    );
   }
   if (args.characterize) {
     const apps = JSON.parse(
@@ -735,11 +1343,31 @@ function finish(report, reportPath) {
       `DIFF ${d.scenario} > ${d.step} [${d.field}]\n  legacy: ${d.legacy}\n  target: ${d.target}`,
     );
   }
+  for (const d of (report.store?.differences ?? []).slice(0, 20)) {
+    console.log(
+      `STORE DIFF ${d.scenario} > ${d.table}: ${d.error ?? `legacy ${d.legacyRows} rows, target ${d.targetRows} rows`}`,
+    );
+    for (const r of d.onlyLegacy ?? [])
+      console.log(`  only legacy: ${r.slice(0, 300)}`);
+    for (const r of d.onlyTarget ?? [])
+      console.log(`  only target: ${r.slice(0, 300)}`);
+  }
+  const store = report.store?.applicable
+    ? `; store tables identical ${report.store.identical}/${report.store.compared}` +
+      (report.store.skipped.length
+        ? ` (skipped: ${report.store.skipped.map((s) => s.table).join(", ")})`
+        : "")
+    : "";
   console.log(
     `\n${report.identical}/${report.total} steps identical across ${report.scenarios} scenario(s); ` +
-      `legacy-data steps ${report.legacyDataIdentical}/${report.legacyDataCases}. Report: ${args.report}`,
+      `legacy-data steps ${report.legacyDataIdentical}/${report.legacyDataCases}; synth-data steps ${report.synthDataIdentical}/${report.synthDataCases}${store}. Report: ${args.report}`,
   );
-  process.exit(report.total > 0 && report.identical === report.total ? 0 : 1);
+  const storeOk =
+    !report.store?.applicable ||
+    report.store.identical === report.store.compared;
+  process.exit(
+    report.total > 0 && report.identical === report.total && storeOk ? 0 : 1,
+  );
 }
 
 if (

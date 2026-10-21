@@ -48,6 +48,9 @@ export const MODERNIZATION_CONTROL_COMMANDS = [
   "update_progress",
   // A line in the live log (what is being done right now).
   "log",
+  // Neo Synth: generate a realistic dataset from the legacy schema and write
+  // it (SQL + JSON) into parity/synth/ so both apps run on the same rows.
+  "synth_data",
   // Durable resume point: label + arbitrary state the agent will need back.
   "checkpoint",
   // Final report; refused while plan steps are still pending.
