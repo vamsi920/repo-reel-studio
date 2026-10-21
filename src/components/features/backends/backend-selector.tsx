@@ -161,6 +161,7 @@ export function BackendSelector({
   const automationDetailMatch = useMatch("/automations/:automationId");
   const environmentSetupMatch = useMatch("/environment/setup");
   const modernizeMatch = useMatch("/modernize/:projectId");
+  const synthMatch = useMatch("/synth/:projectId");
   const [addBackendModalOpen, setAddBackendModalOpen] = React.useState(false);
   const [manageBackendsModalOpen, setManageBackendsModalOpen] =
     React.useState(false);
@@ -362,6 +363,7 @@ export function BackendSelector({
       else if (automationDetailMatch) navigate("/automations");
       else if (environmentSetupMatch) navigate("/environment");
       else if (modernizeMatch) navigate("/modernize");
+      else if (synthMatch) navigate("/synth");
 
       setActive(target.id, orgId);
       onSelectOption?.();
@@ -373,6 +375,7 @@ export function BackendSelector({
       automationDetailMatch,
       environmentSetupMatch,
       modernizeMatch,
+      synthMatch,
       navigate,
       options,
       setActive,

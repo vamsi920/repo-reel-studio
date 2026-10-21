@@ -23,6 +23,12 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   "NEOME$RESTART_PROMPT",
   "NEOME$START_MIGRATION_MESSAGE",
   "SIDEBAR$ENVIRONMENT_SETUP",
+  // Neo Synth: the product name, a brand-name format string, and prompts
+  // sent to the model rather than shown to people.
+  "SYNTH$TITLE",
+  "SYNTH$STUDIO_CONVERSATION_TITLE",
+  "SYNTH$START_PROMPT",
+  "SYNTH$RESTART_PROMPT",
   // "Ask Neo" is the feature's product name, kept in English like "Neo".
   "COMMAND_MENU$AI_GUIDE_TITLE",
   "COMMAND_MENU$ENVIRONMENT_TITLE",

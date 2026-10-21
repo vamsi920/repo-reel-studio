@@ -1,6 +1,7 @@
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { ONBOARDING_CONTROL_ACTION_KIND } from "#/constants/onboarding-control";
 import { MODERNIZATION_CONTROL_ACTION_KIND } from "#/constants/modernization-control";
+import { SYNTH_CONTROL_ACTION_KIND } from "#/constants/synth-control";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -370,6 +371,18 @@ export interface ModernizationControlAction extends ActionBase<
   rationale?: string | null;
 }
 
+/**
+ * Neo Synth (synthetic data studio) control action, intercepted by
+ * handleSynthControlAction. Same envelope as ModernizationControlAction.
+ */
+export interface SynthControlAction extends ActionBase<
+  typeof SYNTH_CONTROL_ACTION_KIND
+> {
+  command: string;
+  payload?: Record<string, unknown> | null;
+  rationale?: string | null;
+}
+
 export interface OnboardingControlAction extends ActionBase<
   typeof ONBOARDING_CONTROL_ACTION_KIND
 > {
@@ -421,4 +434,5 @@ export type Action =
   | CanvasUIAction
   | OnboardingControlAction
   | ModernizationControlAction
+  | SynthControlAction
   | LaunchChildConversationAction;

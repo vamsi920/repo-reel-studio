@@ -1,6 +1,7 @@
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { ONBOARDING_CONTROL_ACTION_KIND } from "#/constants/onboarding-control";
 import { MODERNIZATION_CONTROL_ACTION_KIND } from "#/constants/modernization-control";
+import { SYNTH_CONTROL_ACTION_KIND } from "#/constants/synth-control";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 
 type EventType =
@@ -43,6 +44,7 @@ type ActionEventType =
   | typeof CANVAS_UI_CLIENT_ACTION_KIND
   | typeof ONBOARDING_CONTROL_ACTION_KIND
   | typeof MODERNIZATION_CONTROL_ACTION_KIND
+  | typeof SYNTH_CONTROL_ACTION_KIND
   | typeof LAUNCH_CHILD_CONVERSATION_ACTION_KIND;
 type ObservationEventType =
   | `${ObservationOnlyType}Observation`

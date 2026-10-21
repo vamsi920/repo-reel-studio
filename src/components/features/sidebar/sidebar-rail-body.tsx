@@ -12,6 +12,7 @@ import {
   PlugZap,
   ShieldCheck,
   Replace,
+  Dices,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
@@ -243,6 +244,14 @@ export function SidebarRailBody({
           collapsed={collapsed}
           forceActive={currentPath.startsWith("/modernize")}
           icon={<Replace width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/synth"
+          label={t(I18nKey.SIDEBAR$SYNTH)}
+          testId="sidebar-synth-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/synth")}
+          icon={<Dices width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
           to="/agentops"

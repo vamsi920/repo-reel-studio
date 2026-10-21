@@ -51,6 +51,8 @@ export default [
     route("environment/setup", "routes/environment-setup.tsx"),
     route("modernize", "routes/modernize.tsx"),
     route("modernize/:projectId", "routes/modernize-project.tsx"),
+    route("synth", "routes/synth.tsx"),
+    route("synth/:projectId", "routes/synth-project.tsx"),
     route("environment", "routes/environment.tsx", [
       index("routes/environment-overview.tsx"),
       route("connections", "routes/environment-connections.tsx"),

@@ -107,6 +107,26 @@
         "18890"
       ],
       "port": 18890
+    },
+    {
+      "name": "dev-synth",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PORT=8010",
+        "OH_CANVAS_SAFE_BACKEND_PORT=18010",
+        "OH_CANVAS_SAFE_AUTOMATION_PORT=18011",
+        "OH_CANVAS_SAFE_AGENTOPS_PORT=18012",
+        "OH_CANVAS_SAFE_VITE_PORT=3011",
+        "OH_CANVAS_SAFE_STATE_DIR=.tmp/synth-state",
+        "NEODEVEX_DESKTOP_NOTIFICATIONS=0",
+        "VITE_SUPABASE_URL=",
+        "VITE_SUPABASE_PUBLISHABLE_KEY=",
+        "VITE_SUPABASE_ANON_KEY=",
+        "npm",
+        "run",
+        "dev"
+      ],
+      "port": 8010
     }
   ]
 }
