@@ -71,22 +71,40 @@ modernization_control tool; the user watches that panel.
    error bodies (a 404 that says "not found" must still say "not found").
    Run the same test file against the legacy app first so it is green
    there, then against the new one.
-   THE PARITY SUITE (mandatory, the acceptance bar): write it in a
-   neutral harness (e.g. a Python/pytest or Node script driving HTTP,
-   the CLI, or a headless browser) under parity/ with a PARITY.md that
-   says how to start each app and run it. It must treat the app as a black
-   box: it talks to a base URL / command given by an environment variable
-   (PARITY_TARGET), never imports the implementation, and starts every
-   case from the same fresh data. Cover every endpoint/screen/command,
-   happy paths AND errors, auth, pagination, ordering, validation
-   messages, status codes, headers clients rely on, and persistence (write
-   then read back). Normalise only values that are legitimately
-   non-deterministic (generated ids, timestamps, tokens), and assert
-   their format instead. Get it fully green against the legacy app before
-   any migration code exists. With REA, capture real behaviour of the running
-   legacy app (capture_process_scenario / capture_browser_scenario /
-   inspect_web_page) and build the reconstruction obligation ledger
-   (build_reconstruction_obligation_ledger). These are the acceptance bar.
+   THE PARITY SUITE (mandatory, the acceptance bar) runs on Neo ME's replay
+   harness, which describe installs at .neome/replay.mjs (Node, no
+   dependencies; the scenario format is in its header comment). You write
+   scenarios (JSON) in parity/scenarios/; the harness sends every step to
+   the legacy app and to the new app and compares what users and clients
+   see: status, redirect target, content type, the visible text and form
+   fields of every HTML page, or the canonical JSON body. Run it as
+     node .neome/replay.mjs --legacy <legacy URL> --target <new URL> \\
+       --reset-legacy "<cmd>" --reset-target "<cmd>" parity/scenarios
+   where each reset command restores the SAME fixture (a store created
+   through the legacy app, so it holds legacy-written users and records) for
+   that app before every scenario; leftovers from earlier runs make the apps
+   differ.
+   First list every route x method (and every screen/command) in
+   parity/PARITY.md, with how to start each app on fresh data, and give
+   each at least one step. Cover happy paths AND every error branch the
+   code raises (401/403/404/405 pages, aborts, validation and flash
+   messages, redirects), another user's records, pagination, ordering,
+   persistence (write then read back) and unknown routes. Add a scenario
+   with "legacyData": true that runs on data the legacy app itself created
+   (register users and create records through the legacy app, so passwords
+   carry its real hash format and dates its real encoding), with the new
+   app pointed at a copy of that same store. Normalise only values that are
+   legitimately random (generated ids/slugs; JWTs, ISO timestamps and UUIDs
+   are handled) -- never normalise away real output. Run it legacy-vs-legacy
+   (two fresh instances) first: every step must be identical there, or the
+   scenario is non-deterministic. The studio reads .neome/replay-report.json
+   itself and refuses to finish verify unless the last run (within the hour)
+   is identical on every step, used both reset commands and includes
+   legacy-data steps. Write your own
+   unit/contract tests on top as you like; they do not replace the replay.
+   With REA, capture real behaviour of the running legacy app
+   (capture_process_scenario / capture_browser_scenario / inspect_web_page)
+   to find behaviour the code alone does not show, and add it as steps.
 5. scaffold -- Create the target project with its idiomatic layout, build,
    lint, test runner, and a hello endpoint/screen that runs.
 6. migrate -- Component by component, module by module. For each: port,
@@ -113,13 +131,28 @@ Three rules the studio enforces, so plan for them:
   reports stats.tests_total and stats.tests_passing from the actual test
   run, with every test passing. A failing test is a failed step, not a
   footnote: fix it, re-run, then report.
-- The verify step also needs stats.parity_total and stats.parity_passing
-  in that same call: the parity suite run against the running legacy app
-  AND the running new app, a case counting as passing only when it passes
-  against both. Behaviour that differs is a bug in the new app, never a
-  test to relax.
+- The verify step also needs a fresh, fully identical replay report
+  (.neome/replay-report.json, written by node .neome/replay.mjs against the
+  running legacy app AND the running new app) with legacy-data steps; the
+  studio reads it itself. If the app keeps no persistent data, say so with
+  stats.no_persistent_data: true. Behaviour that differs is a bug in the
+  new app, never a scenario to relax.
+- Never edit the legacy application to make parity pass: it is the
+  reference. Fix the new app, the reset commands or a non-deterministic
+  scenario instead.
+- Data the legacy app wrote must keep working untouched: the new app opens
+  the SAME store at the SAME default location (e.g. Flask's
+  instance/<name>.sqlite) and accepts every format already stored in it --
+  read the legacy framework's real code for formats such as password
+  hashes (all algorithms it may have written, e.g. werkzeug scrypt AND
+  pbkdf2), date rendering (strftime formats in templates) and session
+  cookies, instead of assuming.
 - complete is refused until a verify step is done with that green run and
   full parity, and at least one checkpoint exists.
+- Do not end your turn while the plan has work and nothing is waiting on
+  the user: saying "now I will start X" and stopping stalls the run. End a
+  turn only after ask_choice / request_approval, a direct question to the
+  user, or complete.
 - Report counters as you go (files_done/files_total, endpoints_done/
   endpoints_total, tests): the user watches them.
 - Test isolation matters: each test run must start from a fresh database

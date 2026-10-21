@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
-import { useAgentStore } from "#/stores/agent-store";
-import { AgentState } from "#/types/agent-state";
+import { useConversationStateStore } from "#/stores/conversation-state-store";
+import { ExecutionStatus } from "#/types/agent-server/core/base/common";
 import type { MigrationPhase } from "#/constants/modernization-control";
 
 /**
@@ -13,10 +13,15 @@ import type { MigrationPhase } from "#/constants/modernization-control";
  * prefers-reduced-motion.
  */
 
-/** True while the agent is working (a model call or a tool is in flight). */
+/**
+ * True while the agent is working (a model call or a tool is in flight).
+ * Reads the live execution status the conversation socket writes -- the same
+ * source as the composer's "Running" -- not the legacy agent store, which is
+ * never set to RUNNING for agent-server conversations.
+ */
 export function useNeoMeThinking(): boolean {
-  const state = useAgentStore((s) => s.curAgentState);
-  return state === AgentState.RUNNING;
+  const status = useConversationStateStore((s) => s.execution_status);
+  return status === ExecutionStatus.RUNNING;
 }
 
 /** Phrases cycled while thinking, chosen by the phase of the active step. */

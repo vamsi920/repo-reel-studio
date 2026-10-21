@@ -102,6 +102,16 @@ export interface ProgressStats {
   /** Black-box parity cases run against legacy AND new; passing = both. */
   parityTotal?: number;
   parityPassing?: number;
+  /**
+   * The suite replays every case against both apps and compares the whole
+   * normalised response (status, redirect target, visible text / body), not
+   * only hand-written expectations.
+   */
+  parityDifferential?: boolean;
+  /** Parity cases run on data the legacy app itself created (real hashes…). */
+  legacyDataCases?: number;
+  /** The app keeps no persistent data, so there is no legacy data to carry. */
+  noPersistentData?: boolean;
   endpointsTotal?: number;
   endpointsDone?: number;
   /** Free-form extra counters the agent reports, e.g. "screens": "4/9". */

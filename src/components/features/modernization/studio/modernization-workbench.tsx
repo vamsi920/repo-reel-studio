@@ -186,6 +186,24 @@ export function ModernizationWorkbench({
     return () => clearTimeout(t);
   }, [latestOpen, reduceMotion]);
 
+  // The last waiting card was just answered: the agent is about to work, so
+  // bring the live box back instead of leaving the user parked on old cards.
+  const hadOpenRef = React.useRef(Boolean(latestOpen));
+  React.useEffect(() => {
+    const hadOpen = hadOpenRef.current;
+    hadOpenRef.current = Boolean(latestOpen);
+    if (latestOpen || !hadOpen) return undefined;
+    const t = setTimeout(() => {
+      scrollRef.current
+        ?.querySelector('[data-card-key="live"]')
+        ?.scrollIntoView?.({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [latestOpen, reduceMotion]);
+
   if (!project) return null;
 
   const cards = buildWorkbenchCards(project, {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -56,6 +56,22 @@ describe("OnboardingDock", () => {
     // A prefix/substring check would also hide the dock -- credential-request
     // indicator included -- on any future sibling route like this one.
     renderDock("/environment/setup-history");
+    expect(screen.getByTestId("onboarding-dock-trigger")).toBeInTheDocument();
+  });
+
+  it("stays out of a Neo ME studio, whose answer buttons share its corner", () => {
+    renderDock("/modernize/me_123");
+    expect(screen.queryByTestId("onboarding-dock-trigger")).toBeNull();
+    cleanup();
+    renderDock("/modernize");
+    expect(screen.getByTestId("onboarding-dock-trigger")).toBeInTheDocument();
+  });
+
+  it("stays out of a Neo Synth studio for the same reason", () => {
+    renderDock("/synth/sy_123");
+    expect(screen.queryByTestId("onboarding-dock-trigger")).toBeNull();
+    cleanup();
+    renderDock("/synth");
     expect(screen.getByTestId("onboarding-dock-trigger")).toBeInTheDocument();
   });
 

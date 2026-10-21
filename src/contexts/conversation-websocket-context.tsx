@@ -49,6 +49,7 @@ import {
   handleOnboardingControlAction,
 } from "#/services/onboarding-control";
 import { handleModernizationControlAction } from "#/services/modernization-control";
+import { createWorkspaceRunner } from "#/lib/modernization/replay-harness";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
   ConversationErrorEvent,
@@ -890,6 +891,11 @@ export function ConversationWebSocketProvider({
             void handleModernizationControlAction(event.action, {
               postResult: createConversationResultPoster(conversationId),
               conversationId,
+              runInWorkspace: createWorkspaceRunner(
+                conversationId,
+                conversationUrl,
+                sessionApiKey,
+              ),
             });
           }
 

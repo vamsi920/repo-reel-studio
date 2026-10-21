@@ -65584,5 +65584,22 @@
     "ca": "Paritat",
     "tr": "Eşdeğerlik",
     "uk": "Паритет"
+  },
+  "NEOME$STUCK_NOTICE": {
+    "en": "Stuck repeating itself, asked to change approach",
+    "ja": "同じ操作を繰り返したため、別の方法を試すよう指示しました",
+    "zh-CN": "因重复相同操作而卡住，已要求其换一种方法",
+    "zh-TW": "因重複相同操作而卡住，已要求其換一種方法",
+    "ko-KR": "같은 작업을 반복해 멈췄습니다. 다른 접근을 요청했습니다",
+    "no": "Satt fast i gjentakelser, bedt om å endre tilnærming",
+    "it": "Bloccato a ripetersi, gli è stato chiesto di cambiare approccio",
+    "pt": "Travou repetindo ações, foi pedido que mude de abordagem",
+    "es": "Atascado repitiéndose, se le pidió cambiar de enfoque",
+    "ar": "توقف بسبب تكرار نفس الإجراءات، وطُلب منه تغيير النهج",
+    "fr": "Bloqué à se répéter, il lui a été demandé de changer d'approche",
+    "tr": "Aynı işlemleri tekrarlayarak takıldı, yaklaşımını değiştirmesi istendi",
+    "de": "Hing in Wiederholungen fest, wurde gebeten, den Ansatz zu ändern",
+    "uk": "Застряг на повторах, попросили змінити підхід",
+    "ca": "Encallat repetint-se, se li ha demanat canviar d'enfocament"
   }
 }

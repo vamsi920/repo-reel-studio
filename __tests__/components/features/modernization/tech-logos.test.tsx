@@ -15,6 +15,7 @@ import {
   hasReaMcpServer,
   reaServerForMode,
   REA_MCP_SERVER,
+  REA_MCP_ENV,
   REA_MCP_SERVER_BAKED,
   REA_VERSION,
 } from "#/lib/modernization/rea-mcp";
@@ -107,6 +108,18 @@ describe("REA MCP registration", () => {
 
   it("detects the pinned stdio server and nothing else", () => {
     expect(hasReaMcpServer({ rea: REA_MCP_SERVER })).toBe(true);
+    // The settings API echoes env values redacted; that still matches.
+    expect(
+      hasReaMcpServer({
+        rea: {
+          ...REA_MCP_SERVER,
+          env: {
+            REA_MCP_INPUT_SCHEMA_PROFILE: "**********",
+            REA_MCP_OUTPUT_SCHEMA_PROFILE: "**********",
+          },
+        },
+      }),
+    ).toBe(true);
     expect(hasReaMcpServer({})).toBe(false);
     expect(hasReaMcpServer(undefined)).toBe(false);
     expect(
@@ -114,15 +127,18 @@ describe("REA MCP registration", () => {
         rea: { ...REA_MCP_SERVER, args: ["-y", "rea-agents@1.0.0", "mcp"] },
       }),
     ).toBe(false);
+    // Entries from earlier releases are rewritten: no compact env, a
+    // seconds-valued timeout, or an older description.
+    const { env: _env, ...withoutEnv } = REA_MCP_SERVER;
+    expect(hasReaMcpServer({ rea: withoutEnv })).toBe(false);
+    expect(hasReaMcpServer({ rea: { ...REA_MCP_SERVER, timeout: 120 } })).toBe(
+      false,
+    );
     expect(
-      hasReaMcpServer({
-        rea: {
-          ...REA_MCP_SERVER,
-          env: { REA_MCP_MAX_RESPONSE_BYTES: "200000" },
-        },
-      }),
+      hasReaMcpServer({ rea: { ...REA_MCP_SERVER, description: "old" } }),
     ).toBe(false);
-    expect(REA_MCP_SERVER.env).toBeUndefined();
+    expect(REA_MCP_SERVER.env).toEqual(REA_MCP_ENV);
+    expect(REA_MCP_SERVER.timeout).toBeUndefined();
     expect(REA_MCP_SERVER.command).toBe("npx");
   });
 });

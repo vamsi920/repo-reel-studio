@@ -27,13 +27,19 @@ import { FolderBrowserModal } from "#/components/features/home/workspace-dropdow
 import { isModernizationReceiptEvent } from "#/utils/modernization-receipt";
 import {
   AUTO_CONTINUE_MESSAGE,
+  MID_PLAN_CONTINUE_MESSAGE,
   START_MIGRATION_APPROVAL_ID,
+  STUCK_CONTINUE_MESSAGE,
   createModernizationResultPoster,
   receipt,
   shouldAutoContinue,
+  shouldContinueMidPlan,
 } from "#/services/modernization-control";
-import { useAgentStore } from "#/stores/agent-store";
-import { AgentState } from "#/types/agent-state";
+import { useEventStore } from "#/stores/use-event-store";
+import { isMessageEvent } from "#/types/agent-server/type-guards";
+import { parseMessageFromEvent } from "#/components/conversation-events/chat/event-content-helpers/parse-message-from-event";
+import { useConversationStateStore } from "#/stores/conversation-state-store";
+import { ExecutionStatus } from "#/types/agent-server/core/base/common";
 import {
   useModernizationStudioStore,
   type ModernizationProject,
@@ -83,7 +89,9 @@ function useStudioAutoContinue(
   project: ModernizationProject,
   sendUserMessage: (text: string) => Promise<unknown>,
 ) {
-  const agentState = useAgentStore((s) => s.curAgentState);
+  // Live status from the conversation socket (the legacy agent store is
+  // never set for agent-server conversations, so the nudge never fired).
+  const executionStatus = useConversationStateStore((s) => s.execution_status);
   const lastReceiptAtRef = React.useRef<number | null>(null);
   const nudgedForRef = React.useRef<number | null>(null);
   const answeredCount = project.questions.filter(
@@ -103,10 +111,40 @@ function useStudioAutoContinue(
     }
     seenRef.current = { answeredCount, resolvedCount };
   }, [answeredCount, resolvedCount]);
+  // Idle periods: each transition into idle gets its own id (the time), so
+  // the mid-plan nudge fires at most once per stop.
+  // STUCK (the runtime's repetition detector) also ends the run until a
+  // user message arrives, so it counts as a stop that needs a nudge.
+  const stuck = executionStatus === ExecutionStatus.STUCK;
+  const agentIdle =
+    stuck ||
+    executionStatus === ExecutionStatus.FINISHED ||
+    executionStatus === ExecutionStatus.IDLE;
+  const [idleAt, setIdleAt] = React.useState<number | null>(null);
   React.useEffect(() => {
-    const agentIdle =
-      agentState === AgentState.FINISHED ||
-      agentState === AgentState.AWAITING_USER_INPUT;
+    setIdleAt(agentIdle ? Date.now() : null);
+  }, [agentIdle]);
+  const lastAgentText = useEventStore((state) => {
+    for (let i = state.events.length - 1; i >= 0; i -= 1) {
+      const event = state.events[i];
+      if (isMessageEvent(event) && event.source === "agent") {
+        return parseMessageFromEvent(event);
+      }
+    }
+    return null;
+  });
+  // Progress resets the give-up counter: steps settled, log lines, checkpoints.
+  const progressKey = `${project.plan.filter((s) => s.status === "done").length}:${project.log.length}:${project.checkpoints.length}`;
+  const midPlanRef = React.useRef({
+    nudgedForIdleAt: null as number | null,
+    nudges: 0,
+    progressKey,
+  });
+  if (midPlanRef.current.progressKey !== progressKey) {
+    midPlanRef.current = { ...midPlanRef.current, nudges: 0, progressKey };
+  }
+
+  React.useEffect(() => {
     const lastReceiptAt = lastReceiptAtRef.current;
     if (
       shouldAutoContinue({
@@ -118,14 +156,36 @@ function useStudioAutoContinue(
       })
     ) {
       nudgedForRef.current = lastReceiptAt;
+      midPlanRef.current.nudgedForIdleAt = idleAt;
       // Give the receipt a moment to be delivered before nudging.
       const t = setTimeout(() => {
         void sendUserMessage(AUTO_CONTINUE_MESSAGE).catch(() => {});
       }, 2500);
       return () => clearTimeout(t);
     }
+    const midPlan = midPlanRef.current;
+    if (
+      shouldContinueMidPlan({
+        agentIdle,
+        idleAt,
+        nudgedForIdleAt: midPlan.nudgedForIdleAt,
+        nudgesWithoutProgress: midPlan.nudges,
+        lastAgentText,
+        project,
+      })
+    ) {
+      // Wait a little: a receipt or the user may be about to arrive.
+      const t = setTimeout(() => {
+        midPlan.nudgedForIdleAt = idleAt;
+        midPlan.nudges += 1;
+        void sendUserMessage(
+          stuck ? STUCK_CONTINUE_MESSAGE : MID_PLAN_CONTINUE_MESSAGE,
+        ).catch(() => {});
+      }, 4000);
+      return () => clearTimeout(t);
+    }
     return undefined;
-  }, [agentState, project, sendUserMessage]);
+  }, [agentIdle, idleAt, lastAgentText, project, sendUserMessage, stuck]);
 }
 
 function StudioPanes({ project }: { project: ModernizationProject }) {

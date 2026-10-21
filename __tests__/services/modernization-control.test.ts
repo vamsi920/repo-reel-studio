@@ -6,6 +6,7 @@ import {
   COMMAND_SHAPES,
 } from "#/services/modernization-control";
 import { MODERNIZATION_RESULT_PREFIX } from "#/constants/modernization-control";
+import { isModernizationReceiptEvent } from "#/utils/modernization-receipt";
 import { useModernizationStudioStore } from "#/stores/modernization-studio-store";
 import type { ModernizationControlAction } from "#/types/agent-server/core";
 
@@ -290,10 +291,33 @@ describe("modernization_control dispatcher", () => {
       stats: { parity_total: 42, parity_passing: 40 },
     });
     expect(drift).toMatchObject({ detail: "parity_failing:2" });
-    const [green] = await dispatch("update_progress", {
+    // Hand-written cases are not enough: the suite must replay against both
+    // apps and include data the legacy app created.
+    const [handWritten] = await dispatch("update_progress", {
       step_id: "check",
       status: "done",
       stats: { parity_total: 42, parity_passing: 42 },
+    });
+    expect(handWritten).toMatchObject({ detail: "parity_not_differential" });
+    const [noLegacyData] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: {
+        parity_total: 42,
+        parity_passing: 42,
+        parity_differential: true,
+      },
+    });
+    expect(noLegacyData).toMatchObject({ detail: "no_legacy_data_cases" });
+    const [green] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: {
+        parity_total: 42,
+        parity_passing: 42,
+        parity_differential: true,
+        legacy_data_cases: 3,
+      },
     });
     expect(green.status).toBe("ok");
   });
@@ -358,6 +382,8 @@ describe("modernization_control dispatcher", () => {
         tests_passing: 3,
         parity_total: 12,
         parity_passing: 12,
+        parity_differential: true,
+        no_persistent_data: true,
       },
     });
     const [done] = await dispatch("complete", {
@@ -388,6 +414,145 @@ describe("modernization_control dispatcher", () => {
     expect(nudged.next).toBe(RECEIPT_NEXT_STEP);
     const kept = `${MODERNIZATION_RESULT_PREFIX}{"status":"ok","next":"x"}`;
     expect(withNextStep(kept)).toBe(kept);
+  });
+});
+
+describe("parity proven by Neo ME's own replay", () => {
+  const NOW = Date.parse("2026-10-21T12:00:00Z");
+  let report: Record<string, unknown> | null;
+  const commands: string[] = [];
+  const runInWorkspace = vi.fn(async (command: string) => {
+    commands.push(command);
+    if (command.includes("replay-report.json")) {
+      return { exit_code: 0, stdout: report ? JSON.stringify(report) : "" };
+    }
+    return { exit_code: 0, stdout: "" };
+  });
+
+  async function run(command: string, payload?: Record<string, unknown>) {
+    const postResult = vi.fn();
+    await handleModernizationControlAction(action(command, payload), {
+      postResult,
+      conversationId: CONVERSATION,
+      runInWorkspace,
+      now: () => NOW,
+    });
+    return postResult.mock.calls.map((call) => parseReceipt(call[0] as string));
+  }
+
+  const replayReport = (overrides: Record<string, unknown> = {}) => ({
+    version: 1,
+    generatedAt: "2026-10-21T11:50:00Z",
+    legacy: "http://127.0.0.1:5000",
+    target: "http://127.0.0.1:3000",
+    scenarios: 3,
+    total: 37,
+    identical: 37,
+    legacyDataCases: 2,
+    legacyDataIdentical: 2,
+    freshData: true,
+    differences: [],
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    seedProject();
+    commands.length = 0;
+    report = null;
+  });
+
+  it("installs the harness on describe and decides verify from its report, not from claimed numbers", async () => {
+    const [described] = await run("describe");
+    expect(described.replay_harness).toMatchObject({
+      path: ".neome/replay.mjs",
+    });
+    expect(commands.some((c) => c.includes("> .neome/replay.mjs"))).toBe(true);
+
+    await run("record_discovery", {
+      components: [{ name: "API", kind: "backend", evidence: ["app.py"] }],
+    });
+    await run("set_plan", {
+      steps: [{ id: "check", phase: "verify", title: "Verify" }],
+    });
+    await run("update_progress", { step_id: "check", status: "active" });
+    const claimed = {
+      tests_total: 9,
+      tests_passing: 9,
+      parity_total: 11,
+      parity_passing: 11,
+      parity_differential: true,
+      legacy_data_cases: 1,
+    };
+
+    const [missing] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(missing).toMatchObject({
+      status: "rejected",
+      detail: "replay_report_missing",
+    });
+
+    report = replayReport({
+      identical: 35,
+      differences: [
+        {
+          scenario: "s",
+          step: "index",
+          field: "text",
+          legacy: "a",
+          target: "b",
+        },
+      ],
+    });
+    const [drift] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(drift).toMatchObject({ detail: "replay_differences:2" });
+    expect(drift.differences).toHaveLength(1);
+
+    report = replayReport({ generatedAt: "2026-10-21T09:00:00Z" });
+    const [stale] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(stale).toMatchObject({ detail: "replay_report_stale" });
+
+    report = replayReport({ freshData: false });
+    const [notFresh] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(notFresh).toMatchObject({ detail: "replay_not_fresh_data" });
+
+    report = replayReport({ legacyDataCases: 0, legacyDataIdentical: 0 });
+    const [noLegacy] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(noLegacy).toMatchObject({ detail: "replay_no_legacy_data" });
+
+    report = replayReport();
+    const [ok] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(ok.status).toBe("ok");
+    const project = Object.values(
+      useModernizationStudioStore.getState().projects,
+    )[0];
+    expect(project.stats).toMatchObject({
+      parityTotal: 37,
+      parityPassing: 37,
+      legacyDataCases: 2,
+    });
   });
 });
 
@@ -429,6 +594,122 @@ describe("auto-continue after a card is answered", () => {
         ...base,
         project: { ...base.project, status: "paused" },
       }),
+    ).toBe(false);
+  });
+});
+
+describe("continue mid-plan when the agent stops early", () => {
+  const base = {
+    agentIdle: true,
+    idleAt: 10_000,
+    nudgedForIdleAt: null,
+    nudgesWithoutProgress: 0,
+    lastAgentText: "Now I'll start writing the characterization tests.",
+    project: {
+      status: "planned" as const,
+      questions: [],
+      approvals: [],
+      plan: [
+        {
+          id: "spec",
+          phase: "specify" as const,
+          title: "Spec",
+          status: "done" as const,
+        },
+        {
+          id: "chars",
+          phase: "characterize" as const,
+          title: "Tests",
+          status: "pending" as const,
+        },
+      ],
+    },
+  };
+
+  it("nudges once per stop while work remains and nothing waits on the user", async () => {
+    const { shouldContinueMidPlan, MID_PLAN_MAX_NUDGES } =
+      await import("#/services/modernization-control");
+    expect(shouldContinueMidPlan(base)).toBe(true);
+    // Once per idle period, and not forever without progress.
+    expect(shouldContinueMidPlan({ ...base, nudgedForIdleAt: 10_000 })).toBe(
+      false,
+    );
+    expect(
+      shouldContinueMidPlan({
+        ...base,
+        nudgesWithoutProgress: MID_PLAN_MAX_NUDGES,
+      }),
+    ).toBe(false);
+    // Legitimate stops: a question to the user, a card, a finished plan.
+    expect(
+      shouldContinueMidPlan({
+        ...base,
+        lastAgentText: "Which database should we keep?",
+      }),
+    ).toBe(false);
+    expect(
+      shouldContinueMidPlan({
+        ...base,
+        project: {
+          ...base.project,
+          questions: [
+            {
+              id: "q",
+              title: "q",
+              kind: "single",
+              options: [],
+              allowOther: false,
+              status: "open",
+              selected: [],
+              at: "t",
+            },
+          ],
+        },
+      }),
+    ).toBe(false);
+    expect(
+      shouldContinueMidPlan({
+        ...base,
+        project: {
+          ...base.project,
+          plan: base.project.plan.map((step) => ({
+            ...step,
+            status: "done" as const,
+          })),
+        },
+      }),
+    ).toBe(false);
+    expect(shouldContinueMidPlan({ ...base, agentIdle: false })).toBe(false);
+  });
+});
+
+describe("studio transcript filter", () => {
+  const message = (source: string, text: string) =>
+    ({
+      id: `${source}-${text.length}`,
+      timestamp: "2026-10-21T00:00:00",
+      source,
+      llm_message: { role: "user", content: [{ type: "text", text }] },
+      activated_microagents: [],
+      extended_content: [],
+    }) as unknown as Parameters<typeof isModernizationReceiptEvent>[0];
+
+  it("hides receipts and runtime nudges, keeps what people wrote", () => {
+    expect(
+      isModernizationReceiptEvent(
+        message("user", `${MODERNIZATION_RESULT_PREFIX}{"ok":true}`),
+      ),
+    ).toBe(true);
+    expect(
+      isModernizationReceiptEvent(
+        message(
+          "environment",
+          "Your last response did not include a function call or a message.",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      isModernizationReceiptEvent(message("user", "Keep the SQLite file")),
     ).toBe(false);
   });
 });

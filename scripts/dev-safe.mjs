@@ -57,6 +57,9 @@ const AGENT_CLIENT_PROTOCOL_CONSTRAINT =
 // FastAPI removed the deprecated `lte=` Query alias in 0.153+ (2026-10-20);
 // agent-server 1.42.1 still uses it and fails to import. See config/defaults.json.
 const FASTAPI_CONSTRAINT = SHARED_DEFAULTS.constraints?.fastapi;
+// fastmcp 4.1.3 reads an MCP server's `timeout` as milliseconds; OpenHands
+// settings store seconds, so tool listing timed out. See config/defaults.json.
+const FASTMCP_CONSTRAINT = SHARED_DEFAULTS.constraints?.fastmcp;
 const DEFAULT_AGENT_SERVER_TELEMETRY_POSTHOG_API_KEY =
   SHARED_DEFAULTS.telemetry.posthogApiKey;
 const DEFAULT_AGENT_SERVER_TELEMETRY_POSTHOG_HOST =
@@ -494,6 +497,9 @@ export function buildAgentServerCommand(env = process.env) {
     if (FASTAPI_CONSTRAINT) {
       uvxArgs.push("--with", FASTAPI_CONSTRAINT);
     }
+    if (FASTMCP_CONSTRAINT) {
+      uvxArgs.push("--with", FASTMCP_CONSTRAINT);
+    }
     uvxArgs.push("--with", AGENT_SERVER_POSTHOG_CONSTRAINT);
     uvxArgs.push("agent-server");
     source = `PyPI (${version})`;
@@ -515,6 +521,9 @@ export function buildAgentServerCommand(env = process.env) {
     }
     if (FASTAPI_CONSTRAINT) {
       uvxArgs.push("--with", FASTAPI_CONSTRAINT);
+    }
+    if (FASTMCP_CONSTRAINT) {
+      uvxArgs.push("--with", FASTMCP_CONSTRAINT);
     }
     uvxArgs.push("--with", AGENT_SERVER_POSTHOG_CONSTRAINT);
     uvxArgs.push("agent-server");

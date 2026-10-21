@@ -473,6 +473,8 @@ describe("buildAgentServerCommand", () => {
       "--with",
       "fastapi<0.153",
       "--with",
+      "fastmcp<4.1.3",
+      "--with",
       "posthog>=6,<7",
       "agent-server",
     ]);
@@ -498,6 +500,8 @@ describe("buildAgentServerCommand", () => {
       "agent-client-protocol<0.11",
       "--with",
       "fastapi<0.153",
+      "--with",
+      "fastmcp<4.1.3",
       "--with",
       "posthog>=6,<7",
       "agent-server",

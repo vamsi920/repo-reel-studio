@@ -80,6 +80,17 @@ export function OnboardingDock() {
   // indicator down with it.
   if (location.pathname === buildAgentCanvasPath("/environment/setup"))
     return null;
+  // A Neo ME studio (`/modernize/<project>`) is a chat-plus-cards workbench
+  // whose answer buttons sit in the bottom-right corner; the floating
+  // launcher covered them and swallowed the click. Keep it only when a
+  // credential request needs answering.
+  const neoMeStudio = new RegExp(
+    `^${buildAgentCanvasPath("/modernize")}/[^/]+$`,
+  );
+  if (!pending && neoMeStudio.test(location.pathname)) return null;
+  // Same layout for a Neo Synth studio (`/synth/<project>`).
+  const synthStudio = new RegExp(`^${buildAgentCanvasPath("/synth")}/[^/]+$`);
+  if (!pending && synthStudio.test(location.pathname)) return null;
 
   return (
     <>

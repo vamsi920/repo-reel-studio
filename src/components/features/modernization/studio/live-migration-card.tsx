@@ -13,6 +13,8 @@ import { isActionEvent } from "#/types/agent-server/type-guards";
 import { useLiveConversationMetrics } from "#/hooks/use-live-conversation-metrics";
 import { PHASE_LABEL_KEY } from "./cards";
 import { NeoOrb, ThinkingPhrase, useNeoMeThinking } from "./thinking";
+import { useConversationStateStore } from "#/stores/conversation-state-store";
+import { ExecutionStatus } from "#/types/agent-server/core/base/common";
 
 /**
  * The big live box: what the agent is doing right now, how far the plan is,
@@ -233,6 +235,9 @@ export function LiveMigrationCard({
     project.status === "verifying" ||
     project.status === "discovering";
   const thinking = useNeoMeThinking();
+  const stuck =
+    useConversationStateStore((st) => st.execution_status) ===
+    ExecutionStatus.STUCK;
 
   const fmtRatio = (done?: number, total?: number) =>
     total === undefined ? "—" : `${done ?? 0}/${total}`;
@@ -265,6 +270,14 @@ export function LiveMigrationCard({
             {t(I18nKey.NEOME$LIVE_TITLE)}
           </span>
           {thinking ? <ThinkingPhrase phase={current?.phase ?? null} /> : null}
+          {stuck ? (
+            <span
+              data-testid="neome-stuck-notice"
+              className="text-xs font-medium text-[var(--warning-600,#b45309)]"
+            >
+              {t(I18nKey.NEOME$STUCK_NOTICE)}
+            </span>
+          ) : null}
           <span
             className={cn(
               "truncate text-[var(--text-primary)]",

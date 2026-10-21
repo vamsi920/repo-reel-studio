@@ -1,5 +1,14 @@
 import type { ModernizationControlAction } from "#/types/agent-server/core";
 import {
+  installReplayHarness,
+  judgeReplayReport,
+  readReplayReport,
+  REPLAY_HARNESS_PATH,
+  REPLAY_REPORT_PATH,
+  REPLAY_SCENARIOS_DIR,
+  type RunInWorkspace,
+} from "#/lib/modernization/replay-harness";
+import {
   COMPONENT_KINDS,
   MIGRATION_PHASES,
   MODERNIZATION_CONTROL_COMMANDS,
@@ -40,6 +49,14 @@ export type PostResultFn = (message: string) => void;
 export interface DispatchContext {
   postResult: PostResultFn;
   conversationId?: string;
+  /**
+   * Runs a shell command in the project's workspace. Present when the studio
+   * is attached to a live runtime; used to install the replay harness and to
+   * read its report instead of trusting the parity numbers the agent claims.
+   */
+  runInWorkspace?: RunInWorkspace;
+  /** Clock override for tests. */
+  now?: () => number;
 }
 
 export const RECEIPT_NEXT_STEP =
@@ -100,6 +117,8 @@ const str = (v: unknown): string | undefined =>
   typeof v === "string" && v.trim() ? v.trim() : undefined;
 const num = (v: unknown): number | undefined =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined;
+const bool = (v: unknown): boolean | undefined =>
+  typeof v === "boolean" ? v : undefined;
 const strList = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
@@ -178,6 +197,12 @@ export function verificationIsGreen(stats: ProgressStats): {
  * every case passing against both. Unit tests ported per language can drift
  * with the code they test (run 2 shipped a reworded 404 body that its own
  * ported tests accepted); a shared suite cannot.
+ *
+ * It must also be differential and cover legacy data. Live run 3 (flaskr to
+ * Express) reported 11/11 hand-written cases green while an independent
+ * differential replay found 28 of 37 pages different and every user created
+ * by the old app locked out (scrypt hashes): hand-written assertions only
+ * check what their author thought of.
  */
 export function parityIsComplete(stats: ProgressStats): {
   ok: boolean;
@@ -188,6 +213,12 @@ export function parityIsComplete(stats: ProgressStats): {
   if (total <= 0) return { ok: false, reason: "no_parity_reported" };
   if (passing < total) {
     return { ok: false, reason: `parity_failing:${total - passing}` };
+  }
+  if (stats.parityDifferential !== true) {
+    return { ok: false, reason: "parity_not_differential" };
+  }
+  if (!stats.noPersistentData && (stats.legacyDataCases ?? 0) <= 0) {
+    return { ok: false, reason: "no_legacy_data_cases" };
   }
   return { ok: true };
 }
@@ -242,6 +273,53 @@ export function shouldAutoContinue({
   return true;
 }
 
+/**
+ * Continue mid-plan. Gemini regularly ends a turn with "Now I'll start the
+ * characterization tests" and stops (flaskr run 3, right after set_plan),
+ * leaving a run with pending steps and nothing waiting on the user. When the
+ * agent goes idle mid-plan, with no open card or approval and without having
+ * just asked the user something, nudge it once per idle period, and give up
+ * after a few nudges in a row that produced no progress.
+ */
+export const MID_PLAN_MAX_NUDGES = 3;
+export const MID_PLAN_CONTINUE_MESSAGE =
+  "You ended your turn but the plan still has work and nothing is waiting on me. Call describe if you need the state, then continue with the next step. Keep going until a card or approval needs me, or the migration is complete.";
+
+export const STUCK_CONTINUE_MESSAGE =
+  "The runtime stopped you for repeating the same actions. Step back instead of retrying: re-run the replay, read the differences it prints, decide whether each is a real behaviour difference in the new app or leftover data / a non-deterministic scenario (then fix the reset or the scenario), and change approach. Never edit the legacy app to make parity pass. Then continue with the plan.";
+
+export function shouldContinueMidPlan({
+  agentIdle,
+  idleAt,
+  nudgedForIdleAt,
+  nudgesWithoutProgress,
+  lastAgentText,
+  project,
+}: {
+  agentIdle: boolean;
+  idleAt: number | null;
+  nudgedForIdleAt: number | null;
+  nudgesWithoutProgress: number;
+  lastAgentText: string | null;
+  project: Pick<
+    ModernizationProject,
+    "status" | "questions" | "approvals" | "plan"
+  >;
+}): boolean {
+  if (!agentIdle || idleAt === null || nudgedForIdleAt === idleAt) return false;
+  if (nudgesWithoutProgress >= MID_PLAN_MAX_NUDGES) return false;
+  if (project.status === "done" || project.status === "paused") return false;
+  if (
+    !project.plan.some((s) => s.status === "pending" || s.status === "active")
+  )
+    return false;
+  if (project.questions.some((q) => q.status === "open")) return false;
+  if (project.approvals.some((a) => a.status === "pending")) return false;
+  // A question to the user in plain text is a legitimate stop.
+  if (lastAgentText?.trim().endsWith("?")) return false;
+  return true;
+}
+
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
   describe: "{}",
@@ -254,7 +332,7 @@ export const COMMAND_SHAPES = Object.freeze({
   request_approval:
     "{approval_id?, what, why?} -> wait for {status:'approved'|'changes', approval_id, comment?}",
   update_progress:
-    "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, parity_total?, parity_passing?, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
+    "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, parity_total?, parity_passing?, parity_differential?: boolean, legacy_data_cases?, no_persistent_data?: boolean, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
   log: "{text, level?: info|warn|error|success, step_id?}",
   checkpoint:
     "{label, step_id?, state:{...anything you need to resume, no secrets}}",
@@ -415,6 +493,9 @@ function parseStats(raw: unknown): ProgressStats | null {
     testsPassing: num(s.tests_passing),
     parityTotal: num(s.parity_total),
     parityPassing: num(s.parity_passing),
+    parityDifferential: bool(s.parity_differential),
+    legacyDataCases: num(s.legacy_data_cases),
+    noPersistentData: bool(s.no_persistent_data),
     endpointsTotal: num(s.endpoints_total),
     endpointsDone: num(s.endpoints_done),
     extra: Object.keys(extra).length ? extra : undefined,
@@ -456,7 +537,24 @@ export async function handleModernizationControlAction(
 
   switch (action.command) {
     case "describe": {
-      postReceipt(context, { status: "ok", ...describeProject(project) });
+      const harness = context.runInWorkspace
+        ? await installReplayHarness(context.runInWorkspace)
+        : false;
+      postReceipt(context, {
+        status: "ok",
+        ...describeProject(project),
+        ...(harness
+          ? {
+              replay_harness: {
+                path: REPLAY_HARNESS_PATH,
+                scenarios_dir: REPLAY_SCENARIOS_DIR,
+                report: REPLAY_REPORT_PATH,
+                usage: `node ${REPLAY_HARNESS_PATH} --legacy <legacy base URL> --target <new base URL> --reset-legacy "<command restoring the fixture for the legacy app>" --reset-target "<same for the new app>" ${REPLAY_SCENARIOS_DIR}`,
+                note: "The scenario format is documented at the top of the file. The studio reads the report itself before a verify step can be done.",
+              },
+            }
+          : {}),
+      });
       return;
     }
 
@@ -609,6 +707,7 @@ export async function handleModernizationControlAction(
       const stepId = str(payload.step_id);
       const status = statusOf(payload.status);
       const stats = parseStats(payload.stats);
+      let verifiedParity: ProgressStats | null = null;
       const note = str(payload.note);
       if (!stepId && !stats) {
         postReceipt(context, {
@@ -658,16 +757,46 @@ export async function handleModernizationControlAction(
             });
             return;
           }
-          const parity = parityIsComplete(merged);
-          if (!parity.ok) {
-            postReceipt(context, {
-              status: "rejected",
-              reason: "parity_not_proven",
-              detail: parity.reason,
-              guidance:
-                "Run the black-box parity suite (PARITY.md) against the running legacy app AND the running new app, and report stats.parity_total / parity_passing in this same call: a case passes only if it passes against both. Fix the new app until every case passes.",
-            });
-            return;
+          if (context.runInWorkspace) {
+            // Parity comes from Neo ME's own replay, not from the agent.
+            const verdict = judgeReplayReport(
+              await readReplayReport(context.runInWorkspace),
+              {
+                now: (context.now ?? Date.now)(),
+                noPersistentData: merged.noPersistentData === true,
+              },
+            );
+            if (!verdict.ok) {
+              // Make sure the harness the guidance names is the current one
+              // (the agent may have edited it, or it predates a release).
+              await installReplayHarness(context.runInWorkspace);
+              postReceipt(context, {
+                status: "rejected",
+                reason: "parity_not_proven",
+                detail: verdict.reason,
+                differences: verdict.differences,
+                guidance: `Run ${REPLAY_HARNESS_PATH} against the running legacy app and the running new app with scenarios in ${REPLAY_SCENARIOS_DIR} covering every route x method, every error page, other users' records and data the legacy app itself created (a scenario with "legacyData": true), with --reset-legacy and --reset-target commands that restore the same fresh fixture in both apps before every scenario. Fix the new app until every step is identical, then mark verify done again within the hour. Do not normalise away real output.`,
+              });
+              return;
+            }
+            verifiedParity = {
+              parityTotal: verdict.total,
+              parityPassing: verdict.identical,
+              parityDifferential: true,
+              legacyDataCases: verdict.legacyDataCases,
+            };
+          } else {
+            const parity = parityIsComplete(merged);
+            if (!parity.ok) {
+              postReceipt(context, {
+                status: "rejected",
+                reason: "parity_not_proven",
+                detail: parity.reason,
+                guidance:
+                  "Run the black-box parity suite (PARITY.md) in differential mode: replay every case against the running legacy app AND the running new app and compare the whole normalised responses (status, redirect target, visible text or body), including the legacy-data cases (data created by the legacy app itself, e.g. its real password hashes). Report stats.parity_total / parity_passing, parity_differential: true and legacy_data_cases (or no_persistent_data: true) in this same call. Fix the new app until every case is identical.",
+              });
+              return;
+            }
           }
         }
         if (status || note) {
@@ -708,7 +837,12 @@ export async function handleModernizationControlAction(
           });
         }
       }
-      if (stats) store.mergeStats(projectId, stats);
+      if (stats || verifiedParity) {
+        store.mergeStats(projectId, {
+          ...(stats ?? {}),
+          ...(verifiedParity ?? {}),
+        });
+      }
       const after = useModernizationStudioStore.getState().projects[projectId];
       const progress = after ? planProgress(after.plan) : null;
       postReceipt(context, {

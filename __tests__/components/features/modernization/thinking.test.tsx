@@ -6,8 +6,8 @@ import {
   ThinkingPhrase,
   useNeoMeThinking,
 } from "#/components/features/modernization/studio/thinking";
-import { useAgentStore } from "#/stores/agent-store";
-import { AgentState } from "#/types/agent-state";
+import { useConversationStateStore } from "#/stores/conversation-state-store";
+import { ExecutionStatus } from "#/types/agent-server/core/base/common";
 import { MIGRATION_PHASES } from "#/constants/modernization-control";
 
 function Probe() {
@@ -17,21 +17,21 @@ function Probe() {
 describe("Neo ME thinking motion", () => {
   afterEach(() => {
     vi.useRealTimers();
-    act(() =>
-      useAgentStore.getState().setCurrentAgentState(AgentState.LOADING),
-    );
+    act(() => useConversationStateStore.getState().reset());
   });
 
   it("is on only while the agent is running", () => {
     renderWithProviders(<Probe />);
     act(() =>
-      useAgentStore.getState().setCurrentAgentState(AgentState.RUNNING),
+      useConversationStateStore
+        .getState()
+        .setExecutionStatus(ExecutionStatus.RUNNING),
     );
     expect(screen.getByTestId("probe")).toHaveTextContent("true");
     act(() =>
-      useAgentStore
+      useConversationStateStore
         .getState()
-        .setCurrentAgentState(AgentState.AWAITING_USER_INPUT),
+        .setExecutionStatus(ExecutionStatus.IDLE),
     );
     expect(screen.getByTestId("probe")).toHaveTextContent("false");
   });

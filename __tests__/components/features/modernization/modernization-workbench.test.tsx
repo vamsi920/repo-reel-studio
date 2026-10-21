@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "test-utils";
 import { ModernizationWorkbench } from "#/components/features/modernization/studio/modernization-workbench";
@@ -107,5 +107,47 @@ describe("ModernizationWorkbench", () => {
     const open = screen.getByTestId("neome-question-frontend");
     expect(open.textContent).toContain("Keep Flask");
     expect(open.textContent?.match(/FastAPI/g)).toHaveLength(1);
+  });
+
+  it("returns to the live box once the last waiting card is answered", () => {
+    vi.useFakeTimers();
+    const scrolled: (string | null)[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView() {
+      scrolled.push(
+        (this as Element)
+          .closest("[data-card-key]")
+          ?.getAttribute("data-card-key") ?? null,
+      );
+    };
+    try {
+      renderWithProviders(
+        <ModernizationWorkbench
+          projectId={projectId}
+          postResult={vi.fn()}
+          onStart={vi.fn()}
+          onPause={vi.fn()}
+          onResume={vi.fn()}
+          busy={false}
+        />,
+      );
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(scrolled.at(-1)).toBe("question-frontend");
+
+      act(() => {
+        useModernizationStudioStore
+          .getState()
+          .answerQuestion(projectId, "frontend", ["fastapi"]);
+      });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(scrolled.at(-1)).toBe("live");
+    } finally {
+      Element.prototype.scrollIntoView = original;
+      vi.useRealTimers();
+    }
   });
 });
