@@ -488,4 +488,17 @@ createServer((req, res) => {
       /already answers.*another process owns port/,
     );
   });
+
+  it("rejects an REA opt-out for an app served over HTTP", async () => {
+    await expect(
+      replayManaged({
+        apps: {
+          rea: { not_applicable: "JSON API" },
+          legacy: { start: "x", url: "http://127.0.0.1:1" },
+          target: { start: "x", url: "http://127.0.0.1:2" },
+        },
+        files: [scenarioFile(journey)],
+      }),
+    ).rejects.toThrow(/only for apps with no HTTP surface/);
+  });
 });

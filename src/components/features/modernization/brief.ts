@@ -183,7 +183,10 @@ Three rules the studio enforces, so plan for them:
 - You may be running on the user's own machine. Stop only processes you
   started, by the PID you recorded (e.g. \`cmd & echo $! > .neome/legacy.pid\`),
   never by name (\`pkill node\`, \`kill $(ps aux | grep flask ...)\` kill the
-  user's other work). Use ports nothing else uses and say which in PARITY.md.
+  user's other work). Use ports nothing else uses (never the ones in the
+  RUNTIME_SERVICES block: those are Neo's own servers, and the harness
+  refuses to start an app on a port that already answers) and say which in
+  PARITY.md.
 - Never edit the legacy application to make parity pass: it is the
   reference. Fix the new app, the reset commands or a non-deterministic
   scenario instead.

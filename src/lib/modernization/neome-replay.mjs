@@ -566,6 +566,16 @@ export function validateApps(apps, { needTarget = true } = {}) {
         ? rea.not_applicable.trim().length > 0
         : typeof rea.executable_path === "string" &&
           rea.executable_path.startsWith("/"));
+    if (
+      ok &&
+      typeof rea.not_applicable === "string" &&
+      typeof apps.legacy?.url === "string" &&
+      /^https?:\/\//.test(apps.legacy.url)
+    ) {
+      errors.push(
+        'apps.json: "rea": {"not_applicable"} is only for apps with no HTTP surface (CLI tools, libraries). This app answers HTTP, so browsers reach it: set "rea": {"executable_path": "<absolute path to Chrome/Chromium>"} and add parity/browser scenarios.',
+      );
+    }
     if (!ok) {
       errors.push(
         'apps.json: "rea" must be { "executable_path": "<absolute path to Chrome/Chromium>" } (optional "command") or { "not_applicable": "<reason>" }',
