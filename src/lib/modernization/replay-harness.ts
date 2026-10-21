@@ -264,14 +264,28 @@ export async function readReplayApps(
   }
 }
 
-/** Why the REA lane does not apply to this project, if the agent said so. */
-export function reaNotApplicable(
-  apps: Record<string, unknown> | null,
-): string | null {
+/**
+ * Whether the agent's "rea": {"not_applicable"} declaration is honoured.
+ * Only for a legacy app with no HTTP URL at all (a CLI, a library):
+ * anything served over HTTP is browser-facing, whatever the agent calls it
+ * (the Django run declared a JSON API "not browser-facing").
+ */
+export function reaApplicability(apps: Record<string, unknown> | null): {
+  notApplicable: string | null;
+  ignoredNotApplicable: boolean;
+} {
   const rea = apps?.rea as { not_applicable?: unknown } | undefined;
-  return typeof rea?.not_applicable === "string" && rea.not_applicable.trim()
-    ? rea.not_applicable.trim()
-    : null;
+  const reason =
+    typeof rea?.not_applicable === "string" && rea.not_applicable.trim()
+      ? rea.not_applicable.trim()
+      : null;
+  if (!reason) return { notApplicable: null, ignoredNotApplicable: false };
+  const legacy = apps?.legacy as { url?: unknown } | undefined;
+  const http =
+    typeof legacy?.url === "string" && /^https?:\/\//.test(legacy.url);
+  return http
+    ? { notApplicable: null, ignoredNotApplicable: true }
+    : { notApplicable: reason, ignoredNotApplicable: false };
 }
 
 export type ReaVerdict =
@@ -294,18 +308,27 @@ export function judgeReaReport(
     now,
     kind,
     notApplicable,
+    ignoredNotApplicable = false,
     maxAgeMs,
   }: {
     now: number;
     kind: "rea" | "rea-characterize";
     notApplicable: string | null;
+    ignoredNotApplicable?: boolean;
     maxAgeMs: number;
   },
 ): ReaVerdict {
   if (notApplicable) {
     return { ok: true, scenarios: 0, unchanged: 0, skipped: notApplicable };
   }
-  if (report?.kind !== kind) return { ok: false, reason: "rea_report_missing" };
+  if (report?.kind !== kind) {
+    return {
+      ok: false,
+      reason: ignoredNotApplicable
+        ? "rea_required_for_http_apps"
+        : "rea_report_missing",
+    };
+  }
   const age = now - Date.parse(report.generatedAt);
   if (!Number.isFinite(age) || age > maxAgeMs) {
     return { ok: false, reason: "rea_report_stale" };

@@ -441,7 +441,8 @@ describe("parity proven by Neo ME's own replay", () => {
       return {
         exit_code: 0,
         stdout: Buffer.from(
-          "create table author (id integer primary key autoincrement, name text not null, email text unique);\n" +
+          "create table django_migrations (id integer primary key, app varchar(255), name varchar(255), applied datetime);\n" +
+            "create table author (id integer primary key autoincrement, name text not null, email text unique);\n" +
             "create table post (id integer primary key autoincrement, author_id integer not null references author(id), title text not null, body text, created datetime);",
         ).toString("base64"),
       };
@@ -577,6 +578,7 @@ describe("parity proven by Neo ME's own replay", () => {
     });
     expect(ok.status).toBe("ok");
     expect(ok.entities).toEqual(["author", "post"]);
+    expect(ok.skipped_tables).toEqual(["django_migrations"]);
     expect(ok.rows).toMatchObject({ post: 5 });
     expect(
       (ok.sample_primary_keys as Record<string, unknown[]>).author,
@@ -761,10 +763,24 @@ describe("parity proven by Neo ME's own replay", () => {
       },
     });
 
-    // A CLI tool may declare the browser lane not applicable, and that is recorded.
-    apps = { rea: { not_applicable: "command-line tool, no browser surface" } };
+    // "Not applicable" is ignored for anything served over HTTP (the Django
+    // run called a JSON API "not browser-facing"); a CLI tool may use it.
+    apps = {
+      rea: { not_applicable: "JSON API, clients are external" },
+      legacy: { url: "http://127.0.0.1:5000", start: "x" },
+    };
     reaReport = null;
     await run("update_progress", { step_id: "check", status: "active" });
+    const [http] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(http).toMatchObject({
+      reason: "rea_parity_not_proven",
+      detail: "rea_required_for_http_apps",
+    });
+    apps = { rea: { not_applicable: "command-line tool, no browser surface" } };
     const [cli] = await run("update_progress", {
       step_id: "check",
       status: "done",

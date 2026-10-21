@@ -78,8 +78,20 @@ function sqlLiteral(value: unknown, field: Field, dialect: Dialect): string {
   }
   if (typeof value === "number")
     return Number.isFinite(value) ? String(value) : "NULL";
-  const text =
-    typeof value === "object" ? JSON.stringify(value) : String(value);
+  let text = typeof value === "object" ? JSON.stringify(value) : String(value);
+  // SQLite has no datetime type; the convention every ORM reads back
+  // (Django, SQLAlchemy, Prisma, Rails) is "YYYY-MM-DD HH:MM:SS.ffffff",
+  // not ISO 8601 with "T" and "Z".
+  if (
+    dialect === "sqlite" &&
+    field.type === "datetime" &&
+    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(text)
+  ) {
+    text = text
+      .replace("T", " ")
+      .replace("Z", "")
+      .replace(/\.(\d{3})$/, ".$1000");
+  }
   const escaped = text.replace(/'/g, "''");
   if (dialect === "mysql") {
     return `'${escaped.replace(/\\/g, "\\\\")}'`;

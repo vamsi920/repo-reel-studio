@@ -14,7 +14,7 @@ import {
   REPLAY_APPS_PATH,
   REPLAY_REPORT_MAX_AGE_MS,
   REPLAY_SCENARIO_EXAMPLE,
-  reaNotApplicable,
+  reaApplicability,
   readReaReport,
   readReplayApps,
   readReplayReport,
@@ -389,7 +389,7 @@ export function shouldPauseForSpend({
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
   describe:
-    "{} | {synth_data: {schema_path: 'parity/schema.sql' (SQL DDL, schema.prisma or OpenAPI JSON of the LEGACY store), scenario?: smoke|realistic|edge_cases (default realistic), counts?: {[entity]: number}, seed?}} -> the project state; with synth_data it also writes parity/synth/{fixture.sql, dataset.json, model.json} and returns rows per entity, validation and sample primary keys",
+    "{} | {synth_data: {schema_path: 'parity/schema.sql' (SQL DDL, schema.prisma or OpenAPI JSON of the LEGACY store), scenario?: smoke|realistic|edge_cases (default realistic), counts?: {[entity]: number}, tables?: [only these], exclude?: [never these], seed?}} -> the project state; with synth_data it also writes parity/synth/{fixture.sql, dataset.json, model.json} and returns rows per entity, validation and sample primary keys",
   record_discovery:
     "{components:[{id?, name, kind: frontend|backend|api|database|mobile|desktop|jobs|messaging|infra|tests|build|auth|other, language?, framework?, version?, logo?, summary?, evidence:[string], target?:{language?, framework?, logo?, note?}}]}",
   ask_choice:
@@ -574,6 +574,18 @@ function parseStats(raw: unknown): ProgressStats | null {
 }
 
 /**
+ * Tables that belong to the framework, not to the application's data: a
+ * migration ledger, sessions, permissions, the admin log. Synth rows there
+ * are garbage at best (the Django run got 200 fake migration records).
+ */
+const FRAMEWORK_TABLES =
+  /^(sqlite_sequence|django_(migrations|content_type|session|admin_log|site)|auth_(permission|group|group_permissions)|\w+_(groups|user_permissions)|alembic_version|schema_migrations|ar_internal_metadata|knex_migrations(_lock)?|_prisma_migrations|migrations|typeorm_metadata|flyway_schema_history|__efmigrationshistory)$/i;
+
+function isFrameworkTable(table: string): boolean {
+  return FRAMEWORK_TABLES.test(table);
+}
+
+/**
  * Neo Synth inside Neo ME: a validated dataset generated from the legacy
  * store's schema, written to parity/synth/ so the harness can load the same
  * rows into both apps. Rides on describe's payload (see the command list).
@@ -616,8 +628,21 @@ async function synthData(
     return;
   }
   const parsed = parseSchemaFile(schemaPath, content);
+  const only = strList(payload.tables);
+  const exclude = strList(payload.exclude);
+  const skipped: string[] = [];
+  const entities = parsed.entities.filter((e) => {
+    const table = e.table ?? e.name;
+    const keep =
+      (only.length ? only.includes(table) || only.includes(e.id) : true) &&
+      !exclude.includes(table) &&
+      !exclude.includes(e.id) &&
+      !isFrameworkTable(table);
+    if (!keep) skipped.push(table);
+    return keep;
+  });
   const model: DataModel = {
-    entities: parsed.entities.map(withInferredSemantics),
+    entities: entities.map(withInferredSemantics),
     rules: [],
     flows: [],
   };
@@ -719,6 +744,7 @@ async function synthData(
     reason: validation.ok ? undefined : "synth_validation_failed",
     failed_checks: failed.length ? failed : undefined,
     entities: model.entities.map((e) => e.table ?? e.name),
+    skipped_tables: skipped.length ? skipped : undefined,
     rows,
     sample_primary_keys: sampleIds,
     files: files.map((f) => f.path),
@@ -1016,9 +1042,7 @@ export async function handleModernizationControlAction(
             {
               now: (context.now ?? Date.now)(),
               kind: "rea-characterize",
-              notApplicable: reaNotApplicable(
-                await readReplayApps(context.runInWorkspace),
-              ),
+              ...reaApplicability(await readReplayApps(context.runInWorkspace)),
               maxAgeMs: CHARACTERIZE_REPORT_MAX_AGE_MS,
             },
           );
@@ -1073,7 +1097,7 @@ export async function handleModernizationControlAction(
               {
                 now: (context.now ?? Date.now)(),
                 kind: "rea",
-                notApplicable: reaNotApplicable(
+                ...reaApplicability(
                   await readReplayApps(context.runInWorkspace),
                 ),
                 maxAgeMs: REPLAY_REPORT_MAX_AGE_MS,

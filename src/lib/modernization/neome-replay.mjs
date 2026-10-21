@@ -399,6 +399,16 @@ const sleep = (ms) =>
     setTimeout(r, ms);
   });
 
+async function portAnswers(url) {
+  try {
+    await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(1500) });
+    return true;
+  } catch (error) {
+    // A refused connection means free; a timeout or any HTTP answer means taken.
+    return error?.name === "TimeoutError";
+  }
+}
+
 async function waitUntilAnswers(url, child) {
   for (let i = 0; i < 120; i += 1) {
     if (child && child.exitCode !== null) {
@@ -429,13 +439,27 @@ export async function startManagedApp(side, name, { root, fixture, synthSql }) {
     copyFileSync(resolve(root, fixture), store);
     if (synthSql && isSqliteStore(store)) {
       // Neo Synth rows, the same ones in both apps, on top of the fixture.
-      execFileSync("sqlite3", [store], {
+      // -bail: a single failing INSERT must fail the start, not leave a
+      // half-loaded store that only looks fresh.
+      const load = spawnSync("sqlite3", ["-bail", store], {
         input: readFileSync(resolve(root, synthSql)),
-        stdio: ["pipe", "ignore", "pipe"],
+        encoding: "utf8",
       });
+      if (load.status !== 0) {
+        throw new Error(
+          `loading ${synthSql} into ${side.store} failed: ${(load.stderr || "").trim().split("\n")[0]}`,
+        );
+      }
     }
   }
   const port = new URL(side.url).port;
+  // A port something else already answers on would make the harness measure
+  // that other server (seen with the Neo dev stack on 8000) and call it parity.
+  if (port && (await portAnswers(side.url))) {
+    throw new Error(
+      `${side.url} already answers before ${name} was started: another process owns port ${port}. Pick a free port in apps.json.`,
+    );
+  }
   mkdirSync(resolve(root, ".neome/logs"), { recursive: true });
   const log = createWriteStream(resolve(root, `.neome/logs/${name}.log`), {
     flags: "a",

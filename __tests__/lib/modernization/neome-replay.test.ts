@@ -468,4 +468,24 @@ createServer((req, res) => {
       ),
     ).toEqual([[], ["accept"]]);
   });
+
+  it("refuses to start an app on a port something else already answers on", async () => {
+    const root = mkdtempSync(join(tmpdir(), "neome-port-"));
+    writeFileSync(join(root, "server.mjs"), "setInterval(() => {}, 1000);");
+    // `legacy` (already running from beforeAll) owns its port.
+    const report = await replayManaged({
+      root,
+      apps: {
+        legacy: { start: "node server.mjs", url: legacy },
+        target: { start: "node server.mjs", url: twin },
+      },
+      files: [
+        scenarioFile({ name: "one", steps: [{ name: "home", path: "/" }] }),
+      ],
+    });
+    expect(report.identical).toBe(0);
+    expect(String(report.differences[0].legacy)).toMatch(
+      /already answers.*another process owns port/,
+    );
+  });
 });
