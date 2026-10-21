@@ -26,6 +26,8 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   // Neo Synth: the product name, a brand-name format string, and prompts
   // sent to the model rather than shown to people.
   "SYNTH$TITLE",
+  "SYNTH$WORKBENCH_TITLE",
+  "SIDEBAR$SYNTH",
   "SYNTH$STUDIO_CONVERSATION_TITLE",
   "SYNTH$START_PROMPT",
   "SYNTH$RESTART_PROMPT",

@@ -1080,7 +1080,7 @@ export async function handleSynthControlAction(
       status: "rejected",
       reason: "no_project",
       guidance:
-        "This conversation is not attached to a Neo Synth project. Ask the user to open the studio from the Synthetic Data page.",
+        "This conversation is not attached to a Neo Synth project. Ask the user to open the studio from the Synth page.",
     });
     return;
   }
