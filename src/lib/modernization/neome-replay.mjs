@@ -617,6 +617,8 @@ export async function replay({
     legacyDataCases: 0,
     legacyDataIdentical: 0,
     kind: "replay",
+    /** Status codes the legacy app answered with, e.g. { "200": 9, "404": 2 }. */
+    legacyStatuses: {},
     freshData: freshData ?? Boolean(resetLegacy && resetTarget),
     managedApps: Boolean(around),
     /** @type {{ scenario: string, step: string, field: string, legacy: unknown, target: unknown }[]} */
@@ -650,6 +652,12 @@ export async function replay({
     };
     const steps = align(a);
     const other = align(b);
+    for (const step of steps) {
+      if (typeof step.status === "number") {
+        const key = String(step.status);
+        report.legacyStatuses[key] = (report.legacyStatuses[key] ?? 0) + 1;
+      }
+    }
     steps.forEach((step, i) => {
       const diffs = diffStep(step, other[i]);
       report.total += 1;

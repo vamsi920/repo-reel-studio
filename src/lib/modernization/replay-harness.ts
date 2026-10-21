@@ -88,6 +88,8 @@ export interface ReplayReport {
   identical: number;
   legacyDataCases: number;
   legacyDataIdentical: number;
+  /** Status codes the legacy app answered with across all steps. */
+  legacyStatuses?: Record<string, number>;
   /** Both apps were reset to the same fresh data before every scenario. */
   freshData?: boolean;
   differences: {
@@ -138,6 +140,17 @@ export async function readReplayReport(
   }
 }
 
+/**
+ * Error paths are where migrations drift (flaskr run 1: 403/404/405 pages);
+ * a suite in which the legacy app never answered 4xx did not exercise them.
+ */
+function coversErrorPaths(report: ReplayReport): boolean {
+  return Object.keys(report.legacyStatuses ?? {}).some((code) => {
+    const n = Number(code);
+    return n >= 400 && n < 500;
+  });
+}
+
 export type ReplayVerdict =
   | {
       ok: true;
@@ -171,6 +184,9 @@ export function judgeReplayReport(
   if (report.total <= 0) return { ok: false, reason: "replay_no_steps" };
   if (report.freshData !== true) {
     return { ok: false, reason: "replay_not_fresh_data" };
+  }
+  if (!coversErrorPaths(report)) {
+    return { ok: false, reason: "replay_no_error_paths" };
   }
   if (report.identical < report.total) {
     return {
@@ -235,6 +251,9 @@ export function judgeCharacterizeReport(
     return { ok: false, reason: "characterization_no_steps" };
   if (report.freshData !== true) {
     return { ok: false, reason: "characterization_not_fresh_data" };
+  }
+  if (!coversErrorPaths(report)) {
+    return { ok: false, reason: "characterization_no_error_paths" };
   }
   if (report.identical < report.total) {
     return {

@@ -771,7 +771,7 @@ export async function handleModernizationControlAction(
               reason: "characterization_not_proven",
               detail: verdict.reason,
               differences: verdict.differences,
-              guidance: `Write ${REPLAY_APPS_PATH} (legacy app at least) and scenarios in ${REPLAY_SCENARIOS_DIR} in the formats from describe, then run node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}. Every scenario must give identical results twice against the legacy app on the fresh fixture before building starts.`,
+              guidance: `Write ${REPLAY_APPS_PATH} (legacy app at least) and scenarios in ${REPLAY_SCENARIOS_DIR} in the formats from describe, then run node ${REPLAY_HARNESS_PATH} --characterize --apps ${REPLAY_APPS_PATH} ${REPLAY_SCENARIOS_DIR}. Every scenario must give identical results twice against the legacy app on the fresh fixture before building starts, and the scenarios must reach the legacy app's error paths (4xx pages and responses: missing records, forbidden actions, bad input, wrong methods).`,
             });
             return;
           }

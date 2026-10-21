@@ -451,6 +451,7 @@ describe("parity proven by Neo ME's own replay", () => {
     legacyDataCases: 2,
     legacyDataIdentical: 2,
     freshData: true,
+    legacyStatuses: { "200": 30, "302": 5, "404": 2 },
     differences: [],
     ...overrides,
   });
@@ -554,6 +555,14 @@ describe("parity proven by Neo ME's own replay", () => {
       stats: claimed,
     });
     expect(notFresh).toMatchObject({ detail: "replay_not_fresh_data" });
+
+    report = replayReport({ legacyStatuses: { "200": 35, "302": 2 } });
+    const [noErrors] = await run("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: claimed,
+    });
+    expect(noErrors).toMatchObject({ detail: "replay_no_error_paths" });
 
     report = replayReport({ legacyDataCases: 0, legacyDataIdentical: 0 });
     const [noLegacy] = await run("update_progress", {
