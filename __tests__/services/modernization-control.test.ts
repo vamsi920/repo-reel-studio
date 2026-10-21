@@ -272,10 +272,28 @@ describe("modernization_control dispatcher", () => {
       reason: "verification_not_green",
       detail: "tests_failing:1",
     });
-    const [green] = await dispatch("update_progress", {
+    // Green unit tests are not enough: the shared black-box suite must pass
+    // against both the legacy and the new app.
+    const [noParity] = await dispatch("update_progress", {
       step_id: "check",
       status: "done",
       stats: { tests_total: 20, tests_passing: 20 },
+    });
+    expect(noParity).toMatchObject({
+      status: "rejected",
+      reason: "parity_not_proven",
+      detail: "no_parity_reported",
+    });
+    const [drift] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: { parity_total: 42, parity_passing: 40 },
+    });
+    expect(drift).toMatchObject({ detail: "parity_failing:2" });
+    const [green] = await dispatch("update_progress", {
+      step_id: "check",
+      status: "done",
+      stats: { parity_total: 42, parity_passing: 42 },
     });
     expect(green.status).toBe("ok");
   });
@@ -330,12 +348,17 @@ describe("modernization_control dispatcher", () => {
     expect(unverified).toMatchObject({
       status: "rejected",
       reason: "verification_required",
-      missing: ["verify_step_done", "no_tests_reported"],
+      missing: ["verify_step_done", "no_tests_reported", "no_parity_reported"],
     });
     await dispatch("update_progress", {
       step_id: "check",
       status: "done",
-      stats: { tests_total: 3, tests_passing: 3 },
+      stats: {
+        tests_total: 3,
+        tests_passing: 3,
+        parity_total: 12,
+        parity_passing: 12,
+      },
     });
     const [done] = await dispatch("complete", {
       summary: "Migrated.",

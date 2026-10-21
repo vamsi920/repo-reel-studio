@@ -70,7 +70,20 @@ modernization_control tool; the user watches that panel.
    shapes, field order where clients may depend on it, and the literal
    error bodies (a 404 that says "not found" must still say "not found").
    Run the same test file against the legacy app first so it is green
-   there, then against the new one. With REA, capture real behaviour of the running
+   there, then against the new one.
+   THE PARITY SUITE (mandatory, the acceptance bar): write it in a
+   neutral harness (e.g. a Python/pytest or Node script driving HTTP,
+   the CLI, or a headless browser) under parity/ with a PARITY.md that
+   says how to start each app and run it. It must treat the app as a black
+   box: it talks to a base URL / command given by an environment variable
+   (PARITY_TARGET), never imports the implementation, and starts every
+   case from the same fresh data. Cover every endpoint/screen/command,
+   happy paths AND errors, auth, pagination, ordering, validation
+   messages, status codes, headers clients rely on, and persistence (write
+   then read back). Normalise only values that are legitimately
+   non-deterministic (generated ids, timestamps, tokens), and assert
+   their format instead. Get it fully green against the legacy app before
+   any migration code exists. With REA, capture real behaviour of the running
    legacy app (capture_process_scenario / capture_browser_scenario /
    inspect_web_page) and build the reconstruction obligation ledger
    (build_reconstruction_obligation_ledger). These are the acceptance bar.
@@ -100,8 +113,13 @@ Three rules the studio enforces, so plan for them:
   reports stats.tests_total and stats.tests_passing from the actual test
   run, with every test passing. A failing test is a failed step, not a
   footnote: fix it, re-run, then report.
+- The verify step also needs stats.parity_total and stats.parity_passing
+  in that same call: the parity suite run against the running legacy app
+  AND the running new app, a case counting as passing only when it passes
+  against both. Behaviour that differs is a bug in the new app, never a
+  test to relax.
 - complete is refused until a verify step is done with that green run and
-  at least one checkpoint exists.
+  full parity, and at least one checkpoint exists.
 - Report counters as you go (files_done/files_total, endpoints_done/
   endpoints_total, tests): the user watches them.
 - Test isolation matters: each test run must start from a fresh database

@@ -99,6 +99,9 @@ export interface ProgressStats {
   filesDone?: number;
   testsTotal?: number;
   testsPassing?: number;
+  /** Black-box parity cases run against legacy AND new; passing = both. */
+  parityTotal?: number;
+  parityPassing?: number;
   endpointsTotal?: number;
   endpointsDone?: number;
   /** Free-form extra counters the agent reports, e.g. "screens": "4/9". */

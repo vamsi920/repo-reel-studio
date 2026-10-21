@@ -837,3 +837,195 @@ fluent-card:hover::after,
     font-weight: 600;
     letter-spacing: -0.02em;
 }
+
+/* ── Neo ME: "thinking" motion ────────────────────────────────────────────
+   Shown only while the agent is running (data-thinking="true"), so a live
+   migration never looks frozen. Every animation is transform/opacity or a
+   background-position sweep (compositor-only), and all of it stops under
+   prefers-reduced-motion. */
+
+@keyframes neome-orbit {
+    to { transform: rotate(360deg); }
+}
+@keyframes neome-glow {
+    0%, 100% { opacity: 0.35; transform: scale(0.92); }
+    50%      { opacity: 0.85; transform: scale(1.08); }
+}
+@keyframes neome-shimmer {
+    0%   { background-position: 200% 50%; }
+    100% { background-position: -200% 50%; }
+}
+@keyframes neome-aurora {
+    to { --neome-angle: 360deg; }
+}
+@keyframes neome-phrase-in {
+    from { opacity: 0; transform: translateY(4px); filter: blur(3px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes neome-caret {
+    0%, 49%  { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+@keyframes neome-dot {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+    40%           { transform: translateY(-3px); opacity: 1; }
+}
+@keyframes neome-bar {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+}
+
+@property --neome-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+/* Aurora border around the live card while thinking. */
+.neome-live[data-thinking="true"] {
+    position: relative;
+    border-color: transparent;
+    background:
+        linear-gradient(var(--background-primary), var(--background-primary)) padding-box,
+        conic-gradient(
+            from var(--neome-angle),
+            color-mix(in srgb, var(--primary-500) 70%, transparent),
+            color-mix(in srgb, var(--oh-accent, #27867d) 55%, transparent),
+            color-mix(in srgb, var(--primary-400) 25%, transparent),
+            color-mix(in srgb, var(--primary-500) 70%, transparent)
+        ) border-box;
+    border: 1px solid transparent;
+    animation: neome-aurora 6s linear infinite;
+}
+
+/* The Neo orb: arch mark, soft glow, orbiting dot. */
+.neome-orb {
+    position: relative;
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-500);
+}
+.neome-orb__glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--primary-500) 45%, transparent), transparent 70%);
+    opacity: 0;
+}
+.neome-orb__track {
+    position: absolute;
+    inset: -3px;
+    opacity: 0;
+}
+.neome-orb__track::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 999px;
+    background: var(--primary-500);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--primary-500) 80%, transparent);
+}
+[data-thinking="true"] .neome-orb__glow {
+    animation: neome-glow 2.2s ease-in-out infinite;
+}
+[data-thinking="true"] .neome-orb__track {
+    opacity: 1;
+    animation: neome-orbit 1.6s linear infinite;
+}
+
+/* Shimmering status phrase. */
+.neome-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--text-primary) 0%,
+        var(--text-primary) 35%,
+        var(--primary-500) 50%,
+        var(--text-primary) 65%,
+        var(--text-primary) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: neome-shimmer 2.4s linear infinite;
+}
+.neome-phrase {
+    display: inline-block;
+    animation: neome-phrase-in 0.35s ease-out both;
+}
+
+/* Bouncing dots after the phrase. */
+.neome-dots {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.neome-dots > span {
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: currentColor;
+    animation: neome-dot 1.2s ease-in-out infinite;
+}
+.neome-dots > span:nth-child(2) { animation-delay: 0.15s; }
+.neome-dots > span:nth-child(3) { animation-delay: 0.3s; }
+
+/* Spinning dashed halo around the progress ring. */
+.neome-ring-halo {
+    transform-origin: 26px 26px;
+    opacity: 0;
+}
+[data-thinking="true"] .neome-ring-halo {
+    opacity: 1;
+    animation: neome-orbit 3s linear infinite;
+}
+
+/* Blinking caret at the tail of the live log. */
+.neome-caret {
+    display: inline-block;
+    width: 7px;
+    height: 13px;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: var(--primary-500);
+    animation: neome-caret 1s steps(1) infinite;
+}
+
+/* Indeterminate shimmer bar under the studio header. */
+.neome-header-bar {
+    position: relative;
+    height: 2px;
+    overflow: hidden;
+    background: transparent;
+}
+.neome-header-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, var(--primary-500), var(--oh-accent, #27867d), transparent);
+    animation: neome-bar 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .neome-live[data-thinking="true"],
+    [data-thinking="true"] .neome-orb__glow,
+    [data-thinking="true"] .neome-orb__track,
+    .neome-shimmer,
+    .neome-phrase,
+    .neome-dots > span,
+    [data-thinking="true"] .neome-ring-halo,
+    .neome-caret,
+    .neome-header-bar::after {
+        animation: none !important;
+    }
+    .neome-shimmer { color: var(--text-primary); background: none; }
+}

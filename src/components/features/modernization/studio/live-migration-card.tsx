@@ -12,6 +12,7 @@ import { useEventStore } from "#/stores/use-event-store";
 import { isActionEvent } from "#/types/agent-server/type-guards";
 import { useLiveConversationMetrics } from "#/hooks/use-live-conversation-metrics";
 import { PHASE_LABEL_KEY } from "./cards";
+import { NeoOrb, ThinkingPhrase, useNeoMeThinking } from "./thinking";
 
 /**
  * The big live box: what the agent is doing right now, how far the plan is,
@@ -122,6 +123,18 @@ function ProgressRing({ ratio }: { ratio: number }) {
       data-testid="neome-progress-ring"
       data-percent={pct}
     >
+      {/* Dashed halo that spins while the agent is thinking. */}
+      <circle
+        className="neome-ring-halo"
+        cx="26"
+        cy="26"
+        r={r + 4}
+        fill="none"
+        stroke="var(--primary-500)"
+        strokeOpacity="0.5"
+        strokeWidth="1.5"
+        strokeDasharray="3 6"
+      />
       <circle
         cx="26"
         cy="26"
@@ -219,6 +232,7 @@ export function LiveMigrationCard({
     project.status === "migrating" ||
     project.status === "verifying" ||
     project.status === "discovering";
+  const thinking = useNeoMeThinking();
 
   const fmtRatio = (done?: number, total?: number) =>
     total === undefined ? "—" : `${done ?? 0}/${total}`;
@@ -232,20 +246,33 @@ export function LiveMigrationCard({
     <section
       data-testid="neome-live"
       data-live={live}
-      className="ame-card flex flex-col gap-3 p-4"
+      data-thinking={thinking}
+      className="ame-card neome-live flex flex-col gap-3 p-4"
     >
       <div className="flex items-center gap-3">
         <ProgressRing ratio={progress.ratio} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="ame-eyebrow flex items-center gap-1">
-            <Activity
-              size={12}
-              aria-hidden
-              className={cn(live && "animate-pulse text-[var(--primary-500)]")}
-            />
+          <span className="ame-eyebrow flex items-center gap-1.5">
+            {thinking ? (
+              <NeoOrb size={16} />
+            ) : (
+              <Activity
+                size={12}
+                aria-hidden
+                className={cn(live && "text-[var(--primary-500)]")}
+              />
+            )}
             {t(I18nKey.NEOME$LIVE_TITLE)}
           </span>
-          <span className="truncate text-sm font-medium text-[var(--text-primary)]">
+          {thinking ? <ThinkingPhrase phase={current?.phase ?? null} /> : null}
+          <span
+            className={cn(
+              "truncate text-[var(--text-primary)]",
+              thinking
+                ? "text-xs text-[var(--text-secondary)]"
+                : "text-sm font-medium",
+            )}
+          >
             {current
               ? `${t(PHASE_LABEL_KEY[current.phase])} · ${current.title}`
               : t(I18nKey.NEOME$LIVE_IDLE)}
@@ -268,7 +295,7 @@ export function LiveMigrationCard({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat
           testId="neome-stat-files"
           label={t(I18nKey.NEOME$STAT_FILES)}
@@ -278,6 +305,11 @@ export function LiveMigrationCard({
           testId="neome-stat-tests"
           label={t(I18nKey.NEOME$STAT_TESTS)}
           value={fmtRatio(stats.testsPassing, stats.testsTotal)}
+        />
+        <Stat
+          testId="neome-stat-parity"
+          label={t(I18nKey.NEOME$STAT_PARITY)}
+          value={fmtRatio(stats.parityPassing, stats.parityTotal)}
         />
         <Stat
           testId="neome-stat-endpoints"
@@ -325,6 +357,11 @@ export function LiveMigrationCard({
               </li>
             ))
           )}
+          {thinking ? (
+            <li aria-hidden data-testid="neome-live-caret">
+              <span className="neome-caret" />
+            </li>
+          ) : null}
         </ol>
       ) : null}
     </section>

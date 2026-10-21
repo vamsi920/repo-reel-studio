@@ -17,6 +17,7 @@ import {
   StackCard,
 } from "./cards";
 import { LiveMigrationCard } from "./live-migration-card";
+import { NeoOrb, useNeoMeThinking } from "./thinking";
 
 const STATUS_LABEL_KEY: Record<ModernizationProject["status"], I18nKey> = {
   intake: I18nKey.NEOME$STATUS_INTAKE,
@@ -166,6 +167,7 @@ export function ModernizationWorkbench({
   const { t } = useTranslation("openhands");
   const reduceMotion = useReducedMotion();
   const project = useModernizationStudioStore((s) => s.projects[projectId]);
+  const thinking = useNeoMeThinking();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const latestOpen = project ? latestOpenDecisionKey(project) : null;
 
@@ -197,7 +199,11 @@ export function ModernizationWorkbench({
     <div data-testid="neome-workbench" className="flex h-full min-h-0 flex-col">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-color)] px-4 py-3">
         <div className="flex min-w-0 flex-col">
-          <span className="ame-eyebrow">
+          <span
+            className="ame-eyebrow flex items-center gap-1.5"
+            data-thinking={thinking}
+          >
+            <NeoOrb size={14} />
             {t(I18nKey.NEOME$WORKBENCH_TITLE)}
           </span>
           <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
@@ -212,6 +218,9 @@ export function ModernizationWorkbench({
           {t(STATUS_LABEL_KEY[project.status])}
         </span>
       </header>
+      {thinking ? (
+        <div className="neome-header-bar" data-testid="neome-header-bar" />
+      ) : null}
       <div
         ref={scrollRef}
         data-testid="neome-workbench-scroll"

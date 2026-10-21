@@ -172,6 +172,26 @@ export function verificationIsGreen(stats: ProgressStats): {
   return { ok: true };
 }
 
+/**
+ * Behavioural parity: ONE black-box suite (HTTP/CLI/browser level, never
+ * importing the implementation) run against the legacy app and the new app,
+ * every case passing against both. Unit tests ported per language can drift
+ * with the code they test (run 2 shipped a reworded 404 body that its own
+ * ported tests accepted); a shared suite cannot.
+ */
+export function parityIsComplete(stats: ProgressStats): {
+  ok: boolean;
+  reason?: string;
+} {
+  const total = stats.parityTotal ?? 0;
+  const passing = stats.parityPassing ?? 0;
+  if (total <= 0) return { ok: false, reason: "no_parity_reported" };
+  if (passing < total) {
+    return { ok: false, reason: `parity_failing:${total - passing}` };
+  }
+  return { ok: true };
+}
+
 /** What still blocks `complete`, in the words the receipt uses. */
 export function completionBlockers(project: ModernizationProject): string[] {
   const missing: string[] = [];
@@ -180,6 +200,8 @@ export function completionBlockers(project: ModernizationProject): string[] {
   }
   const green = verificationIsGreen(project.stats);
   if (!green.ok) missing.push(green.reason ?? "tests");
+  const parity = parityIsComplete(project.stats);
+  if (!parity.ok) missing.push(parity.reason ?? "parity");
   if (project.checkpoints.length === 0) missing.push("checkpoint");
   return missing;
 }
@@ -232,7 +254,7 @@ export const COMMAND_SHAPES = Object.freeze({
   request_approval:
     "{approval_id?, what, why?} -> wait for {status:'approved'|'changes', approval_id, comment?}",
   update_progress:
-    "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
+    "{step_id?, status?: pending|active|done|skipped|failed, note?, stats?:{files_total?, files_done?, tests_total?, tests_passing?, parity_total?, parity_passing?, endpoints_total?, endpoints_done?, extra?:{[label]: string}}}",
   log: "{text, level?: info|warn|error|success, step_id?}",
   checkpoint:
     "{label, step_id?, state:{...anything you need to resume, no secrets}}",
@@ -391,6 +413,8 @@ function parseStats(raw: unknown): ProgressStats | null {
     filesDone: num(s.files_done),
     testsTotal: num(s.tests_total),
     testsPassing: num(s.tests_passing),
+    parityTotal: num(s.parity_total),
+    parityPassing: num(s.parity_passing),
     endpointsTotal: num(s.endpoints_total),
     endpointsDone: num(s.endpoints_done),
     extra: Object.keys(extra).length ? extra : undefined,
@@ -634,6 +658,17 @@ export async function handleModernizationControlAction(
             });
             return;
           }
+          const parity = parityIsComplete(merged);
+          if (!parity.ok) {
+            postReceipt(context, {
+              status: "rejected",
+              reason: "parity_not_proven",
+              detail: parity.reason,
+              guidance:
+                "Run the black-box parity suite (PARITY.md) against the running legacy app AND the running new app, and report stats.parity_total / parity_passing in this same call: a case passes only if it passes against both. Fix the new app until every case passes.",
+            });
+            return;
+          }
         }
         if (status || note) {
           store.updateStep(projectId, stepId, {
@@ -773,7 +808,7 @@ export async function handleModernizationControlAction(
           reason: "verification_required",
           missing,
           guidance:
-            "A migration is complete only when a verify-phase step is done with a green test run reported in stats (tests_passing == tests_total > 0) and at least one checkpoint exists.",
+            "A migration is complete only when a verify-phase step is done with a green test run (tests_passing == tests_total > 0), the black-box parity suite passing against both legacy and new (parity_passing == parity_total > 0), and at least one checkpoint.",
         });
         return;
       }
