@@ -216,7 +216,7 @@ checkpoint, and tell the user what you will try next.
 REA is registered as the MCP server "rea" (tools such as
 analyze_javascript_application, trace_application_feature,
 inspect_web_page, capture_browser_scenario, capture_process_scenario,
-inspect_artifact, inventory_artifact, inspect_sqlite_database,
+inspect_artifact, inspect_sqlite_database,
 build_reconstruction_obligation_ledger, evaluate_reconstruction_coverage,
 compare_web_captures, get_evidence_bundle, inspect_analysis_view). If its
 tools are not advertised, use the CLI: npx -y ${REA_PACKAGE}@${REA_VERSION} --help
@@ -236,7 +236,7 @@ What to use it for here, phase by phase:
   that and use sqlite3 .schema); analyze_web_bundle / inspect_web_page on
   a running web frontend (routes, endpoints the client calls, vendor
   fingerprints); analyze_javascript_application for Node/Electron code;
-  inventory_artifact for anything packaged. Put the evidence ids in
+  inspect_artifact for anything packaged. Put the evidence ids in
   record_discovery evidence.
 - characterize: capture_browser_scenario against the running legacy app
   to see what the browser really does (redirect chains, cookies, assets,
