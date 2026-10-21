@@ -51,11 +51,17 @@ export async function mintLocalGithubCloneCredential(
  * returned token. See #/lib/knowledge/deepwiki-repo-target.ts for the other
  * consumer of this.
  */
-export async function mintGithubCloneToken(): Promise<{
+export async function mintGithubCloneToken(
+  options: { evenIfNotFlaggedConnected?: boolean } = {},
+): Promise<{
   token: string;
   host: string;
 } | null> {
-  if (!isLocalGithubConnected() || !isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured || !supabase) return null;
+  // The flag is set as a side effect of `useUserProviders`, which may not have
+  // run yet; the health check asks anyway and lets the Edge Function answer
+  // "not connected".
+  if (!options.evenIfNotFlaggedConnected && !isLocalGithubConnected()) {
     return null;
   }
 

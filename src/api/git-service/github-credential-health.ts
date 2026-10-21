@@ -1,7 +1,10 @@
 import { SettingsClient } from "@openhands/typescript-client/clients";
 import { getAgentServerClientOptions } from "#/api/agent-server-client-options";
 import { SecretsService } from "#/api/secrets-service";
-import { GITHUB_CLONE_SECRET_NAME } from "#/api/git-service/mint-local-github-clone-credential";
+import {
+  GITHUB_CLONE_SECRET_NAME,
+  mintGithubCloneToken,
+} from "#/api/git-service/mint-local-github-clone-credential";
 
 const GITHUB_USER_URL = "https://api.github.com/user";
 const GITHUB_REPOS_URL = "https://api.github.com/repos";
@@ -57,11 +60,46 @@ async function githubStatus(
  */
 export async function checkGithubCredential(): Promise<GithubCredentialStatus> {
   const token = await readStoredGithubToken();
-  if (token === null) return "missing";
   if (token === "error") return "unknown";
-  const status = await githubStatus(GITHUB_USER_URL, token);
-  if (status === 200) return "ok";
-  return status === 401 ? "rejected" : "unknown";
+  if (token !== null) {
+    const status = await githubStatus(GITHUB_USER_URL, token);
+    if (status === 200) return "ok";
+    if (status !== 401) return "unknown";
+  }
+  // The agent-server only holds a copy of the user's GitHub login, written
+  // when a repo conversation starts. After a reconnect that copy is still the
+  // old, revoked token, so the banner kept asking for a reconnect the user
+  // had already done. Refresh the copy from the saved connection first and
+  // only report "rejected" when the saved login itself is refused.
+  const healed = await refreshStoredGithubToken(token);
+  if (healed) return healed;
+  return token === null ? "missing" : "rejected";
+}
+
+async function refreshStoredGithubToken(
+  staleToken: string | null,
+): Promise<GithubCredentialStatus | null> {
+  // With no copy at all, only ask when the app already knows GitHub is
+  // connected, so users without GitHub do not call the Edge Function every
+  // ten minutes.
+  const fresh = await mintGithubCloneToken({
+    evenIfNotFlaggedConnected: staleToken !== null,
+  });
+  if (!fresh || fresh.token === staleToken) return null;
+  // Enterprise hosts are checked by the connection's own health sweep.
+  if (fresh.host !== "github.com") return null;
+  const status = await githubStatus(GITHUB_USER_URL, fresh.token);
+  if (status !== 200) return null;
+  try {
+    await SecretsService.createSecret(
+      GITHUB_CLONE_SECRET_NAME,
+      fresh.token,
+      "GitHub clone credential (auto-managed)",
+    );
+  } catch {
+    return "unknown";
+  }
+  return "ok";
 }
 
 export type GithubRepositoryStatus = "exists" | "missing" | "unknown";

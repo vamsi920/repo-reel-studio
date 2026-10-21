@@ -194,6 +194,24 @@ export function statusFromProbe(
   return "error";
 }
 
+/**
+ * The status to store after a sweep probe, given the stored one.
+ *
+ * A working probe always wins: a connection marked expired/revoked whose
+ * credential is accepted again goes back to `ok`/`degraded` without the user
+ * doing anything. A failed probe on an already-dead connection keeps the
+ * stored verdict, so a network blip (`error`) never turns "revoked" into a
+ * vaguer status.
+ */
+export function nextStatusAfterProbe(
+  stored: string | null | undefined,
+  probed: ConnectionHealthStatus,
+): ConnectionHealthStatus {
+  if (probed === "ok" || probed === "degraded") return probed;
+  if (statusNeedsReconnect(stored)) return stored as ConnectionHealthStatus;
+  return probed;
+}
+
 /** A provider's error body, or null when it is empty or not JSON. */
 export async function readJsonSafely(response: {
   json?: () => Promise<unknown>;

@@ -17,6 +17,7 @@ const {
   classifyRefreshFailure,
   classifyApiAuthFailure,
   statusFromProbe,
+  nextStatusAfterProbe,
   isAllowedAppOrigin,
   resolveAppOrigin,
   safeReturnPath,
@@ -76,6 +77,23 @@ describe("statusFromProbe", () => {
         false,
       ),
     ).toBe("error");
+  });
+});
+
+describe("nextStatusAfterProbe", () => {
+  it("restores a flagged connection whose credential works again", () => {
+    expect(nextStatusAfterProbe("revoked", "ok")).toBe("ok");
+    expect(nextStatusAfterProbe("expired", "degraded")).toBe("degraded");
+  });
+
+  it("keeps a dead verdict when the re-probe fails for any reason", () => {
+    expect(nextStatusAfterProbe("revoked", "error")).toBe("revoked");
+    expect(nextStatusAfterProbe("expired", "revoked")).toBe("expired");
+  });
+
+  it("uses the probe verdict for a live connection", () => {
+    expect(nextStatusAfterProbe("ok", "revoked")).toBe("revoked");
+    expect(nextStatusAfterProbe("ok", "error")).toBe("error");
   });
 });
 

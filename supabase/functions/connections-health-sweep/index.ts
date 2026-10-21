@@ -4,7 +4,11 @@ import { decryptJson } from "../_shared/secrets.ts";
 import { getConnectorManifest } from "../_shared/connector-registry/index.ts";
 import { refreshIfNeeded } from "../_shared/connection-refresh.ts";
 import { runConnectorProbe } from "../_shared/probe-runner.ts";
-import { statusFromProbe } from "../_shared/connection-health.ts";
+import {
+  nextStatusAfterProbe,
+  statusFromProbe,
+  statusNeedsReconnect,
+} from "../_shared/connection-health.ts";
 import { recordConnectionEvents } from "../_shared/connection-sync.ts";
 
 /**
@@ -61,12 +65,13 @@ Deno.serve(async (req) => {
   let exhausted = false;
 
   while (Date.now() - startedAt < TIME_BUDGET_MS) {
-    // Already-dead connections are skipped: re-probing them every hour only
-    // burns provider quota until the user reconnects.
+    // Connections already marked expired/revoked are re-probed too. One bad
+    // answer used to flag a connection for good -- the sweep never looked at
+    // it again -- so a login that still worked kept asking for a reconnect.
+    // A dead row costs one probe per PROBE cadence, not per run.
     let query = admin
       .from("connections")
       .select("*")
-      .not("status", "in", "(expired,revoked)")
       .or(
         `expires_at.lt.${refreshBefore},last_probe_at.is.null,last_probe_at.lt.${probeBefore}`,
       )
@@ -142,14 +147,15 @@ async function sweepOne(
   const due = !lastProbeAt || lastProbeAt < probeBefore;
   if (!due) return { refreshed, probed: false };
 
-  // The refresh above may have just marked the row expired; do not overwrite
-  // that verdict with a probe made on the old token.
+  // The refresh above may have just marked a live row expired; do not
+  // overwrite that verdict with a probe made on the old token.
+  const wasDead = statusNeedsReconnect(connection.status as string);
   const { data: current } = await admin
     .from("connections")
     .select("status")
     .eq("id", connection.id as string)
     .maybeSingle();
-  if (current && (current.status === "expired" || current.status === "revoked")) {
+  if (current && !wasDead && statusNeedsReconnect(current.status as string)) {
     return { refreshed, probed: false };
   }
 
@@ -158,9 +164,12 @@ async function sweepOne(
     (connection.config as Record<string, string>) ?? {},
     credentials,
   );
-  const status = statusFromProbe(
-    result,
-    Boolean((manifest.oauth as { refreshable?: boolean } | undefined)?.refreshable),
+  const status = nextStatusAfterProbe(
+    current?.status as string | undefined,
+    statusFromProbe(
+      result,
+      Boolean((manifest.oauth as { refreshable?: boolean } | undefined)?.refreshable),
+    ),
   );
   await admin
     .from("connections")

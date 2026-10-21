@@ -8,6 +8,7 @@ import {
   NEODEVEX_PULL_REQUESTS_QUERY_KEY,
   SETTINGS_QUERY_KEYS,
 } from "#/hooks/query/query-keys";
+import { GITHUB_CREDENTIAL_HEALTH_QUERY_KEY } from "#/hooks/query/use-github-credential-health";
 
 /**
  * Everything that has to be refreshed for a new connection to be usable,
@@ -53,6 +54,11 @@ export async function invalidateConnectionCaches(
       queryKey: NEODEVEX_PULL_REQUESTS_QUERY_KEY,
     }),
     queryClient.invalidateQueries({ queryKey: ENVIRONMENT_QUERY_KEYS.all }),
+    // Re-checks (and refreshes) the agent-server's copy of the GitHub login,
+    // so the "reconnect GitHub" banner clears right after a reconnect.
+    queryClient.invalidateQueries({
+      queryKey: GITHUB_CREDENTIAL_HEALTH_QUERY_KEY,
+    }),
   ]);
 }
 
@@ -70,4 +76,5 @@ export const CONNECTION_CACHE_KEYS = [
   ["jira-triggers"],
   NEODEVEX_PULL_REQUESTS_QUERY_KEY,
   ENVIRONMENT_QUERY_KEYS.all,
+  GITHUB_CREDENTIAL_HEALTH_QUERY_KEY,
 ] as const;

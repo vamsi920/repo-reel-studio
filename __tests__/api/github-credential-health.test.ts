@@ -5,6 +5,7 @@ import {
   listGithubRepositories,
 } from "#/api/git-service/github-credential-health";
 import { SecretsService } from "#/api/secrets-service";
+import * as mint from "#/api/git-service/mint-local-github-clone-credential";
 
 const { getSecret } = vi.hoisted(() => ({ getSecret: vi.fn() }));
 vi.mock("@openhands/typescript-client/clients", () => ({
@@ -26,8 +27,49 @@ describe("checkGithubCredential", () => {
     getSecret.mockResolvedValue(value);
   }
 
+  function savedLogin(token: string | null) {
+    return vi
+      .spyOn(mint, "mintGithubCloneToken")
+      .mockResolvedValue(token ? { token, host: "github.com" } : null);
+  }
+
+  function githubAccepts(goodToken: string) {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      const auth = new Headers(init?.headers).get("Authorization");
+      return new Response("{}", {
+        status: auth === `Bearer ${goodToken}` ? 200 : 401,
+      });
+    });
+  }
+
+  it("replaces a stale agent-server copy with the saved login instead of warning", async () => {
+    storedToken("gho_old");
+    savedLogin("gho_new");
+    githubAccepts("gho_new");
+    const save = vi
+      .spyOn(SecretsService, "createSecret")
+      .mockResolvedValue(undefined);
+
+    await expect(checkGithubCredential()).resolves.toBe("ok");
+    expect(save).toHaveBeenCalledWith(
+      "GITHUB_TOKEN",
+      "gho_new",
+      expect.any(String),
+    );
+  });
+
+  it("warns only when the saved login itself is refused", async () => {
+    storedToken("gho_old");
+    savedLogin("gho_new");
+    githubAccepts("gho_other");
+    const save = vi.spyOn(SecretsService, "createSecret");
+
+    await expect(checkGithubCredential()).resolves.toBe("rejected");
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it.each([
-    // A revoked OAuth token: every automation run would inherit it.
+    // A revoked OAuth token, and no newer saved login to replace it.
     [401, "rejected"],
     [200, "ok"],
     // Rate limits and outages say nothing about the credential.
@@ -35,6 +77,7 @@ describe("checkGithubCredential", () => {
     [502, "unknown"],
   ])("maps GitHub status %s to %s", async (status, expected) => {
     storedToken("gho_x");
+    savedLogin(null);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("{}", { status }),
     );
@@ -44,6 +87,7 @@ describe("checkGithubCredential", () => {
 
   it("reports a missing credential without calling GitHub", async () => {
     storedToken(null);
+    savedLogin(null);
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(checkGithubCredential()).resolves.toBe("missing");
