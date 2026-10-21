@@ -32,6 +32,9 @@ import { recordConnectionEvents } from "../_shared/connection-sync.ts";
  */
 const REFRESH_WINDOW_MS = 20 * 60_000;
 const REPROBE_AFTER_MS = 24 * 60 * 60_000;
+// Flagged connections are re-tested hourly, so a wrong "reconnect" verdict
+// clears within the hour instead of a day; there are only ever a few.
+const REPROBE_DEAD_AFTER_MS = 60 * 60_000;
 const BATCH_LIMIT = 100;
 // Edge Functions are cut off at ~150 s wall time. Stop picking up new batches
 // well before that; whatever is left is first in line next hour (the query
@@ -51,6 +54,7 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   const refreshBefore = new Date(startedAt + REFRESH_WINDOW_MS).toISOString();
   const probeBefore = new Date(startedAt - REPROBE_AFTER_MS).toISOString();
+  const deadProbeBefore = new Date(startedAt - REPROBE_DEAD_AFTER_MS).toISOString();
 
   // Rows already handled this run. A row whose refresh failed transiently
   // (provider 5xx) keeps matching the query; without this it would be picked
@@ -68,12 +72,12 @@ Deno.serve(async (req) => {
     // Connections already marked expired/revoked are re-probed too. One bad
     // answer used to flag a connection for good -- the sweep never looked at
     // it again -- so a login that still worked kept asking for a reconnect.
-    // A dead row costs one probe per PROBE cadence, not per run.
+    // A dead row costs one probe an hour (REPROBE_DEAD_AFTER_MS).
     let query = admin
       .from("connections")
       .select("*")
       .or(
-        `expires_at.lt.${refreshBefore},last_probe_at.is.null,last_probe_at.lt.${probeBefore}`,
+        `expires_at.lt.${refreshBefore},last_probe_at.is.null,last_probe_at.lt.${probeBefore},and(status.in.(expired,revoked),last_probe_at.lt.${deadProbeBefore})`,
       )
       .order("last_probe_at", { ascending: true, nullsFirst: true })
       .limit(BATCH_LIMIT);
@@ -97,7 +101,11 @@ Deno.serve(async (req) => {
       scanned += 1;
       if (Date.now() - startedAt >= TIME_BUDGET_MS) break;
       try {
-        const outcome = await sweepOne(admin, connection, probeBefore);
+        const outcome = await sweepOne(
+          admin,
+          connection,
+          statusNeedsReconnect(connection.status as string) ? deadProbeBefore : probeBefore,
+        );
         if (outcome.refreshed) refreshed += 1;
         if (outcome.probed) probed += 1;
       } catch {
