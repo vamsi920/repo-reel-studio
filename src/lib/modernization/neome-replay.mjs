@@ -8,16 +8,30 @@
 // names) or the canonical JSON body. Bodies of redirects are not compared
 // (browsers never show them). Differences are bugs in the target.
 //
-// Usage:
+// Usage (preferred): let the harness run both apps.
+//   node .neome/replay.mjs --apps parity/apps.json parity/scenarios
+// parity/apps.json:
+// {
+//   "fixture": "parity/fixture.sqlite",   // optional: copied into each "store"
+//   "legacy": { "cwd": ".", "start": ".venv/bin/flask --app flaskr run --port 5911",
+//               "url": "http://127.0.0.1:5911", "store": "instance/flaskr.sqlite" },
+//   "target": { "cwd": "express-app", "start": "node index.js",
+//               "url": "http://127.0.0.1:5912", "store": "data/flaskr.sqlite",
+//               "env": { "DB_PATH": "data/flaskr.sqlite" } }
+// }
+// Before EVERY scenario the harness, for each app: runs its optional "reset"
+// command, copies the fixture over its "store" (removing -wal/-shm files),
+// starts it with PORT set from its url (plus "env"), waits until the url
+// answers (optional "readyPath"), replays the steps, then stops exactly that
+// process group. Every scenario therefore starts from the same fresh data in
+// both apps, and no app is left running. Logs: .neome/logs/<legacy|target>.log
+//
+// Or point it at apps you run yourself (you must then reset both apps to the
+// same data before every scenario, e.g. by restarting them):
 //   node .neome/replay.mjs --legacy http://127.0.0.1:5000 \
 //     --target http://127.0.0.1:3000 \
-//     --reset-legacy "flask --app flaskr init-db" \
-//     --reset-target "node scripts/reset-db.js" parity/scenarios
-//   (or PARITY_LEGACY / PARITY_TARGET env vars; files or directories of *.json)
-// --reset-legacy / --reset-target run before EVERY scenario, so each one
-// starts from the same fresh data in both apps (restore a fixture, re-seed,
-// or restart the app); the harness then waits until the app answers again.
-// Without them, data left by earlier runs makes the apps differ.
+//     --reset-legacy "<restore fixture + restart>" \
+//     --reset-target "<restore fixture + restart>" parity/scenarios
 //
 // Scenario file (JSON):
 // {
@@ -46,13 +60,17 @@
 // unless every step is identical.
 
 import {
+  copyFileSync,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
-  mkdirSync,
 } from "node:fs";
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 
 const VERSION = 1;
@@ -64,6 +82,7 @@ function parseArgs(argv) {
     report: ".neome/replay-report.json",
     resetLegacy: process.env.PARITY_RESET_LEGACY,
     resetTarget: process.env.PARITY_RESET_TARGET,
+    apps: undefined,
     paths: [],
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -73,6 +92,7 @@ function parseArgs(argv) {
     else if (a === "--report") out.report = argv[++i];
     else if (a === "--reset-legacy") out.resetLegacy = argv[++i];
     else if (a === "--reset-target") out.resetTarget = argv[++i];
+    else if (a === "--apps") out.apps = argv[++i];
     else out.paths.push(a);
   }
   return out;
@@ -334,9 +354,122 @@ async function resetApp(command, base) {
   }
 }
 
+const sleep = (ms) =>
+  new Promise((r) => {
+    setTimeout(r, ms);
+  });
+
+async function waitUntilAnswers(url, child) {
+  for (let i = 0; i < 120; i += 1) {
+    if (child && child.exitCode !== null) {
+      throw new Error(
+        `app exited with code ${child.exitCode} before answering`,
+      );
+    }
+    try {
+      await fetch(url, { redirect: "manual" });
+      return;
+    } catch {
+      await sleep(500);
+    }
+  }
+  throw new Error(`no answer from ${url} within 60s`);
+}
+
+/** Starts one side of apps.json on fresh data; returns a stop function. */
+export async function startManagedApp(side, name, { root, fixture }) {
+  const cwd = resolve(root, side.cwd ?? ".");
+  if (side.reset) execSync(side.reset, { cwd, stdio: "ignore", shell: true });
+  if (fixture && side.store) {
+    const store = resolve(cwd, side.store);
+    mkdirSync(dirname(store), { recursive: true });
+    for (const suffix of ["", "-wal", "-shm", "-journal"]) {
+      rmSync(`${store}${suffix}`, { force: true });
+    }
+    copyFileSync(resolve(root, fixture), store);
+  }
+  const port = new URL(side.url).port;
+  mkdirSync(resolve(root, ".neome/logs"), { recursive: true });
+  const log = createWriteStream(resolve(root, `.neome/logs/${name}.log`), {
+    flags: "a",
+  });
+  const child = spawn(side.start, {
+    cwd,
+    shell: true,
+    detached: true,
+    env: {
+      ...process.env,
+      ...(port ? { PORT: port } : {}),
+      ...(side.env ?? {}),
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout.pipe(log);
+  child.stderr.pipe(log);
+  const stop = async () => {
+    if (child.exitCode !== null) return;
+    try {
+      process.kill(-child.pid, "SIGTERM");
+    } catch {
+      return;
+    }
+    for (let i = 0; i < 20 && child.exitCode === null; i += 1) await sleep(250);
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {
+      // already gone
+    }
+  };
+  try {
+    await waitUntilAnswers(
+      new URL(side.readyPath ?? "/", side.url).href,
+      child,
+    );
+  } catch (error) {
+    await stop();
+    throw error;
+  }
+  return stop;
+}
+
+/**
+ * Replays scenarios with both apps started fresh by the harness for every
+ * scenario (see the header). `apps` is the parsed parity/apps.json.
+ */
+export async function replayManaged({ apps, files, root = process.cwd() }) {
+  const shared = { root, fixture: apps.fixture };
+  const sides = { legacy: apps.legacy, target: apps.target };
+  for (const [name, side] of Object.entries(sides)) {
+    if (!side?.start || !side?.url) {
+      throw new Error(`apps.json: "${name}" needs "start" and "url"`);
+    }
+  }
+  return replay({
+    legacy: apps.legacy.url,
+    target: apps.target.url,
+    files,
+    around: async (which, run) => {
+      let stop = async () => {};
+      try {
+        stop = await startManagedApp(sides[which], which, shared);
+      } catch (error) {
+        return [{ name: "start", error: String(error?.message ?? error) }];
+      }
+      try {
+        return await run();
+      } finally {
+        await stop();
+      }
+    },
+    freshData: true,
+  });
+}
+
 /**
  * @param {{ legacy: string, target: string, files: string[],
- *   resetLegacy?: string, resetTarget?: string }} options
+ *   resetLegacy?: string, resetTarget?: string,
+ *   around?: (which: "legacy" | "target", run: () => Promise<any[]>) => Promise<any[]>,
+ *   freshData?: boolean }} options
  */
 export async function replay({
   legacy,
@@ -344,6 +477,8 @@ export async function replay({
   files,
   resetLegacy,
   resetTarget,
+  around,
+  freshData,
 }) {
   const report = {
     version: VERSION,
@@ -355,19 +490,40 @@ export async function replay({
     identical: 0,
     legacyDataCases: 0,
     legacyDataIdentical: 0,
-    freshData: Boolean(resetLegacy && resetTarget),
+    freshData: freshData ?? Boolean(resetLegacy && resetTarget),
+    managedApps: Boolean(around),
     /** @type {{ scenario: string, step: string, field: string, legacy: unknown, target: unknown }[]} */
     differences: [],
   };
   for (const file of files) {
     const scenario = JSON.parse(readFileSync(file, "utf8"));
     report.scenarios += 1;
-    await resetApp(resetLegacy, legacy);
-    const a = await runScenario(legacy, scenario);
-    await resetApp(resetTarget, target);
-    const b = await runScenario(target, scenario);
-    a.forEach((step, i) => {
-      const diffs = diffStep(step, b[i] ?? { error: "missing" });
+    const wrap = around ?? ((_which, run) => run());
+    const a = await wrap("legacy", async () => {
+      await resetApp(resetLegacy, legacy);
+      return runScenario(legacy, scenario);
+    });
+    const b = await wrap("target", async () => {
+      await resetApp(resetTarget, target);
+      return runScenario(target, scenario);
+    });
+    // A failed start yields one {name: "start", error} entry: every step of
+    // that app then counts as unreachable.
+    const align = (observed) => {
+      const failed =
+        observed.length === 1 && observed[0].name === "start"
+          ? observed[0].error
+          : null;
+      return (scenario.steps ?? []).map((st, i) =>
+        failed
+          ? { name: st.name, error: failed }
+          : (observed[i] ?? { name: st.name, error: "missing" }),
+      );
+    };
+    const steps = align(a);
+    const other = align(b);
+    steps.forEach((step, i) => {
+      const diffs = diffStep(step, other[i]);
       report.total += 1;
       if (scenario.legacyData) report.legacyDataCases += 1;
       if (!diffs.length) {
@@ -388,6 +544,15 @@ export async function replay({
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (!args.apps && !args.legacy && existsSync("parity/apps.json")) {
+    args.apps = "parity/apps.json";
+  }
+  if (args.apps) {
+    const apps = JSON.parse(readFileSync(args.apps, "utf8"));
+    const files = scenarioFiles(args.paths);
+    const report = await replayManaged({ apps, files });
+    return finish(report, args.report);
+  }
   if (!args.legacy || !args.target) {
     console.error(
       "Need --legacy and --target base URLs (or PARITY_LEGACY / PARITY_TARGET).",
@@ -406,7 +571,14 @@ async function main() {
     legacy: args.legacy,
     target: args.target,
     files,
+    resetLegacy: args.resetLegacy,
+    resetTarget: args.resetTarget,
   });
+  return finish(report, args.report);
+}
+
+function finish(report, reportPath) {
+  const args = { report: reportPath };
   mkdirSync(dirname(args.report), { recursive: true });
   writeFileSync(args.report, `${JSON.stringify(report, null, 2)}\n`);
   for (const d of report.differences.slice(0, 80)) {

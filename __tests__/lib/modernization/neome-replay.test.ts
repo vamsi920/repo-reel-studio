@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // The harness Neo ME installs into project workspaces.
-import { replay } from "#/lib/modernization/neome-replay.mjs";
+import { replay, replayManaged } from "#/lib/modernization/neome-replay.mjs";
 
 /** A tiny app: login sets a cookie, /me needs it, /items/:id echoes JSON. */
 function app(variant: { dateFormat: "date" | "datetime"; slug: string }) {
@@ -168,5 +168,53 @@ describe("Neo ME replay harness", () => {
     expect(existsSync(join(dir, "legacy"))).toBe(true);
     expect(existsSync(join(dir, "target"))).toBe(true);
     expect(report.freshData).toBe(true);
+  });
+
+  it("starts both apps on the same fixture for every scenario and stops them", async () => {
+    const root = mkdtempSync(join(tmpdir(), "neome-managed-"));
+    // A server that renders its data file and appends to it on POST, so a
+    // scenario that leaked data into the next one would show it.
+    writeFileSync(
+      join(root, "server.mjs"),
+      `import { createServer } from "node:http";
+import { readFileSync, appendFileSync } from "node:fs";
+const store = process.env.STORE;
+createServer((req, res) => {
+  if (req.method === "POST") appendFileSync(store, "+");
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end("<p>" + readFileSync(store, "utf8") + "</p>");
+}).listen(Number(process.env.PORT), "127.0.0.1");`,
+    );
+    writeFileSync(join(root, "fixture.txt"), "seed");
+    const side = (port: number, store: string) => ({
+      start: `node server.mjs`,
+      url: `http://127.0.0.1:${port}`,
+      store,
+      env: { STORE: join(root, store) },
+    });
+    const scenario = {
+      name: "writes",
+      steps: [
+        { name: "add", method: "POST", path: "/" },
+        { name: "read", path: "/" },
+      ],
+    };
+    const report = await replayManaged({
+      root,
+      apps: {
+        fixture: "fixture.txt",
+        legacy: side(5941, "legacy.txt"),
+        target: side(5942, "target.txt"),
+      },
+      // Twice: the second run must start from "seed" again, not "seed+".
+      files: [scenarioFile(scenario), scenarioFile(scenario)],
+    });
+    expect(report).toMatchObject({
+      total: 4,
+      identical: 4,
+      freshData: true,
+      managedApps: true,
+    });
+    await expect(fetch("http://127.0.0.1:5941")).rejects.toThrow();
   });
 });

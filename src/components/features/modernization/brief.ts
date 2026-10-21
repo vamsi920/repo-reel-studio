@@ -77,13 +77,16 @@ modernization_control tool; the user watches that panel.
    scenarios (JSON) in parity/scenarios/; the harness sends every step to
    the legacy app and to the new app and compares what users and clients
    see: status, redirect target, content type, the visible text and form
-   fields of every HTML page, or the canonical JSON body. Run it as
-     node .neome/replay.mjs --legacy <legacy URL> --target <new URL> \\
-       --reset-legacy "<cmd>" --reset-target "<cmd>" parity/scenarios
-   where each reset command restores the SAME fixture (a store created
-   through the legacy app, so it holds legacy-written users and records) for
-   that app before every scenario; leftovers from earlier runs make the apps
-   differ.
+   fields of every HTML page, or the canonical JSON body. Let the harness
+   run both apps: describe them in parity/apps.json (start command, base
+   URL on a free port, the data "store" path, optional "env"/"reset") with a
+   shared "fixture" -- see the harness header -- and run
+     node .neome/replay.mjs --apps parity/apps.json parity/scenarios
+   Before every scenario it restores the fixture into each app's store,
+   starts the app, waits for it, replays, and stops exactly that process, so
+   you never manage the two servers or their data by hand. Build the fixture
+   through the legacy app itself (register users, create records with it),
+   so it holds legacy-written data.
    First list every route x method (and every screen/command) in
    parity/PARITY.md, with how to start each app on fresh data, and give
    each at least one step. Cover happy paths AND every error branch the
@@ -99,8 +102,8 @@ modernization_control tool; the user watches that panel.
    (two fresh instances) first: every step must be identical there, or the
    scenario is non-deterministic. The studio reads .neome/replay-report.json
    itself and refuses to finish verify unless the last run (within the hour)
-   is identical on every step, used both reset commands and includes
-   legacy-data steps. Write your own
+   is identical on every step, started both apps on fresh data (--apps) and
+   includes legacy-data steps. Write your own
    unit/contract tests on top as you like; they do not replace the replay.
    With REA, capture real behaviour of the running legacy app
    (capture_process_scenario / capture_browser_scenario / inspect_web_page)
@@ -137,6 +140,10 @@ Three rules the studio enforces, so plan for them:
   studio reads it itself. If the app keeps no persistent data, say so with
   stats.no_persistent_data: true. Behaviour that differs is a bug in the
   new app, never a scenario to relax.
+- You may be running on the user's own machine. Stop only processes you
+  started, by the PID you recorded (e.g. \`cmd & echo $! > .neome/legacy.pid\`),
+  never by name (\`pkill node\`, \`kill $(ps aux | grep flask ...)\` kill the
+  user's other work). Use ports nothing else uses and say which in PARITY.md.
 - Never edit the legacy application to make parity pass: it is the
   reference. Fix the new app, the reset commands or a non-deterministic
   scenario instead.

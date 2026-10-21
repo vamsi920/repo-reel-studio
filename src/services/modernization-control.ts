@@ -549,7 +549,7 @@ export async function handleModernizationControlAction(
                 path: REPLAY_HARNESS_PATH,
                 scenarios_dir: REPLAY_SCENARIOS_DIR,
                 report: REPLAY_REPORT_PATH,
-                usage: `node ${REPLAY_HARNESS_PATH} --legacy <legacy base URL> --target <new base URL> --reset-legacy "<command restoring the fixture for the legacy app>" --reset-target "<same for the new app>" ${REPLAY_SCENARIOS_DIR}`,
+                usage: `node ${REPLAY_HARNESS_PATH} --apps parity/apps.json ${REPLAY_SCENARIOS_DIR}`,
                 note: "The scenario format is documented at the top of the file. The studio reads the report itself before a verify step can be done.",
               },
             }
@@ -775,7 +775,7 @@ export async function handleModernizationControlAction(
                 reason: "parity_not_proven",
                 detail: verdict.reason,
                 differences: verdict.differences,
-                guidance: `Run ${REPLAY_HARNESS_PATH} against the running legacy app and the running new app with scenarios in ${REPLAY_SCENARIOS_DIR} covering every route x method, every error page, other users' records and data the legacy app itself created (a scenario with "legacyData": true), with --reset-legacy and --reset-target commands that restore the same fresh fixture in both apps before every scenario. Fix the new app until every step is identical, then mark verify done again within the hour. Do not normalise away real output.`,
+                guidance: `Run ${REPLAY_HARNESS_PATH} against the running legacy app and the running new app with scenarios in ${REPLAY_SCENARIOS_DIR} covering every route x method, every error page, other users' records and data the legacy app itself created (a scenario with "legacyData": true), with --apps parity/apps.json so the harness starts both apps on the same fixture before every scenario. Fix the new app until every step is identical, then mark verify done again within the hour. Do not normalise away real output.`,
               });
               return;
             }
