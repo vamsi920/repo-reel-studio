@@ -42,10 +42,10 @@ async function fetchText(url) {
   throw last;
 }
 
-// neodevex.com is delegated to two DNS providers (Netlify DNS and
-// Squarespace). A resolver asks one of them at random, so a record that
-// exists on only one provider fails for some visitors and not others.
-// Ask every authoritative nameserver directly.
+// neodevex.com was once delegated to two DNS providers at once (Netlify DNS
+// and Squarespace); a record on only one of them failed for some visitors.
+// Since 2026-10-22 only Netlify DNS is delegated. Asking every authoritative
+// nameserver directly still catches a split if one is ever re-added.
 async function checkEveryNameserver(host, failures) {
   const zone = host.split(".").slice(-2).join(".");
   let nameservers;
