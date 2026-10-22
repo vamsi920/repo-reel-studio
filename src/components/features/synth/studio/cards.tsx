@@ -484,7 +484,9 @@ export function PrivacyCard({ project }: { project: SynthProject }) {
       >
         {t(I18nKey.SYNTH$TREATED_FIELDS, {
           synthetic: report.strategies.synthesize,
+          pseudonymized: report.strategies.pseudonymize,
           masked: report.strategies.mask,
+          generalized: report.strategies.generalize,
           redacted: report.strategies.redact,
         })}
       </p>
@@ -534,6 +536,8 @@ const SAFE_RANGE_KEYS: I18nKey[] = [
   I18nKey.SYNTH$SAFE_CARD,
   I18nKey.SYNTH$SAFE_TAX,
   I18nKey.SYNTH$SAFE_IP,
+  I18nKey.SYNTH$SAFE_OTHER_IDS,
+  I18nKey.SYNTH$SAFE_SPECIAL,
 ];
 
 /* ── Report card ───────────────────────────────────────────────────────── */

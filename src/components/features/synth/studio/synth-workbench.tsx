@@ -112,7 +112,13 @@ export function SynthWorkbench({
     { key: "live", node: <LiveCard project={project} /> },
     {
       key: "model",
-      node: <ModelCard projectId={project.id} model={project.model} />,
+      node: (
+        <ModelCard
+          projectId={project.id}
+          model={project.model}
+          postResult={postResult}
+        />
+      ),
     },
     ...(project.model.rules.length
       ? [

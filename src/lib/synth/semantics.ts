@@ -1,47 +1,38 @@
 import type { Field, FieldType, PiiClass, SemanticKind } from "./model";
+import {
+  PERSON_ENTITY,
+  PERSONAL_MONEY,
+  PII_KINDS,
+  piiClassOfSemantic,
+} from "./pii-catalog";
 
 /**
- * Guess what a field means from its name and type. Order matters: the first
- * matching rule wins, and specific names (`billing_email`) come before the
- * generic ones (`email`). The agent can always override `semantic` with
- * what it read in the code.
+ * Guess what a field means from its name and type (and, when given, the
+ * column's description and the entity it belongs to). Personal-data rules
+ * from the PII catalog run first, most specific first; then the generic
+ * rules. The agent or the user can always override `semantic`.
  */
-const NAME_RULES: [RegExp, SemanticKind][] = [
-  [/^(id|pk|_id|uid)$/i, "id"],
-  [/password_?(hash|digest)|hashed_password|passwd/i, "password_hash"],
-  [/e_?mail/i, "email"],
-  [/^(first|given)_?name$/i, "first_name"],
-  [/^(last|family|sur)_?name$/i, "last_name"],
-  [
-    /(full_?name|display_?name|^name$|author|owner_name|customer_name|user_name$)/i,
-    "full_name",
-  ],
-  [/^(user_?name|handle|login|nick(name)?|screen_?name)$/i, "username"],
-  [/(phone|mobile|tel(ephone)?|fax)/i, "phone"],
+const GENERIC_RULES: [RegExp, SemanticKind][] = [
   [/(avatar|image|photo|picture|thumbnail|logo)_?(url)?$/i, "image_url"],
   [/(url|link|href|website|homepage|endpoint)/i, "url"],
-  [/(ip_?addr(ess)?$|(^|_)ip$|remote_addr)/i, "ip_address"],
   [/(uuid|guid)/i, "uuid"],
   [/slug|permalink/i, "slug"],
-  [/(street|address_?line|address1|address$|addr)/i, "street"],
   [/(city|town)/i, "city"],
   [/(state|province|region)(_code|_name)?$/i, "state"],
   [/country_?code|iso_?country/i, "country_code"],
   [/country/i, "country"],
-  [/(zip|postal|post_?code)/i, "postal_code"],
   [/(lat|latitude)$/i, "latitude"],
   [/(lng|lon|long|longitude)$/i, "longitude"],
   [/currency(_code)?$/i, "currency_code"],
   [/(price|unit_cost|cost|fee|rate_amount|msrp)/i, "price"],
   [
-    /(amount|total|subtotal|balance|salary|revenue|budget|tax$|discount$)/i,
+    /(amount|total|subtotal|balance|salary|revenue|budget|income|wage|tax$|discount$)/i,
     "amount",
   ],
   [/(percent|pct|ratio|share)/i, "percentage"],
   [/(quantity|qty|units|stock|inventory)/i, "quantity"],
   [/(count|num_|number_of|_total$|views|likes|followers)/i, "count"],
-  [/^age$/i, "age"],
-  [/(birth|dob)/i, "birthdate"],
+  [/^age$|(^|_)age($|_)/i, "age"],
   [/^year$/i, "year"],
   [/created|inserted|registered|joined|signup/i, "created_at"],
   [/updated|modified|changed|last_seen|last_login/i, "updated_at"],
@@ -55,16 +46,14 @@ const NAME_RULES: [RegExp, SemanticKind][] = [
     /(company|organization|organisation|org_name|employer|vendor|supplier|merchant)/i,
     "company",
   ],
-  [/(job|position|role_title|occupation)/i, "job_title"],
+  [/(job|position|role_title|occupation|profession)/i, "job_title"],
   [/(status|state$|stage|phase)/i, "status"],
   [/colou?r/i, "color"],
   [/(sku|part_number|product_code|barcode|upc|ean)/i, "sku"],
-  [/iban/i, "iban"],
-  [/(card_?number|pan$|credit_card)/i, "card_number"],
-  [/(^|_)ssn($|_)|social_?security/i, "ssn"],
-  [/(national_id|passport|aadhaar|nino)/i, "national_id"],
-  [/(tax_?id|vat|ein|gstin)/i, "tax_id"],
-  [/(token|secret|api_?key|session_id|refresh)/i, "token"],
+  [
+    /(token|secret|api_?key|session_id|refresh|private_?key|access_?key)/i,
+    "token",
+  ],
   [/(locale|language|lang)$/i, "locale"],
   [/(timezone|tz)$/i, "timezone"],
   [/(mime|content_type)/i, "mime_type"],
@@ -73,7 +62,7 @@ const NAME_RULES: [RegExp, SemanticKind][] = [
   [/(sha|checksum|digest|fingerprint|etag|hash)/i, "hash"],
   [/(title|subject|headline|heading)/i, "title"],
   [
-    /(description|summary|bio|about|notes?|comment|body|content|message|text)/i,
+    /(description|summary|bio|about|notes?|comment|body|content|message|text|remarks?|memo|feedback|reason)/i,
     "description",
   ],
   [
@@ -82,21 +71,89 @@ const NAME_RULES: [RegExp, SemanticKind][] = [
   ],
 ];
 
-export function inferSemantic(name: string, type: FieldType): SemanticKind {
+/** PII meanings a numeric column can legitimately hold. */
+const NUMERIC_PII: readonly SemanticKind[] = [
+  "card_cvv",
+  "pin",
+  "credit_score",
+  "bank_account",
+  "routing_number",
+  "card_number",
+  "ssn",
+  "phone",
+  "employee_id",
+  "student_id",
+  "medical_record_number",
+  "insurance_number",
+  "postal_code",
+];
+
+const COUNT_LIKE =
+  /(_count|count_|_total|total_|num_of|number_of|_num$|^num_|_qty|_sum)/i;
+
+function snake(text: string): string {
+  return text
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function piiRuleFor(text: string, type: FieldType): SemanticKind | null {
+  const numeric = type === "integer" || type === "float" || type === "decimal";
+  for (const kind of PII_KINDS) {
+    if (!kind.rule.test(text)) continue;
+    if (
+      numeric &&
+      (!NUMERIC_PII.includes(kind.semantic) || COUNT_LIKE.test(text))
+    ) {
+      continue;
+    }
+    if (
+      (kind.semantic === "birthdate" || kind.semantic === "date_of_death") &&
+      numeric
+    ) {
+      continue;
+    }
+    return kind.semantic;
+  }
+  return null;
+}
+
+export interface SemanticHints {
+  /** Column comment / doc, used when the name says little. */
+  description?: string;
+  /** Entity the column belongs to (a product's `name` is not a person). */
+  entity?: string;
+}
+
+export function inferSemantic(
+  name: string,
+  type: FieldType,
+  hints: SemanticHints = {},
+): SemanticKind {
+  if (/^(id|pk|_id|uid)$/i.test(name)) return "id";
   if (type === "boolean") return "boolean";
   if (type === "uuid") return name === "id" ? "id" : "uuid";
   if (type === "json") return "json";
-  for (const [pattern, kind] of NAME_RULES) {
+  // A thing's name or title is not a person's name.
+  if (/^(name|title)$/i.test(name)) {
+    return hints.entity && !PERSON_ENTITY.test(hints.entity)
+      ? "title"
+      : "full_name";
+  }
+  const pii = piiRuleFor(name, type);
+  if (pii) return pii;
+  for (const [pattern, kind] of GENERIC_RULES) {
     if (!pattern.test(name)) continue;
-    // A date-named field that is numeric is a count, not a date, and so on:
-    // the type wins over a name that does not fit it.
+    // The type wins over a name that does not fit it.
     if (
       (kind === "created_at" ||
         kind === "updated_at" ||
         kind === "deleted_at" ||
         kind === "date_past" ||
-        kind === "date_future" ||
-        kind === "birthdate") &&
+        kind === "date_future") &&
       (type === "integer" || type === "float" || type === "decimal")
     ) {
       continue;
@@ -115,7 +172,19 @@ export function inferSemantic(name: string, type: FieldType): SemanticKind {
     if (kind === "boolean" && (type as FieldType) !== "unknown") {
       continue;
     }
+    // A generic word meaning; a description may still reveal personal data.
+    if (
+      hints.description &&
+      (kind === "description" || kind === "title" || kind === "count")
+    ) {
+      const fromDescription = piiRuleFor(snake(hints.description), type);
+      if (fromDescription) return fromDescription;
+    }
     return kind;
+  }
+  if (hints.description) {
+    const fromDescription = piiRuleFor(snake(hints.description), type);
+    if (fromDescription) return fromDescription;
   }
   switch (type) {
     case "date":
@@ -137,52 +206,32 @@ export function inferSemantic(name: string, type: FieldType): SemanticKind {
   }
 }
 
-const DIRECT: SemanticKind[] = [
-  "email",
-  "full_name",
-  "first_name",
-  "last_name",
-  "username",
-  "phone",
-  "street",
-  "national_id",
-  "ssn",
-  "tax_id",
-  "iban",
-  "card_number",
-  "ip_address",
+/** Special-category rules that make even a boolean column sensitive. */
+const SENSITIVE_BY_NAME: readonly SemanticKind[] = [
+  "health_condition",
+  "special_category",
+  "biometric",
+  "blood_type",
 ];
-const QUASI: SemanticKind[] = [
-  "birthdate",
-  "age",
-  "postal_code",
-  "city",
-  "state",
-  "latitude",
-  "longitude",
-  "job_title",
-  "company",
-  "image_url",
-];
-const SENSITIVE: SemanticKind[] = ["password_hash", "token", "amount", "price"];
 
 /** Privacy class for a field: its explicit `pii`, else from its meaning. */
 export function piiClassOf(field: Field): PiiClass {
   if (field.pii) return field.pii;
-  const semantic = field.semantic ?? inferSemantic(field.name, field.type);
-  if (DIRECT.includes(semantic)) return "direct";
-  if (semantic === "password_hash" || semantic === "token") return "sensitive";
-  if (QUASI.includes(semantic)) return "quasi";
+  const semantic =
+    field.semantic ??
+    inferSemantic(field.name, field.type, { description: field.description });
+  const cls = piiClassOfSemantic(semantic);
+  if (cls !== "none") return cls;
+  const byName = PII_KINDS.find(
+    (k) =>
+      SENSITIVE_BY_NAME.includes(k.semantic) &&
+      (k.rule.test(field.name) ||
+        (field.description ? k.rule.test(snake(field.description)) : false)),
+  );
+  if (byName) return byName.cls;
   if (
-    SENSITIVE.includes(semantic) &&
-    /salary|income|balance/i.test(field.name)
-  ) {
-    return "sensitive";
-  }
-  if (
-    /health|medical|diagnosis|religion|ethnic|gender|sexual|political/i.test(
-      field.name,
-    )
+    (semantic === "amount" || semantic === "price" || semantic === "count") &&
+    PERSONAL_MONEY.test(field.name)
   ) {
     return "sensitive";
   }
@@ -190,13 +239,22 @@ export function piiClassOf(field: Field): PiiClass {
 }
 
 /** Fill in `semantic` for every field that lacks one. Pure. */
-export function withInferredSemantics<T extends { fields: Field[] }>(
-  entity: T,
-): T {
+export function withInferredSemantics<
+  T extends { fields: Field[]; name?: string; id?: string },
+>(entity: T): T {
+  const entityName = entity.name ?? entity.id;
   return {
     ...entity,
     fields: entity.fields.map((f) =>
-      f.semantic ? f : { ...f, semantic: inferSemantic(f.name, f.type) },
+      f.semantic
+        ? f
+        : {
+            ...f,
+            semantic: inferSemantic(f.name, f.type, {
+              description: f.description,
+              entity: entityName,
+            }),
+          },
     ),
   };
 }

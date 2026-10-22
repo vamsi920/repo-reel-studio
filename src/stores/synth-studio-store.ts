@@ -169,6 +169,8 @@ interface SynthStudioActions {
     entities: Entity[],
     options?: { replace?: boolean },
   ) => void;
+  /** Replaces entities by id wholesale (no merge), e.g. after linking keys. */
+  replaceEntities: (projectId: string, entities: Entity[]) => void;
   removeEntity: (projectId: string, entityId: string) => void;
   setFieldSemantic: (
     projectId: string,
@@ -348,6 +350,15 @@ export const useSynthStudioStore = create<SynthStudioStore>()(
               );
             }
             return { ...model, entities: [...byId.values()] };
+          }),
+
+        replaceEntities: (projectId, entities) =>
+          patchModel(projectId, (model) => {
+            const byId = new Map(entities.map((e) => [e.id, e]));
+            return {
+              ...model,
+              entities: model.entities.map((e) => byId.get(e.id) ?? e),
+            };
           }),
 
         removeEntity: (projectId, entityId) =>

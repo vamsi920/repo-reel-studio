@@ -101,7 +101,7 @@ describe("mask / redact choices", () => {
       if (row.phone !== null) expect(row.phone).toBe("[REDACTED]");
     }
     expect(dataset.warnings).toContain(
-      "customers.ssn: masked or redacted, so values are not kept unique",
+      "customers.ssn: masked, generalized or redacted, so values are not kept unique (pseudonymize keeps them unique)",
     );
     const report = validateDataset(model, dataset);
     expect(report.checks.some((c) => c.id === "unique:customers.ssn")).toBe(

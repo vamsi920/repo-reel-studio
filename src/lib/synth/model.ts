@@ -84,6 +84,35 @@ export const SEMANTIC_KINDS = [
   "tax_id",
   "national_id",
   "ssn",
+  "passport_number",
+  "drivers_license",
+  "bank_account",
+  "routing_number",
+  "swift_bic",
+  "card_expiry",
+  "card_cvv",
+  "pin",
+  "credit_score",
+  "medical_record_number",
+  "insurance_number",
+  "health_condition",
+  "blood_type",
+  "gender",
+  "special_category",
+  "biometric",
+  "security_answer",
+  "mac_address",
+  "device_id",
+  "user_agent",
+  "vin",
+  "license_plate",
+  "employee_id",
+  "student_id",
+  "marital_status",
+  "nationality",
+  "date_of_death",
+  "geolocation",
+  "social_profile",
   "token",
   "locale",
   "timezone",
@@ -105,12 +134,27 @@ export const PII_CLASSES = ["direct", "quasi", "sensitive", "none"] as const;
 export type PiiClass = (typeof PII_CLASSES)[number];
 
 /**
- * What the generated data (or a masked export) holds for a personal field.
- * `synthesize` makes a fresh value from a range that is never issued for
- * real (default); `mask` keeps only the last four characters; `redact`
- * replaces the value with a placeholder, or null where the column allows it.
+ * What the generated data (or a masked export) holds for a personal field:
+ * - `synthesize` (default): a fresh, realistic value from a range that is
+ *   never issued for real; in an export the same original always maps to
+ *   the same replacement, so joins survive.
+ * - `pseudonymize`: a stable opaque token per original value (keeps
+ *   uniqueness and joins, shows nothing real).
+ * - `mask`: keeps only the last four characters (emails keep the domain).
+ * - `generalize`: coarsens the value (a date to its year, a number to its
+ *   bracket, a postcode to its area, coordinates to ~10 km).
+ * - `redact`: a placeholder, or null where the column allows it.
+ * - `keep`: leaves the original in a masked export (generated data is
+ *   synthetic anyway).
  */
-export const PRIVACY_TREATMENTS = ["synthesize", "mask", "redact"] as const;
+export const PRIVACY_TREATMENTS = [
+  "synthesize",
+  "pseudonymize",
+  "mask",
+  "generalize",
+  "redact",
+  "keep",
+] as const;
 export type PrivacyTreatment = (typeof PRIVACY_TREATMENTS)[number];
 
 export interface FieldReference {

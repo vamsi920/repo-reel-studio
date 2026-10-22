@@ -212,6 +212,9 @@ export function parseSql(text: string, path = "schema.sql"): ParseResult {
       ) {
         field.generated = true;
       }
+      // MySQL-style inline column comment: a description of the column.
+      const comment = rest.match(/\bCOMMENT\s+'((?:[^']|'')*)'/i);
+      if (comment) field.description = comment[1].replace(/''/g, "'");
       const def = rest.match(/\bDEFAULT\s+('(?:[^']|'')*'|[\w.()]+)/i);
       if (def) {
         const raw = def[1];
@@ -266,6 +269,18 @@ export function parseSql(text: string, path = "schema.sql"): ParseResult {
       refTable: unquote(m[3]),
       refColumns: m[4] ? idList(m[4]) : [],
     });
+  }
+
+  // COMMENT ON COLUMN t.c IS '...' (PostgreSQL, Oracle).
+  for (const m of sql.matchAll(
+    /COMMENT\s+ON\s+COLUMN\s+([\w."`[\]]+)\s+IS\s+'((?:[^']|'')*)'/gi,
+  )) {
+    const parts = m[1].split(".").map((p) => unquote(p));
+    const column = parts.pop() ?? "";
+    const table = parts.pop() ?? "";
+    const entity = entities.find((e) => e.id === slugId(table));
+    const field = entity?.fields.find((f) => f.name === column);
+    if (field) field.description = m[2].replace(/''/g, "'");
   }
 
   const byId = new Map(entities.map((e) => [e.id, e]));

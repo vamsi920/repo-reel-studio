@@ -49,7 +49,9 @@ function fakeWorkspace() {
   const run: RunInWorkspace = async (command) => {
     if (command.startsWith("find "))
       return { exit_code: 0, stdout: "./prisma/schema.prisma\n" };
-    const read = command.match(/^test -f '([^']+)' && base64 < /);
+    const read = command.match(
+      /^test -f '([^']+)' && head -c \d+ '[^']+' \| base64/,
+    );
     if (read) {
       const content = files[read[1]];
       return content === undefined

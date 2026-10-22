@@ -65,15 +65,34 @@ studio's engine does that, deterministically, and reports what it verified.
    fixture, a seed script), record_profile the distributions that matter:
    status mixes, country mixes, order sizes, null rates. Labels and numbers
    only.
-   Privacy: set pii on every column that identifies a person (direct),
-   does so in combination (quasi: birth date, zip, city), or is sensitive
-   (health, salary, credentials); set pii: none where the name misleads.
-   For the high-risk identifiers describe lists under
-   privacy.decisions_pending (SSN, national id, tax id, card number, IBAN),
-   ask the user ONE ask_choice: keep synthetic values (generated from
-   ranges that are never issued for real), mask (keep the last 4), or
-   redact; then record_model with that treatment. Never set a treatment
-   the user did not choose.
+   Privacy covers ALL personal data, not only government ids: names,
+   contact details, addresses and postcodes, birth/death dates and ages,
+   government ids (SSN, SIN, NINO, Aadhaar, passport, driving licence, tax
+   ids), financial data (card number/CVV/expiry, PIN, bank account,
+   routing, IBAN, salary, credit score), credentials and security answers,
+   health (diagnoses, medications, MRN, insurance ids, blood type),
+   biometrics, special categories (gender, ethnicity, religion, politics,
+   sexual orientation, union membership, criminal records), online and
+   device ids (IP, MAC, device/advertising ids, user agent), vehicles (VIN,
+   plates), employee/student ids, precise location, social profiles, and
+   free text or JSON that may contain any of these. Set pii on every such
+   column (direct / quasi / sensitive) and pii: none where a name misleads
+   (a product's "name"). The studio recognises most of these by name,
+   column comment and, for samples, by value; correct it where it is wrong.
+   Treatments the user can choose per column: synthesize (default; fresh
+   values from ranges never issued for real), pseudonymize (stable token,
+   keeps joins and uniqueness), mask (last 4), generalize (year, bracket,
+   area), redact, keep (exports only). describe lists high-risk and
+   sensitive columns nobody decided on under privacy.decisions_pending:
+   ask the user ONE multi-select ask_choice per treatment group (e.g.
+   "Mask these", "Redact these") or a single card with your recommended
+   default, then record_model with each chosen treatment. Never set a
+   treatment the user did not choose.
+   Sample data: when the repo has fixtures, seeds or exports (CSV, JSON
+   arrays) -- or the user says they have sample rows -- import_schema them.
+   The studio learns columns, types, ranges and the mix of non-personal
+   categories, detects personal columns by their values, links
+   <thing>_id columns to their tables, and keeps no personal value.
    Columns whose names say little: describe returns column_context with
    the user's own notes and example values. They are authoritative; set
    semantic, rules or enum values to match them.

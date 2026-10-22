@@ -330,4 +330,37 @@ describe("SynthWorkbench", () => {
       within(result).getByTestId("synth-mask-download-csv"),
     ).toBeInTheDocument();
   });
+
+  it("imports sample rows from disk, learns the table without keeping personal values, and tells the agent", async () => {
+    const postResult = vi.fn();
+    renderWithProviders(
+      <SynthWorkbench
+        projectId={projectId}
+        postResult={postResult}
+        onGenerate={vi.fn()}
+        busy={false}
+      />,
+    );
+    const csv =
+      "id,contact,plan\n1,ann@corp.com,gold\n2,bob@corp.com,free\n3,cy@corp.com,gold\n4,dee@corp.com,free\n5,eve@corp.com,gold\n";
+    fireEvent.change(screen.getByTestId("synth-import-input"), {
+      target: { files: [new File([csv], "members.csv", { type: "text/csv" })] },
+    });
+    await waitFor(() =>
+      expect(
+        useSynthStudioStore.getState().projects[projectId].model.entities,
+      ).toHaveLength(1),
+    );
+    expect(screen.getByTestId("synth-import-note")).toBeInTheDocument();
+    const entity =
+      useSynthStudioStore.getState().projects[projectId].model.entities[0];
+    expect(entity.fields.find((f) => f.name === "contact")?.semantic).toBe(
+      "email",
+    );
+    expect(JSON.stringify(entity)).not.toContain("ann@corp.com");
+    expect(postResult).toHaveBeenCalledTimes(1);
+    expect(postResult.mock.calls[0][0]).toContain(
+      '"status":"imported_by_user"',
+    );
+  });
 });

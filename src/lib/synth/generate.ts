@@ -92,7 +92,34 @@ function uniquify(
   attempt: number,
 ): unknown {
   if (value === null || value === undefined) return value;
-  if (typeof value === "number") return value + attempt * 100003;
+  if (typeof value === "number") {
+    // Stay inside a declared range: step from the bottom, then wrap.
+    if (field.max !== undefined) {
+      const lo = field.min ?? 0;
+      const span = Math.max(1, Math.floor(field.max - lo) + 1);
+      const step = field.type === "integer" ? 1 : 0.01;
+      const shifted = lo + ((value - lo + attempt * step) % span);
+      return field.type === "integer"
+        ? Math.round(shifted)
+        : Number(shifted.toFixed(field.scale ?? 2));
+    }
+    return value + attempt * 100003;
+  }
+  if (
+    typeof value === "string" &&
+    (field.type === "date" || field.type === "datetime")
+  ) {
+    // Dates stay valid dates: move by a day (or a second).
+    const t = Date.parse(value);
+    if (!Number.isNaN(t)) {
+      const d = new Date(
+        t + attempt * (field.type === "date" ? 86_400_000 : 1000),
+      );
+      return field.type === "date"
+        ? d.toISOString().slice(0, 10)
+        : d.toISOString();
+    }
+  }
   if (typeof value === "string") {
     if (semanticOf(field) === "email") {
       const [local, domain] = value.split("@");
@@ -595,12 +622,16 @@ export function generateDataset(
   }
   // Mask / redact choices last, so rules and keys saw real-looking values.
   for (const entity of model.entities) {
-    const treated = applyTreatments(entity, dataset.tables[entity.id] ?? []);
+    const treated = applyTreatments(
+      entity,
+      dataset.tables[entity.id] ?? [],
+      dataset.seed,
+    );
     for (const name of treated) {
       const field = entity.fields.find((f) => f.name === name);
       if (field?.unique) {
         dataset.warnings.push(
-          `${entity.id}.${name}: masked or redacted, so values are not kept unique`,
+          `${entity.id}.${name}: masked, generalized or redacted, so values are not kept unique (pseudonymize keeps them unique)`,
         );
       }
     }

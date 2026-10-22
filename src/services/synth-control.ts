@@ -63,8 +63,10 @@ import {
   totalRows,
 } from "#/lib/synth/scenarios";
 import { parseSchemaFile } from "#/lib/synth/parsers";
+import { linkReferencesByName } from "#/lib/synth/sample";
 import {
   findSchemaFiles,
+  MAX_READ_BYTES,
   MAX_WORKSPACE_BYTES,
   readWorkspaceFile,
   SYNTH_OUTPUT_DIR,
@@ -181,9 +183,9 @@ export function findProjectForConversation(
 export const COMMAND_SHAPES = Object.freeze({
   describe: "{}",
   import_schema:
-    "{paths:[string]} (workspace-relative; schema.prisma, *.sql, openapi.json, *.schema.json)",
+    "{paths:[string]} (workspace-relative; schema.prisma, *.sql, openapi.json, *.schema.json, or sample rows: *.csv / JSON arrays of objects -- shape and statistics are learned, personal values are never kept)",
   record_model:
-    "{entities:[{id?, name, table?, description?, evidence:[string], fields:[{name, type: string|text|integer|float|decimal|boolean|date|datetime|time|uuid|json|enum|bytes|array (or any SQL/ORM type word), semantic?: email|first_name|full_name|phone|url|price|amount|status|created_at|... , nullable?, unique?, primary_key?, generated?, references?: {entity, field} | 'entity.field', enum_values?:[string], min?, max?, max_length?, pattern?, description?, pii?: direct|quasi|sensitive|none, treatment?: synthesize|mask|redact (only after the user chose it), context?: string, examples?:[string]}], unique_together?:[[field]]}], replace?: boolean}",
+    "{entities:[{id?, name, table?, description?, evidence:[string], fields:[{name, type: string|text|integer|float|decimal|boolean|date|datetime|time|uuid|json|enum|bytes|array (or any SQL/ORM type word), semantic?: email|first_name|full_name|phone|url|price|amount|status|created_at|... , nullable?, unique?, primary_key?, generated?, references?: {entity, field} | 'entity.field', enum_values?:[string], min?, max?, max_length?, pattern?, description?, pii?: direct|quasi|sensitive|none, treatment?: synthesize|pseudonymize|mask|generalize|redact|keep (only after the user chose it), context?: string, examples?:[string]}], unique_together?:[[field]]}], replace?: boolean}",
   record_rules:
     "{rules:[{id?, entity, description, evidence?:[string], spec: {kind:'implies', if:{field, in?:[...], isNull?}, then:{field, isNull?, in?:[...], equals?}} | {kind:'compare', field, op:'<'|'<='|'>'|'>='|'==', other} | {kind:'unique_together', fields:[...]} | {kind:'range', field, min?, max?} | {kind:'pattern', field, pattern}}]}",
   record_flows:
@@ -828,6 +830,19 @@ export async function runGeneration(
   }
 }
 
+/**
+ * After an import, links `<thing>_id` columns that no schema declared to
+ * the entity they name (sample files carry no foreign keys).
+ */
+export function linkImportedReferences(projectId: string): string[] {
+  const store = useSynthStudioStore.getState();
+  const project = store.projects[projectId];
+  if (!project) return [];
+  const changed = linkReferencesByName(project.model.entities);
+  if (changed.length) store.replaceEntities(projectId, changed);
+  return changed.map((e) => e.id);
+}
+
 /* ── Completion rules ──────────────────────────────────────────────────── */
 
 export function runIsVerified(run: SynthRun): boolean {
@@ -1194,16 +1209,24 @@ export async function handleSynthControlAction(
       const allEntities: Entity[] = [];
       for (const path of paths.slice(0, 20)) {
         const content = await readWorkspaceFile(context.runInWorkspace, path);
+        // A sample bigger than the read limit arrives cut off.
+        const truncated =
+          content !== null &&
+          new TextEncoder().encode(content).length >= MAX_READ_BYTES - 4;
         if (content === null) {
           imported.push({ path, error: "not_found_or_unreadable" });
           continue;
         }
-        const result = parseSchemaFile(path, content);
+        const result = parseSchemaFile(path, content, { truncated });
         allEntities.push(...result.entities);
         imported.push({
           path,
           format: result.format,
           entities: result.entities.map((e) => e.id),
+          sample_rows: result.sampleRows,
+          personal_by_value: result.detectedByValue?.length
+            ? result.detectedByValue
+            : undefined,
           warnings: result.warnings.length
             ? result.warnings.slice(0, 10)
             : undefined,
@@ -1211,6 +1234,7 @@ export async function handleSynthControlAction(
       }
       if (allEntities.length) {
         store.upsertEntities(projectId, allEntities);
+        linkImportedReferences(projectId);
         if (project.status === "intake") store.setStatus(projectId, "modeling");
         log(
           "success",

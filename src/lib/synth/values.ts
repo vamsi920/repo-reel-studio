@@ -452,6 +452,51 @@ export const FILE_EXTENSIONS = [
   "docx",
 ];
 export const STATUSES = ["active", "pending", "inactive", "archived"];
+/** Common ICD-10 codes with plain labels (codes are not identifiers). */
+export const HEALTH_CONDITIONS: [string, string][] = [
+  ["J06.9", "Upper respiratory infection"],
+  ["I10", "Hypertension"],
+  ["E11.9", "Type 2 diabetes"],
+  ["M54.5", "Low back pain"],
+  ["J45.909", "Asthma"],
+  ["F41.1", "Generalized anxiety"],
+  ["K21.9", "Acid reflux"],
+  ["Z00.00", "Routine check-up"],
+  ["J30.9", "Seasonal allergies"],
+  ["E78.5", "High cholesterol"],
+];
+export const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+export const GENDERS = ["female", "male", "non-binary", "prefer not to say"];
+export const MARITAL_STATUSES = [
+  "single",
+  "married",
+  "divorced",
+  "widowed",
+  "separated",
+];
+/** Neutral placeholders: no real belief, origin or record is implied. */
+export const SPECIAL_CATEGORY_VALUES = [
+  "Category A",
+  "Category B",
+  "Category C",
+  "Category D",
+  "Not disclosed",
+];
+export const USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36",
+];
+
+/** VIN alphabet: digits and letters except I, O and Q. */
+function vinChars(rng: Rng, length: number): string {
+  const chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
+  let out = "";
+  for (let i = 0; i < length; i++) out += chars[rng.int(0, chars.length - 1)];
+  return out;
+}
+
 /** RFC 5737 documentation networks (first three octets). */
 export const DOCUMENTATION_NETS = ["192.0.2", "198.51.100", "203.0.113"];
 
@@ -821,6 +866,93 @@ export function valueFor(
       return `9${String(rng.int(0, 99)).padStart(2, "0")}-00-${String(rng.int(0, 9999)).padStart(4, "0")}`;
     case "national_id":
       return `TEST-${rng.int(100000000, 999999999)}`;
+    case "passport_number":
+      // "TX" + digits: not a format any issuing country uses.
+      return `TX${String(rng.int(0, 9999999)).padStart(7, "0")}`;
+    case "drivers_license":
+      return `DL-TEST-${String(rng.int(0, 9999999)).padStart(7, "0")}`;
+    case "bank_account":
+      // Leading zeros with the TEST routing/bank codes: no real account.
+      if (integer) return rng.int(100000, 999999);
+      return `000${String(rng.int(0, 999999999)).padStart(9, "0")}`;
+    case "routing_number":
+      // ABA prefixes 81-99 are unassigned; 99 never routes.
+      return integer
+        ? Number(`99${String(rng.int(0, 9999999)).padStart(7, "0")}`)
+        : `99${String(rng.int(0, 9999999)).padStart(7, "0")}`;
+    case "swift_bic":
+      // A "0" as the second location character marks a test BIC.
+      return `TEST${place.countryCode}X0`;
+    case "card_expiry": {
+      const d = new Date(now.getTime() + rng.int(30, 1500) * DAY_MS);
+      return `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(d.getUTCFullYear()).slice(2)}`;
+    }
+    case "card_cvv":
+      return integer
+        ? rng.int(100, 999)
+        : String(rng.int(0, 999)).padStart(3, "0");
+    case "pin":
+      return integer
+        ? rng.int(1000, 9999)
+        : String(rng.int(0, 9999)).padStart(4, "0");
+    case "credit_score":
+      return Math.round(clampNumber(rng.normal(690, 70), field, 300, 850));
+    case "medical_record_number":
+      return integer
+        ? rng.int(100000, 999999)
+        : `MRN-TEST-${String(rng.int(0, 999999)).padStart(6, "0")}`;
+    case "insurance_number":
+      return integer
+        ? rng.int(10000000, 99999999)
+        : `INS-TEST-${String(rng.int(0, 99999999)).padStart(8, "0")}`;
+    case "health_condition": {
+      const [code, label] = rng.pick(HEALTH_CONDITIONS);
+      return /code|icd/i.test(field.name) ? code : label;
+    }
+    case "blood_type":
+      return rng.weighted(BLOOD_TYPES, [35, 6, 9, 2, 3, 1, 37, 7]);
+    case "gender":
+      return rng.weighted(GENDERS, [48, 48, 2, 2]);
+    case "special_category":
+      return rng.pick(SPECIAL_CATEGORY_VALUES);
+    case "biometric":
+      return `bio_test_${hexString(rng, 32)}`;
+    case "security_answer":
+      return `${rng.pick(WORDS)}-${rng.pick(WORDS)}`;
+    case "mac_address":
+      // 02: locally administered, never a manufacturer-assigned address.
+      return `02:00:00:${hexString(rng, 2)}:${hexString(rng, 2)}:${hexString(rng, 2)}`;
+    case "device_id":
+      // TAC 00 is reserved for test devices.
+      return /imei|imsi|meid/i.test(field.name)
+        ? `00${String(rng.int(0, 999999999999)).padStart(13, "0")}`
+        : uuidFrom(rng);
+    case "user_agent":
+      return rng.pick(USER_AGENTS);
+    case "vin":
+      return `1TEST${vinChars(rng, 12)}`;
+    case "license_plate":
+      return `TST-${String(rng.int(0, 9999)).padStart(4, "0")}`;
+    case "employee_id":
+      return integer
+        ? rng.int(10000, 99999)
+        : `EMP-${String(rng.int(0, 99999)).padStart(5, "0")}`;
+    case "student_id":
+      return integer
+        ? rng.int(100000, 999999)
+        : `STU-${String(rng.int(0, 999999)).padStart(6, "0")}`;
+    case "marital_status":
+      return rng.weighted(MARITAL_STATUSES, [35, 48, 10, 5, 2]);
+    case "nationality":
+      return place.country;
+    case "date_of_death": {
+      const d = new Date(now.getTime() - rng.int(30, 3650) * DAY_MS);
+      return dateish ? asDate(d) : d.toISOString();
+    }
+    case "geolocation":
+      return `${place.latitude},${place.longitude}`;
+    case "social_profile":
+      return `https://social.example/${persona.username}`;
     case "token":
       return `tok_test_${base62(rng, 24)}`;
     case "locale":

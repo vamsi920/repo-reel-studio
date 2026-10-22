@@ -26,7 +26,9 @@ import {
   type SemanticKind,
 } from "#/lib/synth/model";
 import { inferSemantic, piiClassOf } from "#/lib/synth/semantics";
-import { canMask, canRedact, strategyFor } from "#/lib/synth/privacy";
+import { canApply, strategyFor } from "#/lib/synth/privacy";
+import { receipt, linkImportedReferences } from "#/services/synth-control";
+import type { PostResultFn } from "#/services/synth-control";
 import { parseSchemaFile } from "#/lib/synth/parsers";
 import { useSynthStudioStore } from "#/stores/synth-studio-store";
 
@@ -54,8 +56,11 @@ const PII_LABEL_KEY: Record<PiiClass, I18nKey> = {
 
 const TREATMENT_LABEL_KEY: Record<PrivacyTreatment, I18nKey> = {
   synthesize: I18nKey.SYNTH$TREAT_SYNTHESIZE,
+  pseudonymize: I18nKey.SYNTH$TREAT_PSEUDONYMIZE,
   mask: I18nKey.SYNTH$TREAT_MASK,
+  generalize: I18nKey.SYNTH$TREAT_GENERALIZE,
   redact: I18nKey.SYNTH$TREAT_REDACT,
+  keep: I18nKey.SYNTH$TREAT_KEEP,
 };
 
 const SELECT_CLASS =
@@ -291,10 +296,7 @@ function FieldRow({
                 <option
                   key={treatment}
                   value={treatment}
-                  disabled={
-                    (treatment === "mask" && !canMask(field)) ||
-                    (treatment === "redact" && !canRedact(field))
-                  }
+                  disabled={!canApply(field, treatment)}
                 >
                   {t(TREATMENT_LABEL_KEY[treatment])}
                 </option>
@@ -456,9 +458,12 @@ function EntityBlock({
 export function ModelCard({
   projectId,
   model,
+  postResult,
 }: {
   projectId: string;
   model: DataModel;
+  /** Tells the agent about what the user imported, so it can build on it. */
+  postResult?: PostResultFn;
 }) {
   const { t } = useTranslation("openhands");
   const upsertEntities = useSynthStudioStore((s) => s.upsertEntities);
@@ -470,19 +475,55 @@ export function ModelCard({
   const onFiles = async (list: FileList | null) => {
     if (!list?.length) return;
     let imported = 0;
+    let sampleRows = 0;
     const warnings: string[] = [];
+    const byValue: string[] = [];
+    const entityIds: string[] = [];
+    const files: { name: string; format: string }[] = [];
     for (const file of Array.from(list)) {
       const text = await file.text();
       const result = parseSchemaFile(file.name, text);
       imported += result.entities.length;
+      sampleRows += result.sampleRows ?? 0;
+      byValue.push(...(result.detectedByValue ?? []));
       warnings.push(...result.warnings);
+      files.push({ name: file.name, format: result.format });
+      entityIds.push(...result.entities.map((e) => e.id));
       if (result.entities.length) upsertEntities(projectId, result.entities);
     }
+    const linked = imported ? linkImportedReferences(projectId) : [];
     setImportNote(
       imported
-        ? t(I18nKey.SYNTH$IMPORTED, { count: imported })
+        ? [
+            t(I18nKey.SYNTH$IMPORTED, { count: imported }),
+            sampleRows
+              ? t(I18nKey.SYNTH$IMPORTED_SAMPLE, {
+                  rows: sampleRows.toLocaleString(),
+                })
+              : null,
+            byValue.length
+              ? t(I18nKey.SYNTH$IMPORTED_BY_VALUE, {
+                  columns: byValue.join(", "),
+                })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" ")
         : (warnings[0] ?? t(I18nKey.SYNTH$IMPORT_NOTHING)),
     );
+    if (imported && postResult) {
+      postResult(
+        receipt({
+          status: "imported_by_user",
+          files,
+          entities: entityIds,
+          linked_references: linked.length ? linked : undefined,
+          personal_by_value: byValue.length ? byValue : undefined,
+          guidance:
+            "The user imported these from their machine. Call describe, check the new entities (meaning, pii, rules) and continue.",
+        }),
+      );
+    }
     if (imported) {
       appendLog(projectId, {
         id: `log_${Date.now().toString(36)}`,
@@ -515,7 +556,7 @@ export function ModelCard({
             ref={fileRef}
             type="file"
             multiple
-            accept=".prisma,.sql,.json"
+            accept=".prisma,.sql,.json,.csv"
             className="hidden"
             data-testid="synth-import-input"
             onChange={(e) => void onFiles(e.target.files)}
@@ -530,6 +571,9 @@ export function ModelCard({
           </button>
         </div>
       </div>
+      <p className="text-[11px] text-[var(--text-tertiary)]">
+        {t(I18nKey.SYNTH$IMPORT_HINT)}
+      </p>
       {importNote ? (
         <p
           data-testid="synth-import-note"

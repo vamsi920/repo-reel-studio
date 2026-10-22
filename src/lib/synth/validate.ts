@@ -1,4 +1,4 @@
-import { strategyFor } from "./privacy";
+import { isLossy, strategyFor } from "./privacy";
 import {
   type DataModel,
   type Dataset,
@@ -141,7 +141,7 @@ function checkField(
     checks.push(make("not_null", `${base} is never null`, failures, samples));
   }
   // Masked / redacted values intentionally lose uniqueness and shape.
-  const treated = ["mask", "redact"].includes(strategyFor(field));
+  const treated = isLossy(strategyFor(field));
   if ((field.unique || field.primaryKey) && !treated) {
     const seen = new Set<string>();
     let failures = 0;

@@ -12,6 +12,8 @@ import type { ExportedFile } from "./exporters";
 export const SYNTH_OUTPUT_DIR = "synthetic-data";
 /** Keeps generated data out of the user's commits. */
 export const GIT_EXCLUDE_ENTRY = `${SYNTH_OUTPUT_DIR}/`;
+/** Largest prefix of a workspace file the studio reads (schemas, samples). */
+export const MAX_READ_BYTES = 4 * 1024 * 1024;
 /** Above this, a run is kept in the browser (download) and not written. */
 export const MAX_WORKSPACE_BYTES = 24 * 1024 * 1024;
 
@@ -29,11 +31,13 @@ function decodeBase64(text: string): string {
 export async function readWorkspaceFile(
   run: RunInWorkspace,
   path: string,
+  maxBytes = MAX_READ_BYTES,
 ): Promise<string | null> {
   if (!/^[\w./@-]+$/.test(path) || path.includes("..")) return null;
   try {
+    // Bounded: a sample export can be huge, its first megabytes are enough.
     const result = await run(
-      `test -f '${path}' && base64 < '${path}' | tr -d '\\n' || true`,
+      `test -f '${path}' && head -c ${Math.floor(maxBytes)} '${path}' | base64 | tr -d '\\n' || true`,
     );
     const text = result.stdout?.trim();
     if (!text) return null;
@@ -47,7 +51,7 @@ export async function readWorkspaceFile(
 export async function findSchemaFiles(run: RunInWorkspace): Promise<string[]> {
   try {
     const result = await run(
-      "find . -type f \\( -name 'schema.prisma' -o -name '*.sql' -o -name 'openapi.json' -o -name 'swagger.json' -o -name '*.schema.json' \\) -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/synthetic-data/*' 2>/dev/null | head -40",
+      "find . -type f \\( -name 'schema.prisma' -o -name '*.sql' -o -name 'openapi.json' -o -name 'swagger.json' -o -name '*.schema.json' -o \\( \\( -name '*.csv' -o -name '*.json' \\) \\( -path '*seed*' -o -path '*fixture*' -o -path '*sample*' -o -path '*/data/*' \\) \\) \\) -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/synthetic-data/*' -not -name 'package*.json' -not -name 'tsconfig*.json' 2>/dev/null | head -60",
     );
     return (result.stdout ?? "")
       .split("\n")

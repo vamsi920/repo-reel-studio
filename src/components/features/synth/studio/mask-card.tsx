@@ -25,6 +25,7 @@ interface MaskResult {
   rows: Row[];
   replaced: number;
   perField: Record<string, number>;
+  freeTextFound: number;
   unknownColumns: string[];
 }
 
@@ -54,6 +55,7 @@ export function MaskCard({
       const { entity: shaped, unknownColumns } = entityForColumns(
         entity,
         parsed.columns,
+        parsed.rows,
       );
       const masked = maskRows(shaped, parsed.rows, seed);
       setResult({
@@ -62,6 +64,7 @@ export function MaskCard({
         rows: masked.rows,
         replaced: masked.masked,
         perField: masked.perField,
+        freeTextFound: masked.freeTextFound,
         unknownColumns,
       });
     }
@@ -138,6 +141,16 @@ export function MaskCard({
               ? ` · ${Object.keys(result.perField).join(", ")}`
               : ""}
           </p>
+          {result.freeTextFound ? (
+            <p
+              data-testid="synth-mask-free-text"
+              className="text-[11px] text-[var(--text-secondary)]"
+            >
+              {t(I18nKey.SYNTH$MASK_FREE_TEXT, {
+                count: result.freeTextFound,
+              })}
+            </p>
+          ) : null}
           {result.unknownColumns.length ? (
             <p className="text-[11px] text-[var(--warning-600,#b45309)]">
               {t(I18nKey.SYNTH$MASK_UNKNOWN_COLUMNS, {

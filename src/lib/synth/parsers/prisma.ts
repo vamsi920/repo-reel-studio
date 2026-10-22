@@ -21,8 +21,9 @@ const SCALARS = new Set([
   "Bytes",
 ]);
 
+/** Drops `//` comments but keeps `///` doc comments (field descriptions). */
 function stripComments(text: string): string {
-  return text.replace(/\/\/.*$/gm, "");
+  return text.replace(/(^|[^/])\/\/(?!\/).*$/gm, "$1");
 }
 
 function blocks(
@@ -92,6 +93,7 @@ export function parsePrisma(text: string, path = "schema.prisma"): ParseResult {
     const fields: Field[] = [];
     const uniqueTogether: string[][] = [];
     let table: string | undefined;
+    let pendingDoc = "";
     const pendingRelations: {
       fields: string[];
       references: string[];
@@ -100,6 +102,10 @@ export function parsePrisma(text: string, path = "schema.prisma"): ParseResult {
     for (const raw of model.body.split("\n")) {
       const line = raw.trim();
       if (!line) continue;
+      if (line.startsWith("///")) {
+        pendingDoc = `${pendingDoc ? `${pendingDoc} ` : ""}${line.slice(3).trim()}`;
+        continue;
+      }
       if (line.startsWith("@@map")) {
         const a = attr(line, "@map") ?? attr(line, "map");
         if (a) table = stripQuotes(a);
@@ -127,6 +133,8 @@ export function parsePrisma(text: string, path = "schema.prisma"): ParseResult {
       const m = line.match(/^(\w+)\s+(\w+)(\[\])?(\?)?\s*(.*)$/);
       if (!m) continue;
       const [, name, typeName, isList, isOptional, rest] = m;
+      const doc = pendingDoc;
+      pendingDoc = "";
       const relation = attr(rest, "relation");
       if (modelNames.has(typeName)) {
         // Relation field: the FK lives on the scalar(s) in `fields:`.
@@ -191,6 +199,7 @@ export function parsePrisma(text: string, path = "schema.prisma"): ParseResult {
       if (field.type === "unknown" && SCALARS.has(typeName)) {
         field.type = typeName === "BigInt" ? "integer" : "string";
       }
+      if (doc) field.description = doc;
       fields.push(field);
     }
     for (const rel of pendingRelations) {
