@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolve as resolveDns } from "node:dns/promises";
+import { resolve as resolveDns, resolveNs, resolve4, Resolver } from "node:dns/promises";
 
 const DEFAULT_URLS = [
   "https://neodevex-case-studies.neodevex.com",
@@ -42,9 +42,38 @@ async function fetchText(url) {
   throw last;
 }
 
+// neodevex.com is delegated to two DNS providers (Netlify DNS and
+// Squarespace). A resolver asks one of them at random, so a record that
+// exists on only one provider fails for some visitors and not others.
+// Ask every authoritative nameserver directly.
+async function checkEveryNameserver(host, failures) {
+  const zone = host.split(".").slice(-2).join(".");
+  let nameservers;
+  try {
+    nameservers = await resolveNs(zone);
+  } catch (error) {
+    failures.push(`${zone}: cannot list nameservers (${error.code || error.message})`);
+    return;
+  }
+  for (const ns of nameservers) {
+    try {
+      const resolver = new Resolver({ timeout: 5000, tries: 2 });
+      resolver.setServers(await resolve4(ns));
+      // An authoritative server answers a CNAME without following it, so
+      // ask for the CNAME first and fall back to A records.
+      const cname = await resolver.resolveCname(host).catch(() => []);
+      const answer = cname.length ? cname : await resolver.resolve4(host);
+      if (!answer.length) failures.push(`${host}: no answer from ${ns}`);
+    } catch (error) {
+      failures.push(`${host}: nameserver ${ns} does not know it (${error.code || error.message}); add the record there too`);
+    }
+  }
+}
+
 const failures = [];
 for (const base of urls) {
   const host = new URL(base).hostname;
+  if (!host.endsWith(".netlify.app")) await checkEveryNameserver(host, failures);
   try {
     await resolveDns(host);
   } catch (error) {
