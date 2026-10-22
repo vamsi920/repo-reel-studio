@@ -15,6 +15,7 @@ import {
 import { createRng, uuidFrom, type Rng } from "./rng";
 import { inferSemantic } from "./semantics";
 import { clampScenario } from "./scenarios";
+import { applyTreatments } from "./privacy";
 import {
   edgeValueFor,
   personaFrom,
@@ -591,6 +592,18 @@ export function generateDataset(
       entity,
       rng.fork(`rule-${rule.id}`),
     );
+  }
+  // Mask / redact choices last, so rules and keys saw real-looking values.
+  for (const entity of model.entities) {
+    const treated = applyTreatments(entity, dataset.tables[entity.id] ?? []);
+    for (const name of treated) {
+      const field = entity.fields.find((f) => f.name === name);
+      if (field?.unique) {
+        dataset.warnings.push(
+          `${entity.id}.${name}: masked or redacted, so values are not kept unique`,
+        );
+      }
+    }
   }
   // Implications may have changed typed values to strings; coerce back.
   for (const entity of model.entities) {

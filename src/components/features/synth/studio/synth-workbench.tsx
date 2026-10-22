@@ -1,7 +1,9 @@
 import React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { I18nKey } from "#/i18n/declaration";
+import { cn } from "#/utils/utils";
 import {
   useSynthStudioStore,
   type SynthProject,
@@ -11,6 +13,7 @@ import { ChoiceCard, LiveCard, PrivacyCard, ReportCard } from "./cards";
 import { ModelCard, RulesCard } from "./model-card";
 import { GenerateCard } from "./generate-card";
 import { RunsCard } from "./runs-card";
+import { MaskCard } from "./mask-card";
 import { NeoOrb, useSynthThinking } from "./thinking";
 
 const STATUS_LABEL_KEY: Record<SynthProject["status"], I18nKey> = {
@@ -46,11 +49,17 @@ export function SynthWorkbench({
   postResult,
   onGenerate,
   busy,
+  expanded = false,
+  onToggleExpand,
 }: {
   projectId: string;
   postResult: PostResultFn;
   onGenerate: (request: GenerateRequest) => void;
   busy: boolean;
+  /** The studio fills the screen (chat hidden). */
+  expanded?: boolean;
+  /** Present when the layout can expand (desktop). */
+  onToggleExpand?: () => void;
 }) {
   const { t } = useTranslation("openhands");
   const reduceMotion = useReducedMotion();
@@ -141,6 +150,14 @@ export function SynthWorkbench({
       ? [{ key: "runs", node: <RunsCard runs={project.runs} /> }]
       : []),
     { key: "privacy", node: <PrivacyCard project={project} /> },
+    ...(project.model.entities.length
+      ? [
+          {
+            key: "mask",
+            node: <MaskCard model={project.model} seed={project.id} />,
+          },
+        ]
+      : []),
     ...(project.report
       ? [{ key: "report", node: <ReportCard report={project.report} /> }]
       : []),
@@ -161,13 +178,33 @@ export function SynthWorkbench({
             {project.name}
           </span>
         </div>
-        <span
-          data-testid="synth-status"
-          data-status={project.status}
-          className="ame-badge ame-badge-neutral shrink-0"
-        >
-          {t(STATUS_LABEL_KEY[project.status])}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            data-testid="synth-status"
+            data-status={project.status}
+            className="ame-badge ame-badge-neutral"
+          >
+            {t(STATUS_LABEL_KEY[project.status])}
+          </span>
+          {onToggleExpand ? (
+            <button
+              type="button"
+              aria-pressed={expanded}
+              data-testid="synth-expand-toggle"
+              onClick={onToggleExpand}
+              className="ame-btn-secondary ame-btn-xs"
+            >
+              {expanded ? (
+                <Minimize2 size={12} aria-hidden />
+              ) : (
+                <Maximize2 size={12} aria-hidden />
+              )}{" "}
+              {expanded
+                ? t(I18nKey.SYNTH$SHOW_CHAT)
+                : t(I18nKey.SYNTH$EXPAND_STUDIO)}
+            </button>
+          ) : null}
+        </div>
       </header>
       {thinking ? (
         <div className="neome-header-bar" data-testid="synth-header-bar" />
@@ -175,7 +212,11 @@ export function SynthWorkbench({
       <div
         ref={scrollRef}
         data-testid="synth-workbench-scroll"
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4",
+          // Full width reads better centred than stretched edge to edge.
+          expanded && "mx-auto w-full max-w-[1400px]",
+        )}
       >
         <AnimatePresence initial={false}>
           {cards.map((card) => (

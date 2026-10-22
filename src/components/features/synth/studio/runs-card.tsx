@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Download,
   FolderOpen,
+  Maximize2,
   ShieldCheck,
   XCircle,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { runIsVerified } from "#/services/synth-control";
 import { FORMAT_LABELS } from "#/lib/synth/exporters";
 import type { Row } from "#/lib/synth/model";
 import { downloadBundle, downloadFile, formatBytes } from "./download";
+import { DataViewer } from "./data-viewer";
 
 /**
  * Every generation run: what was generated, whether it passed validation,
@@ -102,6 +104,7 @@ function RunBlock({
   const [entity, setEntity] = React.useState(entities[0] ?? "");
   const cached = getCachedRun(run.id);
   const verified = runIsVerified(run);
+  const [viewing, setViewing] = React.useState(false);
   const { validation } = run;
 
   return (
@@ -268,12 +271,23 @@ function RunBlock({
                 ))}
               </div>
               <PreviewTable rows={run.preview[entity] ?? []} />
-              <span className="text-[11px] text-[var(--text-tertiary)]">
-                {t(I18nKey.SYNTH$PREVIEW_HINT, {
-                  shown: (run.preview[entity] ?? []).length,
-                  total: run.rowsPerEntity[entity] ?? 0,
-                })}
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-[var(--text-tertiary)]">
+                  {t(I18nKey.SYNTH$PREVIEW_HINT, {
+                    shown: (run.preview[entity] ?? []).length,
+                    total: run.rowsPerEntity[entity] ?? 0,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  data-testid={`synth-full-view-${run.id}`}
+                  onClick={() => setViewing(true)}
+                  className="ame-btn-secondary ame-btn-xs"
+                >
+                  <Maximize2 size={12} aria-hidden />{" "}
+                  {t(I18nKey.SYNTH$FULL_VIEW)}
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -318,6 +332,16 @@ function RunBlock({
             </span>
           )}
         </div>
+      ) : null}
+      {viewing ? (
+        <DataViewer
+          title={`${run.scenarioName} · ${t(I18nKey.SYNTH$SEED)} ${run.seed}`}
+          tables={cached?.dataset.tables ?? run.preview}
+          totals={run.rowsPerEntity}
+          previewOnly={!cached}
+          initialEntity={entity}
+          onClose={() => setViewing(false)}
+        />
       ) : null}
     </li>
   );

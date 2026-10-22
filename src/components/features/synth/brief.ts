@@ -41,10 +41,14 @@ studio's engine does that, deterministically, and reports what it verified.
 
 ## The process
 
-1. discover -- Find where the data shape lives: Prisma/Drizzle/TypeORM/
-   Sequelize/Mongoose models, Django/SQLAlchemy/ActiveRecord models and
-   migrations, SQL DDL, OpenAPI/JSON Schema, GraphQL SDL, protobuf, TypeScript
-   types used at the API boundary. Call import_schema for every file the
+1. discover -- Find where the data shape lives. In most applications the ORM
+   layer is the real schema, richer than the DDL it generates: Prisma/
+   Drizzle/TypeORM/Sequelize/Mongoose, Django/SQLAlchemy, ActiveRecord,
+   Hibernate/JPA entities, MyBatis/iBatis mappers, Entity Framework, plus
+   migrations, SQL DDL, OpenAPI/JSON Schema, GraphQL SDL, protobuf and the
+   TypeScript types at the API boundary. Read validators, column comments
+   and existing masking/anonymisation helpers too: they say which columns
+   are personal. Call import_schema for every file the
    studio parses itself (schema.prisma, *.sql, openapi.json, *.schema.json).
    For everything else, read the code and call record_model with the same
    detail a parser would give: field types, nullability, uniqueness, primary
@@ -61,16 +65,30 @@ studio's engine does that, deterministically, and reports what it verified.
    fixture, a seed script), record_profile the distributions that matter:
    status mixes, country mixes, order sizes, null rates. Labels and numbers
    only.
+   Privacy: set pii on every column that identifies a person (direct),
+   does so in combination (quasi: birth date, zip, city), or is sensitive
+   (health, salary, credentials); set pii: none where the name misleads.
+   For the high-risk identifiers describe lists under
+   privacy.decisions_pending (SSN, national id, tax id, card number, IBAN),
+   ask the user ONE ask_choice: keep synthetic values (generated from
+   ranges that are never issued for real), mask (keep the last 4), or
+   redact; then record_model with that treatment. Never set a treatment
+   the user did not choose.
+   Columns whose names say little: describe returns column_context with
+   the user's own notes and example values. They are authoritative; set
+   semantic, rules or enum values to match them.
 3. interview -- Ask with ask_choice what the data is for (local dev seed,
    automated tests, load testing, demo/sandbox, privacy-safe copy), which
    formats the project consumes (the studio exports json, csv, SQL for
-   Postgres/MySQL/SQLite, a Prisma seed script, pytest fixtures), where the
+   Postgres/MySQL/SQLite/SQL Server/Oracle, a Prisma seed script, pytest
+   fixtures), where the
    files should go, and any volumes or scenarios the user wants. Put a
    recommended option first with recommended: true and say why in prompt.
 4. shape -- Call set_scenarios for anything beyond the built-ins (smoke,
    realistic, edge_cases, load): e.g. "churned customers", "orders in every
    state", "one tenant with 10k rows". Overrides fix a field's values or mix
-   for a share of rows.
+   for a share of rows. generate accepts total_rows when the user asks for a
+   volume ("5,000 rows"): the studio spreads it across tables.
 5. generate -- Call generate. The studio generates, validates against every
    constraint and rule, exports, and writes ${SYNTH_OUTPUT_DIR}/<run id>/ in
    the workspace (manifest.json, data/*.json, csv/, seed.*.sql, prisma/seed.ts,

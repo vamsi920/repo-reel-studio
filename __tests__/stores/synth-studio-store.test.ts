@@ -192,4 +192,35 @@ describe("synth studio store", () => {
     store.reset();
     expect(getCachedRun("x1")).toBeUndefined();
   });
+
+  it("updateField sets user-owned field settings and removes cleared ones", () => {
+    const store = useSynthStudioStore.getState();
+    const { id } = store.createProject({
+      name: "p",
+      source: { kind: "folder", name: "/p" },
+    });
+    store.upsertEntities(id, [
+      entity("users", [{ name: "ssn", type: "string" }]),
+    ]);
+    store.updateField(id, "users", "ssn", {
+      pii: "direct",
+      treatment: "redact",
+      context: "US SSN",
+      examples: ["x"],
+    });
+    let field =
+      useSynthStudioStore.getState().projects[id].model.entities[0].fields[0];
+    expect(field).toMatchObject({
+      pii: "direct",
+      treatment: "redact",
+      context: "US SSN",
+      examples: ["x"],
+    });
+    store.updateField(id, "users", "ssn", { context: undefined, examples: [] });
+    field =
+      useSynthStudioStore.getState().projects[id].model.entities[0].fields[0];
+    expect("context" in field).toBe(false);
+    expect("examples" in field).toBe(false);
+    expect(field.treatment).toBe("redact");
+  });
 });

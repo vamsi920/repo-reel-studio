@@ -83,6 +83,7 @@ export const SEMANTIC_KINDS = [
   "card_number",
   "tax_id",
   "national_id",
+  "ssn",
   "token",
   "locale",
   "timezone",
@@ -102,6 +103,15 @@ export type SemanticKind = (typeof SEMANTIC_KINDS)[number];
  */
 export const PII_CLASSES = ["direct", "quasi", "sensitive", "none"] as const;
 export type PiiClass = (typeof PII_CLASSES)[number];
+
+/**
+ * What the generated data (or a masked export) holds for a personal field.
+ * `synthesize` makes a fresh value from a range that is never issued for
+ * real (default); `mask` keeps only the last four characters; `redact`
+ * replaces the value with a placeholder, or null where the column allows it.
+ */
+export const PRIVACY_TREATMENTS = ["synthesize", "mask", "redact"] as const;
+export type PrivacyTreatment = (typeof PRIVACY_TREATMENTS)[number];
 
 export interface FieldReference {
   /** Entity id the field points at. */
@@ -144,6 +154,16 @@ export interface Field {
   distribution?: Distribution;
   /** Explicit override of the inferred privacy class. */
   pii?: PiiClass;
+  /** How a personal field is filled; `synthesize` when unset. */
+  treatment?: PrivacyTreatment;
+  /**
+   * What the column holds, in the user's words, when its name does not say
+   * (e.g. "internal order reference, always starts with ORD-"). Read by the
+   * agent; the engine itself uses `examples`.
+   */
+  context?: string;
+  /** Example values; generated rows draw from them when set. */
+  examples?: string[];
   /** Element type for arrays. */
   items?: FieldType;
 }
@@ -429,6 +449,9 @@ export function modelHash(model: DataModel): string {
         mn: f.min,
         mx: f.max,
         ml: f.maxLength,
+        pi: f.pii,
+        tr: f.treatment,
+        ex: f.examples,
       })),
     })),
     r: model.rules.map((r) => r.spec),

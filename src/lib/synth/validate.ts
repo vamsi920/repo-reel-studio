@@ -1,3 +1,4 @@
+import { strategyFor } from "./privacy";
 import {
   type DataModel,
   type Dataset,
@@ -139,7 +140,9 @@ function checkField(
     });
     checks.push(make("not_null", `${base} is never null`, failures, samples));
   }
-  if (field.unique || field.primaryKey) {
+  // Masked / redacted values intentionally lose uniqueness and shape.
+  const treated = ["mask", "redact"].includes(strategyFor(field));
+  if ((field.unique || field.primaryKey) && !treated) {
     const seen = new Set<string>();
     let failures = 0;
     const samples: string[] = [];
@@ -242,7 +245,7 @@ function checkField(
       ),
     );
   }
-  if (field.pattern) {
+  if (field.pattern && !treated) {
     let re: RegExp | null = null;
     try {
       re = new RegExp(field.pattern);

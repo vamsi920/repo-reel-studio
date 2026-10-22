@@ -6,6 +6,7 @@ import {
   Database,
   KeyRound,
   Link2,
+  MessageSquarePlus,
   ShieldAlert,
   Trash2,
   Upload,
@@ -13,22 +14,29 @@ import {
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import {
+  PII_CLASSES,
+  PRIVACY_TREATMENTS,
   SEMANTIC_KINDS,
   relationsOf,
   type DataModel,
   type Entity,
   type Field,
+  type PiiClass,
+  type PrivacyTreatment,
   type SemanticKind,
 } from "#/lib/synth/model";
 import { inferSemantic, piiClassOf } from "#/lib/synth/semantics";
+import { canMask, canRedact, strategyFor } from "#/lib/synth/privacy";
 import { parseSchemaFile } from "#/lib/synth/parsers";
 import { useSynthStudioStore } from "#/stores/synth-studio-store";
 
 /**
  * The data model: every entity with its fields, what each field means, and
- * the relations between entities. The user can correct a field's meaning
- * inline (it changes which values are generated) and import a schema file
- * from their machine without the agent.
+ * the relations between entities. Per field the user can correct the
+ * meaning, mark whether it is personal data and choose what the generated
+ * data holds for it (synthetic, masked, redacted), and add context or
+ * example values when the column name says little. Schema files can be
+ * imported from disk without the agent.
  */
 
 const PII_DOT: Record<string, string> = {
@@ -36,6 +44,85 @@ const PII_DOT: Record<string, string> = {
   quasi: "bg-[var(--warning-500,#d97706)]",
   sensitive: "bg-[var(--primary-500)]",
 };
+
+const PII_LABEL_KEY: Record<PiiClass, I18nKey> = {
+  direct: I18nKey.SYNTH$PII_CLASS_DIRECT,
+  quasi: I18nKey.SYNTH$PII_CLASS_QUASI,
+  sensitive: I18nKey.SYNTH$PII_CLASS_SENSITIVE,
+  none: I18nKey.SYNTH$PII_CLASS_NONE,
+};
+
+const TREATMENT_LABEL_KEY: Record<PrivacyTreatment, I18nKey> = {
+  synthesize: I18nKey.SYNTH$TREAT_SYNTHESIZE,
+  mask: I18nKey.SYNTH$TREAT_MASK,
+  redact: I18nKey.SYNTH$TREAT_REDACT,
+};
+
+const SELECT_CLASS =
+  "ame-input max-w-[16ch] rounded-[var(--radius-sm)] border border-[var(--border-color)] bg-transparent px-1 py-0.5 text-xs";
+/** Privacy labels are sentences ("Identifies a person"): give them room. */
+const WIDE_SELECT_CLASS = SELECT_CLASS.replace("max-w-[16ch]", "max-w-[26ch]");
+
+/** Notes and example values the user gives a column the name does not explain. */
+function FieldContextEditor({
+  projectId,
+  entity,
+  field,
+}: {
+  projectId: string;
+  entity: Entity;
+  field: Field;
+}) {
+  const { t } = useTranslation("openhands");
+  const updateField = useSynthStudioStore((s) => s.updateField);
+  const [context, setContext] = React.useState(field.context ?? "");
+  const [examples, setExamples] = React.useState(
+    (field.examples ?? []).join(", "),
+  );
+  const save = () =>
+    updateField(projectId, entity.id, field.name, {
+      context: context.trim() || undefined,
+      examples: examples
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .slice(0, 50),
+    });
+  return (
+    <div
+      data-testid={`synth-field-editor-${entity.id}-${field.name}`}
+      className="grid grid-cols-1 gap-2 py-2 sm:grid-cols-2"
+    >
+      <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">
+        {t(I18nKey.SYNTH$FIELD_CONTEXT)}
+        <textarea
+          rows={2}
+          value={context}
+          data-testid={`synth-field-context-${entity.id}-${field.name}`}
+          placeholder={t(I18nKey.SYNTH$FIELD_CONTEXT_PLACEHOLDER)}
+          onChange={(e) => setContext(e.target.value)}
+          onBlur={save}
+          className="ame-input rounded-[var(--radius-sm)] border border-[var(--border-color)] bg-transparent px-2 py-1 text-xs"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">
+        {t(I18nKey.SYNTH$FIELD_EXAMPLES)}
+        <input
+          type="text"
+          value={examples}
+          data-testid={`synth-field-examples-${entity.id}-${field.name}`}
+          placeholder={t(I18nKey.SYNTH$FIELD_EXAMPLES_PLACEHOLDER)}
+          onChange={(e) => setExamples(e.target.value)}
+          onBlur={save}
+          className="ame-input rounded-[var(--radius-sm)] border border-[var(--border-color)] bg-transparent px-2 py-1 text-xs"
+        />
+        <span className="text-[var(--text-tertiary)]">
+          {t(I18nKey.SYNTH$FIELD_EXAMPLES_HINT)}
+        </span>
+      </label>
+    </div>
+  );
+}
 
 function FieldRow({
   projectId,
@@ -47,105 +134,204 @@ function FieldRow({
   field: Field;
 }) {
   const { t } = useTranslation("openhands");
-  const setFieldSemantic = useSynthStudioStore((s) => s.setFieldSemantic);
+  const updateField = useSynthStudioStore((s) => s.updateField);
+  const [editing, setEditing] = React.useState(false);
   const semantic = field.semantic ?? inferSemantic(field.name, field.type);
   const pii = piiClassOf(field);
+  const isKey = Boolean(field.primaryKey || field.references);
+  const strategy = strategyFor(field);
+  const flags = [
+    field.nullable ? t(I18nKey.SYNTH$FIELD_NULLABLE) : null,
+    field.unique && !field.primaryKey ? t(I18nKey.SYNTH$FIELD_UNIQUE) : null,
+    field.generated ? t(I18nKey.SYNTH$FIELD_GENERATED) : null,
+    field.distribution ? t(I18nKey.SYNTH$FIELD_PROFILED) : null,
+    field.examples?.length ? t(I18nKey.SYNTH$FIELD_HAS_EXAMPLES) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <tr
-      data-testid={`synth-field-${entity.id}-${field.name}`}
-      className="border-t border-[var(--border-color)]"
-    >
-      <td className="py-1.5 pr-2 align-top">
-        <span className="flex items-center gap-1.5 font-mono text-xs text-[var(--text-primary)]">
-          {field.primaryKey ? (
-            <KeyRound
-              size={11}
-              aria-label={t(I18nKey.SYNTH$FIELD_PK)}
-              className="text-[var(--warning-600,#b45309)]"
-            />
-          ) : field.references ? (
-            <Link2
-              size={11}
-              aria-label={t(I18nKey.SYNTH$FIELD_FK)}
-              className="text-[var(--primary-500)]"
-            />
+    <>
+      <tr
+        data-testid={`synth-field-${entity.id}-${field.name}`}
+        data-pii={pii}
+        data-treatment={strategy}
+        className="border-t border-[var(--border-color)]"
+      >
+        <td className="py-1.5 pr-2 align-top">
+          <span className="flex items-center gap-1.5 font-mono text-xs text-[var(--text-primary)]">
+            {field.primaryKey ? (
+              <KeyRound
+                size={11}
+                aria-label={t(I18nKey.SYNTH$FIELD_PK)}
+                className="text-[var(--warning-600,#b45309)]"
+              />
+            ) : field.references ? (
+              <Link2
+                size={11}
+                aria-label={t(I18nKey.SYNTH$FIELD_FK)}
+                className="text-[var(--primary-500)]"
+              />
+            ) : null}
+            {field.name}
+            {pii !== "none" ? (
+              <span
+                aria-label={t(I18nKey.SYNTH$PII_LABEL, { kind: pii })}
+                title={t(I18nKey.SYNTH$PII_LABEL, { kind: pii })}
+                className={cn(
+                  "inline-block h-1.5 w-1.5 rounded-full",
+                  PII_DOT[pii],
+                )}
+              />
+            ) : null}
+          </span>
+          {field.references ? (
+            <span className="block text-[11px] text-[var(--text-tertiary)]">
+              → {field.references.entity}.{field.references.field}
+            </span>
           ) : null}
-          {field.name}
-          {pii !== "none" ? (
+          {flags ? (
+            <span className="block text-[11px] text-[var(--text-tertiary)]">
+              {flags}
+            </span>
+          ) : null}
+          {field.context ? (
             <span
-              aria-label={t(I18nKey.SYNTH$PII_LABEL, { kind: pii })}
-              title={t(I18nKey.SYNTH$PII_LABEL, { kind: pii })}
-              className={cn(
-                "inline-block h-1.5 w-1.5 rounded-full",
-                PII_DOT[pii],
-              )}
-            />
+              className="block max-w-[28ch] truncate text-[11px] italic text-[var(--text-secondary)]"
+              title={field.context}
+            >
+              {field.context}
+            </span>
           ) : null}
-        </span>
-        {field.references ? (
-          <span className="block text-[11px] text-[var(--text-tertiary)]">
-            → {field.references.entity}.{field.references.field}
-          </span>
-        ) : null}
-      </td>
-      <td className="py-1.5 pr-2 align-top text-xs text-[var(--text-secondary)]">
-        {field.type}
-        {field.enumValues?.length ? (
-          <span
-            className="block max-w-[18ch] truncate text-[11px] text-[var(--text-tertiary)]"
-            title={field.enumValues.join(", ")}
+        </td>
+        <td className="py-1.5 pr-2 align-top text-xs text-[var(--text-secondary)]">
+          {field.type}
+          {field.enumValues?.length ? (
+            <span
+              className="block max-w-[18ch] truncate text-[11px] text-[var(--text-tertiary)]"
+              title={field.enumValues.join(", ")}
+            >
+              {field.enumValues.slice(0, 4).join(" · ")}
+              {field.enumValues.length > 4 ? " …" : ""}
+            </span>
+          ) : null}
+          {field.maxLength ? (
+            <span className="block text-[11px] text-[var(--text-tertiary)]">
+              ≤ {field.maxLength}
+            </span>
+          ) : null}
+        </td>
+        <td className="py-1.5 pr-2 align-top">
+          {isKey ? (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {semantic}
+            </span>
+          ) : (
+            <select
+              aria-label={t(I18nKey.SYNTH$FIELD_MEANING)}
+              data-testid={`synth-semantic-${entity.id}-${field.name}`}
+              value={semantic}
+              onChange={(e) =>
+                updateField(projectId, entity.id, field.name, {
+                  semantic: e.target.value as SemanticKind,
+                })
+              }
+              className={SELECT_CLASS}
+            >
+              {SEMANTIC_KINDS.map((kind) => (
+                <option key={kind} value={kind}>
+                  {kind}
+                </option>
+              ))}
+            </select>
+          )}
+        </td>
+        <td className="py-1.5 pr-2 align-top">
+          {isKey ? (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {t(I18nKey.SYNTH$PII_CLASS_NONE)}
+            </span>
+          ) : (
+            <select
+              aria-label={t(I18nKey.SYNTH$COL_PRIVACY)}
+              data-testid={`synth-pii-${entity.id}-${field.name}`}
+              value={pii}
+              onChange={(e) =>
+                updateField(projectId, entity.id, field.name, {
+                  pii: e.target.value as PiiClass,
+                })
+              }
+              className={WIDE_SELECT_CLASS}
+            >
+              {PII_CLASSES.map((kind) => (
+                <option key={kind} value={kind}>
+                  {t(PII_LABEL_KEY[kind])}
+                </option>
+              ))}
+            </select>
+          )}
+        </td>
+        <td className="py-1.5 pr-2 align-top">
+          {strategy === "keep" ? (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {t(I18nKey.SYNTH$TREAT_NA)}
+            </span>
+          ) : (
+            <select
+              aria-label={t(I18nKey.SYNTH$COL_TREATMENT)}
+              data-testid={`synth-treatment-${entity.id}-${field.name}`}
+              value={strategy}
+              onChange={(e) =>
+                updateField(projectId, entity.id, field.name, {
+                  treatment: e.target.value as PrivacyTreatment,
+                })
+              }
+              className={WIDE_SELECT_CLASS}
+            >
+              {PRIVACY_TREATMENTS.map((treatment) => (
+                <option
+                  key={treatment}
+                  value={treatment}
+                  disabled={
+                    (treatment === "mask" && !canMask(field)) ||
+                    (treatment === "redact" && !canRedact(field))
+                  }
+                >
+                  {t(TREATMENT_LABEL_KEY[treatment])}
+                </option>
+              ))}
+            </select>
+          )}
+        </td>
+        <td className="py-1.5 align-top">
+          <button
+            type="button"
+            aria-expanded={editing}
+            aria-label={t(I18nKey.SYNTH$FIELD_EDIT)}
+            title={t(I18nKey.SYNTH$FIELD_EDIT)}
+            data-testid={`synth-field-edit-${entity.id}-${field.name}`}
+            onClick={() => setEditing((v) => !v)}
+            className={cn(
+              "ame-btn-icon ame-btn-icon-sm",
+              (field.context || field.examples?.length) &&
+                "text-[var(--primary-500)]",
+            )}
           >
-            {field.enumValues.slice(0, 4).join(" · ")}
-            {field.enumValues.length > 4 ? " …" : ""}
-          </span>
-        ) : null}
-        {field.maxLength ? (
-          <span className="block text-[11px] text-[var(--text-tertiary)]">
-            ≤ {field.maxLength}
-          </span>
-        ) : null}
-      </td>
-      <td className="py-1.5 pr-2 align-top">
-        {field.primaryKey || field.references ? (
-          <span className="text-xs text-[var(--text-tertiary)]">
-            {semantic}
-          </span>
-        ) : (
-          <select
-            aria-label={t(I18nKey.SYNTH$FIELD_MEANING)}
-            data-testid={`synth-semantic-${entity.id}-${field.name}`}
-            value={semantic}
-            onChange={(e) =>
-              setFieldSemantic(
-                projectId,
-                entity.id,
-                field.name,
-                e.target.value as SemanticKind,
-              )
-            }
-            className="ame-input max-w-[16ch] rounded-[var(--radius-sm)] border border-[var(--border-color)] bg-transparent px-1 py-0.5 text-xs"
-          >
-            {SEMANTIC_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {kind}
-              </option>
-            ))}
-          </select>
-        )}
-      </td>
-      <td className="py-1.5 align-top text-[11px] text-[var(--text-tertiary)]">
-        {[
-          field.nullable ? t(I18nKey.SYNTH$FIELD_NULLABLE) : null,
-          field.unique && !field.primaryKey
-            ? t(I18nKey.SYNTH$FIELD_UNIQUE)
-            : null,
-          field.generated ? t(I18nKey.SYNTH$FIELD_GENERATED) : null,
-          field.distribution ? t(I18nKey.SYNTH$FIELD_PROFILED) : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </td>
-    </tr>
+            <MessageSquarePlus size={13} aria-hidden />
+          </button>
+        </td>
+      </tr>
+      {editing ? (
+        <tr className="border-t border-dashed border-[var(--border-color)]">
+          <td colSpan={6}>
+            <FieldContextEditor
+              projectId={projectId}
+              entity={entity}
+              field={field}
+            />
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
 
@@ -230,8 +416,14 @@ function EntityBlock({
                 <th className="py-1.5 pr-2 font-medium">
                   {t(I18nKey.SYNTH$COL_MEANING)}
                 </th>
+                <th className="py-1.5 pr-2 font-medium">
+                  {t(I18nKey.SYNTH$COL_PRIVACY)}
+                </th>
+                <th className="py-1.5 pr-2 font-medium">
+                  {t(I18nKey.SYNTH$COL_TREATMENT)}
+                </th>
                 <th className="py-1.5 font-medium">
-                  {t(I18nKey.SYNTH$COL_FLAGS)}
+                  <span className="sr-only">{t(I18nKey.SYNTH$FIELD_EDIT)}</span>
                 </th>
               </tr>
             </thead>

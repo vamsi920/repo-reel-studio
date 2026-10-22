@@ -191,4 +191,143 @@ describe("SynthWorkbench", () => {
     );
     expect(screen.getByTestId("synth-generate-button")).toBeDisabled();
   });
+
+  it("lets the user mark a column personal and choose masking, and edit its context", () => {
+    useSynthStudioStore
+      .getState()
+      .upsertEntities(
+        projectId,
+        parseSchemaFile("schema.prisma", PRISMA_SHOP).entities,
+      );
+    render();
+    fireEvent.click(screen.getByTestId("synth-entity-toggle-product"));
+    // sku is not personal: no treatment to pick until the user says it is.
+    expect(
+      screen.queryByTestId("synth-treatment-product-sku"),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("synth-pii-product-sku"), {
+      target: { value: "direct" },
+    });
+    fireEvent.change(screen.getByTestId("synth-treatment-product-sku"), {
+      target: { value: "mask" },
+    });
+    const sku = () =>
+      useSynthStudioStore
+        .getState()
+        .projects[projectId].model.entities.find((e) => e.id === "product")!
+        .fields.find((f) => f.name === "sku")!;
+    expect(sku()).toMatchObject({ pii: "direct", treatment: "mask" });
+
+    fireEvent.click(screen.getByTestId("synth-field-edit-product-title"));
+    fireEvent.change(screen.getByTestId("synth-field-examples-product-title"), {
+      target: { value: "Lamp, Desk" },
+    });
+    fireEvent.blur(screen.getByTestId("synth-field-examples-product-title"));
+    expect(
+      useSynthStudioStore
+        .getState()
+        .projects[projectId].model.entities.find((e) => e.id === "product")!
+        .fields.find((f) => f.name === "title")!.examples,
+    ).toEqual(["Lamp", "Desk"]);
+  });
+
+  it("spreads a typed total over the tables and says when it is capped", async () => {
+    useSynthStudioStore
+      .getState()
+      .upsertEntities(
+        projectId,
+        parseSchemaFile("schema.prisma", PRISMA_SHOP).entities,
+      );
+    const onGenerate = vi.fn();
+    render(onGenerate);
+    fireEvent.change(screen.getByTestId("synth-total-rows"), {
+      target: { value: "1,000" },
+    });
+    expect(screen.getByTestId("synth-total-rows-hint")).toHaveAttribute(
+      "data-capped",
+      "false",
+    );
+    fireEvent.click(screen.getByTestId("synth-generate-button"));
+    expect(onGenerate).toHaveBeenCalledWith(
+      expect.objectContaining({ totalRows: 1000 }),
+    );
+    fireEvent.change(screen.getByTestId("synth-total-rows"), {
+      target: { value: "10000000" },
+    });
+    expect(screen.getByTestId("synth-total-rows-hint")).toHaveAttribute(
+      "data-capped",
+      "true",
+    );
+  });
+
+  it("offers an expand toggle when the layout allows it, and opens a run in a full-screen view", async () => {
+    useSynthStudioStore
+      .getState()
+      .upsertEntities(
+        projectId,
+        parseSchemaFile("schema.prisma", PRISMA_SHOP).entities,
+      );
+    await runGeneration(
+      projectId,
+      { scenarioId: "smoke", seed: 2 },
+      { triggeredBy: "user" },
+    );
+    const onToggleExpand = vi.fn();
+    renderWithProviders(
+      <SynthWorkbench
+        projectId={projectId}
+        postResult={vi.fn()}
+        onGenerate={vi.fn()}
+        busy={false}
+        onToggleExpand={onToggleExpand}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("synth-expand-toggle"));
+    expect(onToggleExpand).toHaveBeenCalledTimes(1);
+
+    const run = useSynthStudioStore.getState().projects[projectId].runs[0];
+    fireEvent.click(screen.getByTestId(`synth-full-view-${run.id}`));
+    const viewer = await screen.findByTestId("synth-data-viewer");
+    expect(
+      within(viewer).getByTestId("synth-data-viewer-table"),
+    ).toBeInTheDocument();
+    expect(
+      within(viewer).queryByTestId("synth-data-viewer-preview-only"),
+    ).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByTestId("synth-data-viewer")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("masks a loaded CSV export in the browser using the model's choices", async () => {
+    useSynthStudioStore
+      .getState()
+      .upsertEntities(
+        projectId,
+        parseSchemaFile("schema.prisma", PRISMA_SHOP).entities,
+      );
+    render();
+    fireEvent.change(screen.getByTestId("synth-mask-entity"), {
+      target: { value: "user" },
+    });
+    const file = new File(
+      ["id,email,phone\n1,real.person@corp.com,+15551234567\n"],
+      "users.csv",
+      { type: "text/csv" },
+    );
+    fireEvent.change(screen.getByTestId("synth-mask-input"), {
+      target: { files: [file] },
+    });
+    const result = await screen.findByTestId("synth-mask-result");
+    expect(
+      within(result).queryByText("real.person@corp.com"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(result).getByTestId("synth-preview-table"),
+    ).toBeInTheDocument();
+    expect(
+      within(result).getByTestId("synth-mask-download-csv"),
+    ).toBeInTheDocument();
+  });
 });

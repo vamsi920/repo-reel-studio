@@ -669,4 +669,72 @@ describe("synth_control dispatcher", () => {
       await replayMissedSynthCommands([mk("a3", "record_model", {})], ctx),
     ).toEqual([]);
   });
+
+  it("record_model carries privacy choices and column context; describe lists pending privacy decisions; generate honours total_rows", async () => {
+    const [r] = await dispatch("record_model", {
+      entities: [
+        {
+          name: "Member",
+          fields: [
+            { name: "id", type: "integer", primary_key: true },
+            { name: "ssn", type: "string" },
+            { name: "card_number", type: "string", treatment: "mask" },
+            { name: "nickname", type: "string", pii: false },
+            {
+              name: "lvl",
+              type: "string",
+              context: "membership level",
+              examples: ["gold", " silver ", ""],
+            },
+            { name: "bad", type: "string", treatment: "shred", pii: "maybe" },
+          ],
+        },
+      ],
+    });
+    expect(r.status).toBe("ok");
+    const member =
+      useSynthStudioStore.getState().projects[projectId].model.entities[0];
+    const field = (name: string) => member.fields.find((f) => f.name === name)!;
+    expect(field("card_number").treatment).toBe("mask");
+    expect(field("nickname").pii).toBe("none");
+    expect(field("lvl")).toMatchObject({
+      context: "membership level",
+      examples: ["gold", "silver"],
+    });
+    expect(field("bad").treatment).toBeUndefined();
+    expect(field("bad").pii).toBeUndefined();
+
+    const [d] = await dispatch("describe");
+    const model = d.model as {
+      privacy: { decisions_pending: string[] };
+      entities: { column_context: unknown[] }[];
+    };
+    expect(model.privacy.decisions_pending).toEqual(["member.ssn (ssn)"]);
+    expect(model.entities[0].column_context).toEqual([
+      {
+        field: "lvl",
+        context: "membership level",
+        examples: ["gold", "silver"],
+      },
+    ]);
+
+    const [g] = await dispatch("generate", {
+      scenario_id: "smoke",
+      seed: 1,
+      total_rows: 37,
+      write: false,
+    });
+    expect(g).toMatchObject({ status: "ok", rows_total: 37 });
+    const run = useSynthStudioStore.getState().projects[projectId].runs[0];
+    expect(
+      run.preview.member.every((row) =>
+        /^\*{12}\d{4}$|^\*{11}\d{4}$/.test(String(row.card_number)),
+      ),
+    ).toBe(true);
+    expect(
+      run.preview.member.every((row) =>
+        ["gold", "silver"].includes(String(row.lvl)),
+      ),
+    ).toBe(true);
+  });
 });

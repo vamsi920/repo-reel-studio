@@ -8,6 +8,7 @@ import {
   type Dataset,
   type Distribution,
   type Entity,
+  type Field,
   type Row,
   type Rule,
   type Scenario,
@@ -174,6 +175,15 @@ interface SynthStudioActions {
     entityId: string,
     fieldName: string,
     semantic: SemanticKind,
+  ) => void;
+  /** Edits the user-owned parts of a field (meaning, privacy, context). */
+  updateField: (
+    projectId: string,
+    entityId: string,
+    fieldName: string,
+    patch: Partial<
+      Pick<Field, "semantic" | "pii" | "treatment" | "context" | "examples">
+    >,
   ) => void;
   setFieldDistribution: (
     projectId: string,
@@ -358,6 +368,35 @@ export const useSynthStudioStore = create<SynthStudioStore>()(
                     fields: e.fields.map((f) =>
                       f.name === fieldName ? { ...f, semantic } : f,
                     ),
+                  },
+            ),
+          })),
+
+        updateField: (projectId, entityId, fieldName, patch) =>
+          patchModel(projectId, (model) => ({
+            ...model,
+            entities: model.entities.map((e) =>
+              e.id !== entityId
+                ? e
+                : {
+                    ...e,
+                    fields: e.fields.map((f) => {
+                      if (f.name !== fieldName) return f;
+                      const next: Field = { ...f, ...patch };
+                      // Clearing a value removes the key, so describe and
+                      // the model hash stay clean.
+                      for (const key of Object.keys(patch) as (keyof Field)[]) {
+                        const v = next[key];
+                        if (
+                          v === undefined ||
+                          v === "" ||
+                          (Array.isArray(v) && v.length === 0)
+                        ) {
+                          delete next[key];
+                        }
+                      }
+                      return next;
+                    }),
                   },
             ),
           })),

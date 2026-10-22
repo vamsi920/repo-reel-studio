@@ -145,3 +145,35 @@ export function clampScenario(scenario: Scenario, model: DataModel): Scenario {
   }
   return { ...scenario, counts: capOneToOne(model, counts) };
 }
+
+/**
+ * The scenario resized to `total` rows across its tables, keeping the
+ * ratio between tables (children still outnumber parents), then clamped to
+ * the run limits. Lookup tables keep their small size.
+ */
+export function scaleToTotal(
+  scenario: Scenario,
+  model: DataModel,
+  total: number,
+): Scenario {
+  const target = Math.max(1, Math.floor(total));
+  const current = totalRows(scenario, model);
+  if (current <= 0) return clampScenario(scenario, model);
+  const factor = target / current;
+  const counts: Record<string, number> = {};
+  for (const e of model.entities) {
+    const n = scenario.counts[e.id] ?? scenario.defaultCount ?? 10;
+    counts[e.id] = isLookupLike(e.id) ? n : Math.max(1, Math.round(n * factor));
+  }
+  // Rounding drifts by a few rows; give the difference to the biggest
+  // table so the total is exactly what was asked for.
+  const scalable = model.entities
+    .filter((e) => !isLookupLike(e.id))
+    .sort((a, b) => counts[b.id] - counts[a.id]);
+  const drift = target - Object.values(counts).reduce((a, b) => a + b, 0);
+  if (scalable.length && drift !== 0) {
+    const biggest = scalable[0].id;
+    counts[biggest] = Math.max(1, counts[biggest] + drift);
+  }
+  return clampScenario({ ...scenario, counts }, model);
+}

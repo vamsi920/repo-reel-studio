@@ -24,6 +24,8 @@ import {
 } from "#/stores/synth-studio-store";
 import {
   FIELD_TYPES,
+  PII_CLASSES,
+  PRIVACY_TREATMENTS,
   SEMANTIC_KINDS,
   findEntity,
   modelProblems,
@@ -34,6 +36,8 @@ import {
   type Entity,
   type Field,
   type FieldType,
+  type PiiClass,
+  type PrivacyTreatment,
   type Rule,
   type RuleSpec,
   type Scenario,
@@ -55,6 +59,7 @@ import {
   clampScenario,
   MAX_ROWS_PER_ENTITY,
   MAX_ROWS_PER_RUN,
+  scaleToTotal,
   totalRows,
 } from "#/lib/synth/scenarios";
 import { parseSchemaFile } from "#/lib/synth/parsers";
@@ -178,7 +183,7 @@ export const COMMAND_SHAPES = Object.freeze({
   import_schema:
     "{paths:[string]} (workspace-relative; schema.prisma, *.sql, openapi.json, *.schema.json)",
   record_model:
-    "{entities:[{id?, name, table?, description?, evidence:[string], fields:[{name, type: string|text|integer|float|decimal|boolean|date|datetime|time|uuid|json|enum|bytes|array (or any SQL/ORM type word), semantic?: email|first_name|full_name|phone|url|price|amount|status|created_at|... , nullable?, unique?, primary_key?, generated?, references?: {entity, field} | 'entity.field', enum_values?:[string], min?, max?, max_length?, pattern?, description?}], unique_together?:[[field]]}], replace?: boolean}",
+    "{entities:[{id?, name, table?, description?, evidence:[string], fields:[{name, type: string|text|integer|float|decimal|boolean|date|datetime|time|uuid|json|enum|bytes|array (or any SQL/ORM type word), semantic?: email|first_name|full_name|phone|url|price|amount|status|created_at|... , nullable?, unique?, primary_key?, generated?, references?: {entity, field} | 'entity.field', enum_values?:[string], min?, max?, max_length?, pattern?, description?, pii?: direct|quasi|sensitive|none, treatment?: synthesize|mask|redact (only after the user chose it), context?: string, examples?:[string]}], unique_together?:[[field]]}], replace?: boolean}",
   record_rules:
     "{rules:[{id?, entity, description, evidence?:[string], spec: {kind:'implies', if:{field, in?:[...], isNull?}, then:{field, isNull?, in?:[...], equals?}} | {kind:'compare', field, op:'<'|'<='|'>'|'>='|'==', other} | {kind:'unique_together', fields:[...]} | {kind:'range', field, min?, max?} | {kind:'pattern', field, pattern}}]}",
   record_flows:
@@ -189,7 +194,7 @@ export const COMMAND_SHAPES = Object.freeze({
     "{question_id, title, prompt?, kind: single|multi, options:[{id, label, description?, recommended?}], allow_other?: boolean} -> wait for {status:'answered', question_id, selected, other?}",
   set_scenarios:
     "{scenarios:[{id?, name, description?, counts:{entity_id: rows}, default_count?, edge_cases?: boolean, null_rate?, parent_distribution?: uniform|skewed, overrides?:[{entity, field, values?:[...], weights?:{value: weight}, share?, null_rate?}]}]}",
-  generate: `{scenario_id?: smoke|realistic|edge_cases|load|<custom id>, seed?: number|string, formats?: [${EXPORT_FORMATS.join("|")}], counts?: {entity_id: rows}, edge_cases?: boolean, write?: boolean (default true)} -> the studio generates, validates, exports and writes ${SYNTH_OUTPUT_DIR}/<run id>/; the receipt carries validation and paths`,
+  generate: `{scenario_id?: smoke|realistic|edge_cases|load|<custom id>, seed?: number|string, formats?: [${EXPORT_FORMATS.join("|")}], counts?: {entity_id: rows}, total_rows?: number (spread over tables in the scenario's proportions, max ${MAX_ROWS_PER_RUN}), edge_cases?: boolean, write?: boolean (default true)} -> the studio generates, validates, exports and writes ${SYNTH_OUTPUT_DIR}/<run id>/; the receipt carries validation and paths`,
   report_verification:
     "{run_id, loaded_into?: string (database / fixture / test suite), rows_loaded?, tests_total?, tests_passing?, notes?}",
   log: "{text, level?: info|warn|error|success}",
@@ -268,6 +273,28 @@ function parseFields(
     if (num(e.scale) !== undefined) field.scale = num(e.scale);
     if (str(e.pattern)) field.pattern = str(e.pattern);
     if (str(e.description)) field.description = str(e.description);
+    const pii =
+      e.pii === true
+        ? "direct"
+        : e.pii === false
+          ? "none"
+          : str(e.pii)?.toLowerCase();
+    if (pii && (PII_CLASSES as readonly string[]).includes(pii)) {
+      field.pii = pii as PiiClass;
+    }
+    const treatment = str(e.treatment)?.toLowerCase();
+    if (
+      treatment &&
+      (PRIVACY_TREATMENTS as readonly string[]).includes(treatment)
+    ) {
+      field.treatment = treatment as PrivacyTreatment;
+    }
+    if (str(e.context)) field.context = str(e.context)!.slice(0, 500);
+    const examples = strList(e.examples)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 50);
+    if (examples.length) field.examples = examples;
     if (e.default !== undefined) field.defaultValue = e.default;
     if (field.type === "unknown") {
       // Let the name decide: ids are integers, *_at are datetimes, else string.
@@ -605,6 +632,8 @@ export interface GenerateRequest {
   formats?: ExportFormat[];
   counts?: Record<string, number>;
   edgeCases?: boolean;
+  /** Resize the scenario to this many rows overall, keeping its ratios. */
+  totalRows?: number;
   /** Write into the workspace when a runtime is attached (default true). */
   write?: boolean;
 }
@@ -635,10 +664,14 @@ export function resolveScenario(
     if (entity && Number.isFinite(v))
       counts[entity.id] = Math.max(0, Math.floor(v));
   }
-  return clampScenario(
-    { ...base, counts, edgeCases: request.edgeCases ?? base.edgeCases },
-    project.model,
-  );
+  const resolved = {
+    ...base,
+    counts,
+    edgeCases: request.edgeCases ?? base.edgeCases,
+  };
+  return request.totalRows && request.totalRows > 0
+    ? scaleToTotal(resolved, project.model, request.totalRows)
+    : clampScenario(resolved, project.model);
 }
 
 export function randomSeed(): number {
@@ -990,10 +1023,20 @@ function describeProject(project: SynthProject, schemaFiles: string[]) {
             f.nullable ? "nullable" : null,
             f.unique ? "unique" : null,
             f.enumValues ? `enum(${f.enumValues.length})` : null,
+            f.pii ? `pii=${f.pii}` : null,
+            f.treatment ? `treatment=${f.treatment}` : null,
           ]
             .filter(Boolean)
             .join(":"),
         ),
+        // The user's own words about columns: authoritative over names.
+        column_context: e.fields
+          .filter((f) => f.context || f.examples?.length)
+          .map((f) => ({
+            field: f.name,
+            context: f.context,
+            examples: f.examples,
+          })),
       })),
       relations: relations.map(
         (r) =>
@@ -1012,6 +1055,18 @@ function describeProject(project: SynthProject, schemaFiles: string[]) {
         entities: f.entities,
       })),
       problems: modelProblems(model),
+      privacy: (() => {
+        const report = privacyReport(model);
+        return {
+          strategies: report.strategies,
+          // High-risk identifiers nobody chose a treatment for yet: ask the
+          // user (ask_choice) whether to keep synthetic values, mask or
+          // redact them, then record_model with treatment.
+          decisions_pending: report.undecided.map(
+            (u) => `${u.entity}.${u.field} (${u.semantic})`,
+          ),
+        };
+      })(),
       profiled_fields: model.entities.flatMap((e) =>
         e.fields.filter((f) => f.distribution).map((f) => `${e.id}.${f.name}`),
       ),
@@ -1393,6 +1448,7 @@ export async function handleSynthControlAction(
           formats,
           counts,
           edgeCases: bool(payload.edge_cases),
+          totalRows: num(payload.total_rows),
           write: payload.write !== false,
         },
         {

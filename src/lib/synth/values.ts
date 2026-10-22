@@ -452,6 +452,20 @@ export const FILE_EXTENSIONS = [
   "docx",
 ];
 export const STATUSES = ["active", "pending", "inactive", "archived"];
+/** RFC 5737 documentation networks (first three octets). */
+export const DOCUMENTATION_NETS = ["192.0.2", "198.51.100", "203.0.113"];
+
+/** Published card-network test numbers (Luhn-valid, never chargeable). */
+export const TEST_CARD_NUMBERS = [
+  "4111111111111111",
+  "4012888888881881",
+  "4242424242424242",
+  "5555555555554444",
+  "5105105105105100",
+  "378282246310005",
+  "6011111111111117",
+];
+
 export const EMAIL_DOMAINS = [
   "example.com",
   "example.org",
@@ -643,6 +657,17 @@ export function valueFor(
 
   if (field.enumValues?.length) return rng.pick(field.enumValues);
 
+  // Example values the user gave for the column beat a guessed meaning.
+  if (field.examples?.length) {
+    const picked = rng.pick(field.examples);
+    if (numeric) {
+      const n = Number(picked);
+      if (Number.isFinite(n)) return integer ? Math.round(n) : n;
+    } else {
+      return picked;
+    }
+  }
+
   switch (semantic) {
     case "id":
     case "uuid":
@@ -660,13 +685,15 @@ export function valueFor(
     case "password_hash":
       return `$2b$12$${base62(rng, 53)}`;
     case "phone":
-      return `+1${rng.int(200, 989)}${rng.int(200, 999)}${rng.int(1000, 9999)}`;
+      // NANP reserves 555-0100..0199 for fiction: never a real line.
+      return `+1${rng.int(201, 989)}555${rng.int(100, 199).toString().padStart(4, "0")}`;
     case "url":
       return `https://${rng.pick(WORDS)}.example.com/${rng.pick(WORDS)}`;
     case "image_url":
       return `https://images.example.com/${hexString(rng, 12)}.jpg`;
     case "ip_address":
-      return `${rng.int(10, 223)}.${rng.int(0, 255)}.${rng.int(0, 255)}.${rng.int(1, 254)}`;
+      // RFC 5737 documentation ranges: never routed, never a real host.
+      return `${rng.pick(DOCUMENTATION_NETS)}.${rng.int(1, 254)}`;
     case "slug":
       return `${rng.pick(WORDS)}-${rng.pick(WORDS)}-${ctx.index + 1}`;
     case "title":
@@ -779,12 +806,19 @@ export function valueFor(
     case "sku":
       return `${rng.pick(["SKU", "PRD", "ITM"])}-${rng.int(1000, 9999)}-${base62(rng, 3).toUpperCase()}`;
     case "iban":
-      return `GB${rng.int(10, 99)}NWBK${String(rng.int(0, 999999)).padStart(6, "0")}${String(rng.int(0, 99999999)).padStart(8, "0")}`;
+      // "TEST" is not a bank code, so the account cannot exist.
+      return `GB${rng.int(10, 99)}TEST${String(rng.int(0, 999999)).padStart(6, "0")}${String(rng.int(0, 99999999)).padStart(8, "0")}`;
     case "card_number":
-      // Test-only prefix (Visa test range), never a real PAN.
-      return `4111${String(rng.int(0, 999999999999)).padStart(12, "0")}`;
+      // Card networks' published test numbers: they pass Luhn checks and
+      // can never be charged.
+      return rng.pick(TEST_CARD_NUMBERS);
     case "tax_id":
-      return `${rng.int(10, 99)}-${rng.int(1000000, 9999999)}`;
+      // EIN prefix 00 is never assigned.
+      return `00-${String(rng.int(0, 9999999)).padStart(7, "0")}`;
+    case "ssn":
+      // Area 9xx with group 00 is never issued as an SSN (nor an ITIN), so
+      // a synthetic SSN cannot be someone's real one.
+      return `9${String(rng.int(0, 99)).padStart(2, "0")}-00-${String(rng.int(0, 9999)).padStart(4, "0")}`;
     case "national_id":
       return `TEST-${rng.int(100000000, 999999999)}`;
     case "token":
@@ -834,8 +868,23 @@ export function valueFor(
     case "text":
       return paragraph(rng, 2);
     default:
-      return `${rng.pick(WORDS)} ${rng.pick(WORDS)}`;
+      return variedLengthText(rng, field.maxLength);
   }
+}
+
+/**
+ * Text for a column whose meaning is unknown. With a declared length the
+ * lengths spread across the whole range (a varchar(10) gets 1..10
+ * characters, not always two words), which is what real data looks like
+ * and what breaks naive code.
+ */
+function variedLengthText(rng: Rng, maxLength: number | undefined): string {
+  if (!maxLength || maxLength > 64)
+    return `${rng.pick(WORDS)} ${rng.pick(WORDS)}`;
+  const target = rng.int(1, maxLength);
+  let text = "";
+  while (text.length < target) text += `${text ? " " : ""}${rng.pick(WORDS)}`;
+  return text.slice(0, target).trimEnd() || text.slice(0, 1);
 }
 
 /** Boundary / malformed-but-valid values for an edge-case row. */

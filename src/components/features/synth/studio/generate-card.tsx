@@ -9,7 +9,12 @@ import {
   type ExportFormat,
 } from "#/lib/synth/exporters";
 import { modelProblems, type Scenario } from "#/lib/synth/model";
-import { MAX_ROWS_PER_ENTITY, totalRows } from "#/lib/synth/scenarios";
+import {
+  MAX_ROWS_PER_ENTITY,
+  MAX_ROWS_PER_RUN,
+  scaleToTotal,
+  totalRows,
+} from "#/lib/synth/scenarios";
 import type { SynthProject } from "#/stores/synth-studio-store";
 import {
   allScenarios,
@@ -47,6 +52,15 @@ export function GenerateCard({
     undefined,
   );
   const [showCounts, setShowCounts] = React.useState(false);
+  // Empty means "the scenario's own size".
+  const [totalInput, setTotalInput] = React.useState("");
+  const requestedTotal = Number(totalInput.replace(/[\s,_]/g, ""));
+  const totalRequested =
+    totalInput.trim() !== "" &&
+    Number.isFinite(requestedTotal) &&
+    requestedTotal > 0
+      ? Math.floor(requestedTotal)
+      : undefined;
 
   // A scenario change resets the per-entity overrides to its own counts.
   React.useEffect(() => {
@@ -55,9 +69,14 @@ export function GenerateCard({
   }, [scenarioId]);
 
   const problems = modelProblems(project.model);
-  const effective: Scenario | null = scenario
+  const withCounts: Scenario | null = scenario
     ? { ...scenario, counts: { ...scenario.counts, ...counts } }
     : null;
+  const effective: Scenario | null =
+    withCounts && totalRequested
+      ? scaleToTotal(withCounts, project.model, totalRequested)
+      : withCounts;
+  const capped = Boolean(totalRequested && totalRequested > MAX_ROWS_PER_RUN);
   const rows = effective ? totalRows(effective, project.model) : 0;
   const canGenerate = problems.length === 0 && !busy && Boolean(scenario);
 
@@ -79,6 +98,7 @@ export function GenerateCard({
       formats: formats.length ? formats : DEFAULT_FORMATS,
       counts,
       edgeCases,
+      totalRows: totalRequested,
     });
   };
 
@@ -149,6 +169,53 @@ export function GenerateCard({
         })}
       </div>
 
+      <div className="flex flex-col gap-1">
+        <label className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <span className="font-medium text-[var(--text-primary)]">
+            {t(I18nKey.SYNTH$TOTAL_ROWS)}
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={totalInput}
+            data-testid="synth-total-rows"
+            placeholder={String(
+              withCounts ? totalRows(withCounts, project.model) : "",
+            )}
+            onChange={(e) => setTotalInput(e.target.value)}
+            className="ame-input w-[14ch] rounded-[var(--radius-sm)] border border-[var(--border-color)] bg-transparent px-2 py-1 font-mono text-xs"
+          />
+          {totalInput ? (
+            <button
+              type="button"
+              data-testid="synth-total-rows-reset"
+              onClick={() => setTotalInput("")}
+              className="ame-btn-link text-xs"
+            >
+              {t(I18nKey.SYNTH$TOTAL_ROWS_RESET)}
+            </button>
+          ) : null}
+        </label>
+        <span
+          data-testid="synth-total-rows-hint"
+          data-capped={capped}
+          className={cn(
+            "text-[11px]",
+            capped
+              ? "text-[var(--warning-600,#b45309)]"
+              : "text-[var(--text-tertiary)]",
+          )}
+        >
+          {capped
+            ? t(I18nKey.SYNTH$TOTAL_ROWS_CAPPED, {
+                max: MAX_ROWS_PER_RUN.toLocaleString(),
+              })
+            : t(I18nKey.SYNTH$TOTAL_ROWS_HINT, {
+                max: MAX_ROWS_PER_RUN.toLocaleString(),
+              })}
+        </span>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
           {t(I18nKey.SYNTH$SEED)}
@@ -205,6 +272,8 @@ export function GenerateCard({
                 min={0}
                 max={MAX_ROWS_PER_ENTITY}
                 data-testid={`synth-count-${entity.id}`}
+                // A total spreads itself over the tables; clear it to edit.
+                disabled={Boolean(totalRequested)}
                 value={
                   effective.counts[entity.id] ?? effective.defaultCount ?? 10
                 }

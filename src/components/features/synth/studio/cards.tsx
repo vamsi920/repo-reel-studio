@@ -478,23 +478,63 @@ export function PrivacyCard({ project }: { project: SynthProject }) {
           {t(I18nKey.SYNTH$PII_SENSITIVE, { count: report.counts.sensitive })}
         </span>
       </div>
-      {report.findings.length ? (
+      <p
+        data-testid="synth-privacy-treatments"
+        className="text-xs text-[var(--text-secondary)]"
+      >
+        {t(I18nKey.SYNTH$TREATED_FIELDS, {
+          synthetic: report.strategies.synthesize,
+          masked: report.strategies.mask,
+          redacted: report.strategies.redact,
+        })}
+      </p>
+      {report.undecided.length ? (
         <p
-          className="truncate text-[11px] text-[var(--text-tertiary)]"
-          title={report.findings
-            .map((f) => `${f.entity}.${f.field}`)
-            .join(", ")}
+          data-testid="synth-privacy-undecided"
+          className="ame-alert ame-alert-warning text-xs"
         >
-          {report.findings
-            .slice(0, 6)
-            .map((f) => `${f.entity}.${f.field}`)
-            .join(" · ")}
-          {report.findings.length > 6 ? " …" : ""}
+          {t(I18nKey.SYNTH$PII_UNDECIDED, {
+            count: report.undecided.length,
+            fields: report.undecided
+              .slice(0, 4)
+              .map((u) => `${u.entity}.${u.field}`)
+              .join(", "),
+          })}
         </p>
       ) : null}
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] uppercase tracking-wide text-[var(--text-tertiary)]">
+          {t(I18nKey.SYNTH$SAFE_TITLE)}
+        </span>
+        <ul
+          data-testid="synth-privacy-safe"
+          className="grid grid-cols-1 gap-x-3 gap-y-0.5 text-[11px] text-[var(--text-secondary)] sm:grid-cols-2"
+        >
+          {SAFE_RANGE_KEYS.map((key) => (
+            <li key={key} className="flex items-start gap-1">
+              <Check
+                size={11}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-[var(--success-500,#16a34a)]"
+              />
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
+
+/** Where each kind of identifier comes from, so none can be a real one. */
+const SAFE_RANGE_KEYS: I18nKey[] = [
+  I18nKey.SYNTH$SAFE_EMAIL,
+  I18nKey.SYNTH$SAFE_PHONE,
+  I18nKey.SYNTH$SAFE_SSN,
+  I18nKey.SYNTH$SAFE_CARD,
+  I18nKey.SYNTH$SAFE_TAX,
+  I18nKey.SYNTH$SAFE_IP,
+];
 
 /* ── Report card ───────────────────────────────────────────────────────── */
 

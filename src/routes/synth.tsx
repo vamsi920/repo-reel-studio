@@ -65,6 +65,25 @@ import type { Branch, GitRepository } from "#/types/git";
 import type { Provider } from "#/types/settings";
 import type { LocalWorkspace } from "#/types/workspace";
 
+/** Per-browser memory of the expanded (full-width) studio layout. */
+const EXPANDED_STORAGE_KEY = "synth-studio-expanded";
+
+function readExpanded(): boolean {
+  try {
+    return localStorage.getItem(EXPANDED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeExpanded(value: boolean) {
+  try {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    // Storage blocked: the toggle still works for this visit.
+  }
+}
+
 /** Tab ids for the mobile layout; not user-facing text. */
 const MOBILE_TABS = ["chat", "workbench"] as const;
 
@@ -215,6 +234,13 @@ function StudioPanes({ project }: { project: SynthProject }) {
     "chat",
   );
   const [busy, setBusy] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(readExpanded);
+  const toggleExpanded = React.useCallback(() => {
+    setExpanded((v) => {
+      writeExpanded(!v);
+      return !v;
+    });
+  }, []);
   const conversationId = project.conversationId!;
   const { data: conversation } = useUserConversation(conversationId);
   useTrackRealUsage();
@@ -296,6 +322,8 @@ function StudioPanes({ project }: { project: SynthProject }) {
       postResult={postResult}
       onGenerate={onGenerate}
       busy={busy}
+      expanded={!isMobile && expanded}
+      onToggleExpand={isMobile ? undefined : toggleExpanded}
     />
   );
 
@@ -331,14 +359,22 @@ function StudioPanes({ project }: { project: SynthProject }) {
 
   return (
     <div ref={containerRef} className="flex min-h-0 flex-1">
+      {/* Hidden, not unmounted, when expanded: the chat keeps its scroll. */}
       <div
         style={{ width: `${leftWidth}%` }}
-        className="flex min-h-0 min-w-0 flex-col"
+        className={cn("flex min-h-0 min-w-0 flex-col", expanded && "hidden")}
       >
         <StudioChat />
       </div>
-      <ResizeHandle onMouseDown={handleMouseDown} isDragging={isDragging} />
-      <div style={{ width: `${rightWidth}%` }} className="min-h-0 min-w-0">
+      {expanded ? null : (
+        <ResizeHandle onMouseDown={handleMouseDown} isDragging={isDragging} />
+      )}
+      <div
+        style={{ width: expanded ? "100%" : `${rightWidth}%` }}
+        data-testid="synth-workbench-pane"
+        data-expanded={expanded}
+        className="min-h-0 min-w-0"
+      >
         {workbench}
       </div>
     </div>
