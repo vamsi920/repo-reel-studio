@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-21T23:04:21.348Z",
+  "legacy": "http://127.0.0.1:5931",
+  "target": null,
+  "scenarios": 1,
+  "total": 10,
+  "identical": 10,
+  "legacyDataCases": 0,
+  "legacyDataIdentical": 0,
+  "synthDataCases": 10,
+  "synthDataIdentical": 10,
+  "synthApplied": true,
+  "kind": "characterize",
+  "legacyStatuses": {
+    "201": 1,
+    "403": 3,
+    "404": 6
+  },
+  "freshData": true,
+  "managedApps": true,
+  "store": {
+    "applicable": true,
+    "compared": 17,
+    "identical": 17,
+    "skipped": [],
+    "differences": []
+  },
+  "differences": []
+}

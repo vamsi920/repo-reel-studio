@@ -1,0 +1,333 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-22T00:24:55.915Z",
+  "legacy": "http://127.0.0.1:5931",
+  "target": "http://127.0.0.1:5932",
+  "scenarios": 4,
+  "total": 24,
+  "identical": 11,
+  "legacyDataCases": 2,
+  "legacyDataIdentical": 1,
+  "synthDataCases": 24,
+  "synthDataIdentical": 11,
+  "synthApplied": true,
+  "kind": "replay",
+  "legacyStatuses": {
+    "200": 3,
+    "201": 1,
+    "400": 2,
+    "403": 7,
+    "404": 11
+  },
+  "freshData": true,
+  "managedApps": true,
+  "store": {
+    "applicable": true,
+    "compared": 68,
+    "identical": 67,
+    "skipped": [],
+    "differences": [
+      {
+        "scenario": "Sign up, post article, comment, favorite",
+        "table": "profiles_profile",
+        "legacyRows": 121,
+        "targetRows": 121,
+        "onlyLegacy": [
+          "{\"bio\":\"\",\"created_at\":\"<timestamp>\",\"id\":121,\"image\":\"\",\"updated_at\":\"<timestamp>\",\"user_id\":201}"
+        ],
+        "onlyTarget": [
+          "{\"bio\":\"\",\"created_at\":\"<timestamp>\",\"id\":121,\"image\":\"https://static.productionready.io/images/smiley-cyrus.jpg\",\"updated_at\":\"<timestamp>\",\"user_id\":201}"
+        ]
+      }
+    ]
+  },
+  "differences": [
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Read article",
+      "field": "json",
+      "legacy": "{\"errors\":{\"article\":\"An article with this slug does not exist.\"}}",
+      "target": "{\"errors\":{\"article\":[\"An article with this slug does not exist.\"]}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Add comment",
+      "field": "status",
+      "legacy": 404,
+      "target": 403
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Add comment",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Add comment",
+      "field": "text",
+      "legacy": "\"Page not found at /api/articles/{{slug}}/comments Page not found (404) Request Method: POST Request URL: http://127.0.0.1:5931/api/articles/%7B%7Bslug%7D%7D/comments Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-ro",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Add comment",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"comment\":{\"detail\":\"Authentication credentials were not provided.\"}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Add comment",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "List comments",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "List comments",
+      "field": "text",
+      "legacy": "\"Page not found at /api/articles/{{slug}}/comments Page not found (404) Request Method: GET Request URL: http://127.0.0.1:5931/api/articles/%7B%7Bslug%7D%7D/comments Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-roo",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "List comments",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"errors\":{\"article\":[\"An article with this slug does not exist.\"]}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "List comments",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Favorite article",
+      "field": "status",
+      "legacy": 404,
+      "target": 403
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Favorite article",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Favorite article",
+      "field": "text",
+      "legacy": "\"Page not found at /api/articles/{{slug}}/favorite Page not found (404) Request Method: POST Request URL: http://127.0.0.1:5931/api/articles/%7B%7Bslug%7D%7D/favorite Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-ro",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Favorite article",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"article\":{\"detail\":\"Authentication credentials were not provided.\"}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Favorite article",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Unfavorite article",
+      "field": "status",
+      "legacy": 404,
+      "target": 403
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Unfavorite article",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Unfavorite article",
+      "field": "text",
+      "legacy": "\"Page not found at /api/articles/{{slug}}/favorite Page not found (404) Request Method: DELETE Request URL: http://127.0.0.1:5931/api/articles/%7B%7Bslug%7D%7D/favorite Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Unfavorite article",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"article\":{\"detail\":\"Authentication credentials were not provided.\"}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Unfavorite article",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Delete comment",
+      "field": "status",
+      "legacy": 404,
+      "target": 403
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Delete comment",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Delete comment",
+      "field": "text",
+      "legacy": "\"Page not found at /api/articles/{{slug}}/comments/{{comment_id}} Page not found (404) Request Method: DELETE Request URL: http://127.0.0.1:5931/api/articles/%7B%7Bslug%7D%7D/comments/%7B%7Bcomment_id%7D%7D Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\",
+      "target": "null"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Delete comment",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"comment\":{\"detail\":\"Authentication credentials were not provided.\"}}"
+    },
+    {
+      "scenario": "Sign up, post article, comment, favorite",
+      "step": "Delete comment",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get non-existent article",
+      "field": "json",
+      "legacy": "{\"errors\":{\"article\":\"An article with this slug does not exist.\"}}",
+      "target": "{\"errors\":{\"article\":[\"An article with this slug does not exist.\"]}}"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Follow profile not found",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Follow profile not found",
+      "field": "text",
+      "legacy": "\"Page not found at /api/profiles/does-not-exist/follow Page not found (404) Request Method: POST Request URL: http://127.0.0.1:5931/api/profiles/does-not-exist/follow Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-ro",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Follow profile not found",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"errors\":{\"profile\":[\"A profile with this username does not exist.\"]}}"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Follow profile not found",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Unfollow profile not found",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Unfollow profile not found",
+      "field": "text",
+      "legacy": "\"Page not found at /api/profiles/does-not-exist/follow Page not found (404) Request Method: DELETE Request URL: http://127.0.0.1:5931/api/profiles/does-not-exist/follow Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Unfollow profile not found",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"errors\":{\"profile\":[\"A profile with this username does not exist.\"]}}"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Unfollow profile not found",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get profile not found",
+      "field": "type",
+      "legacy": "text/html",
+      "target": "application/json"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get profile not found",
+      "field": "text",
+      "legacy": "\"Page not found at /api/profiles/does-not-exist Page not found (404) Request Method: GET Request URL: http://127.0.0.1:5931/api/profiles/does-not-exist Using the URLconf defined in conduit.urls , Django tried these URL patterns, in this order: ^admin/ ^api/ ^ ^articles$ [name='article-list'] ^api/ ^ ^articles\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-list'] ^api/ ^ ^articles/(?P<slug>[^/.]+)$ [name='article-detail'] ^api/ ^ ^articles/(?P<slug>[^/.]+)\\\\.(?P<format>[a-z0-9]+)/?$ [name='article-detail'] ^api/ ^ ^$ [name='api-root'] ^api/ ^ ^\\\\.(?P<format>[a-z0-9]+)/?$ [name='api-root'] ^api/ ^art",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get profile not found",
+      "field": "json",
+      "legacy": "null",
+      "target": "{\"errors\":{\"profile\":[\"A profile with this username does not exist.\"]}}"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get profile not found",
+      "field": "fields",
+      "legacy": "[]",
+      "target": "null"
+    },
+    {
+      "scenario": "Validation and Errors",
+      "step": "Get article feed not logged in",
+      "field": "json",
+      "legacy": "{\"errors\":{\"article\":\"An article with this slug does not exist.\"}}",
+      "target": "{\"errors\":{\"article\":[\"An article with this slug does not exist.\"]}}"
+    },
+    {
+      "scenario": "List Data Read",
+      "step": "List tags",
+      "field": "json",
+      "legacy": "{\"tags\":[\"echo upland\",\"canyon summit\",\"anchor quartz\",\"quartz delta\",\"lumen nectar\",\"fjord falcon\",\"glacier umber\",\"ridge kelp\",\"willow prairie\",\"saffron ridge\",\"canyon indigo\",\"isle kestrel\"]}",
+      "target": "{\"tags\":[\"glacier umber\",\"isle kestrel\",\"saffron ridge\",\"echo upland\",\"anchor quartz\",\"ridge kelp\",\"canyon summit\",\"fjord falcon\",\"quartz delta\",\"lumen nectar\",\"willow prairie\",\"canyon indigo\"]}"
+    },
+    {
+      "scenario": "Legacy Data Compatibility",
+      "step": "Login with legacy user",
+      "field": "json",
+      "legacy": "{\"user\":{\"email\":\"legacy@example.com\",\"token\":\"<jwt>\",\"username\":\"legacy\"}}",
+      "target": "{\"user\":{\"bio\":\"\",\"email\":\"legacy@example.com\",\"image\":\"\",\"token\":\"<jwt>\",\"username\":\"legacy\"}}"
+    }
+  ]
+}

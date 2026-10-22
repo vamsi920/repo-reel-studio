@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-21T19:39:31.552Z",
+  "legacy": "http://127.0.0.1:5911",
+  "target": "http://127.0.0.1:5912",
+  "scenarios": 4,
+  "total": 36,
+  "identical": 36,
+  "legacyDataCases": 3,
+  "legacyDataIdentical": 3,
+  "kind": "replay",
+  "legacyStatuses": {
+    "200": 11,
+    "302": 18,
+    "400": 2,
+    "403": 3,
+    "404": 1,
+    "405": 1
+  },
+  "freshData": true,
+  "managedApps": true,
+  "differences": []
+}

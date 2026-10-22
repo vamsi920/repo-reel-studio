@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "kind": "rea-characterize",
+  "generatedAt": "2026-10-21T22:27:46.692Z",
+  "tool": "npx -y rea-agents@6.7.0",
+  "legacy": "http://127.0.0.1:5931",
+  "target": null,
+  "scenarios": 4,
+  "unchanged": 4,
+  "freshData": true,
+  "synthApplied": true,
+  "harnessNormalization": [
+    "drop_response_header_names"
+  ],
+  "results": [
+    {
+      "scenario": "API Articles list",
+      "status": "unchanged",
+      "changed": [],
+      "evidence": {
+        "legacy": "ev_981818899bc191876517e3894cca5d314e19ea13f1c6dd3d095bbd77c6dfe307",
+        "target": "ev_96f9bb08e95b2bcdb6228ad70162175ad5da85f4ce061cae44bd160cb04b5bd6",
+        "compare": "ev_104d28f6e4f9e2f955e5704d70cfb63898f965b80ebf02ba265677e65187cb5e"
+      },
+      "alignment": {
+        "status": "aligned",
+        "aligned_steps": 2,
+        "before_only": [],
+        "after_only": [],
+        "failures": []
+      }
+    },
+    {
+      "scenario": "API Tags list",
+      "status": "unchanged",
+      "changed": [],
+      "evidence": {
+        "legacy": "ev_e95d8a532f6345c4ebeb53111e98b8c8fcf5a886090acbfbac72f7177bce0415",
+        "target": "ev_7651f6279e9de6fe96f4078676c267272c6eaed5c4bb283d1ce68eb5e47de1d5",
+        "compare": "ev_104d28f6e4f9e2f955e5704d70cfb63898f965b80ebf02ba265677e65187cb5e"
+      },
+      "alignment": {
+        "status": "aligned",
+        "aligned_steps": 2,
+        "before_only": [],
+        "after_only": [],
+        "failures": []
+      }
+    },
+    {
+      "scenario": "API Profile",
+      "status": "unchanged",
+      "changed": [],
+      "evidence": {
+        "legacy": "ev_3f5184dbe647ab3cf51b6fcf91a187d8f08afa30818d40d744dfa42b413690fb",
+        "target": "ev_2efdf0a67b27d265e5b6e6ad17fbd7f04ed0ec812b3f2e02450e7a06dc1f4adc",
+        "compare": "ev_104d28f6e4f9e2f955e5704d70cfb63898f965b80ebf02ba265677e65187cb5e"
+      },
+      "alignment": {
+        "status": "aligned",
+        "aligned_steps": 2,
+        "before_only": [],
+        "after_only": [],
+        "failures": []
+      }
+    },
+    {
+      "scenario": "API Errors",
+      "status": "unchanged",
+      "changed": [],
+      "evidence": {
+        "legacy": "ev_61e90b2ff3f8c84fe65f10ad1f37f420520ab7bcd0b97dbf6c74bb941aecc2c4",
+        "target": "ev_c42df22f1b7b7cc419e51e4c0bbff6865e821d29f1b2f7e0e4f844869d65d10a",
+        "compare": "ev_30feeed72aa94db38048910dd2bce5721ff44c2055b5ac80f4ffd5b6a3b9d86c"
+      },
+      "alignment": {
+        "status": "aligned",
+        "aligned_steps": 4,
+        "before_only": [],
+        "after_only": [],
+        "failures": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "study": "Neo ME end-to-end migrations",
+  "dates": "2026-10-20 to 2026-10-21",
+  "model": "gemini/gemini-pro-latest (Neo ME default profile)",
+  "migrations": [
+    {
+      "app": "flaskr (Flask tutorial blog)",
+      "difficulty": "easy",
+      "from": "Flask + SQLite + Jinja",
+      "to": "Node.js Express + Nunjucks, same SQLite file",
+      "runs": [
+        {"run": 1, "before_fixes": true, "cost_usd": 3.73, "model_calls": 117, "neome_claimed": "11/11 parity cases pass", "independent_visible_text_identical": "9/37", "notes": "Users created by the old app could not log in (scrypt hashes unsupported)."},
+        {"run": 3, "cost_usd": 35, "independent_identical": "35/37", "notes": "Agent spent most of the money starting and resetting two servers and the database by hand. Led to the harness managing both apps itself."},
+        {"run": 5, "final": true, "cost_usd": 7.33, "model_calls": 211, "prompt_tokens": 23964563, "cached_prompt_tokens": 22809669, "completion_tokens": 38410, "neome_replay_identical": "36/36", "neome_legacy_data_identical": "3/3", "independent_identical": "34/37", "remaining_differences": ["Register with empty fields: 400 vs 200", "Two posts created in the same second list in a different order"]}
+      ],
+      "note": "Runs 2 and 4 were stopped early to fix Neo ME problems they exposed; their costs are not reported separately."
+    },
+    {
+      "app": "Conduit RealWorld API (gothinkster/django-realworld-example-app)",
+      "difficulty": "medium",
+      "from": "Django 1.x + Django REST framework + SQLite",
+      "to": "FastAPI + SQLAlchemy, same SQLite file",
+      "status": "stopped by us at the $60 spend checkpoint, not finished",
+      "cost_usd": 59.13,
+      "model_calls": 1242,
+      "prompt_tokens": 178913990,
+      "cached_prompt_tokens": 168172423,
+      "completion_tokens": 281418,
+      "characterization": {"legacy_vs_itself_identical": "24/24", "synth_rows_loaded": 2544, "synth_tables": 8, "rea_browser_scenarios_unchanged": "4/4"},
+      "at_usd_50": {"neome_replay_identical": "7/24", "independent_identical": "13/56", "store_tables_identical": "67/68"},
+      "at_usd_60": {"neome_replay_identical": "11/24", "independent_identical": "9/56", "store_tables_identical": "67/68"},
+      "spend_checkpoints_fired": [10, 20, 30, 40, 50, 60]
+    },
+    {
+      "app": "Conduit AngularJS frontend (gothinkster/angularjs-realworld-example-app)",
+      "difficulty": "hard",
+      "from": "AngularJS 1.5",
+      "to": "React (planned)",
+      "status": "not run: stopped by the account owner after 5 model calls ($0.25), before any migration work",
+      "cost_usd": 0.25
+    }
+  ],
+  "total_cost_usd_reported": 105.44,
+  "total_cost_note": "3.73 + 35 + 7.33 + 59.13 + 0.25. Runs 2 and 4 of flaskr are not included."
+}

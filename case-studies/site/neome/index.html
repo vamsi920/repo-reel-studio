@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moving old apps to new code</title>
+<meta name="description" content="We used Neo ME to move real applications to a new framework and checked each result with our own independent tester. The easy app moved almost exactly; the medium one did not finish; the hard one was not run. Costs, tokens and every gap included.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .sc-row.five { grid-template-columns: minmax(170px, 1.2fr) repeat(3, minmax(110px, 1fr)) minmax(110px, 0.8fr); }
+  .sc-row.six { grid-template-columns: minmax(150px, 1.3fr) repeat(5, minmax(80px, 1fr)); }
+  .sc-row .cellnote { font: 400 0.9rem/1.45 var(--body); }
+  .sc-row .cellnote b { font: 600 0.82rem var(--display); display: block; margin-bottom: 2px; }
+  .num { font: 600 0.95rem var(--mono); }
+  .pass { color: var(--v-correct); }
+  .fail { color: var(--v-wrong); }
+  .part { color: var(--v-partial); }
+  .na { color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .incidents { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .incidents li { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+  .incidents li .tag { font: 600 0.72rem var(--mono); margin-right: 8px; }
+  .incidents li .tag.fixed { color: var(--v-correct); }
+  .incidents li .tag.open { color: var(--v-wrong); }
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 860px) {
+    .sc-row.five { grid-template-columns: 1fr 1fr; }
+    .sc-row.five .sc-metric, .sc-row.five .sc-call { grid-column: 1 / -1; }
+    .sc-row.six { min-width: 640px; }
+    .two-col, .stat-strip { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) { .two-col, .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Neo ME · October 2026</p>
+    <h1 id="summary-h">Neo ME moved a small app to new code almost exactly. A medium one did not finish.</h1>
+    <p class="lede">Neo ME is our tool for moving an old application onto a new framework. We tried it on real open-source apps and checked every result with our own separate tester. That tester knows nothing about Neo ME. It sends the same clicks and requests to the old and new app and compares what comes back.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>34 / 37</b><span>steps the same in the small blog app, up from 9 / 37 on the first try</span></li>
+      <li><b>$7.33</b><span>cost of the final small-app migration</span></li>
+      <li><b>9 / 56</b><span>API requests the same in the medium app when we stopped it</span></li>
+      <li><b>$59.13</b><span>spent on the medium app before we stopped it</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>On the first try, Neo ME said "all tests pass" when only 9 of 37 pages matched the old app. Users from the old app could not log in.</li>
+      <li>We made Neo ME check the result itself instead of trusting the AI. It now runs both apps on the same data and compares every page, error and database table.</li>
+      <li>With those checks, the small blog app came out 34 of 37 the same, and old users can log in.</li>
+      <li>Neo ME now also fills both apps with realistic fake data and records real browser sessions to compare. Those checks caught problems the plain page check missed.</li>
+    </ul>
+    <h2>Where we still fall short</h2>
+    <ul class="simple">
+      <li>The medium app, a Django API, never got close. After $59 and 1,242 AI calls, only 9 of 56 requests matched.</li>
+      <li>Near the end the AI fixed what its own small test list covered and broke other things. Its own score went up while our tester's score went down.</li>
+      <li>Once, an AI call hung for about 50 minutes and only a restart freed it.</li>
+      <li>The AI asked for approval to start building, then built without waiting for it.</li>
+      <li>We did not run the hard app, an AngularJS website. It was stopped before any work began.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> Neo ME no longer reports a migration as done when it isn't, and small apps now come across almost exactly. It cannot yet finish a medium-sized app at a sensible cost.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
+  <section class="hero">
+    <p class="eyebrow">Neo ME · 2026-10-20 to 2026-10-21</p>
+    <h1>Three real apps, an independent black-box checker, <em>and the full bill.</em></h1>
+    <p class="lede">We ran Neo ME (<code>/modernize</code>) through its real studio UI on open-source apps of rising difficulty. The agent used Neo ME's default profile, <code>gemini/gemini-pro-latest</code>. Every result was checked by a differential harness in <code>case-studies/neome/bench/</code>. It shares no code with Neo ME and had to report 100% identical on legacy-vs-legacy before we trusted it. flaskr (Flask → Express) ended at 34 / 37 independent steps identical for $7.33. The Conduit API (Django → FastAPI) characterized perfectly but did not converge: we stopped it at $59.13 with 9 / 56 requests identical. The Conduit AngularJS frontend was not run.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>34 / 37</b><span>flaskr, independent checker (first run 9 / 37 on visible text)</span></div>
+      <div class="stat"><b>24 / 24</b><span>Django legacy-vs-itself characterization with Synth rows loaded</span></div>
+      <div class="stat"><b>9 / 56</b><span>Django, independent checker at stop (13 / 56 at $50)</span></div>
+      <div class="stat"><b>$105</b><span>total model spend reported on this page</span></div>
+    </div>
+  </section>
+
+  <section id="apps" aria-labelledby="apps-h">
+    <h2 id="apps-h">App by app</h2>
+    <p class="section-lede">"Neo ME's own check" is the replay report Neo ME's harness writes. "Independent" is our separate checker. Costs come from the agent-server's own reported cost for the conversation.</p>
+    <div class="scorecard" role="table" aria-label="Per-app results">
+      <div class="sc-row five head" role="row"><span class="sc-metric" role="columnheader">App</span><span role="columnheader">Neo ME's own check</span><span role="columnheader">Independent check</span><span role="columnheader">Cost</span><span role="columnheader">Call</span></div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">Easy · flaskr<small>Flask tutorial blog: Flask + SQLite + Jinja → Express + Nunjucks on the same SQLite file.</small></span>
+        <span class="cellnote" role="cell"><b class="pass">36 / 36</b>Every replay step identical, including 3 steps that read data the old app wrote.</span>
+        <span class="cellnote" role="cell"><b class="pass">34 / 37</b>Left: registering with empty fields gives 400 instead of 200; two posts made in the same second list in a different order.</span>
+        <span class="cellnote" role="cell"><b>$7.33</b>211 model calls, 24.0M prompt tokens (95% cached), 38k output tokens.</span>
+        <span class="sc-call win" role="cell">Nearly exact</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">Medium · Conduit API<small>RealWorld JSON API: Django 1.x + DRF + SQLite → FastAPI + SQLAlchemy on the same SQLite file.</small></span>
+        <span class="cellnote" role="cell"><b class="fail">11 / 24</b>Store parity 67 / 68 tables. Most remaining differences are error responses: see below.</span>
+        <span class="cellnote" role="cell"><b class="fail">9 / 56</b>Down from 13 / 56 at $50, while Neo ME's own check went up from 7 / 24.</span>
+        <span class="cellnote" role="cell"><b>$59.13</b>1,242 model calls, 178.9M prompt tokens (94% cached), 281k output tokens.</span>
+        <span class="sc-call lose" role="cell">Did not converge</span>
+      </div>
+      <div class="sc-row five" role="row">
+        <span class="sc-metric" role="cell">Hard · Conduit AngularJS frontend<small>AngularJS 1.5 single-page app → React, against a local copy of the Django API.</small></span>
+        <span class="cellnote" role="cell"><b class="na">Not run</b>Stopped by the account owner after 5 model calls, before any migration work.</span>
+        <span class="cellnote" role="cell"><b class="na">Not run</b>The 32-checkpoint Playwright checker is ready in the bench folder.</span>
+        <span class="cellnote" role="cell"><b>$0.25</b>Reading the project only.</span>
+        <span class="sc-call" role="cell">No result</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="flaskr" aria-labelledby="flaskr-h">
+    <h2 id="flaskr-h">flaskr, run by run</h2>
+    <p class="section-lede">Each run used the Neo ME build of that moment. Runs 2 and 4 were stopped early to fix the problems they exposed; their costs are not broken out here.</p>
+    <div class="scroll">
+    <div class="scorecard" role="table" aria-label="flaskr runs">
+      <div class="sc-row six head" role="row"><span class="sc-metric" role="columnheader">Run</span><span role="columnheader">Neo ME said</span><span role="columnheader">Independent</span><span role="columnheader">Old users log in</span><span role="columnheader">Calls</span><span role="columnheader">Cost</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">Run 1<small>before any fixes</small></span><span class="num fail" role="cell">11 / 11 pass</span><span class="num fail" role="cell">9 / 37 text</span><span class="num fail" role="cell">No</span><span class="num" role="cell">117</span><span class="num" role="cell">$3.73</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">Run 3<small>first harness</small></span><span class="num part" role="cell">36 / 37</span><span class="num pass" role="cell">35 / 37</span><span class="num pass" role="cell">Yes</span><span class="num na" role="cell">–</span><span class="num" role="cell">$35</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">Run 5<small>harness manages both apps</small></span><span class="num pass" role="cell">36 / 36</span><span class="num pass" role="cell">34 / 37</span><span class="num pass" role="cell">Yes</span><span class="num" role="cell">211</span><span class="num" role="cell">$7.33</span></div>
+    </div>
+    </div>
+    <p class="section-lede">Run 1's 11 parity cases were written by the agent and checked only status codes. The real gaps were dates shown with a time, blank 403 pages, different 404/405 pages, and werkzeug <code>scrypt</code> password hashes the new app could not verify. Run 3 found the same gaps but spent most of its $35 starting, stopping and resetting two servers and a database by hand. Run 5's last two differences are small, but they are real.</p>
+  </section>
+
+  <section id="django" aria-labelledby="django-h">
+    <h2 id="django-h">Django → FastAPI: what happened</h2>
+    <div class="two-col">
+      <div>
+        <h3>Characterization worked</h3>
+        <ul class="caveats">
+          <li>Synth read the old schema and generated 2,544 rows across 8 app tables. Both apps start every scenario on those rows.</li>
+          <li>The old app replayed against itself 24 / 24 identical, with all store tables identical.</li>
+          <li>REA recorded 4 browser scenarios on the old app twice and found all 4 unchanged.</li>
+        </ul>
+        <h3>The migration did not</h3>
+        <ul class="caveats">
+          <li>By $40 the new API crashed on start (<code>NameError: get_current_user</code>), and the agent had cut its suite from 24 steps to 10.</li>
+          <li>From $40 to $60 it restored the 24 steps and the API started. Its own score rose from 7 to 11 of 24.</li>
+          <li>Over the same $10, our checker fell from 13 to 9 of 56. The agent fixed what its suite covered and broke requests the suite never sends.</li>
+          <li>Progress was about one difference fixed per $1–2. We stopped at the $60 checkpoint.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What still differs</h3>
+        <ul class="caveats">
+          <li><b>The old app's bugs.</b> The legacy Django app answers several API routes (comments, favorites, unknown profiles) with Django's HTML "Page not found" page. The new app returns proper JSON errors. Neo ME counts that as a difference, correctly: users of the old API saw the HTML.</li>
+          <li><b>Status codes.</b> 403 where the old app gives 404 on the same routes.</li>
+          <li><b>Error bodies.</b> "Article not found" wording and shape differ.</li>
+          <li><b>Data.</b> One store difference: a new profile gets a default avatar URL where the old app stores an empty string.</li>
+          <li><b>Old users.</b> Logging in as a user the old app created returns a different body.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="gaps" aria-labelledby="gaps-h">
+    <h2 id="gaps-h">What the runs exposed in Neo ME</h2>
+    <div class="two-col">
+      <div>
+        <h3>Fixed during the study</h3>
+        <ul class="incidents">
+          <li><span class="tag fixed">fixed</span><b>Claims instead of checks.</b> Neo ME now installs its own replay harness. The studio reads the harness report and refuses "verified" unless every step is identical on fresh data, including steps that read old data and error cases.</li>
+          <li><span class="tag fixed">fixed</span><b>Agent managing servers.</b> The harness starts both apps on the fixture, runs a scenario and stops exactly those processes. This removed the $35 thrash of run 3.</li>
+          <li><span class="tag fixed">fixed</span><b>No real data volume.</b> Neo ME now asks Synth for realistic rows from the old schema and loads them into both stores. Characterize and verify are refused without them.</li>
+          <li><span class="tag fixed">fixed</span><b>Database not compared.</b> After every scenario both SQLite stores are compared table by table.</li>
+          <li><span class="tag fixed">fixed</span><b>Browser behaviour not compared.</b> REA records each browser journey on both apps and compares them. On flaskr it caught a moved stylesheet and a changed 404 reason phrase that the page check missed.</li>
+          <li><span class="tag fixed">fixed</span><b>Opting out of REA.</b> The agent declared the JSON API "not browser-facing". An opt-out is now refused for any app with an HTTP address.</li>
+          <li><span class="tag fixed">fixed</span><b>Testing the wrong server.</b> The agent measured Neo's own server on port 8000. The harness now refuses a port that already answers.</li>
+          <li><span class="tag fixed">fixed</span><b>Synth writing into framework tables</b> and SQLite dates in the wrong format.</li>
+          <li><span class="tag fixed">fixed</span><b>New launches failed with a 422.</b> Adding a command changed the tool schema the agent-server had pinned. Synth now rides on the existing describe command.</li>
+          <li><span class="tag fixed">fixed</span><b>Unbounded spend.</b> The studio now pauses every $10 and asks before going on. It fired at $10, 20, 30, 40, 50 and 60 on Django.</li>
+          <li><span class="tag fixed">fixed</span><b>Thinking animation never played.</b> It read a status that agent-server conversations never set.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Still open</h3>
+        <ul class="incidents">
+          <li><span class="tag open">open</span><b>Medium apps do not converge.</b> Django cost $59 and ended at 9 / 56.</li>
+          <li><span class="tag open">open</span><b>Suite too small.</b> A 24-step suite let the agent break behaviour it did not cover. Neo ME should require a minimum coverage of routes and error cases before migration starts.</li>
+          <li><span class="tag open">open</span><b>Hung model call.</b> One call blocked the conversation for about 50 minutes. Pause and resume returned 409; only restarting the agent-server cleared it. The conversation then resumed from storage.</li>
+          <li><span class="tag open">open</span><b>Approval not enforced on files.</b> The agent asked to start building and built before the answer. The studio can refuse to mark the step started, but it cannot stop file writes.</li>
+          <li><span class="tag open">open</span><b>Hard app untested.</b> No result for the AngularJS → React migration.</li>
+          <li><span class="tag open">open</span><b>REA's SQLite inspector</b> needs Node 24.15 or later. The test machine had 24.14, so the agent fell back to <code>sqlite3 .schema</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="cost" aria-labelledby="cost-h">
+    <h2 id="cost-h">Where the money went</h2>
+    <div class="scroll">
+    <div class="scorecard" role="table" aria-label="Cost and tokens">
+      <div class="sc-row six head" role="row"><span class="sc-metric" role="columnheader">Run</span><span role="columnheader">Calls</span><span role="columnheader">Prompt tokens</span><span role="columnheader">Cached</span><span role="columnheader">Output tokens</span><span role="columnheader">Cost</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">flaskr run 5</span><span class="num" role="cell">211</span><span class="num" role="cell">24.0M</span><span class="num" role="cell">95%</span><span class="num" role="cell">38k</span><span class="num" role="cell">$7.33</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">Django → FastAPI</span><span class="num" role="cell">1,242</span><span class="num" role="cell">178.9M</span><span class="num" role="cell">94%</span><span class="num" role="cell">281k</span><span class="num" role="cell">$59.13</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">flaskr runs 1 and 3</span><span class="num na" role="cell">–</span><span class="num na" role="cell">–</span><span class="num na" role="cell">–</span><span class="num na" role="cell">–</span><span class="num" role="cell">$38.73</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">AngularJS, stopped</span><span class="num" role="cell">5</span><span class="num na" role="cell">–</span><span class="num na" role="cell">–</span><span class="num na" role="cell">–</span><span class="num" role="cell">$0.25</span></div>
+      <div class="sc-row six" role="row"><span class="sc-metric" role="cell">Total on this page</span><span class="num" role="cell"></span><span class="num" role="cell"></span><span class="num" role="cell"></span><span class="num" role="cell"></span><span class="num" role="cell">$105.44</span></div>
+    </div>
+    </div>
+    <p class="section-lede">Input dominates. Each call resends the whole conversation, about 144k tokens per call on Django, almost all of it cached. Output is under 0.2% of tokens. Long runs are expensive because the history grows, not because the agent writes a lot. Token figures for flaskr runs 1 and 3, and run 3's call count, were not saved.</p>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we tested</h2>
+    <ul class="method-list">
+      <li>Apps: <code>pallets/flask</code> <code>examples/tutorial</code>; <code>gothinkster/django-realworld-example-app</code> (Python 3.8 via uv); <code>gothinkster/angularjs-realworld-example-app</code> pinned to <code>angular@1.5.11</code>, served against a local copy of the Django API because the public demo API is gone.</li>
+      <li>Each migration ran through the real studio UI on a local NeoDevEx stack: pick a local folder, answer the interview cards, approve the plan and each $10 spend checkpoint. We answered as a user would and did not edit the agent's code.</li>
+      <li>Independent checkers, in <code>case-studies/neome/bench/</code>: <code>flaskr_diff.py</code> replays a browser-like session and compares status, redirect target, form fields and visible text; <code>conduit_diff.py</code> sends 56 API requests and compares JSON exactly after normalising JWTs, timestamps and slug suffixes; <code>conduit_ui_diff.mjs</code> is a 32-checkpoint Playwright journey for the frontend (unused). Each had to report 100% identical on two fresh copies of the old app first.</li>
+      <li>Costs and tokens are the agent-server's own reported metrics for the conversation.</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>One run per app on the final Neo ME build. A second run could land differently.</li>
+      <li>Neo ME changed between flaskr runs, so the runs show the effect of the fixes, not repeatability.</li>
+      <li>We stopped Django ourselves. With more money it might have converged; the trend at the end did not suggest so.</li>
+      <li>Only one model was used. A stronger coding model may do much better on Django.</li>
+      <li>The Django characterize report in the downloads is a later 10-step rerun. The 24 / 24 result came from the run before it and its report was overwritten.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/summary.json">summary.json<small>Every number on this page, per app and per run.</small></a></li>
+      <li><a href="data/flaskr-run5.json">flaskr-run5.json<small>Final flaskr run: calls, tokens, cost.</small></a></li>
+      <li><a href="data/flaskr-replay-report.json">flaskr-replay-report.json<small>Neo ME's harness report for the final flaskr run.</small></a></li>
+      <li><a href="data/django-run.json">django-run.json<small>Django run at stop: calls, tokens, cost.</small></a></li>
+      <li><a href="data/django-replay-report.json">django-replay-report.json<small>Neo ME's harness report at stop, with every difference and the store comparison.</small></a></li>
+      <li><a href="data/django-characterize-report.json">django-characterize-report.json<small>Old app against itself, with Synth rows.</small></a></li>
+      <li><a href="data/django-rea-characterize-report.json">django-rea-characterize-report.json<small>REA browser scenarios on the old app, recorded twice.</small></a></li>
+    </ul>
+  </section>
+  </details>
+</main>
+
+<footer class="foot">
+  <p>Flask, the RealWorld Conduit apps and REA are their maintainers' open-source projects; we only ran and migrated copies of them locally.</p>
+</footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

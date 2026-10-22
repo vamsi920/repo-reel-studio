@@ -34,5 +34,11 @@
     "title": "Setting up at a bank",
     "state": "Published",
     "summary": "Our setup assistant learned a simulated bank's tools and rules and connected its private code system in every final run, up from none at first. It no longer claims connections it never made, but results still vary run to run."
+  },
+  {
+    "href": "neome/",
+    "title": "Moving old apps to new code",
+    "state": "Published",
+    "summary": "Neo ME moved a small Flask blog to Node with 34 of 37 steps the same, for $7.33. A medium Django API did not finish: we stopped it at $59 with 9 of 56 requests the same. The hard app was not run."
   }
 ]
