@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { LandingConsoleLink } from "./landing-console-link";
 import { CTA_BAND } from "./landing-copy";
 
 export function LandingCta() {
@@ -13,9 +13,10 @@ export function LandingCta() {
           {CTA_BAND.title}
         </h2>
         <p className="text-[var(--text-secondary)]">{CTA_BAND.subtitle}</p>
-        <Link to="/conversations" className="ame-btn-primary ame-btn-lg">
-          {CTA_BAND.cta}
-        </Link>
+        <LandingConsoleLink
+          label={CTA_BAND.cta}
+          className="ame-btn-primary ame-btn-lg"
+        />
       </div>
     </section>
   );

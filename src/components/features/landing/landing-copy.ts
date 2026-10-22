@@ -7,6 +7,9 @@
  * localization, these become the source for new translation.json keys.
  */
 
+/** Primary button label for a returning, signed-in user. */
+export const CONSOLE_CTA = "Console";
+
 export const NAV = {
   wordmark: "Neo",
   cta: "Try Neo",

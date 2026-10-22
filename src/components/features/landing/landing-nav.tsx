@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { LandingConsoleLink } from "./landing-console-link";
 import NeoLogo from "#/assets/branding/openhands-logo.svg?react";
 import { NAV } from "./landing-copy";
 
@@ -15,9 +16,10 @@ export function LandingNav() {
             {NAV.wordmark}
           </span>
         </Link>
-        <Link to="/conversations" className="ame-btn-primary ame-btn-sm">
-          {NAV.cta}
-        </Link>
+        <LandingConsoleLink
+          label={NAV.cta}
+          className="ame-btn-primary ame-btn-sm"
+        />
       </div>
     </header>
   );

@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { LandingConsoleLink } from "./landing-console-link";
 import { LandingTerminal } from "./landing-terminal";
 import { LandingAgentGraph } from "./landing-agent-graph";
 import { HERO } from "./landing-copy";
@@ -20,9 +20,10 @@ export function LandingHero() {
             {HERO.subtitle}
           </p>
           <div className="flex flex-col items-start gap-2">
-            <Link to="/conversations" className="ame-btn-primary ame-btn-lg">
-              {HERO.cta}
-            </Link>
+            <LandingConsoleLink
+              label={HERO.cta}
+              className="ame-btn-primary ame-btn-lg"
+            />
             <span className="text-xs text-[var(--text-tertiary)]">
               {HERO.ctaSub}
             </span>
