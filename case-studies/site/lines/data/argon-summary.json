@@ -1,0 +1,139 @@
+{
+  "model": "gemini/gemini-4-argon",
+  "reasoning_effort": "medium",
+  "runs": 15,
+  "tasks": {
+    "L1": {
+      "label": "Fix two bugs",
+      "runs": 3,
+      "passed": 3,
+      "lines_added_median": 2,
+      "lines_changed_median": 5,
+      "src_added_median": 2,
+      "test_added_median": 0,
+      "lines_added_range": [
+        2,
+        2
+      ],
+      "cost_median": 0.0571,
+      "cost_range": [
+        0.0541,
+        0.0773
+      ],
+      "tokens_median": 59049,
+      "calls_median": 4,
+      "seconds_median": 52.6,
+      "ncu_median": 0.143,
+      "cost_per_100_lines": 1.257
+    },
+    "L2": {
+      "label": "Add one function with a test",
+      "runs": 3,
+      "passed": 3,
+      "lines_added_median": 19,
+      "lines_changed_median": 19,
+      "src_added_median": 5,
+      "test_added_median": 14,
+      "lines_added_range": [
+        18,
+        19
+      ],
+      "cost_median": 0.0724,
+      "cost_range": [
+        0.0692,
+        0.1051
+      ],
+      "tokens_median": 85107,
+      "calls_median": 6,
+      "seconds_median": 49.8,
+      "ncu_median": 0.181,
+      "cost_per_100_lines": 0.441
+    },
+    "L3": {
+      "label": "Add a coupons module",
+      "runs": 3,
+      "passed": 3,
+      "lines_added_median": 78,
+      "lines_changed_median": 78,
+      "src_added_median": 35,
+      "test_added_median": 43,
+      "lines_added_range": [
+        67,
+        104
+      ],
+      "cost_median": 0.1483,
+      "cost_range": [
+        0.1085,
+        0.158
+      ],
+      "tokens_median": 202526,
+      "calls_median": 11,
+      "seconds_median": 174.6,
+      "ncu_median": 0.371,
+      "cost_per_100_lines": 0.167
+    },
+    "L4": {
+      "label": "Add an inventory class",
+      "runs": 3,
+      "passed": 3,
+      "lines_added_median": 203,
+      "lines_changed_median": 203,
+      "src_added_median": 64,
+      "test_added_median": 138,
+      "lines_added_range": [
+        177,
+        219
+      ],
+      "cost_median": 0.1167,
+      "cost_range": [
+        0.1146,
+        0.1433
+      ],
+      "tokens_median": 118495,
+      "calls_median": 7,
+      "seconds_median": 117.8,
+      "ncu_median": 0.292,
+      "cost_per_100_lines": 0.063
+    },
+    "L5": {
+      "label": "Build a receipt feature across modules",
+      "runs": 3,
+      "passed": 3,
+      "lines_added_median": 175,
+      "lines_changed_median": 175,
+      "src_added_median": 67,
+      "test_added_median": 108,
+      "lines_added_range": [
+        131,
+        219
+      ],
+      "cost_median": 0.1473,
+      "cost_range": [
+        0.1471,
+        0.1787
+      ],
+      "tokens_median": 165933,
+      "calls_median": 9,
+      "seconds_median": 163.9,
+      "ncu_median": 0.368,
+      "cost_per_100_lines": 0.09
+    }
+  },
+  "totals": {
+    "cost_usd": 1.6977,
+    "lines_added": 1435,
+    "lines_changed": 1444,
+    "src_added": 526,
+    "test_added": 909,
+    "tokens": 1978094,
+    "output_tokens": 60582,
+    "passed": 15,
+    "cost_per_100_lines_all": 0.1176,
+    "lines_per_dollar_all": 850.6,
+    "lines_per_ncu_all": 340.2,
+    "cost_per_100_lines_features": 0.0919,
+    "lines_per_ncu_features": 435.0,
+    "tokens_per_line": 1370,
+    "seconds_total": 1722
+  }
+}

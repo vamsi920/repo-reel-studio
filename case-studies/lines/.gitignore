@@ -1,0 +1,4 @@
+# Run outputs: results while running and a node_modules copy.
+# Published results live in case-studies/site/lines/data/.
+bench/out/
+__pycache__/

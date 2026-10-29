@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lines of Code vs Cost</title>
+<meta name="description" content="What it costs NeoDevEx's agent to write code, counted in changed lines: five coding tasks, 15 runs on Gemini 4 Argon, every line counted from git and every result checked by hidden tests.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/case.css">
+<style>
+  .stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font: 600 1.5rem var(--mono); }
+  .stat span { font: 500 0.82rem var(--display); color: var(--muted); }
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin-top: 14px; }
+  table.data th, table.data td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+  table.data th:first-child, table.data td:first-child { text-align: left; white-space: normal; }
+  table.data th { font: 600 0.78rem var(--display); color: var(--muted); }
+  table.data td.num { font-family: var(--mono); }
+  table.data tr.total td { font-weight: 600; border-top: 2px solid var(--rule); }
+  .table-wrap { overflow-x: auto; }
+  .bar { display: grid; grid-template-columns: 190px 1fr 90px; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.9rem; }
+  .bar .track { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; height: 18px; position: relative; overflow: hidden; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--neo); opacity: 0.75; }
+  .bar .fill.muted { background: var(--muted); opacity: 0.45; }
+  .bar b { font: 600 0.85rem var(--mono); text-align: right; }
+  @media (max-width: 860px) { .stat-strip { grid-template-columns: 1fr 1fr; } .bar { grid-template-columns: 130px 1fr 80px; } }
+  @media (max-width: 480px) { .stat-strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to results</a>
+<header class="masthead">
+  <a class="brand" href="../">NeoDevEx <span>case studies</span></a>
+  <nav aria-label="Sections">
+    <a href="#summary">Summary</a><a href="#tech">Full write-up</a><a href="#data">Raw data</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="plain" id="summary" aria-labelledby="summary-h">
+    <p class="eyebrow">Cost per line of code · October 2026</p>
+    <h1 id="summary-h">Our agent writes 100 lines of working, tested code for about 12 cents.</h1>
+    <p class="lede">We gave our agent five coding jobs, from a two-line bug fix to a feature spread over three new files, and ran each one three times on Gemini 4 Argon, our default AI model. We counted every line it changed with git, checked every result with tests the agent never saw, and read the exact cost from the AI provider.</p>
+    <ul class="big-numbers" aria-label="Key numbers">
+      <li><b>$0.12</b><span>AI cost per 100 lines changed, across all 15 runs</span></li>
+      <li><b>15 of 15</b><span>runs passed our hidden tests</span></li>
+      <li><b>~340</b><span>lines per Neo Credit Unit (NCU), about 435 on feature work</span></li>
+      <li><b>$1.70</b><span>total cost of all 15 runs, 1,444 lines changed</span></li>
+    </ul>
+    <h2>What we found</h2>
+    <ul class="simple">
+      <li>Bigger jobs are cheaper per line. A 200-line class cost $0.12; a 2-line bug fix cost $0.06.</li>
+      <li>The cost comes from reading, not writing. 97% of what the AI processes is the code and instructions it reads; the code it writes is 3%.</li>
+      <li>About two thirds of the lines are tests. We asked for tests on every feature, and the agent wrote them every time.</li>
+      <li>Speed: one to three minutes per job.</li>
+    </ul>
+    <h2>Where to be careful</h2>
+    <ul class="simple">
+      <li>This is a small codebase. In a large one the agent reads more before it writes, so each line costs more.</li>
+      <li>Lines are a rough measure of value. The two-line bug fix cost the most per line, yet it stopped discount codes from making orders free.</li>
+    </ul>
+    <div class="verdict"><p><b>Bottom line:</b> new code costs cents, not dollars. Price it per job, because a line count says little about what the work was worth.</p></div>
+  </section>
+
+  <details class="tech" id="tech">
+    <summary>Full technical write-up, for engineers</summary>
+  <section class="hero">
+    <p class="eyebrow">Module 08 · Lines of code vs cost · 15 runs, 2026-10-29</p>
+    <h1>1,444 changed lines for <em>$1.70</em>: what each line of agent-written code costs.</h1>
+    <p class="lede">Five coding tasks of increasing size, three runs each, on Gemini 4 Argon with medium thinking, the model and settings the app ships. Lines come from <code>git diff --numstat</code> against the starting commit; cost and tokens are what the provider reported. Every run passed hidden checks the agent never saw.</p>
+    <div class="stat-strip" aria-label="Headline numbers">
+      <div class="stat"><b>$0.118</b><span>AI cost per 100 lines changed, all tasks</span></div>
+      <div class="stat"><b>$0.092</b><span>per 100 lines on the three feature tasks</span></div>
+      <div class="stat"><b>1,370</b><span>tokens processed per line changed</span></div>
+      <div class="stat"><b>63%</b><span>of added lines are tests (909 of 1,435)</span></div>
+    </div>
+  </section>
+
+  <section id="results" aria-labelledby="results-h">
+    <h2 id="results-h">Results by task, median of 3 runs</h2>
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Task</th><th>Passed</th><th>Lines added</th><th>Source / tests</th><th>Cost</th><th>NCU</th><th>Cost per 100 lines</th><th>Model calls</th><th>Time</th></tr></thead>
+      <tbody>
+        <tr><td>L1 · Fix two bugs</td><td class="num">3/3</td><td class="num">2 (+3 removed)</td><td class="num">2 / 0</td><td class="num">$0.057</td><td class="num">0.14</td><td class="num">$1.26</td><td class="num">4</td><td class="num">53 s</td></tr>
+        <tr><td>L2 · Add one function with a test</td><td class="num">3/3</td><td class="num">19</td><td class="num">5 / 14</td><td class="num">$0.072</td><td class="num">0.18</td><td class="num">$0.44</td><td class="num">6</td><td class="num">50 s</td></tr>
+        <tr><td>L3 · Add a coupons module</td><td class="num">3/3</td><td class="num">78</td><td class="num">35 / 43</td><td class="num">$0.148</td><td class="num">0.37</td><td class="num">$0.17</td><td class="num">11</td><td class="num">175 s</td></tr>
+        <tr><td>L4 · Add an inventory class</td><td class="num">3/3</td><td class="num">203</td><td class="num">64 / 138</td><td class="num">$0.117</td><td class="num">0.29</td><td class="num">$0.06</td><td class="num">7</td><td class="num">118 s</td></tr>
+        <tr><td>L5 · Receipt feature across three modules</td><td class="num">3/3</td><td class="num">175</td><td class="num">67 / 108</td><td class="num">$0.147</td><td class="num">0.37</td><td class="num">$0.09</td><td class="num">9</td><td class="num">164 s</td></tr>
+        <tr class="total"><td>All 15 runs (totals)</td><td class="num">15/15</td><td class="num">1,435 (+9 removed)</td><td class="num">526 / 909</td><td class="num">$1.70</td><td class="num">4.24</td><td class="num">$0.12</td><td class="num">–</td><td class="num">29 min</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="section-lede" style="margin-top:14px">Cost per 100 lines is each task's total cost over its total lines changed (added + removed) across its three runs. NCU is cost ÷ $0.40, the metered work in one Neo Credit Unit. Runs of the same task differ: L5 wrote 131 to 219 lines, L3 67 to 104.</p>
+  </section>
+
+  <section id="shape" aria-labelledby="shape-h">
+    <h2 id="shape-h">Cost does not grow with lines</h2>
+    <p class="section-lede">Median cost per task against median lines added. A hundred times more code cost about twice as much.</p>
+    <div class="bar"><span>L1 · 2 lines</span><span class="track"><span class="fill" style="width:38.5%"></span></span><b>$0.057</b></div>
+    <div class="bar"><span>L2 · 19 lines</span><span class="track"><span class="fill" style="width:48.8%"></span></span><b>$0.072</b></div>
+    <div class="bar"><span>L3 · 78 lines</span><span class="track"><span class="fill" style="width:100%"></span></span><b>$0.148</b></div>
+    <div class="bar"><span>L5 · 175 lines</span><span class="track"><span class="fill" style="width:99.3%"></span></span><b>$0.147</b></div>
+    <div class="bar"><span>L4 · 203 lines</span><span class="track"><span class="fill" style="width:78.7%"></span></span><b>$0.117</b></div>
+    <p class="section-lede" style="margin-top:14px">An agent run is a loop of model calls, and every call resends the instructions, the files read so far and the conversation. Across the 15 runs the model processed 1.98M tokens, of which only 60,582 (3%) were output, thinking included. The cost follows how many steps the agent takes and how much it reads, so a small fix that needs a test run to confirm still pays for several steps.</p>
+  </section>
+
+  <section id="ncu" aria-labelledby="ncu-h">
+    <h2 id="ncu-h">In Neo Credit Units</h2>
+    <ul class="caveats">
+      <li><b>About 340 changed lines per NCU</b> across all tasks, about 435 on feature work (L3–L5), in this codebase.</li>
+      <li>At the $1.60–2.00 NCU price, that is roughly <b>$0.47–0.59 per 100 lines</b> to a customer.</li>
+      <li>An everyday coding job here used 0.14–0.37 NCU.</li>
+    </ul>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <h2 id="method-h">How we measured</h2>
+    <ul class="caveats">
+      <li>The harness (<code>run_lines.py</code>) runs each task with OpenHands SDK 1.42.1, the version the agent-server ships, building the agent from the frozen copy of the settings the app sends (the same copy as the chat study: working rules v5, output style, skills). Model <code>gemini/gemini-4-argon</code>, reasoning effort medium. The browser tool was off.</li>
+      <li>Each run starts from a fresh copy of a small JavaScript cart service (45 lines of source and tests, two planted bugs) committed to git. After the run every change is staged and counted with <code>git diff --cached --numstat</code>; <code>node_modules</code>, lockfiles and <code>.gitignore</code> are excluded, and source (<code>src/</code>) and test (<code>test/</code>) lines are counted separately. Blank lines and comments count as lines.</li>
+      <li>Each task has a hidden check written before the runs: the agent's own tests must pass, and a separate script calls the new code with inputs the agent was not shown (for example a coupon over the 90% limit, a reservation that must change nothing when one line lacks stock, a receipt total of $58.57).</li>
+      <li>Token counts and cost are what Google reported for each call, summed by the SDK.</li>
+    </ul>
+    <h3>What could skew this</h3>
+    <ul class="caveats">
+      <li>A small codebase. In a real repository the agent reads more files before writing, which raises the cost per line.</li>
+      <li>Three runs per task. Lines and cost vary run to run; we report medians and totals.</li>
+      <li>Lines measure output, not value. The agent decides how much test code to write, and it wrote more tests than code.</li>
+    </ul>
+  </section>
+
+  <section id="data" aria-labelledby="data-h">
+    <h2 id="data-h">Raw data</h2>
+    <ul class="downloads">
+      <li><a href="data/argon-results.jsonl">argon-results.jsonl<small>All 15 runs: lines by file type, tokens, cost, NCU, calls, time, pass.</small></a></li>
+      <li><a href="data/argon-summary.json">argon-summary.json<small>Per-task medians and totals.</small></a></li>
+      <li><a href="data/run_lines.py">run_lines.py<small>The harness, task prompts and hidden checks.</small></a></li>
+    </ul>
+  </section>
+  </details>
+</main>
+
+<footer class="foot">
+  <p>Gemini is a product of Google. Costs are what Google's API reported for our own account.</p>
+</footer>
+<script>
+(function () {
+  function openTarget() {
+    var id = location.hash.slice(1);
+    var el = id && document.getElementById(id);
+    var box = el && el.closest("details.tech");
+    if (box && !box.open) { box.open = true; el.scrollIntoView(); }
+  }
+  addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

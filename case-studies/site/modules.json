@@ -24,6 +24,12 @@
     "summary": "We cut our AI bill per task by about a third with no drop in quality. Investigating the same bug report cost us $0.017 and Devin $0.22."
   },
   {
+    "href": "lines/",
+    "title": "Cost per line of code",
+    "state": "Published",
+    "summary": "Five coding jobs, 15 runs on Gemini 4 Argon, every line counted with git and checked by hidden tests. 100 changed lines cost about 12 cents of AI, and all 15 runs passed. Bigger jobs are cheaper per line."
+  },
+  {
     "href": "selfhosted/",
     "title": "Running our own AI model",
     "state": "Published",
