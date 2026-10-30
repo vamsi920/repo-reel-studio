@@ -174,7 +174,7 @@ const VISUALS: Record<StoryVisual, React.FC<{ step: Step }>> = {
 };
 
 /**
- * Pinned, five-chapter walkthrough. The section is five screens tall; the
+ * Pinned, five-chapter walkthrough. Each chapter gets about half a screen of scroll; the
  * content stays put while the scroll position picks the active chapter.
  */
 export function LandingStory() {
@@ -198,7 +198,7 @@ export function LandingStory() {
   const Visual = VISUALS[step.visual];
 
   return (
-    <section id="how" ref={ref} className="relative h-[520vh]">
+    <section id="how" ref={ref} className="relative h-[360vh]">
       <div className="sticky top-0 flex h-screen items-center px-4 pt-16 md:px-6 md:pt-0">
         <div className="mx-auto grid w-full max-w-6xl gap-8 md:grid-cols-[1fr_1.1fr] md:gap-16">
           <div className="flex flex-col justify-center">

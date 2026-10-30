@@ -26,24 +26,26 @@ function Word({
 }
 
 /**
- * A pinned manifesto whose words light up one by one as the page scrolls
- * past it.
+ * A briefly pinned manifesto whose words light up one by one as it scrolls
+ * into view.
  */
 export function LandingStatement() {
   const ref = React.useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start start", "end end"],
+    // Starts filling while the section is still rising into view and is
+    // fully lit soon after it pins, so a quick scroll never skips it.
+    offset: ["start 0.8", "end end"],
   });
 
   const words = STATEMENT.text.split(" ").map((raw) => ({
     word: raw.replace(/\*/g, ""),
     accent: raw.includes("*"),
   }));
-  const step = 0.85 / words.length;
+  const step = 0.6 / words.length;
 
   return (
-    <section ref={ref} className="relative h-[260vh]">
+    <section ref={ref} className="relative h-[150vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center px-6">
         <div className="max-w-5xl">
           <span className="lp-eyebrow mb-8">{STATEMENT.eyebrow}</span>
@@ -54,7 +56,7 @@ export function LandingStatement() {
                 word={word}
                 accent={accent}
                 progress={scrollYProgress}
-                range={[0.05 + i * step, 0.05 + (i + 1) * step]}
+                range={[i * step, i * step + 0.12]}
               />
             ))}
           </p>
