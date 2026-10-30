@@ -223,4 +223,63 @@ describe("synth studio store", () => {
     expect("examples" in field).toBe(false);
     expect(field.treatment).toBe("redact");
   });
+
+  it("adds documents with their requirements, replacing a re-upload, and migrates older projects", () => {
+    const store = useSynthStudioStore.getState();
+    const project = store.createProject({
+      name: "loans",
+      source: { kind: "document", name: "brd.md" },
+    });
+    const doc = {
+      id: "brd",
+      name: "brd.md",
+      format: "markdown" as const,
+      bytes: 10,
+      chars: 10,
+      addedAt: "2026-10-29T00:00:00Z",
+      addedBy: "user" as const,
+      workspacePath: null,
+      unreadable: false,
+      personalValuesRemoved: 0,
+      entities: ["loan"],
+      fields: 2,
+      rules: 0,
+      warnings: [],
+    };
+    const req = {
+      id: "BR-1",
+      docId: "brd",
+      text: "Each loan ...",
+      kind: "data" as const,
+      mapped: [],
+    };
+    store.addDocument(project.id, doc, [req]);
+    store.addDocument(project.id, { ...doc, fields: 3 }, [
+      req,
+      { ...req, id: "BR-2" },
+    ]);
+    store.setDocumentPaths(project.id, "brd", {
+      workspacePath: "synth-input/x/brd.md",
+    });
+    const after = useSynthStudioStore.getState().projects[project.id];
+    expect(after.documents).toHaveLength(1);
+    expect(after.documents[0]).toMatchObject({
+      fields: 3,
+      workspacePath: "synth-input/x/brd.md",
+    });
+    expect(after.requirements.map((r) => r.id)).toEqual(["BR-1", "BR-2"]);
+
+    const migrate = useSynthStudioStore.persist.getOptions().migrate!;
+    const old = { projects: { p: { id: "p" } }, activeProjectId: null };
+    const migrated = migrate(old, 1) as {
+      projects: Record<
+        string,
+        { documents: unknown[]; requirements: unknown[] }
+      >;
+    };
+    expect(migrated.projects.p).toMatchObject({
+      documents: [],
+      requirements: [],
+    });
+  });
 });

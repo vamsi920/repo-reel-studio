@@ -363,4 +363,49 @@ describe("SynthWorkbench", () => {
       '"status":"imported_by_user"',
     );
   });
+
+  it("adds a requirements document: the model, the coverage and a receipt for the agent", async () => {
+    const postResult = vi.fn();
+    renderWithProviders(
+      <SynthWorkbench
+        projectId={projectId}
+        postResult={postResult}
+        onGenerate={vi.fn()}
+        busy={false}
+      />,
+    );
+    expect(screen.getByTestId("synth-documents")).toBeInTheDocument();
+    const brd = [
+      "BR-1: Each customer can have many orders.",
+      "BR-2: The order total must be between 1 and 999.",
+      "BR-3: Orders are archived after a year.",
+    ].join("\n");
+    const file = new File([brd], "orders-brd.md", { type: "text/markdown" });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId("synth-documents-input"), {
+        target: { files: [file] },
+      });
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("synth-document-orders_brd"),
+      ).toBeInTheDocument(),
+    );
+    const project = useSynthStudioStore.getState().projects[projectId];
+    expect(project.model.entities.map((e) => e.id).sort()).toEqual([
+      "customer",
+      "order",
+    ]);
+    // Two of three requirements are in the model; BR-3 is the gap.
+    expect(
+      within(screen.getByTestId("synth-coverage")).getByRole("progressbar"),
+    ).toHaveAttribute("aria-valuenow", "67");
+    const gaps = within(
+      screen.getByTestId("synth-coverage-list"),
+    ).getAllByTestId("synth-requirement");
+    expect(gaps.map((g) => g.getAttribute("data-covered"))).toEqual(["false"]);
+    expect(String(postResult.mock.calls[0][0])).toContain(
+      "document_added_by_user",
+    );
+  });
 });

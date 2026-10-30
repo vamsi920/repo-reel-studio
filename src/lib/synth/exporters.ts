@@ -143,6 +143,219 @@ function sqlLiteral(value: unknown, field: Field, dialect: Dialect): string {
 
 const INSERT_BATCH = 500;
 
+function columnType(field: Field, dialect: Dialect): string {
+  const n = field.maxLength && field.maxLength > 0 ? field.maxLength : 255;
+  const scale = field.scale ?? 2;
+  const longestEnum = Math.max(
+    16,
+    ...(field.enumValues ?? []).map((v) => v.length),
+  );
+  const pick = (map: Record<Dialect, string>) => map[dialect];
+  switch (field.type) {
+    case "uuid":
+      return pick({
+        postgres: "UUID",
+        mysql: "CHAR(36)",
+        sqlite: "TEXT",
+        sqlserver: "UNIQUEIDENTIFIER",
+        oracle: "VARCHAR2(36)",
+      });
+    case "text":
+      return pick({
+        postgres: "TEXT",
+        mysql: "TEXT",
+        sqlite: "TEXT",
+        sqlserver: "NVARCHAR(MAX)",
+        oracle: "CLOB",
+      });
+    case "integer":
+      return pick({
+        postgres: "BIGINT",
+        mysql: "BIGINT",
+        sqlite: "INTEGER",
+        sqlserver: "BIGINT",
+        oracle: "NUMBER(19)",
+      });
+    case "float":
+      return pick({
+        postgres: "DOUBLE PRECISION",
+        mysql: "DOUBLE",
+        sqlite: "REAL",
+        sqlserver: "FLOAT",
+        oracle: "BINARY_DOUBLE",
+      });
+    case "decimal":
+      return pick({
+        postgres: `NUMERIC(18, ${scale})`,
+        mysql: `DECIMAL(18, ${scale})`,
+        sqlite: "NUMERIC",
+        sqlserver: `DECIMAL(18, ${scale})`,
+        oracle: `NUMBER(18, ${scale})`,
+      });
+    case "boolean":
+      return pick({
+        postgres: "BOOLEAN",
+        mysql: "BOOLEAN",
+        sqlite: "INTEGER",
+        sqlserver: "BIT",
+        oracle: "NUMBER(1)",
+      });
+    case "date":
+      return pick({
+        postgres: "DATE",
+        mysql: "DATE",
+        sqlite: "TEXT",
+        sqlserver: "DATE",
+        oracle: "DATE",
+      });
+    case "datetime":
+      return pick({
+        postgres: "TIMESTAMP",
+        mysql: "DATETIME(6)",
+        sqlite: "TEXT",
+        sqlserver: "DATETIME2",
+        oracle: "TIMESTAMP",
+      });
+    case "time":
+      return pick({
+        postgres: "TIME",
+        mysql: "TIME",
+        sqlite: "TEXT",
+        sqlserver: "TIME",
+        oracle: "VARCHAR2(16)",
+      });
+    case "json":
+      return pick({
+        postgres: "JSONB",
+        mysql: "JSON",
+        sqlite: "TEXT",
+        sqlserver: "NVARCHAR(MAX)",
+        oracle: "CLOB",
+      });
+    case "bytes":
+      return pick({
+        postgres: "BYTEA",
+        mysql: "BLOB",
+        sqlite: "BLOB",
+        sqlserver: "VARBINARY(MAX)",
+        oracle: "BLOB",
+      });
+    case "array":
+      return pick({
+        postgres: "TEXT[]",
+        mysql: "JSON",
+        sqlite: "TEXT",
+        sqlserver: "NVARCHAR(MAX)",
+        oracle: "CLOB",
+      });
+    case "enum":
+      return pick({
+        postgres: `VARCHAR(${longestEnum})`,
+        mysql: `VARCHAR(${longestEnum})`,
+        sqlite: "TEXT",
+        sqlserver: `NVARCHAR(${longestEnum})`,
+        oracle: `VARCHAR2(${longestEnum})`,
+      });
+    default:
+      return pick({
+        postgres: `VARCHAR(${n})`,
+        mysql: `VARCHAR(${n})`,
+        sqlite: "TEXT",
+        sqlserver: `NVARCHAR(${n})`,
+        oracle: `VARCHAR2(${Math.min(n, 4000)})`,
+      });
+  }
+}
+
+/**
+ * CREATE TABLE statements for the model, in foreign-key order, so a
+ * dataset can be loaded where no application has created the tables yet
+ * (a document project, a fresh test database). Keys, NOT NULL, UNIQUE,
+ * allowed values and numeric ranges become constraints; foreign keys are
+ * added after every table exists (SQLite declares them inline).
+ */
+export function toSqlSchema(
+  model: DataModel,
+  order: string[],
+  dialect: Dialect,
+): string {
+  const q = (name: string) => quoteIdent(name, dialect);
+  const byId = new Map(model.entities.map((e) => [e.id, e]));
+  const ordered = [
+    ...order.map((id) => byId.get(id)).filter((e): e is Entity => Boolean(e)),
+    ...model.entities.filter((e) => !order.includes(e.id)),
+  ];
+  const lines: string[] = [
+    "-- Tables for the Neo Synth data model (load before the seed file).",
+    "",
+  ];
+  const foreignKeys: string[] = [];
+  for (const entity of ordered) {
+    const defs: string[] = [];
+    const pk = entity.fields.filter((f) => f.primaryKey);
+    for (const field of entity.fields) {
+      const parts = [q(field.name), columnType(field, dialect)];
+      if (!field.nullable || field.primaryKey) parts.push("NOT NULL");
+      if (field.unique && !field.primaryKey) parts.push("UNIQUE");
+      // Lossy privacy treatments change values; their checks would fail.
+      const checked = !field.treatment || field.treatment === "synthesize";
+      if (checked && field.type === "enum" && field.enumValues?.length) {
+        parts.push(
+          `CHECK (${q(field.name)} IN (${field.enumValues.map((v) => `'${v.replace(/'/g, "''")}'`).join(", ")}))`,
+        );
+      }
+      const numeric =
+        field.type === "integer" ||
+        field.type === "decimal" ||
+        field.type === "float";
+      if (
+        checked &&
+        numeric &&
+        (field.min !== undefined || field.max !== undefined)
+      ) {
+        const bounds = [
+          field.min !== undefined ? `${q(field.name)} >= ${field.min}` : null,
+          field.max !== undefined ? `${q(field.name)} <= ${field.max}` : null,
+        ].filter(Boolean);
+        parts.push(`CHECK (${bounds.join(" AND ")})`);
+      }
+      if (field.references && dialect === "sqlite") {
+        const parent = byId.get(field.references.entity);
+        if (parent)
+          parts.push(
+            `REFERENCES ${q(tableName(parent))} (${q(field.references.field)})`,
+          );
+      }
+      defs.push(`  ${parts.join(" ")}`);
+      if (field.references && dialect !== "sqlite") {
+        const parent = byId.get(field.references.entity);
+        if (parent) {
+          foreignKeys.push(
+            `ALTER TABLE ${q(tableName(entity))} ADD FOREIGN KEY (${q(field.name)}) REFERENCES ${q(tableName(parent))} (${q(field.references.field)});`,
+          );
+        }
+      }
+    }
+    if (pk.length)
+      defs.push(`  PRIMARY KEY (${pk.map((f) => q(f.name)).join(", ")})`);
+    for (const group of entity.uniqueTogether ?? []) {
+      defs.push(`  UNIQUE (${group.map((f) => q(f)).join(", ")})`);
+    }
+    const ifNotExists =
+      dialect === "postgres" || dialect === "mysql" || dialect === "sqlite"
+        ? "IF NOT EXISTS "
+        : "";
+    lines.push(
+      `CREATE TABLE ${ifNotExists}${q(tableName(entity))} (`,
+      defs.join(",\n"),
+      ");",
+      "",
+    );
+  }
+  if (foreignKeys.length) lines.push(...foreignKeys, "");
+  return lines.join("\n");
+}
+
 export function toSql(
   model: DataModel,
   dataset: Dataset,
@@ -409,12 +622,22 @@ export function exportDataset(
   }
   if (wants.has("sql_postgres")) {
     files.push({
+      path: "schema.postgres.sql",
+      content: toSqlSchema(model, dataset.order, "postgres"),
+      mimeType: "application/sql",
+    });
+    files.push({
       path: "seed.postgres.sql",
       content: toSql(model, dataset, "postgres"),
       mimeType: "application/sql",
     });
   }
   if (wants.has("sql_mysql")) {
+    files.push({
+      path: "schema.mysql.sql",
+      content: toSqlSchema(model, dataset.order, "mysql"),
+      mimeType: "application/sql",
+    });
     files.push({
       path: "seed.mysql.sql",
       content: toSql(model, dataset, "mysql"),
@@ -423,6 +646,11 @@ export function exportDataset(
   }
   if (wants.has("sql_sqlserver")) {
     files.push({
+      path: "schema.sqlserver.sql",
+      content: toSqlSchema(model, dataset.order, "sqlserver"),
+      mimeType: "application/sql",
+    });
+    files.push({
       path: "seed.sqlserver.sql",
       content: toSql(model, dataset, "sqlserver"),
       mimeType: "application/sql",
@@ -430,12 +658,22 @@ export function exportDataset(
   }
   if (wants.has("sql_oracle")) {
     files.push({
+      path: "schema.oracle.sql",
+      content: toSqlSchema(model, dataset.order, "oracle"),
+      mimeType: "application/sql",
+    });
+    files.push({
       path: "seed.oracle.sql",
       content: toSql(model, dataset, "oracle"),
       mimeType: "application/sql",
     });
   }
   if (wants.has("sql_sqlite")) {
+    files.push({
+      path: "schema.sqlite.sql",
+      content: toSqlSchema(model, dataset.order, "sqlite"),
+      mimeType: "application/sql",
+    });
     files.push({
       path: "seed.sqlite.sql",
       content: toSql(model, dataset, "sqlite"),

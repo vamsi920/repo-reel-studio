@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router";
 import {
   Database,
   Dices,
+  FileText,
   FolderOpen,
   GitBranch,
   Plus,
@@ -60,6 +61,11 @@ import {
   statusLabelKey,
 } from "#/components/features/synth/studio/synth-workbench";
 import { SYNTH_SYSTEM_BRIEF } from "#/components/features/synth/brief";
+import {
+  DocumentIntakeDialog,
+  type PickedDocument,
+} from "#/components/features/synth/document-intake-dialog";
+import { flushDocuments, ingestDocument } from "#/services/synth-documents";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { Branch, GitRepository } from "#/types/git";
 import type { Provider } from "#/types/settings";
@@ -227,6 +233,40 @@ function useReplayMissedCommands(
   }, [eventCount, conversationId, conversationUrl, sessionApiKey, project.id]);
 }
 
+/**
+ * Writes documents uploaded before the conversation had a runtime into its
+ * workspace, retrying while the runtime starts (a few seconds on a cold
+ * agent-server).
+ */
+function useFlushDocuments(
+  project: SynthProject,
+  runInWorkspace: ReturnType<typeof createWorkspaceRunner>,
+) {
+  const pending = (project.documents ?? []).filter(
+    (d) => !d.workspacePath,
+  ).length;
+  React.useEffect(() => {
+    if (pending === 0) return undefined;
+    let cancelled = false;
+    let attempt = 0;
+    const tick = async () => {
+      if (cancelled) return;
+      attempt += 1;
+      const written = await flushDocuments(project.id, runInWorkspace).catch(
+        () => [] as string[],
+      );
+      if (!cancelled && written.length === 0 && attempt < 10) {
+        timer = setTimeout(() => void tick(), 3000);
+      }
+    };
+    let timer = setTimeout(() => void tick(), 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pending, project.id, runInWorkspace]);
+}
+
 function StudioPanes({ project }: { project: SynthProject }) {
   const { t } = useTranslation("openhands");
   const isMobile = useBreakpoint();
@@ -269,6 +309,11 @@ function StudioPanes({ project }: { project: SynthProject }) {
 
   const conversationUrl = conversation?.conversation_url ?? null;
   const sessionApiKey = conversation?.session_api_key ?? null;
+  const runInWorkspace = React.useMemo(
+    () => createWorkspaceRunner(conversationId, conversationUrl, sessionApiKey),
+    [conversationId, conversationUrl, sessionApiKey],
+  );
+  useFlushDocuments(project, runInWorkspace);
   useReplayMissedCommands(
     project,
     conversationId,
@@ -324,6 +369,7 @@ function StudioPanes({ project }: { project: SynthProject }) {
       busy={busy}
       expanded={!isMobile && expanded}
       onToggleExpand={isMobile ? undefined : toggleExpanded}
+      runInWorkspace={runInWorkspace}
     />
   );
 
@@ -418,6 +464,9 @@ type CreateVariables = Parameters<
 
 function variablesForSource(source: ProjectSource): CreateVariables {
   if (source.kind === "folder") return { workingDir: source.name };
+  // No codebase: the agent works in the default workspace, where the
+  // documents are written under synth-input/<project>/.
+  if (source.kind === "document") return {};
   return {
     repository: {
       name: source.name,
@@ -518,6 +567,7 @@ function RestartConversation({ project }: { project: SynthProject }) {
 /* ── Project list / intake ─────────────────────────────────────────────── */
 
 function sourceLabel(source: ProjectSource): string {
+  if (source.kind === "document") return source.name;
   return source.kind === "repository"
     ? `${source.name}${source.branch ? `@${source.branch}` : ""}`
     : source.name;
@@ -584,6 +634,7 @@ function ProjectsScreen() {
   const launch = useLaunchSynthConversation();
   const [repoDialogOpen, setRepoDialogOpen] = React.useState(false);
   const [folderOpen, setFolderOpen] = React.useState(false);
+  const [documentOpen, setDocumentOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
 
   const list = React.useMemo(
@@ -599,6 +650,46 @@ function ProjectsScreen() {
     const project = createProject({ name, source });
     try {
       await launch(project, t(I18nKey.SYNTH$START_PROMPT));
+      navigate(`/synth/${project.id}`);
+    } catch (error) {
+      removeProject(project.id);
+      displayErrorToast(
+        error instanceof Error && error.message
+          ? error.message
+          : t(I18nKey.SYNTH$START_ERROR),
+      );
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  // Documents are read and merged before the conversation starts, so the
+  // studio opens on a model and the agent's first describe sees it.
+  const startDocumentProject = async (
+    name: string,
+    documents: PickedDocument[],
+  ) => {
+    setStarting(true);
+    const project = createProject({
+      name,
+      source: {
+        kind: "document",
+        name: documents
+          .map((d) => d.name)
+          .join(", ")
+          .slice(0, 200),
+      },
+    });
+    try {
+      for (const doc of documents) {
+        await ingestDocument(
+          project.id,
+          { name: doc.name, bytes: doc.bytes },
+          { addedBy: "user" },
+        );
+      }
+      await launch(project, t(I18nKey.SYNTH$DOC_START_PROMPT));
+      setDocumentOpen(false);
       navigate(`/synth/${project.id}`);
     } catch (error) {
       removeProject(project.id);
@@ -687,6 +778,15 @@ function ProjectsScreen() {
             className="ame-btn-secondary ame-btn-sm"
           >
             <FolderOpen size={14} aria-hidden /> {t(I18nKey.SYNTH$PICK_FOLDER)}
+          </button>
+          <button
+            type="button"
+            data-testid="synth-pick-document"
+            disabled={starting}
+            onClick={() => setDocumentOpen(true)}
+            className="ame-btn-secondary ame-btn-sm"
+          >
+            <FileText size={14} aria-hidden /> {t(I18nKey.SYNTH$PICK_DOCUMENT)}
           </button>
           {starting ? (
             <span className="self-center text-xs text-[var(--text-tertiary)]">
@@ -781,6 +881,14 @@ function ProjectsScreen() {
         isOpen={folderOpen}
         onClose={() => setFolderOpen(false)}
         onAdd={onFolder}
+      />
+      <DocumentIntakeDialog
+        isOpen={documentOpen}
+        busy={starting}
+        onClose={() => setDocumentOpen(false)}
+        onConfirm={(name, documents) =>
+          void startDocumentProject(name, documents)
+        }
       />
     </main>
   );

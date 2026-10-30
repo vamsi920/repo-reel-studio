@@ -14,6 +14,8 @@ import { ModelCard, RulesCard } from "./model-card";
 import { GenerateCard } from "./generate-card";
 import { RunsCard } from "./runs-card";
 import { MaskCard } from "./mask-card";
+import { DocumentsCard } from "./documents-card";
+import type { RunInWorkspace } from "#/lib/modernization/replay-harness";
 import { NeoOrb, useSynthThinking } from "./thinking";
 
 const STATUS_LABEL_KEY: Record<SynthProject["status"], I18nKey> = {
@@ -51,8 +53,11 @@ export function SynthWorkbench({
   busy,
   expanded = false,
   onToggleExpand,
+  runInWorkspace,
 }: {
   projectId: string;
+  /** The conversation's workspace, for writing added documents. */
+  runInWorkspace?: RunInWorkspace;
   postResult: PostResultFn;
   onGenerate: (request: GenerateRequest) => void;
   busy: boolean;
@@ -108,8 +113,22 @@ export function SynthWorkbench({
     return open !== 0 ? open : Date.parse(a.at) - Date.parse(b.at);
   });
 
+  const documentsCard = {
+    key: "documents",
+    node: (
+      <DocumentsCard
+        project={project}
+        postResult={postResult}
+        runInWorkspace={runInWorkspace}
+      />
+    ),
+  };
+  // Documents are the source of a document project, an extra for others.
+  const fromDocuments =
+    project.source.kind === "document" || (project.documents ?? []).length > 0;
   const cards: { key: string; node: React.ReactNode }[] = [
     { key: "live", node: <LiveCard project={project} /> },
+    ...(fromDocuments ? [documentsCard] : []),
     {
       key: "model",
       node: (
@@ -128,6 +147,7 @@ export function SynthWorkbench({
           },
         ]
       : []),
+    ...(fromDocuments ? [] : [documentsCard]),
     ...questions.map((q) => ({
       key: `question-${q.id}`,
       node: (

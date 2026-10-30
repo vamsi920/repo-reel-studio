@@ -16,6 +16,7 @@ import { getCachedRun, useSynthStudioStore } from "#/stores/synth-studio-store";
 import type { SynthControlAction } from "#/types/agent-server/core";
 import type { RunInWorkspace } from "#/lib/modernization/replay-harness";
 import { PRISMA_SHOP } from "../lib/synth/fixtures";
+import { clearDocumentCache, ingestDocument } from "#/services/synth-documents";
 
 vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
@@ -738,5 +739,153 @@ describe("synth_control dispatcher", () => {
         ["gold", "silver"].includes(String(row.lvl)),
       ),
     ).toBe(true);
+  });
+});
+
+describe("document projects", () => {
+  const BRD = [
+    "# Loans BRD",
+    "",
+    "BR-1: The system shall capture the following details for each customer: full name, email address and date of birth.",
+    "BR-2: Each customer can have many loans.",
+    "BR-3: The loan amount must be between 500 and 50,000.",
+    "BR-4: Loan status can be Open, Closed or Defaulted.",
+    "BR-5: A defaulted loan is handed to the collections team within 30 days.",
+    "Contact for questions: jane.doe@gmail.com",
+  ].join("\n");
+  let projectId: string;
+
+  beforeEach(() => {
+    const store = useSynthStudioStore.getState();
+    store.reset();
+    clearDocumentCache();
+    projectId = store.createProject({
+      name: "loans",
+      source: { kind: "document", name: "loans-brd.md" },
+    }).id;
+    store.setConversationId(projectId, CONVERSATION);
+  });
+
+  it("builds the model from a document before any runtime exists, then hands the agent the scrubbed text", async () => {
+    const outcome = await ingestDocument(
+      projectId,
+      { name: "loans-brd.md", bytes: new TextEncoder().encode(BRD) },
+      { addedBy: "user" },
+    );
+    expect(outcome.ok).toBe(true);
+    const project = useSynthStudioStore.getState().projects[projectId];
+    expect(project.model.entities.map((e) => e.id).sort()).toEqual([
+      "customer",
+      "loan",
+    ]);
+    expect(project.status).toBe("modeling");
+    expect(project.documents[0]).toMatchObject({
+      workspacePath: null,
+      personalValuesRemoved: 1,
+    });
+
+    const ws = fakeWorkspace();
+    const [described] = await dispatch("describe", {}, ws.run);
+    const docDir = `synth-input/${projectId}`;
+    expect(ws.written).toContain(`'${docDir}/loans_brd.md'`);
+    expect(described.documents).toEqual([
+      expect.objectContaining({
+        id: "loans_brd",
+        path: `${docDir}/loans_brd.md`,
+        text_available: true,
+      }),
+    ]);
+    // BR-5 talks about loans but nothing in the model expresses it yet.
+    const requirements = described.requirements as {
+      uncovered: { id: string }[];
+      covered: number;
+      data: number;
+    };
+    expect(requirements.uncovered.map((r) => r.id)).toEqual(["BR-5"]);
+
+    const [chunk] = await dispatch("describe", { document_id: "loans_brd" });
+    const text = (chunk.document_text as { text: string }).text;
+    expect(text).toContain("BR-3");
+    expect(text).not.toContain("jane.doe@gmail.com");
+  });
+
+  it("counts a requirement covered once the agent cites it", async () => {
+    await ingestDocument(
+      projectId,
+      { name: "loans-brd.md", bytes: new TextEncoder().encode(BRD) },
+      { addedBy: "user" },
+    );
+    await dispatch("record_rules", {
+      rules: [
+        {
+          entity: "loan",
+          description:
+            "Defaulted loans go to collections within 30 days (not generated).",
+          evidence: ["loans-brd.md BR-5"],
+          spec: { kind: "range", field: "amount", min: 500, max: 50000 },
+        },
+      ],
+    });
+    const [described] = await dispatch("describe");
+    const requirements = described.requirements as {
+      uncovered: unknown[];
+      covered: number;
+      data: number;
+    };
+    expect(requirements.uncovered).toEqual([]);
+    expect(requirements.covered).toBe(requirements.data);
+  });
+
+  it("import_schema reads requirement documents from the workspace and keeps originals it cannot read", async () => {
+    const ws = fakeWorkspace();
+    const files: Record<string, string> = {
+      "docs/Loans BRD.md": BRD,
+      "docs/scan.pdf": "%PDF-1.4\n%%EOF",
+    };
+    const run: RunInWorkspace = async (command) => {
+      const read = command.match(
+        /^test -f '([^']+)' && head -c \d+ '[^']+' \| base64/,
+      );
+      if (read && files[read[1]] !== undefined) {
+        return {
+          exit_code: 0,
+          stdout: Buffer.from(files[read[1]], "utf8").toString("base64"),
+        };
+      }
+      return ws.run(command);
+    };
+    const [receiptBody] = await dispatch(
+      "import_schema",
+      { paths: ["docs/Loans BRD.md", "docs/scan.pdf"] },
+      run,
+    );
+    expect(receiptBody.status).toBe("ok");
+    const imported = receiptBody.imported as Record<string, unknown>[];
+    expect(imported[0]).toMatchObject({
+      document_id: "loans_brd",
+      entities: ["customer", "loan"],
+    });
+    expect(imported[1]).toMatchObject({ document_id: "scan", entities: [] });
+    const project = useSynthStudioStore.getState().projects[projectId];
+    const scan = project.documents.find((d) => d.id === "scan")!;
+    expect(scan).toMatchObject({ unreadable: true, addedBy: "agent" });
+    expect(scan.originalPath).toBe(
+      `synth-input/${projectId}/scan.original.pdf`,
+    );
+    expect(ws.written).toContain(
+      `'synth-input/${projectId}/scan.original.pdf'`,
+    );
+  });
+
+  it("refuses files it cannot read at all", async () => {
+    const outcome = await ingestDocument(
+      projectId,
+      { name: "broken.docx", bytes: new TextEncoder().encode("not a zip") },
+      { addedBy: "user" },
+    );
+    expect(outcome).toMatchObject({ ok: false });
+    expect(
+      useSynthStudioStore.getState().projects[projectId].documents,
+    ).toEqual([]);
   });
 });

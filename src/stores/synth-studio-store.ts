@@ -16,6 +16,7 @@ import {
 } from "#/lib/synth/model";
 import type { ExportFormat, ExportedFile } from "#/lib/synth/exporters";
 import type { ValidationReport } from "#/lib/synth/validate";
+import type { DocRequirement, DocumentFormat } from "#/lib/synth/documents";
 
 /**
  * Neo Synth studio state.
@@ -33,11 +34,39 @@ import type { ValidationReport } from "#/lib/synth/validate";
  */
 
 export interface ProjectSource {
-  kind: "repository" | "folder";
-  /** "owner/name" for a repository, absolute path for a folder. */
+  /**
+   * `document`: no codebase -- the data model comes from requirement
+   * documents (BRD, FRD, data dictionary) the user uploaded.
+   */
+  kind: "repository" | "folder" | "document";
+  /** "owner/name", an absolute path, or the first document's file name. */
   name: string;
   branch?: string;
   gitProvider?: string;
+}
+
+/**
+ * A requirements document read into the project. Only the scrubbed text
+ * goes to the agent's workspace; the store keeps what came out of it.
+ */
+export interface SynthDocument {
+  id: string;
+  name: string;
+  format: DocumentFormat;
+  bytes: number;
+  chars: number;
+  addedAt: string;
+  addedBy: "user" | "agent";
+  /** Scrubbed text in the agent's workspace, once written. */
+  workspacePath: string | null;
+  /** The original file, written only when its text could not be read here. */
+  originalPath?: string | null;
+  unreadable: boolean;
+  personalValuesRemoved: number;
+  entities: string[];
+  fields: number;
+  rules: number;
+  warnings: string[];
 }
 
 export interface ChoiceOption {
@@ -132,6 +161,10 @@ export interface SynthProject {
   runs: SynthRun[];
   log: LogEntry[];
   report: SynthReport | null;
+  /** Requirement documents this project was built from (document projects). */
+  documents: SynthDocument[];
+  /** What those documents asked for, and what each became in the model. */
+  requirements: DocRequirement[];
   /**
    * Ids of synth_control actions this studio already dispatched. A command
    * that reaches the agent-server while the tab is reloading (Vite HMR, a
@@ -147,6 +180,7 @@ export const MAX_LOG_ENTRIES = 400;
 export const MAX_HANDLED_ACTIONS = 300;
 export const MAX_RUNS = 30;
 export const PREVIEW_ROWS = 8;
+export const MAX_REQUIREMENTS = 600;
 
 interface SynthStudioState {
   projects: Record<string, SynthProject>;
@@ -194,6 +228,17 @@ interface SynthStudioActions {
     distribution: Distribution | null,
   ) => void;
   upsertRules: (projectId: string, rules: Rule[]) => void;
+  /** Adds (or replaces, by id) a document and its requirements. */
+  addDocument: (
+    projectId: string,
+    document: SynthDocument,
+    requirements: DocRequirement[],
+  ) => void;
+  setDocumentPaths: (
+    projectId: string,
+    documentId: string,
+    paths: { workspacePath: string | null; originalPath?: string | null },
+  ) => void;
   removeRule: (projectId: string, ruleId: string) => void;
   upsertFlows: (projectId: string, flows: DataFlow[]) => void;
   askQuestion: (projectId: string, question: ChoiceQuestion) => void;
@@ -255,6 +300,8 @@ export function emptySynthProject(input: {
     runs: [],
     log: [],
     report: null,
+    documents: [],
+    requirements: [],
     handledActionIds: [],
     createdAt: at,
     updatedAt: at,
@@ -429,6 +476,27 @@ export const useSynthStudioStore = create<SynthStudioStore>()(
             ),
           })),
 
+        addDocument: (projectId, document, requirements) =>
+          patchProject(projectId, (p) => ({
+            ...p,
+            documents: [
+              ...(p.documents ?? []).filter((d) => d.id !== document.id),
+              document,
+            ],
+            requirements: [
+              ...(p.requirements ?? []).filter((r) => r.docId !== document.id),
+              ...requirements,
+            ].slice(0, MAX_REQUIREMENTS),
+          })),
+
+        setDocumentPaths: (projectId, documentId, paths) =>
+          patchProject(projectId, (p) => ({
+            ...p,
+            documents: (p.documents ?? []).map((d) =>
+              d.id === documentId ? { ...d, ...paths } : d,
+            ),
+          })),
+
         upsertRules: (projectId, rules) =>
           patchModel(projectId, (model) => {
             const byId = new Map(model.rules.map((r) => [r.id, r]));
@@ -543,8 +611,19 @@ export const useSynthStudioStore = create<SynthStudioStore>()(
     },
     {
       name: "openhands-synth-studio",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // v2: document projects (documents + requirements on every project).
+      migrate: (persisted, version) => {
+        const state = persisted as SynthStudioState;
+        if (version < 2 && state?.projects) {
+          for (const project of Object.values(state.projects)) {
+            project.documents ??= [];
+            project.requirements ??= [];
+          }
+        }
+        return state;
+      },
     },
   ),
 );

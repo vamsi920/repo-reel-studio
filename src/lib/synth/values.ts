@@ -1,5 +1,6 @@
 import type { Field, SemanticKind } from "./model";
 import { uuidFrom, type Rng } from "./rng";
+import { valueFromPattern } from "./pattern";
 
 /**
  * Value generators per semantic kind. Deterministic given the rng, so the
@@ -702,8 +703,15 @@ export function valueFor(
 
   if (field.enumValues?.length) return rng.pick(field.enumValues);
 
-  // Example values the user gave for the column beat a guessed meaning.
-  if (field.examples?.length) {
+  // A declared format (a document's "LN-YYYY-#####") is the contract.
+  if (field.pattern && !numeric && !dateish && field.type !== "boolean") {
+    const fromPattern = valueFromPattern(field.pattern, rng);
+    if (fromPattern !== null) return fromPattern;
+  }
+
+  // Example values the user gave for the column beat a guessed meaning
+  // (not for unique columns: a handful of examples cannot be unique).
+  if (field.examples?.length && !field.unique) {
     const picked = rng.pick(field.examples);
     if (numeric) {
       const n = Number(picked);

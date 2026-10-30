@@ -64,10 +64,17 @@ import {
 } from "#/lib/synth/scenarios";
 import { parseSchemaFile } from "#/lib/synth/parsers";
 import { linkReferencesByName } from "#/lib/synth/sample";
+import { isDocumentPath } from "#/lib/synth/documents";
+import {
+  describeDocuments,
+  flushDocuments,
+  ingestDocument,
+} from "#/services/synth-documents";
 import {
   findSchemaFiles,
   MAX_READ_BYTES,
   MAX_WORKSPACE_BYTES,
+  readWorkspaceBytes,
   readWorkspaceFile,
   SYNTH_OUTPUT_DIR,
   writeRunToWorkspace,
@@ -181,9 +188,10 @@ export function findProjectForConversation(
 
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
-  describe: "{}",
+  describe:
+    "{} | {document_id, offset?} (the second form also returns up to 12000 characters of that requirement document's scrubbed text, with next_offset)",
   import_schema:
-    "{paths:[string]} (workspace-relative; schema.prisma, *.sql, openapi.json, *.schema.json, or sample rows: *.csv / JSON arrays of objects -- shape and statistics are learned, personal values are never kept)",
+    "{paths:[string]} (workspace-relative; schema.prisma, *.sql, openapi.json, *.schema.json, sample rows: *.csv / JSON arrays of objects -- shape and statistics are learned, personal values are never kept -- or requirement documents: *.md, *.txt, *.html, *.docx, *.xlsx, *.pdf (BRD, FRD, SRS, data dictionary) -- entities, fields, relations and rules are extracted and every element is traced to its requirement)",
   record_model:
     "{entities:[{id?, name, table?, description?, evidence:[string], fields:[{name, type: string|text|integer|float|decimal|boolean|date|datetime|time|uuid|json|enum|bytes|array (or any SQL/ORM type word), semantic?: email|first_name|full_name|phone|url|price|amount|status|created_at|... , nullable?, unique?, primary_key?, generated?, references?: {entity, field} | 'entity.field', enum_values?:[string], min?, max?, max_length?, pattern?, description?, pii?: direct|quasi|sensitive|none, treatment?: synthesize|pseudonymize|mask|generalize|redact|keep (only after the user chose it), context?: string, examples?:[string]}], unique_together?:[[field]]}], replace?: boolean}",
   record_rules:
@@ -1173,12 +1181,23 @@ export async function handleSynthControlAction(
 
   switch (action.command) {
     case "describe": {
+      if (context.runInWorkspace) {
+        // Documents uploaded before the runtime was up land now, before
+        // the agent is told where they are.
+        await flushDocuments(projectId, context.runInWorkspace);
+      }
       const schemaFiles = context.runInWorkspace
         ? await findSchemaFiles(context.runInWorkspace)
         : [];
+      const fresh =
+        useSynthStudioStore.getState().projects[projectId] ?? project;
       postReceipt(context, {
         status: "ok",
-        ...describeProject(project, schemaFiles),
+        ...describeProject(fresh, schemaFiles),
+        ...describeDocuments(fresh, {
+          documentId: str(payload.document_id),
+          offset: num(payload.offset),
+        }),
       });
       return;
     }
@@ -1207,7 +1226,41 @@ export async function handleSynthControlAction(
       }
       const imported: Record<string, unknown>[] = [];
       const allEntities: Entity[] = [];
+      let documentEntities = 0;
       for (const path of paths.slice(0, 20)) {
+        if (isDocumentPath(path)) {
+          const bytes = await readWorkspaceBytes(context.runInWorkspace, path);
+          if (!bytes) {
+            imported.push({ path, error: "not_found_or_unreadable" });
+            continue;
+          }
+          const outcome = await ingestDocument(
+            projectId,
+            { name: path.split("/").pop() ?? path, bytes },
+            {
+              addedBy: "agent",
+              runInWorkspace: context.runInWorkspace,
+              now: context.now,
+            },
+          );
+          documentEntities += outcome.extraction?.entities.length ?? 0;
+          imported.push({
+            path,
+            format: outcome.document?.format ?? "document",
+            document_id: outcome.document?.id,
+            entities: outcome.extraction?.entities.map((e) => e.id),
+            rules: outcome.extraction?.rules.length,
+            requirements: outcome.extraction?.requirements.length,
+            scrubbed_text: outcome.document?.workspacePath ?? undefined,
+            personal_values_removed:
+              outcome.extraction?.personalValuesRemoved || undefined,
+            error: outcome.ok ? undefined : outcome.reason,
+            warnings: outcome.extraction?.warnings.length
+              ? outcome.extraction.warnings.slice(0, 10)
+              : undefined,
+          });
+          continue;
+        }
         const content = await readWorkspaceFile(context.runInWorkspace, path);
         // A sample bigger than the read limit arrives cut off.
         const truncated =
@@ -1242,14 +1295,19 @@ export async function handleSynthControlAction(
         );
       }
       const after = useSynthStudioStore.getState().projects[projectId];
+      const anything =
+        allEntities.length > 0 ||
+        documentEntities > 0 ||
+        imported.some((i) => i.document_id);
       postReceipt(context, {
-        status: allEntities.length ? "ok" : "rejected",
-        reason: allEntities.length ? undefined : "nothing_imported",
+        status: anything ? "ok" : "rejected",
+        reason: anything ? undefined : "nothing_imported",
         imported,
         entities_total: after?.model.entities.length ?? 0,
         model_problems: after ? modelProblems(after.model) : [],
-        guidance:
-          "Parsers read structure only. Now read the code for what the schema cannot say: business rules (record_rules), data flows (record_flows), and the meaning of ambiguous fields (record_model with semantic).",
+        guidance: imported.some((i) => i.document_id)
+          ? 'Documents were read deterministically: what a sentence states clearly is in the model, the rest is in describe\'s requirements.uncovered. Read each document in full (scrubbed_text, or describe {document_id}), then refine with record_model / record_rules / record_flows citing the requirement id in evidence (e.g. "BRD.docx BR-012"), and ask_choice for anything the document leaves open.'
+          : "Parsers read structure only. Now read the code for what the schema cannot say: business rules (record_rules), data flows (record_flows), and the meaning of ambiguous fields (record_model with semantic).",
       });
       return;
     }
