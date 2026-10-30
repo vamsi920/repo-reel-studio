@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "关闭",
   "ENVIRONMENT$COPILOT_MINIMIZE": "最小化",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "只有组织管理员才能运行引导代理，因为它会更改此部署的配置方式。",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "引导代理需要一个 OpenHands 代理配置文件。当前选择的配置文件运行的是另一个代理，无法驱动此屏幕。",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "引导代理需要一个 Neo 代理配置文件。当前选择的配置文件运行的是另一个代理，无法驱动此屏幕。",
   "ENVIRONMENT$COPILOT_STARTING": "正在启动引导代理",
   "ENVIRONMENT$COPILOT_SEED_FIX": "帮我解决这个问题",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "目前还无法从这里访问引导对话。请打开工作室来回应此请求。",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}：{{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "你的组织已连接 GitHub，但仓库列表来自你自己的 GitHub 账户。请连接你的账户以查看你的仓库。",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "连接你的 GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "设置助手需要本地后端。OpenHands Cloud 目前还无法运行它用于配置此工作区的工具。请切换到本地后端，或直接连接提供商。",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "设置助手需要本地后端。Neo Cloud 目前还无法运行它用于配置此工作区的工具。请切换到本地后端，或直接连接提供商。",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "直接连接提供商",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "已交付",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "已恢复 · 已交付",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "显示全部（{{count}}）",
   "SYNTH$COVERAGE_SHOW_GAPS": "仅显示缺口",
   "SYNTH$COVERAGE_GAP": "尚未进入模型",
-  "SYNTH$COVERAGE_COVERED": "已在模型中"
+  "SYNTH$COVERAGE_COVERED": "已在模型中",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo 代理"
 }

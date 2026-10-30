@@ -27,7 +27,7 @@ function UnpricedNote({ show }: { show: boolean }) {
   const { t } = useTranslation("openhands");
   if (!show) return null;
   return (
-    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+    <p className="text-xs text-[var(--text-secondary)]">
       {t(I18nKey.USAGE$UNPRICED_NOTE)}
     </p>
   );
@@ -144,7 +144,7 @@ export function UsageCostsTab({ data }: { data: UsageData }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[32rem] text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-secondary)]">
               <th className="py-2 pr-4 font-medium">
                 {t(I18nKey.USAGE$PERIOD_COLUMN)}
               </th>
@@ -161,10 +161,7 @@ export function UsageCostsTab({ data }: { data: UsageData }) {
           </thead>
           <tbody>
             {rows.map(({ label, summary }) => (
-              <tr
-                key={label}
-                className="border-t border-neutral-200 dark:border-neutral-800"
-              >
+              <tr key={label} className="border-t border-[var(--border-color)]">
                 <td className="py-2 pr-4">{label}</td>
                 <td className="py-2 pr-4 tabular-nums">
                   {formatUsd(summary.costWithOptimization)}
@@ -301,7 +298,7 @@ export function MemoryHealthTab({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[32rem] text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                <tr className="text-left text-xs uppercase tracking-wide text-[var(--text-secondary)]">
                   <th className="py-2 pr-4 font-medium">
                     {t(I18nKey.USAGE$WORKSPACE_COLUMN)}
                   </th>
@@ -320,7 +317,7 @@ export function MemoryHealthTab({
                 {health.byWorkspace.map((row) => (
                   <tr
                     key={row.workspaceId}
-                    className="border-t border-neutral-200 dark:border-neutral-800"
+                    className="border-t border-[var(--border-color)]"
                   >
                     <td className="py-2 pr-4">
                       {workspaceLabels[row.workspaceId] ?? row.workspaceId}
@@ -351,18 +348,18 @@ export function MemoryHealthTab({
             {health.conflicts.map(({ record, peers }) => (
               <li
                 key={record.id}
-                className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40"
+                className="ame-alert ame-alert-warning p-3 text-sm"
               >
-                <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                <div className="font-medium text-[var(--text-primary)]">
                   {record.subject}
                 </div>
-                <div className="mt-1 text-neutral-700 dark:text-neutral-300">
+                <div className="mt-1 text-[var(--text-secondary)]">
                   {record.statement}
                 </div>
                 {peers.map((peer) => (
                   <div
                     key={peer.id}
-                    className="mt-1 text-neutral-700 dark:text-neutral-300"
+                    className="mt-1 text-[var(--text-secondary)]"
                   >
                     {t(I18nKey.USAGE$VS_PREFIX)} {peer.statement}
                   </div>
@@ -389,12 +386,10 @@ export function WorkspaceActivityFeed({
       {events.map((event) => (
         <li
           key={event.id}
-          className="flex items-baseline justify-between gap-4 border-b border-neutral-200 pb-2 last:border-0 dark:border-neutral-800"
+          className="flex items-baseline justify-between gap-4 border-b border-[var(--border-color)] pb-2 last:border-0"
         >
-          <span className="text-neutral-700 dark:text-neutral-300">
-            {event.summary}
-          </span>
-          <span className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
+          <span className="text-[var(--text-secondary)]">{event.summary}</span>
+          <span className="shrink-0 text-xs text-[var(--text-secondary)]">
             {formatRelativeTime(event.at)}
           </span>
         </li>

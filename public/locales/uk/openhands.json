@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "Закрити",
   "ENVIRONMENT$COPILOT_MINIMIZE": "Згорнути",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "Лише адміністратори організації можуть запускати агент адаптації, оскільки він змінює спосіб налаштування цього розгортання.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Агенту адаптації потрібен профіль агента OpenHands. Поточний вибраний профіль запускає іншого агента, який не може керувати цим екраном.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Агенту адаптації потрібен профіль агента Neo. Поточний вибраний профіль запускає іншого агента, який не може керувати цим екраном.",
   "ENVIRONMENT$COPILOT_STARTING": "Запуск агента адаптації",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Допоможи мені це виправити",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Поки що звідси неможливо отримати доступ до розмови адаптації. Відкрийте студію, щоб відповісти на цей запит.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "Ваша організація підключила GitHub, але репозиторії беруться з вашого власного облікового запису GitHub. Підключіть свій обліковий запис, щоб бачити свої репозиторії.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "Підключити свій GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Помічнику налаштування потрібен локальний бекенд. OpenHands Cloud поки не може запускати інструменти, якими він налаштовує цей робочий простір. Перейдіть на локальний бекенд або підключіть постачальників напряму.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Помічнику налаштування потрібен локальний бекенд. Neo Cloud поки не може запускати інструменти, якими він налаштовує цей робочий простір. Перейдіть на локальний бекенд або підключіть постачальників напряму.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Підключити постачальників напряму",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "Доставлено",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "Відновлено · доставлено",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "Показати всі ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "Показати лише прогалини",
   "SYNTH$COVERAGE_GAP": "Ще немає в моделі",
-  "SYNTH$COVERAGE_COVERED": "У моделі"
+  "SYNTH$COVERAGE_COVERED": "У моделі",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Агент Neo"
 }

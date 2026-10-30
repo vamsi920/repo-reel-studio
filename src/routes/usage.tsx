@@ -104,10 +104,10 @@ export default function UsageRoute() {
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">
             {t(I18nKey.USAGE$PAGE_TITLE)}
           </h1>
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             {t(I18nKey.USAGE$PAGE_DESCRIPTION)}
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function UsageRoute() {
         />
       </header>
 
-      <nav className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800">
+      <nav className="flex gap-1 border-b border-[var(--border-color)]">
         {TABS.map((name) => (
           <button
             key={name}
@@ -126,8 +126,8 @@ export default function UsageRoute() {
             onClick={() => setTab(name)}
             className={
               tab === name
-                ? "border-b-2 border-neutral-900 px-3 py-2 text-sm font-medium text-neutral-900 dark:border-neutral-100 dark:text-neutral-100"
-                : "border-b-2 border-transparent px-3 py-2 text-sm text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                ? "border-b-2 border-[var(--primary-500)] px-3 py-2 text-sm font-medium text-[var(--text-primary)]"
+                : "border-b-2 border-transparent px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             }
           >
             {name}

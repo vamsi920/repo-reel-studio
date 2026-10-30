@@ -11,6 +11,7 @@ import { AuditList } from "#/components/features/agentops/audit-list";
 import { ApprovalsQueue } from "#/components/features/agentops/approvals-queue";
 import { RunControls } from "#/components/features/agentops/run-controls";
 import { RunStatusBadge } from "#/components/features/agentops/run-status-badge";
+import { displayAgentName } from "#/components/features/agentops/agent-name";
 import { RunTimeline } from "#/components/features/agentops/run-timeline";
 import {
   formatCompactTokenCount,
@@ -77,7 +78,7 @@ function AgentOpsRunDetailScreen() {
               </h2>
               <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-tertiary)]">
                 <RunStatusBadge status={data.run.status} />
-                <span>{data.run.agentName}</span>
+                <span>{displayAgentName(data.run.agentName, t)}</span>
                 <span className="font-mono">{data.run.workspaceId}</span>
               </div>
             </div>

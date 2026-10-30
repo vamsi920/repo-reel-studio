@@ -91,7 +91,7 @@ export function UsageWorkspaceSelect({
     <select
       data-testid="usage-workspace-select"
       aria-label={t(I18nKey.USAGE$WORKSPACE_COLUMN)}
-      className="rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+      className="ame-input w-auto max-w-xs px-2 py-1.5 text-sm"
       value={valueFromSelection(selection)}
       onChange={(event) => onChange(selectionFromValue(event.target.value))}
     >

@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "إغلاق",
   "ENVIRONMENT$COPILOT_MINIMIZE": "تصغير",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "يمكن فقط لمسؤولي المؤسسة تشغيل وكيل الإعداد، لأنه يغيّر طريقة تهيئة هذا النشر.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "يحتاج وكيل الإعداد إلى ملف تعريف وكيل OpenHands. الملف الشخصي المحدد حاليًا يشغّل وكيلاً مختلفًا لا يمكنه التحكم في هذه الشاشة.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "يحتاج وكيل الإعداد إلى ملف تعريف وكيل Neo. الملف الشخصي المحدد حاليًا يشغّل وكيلاً مختلفًا لا يمكنه التحكم في هذه الشاشة.",
   "ENVIRONMENT$COPILOT_STARTING": "جارٍ بدء تشغيل وكيل الإعداد",
   "ENVIRONMENT$COPILOT_SEED_FIX": "ساعدني في إصلاح هذا",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "لا يمكن الوصول إلى محادثة الإعداد من هنا بعد. افتح الاستوديو للرد على هذا الطلب.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "مؤسستك متصلة بـ GitHub، لكن المستودعات تُعرض من حسابك الشخصي على GitHub. اربط حسابك لرؤية مستودعاتك.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "اربط حسابك على GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "يحتاج مساعد الإعداد إلى واجهة خلفية محلية. لا يمكن لـ OpenHands Cloud بعد تشغيل الأدوات التي يستخدمها لتهيئة مساحة العمل هذه. انتقل إلى واجهة خلفية محلية، أو اربط المزودين مباشرة.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "يحتاج مساعد الإعداد إلى واجهة خلفية محلية. لا يمكن لـ Neo Cloud بعد تشغيل الأدوات التي يستخدمها لتهيئة مساحة العمل هذه. انتقل إلى واجهة خلفية محلية، أو اربط المزودين مباشرة.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "اربط المزودين مباشرة",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "تم التسليم",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "تمت الاستعادة · تم التسليم",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "عرض الكل ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "عرض الفجوات فقط",
   "SYNTH$COVERAGE_GAP": "ليس في النموذج بعد",
-  "SYNTH$COVERAGE_COVERED": "في النموذج"
+  "SYNTH$COVERAGE_COVERED": "في النموذج",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "وكيل Neo"
 }

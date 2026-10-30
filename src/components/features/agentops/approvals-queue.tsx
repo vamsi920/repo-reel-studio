@@ -8,6 +8,7 @@ import type {
   AgentOpsBudgetBreach,
 } from "#/api/agentops-service/agentops-service.types";
 import { getAgentOpsErrorMessage } from "#/api/agentops-service/agentops-service.api";
+import { displayAgentName } from "./agent-name";
 import { useAgentOpsApprovalDecision } from "#/hooks/query/use-agentops";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import {
@@ -122,7 +123,8 @@ function ApprovalCard({ approval }: ApprovalCardProps) {
             {approval.title}
           </h3>
           <p className="text-xs text-[var(--text-tertiary)]">
-            {approval.agentName} · {shortWorkspace(approval.workspaceId)} ·{" "}
+            {displayAgentName(approval.agentName, t)} ·{" "}
+            {shortWorkspace(approval.workspaceId)} ·{" "}
             {formatTimestamp(approval.requestedAt)}
           </p>
         </div>

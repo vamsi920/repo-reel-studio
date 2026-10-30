@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "닫기",
   "ENVIRONMENT$COPILOT_MINIMIZE": "최소화",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "온보딩 에이전트는 이 배포의 구성 방식을 변경하므로 조직 관리자만 실행할 수 있습니다.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "온보딩 에이전트에는 OpenHands 에이전트 프로필이 필요합니다. 현재 선택된 프로필은 다른 에이전트를 실행하므로 이 화면을 제어할 수 없습니다.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "온보딩 에이전트에는 Neo 에이전트 프로필이 필요합니다. 현재 선택된 프로필은 다른 에이전트를 실행하므로 이 화면을 제어할 수 없습니다.",
   "ENVIRONMENT$COPILOT_STARTING": "온보딩 에이전트 시작 중",
   "ENVIRONMENT$COPILOT_SEED_FIX": "이 문제 해결을 도와줘",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "아직 여기에서는 온보딩 대화에 접근할 수 없습니다. 이 요청에 응답하려면 스튜디오를 여세요.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "조직에 GitHub가 연결되어 있지만 저장소는 본인의 GitHub 계정에서 표시됩니다. 저장소를 보려면 계정을 연결하세요.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "내 GitHub 연결",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "설정 도우미에는 로컬 백엔드가 필요합니다. OpenHands Cloud는 아직 이 작업 공간을 구성하는 도구를 실행할 수 없습니다. 로컬 백엔드로 전환하거나 공급자를 직접 연결하세요.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "설정 도우미에는 로컬 백엔드가 필요합니다. Neo Cloud는 아직 이 작업 공간을 구성하는 도구를 실행할 수 없습니다. 로컬 백엔드로 전환하거나 공급자를 직접 연결하세요.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "공급자 직접 연결",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "전달됨",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "복구됨 · 전달됨",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "모두 보기({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "누락만 보기",
   "SYNTH$COVERAGE_GAP": "아직 모델에 없음",
-  "SYNTH$COVERAGE_COVERED": "모델에 반영됨"
+  "SYNTH$COVERAGE_COVERED": "모델에 반영됨",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo 에이전트"
 }

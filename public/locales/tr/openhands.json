@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "Kapat",
   "ENVIRONMENT$COPILOT_MINIMIZE": "Küçült",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "Bu, dağıtımın nasıl yapılandırıldığını değiştirdiğinden, katılım aracısını yalnızca kuruluş yöneticileri çalıştırabilir.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Katılım aracısının bir OpenHands aracı profiline ihtiyacı var. Şu anda seçili olan profil, bu ekranı yönetemeyen farklı bir aracıyı çalıştırıyor.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Katılım aracısının bir Neo aracı profiline ihtiyacı var. Şu anda seçili olan profil, bu ekranı yönetemeyen farklı bir aracıyı çalıştırıyor.",
   "ENVIRONMENT$COPILOT_STARTING": "Katılım aracısı başlatılıyor",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Bunu düzeltmeme yardım et",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Katılım konuşmasına buradan henüz ulaşılamıyor. Bu isteği yanıtlamak için stüdyoyu açın.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "Kuruluşunuz GitHub'a bağlı, ancak depolar kendi GitHub hesabınızdan listelenir. Depolarınızı görmek için hesabınızı bağlayın.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "GitHub hesabını bağla",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Kurulum asistanı yerel bir arka uç gerektirir. OpenHands Cloud, bu çalışma alanını yapılandırmak için kullandığı araçları henüz çalıştıramıyor. Yerel bir arka uca geçin veya sağlayıcıları doğrudan bağlayın.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Kurulum asistanı yerel bir arka uç gerektirir. Neo Cloud, bu çalışma alanını yapılandırmak için kullandığı araçları henüz çalıştıramıyor. Yerel bir arka uca geçin veya sağlayıcıları doğrudan bağlayın.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Sağlayıcıları doğrudan bağla",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "Teslim edildi",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "Kurtarıldı · teslim edildi",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "Tümünü göster ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "Yalnızca eksikleri göster",
   "SYNTH$COVERAGE_GAP": "Henüz modelde değil",
-  "SYNTH$COVERAGE_COVERED": "Modelde"
+  "SYNTH$COVERAGE_COVERED": "Modelde",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo Ajanı"
 }

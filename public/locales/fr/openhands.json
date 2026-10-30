@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "Fermer",
   "ENVIRONMENT$COPILOT_MINIMIZE": "Réduire",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "Seuls les administrateurs de l'organisation peuvent exécuter l'agent d'intégration, car il modifie la configuration de ce déploiement.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "L'agent d'intégration a besoin d'un profil d'agent OpenHands. Le profil actuellement sélectionné exécute un agent différent, qui ne peut pas piloter cet écran.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "L'agent d'intégration a besoin d'un profil d'agent Neo. Le profil actuellement sélectionné exécute un agent différent, qui ne peut pas piloter cet écran.",
   "ENVIRONMENT$COPILOT_STARTING": "Démarrage de l'agent d'intégration",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Aide-moi à résoudre ça",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Impossible d'accéder à la conversation d'intégration depuis ici pour le moment. Ouvrez le studio pour répondre à cette demande.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}} : {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "Votre organisation a connecté GitHub, mais les dépôts proviennent de votre propre compte GitHub. Connectez votre compte pour voir vos dépôts.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "Connecter votre GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "L'assistant de configuration nécessite un backend local. OpenHands Cloud ne peut pas encore exécuter les outils qu'il utilise pour configurer cet espace de travail. Passez à un backend local ou connectez les fournisseurs directement.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "L'assistant de configuration nécessite un backend local. Neo Cloud ne peut pas encore exécuter les outils qu'il utilise pour configurer cet espace de travail. Passez à un backend local ou connectez les fournisseurs directement.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Connecter les fournisseurs directement",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "Livré",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "Rétabli · livré",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "Tout afficher ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "Afficher les manques uniquement",
   "SYNTH$COVERAGE_GAP": "Pas encore dans le modèle",
-  "SYNTH$COVERAGE_COVERED": "Dans le modèle"
+  "SYNTH$COVERAGE_COVERED": "Dans le modèle",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Agent Neo"
 }

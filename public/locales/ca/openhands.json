@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "Tanca",
   "ENVIRONMENT$COPILOT_MINIMIZE": "Minimitza",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "Només els administradors de l'organització poden executar l'agent d'incorporació, perquè canvia la configuració d'aquest desplegament.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "L'agent d'incorporació necessita un perfil d'agent d'OpenHands. El perfil seleccionat actualment executa un agent diferent, que no pot controlar aquesta pantalla.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "L'agent d'incorporació necessita un perfil d'agent d'Neo. El perfil seleccionat actualment executa un agent diferent, que no pot controlar aquesta pantalla.",
   "ENVIRONMENT$COPILOT_STARTING": "S'està iniciant l'agent d'incorporació",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Ajuda'm a solucionar això",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Encara no es pot accedir a la conversa d'incorporació des d'aquí. Obre l'estudi per respondre a aquesta sol·licitud.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "La teva organització té GitHub connectat, però els repositoris es mostren des del teu propi compte de GitHub. Connecta el teu compte per veure els teus repositoris.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "Connecta el teu GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "L'assistent de configuració necessita un backend local. OpenHands Cloud encara no pot executar les eines que fa servir per configurar aquest espai de treball. Canvia a un backend local o connecta els proveïdors directament.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "L'assistent de configuració necessita un backend local. Neo Cloud encara no pot executar les eines que fa servir per configurar aquest espai de treball. Canvia a un backend local o connecta els proveïdors directament.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Connecta els proveïdors directament",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "Lliurat",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "Recuperat · lliurat",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "Mostra-ho tot ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "Mostra només els buits",
   "SYNTH$COVERAGE_GAP": "Encara no és al model",
-  "SYNTH$COVERAGE_COVERED": "Al model"
+  "SYNTH$COVERAGE_COVERED": "Al model",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Agent Neo"
 }

@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "閉じる",
   "ENVIRONMENT$COPILOT_MINIMIZE": "最小化",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "この操作はデプロイの設定方法を変更するため、組織の管理者のみがオンボーディングエージェントを実行できます。",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "オンボーディングエージェントにはOpenHandsエージェントプロファイルが必要です。現在選択されているプロファイルは別のエージェントを実行しており、この画面を操作できません。",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "オンボーディングエージェントにはNeoエージェントプロファイルが必要です。現在選択されているプロファイルは別のエージェントを実行しており、この画面を操作できません。",
   "ENVIRONMENT$COPILOT_STARTING": "オンボーディングエージェントを起動しています",
   "ENVIRONMENT$COPILOT_SEED_FIX": "これを修正するのを手伝って",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "ここからはまだオンボーディングの会話に到達できません。このリクエストに応答するには、スタジオを開いてください。",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "組織には GitHub が接続されていますが、リポジトリはあなた自身の GitHub アカウントから表示されます。リポジトリを表示するには、あなたのアカウントを接続してください。",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "自分の GitHub を接続",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "セットアップアシスタントにはローカルバックエンドが必要です。OpenHands Cloud では、このワークスペースを構成するためのツールをまだ実行できません。ローカルバックエンドに切り替えるか、プロバイダーを直接接続してください。",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "セットアップアシスタントにはローカルバックエンドが必要です。Neo Cloud では、このワークスペースを構成するためのツールをまだ実行できません。ローカルバックエンドに切り替えるか、プロバイダーを直接接続してください。",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "プロバイダーを直接接続",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "配信済み",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "復旧して配信済み",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "すべて表示（{{count}}）",
   "SYNTH$COVERAGE_SHOW_GAPS": "未対応のみ表示",
   "SYNTH$COVERAGE_GAP": "まだモデルにありません",
-  "SYNTH$COVERAGE_COVERED": "モデルに反映済み"
+  "SYNTH$COVERAGE_COVERED": "モデルに反映済み",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo エージェント"
 }

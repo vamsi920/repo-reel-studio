@@ -446,9 +446,14 @@ async function buildConfig(args, env = process.env) {
   // Both validate it via the `X-Session-API-Key` header.
   // LOCAL_BACKEND_API_KEY is the single user-facing env var: if set it's
   // used directly; otherwise one is auto-generated and persisted.
-  const stateDir =
+  // Absolute, like dev-safe.mjs: the automation backend runs from another
+  // working directory, and a relative state dir made its SQLite URL point
+  // nowhere ("unable to open database file", Automations unavailable).
+  const stateDir = resolve(
+    projectRoot,
     env.OH_CANVAS_SAFE_STATE_DIR ||
-    join(homedir(), ".openhands", "agent-canvas");
+      join(homedir(), ".openhands", "agent-canvas"),
+  );
 
   const safeConfig = buildSafeDevConfig(projectRoot, {
     ...env,

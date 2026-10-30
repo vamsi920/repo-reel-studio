@@ -10,6 +10,7 @@ import {
   shortWorkspace,
 } from "./agentops-formatting";
 import { RunStatusBadge } from "./run-status-badge";
+import { displayAgentName } from "./agent-name";
 
 interface LiveRunsTableProps {
   runs: AgentOpsRun[];
@@ -79,7 +80,7 @@ export function LiveRunsTable({
               className="cursor-pointer border-b border-[var(--border-color)] last:border-b-0 hover:bg-[var(--background-secondary)]"
             >
               <td className="whitespace-nowrap px-4 py-3 text-[var(--text-primary)]">
-                {run.agentName}
+                {displayAgentName(run.agentName, t)}
               </td>
               <td className="max-w-[280px] px-4 py-3 text-[var(--text-primary)]">
                 {/* The row's own onClick is pointer-only. This link is what

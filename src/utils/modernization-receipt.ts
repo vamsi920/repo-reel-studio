@@ -4,6 +4,7 @@ import {
   MID_PLAN_CONTINUE_MESSAGE,
   STUCK_CONTINUE_MESSAGE,
 } from "#/services/modernization-control";
+import { LLM_RECOVERY_MESSAGE } from "#/lib/llm-recovery";
 import { isMessageEvent } from "#/types/agent-server/type-guards";
 import type { OpenHandsEvent } from "#/types/agent-server/core";
 import { parseMessageFromEvent } from "#/components/conversation-events/chat/event-content-helpers/parse-message-from-event";
@@ -24,7 +25,8 @@ export function isModernizationReceiptEvent(event: OpenHandsEvent): boolean {
   if (
     text === AUTO_CONTINUE_MESSAGE ||
     text === MID_PLAN_CONTINUE_MESSAGE ||
-    text === STUCK_CONTINUE_MESSAGE
+    text === STUCK_CONTINUE_MESSAGE ||
+    text === LLM_RECOVERY_MESSAGE
   )
     return true;
   return text.trimStart().startsWith(MODERNIZATION_RESULT_PREFIX.trim());

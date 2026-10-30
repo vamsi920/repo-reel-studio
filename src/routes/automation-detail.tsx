@@ -286,7 +286,7 @@ export default function AutomationDetail() {
             // key the section's local pagination `limit` and
             // `scrolledToRunIdRef` would carry over from the previous
             // automation instead of resetting to the first page.
-            key={automation.id}
+            key={`activity-log-${automation.id}`}
             automation={automation}
             highlightedRunId={highlightedRunId}
           />
@@ -306,7 +306,9 @@ export default function AutomationDetail() {
               // carry over from the previous automation instead of
               // resetting, letting a save silently overwrite the new
               // automation with the old one's field values.
-              key={automation.id}
+              // Distinct from the activity log's key: siblings sharing a key
+              // made React keep stale log panels (four after "Run now").
+              key={`edit-${automation.id}`}
               automation={automation}
               isOpen={showEditModal}
               onClose={() => setShowEditModal(false)}

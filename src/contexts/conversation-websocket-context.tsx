@@ -81,6 +81,8 @@ import {
   handleLlmErrorForRouting,
   noteConversationLlmSuccess,
 } from "#/lib/model-routing/runtime";
+import { maybeRecoverFromProviderRejection } from "#/lib/llm-recovery";
+import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { displaySuccessToast } from "#/utils/custom-toast-handlers";
 import i18n from "#/i18n";
 import { I18nKey } from "#/i18n/declaration";
@@ -736,7 +738,25 @@ export function ConversationWebSocketProvider({
                       name: outcome.decision.profileName,
                     }),
                   );
+                  return;
                 }
+                // Gemini's transient INVALID_ARGUMENT: one more user
+                // message and the run continues (see llm-recovery.ts).
+                void maybeRecoverFromProviderRejection({
+                  conversationId,
+                  eventId:
+                    errorEvent.id ??
+                    `${conversationId}:${errorEvent.timestamp ?? ""}`,
+                  detail: errorEvent.detail,
+                  timestamp: errorEvent.timestamp,
+                  send: (text) =>
+                    AgentServerConversationService.sendMessage(conversationId, {
+                      role: "user",
+                      content: [{ type: "text", text }],
+                    }),
+                }).then((recovered) => {
+                  if (recovered) removeErrorMessage();
+                });
               });
             }
           } else {

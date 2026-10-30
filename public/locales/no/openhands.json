@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "Lukk",
   "ENVIRONMENT$COPILOT_MINIMIZE": "Minimer",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "Bare organisasjonsadministratorer kan kjøre onboardingagenten, fordi den endrer hvordan denne utrullingen er konfigurert.",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Onboardingagenten trenger en OpenHands-agentprofil. Profilen som er valgt nå, kjører en annen agent, som ikke kan styre denne skjermen.",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "Onboardingagenten trenger en Neo-agentprofil. Profilen som er valgt nå, kjører en annen agent, som ikke kan styre denne skjermen.",
   "ENVIRONMENT$COPILOT_STARTING": "Starter onboardingagenten",
   "ENVIRONMENT$COPILOT_SEED_FIX": "Hjelp meg å fikse dette",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "Kan ikke nå onboarding-samtalen herfra ennå. Åpne studioet for å svare på denne forespørselen.",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}: {{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "Organisasjonen din har koblet til GitHub, men repositorier hentes fra din egen GitHub-konto. Koble til kontoen din for å se repositoriene dine.",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "Koble til din GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Oppsettassistenten trenger en lokal backend. OpenHands Cloud kan ennå ikke kjøre verktøyene den bruker for å konfigurere dette arbeidsområdet. Bytt til en lokal backend, eller koble til leverandører direkte.",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "Oppsettassistenten trenger en lokal backend. Neo Cloud kan ennå ikke kjøre verktøyene den bruker for å konfigurere dette arbeidsområdet. Bytt til en lokal backend, eller koble til leverandører direkte.",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "Koble til leverandører direkte",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "Levert",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "Gjenopprettet · levert",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "Vis alle ({{count}})",
   "SYNTH$COVERAGE_SHOW_GAPS": "Vis bare hull",
   "SYNTH$COVERAGE_GAP": "Ikke i modellen ennå",
-  "SYNTH$COVERAGE_COVERED": "I modellen"
+  "SYNTH$COVERAGE_COVERED": "I modellen",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo-agent"
 }

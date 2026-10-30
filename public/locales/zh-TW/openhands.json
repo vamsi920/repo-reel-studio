@@ -3032,7 +3032,7 @@
   "PROBE$EGRESS_UV": "uv installer downloads",
   "PROBE$EGRESS_GHCR": "Container images",
   "PROBE$EGRESS_FONTS": "Web fonts",
-  "PROBE$EGRESS_OPENHANDS_CLOUD": "OpenHands Cloud backend",
+  "PROBE$EGRESS_OPENHANDS_CLOUD": "Neo Cloud backend",
   "PROBE$BINARY_NODE": "Runs the frontend build and the AgentOps collector",
   "PROBE$BINARY_GIT": "Clones repositories into the agent workspace",
   "PROBE$BINARY_UVX": "Installs and launches the agent server",
@@ -3235,7 +3235,7 @@
   "ENVIRONMENT$COPILOT_CLOSE": "關閉",
   "ENVIRONMENT$COPILOT_MINIMIZE": "最小化",
   "ENVIRONMENT$COPILOT_ADMIN_ONLY": "只有組織管理員才能執行導覽代理程式，因為它會變更此部署的設定方式。",
-  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "導覽代理程式需要 OpenHands 代理程式設定檔。目前選取的設定檔執行的是另一個代理程式，無法操作此畫面。",
+  "ENVIRONMENT$COPILOT_UNAVAILABLE_ACP": "導覽代理程式需要 Neo 代理程式設定檔。目前選取的設定檔執行的是另一個代理程式，無法操作此畫面。",
   "ENVIRONMENT$COPILOT_STARTING": "正在啟動導覽代理程式",
   "ENVIRONMENT$COPILOT_SEED_FIX": "幫我解決這個問題",
   "ENVIRONMENT$COPILOT_CREDENTIAL_UNAVAILABLE": "目前還無法從這裡存取導覽對話。請開啟工作室以回應此請求。",
@@ -3672,7 +3672,7 @@
   "ENVIRONMENT$ACTIVITY_STATUS_CHANGED": "{{provider}}：{{status}}",
   "CONNECTIONS$TEAM_GITHUB_HINT": "你的組織已連線 GitHub，但儲存庫清單來自你自己的 GitHub 帳戶。請連線你的帳戶以查看你的儲存庫。",
   "CONNECTIONS$CONNECT_YOUR_GITHUB": "連線你的 GitHub",
-  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "設定助理需要本機後端。OpenHands Cloud 目前還無法執行它用來設定此工作區的工具。請切換到本機後端，或直接連線提供者。",
+  "ENVIRONMENT$STUDIO_CLOUD_UNSUPPORTED": "設定助理需要本機後端。Neo Cloud 目前還無法執行它用來設定此工作區的工具。請切換到本機後端，或直接連線提供者。",
   "ENVIRONMENT$STUDIO_CLOUD_USE_CONNECTIONS": "直接連線提供者",
   "AUTOMATIONS$DETAIL$OUTCOME_DELIVERED": "已交付",
   "AUTOMATIONS$DETAIL$OUTCOME_RECOVERED": "已恢復 · 已交付",
@@ -4089,5 +4089,6 @@
   "SYNTH$COVERAGE_SHOW_ALL": "顯示全部（{{count}}）",
   "SYNTH$COVERAGE_SHOW_GAPS": "只顯示缺口",
   "SYNTH$COVERAGE_GAP": "尚未進入模型",
-  "SYNTH$COVERAGE_COVERED": "已在模型中"
+  "SYNTH$COVERAGE_COVERED": "已在模型中",
+  "AGENTOPS$DEFAULT_AGENT_NAME": "Neo 代理程式"
 }
