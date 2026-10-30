@@ -270,11 +270,11 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "Neo — Autonomous Coding Agent" },
+  { title: "Neo — Your digital developer" },
   {
     name: "description",
     content:
-      "Describe what you're building or point it at a repo. Neo reads the code, plans the change, and does the work — real bash commands, real file edits, real browser tools.",
+      "Neo is a digital developer for enterprise teams: it learns your codebase, builds features, fixes bugs, writes tests, modernizes legacy apps and runs routine engineering work — governed, audited and approved by you.",
   },
   { name: "theme-color", content: "#0b81b7" },
   { name: "msapplication-TileColor", content: "#0b81b7" },

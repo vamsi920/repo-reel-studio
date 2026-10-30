@@ -18,7 +18,7 @@ export const NAV = {
   wordmark: "Neo",
   cta: "Try Neo",
   links: [
-    { href: "#how", label: "How it works" },
+    { href: "#how", label: "What it does" },
     { href: "#platform", label: "Platform" },
     { href: "#studios", label: "Studios" },
     { href: "#trust", label: "Trust" },
@@ -26,13 +26,13 @@ export const NAV = {
 };
 
 export const HERO = {
-  eyebrow: "The autonomous engineer for enterprise teams",
-  titleLead: "Hand Neo the ticket.",
-  titleTail: "Review the diff.",
+  eyebrow: "The digital developer for enterprise teams",
+  titleLead: "Meet Neo.",
+  titleTail: "Your digital developer.",
   subtitle:
-    "Neo reads your codebase, plans the change and does the work — real commands, real file edits, real browser tools — inside a governed sandbox in your cloud or ours. You approve what ships.",
+    "Neo joins your team like a senior engineer. It learns your codebase, builds features, fixes bugs, writes the tests, modernizes legacy apps, generates test data and runs the routine work around the clock — in a governed sandbox, with every change waiting for your approval.",
   cta: "Try Neo",
-  secondaryCta: "See it work",
+  secondaryCta: "See what it does",
   ctaSub: "Enterprise-grade models included. No API keys, nothing to install.",
 };
 
@@ -97,84 +97,103 @@ export const STACK = {
 
 /** The scroll-filled manifesto. Words wrapped in *asterisks* get the accent. */
 export const STATEMENT = {
-  eyebrow: "Why teams stall",
-  text: "Context lives in people. It should live in the *system.* Neo keeps the architecture, the decisions and the reasoning behind every change attached to the *repo* — not to the one engineer who remembers.",
+  eyebrow: "A teammate, not a tool",
+  text: "Copilots finish your *line.* Neo finishes the *job.* It learns how your systems fit together, carries work from idea to reviewed change, and remembers what it learned — so every task starts where the last one ended.",
 };
 
-export type StoryVisual = "ticket" | "investigate" | "work" | "review";
+export type StoryVisual = "learn" | "build" | "prove" | "automate" | "control";
 
 export interface StoryStep {
   visual: StoryVisual;
   number: string;
   title: string;
   description: string;
-  ticketId?: string;
-  ticketTitle?: string;
-  ticketMeta?: string[];
-  plan?: string[];
-  question?: string;
-  lines?: string[];
-  checks?: string[];
-  approve?: string;
-  request?: string;
+  /** Short label for the card header. */
+  label: string;
+  items: string[];
+  /** One highlighted line under the items. */
+  footer: string;
 }
 
-export const STORY = {
-  eyebrow: "How it works",
-  title: "From ticket to merged change, in one conversation.",
-  steps: <StoryStep[]>[
+export const STORY: {
+  eyebrow: string;
+  title: string;
+  steps: StoryStep[];
+} = {
+  eyebrow: "What Neo does",
+  title: "One digital developer. The whole software lifecycle.",
+  steps: [
     {
-      visual: "ticket",
+      visual: "learn",
       number: "01",
-      title: "Hand it a ticket, a repo or a sentence",
+      title: "Learns your codebase",
+      label: "Knowledge · acme/storefront",
       description:
-        "Paste a repo link, assign a Jira or Linear ticket, or just describe what you need. No config files, no prompt engineering.",
-      ticketId: "ENG-4831",
-      ticketTitle: "Refresh SSO sessions before they expire",
-      ticketMeta: [
-        "Priority: High",
-        "Assignee: Neo",
-        "Repo: acme/auth-service",
+        "Point Neo at a repository and it maps the architecture, writes the docs and records a narrated walkthrough — so it, and every new hire, starts with real context.",
+      items: [
+        "Architecture overview",
+        "Checkout & payments flow",
+        "Auth and session lifecycle",
+        "Data model · 14 tables",
       ],
+      footer: "Watch KT · 11-minute walkthrough of the real code",
     },
     {
-      visual: "investigate",
+      visual: "build",
       number: "02",
-      title: "Neo investigates before it touches anything",
+      title: "Builds, fixes and refactors",
+      label: "Conversation · Add SSO session refresh",
       description:
-        "It reads the code and the generated architecture docs, recalls what it learned last time, writes a plan and asks when something is genuinely ambiguous.",
-      plan: [
-        "Read docs/kt: auth module, session lifecycle",
-        "Trace token expiry in src/auth/session.ts",
-        "Add refreshSession() with a 5-minute margin",
-        "Cover expiry, refresh and logout with tests",
-      ],
-      question: "Should refresh failures sign the user out, or retry once?",
-    },
-    {
-      visual: "work",
-      number: "03",
-      title: "It does the work — for real",
-      description:
-        "Real commands, real edits and a real browser, streamed into the conversation as they happen. Not a progress bar, not a simulation.",
-      lines: [
+        "Features, bug fixes, refactors and dependency upgrades — written with real commands, real edits and a real browser in its own sandbox, streamed as it works.",
+      items: [
         '$ rg -n "expiresAt" src/auth',
-        "src/auth/session.ts:42: if (now > expiresAt) {",
         "edit  src/auth/session.ts  +38 −6",
         "edit  src/auth/session.test.ts  +71",
         "$ npm test -- auth",
-        "Tests: 48 passed, 48 total",
       ],
+      footer: "Tests: 48 passed, 48 total",
     },
     {
-      visual: "review",
-      number: "04",
-      title: "You review and ship",
+      visual: "prove",
+      number: "03",
+      title: "Proves it works",
+      label: "Verification",
       description:
-        "Every change lands as a reviewable diff with the evidence attached. Nothing merges itself — you approve, request changes or reject.",
-      checks: ["Unit tests · 48 passed", "Type check · clean", "Lint · clean"],
-      approve: "Approve & merge",
-      request: "Request changes",
+        "Writes tests that fail when behaviour breaks, generates realistic, privacy-safe test data, and replays old and new apps side by side to prove a migration changed nothing.",
+      items: [
+        "Mutation check · new test fails on the old bug",
+        "Synthetic dataset · 400 rows · 78/78 checks",
+        "Replay parity · 14/14 steps identical",
+      ],
+      footer: "Evidence attached to the change",
+    },
+    {
+      visual: "automate",
+      number: "04",
+      title: "Runs the routine, 24/7",
+      label: "Automations",
+      description:
+        "Failed CI, nightly upgrades, new issues, webhooks from your own systems — Neo picks up recurring work on its own and ends every run with a result you can verify.",
+      items: [
+        "CI failed on main · fix opened",
+        "Nightly dependency bump · PR ready",
+        "New issue labelled bug · triaged",
+      ],
+      footer: "RESULT: https://github.com/acme/web/pull/913",
+    },
+    {
+      visual: "control",
+      number: "05",
+      title: "You stay in control",
+      label: "Review",
+      description:
+        "Every command is logged, every run has a budget, risky steps wait for approval, and changes arrive as diffs you review. Nothing merges itself.",
+      items: [
+        "Unit tests · passed",
+        "Type check · clean",
+        "Budget · $0.18 of $2.00",
+      ],
+      footer: "Approve & merge",
     },
   ],
 };
@@ -195,7 +214,7 @@ export const PLATFORM = {
   items: [
     {
       visual: "agent" as PlatformVisual,
-      title: "An agent that finishes the job",
+      title: "A developer that finishes the job",
       description:
         "Terminal, file editor and browser in an isolated sandbox. Neo answers from your checked-out code with file and line references, and proves a test fails when the behaviour breaks.",
       tags: ["Bash", "File edits", "Browser", "Sub-agents"],
@@ -379,23 +398,23 @@ export const STATS = {
 };
 
 export const CTA_BAND = {
-  title: "Onboard your first digital engineer today.",
+  title: "Hire your first digital developer today.",
   subtitle:
-    "Open the console, hand it a repo or a ticket and watch it work — governed, audited and ready to ship.",
+    "Open the console, give it a repo, a feature, a bug or a migration, and watch it work — governed, audited and ready to ship.",
   cta: "Try Neo",
-  secondary: "See how it works",
+  secondary: "See what it does",
 };
 
 export const FOOTER = {
   wordmark: "Neo",
-  tagline: "An autonomous AI engineer for enterprise engineering teams.",
+  tagline: "The digital developer for enterprise engineering teams.",
   columns: [
     {
       title: "Product",
       links: [
         { href: "#platform", label: "Platform" },
         { href: "#studios", label: "Studios" },
-        { href: "#how", label: "How it works" },
+        { href: "#how", label: "What it does" },
       ],
     },
     {

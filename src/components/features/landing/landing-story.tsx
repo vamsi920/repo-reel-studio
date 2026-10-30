@@ -6,7 +6,16 @@ import {
   useScroll,
   useSpring,
 } from "framer-motion";
-import { Check, CircleHelp, GitMerge, Ticket } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  Database,
+  FlaskConical,
+  GitMerge,
+  PlayCircle,
+  Repeat,
+  Workflow,
+} from "lucide-react";
 import { STORY, StoryStep, StoryVisual } from "./landing-copy";
 
 type Step = StoryStep;
@@ -19,110 +28,137 @@ const listItem = (i: number) => ({
   transition: { delay: 0.15 + i * 0.12, duration: 0.45, ease: EASE },
 });
 
-function TicketVisual({ step }: { step: Step }) {
+function LearnVisual({ step }: { step: Step }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 text-sm text-[var(--lp-ink-3)]">
-        <Ticket size={16} className="text-[var(--lp-violet)]" />
-        <span className="lp-mono">{step.ticketId}</span>
-      </div>
-      <div className="text-2xl font-semibold tracking-tight">
-        {step.ticketTitle}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {step.ticketMeta?.map((meta, i) => (
-          <motion.span
-            key={meta}
-            {...listItem(i)}
-            className="rounded-full bg-[#f1f5f9] px-3 py-1 text-xs text-[var(--lp-ink-2)]"
-          >
-            {meta}
-          </motion.span>
-        ))}
-      </div>
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: 0.5, duration: 1.2, ease: EASE }}
-        className="lp-gradient-bg h-1 origin-left rounded-full"
-      />
-    </div>
-  );
-}
-
-function InvestigateVisual({ step }: { step: Step }) {
-  return (
-    <div className="flex flex-col gap-3">
-      {step.plan?.map((line, i) => (
+    <div className="flex flex-col gap-2.5">
+      {step.items.map((item, i) => (
         <motion.div
-          key={line}
+          key={item}
           {...listItem(i)}
-          className="flex items-start gap-3 rounded-xl bg-[#f8fafc] px-4 py-3 text-sm"
+          className="flex items-center gap-3 rounded-xl bg-[#f8fafc] px-4 py-3 text-sm"
         >
-          <span className="lp-mono text-[var(--lp-primary)]">{i + 1}</span>
-          {line}
+          <BookOpen size={15} className="shrink-0 text-[var(--lp-primary)]" />
+          {item}
         </motion.div>
       ))}
       <motion.div
-        {...listItem(5)}
-        className="flex items-start gap-3 rounded-xl border border-[rgba(91,108,240,0.25)] bg-[rgba(91,108,240,0.06)] px-4 py-3 text-sm text-[#3b47b8]"
+        {...listItem(step.items.length)}
+        className="mt-1 flex items-center gap-3 rounded-xl bg-[var(--lp-ink)] px-4 py-3 text-sm text-[#fff]"
       >
-        <CircleHelp size={16} className="mt-0.5 shrink-0" />
-        {step.question}
+        <PlayCircle size={16} className="shrink-0" />
+        {step.footer}
       </motion.div>
     </div>
   );
 }
 
-function WorkVisual({ step }: { step: Step }) {
+function BuildVisual({ step }: { step: Step }) {
   return (
     <div className="lp-mono flex flex-col gap-2 rounded-2xl bg-[#f8fafc] p-5 text-[13px] ring-1 ring-[var(--lp-line)]">
-      {step.lines?.map((line, i) => (
+      {step.items.map((line, i) => (
         <motion.div
           key={line}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 + i * 0.25 }}
+          transition={{ delay: 0.2 + i * 0.3 }}
           className={
             line.startsWith("$")
               ? "text-[var(--lp-ink)]"
-              : line.startsWith("edit")
-                ? "text-[var(--lp-primary)]"
-                : line.startsWith("Tests")
-                  ? "text-[var(--lp-green)]"
-                  : "text-[var(--lp-ink-3)]"
+              : "text-[var(--lp-primary)]"
           }
         >
           {line}
         </motion.div>
       ))}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 + step.items.length * 0.3 }}
+        className="text-[var(--lp-green)]"
+      >
+        {step.footer}
+      </motion.div>
       <span className="lp-caret mt-1" />
     </div>
   );
 }
 
-function ReviewVisual({ step }: { step: Step }) {
+function ProveVisual({ step }: { step: Step }) {
+  const icons = [FlaskConical, Database, Repeat];
+  return (
+    <div className="flex flex-col gap-3">
+      {step.items.map((item, i) => {
+        const Icon = icons[i % icons.length];
+        return (
+          <motion.div
+            key={item}
+            {...listItem(i)}
+            className="flex items-center gap-3 rounded-xl border border-[var(--lp-line)] px-4 py-3 text-sm"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(18,161,80,0.1)] text-[var(--lp-green)]">
+              <Icon size={15} />
+            </span>
+            {item}
+            <Check
+              size={16}
+              className="ml-auto shrink-0 text-[var(--lp-green)]"
+            />
+          </motion.div>
+        );
+      })}
+      <motion.div
+        {...listItem(step.items.length)}
+        className="text-sm text-[var(--lp-ink-3)]"
+      >
+        {step.footer}
+      </motion.div>
+    </div>
+  );
+}
+
+function AutomateVisual({ step }: { step: Step }) {
+  return (
+    <div className="flex flex-col gap-2.5">
+      {step.items.map((item, i) => (
+        <motion.div
+          key={item}
+          {...listItem(i)}
+          className="flex items-center gap-3 rounded-xl bg-[#f8fafc] px-4 py-3 text-sm"
+        >
+          <Workflow size={15} className="shrink-0 text-[var(--lp-violet)]" />
+          {item}
+          <span className="lp-pulse ml-auto h-2 w-2 shrink-0 rounded-full bg-[var(--lp-green)]" />
+        </motion.div>
+      ))}
+      <motion.div
+        {...listItem(step.items.length)}
+        className="lp-mono mt-1 truncate rounded-xl bg-[rgba(18,161,80,0.08)] px-4 py-3 text-[12px] text-[#067647]"
+      >
+        {step.footer}
+      </motion.div>
+    </div>
+  );
+}
+
+function ControlVisual({ step }: { step: Step }) {
   return (
     <div className="flex flex-col gap-4">
-      {step.checks?.map((check, i) => (
+      {step.items.map((item, i) => (
         <motion.div
-          key={check}
+          key={item}
           {...listItem(i)}
           className="flex items-center gap-3 text-sm"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(18,161,80,0.12)] text-[var(--lp-green)]">
             <Check size={14} />
           </span>
-          {check}
+          {item}
         </motion.div>
       ))}
-      <motion.div {...listItem(4)} className="mt-2 flex flex-wrap gap-3">
+      <motion.div {...listItem(step.items.length)} className="mt-2">
         <span className="lp-btn bg-[var(--lp-green)] px-5 py-2.5 text-sm text-[#fff]">
           <GitMerge size={15} />
-          {step.approve}
-        </span>
-        <span className="lp-btn lp-btn-ghost px-5 py-2.5 text-sm">
-          {step.request}
+          {step.footer}
         </span>
       </motion.div>
     </div>
@@ -130,14 +166,15 @@ function ReviewVisual({ step }: { step: Step }) {
 }
 
 const VISUALS: Record<StoryVisual, React.FC<{ step: Step }>> = {
-  ticket: TicketVisual,
-  investigate: InvestigateVisual,
-  work: WorkVisual,
-  review: ReviewVisual,
+  learn: LearnVisual,
+  build: BuildVisual,
+  prove: ProveVisual,
+  automate: AutomateVisual,
+  control: ControlVisual,
 };
 
 /**
- * Pinned, four-chapter walkthrough. The section is four screens tall; the
+ * Pinned, five-chapter walkthrough. The section is five screens tall; the
  * content stays put while the scroll position picks the active chapter.
  */
 export function LandingStory() {
@@ -161,7 +198,7 @@ export function LandingStory() {
   const Visual = VISUALS[step.visual];
 
   return (
-    <section id="how" ref={ref} className="relative h-[420vh]">
+    <section id="how" ref={ref} className="relative h-[520vh]">
       <div className="sticky top-0 flex h-screen items-center px-4 pt-16 md:px-6 md:pt-0">
         <div className="mx-auto grid w-full max-w-6xl gap-8 md:grid-cols-[1fr_1.1fr] md:gap-16">
           <div className="flex flex-col justify-center">
@@ -235,9 +272,12 @@ export function LandingStory() {
                       {step.number}
                     </span>
                     <span className="text-sm font-medium text-[var(--lp-ink-2)]">
-                      {step.title}
+                      {step.label}
                     </span>
                   </div>
+                  <h3 className="mb-2 text-lg font-semibold md:hidden">
+                    {step.title}
+                  </h3>
                   <p className="mb-5 text-sm leading-relaxed text-[var(--lp-ink-2)] md:hidden">
                     {step.description}
                   </p>
