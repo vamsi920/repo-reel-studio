@@ -186,7 +186,7 @@
     "lint-staged": "17.3.0",
     "msw": "2.15.0",
     "png2icons": "2.0.1",
-    "postcss-prefix-selector": "2.1.1",
+    "postcss-prefix-selector": "2.2.1",
     "prettier": "3.8.3",
     "tailwindcss": "4.3.3",
     "tree-sitter-go": "0.25.0",
