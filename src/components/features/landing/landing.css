@@ -1,0 +1,226 @@
+/*
+ * Landing page look. Light only: the page owns its own --lp-* palette
+ * instead of the app's --oh-* tokens, so the app's dark appearance never
+ * reaches the marketing page. Colours follow the Neo DeepSea palette.
+ */
+.lp-root {
+  --lp-bg: #f5f8fb;
+  --lp-surface: #ffffff;
+  --lp-ink: #0a1b2b;
+  --lp-ink-2: #44566a;
+  --lp-ink-3: #8293a5;
+  --lp-line: rgba(10, 27, 43, 0.08);
+  --lp-line-strong: rgba(10, 27, 43, 0.14);
+  --lp-primary: #0b81b7;
+  --lp-primary-deep: #075277;
+  --lp-cyan: #22c3e6;
+  --lp-violet: #5b6cf0;
+  --lp-green: #12a150;
+  --lp-amber: #d97706;
+  --lp-red: #d63b3b;
+  --lp-gradient: linear-gradient(110deg, #075277 0%, #0b81b7 35%, #22c3e6 65%, #5b6cf0 100%);
+  --lp-shadow: 0 1px 2px rgba(10, 27, 43, 0.04), 0 12px 32px -12px rgba(10, 27, 43, 0.12);
+  --lp-shadow-lg: 0 2px 4px rgba(10, 27, 43, 0.04), 0 40px 80px -24px rgba(7, 82, 119, 0.28);
+
+  color-scheme: light;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: "Outfit", -apple-system, "SF Pro Display", BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+.lp-root ::selection {
+  background: rgba(34, 195, 230, 0.25);
+}
+
+.lp-mono {
+  font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
+.lp-gradient-text {
+  background: var(--lp-gradient);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: lp-shift 8s ease-in-out infinite alternate;
+}
+
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-primary);
+}
+
+.lp-card {
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-line);
+  border-radius: 24px;
+  box-shadow: var(--lp-shadow);
+}
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.lp-btn:hover {
+  transform: translateY(-1px);
+}
+
+.lp-btn-primary {
+  background: var(--lp-ink);
+  color: #fff;
+  box-shadow: 0 8px 24px -8px rgba(10, 27, 43, 0.5);
+}
+
+.lp-btn-primary:hover {
+  background: var(--lp-primary-deep);
+  box-shadow: 0 12px 32px -8px rgba(7, 82, 119, 0.6);
+}
+
+.lp-btn-ghost {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--lp-ink);
+  border: 1px solid var(--lp-line-strong);
+}
+
+.lp-btn-ghost:hover {
+  background: #fff;
+}
+
+.lp-grid-bg {
+  background-image:
+    linear-gradient(var(--lp-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 75%);
+}
+
+.lp-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  animation: lp-float 18s ease-in-out infinite alternate;
+}
+
+.lp-marquee {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 40s linear infinite;
+}
+
+.lp-marquee-mask {
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.lp-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(34, 195, 230, 0.12),
+    transparent 60%
+  );
+}
+
+.lp-spotlight:hover::before {
+  opacity: 1;
+}
+
+.lp-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  vertical-align: -0.15em;
+  background: var(--lp-primary);
+  animation: lp-blink 1s steps(2, start) infinite;
+}
+
+.lp-pulse {
+  animation: lp-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes lp-shift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes lp-float {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, -30px, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-30px, 20px, 0) scale(0.95);
+  }
+}
+
+@keyframes lp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes lp-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+@keyframes lp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-gradient-text,
+  .lp-blob,
+  .lp-marquee,
+  .lp-caret,
+  .lp-pulse {
+    animation: none;
+  }
+}
+
+.lp-gradient-bg {
+  background: var(--lp-gradient);
+}
