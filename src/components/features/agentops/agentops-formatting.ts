@@ -153,5 +153,12 @@ export function phaseProgressPercent(phase: AgentOpsRunPhase): number {
 export function shortWorkspace(workspaceId: string): string {
   if (!workspaceId || workspaceId === "unknown") return "—";
   const parts = workspaceId.split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? workspaceId;
+  const last = parts[parts.length - 1] ?? workspaceId;
+  // A conversation without a workspace runs in a generated folder
+  // (".../<conversation hex id>"): the id means nothing to a reader.
+  if (GENERATED_FOLDER.test(last)) return "—";
+  return last;
 }
+
+const GENERATED_FOLDER =
+  /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;

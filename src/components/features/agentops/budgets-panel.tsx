@@ -196,7 +196,12 @@ export function BudgetsPanel({ budgets, policies }: BudgetsPanelProps) {
   }
 
   return (
-    <div data-testid="agentops-budgets-panel" className="flex flex-col gap-4">
+    // Bottom space: the floating "Onboarding agent" launcher sits bottom-right,
+    // exactly where Save ends up, and swallowed clicks on it.
+    <div
+      data-testid="agentops-budgets-panel"
+      className="flex flex-col gap-4 pb-20"
+    >
       {budgets.map((budget) => {
         const form = {
           ...baseline[budget.workspaceId],
