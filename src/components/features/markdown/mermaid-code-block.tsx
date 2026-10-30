@@ -1,36 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import mermaid from "mermaid";
 import type { ExtraProps } from "react-markdown";
 import { code as defaultCode } from "./code";
+import { currentAppearance, subscribeAppearance } from "#/themes/appearance";
 
 /* eslint-disable i18next/no-literal-string -- mermaid status chrome */
 
-let initialized = false;
-function ensureMermaidInitialized() {
-  if (initialized) return;
+type MermaidTheme = "dark" | "default";
+
+let initializedTheme: MermaidTheme | null = null;
+// Follows the app's appearance: the dark theme's pale lines and labels were
+// unreadable on the light surface the app now defaults to.
+function ensureMermaidInitialized(theme: MermaidTheme) {
+  if (initializedTheme === theme) return;
   mermaid.initialize({
     startOnLoad: false,
-    theme: "dark",
+    theme,
     securityLevel: "strict",
   });
-  initialized = true;
+  initializedTheme = theme;
+}
+
+function useMermaidTheme(): MermaidTheme {
+  const appearance = useSyncExternalStore(
+    subscribeAppearance,
+    currentAppearance,
+    () => "dark" as const,
+  );
+  return appearance === "dark" ? "dark" : "default";
 }
 
 const svgCache = new Map<string, string>();
 let renderCounter = 0;
 
 function MermaidDiagram({ source }: { source: string }) {
-  const [svg, setSvg] = useState<string | null>(svgCache.get(source) ?? null);
+  const theme = useMermaidTheme();
+  const cacheKey = `${theme}:${source}`;
+  const [svg, setSvg] = useState<string | null>(svgCache.get(cacheKey) ?? null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const cached = svgCache.get(source);
+    const cached = svgCache.get(cacheKey);
     if (cached) {
       setSvg(cached);
       setFailed(false);
       return undefined;
     }
-    ensureMermaidInitialized();
+    ensureMermaidInitialized(theme);
     let cancelled = false;
     renderCounter += 1;
     const elementId = `kt-read-mermaid-${renderCounter}`;
@@ -38,7 +54,7 @@ function MermaidDiagram({ source }: { source: string }) {
       .render(elementId, source)
       .then(({ svg: rendered }) => {
         if (cancelled) return;
-        svgCache.set(source, rendered);
+        svgCache.set(cacheKey, rendered);
         setSvg(rendered);
       })
       .catch(() => {
@@ -53,7 +69,7 @@ function MermaidDiagram({ source }: { source: string }) {
     return () => {
       cancelled = true;
     };
-  }, [source]);
+  }, [source, theme, cacheKey]);
 
   if (failed) {
     return (

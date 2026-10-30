@@ -36,6 +36,7 @@ import {
   toPluginCoordinates,
   type WorkspaceMode,
 } from "#/api/conversation-metadata-store";
+import { CLONE_INSTRUCTION_PREFIX } from "#/lib/git/clone-instruction";
 import {
   GITHUB_CLONE_SECRET_NAME,
   mintLocalGithubCloneCredential,
@@ -62,7 +63,7 @@ async function buildLocalGithubCloneInstructions(repository: {
   // second conversation on the same repo finds the checkout already there --
   // update it instead of failing `git clone` into a non-empty directory.
   return (
-    `Before doing anything else, run: ` +
+    CLONE_INSTRUCTION_PREFIX +
     `if [ -d .git ]; then git fetch origin${checkout} && git pull --ff-only || true; ` +
     `else git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}; fi`
   );

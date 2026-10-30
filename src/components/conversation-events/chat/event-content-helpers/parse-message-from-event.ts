@@ -9,6 +9,7 @@ import {
   KT_DOCS_BLOCK_END,
   KT_DOCS_BLOCK_START,
 } from "#/lib/knowledge/kt-format";
+import { stripCloneInstruction } from "#/lib/git/clone-instruction";
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -65,7 +66,7 @@ export const parseMessageFromEvent = (event: MessageEvent): string => {
     message.content.some((content) => content.type === "image");
 
   if (event.source === "user") {
-    textContent = stripInjectedContext(textContent);
+    textContent = stripCloneInstruction(stripInjectedContext(textContent));
   }
 
   if (!hasImages) {
