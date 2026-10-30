@@ -481,3 +481,67 @@ describe("privacy", () => {
     expect(masked[0].createdAt).toBe("2026-01-01T00:00:00Z");
   });
 });
+
+describe("values always match the declared type (jevy-local-poc regression)", () => {
+  it("keys from a list, numbers in number columns, text in text columns", () => {
+    const model: DataModel = {
+      entities: [
+        {
+          id: "estates",
+          name: "estates",
+          evidence: [],
+          fields: [
+            {
+              name: "estate_id",
+              type: "enum",
+              primaryKey: true,
+              enumValues: ["EST-1", "EST-2", "EST-3", "EST-4"],
+            },
+            { name: "estate_name", type: "string" },
+          ],
+        },
+        {
+          id: "servers",
+          name: "servers",
+          evidence: [],
+          fields: [
+            { name: "id", type: "integer", primaryKey: true },
+            {
+              name: "estate_id",
+              type: "enum",
+              enumValues: ["EST-1", "EST-2", "EST-3", "EST-4"],
+              references: { entity: "estates", field: "estate_id" },
+            },
+            // A meaning that yields text, on an integer column.
+            { name: "memory_gb", type: "integer", semantic: "description" },
+            // A numeric profile on a text column.
+            {
+              name: "cost_center",
+              type: "string",
+              distribution: { kind: "normal", mean: 40, stddev: 5 },
+            },
+          ],
+        },
+      ],
+      rules: [],
+      flows: [],
+    };
+    for (const scenario of builtinScenarios(model)) {
+      const dataset = generateDataset(
+        model,
+        { ...scenario, counts: { estates: 8, servers: 30 } },
+        { seed: 3, now: new Date("2026-06-01T00:00:00Z") },
+      );
+      const report = validateDataset(model, dataset);
+      expect(
+        report.checks.filter((c) => !c.passed).map((c) => c.label),
+      ).toEqual([]);
+      expect(dataset.tables.estates).toHaveLength(4);
+      for (const row of dataset.tables.servers) {
+        expect(typeof row.memory_gb).toBe("number");
+        if (row.cost_center !== null)
+          expect(typeof row.cost_center).toBe("string");
+      }
+    }
+  });
+});

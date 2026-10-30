@@ -66,8 +66,12 @@ const DEFAULT_IMPORT_EXPORT: InterfaceImportExport = {
   },
 };
 
-const DEFAULT_DOCS_URL =
-  "https://docs.openhands.dev/openhands/usage/automations/overview";
+/**
+ * No product docs page for automations yet; the upstream OpenHands page sent
+ * NeoDevEx users to another product's docs, so the link is hidden unless the
+ * admitted interface manifest names one.
+ */
+const DEFAULT_DOCS_URL: string | null = null;
 
 /**
  * Proven automations featured above the Beta group. NOT derived from
@@ -278,7 +282,7 @@ export function getImportExportSpec(): InterfaceImportExport {
   return ADMITTED?.importExport ?? DEFAULT_IMPORT_EXPORT;
 }
 
-export function getAutomationsDocsUrl(): string {
+export function getAutomationsDocsUrl(): string | null {
   return ADMITTED?.docsUrl ?? DEFAULT_DOCS_URL;
 }
 

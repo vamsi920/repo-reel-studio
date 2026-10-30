@@ -139,7 +139,50 @@ function keyOf(value: unknown): string {
     : `j:${JSON.stringify(value)}`;
 }
 
+/**
+ * The value as the field's declared type. A meaning guessed from a name
+ * (memory_gb read as text, a cost_center profiled from numbers) must never
+ * put a word in an integer column or a number in a text one.
+ */
+export function conformToType(field: Field, value: unknown, rng: Rng): unknown {
+  if (value === null || value === undefined) return value;
+  const lo = field.min ?? 0;
+  const hi = field.max ?? (field.type === "integer" ? 1000 : 1000);
+  switch (field.type) {
+    case "integer": {
+      const n = typeof value === "number" ? value : Number(value);
+      return Number.isFinite(n) ? Math.round(n) : rng.int(lo, Math.max(lo, hi));
+    }
+    case "decimal":
+    case "float": {
+      const n = typeof value === "number" ? value : Number(value);
+      if (Number.isFinite(n)) return n;
+      const v = lo + rng.next() * (Math.max(lo, hi) - lo);
+      return Number(v.toFixed(field.scale ?? 2));
+    }
+    case "boolean":
+      return typeof value === "boolean" ? value : rng.chance(0.5);
+    case "enum":
+      return field.enumValues?.length &&
+        !field.enumValues.includes(String(value))
+        ? rng.pick(field.enumValues)
+        : value;
+    case "string":
+    case "text":
+      return typeof value === "number" || typeof value === "boolean"
+        ? String(value)
+        : value;
+    default:
+      return value;
+  }
+}
+
 function generatePrimaryKey(field: Field, index: number, rng: Rng): unknown {
+  // Keys drawn from a declared list keep its values (rows are capped to
+  // the list's length in clampScenario).
+  if (field.enumValues?.length) {
+    return field.enumValues[index % field.enumValues.length];
+  }
   if (field.type === "integer") return index + 1;
   if (field.type === "uuid" || semanticOf(field) === "uuid")
     return uuidFrom(rng);
@@ -206,7 +249,11 @@ function generateEntityRows(
       } else if (field === pk || field.primaryKey) {
         value = generatePrimaryKey(field, index, rowRng.fork("pk"));
       } else if (isEdge) {
-        value = edgeValueFor(field, semantic, ctx, variant + index);
+        value = conformToType(
+          field,
+          edgeValueFor(field, semantic, ctx, variant + index),
+          ctx.rng,
+        );
       } else {
         const nullDist =
           field.distribution?.kind === "null_rate"
@@ -216,7 +263,7 @@ function generateEntityRows(
         if (field.nullable && rowRng.chance(pNull)) {
           value = null;
         } else {
-          value = valueFor(field, semantic, ctx);
+          value = conformToType(field, valueFor(field, semantic, ctx), ctx.rng);
           if (
             typeof value === "string" &&
             field.maxLength &&

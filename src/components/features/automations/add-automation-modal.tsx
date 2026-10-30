@@ -37,7 +37,11 @@ export function AddAutomationModal({
   return (
     <ModalBackdrop
       onClose={onClose}
-      aria-label={t(I18nKey.AUTOMATIONS$EMPTY_HOW_TO_CREATE_TITLE)}
+      aria-label={
+        showChatInstructions
+          ? t(I18nKey.AUTOMATIONS$EMPTY_HOW_TO_CREATE_TITLE)
+          : t(I18nKey.AUTOMATIONS$CREATE_TITLE)
+      }
     >
       <div
         data-testid="add-automation-modal"

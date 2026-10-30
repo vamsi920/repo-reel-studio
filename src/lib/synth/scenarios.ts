@@ -134,6 +134,17 @@ export function clampScenario(scenario: Scenario, model: DataModel): Scenario {
   for (const e of model.entities) {
     const n = scenario.counts[e.id] ?? scenario.defaultCount ?? 10;
     counts[e.id] = Math.min(MAX_ROWS_PER_ENTITY, Math.max(0, Math.floor(n)));
+    // A key (or other unique column) limited to a list of values cannot
+    // have more rows than values: "estate_id is one of EST-1..EST-4".
+    const listed = e.fields.filter(
+      (f) =>
+        (f.primaryKey || f.unique) &&
+        !f.references &&
+        (f.enumValues?.length ?? 0) > 0,
+    );
+    for (const f of listed) {
+      counts[e.id] = Math.min(counts[e.id], f.enumValues!.length);
+    }
   }
   let total = Object.values(counts).reduce((a, b) => a + b, 0);
   if (total > MAX_ROWS_PER_RUN) {

@@ -74,14 +74,18 @@ export function CreateInstructionsContent({
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <a
-          href={DOCS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-muted underline transition-colors hover:text-foreground"
-        >
-          {t(I18nKey.AUTOMATIONS$EMPTY_LEARN_MORE)}
-        </a>
+        {DOCS_URL ? (
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted underline transition-colors hover:text-foreground"
+          >
+            {t(I18nKey.AUTOMATIONS$EMPTY_LEARN_MORE)}
+          </a>
+        ) : (
+          <span />
+        )}
         <BrandButton
           type="button"
           variant="primary"
