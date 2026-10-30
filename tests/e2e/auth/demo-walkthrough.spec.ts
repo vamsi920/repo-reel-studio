@@ -52,6 +52,15 @@ async function dismissAnalyticsModal(page: Page) {
   } catch {
     // Not shown.
   }
+  // A fresh browser gets the first-run "Welcome to Neo" dialog.
+  try {
+    const skip = page.getByRole("button", { name: "Skip for now" });
+    await skip.waitFor({ state: "visible", timeout: 4_000 });
+    await skip.click();
+    await skip.waitFor({ state: "hidden", timeout: 5_000 });
+  } catch {
+    // Not shown.
+  }
 }
 
 async function login(page: Page) {
@@ -98,6 +107,7 @@ test("a chat gets a real answer from the agent", async ({ page }) => {
   test.setTimeout(300_000);
   await login(page);
   await page.goto("/conversations", { waitUntil: "domcontentloaded" });
+  await dismissAnalyticsModal(page);
   const input = page.getByTestId("chat-input");
   await input.waitFor({ state: "visible", timeout: 30_000 });
   await input.click();
