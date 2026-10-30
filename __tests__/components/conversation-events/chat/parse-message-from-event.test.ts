@@ -21,7 +21,7 @@ describe("parseMessageFromEvent", () => {
 
   it("hides the repo clone instruction appended to the first message", () => {
     const text =
-      "Fix the checkout bug\nBefore doing anything else, run: if [ -d .git ]; then git fetch origin && git checkout main && git pull --ff-only || true; else git clone https://x-access-token:$GITHUB_TOKEN@github.com/acme/shop.git . && git checkout main; fi";
+      "Fix the checkout bug\nBefore doing anything else, run: if [ -d .git ]; then git fetch origin && git checkout main && git pull --ff-only || true; else git clone https://x-access-token:$GITHUB_TOKEN@github.com/acme/shop.git . && git checkout main; fi; git config user.name 'Neo'; git config user.email 'neo@neodevex.com'";
 
     expect(parseMessageFromEvent(userMessage(text))).toBe(
       "Fix the checkout bug",

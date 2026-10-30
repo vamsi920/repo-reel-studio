@@ -36,7 +36,11 @@ import {
   toPluginCoordinates,
   type WorkspaceMode,
 } from "#/api/conversation-metadata-store";
-import { CLONE_INSTRUCTION_PREFIX } from "#/lib/git/clone-instruction";
+import {
+  CLONE_INSTRUCTION_PREFIX,
+  gitIdentityCommands,
+  resolveGitIdentity,
+} from "#/lib/git/clone-instruction";
 import {
   GITHUB_CLONE_SECRET_NAME,
   mintLocalGithubCloneCredential,
@@ -62,10 +66,16 @@ async function buildLocalGithubCloneInstructions(repository: {
   // The working dir is a stable per-repo folder (`buildRepoWorkingDir`), so a
   // second conversation on the same repo finds the checkout already there --
   // update it instead of failing `git clone` into a non-empty directory.
+  // Commits made in this checkout carry the user's git identity (Settings >
+  // Application), not the agent-server's "openhands" fallback.
+  const identity = await SettingsService.getSettings()
+    .then(resolveGitIdentity)
+    .catch(() => resolveGitIdentity({}));
   return (
     CLONE_INSTRUCTION_PREFIX +
     `if [ -d .git ]; then git fetch origin${checkout} && git pull --ff-only || true; ` +
-    `else git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}; fi`
+    `else git clone https://x-access-token:$${GITHUB_CLONE_SECRET_NAME}@${host}/${repository.name}.git .${checkout}; fi` +
+    gitIdentityCommands(identity)
   );
 }
 

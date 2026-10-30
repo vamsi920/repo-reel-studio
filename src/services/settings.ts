@@ -1,3 +1,7 @@
+import {
+  DEFAULT_GIT_USER_EMAIL,
+  DEFAULT_GIT_USER_NAME,
+} from "#/lib/git/clone-instruction";
 import { Settings } from "#/types/settings";
 import {
   DEFAULT_ROUTING_MODE,
@@ -32,8 +36,8 @@ export const DEFAULT_SETTINGS: Settings = {
   max_budget_per_task: null,
   email: "",
   email_verified: true,
-  git_user_name: "openhands",
-  git_user_email: "openhands@all-hands.dev",
+  git_user_name: DEFAULT_GIT_USER_NAME,
+  git_user_email: DEFAULT_GIT_USER_EMAIL,
   title_llm_profile: null,
   model_routing_mode: DEFAULT_ROUTING_MODE,
   model_routing_policy: DEFAULT_ROUTING_POLICY,
