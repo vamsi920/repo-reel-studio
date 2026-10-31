@@ -2,6 +2,7 @@ import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { ONBOARDING_CONTROL_ACTION_KIND } from "#/constants/onboarding-control";
 import { MODERNIZATION_CONTROL_ACTION_KIND } from "#/constants/modernization-control";
 import { SYNTH_CONTROL_ACTION_KIND } from "#/constants/synth-control";
+import { TEST_CONTROL_ACTION_KIND } from "#/constants/test-control";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -383,6 +384,18 @@ export interface SynthControlAction extends ActionBase<
   rationale?: string | null;
 }
 
+/**
+ * Neo Test (testing studio) control action, intercepted by
+ * handleTestControlAction. Same envelope as SynthControlAction.
+ */
+export interface TestControlAction extends ActionBase<
+  typeof TEST_CONTROL_ACTION_KIND
+> {
+  command: string;
+  payload?: Record<string, unknown> | null;
+  rationale?: string | null;
+}
+
 export interface OnboardingControlAction extends ActionBase<
   typeof ONBOARDING_CONTROL_ACTION_KIND
 > {
@@ -435,4 +448,5 @@ export type Action =
   | OnboardingControlAction
   | ModernizationControlAction
   | SynthControlAction
+  | TestControlAction
   | LaunchChildConversationAction;

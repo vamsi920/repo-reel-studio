@@ -464,7 +464,10 @@ export default defineConfig(({ mode }) => {
         },
       },
       watch: {
-        ignored: ["**/node_modules/**", "**/.git/**"],
+        // `.tmp/**` holds isolated dev-stack state (agent-server events, the
+        // automation SQLite database and its journal); a watcher on it
+        // forces a full page reload every few seconds while the stack runs.
+        ignored: ["**/node_modules/**", "**/.git/**", "**/.tmp/**"],
       },
     },
     ssr: {

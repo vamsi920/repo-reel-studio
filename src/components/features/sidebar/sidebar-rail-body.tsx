@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Replace,
   Dices,
+  FlaskConical,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
@@ -252,6 +253,14 @@ export function SidebarRailBody({
           collapsed={collapsed}
           forceActive={currentPath.startsWith("/synth")}
           icon={<Dices width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/testing"
+          label={t(I18nKey.SIDEBAR$TESTING)}
+          testId="sidebar-testing-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/testing")}
+          icon={<FlaskConical width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
           to="/agentops"

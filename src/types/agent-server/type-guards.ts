@@ -6,6 +6,7 @@ import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversat
 import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
 import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 import { SYNTH_CONTROL_TOOL_NAME } from "#/constants/synth-control";
+import { TEST_CONTROL_TOOL_NAME } from "#/constants/test-control";
 
 import {
   OpenHandsEvent,
@@ -23,6 +24,7 @@ import {
   OnboardingControlAction,
   ModernizationControlAction,
   SynthControlAction,
+  TestControlAction,
   LaunchChildConversationAction,
 } from "./core";
 import { AgentErrorEvent } from "./core/events/observation-event";
@@ -221,6 +223,12 @@ export const isSynthControlActionEvent = (
   event: OpenHandsEvent,
 ): event is ActionEvent<SynthControlAction> =>
   isActionEvent(event) && event.tool_name === SYNTH_CONTROL_TOOL_NAME;
+
+/** Neo Test studio control (see `src/services/test-control.ts`). */
+export const isTestControlActionEvent = (
+  event: OpenHandsEvent,
+): event is ActionEvent<TestControlAction> =>
+  isActionEvent(event) && event.tool_name === TEST_CONTROL_TOOL_NAME;
 
 /** Neo ME studio control (see `src/services/modernization-control.ts`). */
 export const isModernizationControlActionEvent = (

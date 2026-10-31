@@ -91,6 +91,9 @@ export function OnboardingDock() {
   // Same layout for a Neo Synth studio (`/synth/<project>`).
   const synthStudio = new RegExp(`^${buildAgentCanvasPath("/synth")}/[^/]+$`);
   if (!pending && synthStudio.test(location.pathname)) return null;
+  // Same layout for a Neo Test studio (`/testing/<project>`).
+  const testStudio = new RegExp(`^${buildAgentCanvasPath("/testing")}/[^/]+$`);
+  if (!pending && testStudio.test(location.pathname)) return null;
 
   return (
     <>

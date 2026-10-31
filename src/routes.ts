@@ -53,6 +53,8 @@ export default [
     route("modernize/:projectId", "routes/modernize-project.tsx"),
     route("synth", "routes/synth.tsx"),
     route("synth/:projectId", "routes/synth-project.tsx"),
+    route("testing", "routes/testing.tsx"),
+    route("testing/:projectId", "routes/testing-project.tsx"),
     route("environment", "routes/environment.tsx", [
       index("routes/environment-overview.tsx"),
       route("connections", "routes/environment-connections.tsx"),

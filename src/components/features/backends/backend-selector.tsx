@@ -162,6 +162,7 @@ export function BackendSelector({
   const environmentSetupMatch = useMatch("/environment/setup");
   const modernizeMatch = useMatch("/modernize/:projectId");
   const synthMatch = useMatch("/synth/:projectId");
+  const testingMatch = useMatch("/testing/:projectId");
   const [addBackendModalOpen, setAddBackendModalOpen] = React.useState(false);
   const [manageBackendsModalOpen, setManageBackendsModalOpen] =
     React.useState(false);
@@ -364,6 +365,7 @@ export function BackendSelector({
       else if (environmentSetupMatch) navigate("/environment");
       else if (modernizeMatch) navigate("/modernize");
       else if (synthMatch) navigate("/synth");
+      else if (testingMatch) navigate("/testing");
 
       setActive(target.id, orgId);
       onSelectOption?.();
@@ -376,6 +378,7 @@ export function BackendSelector({
       environmentSetupMatch,
       modernizeMatch,
       synthMatch,
+      testingMatch,
       navigate,
       options,
       setActive,

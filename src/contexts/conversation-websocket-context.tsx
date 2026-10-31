@@ -42,6 +42,7 @@ import {
   isOnboardingControlActionEvent,
   isModernizationControlActionEvent,
   isSynthControlActionEvent,
+  isTestControlActionEvent,
 } from "#/types/agent-server/type-guards";
 import { handleCanvasUIAction } from "#/services/canvas-ui";
 import { handleLaunchChildConversationAction } from "#/services/child-conversation-launch";
@@ -51,6 +52,7 @@ import {
 } from "#/services/onboarding-control";
 import { handleModernizationControlAction } from "#/services/modernization-control";
 import { handleSynthControlAction } from "#/services/synth-control";
+import { handleTestControlAction } from "#/services/test-control";
 import { createWorkspaceRunner } from "#/lib/modernization/replay-harness";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
@@ -925,6 +927,21 @@ export function ConversationWebSocketProvider({
           // import, model, rules, scenarios; generation runs in the browser).
           if (conversationId && isSynthControlActionEvent(event)) {
             void handleSynthControlAction(event.action, {
+              postResult: createConversationResultPoster(conversationId),
+              conversationId,
+              actionId: String(event.id),
+              runInWorkspace: createWorkspaceRunner(
+                conversationId,
+                conversationUrl,
+                sessionApiKey,
+              ),
+            });
+          }
+
+          // Neo Test: the testing agent driving its studio (stack, plan,
+          // gates; the studio runs the harness and parses the results).
+          if (conversationId && isTestControlActionEvent(event)) {
+            void handleTestControlAction(event.action, {
               postResult: createConversationResultPoster(conversationId),
               conversationId,
               actionId: String(event.id),

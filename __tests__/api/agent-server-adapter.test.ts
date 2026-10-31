@@ -4,6 +4,7 @@ import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversat
 import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
 import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 import { SYNTH_CONTROL_TOOL_NAME } from "#/constants/synth-control";
+import { TEST_CONTROL_TOOL_NAME } from "#/constants/test-control";
 
 import {
   ACP_SERVER_TAG_KEY,
@@ -824,6 +825,7 @@ describe("buildStartConversationRequest", () => {
         ONBOARDING_CONTROL_TOOL_NAME,
         MODERNIZATION_CONTROL_TOOL_NAME,
         SYNTH_CONTROL_TOOL_NAME,
+        TEST_CONTROL_TOOL_NAME,
       ]);
     });
 
@@ -840,6 +842,7 @@ describe("buildStartConversationRequest", () => {
         ONBOARDING_CONTROL_TOOL_NAME,
         MODERNIZATION_CONTROL_TOOL_NAME,
         SYNTH_CONTROL_TOOL_NAME,
+        TEST_CONTROL_TOOL_NAME,
       ]);
     });
 
