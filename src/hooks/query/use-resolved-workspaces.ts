@@ -86,7 +86,14 @@ export function useResolvedWorkspaces(): UseResolvedWorkspacesResult {
   });
 
   const isLoading = isLoadingList || parentQueries.some((q) => q.isLoading);
-  const isError = isErrorList || parentQueries.some((q) => q.isError);
+  // An implicit parent that doesn't exist on this machine is not an error the
+  // user can act on (they never added it); only their own parents count.
+  const isError =
+    isErrorList ||
+    parentQueries.some(
+      (q, index) =>
+        q.isError && !workspaceParents[index]?.id.startsWith("implicit:"),
+    );
 
   // Stable string fingerprint that changes whenever any parent's subdir
   // results change. Avoids spreading timestamps into the `useMemo` deps,

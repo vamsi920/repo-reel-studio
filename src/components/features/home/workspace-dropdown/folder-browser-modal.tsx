@@ -333,7 +333,7 @@ export function FolderBrowserModal({
                   <button
                     type="button"
                     onClick={() => setCurrentPath(entry.path)}
-                    className="grid grid-cols-[1fr_120px] items-center w-full text-left px-4 py-1.5 text-sm text-white hover:bg-[var(--oh-interactive-hover)] cursor-pointer"
+                    className="grid grid-cols-[1fr_120px] items-center w-full select-none text-left px-4 py-1.5 text-sm text-white hover:bg-[var(--oh-interactive-hover)] cursor-pointer"
                     data-testid={`folder-browser-entry-${entry.name}`}
                   >
                     <span className="flex items-center gap-2 min-w-0">

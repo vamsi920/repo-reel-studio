@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Führt die Suiten aus",
   "TESTING$THINK_PARSING": "Liest die Ergebnisse",
   "TESTING$THINK_PROVING": "Beweist Tests mit Mutanten",
-  "TESTING$THINK_REPORT": "Schreibt den Bericht"
+  "TESTING$THINK_REPORT": "Schreibt den Bericht",
+  "MODULE$ERROR_TITLE": "Auf dieser Seite ist ein Problem aufgetreten",
+  "MODULE$ERROR_BODY": "Der Rest von Neo funktioniert weiterhin. Versuche es erneut oder geh woanders hin und komm zurück.",
+  "MODULE$NOT_FOUND_TITLE": "Seite nicht gefunden",
+  "MODULE$NOT_FOUND_BODY": "Dieser Link verweist auf etwas, das nicht existiert oder entfernt wurde.",
+  "MODULE$TRY_AGAIN": "Erneut versuchen",
+  "MODULE$GO_TO_CONVERSATIONS": "Zu den Unterhaltungen",
+  "MODULE$GO_BACK": "Zurück",
+  "MODULE$DETAILS": "Details"
 }

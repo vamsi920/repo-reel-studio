@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Executant les suites",
   "TESTING$THINK_PARSING": "Llegint els resultats",
   "TESTING$THINK_PROVING": "Provant tests amb mutants",
-  "TESTING$THINK_REPORT": "Escrivint l'informe"
+  "TESTING$THINK_REPORT": "Escrivint l'informe",
+  "MODULE$ERROR_TITLE": "Aquesta pàgina ha tingut un problema",
+  "MODULE$ERROR_BODY": "La resta de Neo continua funcionant. Torna-ho a provar, o ves a un altre lloc i torna.",
+  "MODULE$NOT_FOUND_TITLE": "No s'ha trobat la pàgina",
+  "MODULE$NOT_FOUND_BODY": "Aquest enllaç apunta a una cosa que no existeix o s'ha eliminat.",
+  "MODULE$TRY_AGAIN": "Torna-ho a provar",
+  "MODULE$GO_TO_CONVERSATIONS": "Ves a les converses",
+  "MODULE$GO_BACK": "Enrere",
+  "MODULE$DETAILS": "Detalls"
 }

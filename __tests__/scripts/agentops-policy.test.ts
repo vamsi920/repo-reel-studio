@@ -269,6 +269,19 @@ describe("summarize", () => {
     expect(summary.runsTodayWithoutReportedCost).toBe(1);
   });
 
+  it("counts today from the viewer's local midnight when given", () => {
+    // 21:00 in New York on the 31st is already the 1st in UTC; a run that
+    // finished at 19:00 local time is still "today" for that viewer.
+    const now = "2026-11-01T01:00:00.000Z";
+    const localMidnight = "2026-10-31T04:00:00.000Z";
+    const runs = [
+      run({ runId: "evening", updatedAt: "2026-10-31T23:00:00.000Z" }),
+    ];
+
+    expect(summarize(runs, [], now).runsToday).toBe(0);
+    expect(summarize(runs, [], now, localMidnight).runsToday).toBe(1);
+  });
+
   it("counts a stuck run as a failure and not as an active agent", () => {
     const summary = summarize(
       [run({ runId: "s", status: "stuck", agentName: "Looping Agent" })],

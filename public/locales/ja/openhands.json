@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "スイートを実行しています",
   "TESTING$THINK_PARSING": "結果を読んでいます",
   "TESTING$THINK_PROVING": "ミュータントでテストを証明しています",
-  "TESTING$THINK_REPORT": "レポートを書いています"
+  "TESTING$THINK_REPORT": "レポートを書いています",
+  "MODULE$ERROR_TITLE": "このページで問題が発生しました",
+  "MODULE$ERROR_BODY": "Neo の他の部分は引き続き動作します。再試行するか、別のページに移動してから戻ってください。",
+  "MODULE$NOT_FOUND_TITLE": "ページが見つかりません",
+  "MODULE$NOT_FOUND_BODY": "このリンク先は存在しないか、削除されています。",
+  "MODULE$TRY_AGAIN": "再試行",
+  "MODULE$GO_TO_CONVERSATIONS": "会話へ移動",
+  "MODULE$GO_BACK": "戻る",
+  "MODULE$DETAILS": "詳細"
 }

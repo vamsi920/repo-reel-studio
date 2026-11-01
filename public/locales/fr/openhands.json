@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Exécution des suites",
   "TESTING$THINK_PARSING": "Lecture des résultats",
   "TESTING$THINK_PROVING": "Preuve des tests par mutants",
-  "TESTING$THINK_REPORT": "Rédaction du rapport"
+  "TESTING$THINK_REPORT": "Rédaction du rapport",
+  "MODULE$ERROR_TITLE": "Cette page a rencontré un problème",
+  "MODULE$ERROR_BODY": "Le reste de Neo fonctionne toujours. Réessayez, ou allez ailleurs puis revenez.",
+  "MODULE$NOT_FOUND_TITLE": "Page introuvable",
+  "MODULE$NOT_FOUND_BODY": "Ce lien pointe vers un élément qui n'existe pas ou a été supprimé.",
+  "MODULE$TRY_AGAIN": "Réessayer",
+  "MODULE$GO_TO_CONVERSATIONS": "Aller aux conversations",
+  "MODULE$GO_BACK": "Retour",
+  "MODULE$DETAILS": "Détails"
 }

@@ -10,7 +10,10 @@ describe("automation setup route", () => {
     );
 
     // Act
-    const setupRoute = rootLayout?.children?.find(
+    const pages = rootLayout?.children?.find(
+      (route) => route.file === "routes/module-boundary.tsx",
+    );
+    const setupRoute = pages?.children?.find(
       (route) => route.file === "routes/automation-setup-route.tsx",
     );
 

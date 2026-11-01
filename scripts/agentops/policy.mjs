@@ -328,9 +328,13 @@ export function applyBudgetApproval(policies, approval, additionalUsd = 0) {
   return { workspaces, agents };
 }
 
-/** The Overview tiles. All counts derived from stored runs, never invented. */
-export function summarize(runs, approvals, now) {
-  const since = dayStart(now);
+/**
+ * The Overview tiles. All counts derived from stored runs, never invented.
+ * `since` is the start of "today" in the viewer's time zone (the UI sends its
+ * local midnight); without it the UTC day is used, which reset the tiles to
+ * zero every evening for anyone west of Greenwich.
+ */
+export function summarize(runs, approvals, now, since = dayStart(now)) {
   const today = runs.filter((run) => within(run, since));
   const spendToday = computeSpend(runs, { since });
 

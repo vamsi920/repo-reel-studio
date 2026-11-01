@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "正在執行套件",
   "TESTING$THINK_PARSING": "正在讀取結果",
   "TESTING$THINK_PROVING": "正在用變異體驗證測試",
-  "TESTING$THINK_REPORT": "正在撰寫報告"
+  "TESTING$THINK_REPORT": "正在撰寫報告",
+  "MODULE$ERROR_TITLE": "此頁面發生問題",
+  "MODULE$ERROR_BODY": "Neo 的其他部分仍可正常使用。請重試，或先前往其他頁面再返回。",
+  "MODULE$NOT_FOUND_TITLE": "找不到頁面",
+  "MODULE$NOT_FOUND_BODY": "此連結指向的內容不存在或已被移除。",
+  "MODULE$TRY_AGAIN": "重試",
+  "MODULE$GO_TO_CONVERSATIONS": "前往對話",
+  "MODULE$GO_BACK": "返回",
+  "MODULE$DETAILS": "詳細資訊"
 }

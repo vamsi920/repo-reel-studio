@@ -74,6 +74,9 @@ describe("AgentServerGitService", () => {
       // No `ref`: the server auto-detects the base so committed (and
       // pushed) changes stay visible.
       expect(mockGitChanges).toHaveBeenCalledWith("/workspace/project");
+      expect(mockGitChanges).toHaveBeenCalledWith("/workspace/project", {
+        ref: "HEAD",
+      });
     });
 
     test("preserves slashes in path when using workspace helper", async () => {
@@ -88,6 +91,37 @@ describe("AgentServerGitService", () => {
       );
 
       expect(mockGitChanges).toHaveBeenCalledWith(pathWithSlashes);
+    });
+
+    test("includes uncommitted edits that only differ from HEAD", async () => {
+      // Fixing a bug introduced by a local, unpushed commit restores the
+      // upstream content: against the auto-detected base the fix is
+      // invisible, against HEAD it is the change under review.
+      mockGitChanges.mockImplementation(
+        async (_path: string, options?: { ref?: string }) =>
+          options?.ref === "HEAD"
+            ? [
+                { status: "UPDATED", path: "src/helpers.py" },
+                { status: "UPDATED", path: "tests/test_bp.py" },
+              ]
+            : [
+                { status: "UPDATED", path: "tests/test_bp.py" },
+                { status: "ADDED", path: "committed.py" },
+              ],
+      );
+
+      const result = await AgentServerGitService.getGitChanges(
+        "123",
+        "http://localhost:3000/api/conversations/123",
+        "test-api-key",
+        "/workspace",
+      );
+
+      expect(result).toEqual([
+        { status: "M", path: "tests/test_bp.py" },
+        { status: "A", path: "committed.py" },
+        { status: "M", path: "src/helpers.py" },
+      ]);
     });
 
     test("maps V1 git statuses to V0 format", async () => {
@@ -168,6 +202,26 @@ describe("AgentServerGitService", () => {
         original: "",
         diff: expectedDiff.diff,
       });
+    });
+  });
+
+  describe("getGitChangeDiff against HEAD", () => {
+    test("falls back to HEAD when the file matches the auto-detected base", async () => {
+      mockGitDiff.mockImplementation(
+        async (_path: string, options?: { ref?: string }) =>
+          options?.ref === "HEAD"
+            ? { original: "partition", modified: "rpartition" }
+            : { original: "rpartition", modified: "rpartition" },
+      );
+
+      const result = await AgentServerGitService.getGitChangeDiff(
+        "123",
+        "http://localhost:3000/api/conversations/123",
+        "test-api-key",
+        "/workspace/src/helpers.py",
+      );
+
+      expect(result).toEqual({ original: "partition", modified: "rpartition" });
     });
   });
 

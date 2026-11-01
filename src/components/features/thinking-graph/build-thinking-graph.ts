@@ -204,6 +204,10 @@ export function buildThinkingGraph(
         });
       }
     } else if (isActionEvent(event)) {
+      // The agent often says something mid-run ("now I'll check X") and then
+      // keeps acting; only a reply with nothing after it ends the run, or
+      // the view zooms out to "the whole finished graph" while it still works.
+      isFinished = false;
       const { kind } = event.action;
       const responseId = event.llm_response_id || event.id;
       const continuesFork =

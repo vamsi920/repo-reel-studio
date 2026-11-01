@@ -134,6 +134,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Prerendered into the static index.html (ssr: false), so something is on
+ * screen while the app bundle downloads and boots instead of a blank page for
+ * the first one to two seconds. Kept free of theme surfaces: the prerendered
+ * shell carries the default theme tokens before the user's appearance applies.
+ */
+export function HydrateFallback() {
+  return (
+    <div
+      data-testid="app-boot-loading"
+      className="flex min-h-screen items-center justify-center"
+    >
+      <LoadingSpinner size="large" />
+    </div>
+  );
+}
+
 function AgentServerBootstrapLoading() {
   return (
     <main className="min-h-screen bg-base px-6 py-10 text-white">

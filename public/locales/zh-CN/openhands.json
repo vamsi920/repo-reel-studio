@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "正在运行套件",
   "TESTING$THINK_PARSING": "正在读取结果",
   "TESTING$THINK_PROVING": "正在用变异体验证测试",
-  "TESTING$THINK_REPORT": "正在撰写报告"
+  "TESTING$THINK_REPORT": "正在撰写报告",
+  "MODULE$ERROR_TITLE": "此页面出现问题",
+  "MODULE$ERROR_BODY": "Neo 的其他部分仍可正常使用。请重试，或先前往其他页面再返回。",
+  "MODULE$NOT_FOUND_TITLE": "找不到页面",
+  "MODULE$NOT_FOUND_BODY": "此链接指向的内容不存在或已被删除。",
+  "MODULE$TRY_AGAIN": "重试",
+  "MODULE$GO_TO_CONVERSATIONS": "前往对话",
+  "MODULE$GO_BACK": "返回",
+  "MODULE$DETAILS": "详细信息"
 }

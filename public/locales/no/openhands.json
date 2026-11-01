@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Kjører suitene",
   "TESTING$THINK_PARSING": "Leser resultatene",
   "TESTING$THINK_PROVING": "Beviser tester med mutanter",
-  "TESTING$THINK_REPORT": "Skriver rapporten"
+  "TESTING$THINK_REPORT": "Skriver rapporten",
+  "MODULE$ERROR_TITLE": "Denne siden fikk et problem",
+  "MODULE$ERROR_BODY": "Resten av Neo fungerer fortsatt. Prøv igjen, eller gå et annet sted og kom tilbake.",
+  "MODULE$NOT_FOUND_TITLE": "Fant ikke siden",
+  "MODULE$NOT_FOUND_BODY": "Denne lenken peker til noe som ikke finnes eller er fjernet.",
+  "MODULE$TRY_AGAIN": "Prøv igjen",
+  "MODULE$GO_TO_CONVERSATIONS": "Gå til samtaler",
+  "MODULE$GO_BACK": "Gå tilbake",
+  "MODULE$DETAILS": "Detaljer"
 }

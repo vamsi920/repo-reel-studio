@@ -140,19 +140,32 @@ class AgentServerGitService {
       }));
     }
 
-    // No `ref`: let the server auto-detect the base (origin branch /
-    // merge-base), so changes the agent has already committed still show
-    // up. `ref: "HEAD"` would go blank after every `git commit` — and the
-    // cloud-proxy branch above already omits `ref`.
-    const changes = await new RemoteWorkspace(
+    // Two views, merged. No `ref` lets the server auto-detect the base
+    // (origin branch / merge-base), so changes the agent has already
+    // committed still show up (`ref: "HEAD"` alone would go blank after every
+    // `git commit`). But against that base, an uncommitted edit that restores
+    // the upstream content is invisible -- e.g. fixing a bug introduced by a
+    // local, unpushed commit hid the fix itself from review. `ref: "HEAD"`
+    // catches exactly those, so the list is the union (HEAD wins per path).
+    const workspace = new RemoteWorkspace(
       getAgentServerClientOptions({ conversationUrl, sessionApiKey }),
-    ).gitChanges(path);
+    );
+    const [againstBase, againstHead] = await Promise.all([
+      workspace.gitChanges(path),
+      workspace.gitChanges(path, { ref: "HEAD" }).catch(() => []),
+    ]);
 
-    if (!Array.isArray(changes)) {
+    if (!Array.isArray(againstBase)) {
       throw new Error(
         "Invalid response from runtime - runtime may be unavailable",
       );
     }
+
+    const byPath = new Map(againstBase.map((change) => [change.path, change]));
+    if (Array.isArray(againstHead)) {
+      againstHead.forEach((change) => byPath.set(change.path, change));
+    }
+    const changes = [...byPath.values()];
 
     return changes.map((change) => ({
       status: mapAnyGitStatusToClientStatus(
@@ -266,10 +279,20 @@ class AgentServerGitService {
     }
 
     // No `ref` for the same reason as getGitChanges: the base must match
-    // the one the change list was computed against.
-    const diff = (await new RemoteWorkspace(
+    // the one the change list was computed against. A file that only
+    // differs from HEAD (see getGitChanges) is identical to the base, so an
+    // empty base diff falls back to the diff against HEAD.
+    const workspace = new RemoteWorkspace(
       getAgentServerClientOptions({ conversationUrl, sessionApiKey }),
-    ).gitDiff(path)) as GitChangeDiff & { diff?: string };
+    );
+    let diff = (await workspace.gitDiff(path)) as GitChangeDiff & {
+      diff?: string;
+    };
+    if ((diff.modified ?? "") === (diff.original ?? "") && !diff.diff) {
+      diff = (await workspace
+        .gitDiff(path, { ref: "HEAD" })
+        .catch(() => diff)) as GitChangeDiff & { diff?: string };
+    }
 
     return {
       modified: diff.modified ?? "",

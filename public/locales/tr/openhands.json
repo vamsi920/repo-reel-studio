@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Paketler çalıştırılıyor",
   "TESTING$THINK_PARSING": "Sonuçlar okunuyor",
   "TESTING$THINK_PROVING": "Testler mutantlarla kanıtlanıyor",
-  "TESTING$THINK_REPORT": "Rapor yazılıyor"
+  "TESTING$THINK_REPORT": "Rapor yazılıyor",
+  "MODULE$ERROR_TITLE": "Bu sayfada bir sorun oluştu",
+  "MODULE$ERROR_BODY": "Neo'nun geri kalanı çalışmaya devam ediyor. Tekrar deneyin veya başka bir yere gidip geri dönün.",
+  "MODULE$NOT_FOUND_TITLE": "Sayfa bulunamadı",
+  "MODULE$NOT_FOUND_BODY": "Bu bağlantı var olmayan veya kaldırılmış bir şeye işaret ediyor.",
+  "MODULE$TRY_AGAIN": "Tekrar dene",
+  "MODULE$GO_TO_CONVERSATIONS": "Sohbetlere git",
+  "MODULE$GO_BACK": "Geri dön",
+  "MODULE$DETAILS": "Ayrıntılar"
 }

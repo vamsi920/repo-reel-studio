@@ -183,8 +183,17 @@ class AgentOpsService {
     return request<{ status: string }>("/health", {}, { authenticated: false });
   }
 
+  /** "Today" tiles count from the viewer's local midnight, not UTC's. */
   static async getSummary(): Promise<AgentOpsSummary> {
-    return request<AgentOpsSummary>("/summary");
+    const now = new Date();
+    const localMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    ).toISOString();
+    return request<AgentOpsSummary>(
+      `/summary?since=${encodeURIComponent(localMidnight)}`,
+    );
   }
 
   static async getRuns(

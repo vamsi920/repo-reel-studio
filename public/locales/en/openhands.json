@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Running the suites",
   "TESTING$THINK_PARSING": "Reading the results",
   "TESTING$THINK_PROVING": "Proving tests with mutants",
-  "TESTING$THINK_REPORT": "Writing the report"
+  "TESTING$THINK_REPORT": "Writing the report",
+  "MODULE$ERROR_TITLE": "This page hit a problem",
+  "MODULE$ERROR_BODY": "The rest of Neo still works. Try again, or go somewhere else and come back.",
+  "MODULE$NOT_FOUND_TITLE": "Page not found",
+  "MODULE$NOT_FOUND_BODY": "This link points to something that doesn't exist or was removed.",
+  "MODULE$TRY_AGAIN": "Try again",
+  "MODULE$GO_TO_CONVERSATIONS": "Go to conversations",
+  "MODULE$GO_BACK": "Go back",
+  "MODULE$DETAILS": "Details"
 }

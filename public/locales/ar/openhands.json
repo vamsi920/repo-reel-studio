@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "يشغّل المجموعات",
   "TESTING$THINK_PARSING": "يقرأ النتائج",
   "TESTING$THINK_PROVING": "يثبت الاختبارات بالطفرات",
-  "TESTING$THINK_REPORT": "يكتب التقرير"
+  "TESTING$THINK_REPORT": "يكتب التقرير",
+  "MODULE$ERROR_TITLE": "واجهت هذه الصفحة مشكلة",
+  "MODULE$ERROR_BODY": "بقية Neo لا تزال تعمل. حاول مرة أخرى، أو انتقل إلى مكان آخر ثم عد.",
+  "MODULE$NOT_FOUND_TITLE": "الصفحة غير موجودة",
+  "MODULE$NOT_FOUND_BODY": "يشير هذا الرابط إلى شيء غير موجود أو تمت إزالته.",
+  "MODULE$TRY_AGAIN": "حاول مرة أخرى",
+  "MODULE$GO_TO_CONVERSATIONS": "الانتقال إلى المحادثات",
+  "MODULE$GO_BACK": "رجوع",
+  "MODULE$DETAILS": "التفاصيل"
 }

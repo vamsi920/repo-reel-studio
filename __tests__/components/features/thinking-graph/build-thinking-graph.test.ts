@@ -129,6 +129,24 @@ describe("buildThinkingGraph", () => {
     expect(graph.isFinished).toBe(true);
   });
 
+  it("is not finished when the agent keeps acting after saying something mid-run", () => {
+    const agentSays = (id: string, text: string) =>
+      ({
+        id,
+        timestamp: ts(),
+        source: "agent",
+        llm_message: { role: "assistant", content: [{ type: "text", text }] },
+      }) as unknown as OpenHandsEvent;
+
+    const graph = buildThinkingGraph([
+      userMessage("u1", "Fix the bug"),
+      agentSays("m1", "Found the cause, now I'll fix it."),
+      bash("a1"),
+    ]);
+
+    expect(graph.isFinished).toBe(false);
+  });
+
   it("splits tool calls the agent issued together into side-by-side branches that join into the next step", () => {
     const together = (id: string) =>
       action(

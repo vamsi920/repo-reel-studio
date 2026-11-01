@@ -26,6 +26,7 @@ import { FolderBrowserModal } from "#/components/features/home/workspace-dropdow
 import { ManageWorkspacesModal } from "#/components/features/home/workspace-dropdown/manage-workspaces-modal";
 
 import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
+import { LoadingSpinner } from "#/components/shared/loading-spinner";
 import { Divider } from "#/ui/divider";
 import { NEW_CONVERSATION_DROPDOWN_SURFACE } from "./new-conversation-dropdown-styles";
 import { usePopoverFixedPlacement } from "#/hooks/use-popover-fixed-placement";
@@ -92,6 +93,10 @@ export function LocalNewConversationMenu({
   const { mutate: createConversation, isPending } = useCreateConversation();
   const isCreatingElsewhere = useIsCreatingConversation();
   const isCreating = isPending || isCreatingElsewhere;
+  // Which row was clicked: starting a conversation takes a few seconds (the
+  // workspace is prepared server-side), so that row shows a spinner.
+  const [launchingPath, setLaunchingPath] = React.useState<string | null>(null);
+  const NO_WORKSPACE_KEY = "";
 
   React.useEffect(() => {
     if (!open || browserOpen || manageOpen) return undefined;
@@ -120,9 +125,11 @@ export function LocalNewConversationMenu({
 
   const launch = (workingDir?: string) => {
     if (isCreating) return;
+    setLaunchingPath(workingDir ?? NO_WORKSPACE_KEY);
     createConversation(
       { workingDir, entryPoint: "sidebar_local_menu" },
       {
+        onSettled: () => setLaunchingPath(null),
         onSuccess: (data) => {
           setOpen(false);
           navigate(`/conversations/${data.conversation_id}`);
@@ -219,12 +226,20 @@ export function LocalNewConversationMenu({
                 type="button"
                 disabled={isCreating}
                 data-testid="launch-no-workspace"
+                aria-busy={launchingPath === NO_WORKSPACE_KEY}
                 onClick={() => launch()}
                 className={itemClass}
               >
                 <span className="text-[var(--oh-muted)]">
                   {t(I18nKey.HOME$NO_WORKSPACE_OPTION)}
                 </span>
+                {launchingPath === NO_WORKSPACE_KEY && (
+                  <LoadingSpinner
+                    size="small"
+                    className="ml-auto h-4 w-4 shrink-0"
+                    outerClassName="h-4 w-4"
+                  />
+                )}
               </button>
             </li>
             {workspaces.map((w) => (
@@ -234,6 +249,7 @@ export function LocalNewConversationMenu({
                   disabled={isCreating}
                   data-testid="launch-workspace"
                   data-workspace-path={w.path}
+                  aria-busy={launchingPath === w.path}
                   onClick={() => launch(w.path)}
                   className={itemClass}
                 >
@@ -244,6 +260,13 @@ export function LocalNewConversationMenu({
                     <RepoIcon width={14} height={14} />
                   </span>
                   <span className="truncate">{w.name}</span>
+                  {launchingPath === w.path && (
+                    <LoadingSpinner
+                      size="small"
+                      className="ml-auto h-4 w-4 shrink-0"
+                      outerClassName="h-4 w-4"
+                    />
+                  )}
                 </button>
               </li>
             ))}

@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "스위트를 실행하는 중",
   "TESTING$THINK_PARSING": "결과를 읽는 중",
   "TESTING$THINK_PROVING": "뮤턴트로 테스트를 증명하는 중",
-  "TESTING$THINK_REPORT": "리포트를 작성하는 중"
+  "TESTING$THINK_REPORT": "리포트를 작성하는 중",
+  "MODULE$ERROR_TITLE": "이 페이지에 문제가 발생했습니다",
+  "MODULE$ERROR_BODY": "Neo의 나머지 기능은 정상적으로 작동합니다. 다시 시도하거나 다른 곳으로 이동한 뒤 돌아오세요.",
+  "MODULE$NOT_FOUND_TITLE": "페이지를 찾을 수 없습니다",
+  "MODULE$NOT_FOUND_BODY": "이 링크가 가리키는 항목이 없거나 삭제되었습니다.",
+  "MODULE$TRY_AGAIN": "다시 시도",
+  "MODULE$GO_TO_CONVERSATIONS": "대화로 이동",
+  "MODULE$GO_BACK": "뒤로 가기",
+  "MODULE$DETAILS": "세부 정보"
 }

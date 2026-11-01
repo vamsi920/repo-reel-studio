@@ -4214,5 +4214,13 @@
   "TESTING$THINK_RUNNING": "Виконує набори",
   "TESTING$THINK_PARSING": "Читає результати",
   "TESTING$THINK_PROVING": "Доводить тести мутантами",
-  "TESTING$THINK_REPORT": "Пише звіт"
+  "TESTING$THINK_REPORT": "Пише звіт",
+  "MODULE$ERROR_TITLE": "На цій сторінці сталася проблема",
+  "MODULE$ERROR_BODY": "Решта Neo працює. Спробуйте ще раз або перейдіть деінде й поверніться.",
+  "MODULE$NOT_FOUND_TITLE": "Сторінку не знайдено",
+  "MODULE$NOT_FOUND_BODY": "Це посилання веде на те, чого не існує або що було видалено.",
+  "MODULE$TRY_AGAIN": "Спробувати ще раз",
+  "MODULE$GO_TO_CONVERSATIONS": "До розмов",
+  "MODULE$GO_BACK": "Назад",
+  "MODULE$DETAILS": "Подробиці"
 }

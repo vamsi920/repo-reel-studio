@@ -195,6 +195,11 @@ type Pages = {
       "pageId": string;
     };
   };
+  "/*": {
+    params: {
+      "*": string;
+    };
+  };
   "/shared/conversations/:conversationId": {
     params: {
       "conversationId": string;
@@ -205,7 +210,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/logout" | "/reset-password" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/modernize" | "/modernize/:projectId" | "/synth" | "/synth/:projectId" | "/testing" | "/testing/:projectId" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/shared/conversations/:conversationId";
+    page: "/" | "/login" | "/logout" | "/reset-password" | "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/modernize" | "/modernize/:projectId" | "/synth" | "/synth/:projectId" | "/testing" | "/testing/:projectId" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/*" | "/shared/conversations/:conversationId";
   };
   "routes/welcome.tsx": {
     id: "routes/welcome";
@@ -225,7 +230,11 @@ type RouteFiles = {
   };
   "routes/root-layout.tsx": {
     id: "routes/root-layout";
-    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/modernize" | "/modernize/:projectId" | "/synth" | "/synth/:projectId" | "/testing" | "/testing/:projectId" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/modernize" | "/modernize/:projectId" | "/synth" | "/synth/:projectId" | "/testing" | "/testing/:projectId" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/*";
+  };
+  "routes/module-boundary.tsx": {
+    id: "routes/module-boundary";
+    page: "/conversations" | "/conversations/:conversationId/panel" | "/conversations/:conversationId" | "/launch" | "/customize" | "/skills" | "/plugins" | "/mcp" | "/settings" | "/settings/llm" | "/settings/agent" | "/settings/agents" | "/settings/condenser" | "/settings/agent-context" | "/settings/verification" | "/settings/app" | "/settings/connections" | "/settings/secrets" | "/oauth/device/verify" | "/automations" | "/automations/templates" | "/automations/pull-requests" | "/automations/new/:automationId" | "/automations/:automationId" | "/security" | "/environment/setup" | "/modernize" | "/modernize/:projectId" | "/synth" | "/synth/:projectId" | "/testing" | "/testing/:projectId" | "/environment" | "/environment/connections" | "/environment/network" | "/environment/requirements" | "/environment/runbook" | "/usage" | "/agentops" | "/agentops/live" | "/agentops/approvals" | "/agentops/history" | "/agentops/budgets" | "/agentops/runs/:runId" | "/kt" | "/kt/:repositoryId" | "/kt/:repositoryId/graph" | "/kt/:repositoryId/video" | "/kt/:repositoryId/:pageId" | "/*";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -435,6 +444,10 @@ type RouteFiles = {
     id: "routes/kt-page";
     page: "/kt/:repositoryId/:pageId";
   };
+  "routes/not-found.tsx": {
+    id: "routes/not-found";
+    page: "/*";
+  };
   "routes/shared-conversation.tsx": {
     id: "routes/shared-conversation";
     page: "/shared/conversations/:conversationId";
@@ -448,6 +461,7 @@ type RouteModules = {
   "routes/logout": typeof import("./src/routes/logout.tsx");
   "routes/reset-password": typeof import("./src/routes/reset-password.tsx");
   "routes/root-layout": typeof import("./src/routes/root-layout.tsx");
+  "routes/module-boundary": typeof import("./src/routes/module-boundary.tsx");
   "routes/home": typeof import("./src/routes/home.tsx");
   "routes/conversation-panel": typeof import("./src/routes/conversation-panel.tsx");
   "routes/conversation": typeof import("./src/routes/conversation.tsx");
@@ -500,5 +514,6 @@ type RouteModules = {
   "routes/kt-graph": typeof import("./src/routes/kt-graph.tsx");
   "routes/kt-video-list": typeof import("./src/routes/kt-video-list.tsx");
   "routes/kt-page": typeof import("./src/routes/kt-page.tsx");
+  "routes/not-found": typeof import("./src/routes/not-found.tsx");
   "routes/shared-conversation": typeof import("./src/routes/shared-conversation.tsx");
 };

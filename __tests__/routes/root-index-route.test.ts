@@ -12,7 +12,10 @@ describe("root index route", () => {
     const rootLayout = routes.find(
       (route) => route.file === "routes/root-layout.tsx",
     );
-    const homeRoute = rootLayout?.children?.find(
+    const pages = rootLayout?.children?.find(
+      (route) => route.file === "routes/module-boundary.tsx",
+    );
+    const homeRoute = pages?.children?.find(
       (route) => route.path === "conversations",
     );
 

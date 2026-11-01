@@ -51,6 +51,22 @@ describe("resolveCorsOrigin", () => {
     expect(resolveCorsOrigin(undefined, allowed)).toBeNull();
   });
 
+  it("allows a loopback origin on any port with the default list", () => {
+    for (const origin of [
+      "http://localhost:8000",
+      "http://127.0.0.1:8010",
+      "http://[::1]:3000",
+    ]) {
+      expect(resolveCorsOrigin(origin, DEFAULT_ALLOWED_ORIGINS)).toBe(origin);
+    }
+    expect(
+      resolveCorsOrigin(
+        "http://localhost.evil.example.com",
+        DEFAULT_ALLOWED_ORIGINS,
+      ),
+    ).toBeNull();
+  });
+
   it("echoes any origin back when the allow-list is a wildcard", () => {
     expect(resolveCorsOrigin("https://anything.example.com", ["*"])).toBe("*");
   });

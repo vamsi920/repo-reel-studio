@@ -268,6 +268,13 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
+/** A valid ISO time from a `since` query parameter, or undefined. */
+function parseSince(value) {
+  if (!value) return undefined;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? undefined : new Date(time).toISOString();
+}
+
 export function createRouter({ store, client, collector, storeKind }) {
   return async function route(req, res, path, url) {
     const method = req.method ?? "GET";
@@ -279,7 +286,12 @@ export function createRouter({ store, client, collector, storeKind }) {
         store.listApprovals({ state: "all" }),
       ]);
       sendJson(res, 200, {
-        ...summarize(summaryRuns, summaryApprovals, now),
+        ...summarize(
+          summaryRuns,
+          summaryApprovals,
+          now,
+          parseSince(url.searchParams.get("since")),
+        ),
         collector: collector.health(),
         // Which store is actually serving this data — the UI warns the user
         // when it's the ephemeral JSONL fallback, since that data is lost on
