@@ -267,6 +267,16 @@ describe("buildReport", () => {
     expect(current.gates.verdict).toBe("warned");
   });
 
+  it("does not call a flip flaky when the working tree changed, even on the same commit", () => {
+    const previous = { ...build({ unit: ["failed"] }), treeHash: "tree-a" };
+    const current = { ...build({ unit: ["passed"] }), treeHash: "tree-b" };
+    expect(flakyAcrossRuns(current, previous)).toEqual([]);
+    const sameTree = { ...build({ unit: ["passed"] }), treeHash: "tree-a" };
+    expect(flakyAcrossRuns(sameTree, previous).map((c) => c.id)).toEqual([
+      "t0",
+    ]);
+  });
+
   it("does not call a flip flaky across different commits", () => {
     const previous = { ...build({ unit: ["failed"] }), commit: "other" };
     const current = build({ unit: ["passed"] });

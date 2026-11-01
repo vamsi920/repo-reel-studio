@@ -72,8 +72,12 @@ export function flakyAcrossRuns(
   const flaky = current.suites.flatMap((s) =>
     s.cases.filter((c) => c.status === "flaky"),
   );
-  if (!previous || !current.commit || previous.commit !== current.commit)
-    return flaky;
+  // Same code is the same working tree when the harness hashed it, else the
+  // same commit (an uncommitted fix would otherwise read as flakiness).
+  const sameCode = current.treeHash
+    ? previous?.treeHash === current.treeHash
+    : Boolean(current.commit) && previous?.commit === current.commit;
+  if (!previous || !sameCode) return flaky;
   const prevById = new Map(
     previous.suites
       .flatMap((s) => s.cases)
@@ -235,6 +239,7 @@ export function buildReport(input: BuildReportInput): TestReport {
     finishedAt: input.finishedAt,
     commit: input.status?.commit,
     branch: input.status?.branch,
+    treeHash: input.status?.treeHash,
     trigger: input.trigger,
     suites,
     counts,

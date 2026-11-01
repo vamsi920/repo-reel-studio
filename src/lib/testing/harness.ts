@@ -28,6 +28,8 @@ export const RUNS_DIR = `${NEOTEST_DIR}/runs`;
 export const RESULTS_DIR = `${NEOTEST_DIR}/results`;
 export const REPORT_MD_PATH = `${NEOTEST_DIR}/REPORT.md`;
 export const LATEST_JSON_PATH = `${NEOTEST_DIR}/latest.json`;
+/** CTRF (MIT common test report format) view of the latest run. */
+export const CTRF_PATH = `${NEOTEST_DIR}/ctrf.json`;
 export const GIT_EXCLUDE_ENTRY = `${NEOTEST_DIR}/`;
 
 /** Paths we read back: no quotes, no parent references. */
@@ -281,14 +283,17 @@ export async function writeReportFiles(
   run: RunInWorkspace,
   report: TestReport,
   markdown: string,
+  ctrf?: string,
 ): Promise<string[]> {
   const written: string[] = [];
   const json = `${JSON.stringify(report, null, 2)}\n`;
-  for (const [path, content] of [
+  const files: (readonly [string, string])[] = [
     [reportPath(report.runId), json],
     [LATEST_JSON_PATH, json],
     [REPORT_MD_PATH, markdown],
-  ] as const) {
+    ...(ctrf ? [[CTRF_PATH, ctrf] as const] : []),
+  ];
+  for (const [path, content] of files) {
     if (await writeText(run, path, content).catch(() => false))
       written.push(path);
   }

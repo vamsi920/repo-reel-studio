@@ -36,6 +36,7 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   "SIDEBAR$TESTING",
   "TESTING$START_PROMPT",
   "TESTING$RESTART_PROMPT",
+  "TESTING$EXPORT_JSON",
   // "Ask Neo" is the feature's product name, kept in English like "Neo".
   "COMMAND_MENU$AI_GUIDE_TITLE",
   "COMMAND_MENU$ENVIRONMENT_TITLE",

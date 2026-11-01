@@ -16,6 +16,10 @@ import { ResultsCard } from "./results-card";
 import { GatesCard } from "./gates-card";
 import { TrendCard } from "./trend-card";
 import { ScheduleCard } from "./schedule-card";
+import { KtCard } from "./kt-card";
+import { MatrixCard } from "./matrix-card";
+import type { TestRuntime } from "#/lib/testing/kt";
+import type { RunInWorkspace } from "#/lib/modernization/replay-harness";
 import { NeoOrb, useTestThinking } from "./thinking";
 
 const STATUS_LABEL_KEY: Record<TestProject["status"], I18nKey> = {
@@ -54,6 +58,8 @@ export function TestWorkbench({
   canRun,
   expanded = false,
   onToggleExpand,
+  runtime,
+  runInWorkspace,
 }: {
   projectId: string;
   postResult: PostResultFn;
@@ -62,6 +68,8 @@ export function TestWorkbench({
   canRun: boolean;
   expanded?: boolean;
   onToggleExpand?: () => void;
+  runtime?: TestRuntime;
+  runInWorkspace?: RunInWorkspace;
 }) {
   const { t } = useTranslation("openhands");
   const reduceMotion = useReducedMotion();
@@ -93,8 +101,21 @@ export function TestWorkbench({
 
   const cards: { key: string; node: React.ReactNode }[] = [
     { key: "live", node: <LiveCard project={project} /> },
+    { key: "matrix", node: <MatrixCard project={project} report={report} /> },
     ...(report
-      ? [{ key: "results", node: <ResultsCard report={report} /> }]
+      ? [
+          {
+            key: "results",
+            node: (
+              <ResultsCard
+                report={report}
+                runs={project.runs}
+                projectName={project.name}
+                postResult={postResult}
+              />
+            ),
+          },
+        ]
       : []),
     ...questions.map((q) => ({
       key: `question-${q.id}`,
@@ -106,6 +127,17 @@ export function TestWorkbench({
         />
       ),
     })),
+    {
+      key: "kt",
+      node: (
+        <KtCard
+          project={project}
+          runtime={runtime}
+          runInWorkspace={runInWorkspace}
+          postResult={postResult}
+        />
+      ),
+    },
     { key: "stack", node: <StackCard project={project} /> },
     {
       key: "plan",
@@ -115,7 +147,12 @@ export function TestWorkbench({
     },
     { key: "gates", node: <GatesCard project={project} report={report} /> },
     ...(project.findings.length
-      ? [{ key: "findings", node: <FindingsCard project={project} /> }]
+      ? [
+          {
+            key: "findings",
+            node: <FindingsCard project={project} postResult={postResult} />,
+          },
+        ]
       : []),
     ...(project.runs.some((r) => r.report)
       ? [{ key: "trend", node: <TrendCard project={project} /> }]

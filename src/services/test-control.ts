@@ -49,8 +49,10 @@ import {
   reportHeadline,
   reportMarkdown,
 } from "#/lib/testing/report";
+import { toCtrf } from "#/lib/testing/ctrf";
 import { parseArtifact, parseNeotestMutation } from "#/lib/testing/parsers";
 import { STACK_FIND_COMMAND, detectStack } from "#/lib/testing/stack";
+import { catalogByKind } from "#/lib/testing/catalog";
 import {
   DEFAULT_RUN_TIMEOUT_MS,
   HARNESS_PATH,
@@ -74,7 +76,14 @@ import {
 } from "#/lib/testing/harness";
 import { readWorkspaceFile } from "#/lib/synth/workspace";
 import { useSynthStudioStore } from "#/stores/synth-studio-store";
-import { findKnowledgeForConversation } from "#/lib/knowledge/kt-agent-context";
+import {
+  ensureKtInWorkspace,
+  generateKtForProject,
+  knowledgeRepositoryId,
+  resolveTestKnowledge,
+  summarizeKnowledge,
+  type TestRuntime,
+} from "#/lib/testing/kt";
 import type { RunInWorkspace } from "#/lib/modernization/replay-harness";
 import { scanForSecrets } from "#/lib/environment/discovery-guard";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
@@ -101,6 +110,13 @@ export interface DispatchContext {
   conversationId?: string;
   /** Runs a shell command in the project's workspace, when attached to a runtime. */
   runInWorkspace?: RunInWorkspace;
+  /** The conversation's runtime, for KT export/generation through the SDK. */
+  runtime?: {
+    conversationUrl: string | null;
+    sessionApiKey: string | null;
+    workingDir: string | null;
+    backendId?: string | null;
+  };
   /** Id of the ActionEvent being dispatched; dedupes replays. */
   actionId?: string;
   /** Clock override for tests. */
@@ -192,7 +208,8 @@ export function findProjectForConversation(
 
 /** Payload shapes, handed to the agent by `describe`. */
 export const COMMAND_SHAPES = Object.freeze({
-  describe: "{}",
+  describe:
+    "{} | {generate_kt: true} (starts KT doc generation from this checkout when none exist; a kt_docs_ready receipt follows)",
   record_stack:
     "{languages:[string], frameworks?:[string], runners?:[string], existing_suites?:[{kind, name, command?, path?}], app_start?:{command, url, ready_path?}, data_sources?:[string], ci?:[string], notes?, evidence:[paths]}",
   set_plan: `{suites:[{id?, kind: ${TEST_KINDS.join("|")}, name, command, cwd?, env?:{NAME: value}, timeout_sec?, setup?, teardown?, results:[{path, format?: ${ARTIFACT_FORMATS.join("|")}}], targets?:[paths], rationale?, origin?: existing|agent, not_applicable?: string (reason the kind cannot be tested here), evidence?:[paths]}], replace?: boolean} -- result paths are workspace-relative; write results under ${RESULTS_DIR}/ (e.g. --reporter=junit --outputFile=${RESULTS_DIR}/unit-junit.xml, coverage lcov under ${RESULTS_DIR}/coverage/). Data suites write ${RESULTS_DIR}/checks.json: {checks:[{name, dataset?, column?, status: pass|warn|fail|error, severity?: critical|high|medium|low, metric?, expected?, unexpected_count?, unexpected_percent?, message?}]}`,
@@ -541,12 +558,16 @@ export async function executeRun(
   });
   // Mutation proofs stay valid until the code changes: merge every proof
   // recorded on this commit into the new report so the gate keeps reading.
-  if (!report.mutation && report.commit) {
+  const sameCode = (r: TestReport) =>
+    report.treeHash
+      ? r.treeHash === report.treeHash
+      : Boolean(report.commit) && r.commit === report.commit;
+  if (!report.mutation && (report.treeHash || report.commit)) {
     const proofs = fresh.runs
       .map((r) => r.report)
       .filter(
         (r): r is TestReport =>
-          !!r?.mutation && r.commit === report.commit && r.runId !== runId,
+          !!r?.mutation && sameCode(r) && r.runId !== runId,
       )
       .map((r) => r.mutation!);
     if (proofs.length) {
@@ -577,6 +598,7 @@ export async function executeRun(
     run,
     report,
     reportMarkdown(report, fresh.name),
+    JSON.stringify(toCtrf(report, fresh.name), null, 2),
   );
   if (written.length === 0)
     report.warnings.push("report files could not be written to the workspace");
@@ -589,6 +611,7 @@ export async function executeRun(
     ),
   });
   useTestStudioStore.getState().setStatus(projectId, "reporting");
+  openFailureTriage(projectId, report, finishedAt);
   useTestStudioStore.getState().appendLog(projectId, {
     id: newTestId("log"),
     level:
@@ -605,6 +628,92 @@ export async function executeRun(
     run: updated ?? { ...testRun, status: "done", report },
     report,
   };
+}
+
+/** Ids of the triage card's options; the brief documents their meaning. */
+export const TRIAGE_OPTIONS = [
+  "fix_app",
+  "fix_tests",
+  "findings_only",
+] as const;
+export type TriageOption = (typeof TRIAGE_OPTIONS)[number];
+export const TRIAGE_QUESTION_PREFIX = "triage-";
+
+/**
+ * Failed tests or a failed gate are the user's call, not the agent's: the
+ * studio opens a card asking whether Neo should fix the application, fix
+ * the tests, or only record findings. One open triage at a time; the
+ * answer reaches the agent as an ordinary card receipt.
+ */
+export function openFailureTriage(
+  projectId: string,
+  report: TestReport,
+  at: string,
+): boolean {
+  const failed = report.counts.failed + report.counts.error;
+  const gatesFailed = report.gates.results.filter(
+    (g) => g.verdict === "failed",
+  );
+  if (failed === 0 && gatesFailed.length === 0) return false;
+  const store = useTestStudioStore.getState();
+  const project = store.projects[projectId];
+  if (!project) return false;
+  if (
+    project.questions.some(
+      (q) => q.status === "open" && q.id.startsWith(TRIAGE_QUESTION_PREFIX),
+    )
+  ) {
+    return false;
+  }
+  const failures = report.suites
+    .flatMap((s) =>
+      s.cases
+        .filter((c) => c.status === "failed" || c.status === "error")
+        .map((c) => `${s.name}: ${c.name}`),
+    )
+    .slice(0, 8);
+  store.askQuestion(projectId, {
+    id: `${TRIAGE_QUESTION_PREFIX}${report.runId}`,
+    askedBy: "studio",
+    title: `${failed} test(s) failed, ${gatesFailed.length} gate(s) failed`,
+    titleKey: "TESTING$TRIAGE_TITLE",
+    prompt: failures.join("\n"),
+    promptKey: "TESTING$TRIAGE_PROMPT",
+    values: {
+      failed,
+      gates: gatesFailed.length,
+      run: report.runId,
+      failures: failures.join("\n"),
+      gateList: gatesFailed.map((g) => g.rule.id).join(", "),
+    },
+    kind: "single",
+    options: [
+      {
+        id: "fix_app",
+        label: "Fix the application",
+        labelKey: "TESTING$TRIAGE_FIX_APP",
+        descriptionKey: "TESTING$TRIAGE_FIX_APP_DESC",
+        recommended: true,
+      },
+      {
+        id: "fix_tests",
+        label: "Fix the tests",
+        labelKey: "TESTING$TRIAGE_FIX_TESTS",
+        descriptionKey: "TESTING$TRIAGE_FIX_TESTS_DESC",
+      },
+      {
+        id: "findings_only",
+        label: "Record as findings only",
+        labelKey: "TESTING$TRIAGE_FINDINGS_ONLY",
+        descriptionKey: "TESTING$TRIAGE_FINDINGS_ONLY_DESC",
+      },
+    ],
+    allowOther: true,
+    status: "open",
+    selected: [],
+    at,
+  });
+  return true;
 }
 
 export type ProofOutcome =
@@ -685,7 +794,12 @@ export async function executeProof(
     const report: TestReport = { ...last.report, mutation: summary };
     report.gates = evaluateGates(report, fresh.gates);
     useTestStudioStore.getState().updateRun(projectId, last.id, { report });
-    await writeReportFiles(run, report, reportMarkdown(report, fresh.name));
+    await writeReportFiles(
+      run,
+      report,
+      reportMarkdown(report, fresh.name),
+      JSON.stringify(toCtrf(report, fresh.name), null, 2),
+    );
   }
   useTestStudioStore.getState().appendLog(projectId, {
     id: newTestId("log"),
@@ -888,6 +1002,127 @@ export async function replayMissedTestCommands(
   return replayed;
 }
 
+/** Files changed in the last commit plus the working tree, for test focus. */
+async function readChangedFiles(run: RunInWorkspace): Promise<string[]> {
+  try {
+    const result = await run(
+      "(git diff --name-only HEAD~1..HEAD 2>/dev/null; git status --porcelain 2>/dev/null | awk '{print $2}') | sort -u | head -60",
+    );
+    return (result.stdout ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith(".neotest"));
+  } catch {
+    return [];
+  }
+}
+
+/* ── KT docs ───────────────────────────────────────────────────────────── */
+
+/**
+ * Finds the KT docs Neo already generated for the project (store, then
+ * Supabase), writes them into the workspace when a runtime is attached, and
+ * records the result on the project. Shared by `describe`, the studio's
+ * mount-time sync and the KT card.
+ */
+export async function syncProjectKt(
+  projectId: string,
+  runtime?: TestRuntime,
+): Promise<TestProject["kt"] | null> {
+  const store = useTestStudioStore.getState();
+  const project = store.projects[projectId];
+  if (!project) return null;
+  if (project.kt.status === "generating") return project.kt;
+  const resolved = await resolveTestKnowledge(project.source);
+  if (!resolved) {
+    // A failed generation keeps its error on the card until docs exist.
+    if (project.kt.status === "error") return project.kt;
+    store.setKt(projectId, {
+      status: "none",
+      exportedCommit: project.kt.exportedCommit,
+    });
+    return useTestStudioStore.getState().projects[projectId]?.kt ?? null;
+  }
+  const summary = summarizeKnowledge(resolved.knowledge, resolved.from);
+  let exportedCommit = project.kt.exportedCommit;
+  if (runtime?.conversationUrl && runtime.workingDir) {
+    exportedCommit = await ensureKtInWorkspace(
+      runtime,
+      resolved.knowledge,
+      project.source,
+    );
+  }
+  store.setKt(projectId, { ...summary, exportedCommit });
+  return useTestStudioStore.getState().projects[projectId]?.kt ?? null;
+}
+
+/**
+ * Generates KT docs for the project from the studio's own checkout, exports
+ * them, and tells the agent. The knowledge store carries progress under
+ * `knowledgeRepositoryId(source)` while it runs.
+ */
+export async function startKtGeneration(
+  projectId: string,
+  runtime: TestRuntime,
+  run: RunInWorkspace,
+  postResult?: PostResultFn,
+): Promise<TestProject["kt"] | null> {
+  const store = useTestStudioStore.getState();
+  const project = store.projects[projectId];
+  if (!project) return null;
+  if (project.kt.status === "generating") return project.kt;
+  store.setKt(projectId, { status: "generating", error: undefined });
+  store.appendLog(projectId, {
+    id: newTestId("log"),
+    level: "info",
+    text: `Generating KT docs for ${project.name} (${knowledgeRepositoryId(project.source)})`,
+    at: new Date().toISOString(),
+  });
+  const outcome = await generateKtForProject(project.source, runtime, run);
+  if (!outcome.ok) {
+    useTestStudioStore.getState().setKt(projectId, {
+      status: "error",
+      error: outcome.detail ?? outcome.reason,
+    });
+    postResult?.(
+      receipt({
+        status: "kt_generation_failed",
+        reason: outcome.reason,
+        detail: outcome.detail,
+        guidance:
+          "Plan from the README, entry points and routes instead; KT docs can be generated later from the Knowledge page.",
+      }),
+    );
+    return useTestStudioStore.getState().projects[projectId]?.kt ?? null;
+  }
+  const exportedCommit = await ensureKtInWorkspace(
+    runtime,
+    outcome.knowledge,
+    project.source,
+  );
+  useTestStudioStore.getState().setKt(projectId, {
+    ...summarizeKnowledge(outcome.knowledge, "generated"),
+    exportedCommit,
+  });
+  useTestStudioStore.getState().appendLog(projectId, {
+    id: newTestId("log"),
+    level: "success",
+    text: `KT docs ready: ${outcome.knowledge.pages.length} pages at .neodevex/kt/`,
+    at: new Date().toISOString(),
+  });
+  postResult?.(
+    receipt({
+      status: "kt_docs_ready",
+      index: ".neodevex/kt/INDEX.md",
+      pages: outcome.knowledge.pages.length,
+      commit: outcome.knowledge.commitSha,
+      guidance:
+        "Read .neodevex/kt/INDEX.md and the pages for the areas you will test, then refine the plan (set_plan) with what the architecture map shows.",
+    }),
+  );
+  return useTestStudioStore.getState().projects[projectId]?.kt ?? null;
+}
+
 /* ── describe ──────────────────────────────────────────────────────────── */
 
 function summarizeReport(report: TestReport) {
@@ -948,10 +1183,12 @@ function summarizeReport(report: TestReport) {
 async function describeProject(
   project: TestProject,
   run: RunInWorkspace | undefined,
+  runtime?: TestRuntime,
 ) {
   let stackHint: ReturnType<typeof detectStack> | undefined;
   let ktDocs = false;
   let synthDirs: string[] = [];
+  let changedFiles: string[] = [];
   if (run) {
     try {
       const listing = await run(STACK_FIND_COMMAND);
@@ -974,13 +1211,9 @@ async function describeProject(
     }
     ktDocs = await hasKtDocs(run);
     synthDirs = await listSynthRunsInWorkspace(run);
+    changedFiles = await readChangedFiles(run);
   }
-  const knowledge = findKnowledgeForConversation({
-    workingDir: project.source.kind === "folder" ? project.source.name : null,
-    repository:
-      project.source.kind === "repository" ? project.source.name : null,
-    branch: project.source.branch,
-  });
+  const kt = (await syncProjectKt(project.id, runtime)) ?? project.kt;
   const synthProjects = Object.values(
     useSynthStudioStore.getState().projects,
   ).filter((p) => p.source.name === project.source.name);
@@ -1002,7 +1235,44 @@ async function describeProject(
       })),
   );
   const latest = latestReport(project);
+  const languages = project.stack?.languages ?? stackHint?.languages ?? [];
+  const catalog = catalogByKind(languages);
   return {
+    // Open-source tools (MIT first) per kind for the recorded stack, with
+    // the exact invocation that writes a result the studio parses.
+    tool_catalog: Object.fromEntries(
+      TEST_KINDS.map((kind) => [
+        kind,
+        (catalog[kind] ?? []).slice(0, 6).map((tool) => ({
+          id: tool.id,
+          name: tool.name,
+          license: tool.license,
+          mit: tool.mit,
+          command: tool.command,
+          result: tool.result,
+          generates: tool.generates,
+          needs: tool.needs,
+          notes: tool.notes,
+        })),
+      ]),
+    ),
+    // Where to aim new tests: least covered files and recent changes.
+    coverage_gaps: latest?.coverage?.hotspots.slice(0, 10),
+    changed_files: changedFiles,
+    failing_tests: latest
+      ? latest.suites
+          .flatMap((s) =>
+            s.cases
+              .filter((c) => c.status === "failed" || c.status === "error")
+              .map((c) => ({
+                suite: s.id,
+                test: c.name,
+                file: c.file,
+                line: c.line,
+              })),
+          )
+          .slice(0, 30)
+      : [],
     project: {
       id: project.id,
       name: project.name,
@@ -1025,19 +1295,22 @@ async function describeProject(
         }
       : undefined,
     kt_docs: {
-      present_in_workspace: ktDocs,
+      // Neo's own Knowledge module: generated architecture pages for this
+      // repository, not the repository's markdown.
+      status: kt.status,
+      generated_in_neo: kt.status === "available",
+      source: kt.from,
+      commit: kt.commitSha,
+      generated_at: kt.generatedAt,
+      present_in_workspace: ktDocs || Boolean(kt.exportedCommit),
       index: ".neodevex/kt/INDEX.md",
-      pages: knowledge
-        ? knowledge.pages.slice(0, 40).map((p) => ({
-            title: p.title,
-            path: `.neodevex/kt/pages/${p.id}.md`,
-            importance: p.importance,
-          }))
-        : undefined,
+      pages: kt.pages?.slice(0, 40),
       guidance:
-        ktDocs || knowledge
-          ? "Read the index and the pages for the areas you will test before planning."
-          : "No KT docs: read the README, entry points and routes first; the user can generate KT docs from the Knowledge page.",
+        kt.status === "available"
+          ? "Neo already generated KT docs for this project. Read the index and the high-importance pages for the areas you will test BEFORE planning; cite pages as evidence."
+          : kt.status === "generating"
+            ? "KT docs are being generated right now; a kt_docs_ready receipt will arrive. Continue discovery from the README and entry points meanwhile."
+            : "No KT docs exist yet. Call describe {generate_kt: true} to have Neo generate them from this checkout (takes a few minutes; a kt_docs_ready receipt arrives) and continue discovery from the README, entry points and routes meanwhile.",
     },
     synth_data: {
       datasets: synthRuns,
@@ -1108,6 +1381,24 @@ async function describeProject(
   };
 }
 
+/** The runtime with its working directory resolved (once per call). */
+async function resolveRuntime(
+  context: DispatchContext,
+): Promise<TestRuntime | undefined> {
+  if (!context.runtime) return undefined;
+  if (context.runtime.workingDir || !context.conversationId)
+    return context.runtime;
+  try {
+    const workingDir =
+      await AgentServerConversationService.resolveConversationWorkingDir(
+        context.conversationId,
+      );
+    return { ...context.runtime, workingDir };
+  } catch {
+    return context.runtime;
+  }
+}
+
 /* ── Dispatcher ────────────────────────────────────────────────────────── */
 
 export async function handleTestControlAction(
@@ -1150,9 +1441,25 @@ export async function handleTestControlAction(
 
   switch (action.command) {
     case "describe": {
+      if (payload.generate_kt === true && context.runInWorkspace) {
+        const runtime = await resolveRuntime(context);
+        if (runtime?.conversationUrl && runtime.workingDir) {
+          // Fire and forget: the receipt arrives when the docs are ready.
+          void startKtGeneration(
+            projectId,
+            runtime,
+            context.runInWorkspace,
+            context.postResult,
+          );
+        }
+      }
       postReceipt(context, {
         status: "ok",
-        ...(await describeProject(project, context.runInWorkspace)),
+        ...(await describeProject(
+          project,
+          context.runInWorkspace,
+          await resolveRuntime(context),
+        )),
       });
       return;
     }

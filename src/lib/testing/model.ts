@@ -55,6 +55,19 @@ export const ARTIFACT_FORMATS = [
   "great_expectations",
   "stryker",
   "neotest_mutation",
+  "oha",
+  "vegeta",
+  "bombardier",
+  "lighthouse",
+  "pa11y",
+  "gitleaks",
+  "nuclei",
+  "cargo_audit",
+  "govulncheck",
+  "osv_scanner",
+  "cargo_mutants",
+  "backstop",
+  "ctrf",
 ] as const;
 export type ArtifactFormat = (typeof ARTIFACT_FORMATS)[number];
 
@@ -251,6 +264,8 @@ export interface HarnessStatus {
   finishedAt?: string;
   commit?: string;
   branch?: string;
+  /** Hash of the working tree the run saw (tracked + untracked). */
+  treeHash?: string;
   node?: string;
   suites: HarnessSuite[];
 }
@@ -363,6 +378,7 @@ export interface TestReport {
   finishedAt: string;
   commit?: string;
   branch?: string;
+  treeHash?: string;
   trigger: "agent" | "user" | "schedule";
   suites: SuiteResult[];
   counts: CaseCounts;

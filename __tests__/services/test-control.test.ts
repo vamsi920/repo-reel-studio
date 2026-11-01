@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   COMMAND_SHAPES,
   RECEIPT_NEXT_STEP,
+  TRIAGE_QUESTION_PREFIX,
   completionBlockers,
   executeRun,
   handleTestControlAction,
+  openFailureTriage,
+  syncProjectKt,
   replayMissedTestCommands,
   shouldAutoContinue,
   shouldContinueMidPlan,
@@ -20,9 +23,27 @@ import type { RunInWorkspace } from "#/lib/modernization/replay-harness";
 vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
   () => ({
-    default: { sendMessage: vi.fn().mockResolvedValue(undefined) },
+    default: {
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+      resolveConversationWorkingDir: vi.fn().mockResolvedValue("/work/shop"),
+    },
   }),
 );
+vi.mock("#/lib/knowledge/persisted-knowledge", () => ({
+  loadPersistedKnowledge: vi.fn().mockResolvedValue({ status: "not-found" }),
+}));
+vi.mock("#/lib/knowledge/kt-workspace-export", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("#/lib/knowledge/kt-workspace-export")
+    >();
+  return {
+    ...actual,
+    readWorkspaceKtCommit: vi.fn().mockResolvedValue(null),
+    exportKtToWorkspace: vi.fn().mockResolvedValue({ ok: true }),
+  };
+});
+import { useKnowledgeStore } from "#/stores/knowledge-store";
 
 const CONVERSATION = "conv-test";
 
@@ -543,8 +564,26 @@ describe("test_control dispatcher", () => {
     const blockers = completionBlockers(
       useTestStudioStore.getState().projects[projectId],
     );
-    expect(blockers).toEqual(["suites_never_run:api", "no_mutation_proof"]);
+    expect(blockers).toEqual([
+      "suites_never_run:api",
+      "no_mutation_proof",
+      "open_questions",
+    ]);
+    // The failing run opened a triage card; answer it as the user would.
+    const answerTriage = () => {
+      const open = useTestStudioStore
+        .getState()
+        .projects[
+          projectId
+        ].questions.find((q) => q.status === "open" && q.id.startsWith("triage-"));
+      if (open)
+        useTestStudioStore
+          .getState()
+          .answerQuestion(projectId, open.id, ["findings_only"]);
+    };
+    answerTriage();
     await dispatch("run", { suite_ids: ["api"] }, run);
+    answerTriage();
     expect(
       (await dispatch("complete", { summary: "done" }))[0].blockers,
     ).toEqual(["no_mutation_proof"]);
@@ -752,5 +791,133 @@ describe("executeRun from the workbench", () => {
     expect(
       (await executeRun(projectId, { triggeredBy: "user", poll: POLL })).ok,
     ).toBe(false);
+  });
+});
+
+describe("failure triage and KT docs", () => {
+  let projectId: string;
+  beforeEach(() => {
+    projectId = seedProject();
+  });
+
+  it("a run with failures opens one studio-authored triage card that blocks complete until answered", async () => {
+    await dispatch("record_stack", STACK);
+    await dispatch("set_plan", PLAN);
+    const { run } = fakeWorkspace(); // JUNIT has one failure
+    const [receipt] = await dispatch("run", { suite_ids: ["unit"] }, run);
+    expect(receipt.verdict).toBe("failed");
+    const project = useTestStudioStore.getState().projects[projectId];
+    const triage = project.questions.find((q) =>
+      q.id.startsWith(TRIAGE_QUESTION_PREFIX),
+    );
+    expect(triage).toEqual(
+      expect.objectContaining({
+        askedBy: "studio",
+        status: "open",
+        titleKey: "TESTING$TRIAGE_TITLE",
+      }),
+    );
+    expect(triage?.options.map((o) => o.id)).toEqual([
+      "fix_app",
+      "fix_tests",
+      "findings_only",
+    ]);
+    expect(triage?.values?.failed).toBe(1);
+    expect(completionBlockers(project)).toContain("open_questions");
+    // A second failing run does not stack a second card.
+    await dispatch("run", { suite_ids: ["unit"] }, run);
+    const open = useTestStudioStore
+      .getState()
+      .projects[projectId].questions.filter((q) => q.status === "open");
+    expect(open).toHaveLength(1);
+    // A green report opens nothing.
+    const greenReport = {
+      ...useTestStudioStore.getState().projects[projectId].runs[0].report!,
+      counts: {
+        total: 1,
+        passed: 1,
+        failed: 0,
+        skipped: 0,
+        error: 0,
+        flaky: 0,
+      },
+      gates: { verdict: "passed" as const, results: [] },
+    };
+    useTestStudioStore
+      .getState()
+      .answerQuestion(projectId, triage!.id, ["fix_app"]);
+    expect(openFailureTriage(projectId, greenReport, "t")).toBe(false);
+  });
+
+  it("describe reports KT docs Neo generated and writes them into the workspace", async () => {
+    useKnowledgeStore.getState().hydrate(
+      "local:/work/shop",
+      {
+        repositoryId: "local:/work/shop",
+        owner: "local",
+        repo: "shop",
+        branch: "",
+        commitSha: "abc123",
+        localPath: "/work/shop",
+      },
+      {
+        repositoryId: "local:/work/shop",
+        commitSha: "abc123",
+        title: "Shop",
+        summary: "A shop",
+        sections: [],
+        pages: [
+          {
+            id: "pricing",
+            title: "Pricing",
+            description: "",
+            contentMarkdown: "# Pricing",
+            importance: "high",
+            relevantFiles: [],
+            diagrams: [],
+            relatedPageIds: [],
+          },
+        ],
+        generatedAt: "2026-11-01T00:00:00Z",
+      },
+      [],
+    );
+    const { run } = fakeWorkspace();
+    const postResult = vi.fn();
+    await handleTestControlAction(action("describe"), {
+      postResult,
+      conversationId: CONVERSATION,
+      runInWorkspace: run,
+      runtime: {
+        conversationUrl: "http://rt",
+        sessionApiKey: "k",
+        workingDir: "/work/shop",
+      },
+    });
+    const receipt = parseReceipt(postResult.mock.calls[0][0] as string);
+    const kt = receipt.kt_docs as Record<string, unknown>;
+    expect(kt.status).toBe("available");
+    expect(kt.generated_in_neo).toBe(true);
+    expect(kt.commit).toBe("abc123");
+    expect((kt.pages as { title: string }[])[0].title).toBe("Pricing");
+    expect(useTestStudioStore.getState().projects[projectId].kt).toEqual(
+      expect.objectContaining({
+        status: "available",
+        exportedCommit: "abc123",
+        from: "store",
+      }),
+    );
+    expect(receipt.tool_catalog).toBeTruthy();
+    expect(Array.isArray(receipt.changed_files)).toBe(true);
+  });
+
+  it("describe says none when Neo has no docs, and syncProjectKt records it", async () => {
+    useKnowledgeStore.setState({ byRepositoryId: {} });
+    const kt = await syncProjectKt(projectId, {
+      conversationUrl: "http://rt",
+      sessionApiKey: null,
+      workingDir: "/work/shop",
+    });
+    expect(kt?.status).toBe("none");
   });
 });

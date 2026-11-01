@@ -19,6 +19,15 @@ vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
   () => ({ default: { sendMessage: vi.fn().mockResolvedValue(undefined) } }),
 );
+vi.mock("#/services/test-control", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("#/services/test-control")>();
+  return {
+    ...actual,
+    syncProjectKt: vi.fn().mockResolvedValue(null),
+    startKtGeneration: vi.fn().mockResolvedValue(null),
+  };
+});
 vi.mock("#/api/automation-service/automation-service.api", () => ({
   default: {
     createAutomationDraft: vi.fn().mockResolvedValue({ id: "auto-7" }),
@@ -321,6 +330,140 @@ describe("TestWorkbench", () => {
     expect(screen.getByTestId("testing-finding-f1")).toHaveAttribute(
       "data-status",
       "fixed",
+    );
+  });
+
+  it("shows the coverage matrix per kind and the KT card state", () => {
+    const store = useTestStudioStore.getState();
+    store.upsertSuites(projectId, PLAN);
+    store.addRun(projectId, {
+      id: "r1",
+      startedAt: "a",
+      status: "done",
+      suiteIds: ["unit", "perf"],
+      triggeredBy: "agent",
+      progress: {},
+      report: reportFor(projectId, ["passed", "failed"]),
+    });
+    store.setKt(projectId, {
+      status: "available",
+      from: "store",
+      commitSha: "abcdef123",
+      pages: [
+        {
+          id: "p",
+          title: "Pricing",
+          path: ".neodevex/kt/pages/p.md",
+          importance: "high",
+        },
+      ],
+      exportedCommit: "abcdef123",
+    });
+    render();
+    expect(screen.getByTestId("testing-matrix-unit")).toHaveAttribute(
+      "data-state",
+      "failed",
+    );
+    expect(screen.getByTestId("testing-matrix-performance")).toHaveAttribute(
+      "data-state",
+      "passed",
+    );
+    expect(screen.getByTestId("testing-matrix-accessibility")).toHaveAttribute(
+      "data-state",
+      "not_applicable",
+    );
+    expect(screen.getByTestId("testing-matrix-security")).toHaveAttribute(
+      "data-state",
+      "missing",
+    );
+    expect(screen.getByTestId("testing-kt")).toHaveAttribute(
+      "data-status",
+      "available",
+    );
+    expect(screen.getByTestId("testing-kt")).toHaveTextContent("Pricing");
+    expect(screen.queryByTestId("testing-kt-generate")).not.toBeInTheDocument();
+    // Export controls and a fix button on the failed suite.
+    expect(screen.getByTestId("testing-export-md")).toBeInTheDocument();
+    expect(screen.getByTestId("testing-fix-suite-unit")).toBeInTheDocument();
+  });
+
+  it("renders a studio-authored triage card with translated options and posts the answer", () => {
+    const postResult = vi.fn();
+    useTestStudioStore.getState().askQuestion(projectId, {
+      id: "triage-r1",
+      askedBy: "studio",
+      title: "2 failed",
+      titleKey: "TESTING$TRIAGE_TITLE",
+      values: { failed: 2, gates: 1, run: "r1", failures: "x" },
+      kind: "single",
+      options: [
+        {
+          id: "fix_app",
+          label: "Fix the application",
+          labelKey: "TESTING$TRIAGE_FIX_APP",
+          recommended: true,
+        },
+        {
+          id: "findings_only",
+          label: "Findings",
+          labelKey: "TESTING$TRIAGE_FINDINGS_ONLY",
+        },
+      ],
+      allowOther: true,
+      status: "open",
+      selected: [],
+      at: "t",
+    });
+    renderWithProviders(
+      <TestWorkbench
+        projectId={projectId}
+        postResult={postResult}
+        onRun={vi.fn()}
+        busy={false}
+        canRun
+      />,
+    );
+    fireEvent.click(screen.getByTestId("testing-option-triage-r1-fix_app"));
+    fireEvent.click(screen.getByTestId("testing-confirm-triage-r1"));
+    expect(postResult).toHaveBeenCalledWith(
+      expect.stringContaining('"selected":["fix_app"]'),
+    );
+    expect(postResult).toHaveBeenCalledWith(
+      expect.stringContaining('"asked_by":"studio"'),
+    );
+  });
+
+  it("asks Neo to fix a finding through a receipt", () => {
+    const postResult = vi.fn();
+    useTestStudioStore.getState().upsertFindings(projectId, [
+      {
+        id: "f1",
+        title: "Bug",
+        severity: "high",
+        kind: "unit",
+        description: "d",
+        file: "src/a.js",
+        line: 3,
+        evidence: ["t"],
+        status: "open",
+        at: "t",
+      },
+    ]);
+    renderWithProviders(
+      <TestWorkbench
+        projectId={projectId}
+        postResult={postResult}
+        onRun={vi.fn()}
+        busy={false}
+        canRun
+      />,
+    );
+    fireEvent.click(screen.getByTestId("testing-finding-fix-f1"));
+    expect(postResult).toHaveBeenCalledWith(
+      expect.stringContaining('"status":"fix_requested"'),
+    );
+    expect(postResult).toHaveBeenCalledWith(
+      expect.stringContaining('"finding_id":"f1"'),
     );
   });
 });

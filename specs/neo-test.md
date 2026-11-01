@@ -107,3 +107,27 @@ The Schedule card creates a NeoDevEx automation (nightly cron, or on push for
 GitHub sources) whose prompt runs the harness and reports from
 `status.json`; the automation id is kept on the project. Deleting the project
 leaves the automation (it is the user's) and says so.
+
+## NT-010 Open-source foundations (MIT first)
+
+Neo Test builds on tools and projects that already solved parts of
+autonomous testing. Licences verified against the upstream repositories on
+2026-11-01; non-MIT entries are run as external CLIs only and never vendored.
+
+| Need | Project | Licence | How Neo Test uses it |
+|---|---|---|---|
+| One result format across every runner | ctrf-io/ctrf | MIT | Parsed natively; every run also exports `.neotest/ctrf.json` |
+| API tests generated from OpenAPI | schemathesis/schemathesis | MIT | Catalog entry; JUnit output parsed |
+| Natural-language, self-healing E2E | web-infra-dev/midscene, browserbase/stagehand, alumnium-hq/alumnium | MIT | Catalog entries (need a model key) |
+| Unit-test seeding | se2p/pynguin (Python), randoop/randoop (Java), fast-check (JS) | MIT | Catalog entries, marked `generates` |
+| Validate-and-refine loop for LLM-written tests | githubnext/testpilot (archived), Meta TestGen-LLM (paper) | MIT / paper | Procedure ported into the brief: signature + docs + usage, run, feed the error back, keep only passing tests that raise coverage, prove with mutants |
+| Load | autocannon, oha, vegeta, bombardier, Locust | MIT | Catalog entries, parsers |
+| Security | gitleaks, nuclei, cargo-audit, govulncheck | MIT / BSD | Catalog entries, parsers |
+| Visual regression | BackstopJS | MIT | Catalog entry, parser |
+| Mutation | the studio's own `prove` (MIT, dependency-free), cargo-mutants | MIT | `prove` is required before `complete`; StrykerJS (Apache-2.0) parsed when present |
+| Accessibility | axe-core (MPL-2.0), pa11y (LGPL), Lighthouse (Apache-2.0) | flagged | Parsed; axe-playwright (MIT) is the glue |
+| Data quality | pandera, sqlfluff, pointblank | MIT | Catalog entries; `checks.json` is the studio's own contract |
+
+Explicitly not vendored: qodo-cover / cover-agent and Mutahunter (AGPL),
+TestZeus Hercules and Skyvern (AGPL), EvoMaster (LGPL). They may be invoked
+as CLIs in a sandbox where that licence is acceptable.

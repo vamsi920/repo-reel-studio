@@ -950,6 +950,11 @@ export function ConversationWebSocketProvider({
                 conversationUrl,
                 sessionApiKey,
               ),
+              runtime: {
+                conversationUrl: conversationUrl ?? null,
+                sessionApiKey: sessionApiKey ?? null,
+                workingDir: null,
+              },
             });
           }
 

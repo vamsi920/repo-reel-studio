@@ -44,6 +44,7 @@ import {
   replayMissedTestCommands,
   shouldAutoContinue,
   shouldContinueMidPlan,
+  syncProjectKt,
 } from "#/services/test-control";
 import { useEventStore } from "#/stores/use-event-store";
 import { isMessageEvent } from "#/types/agent-server/type-guards";
@@ -62,6 +63,7 @@ import {
   statusLabelKey,
 } from "#/components/features/testing/studio/test-workbench";
 import { NEOTEST_SYSTEM_BRIEF } from "#/components/features/testing/brief";
+import type { TestRuntime } from "#/lib/testing/kt";
 import { reportHeadline } from "#/lib/testing/report";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import type { Branch, GitRepository } from "#/types/git";
@@ -246,6 +248,39 @@ function useReconcileStaleRuns(project: TestProject) {
   }, [project.id, project.runs, project.status, updateRun, setStatus]);
 }
 
+/**
+ * Brings Neo's KT docs for this project into the workspace as soon as the
+ * runtime is up (retrying while it starts), so the agent's first describe
+ * already finds them. Once per conversation.
+ */
+function useTestKtSync(project: TestProject, runtime: TestRuntime) {
+  const key = `${project.conversationId}:${runtime.conversationUrl}:${runtime.workingDir}`;
+  const doneRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!runtime.conversationUrl || !runtime.workingDir) return undefined;
+    if (doneRef.current === key) return undefined;
+    let cancelled = false;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      if (cancelled) return;
+      attempt += 1;
+      const kt = await syncProjectKt(project.id, runtime).catch(() => null);
+      if (cancelled) return;
+      if (kt && (kt.status !== "available" || kt.exportedCommit)) {
+        doneRef.current = key;
+        return;
+      }
+      if (attempt < 8) timer = setTimeout(() => void tick(), 8000);
+    };
+    timer = setTimeout(() => void tick(), 1500);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [key, project.id, runtime]);
+}
+
 function StudioPanes({ project }: { project: TestProject }) {
   const { t } = useTranslation("openhands");
   const isMobile = useBreakpoint();
@@ -289,10 +324,22 @@ function StudioPanes({ project }: { project: TestProject }) {
 
   const conversationUrl = conversation?.conversation_url ?? null;
   const sessionApiKey = conversation?.session_api_key ?? null;
+  const workingDir = conversation?.workspace?.working_dir ?? null;
+  const { backend } = useActiveBackend();
   const runInWorkspace = React.useMemo(
     () => createWorkspaceRunner(conversationId, conversationUrl, sessionApiKey),
     [conversationId, conversationUrl, sessionApiKey],
   );
+  const runtime = React.useMemo<TestRuntime>(
+    () => ({
+      conversationUrl,
+      sessionApiKey,
+      workingDir,
+      backendId: backend.id,
+    }),
+    [conversationUrl, sessionApiKey, workingDir, backend.id],
+  );
+  useTestKtSync(project, runtime);
   useReplayMissedCommands(
     project,
     conversationId,
@@ -343,6 +390,8 @@ function StudioPanes({ project }: { project: TestProject }) {
       canRun={Boolean(conversationUrl) || Boolean(conversation)}
       expanded={!isMobile && expanded}
       onToggleExpand={isMobile ? undefined : toggleExpanded}
+      runtime={runtime}
+      runInWorkspace={runInWorkspace}
     />
   );
 

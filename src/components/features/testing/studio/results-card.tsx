@@ -5,6 +5,7 @@ import {
   ChevronRight,
   CircleCheck,
   CircleX,
+  Download,
   Gauge,
   TriangleAlert,
 } from "lucide-react";
@@ -20,6 +21,10 @@ import {
   type TestReport,
 } from "#/lib/testing/model";
 import { METRIC_LABELS } from "#/lib/testing/gates";
+import { reportMarkdown } from "#/lib/testing/report";
+import { receipt, type PostResultFn } from "#/services/test-control";
+import type { TestRun } from "#/stores/test-studio-store";
+import { downloadFile } from "#/components/features/synth/studio/download";
 import { SEVERITY_BADGE, Stat, formatMs, formatPct } from "./cards";
 
 const VERDICT_KEY: Record<GateVerdict, I18nKey> = {
@@ -166,7 +171,13 @@ function CaseRow({ c }: { c: TestCase }) {
   );
 }
 
-function SuiteResultRow({ suite }: { suite: SuiteResult }) {
+function SuiteResultRow({
+  suite,
+  onFix,
+}: {
+  suite: SuiteResult;
+  onFix?: (suite: SuiteResult) => void;
+}) {
   const { t } = useTranslation("openhands");
   const [open, setOpen] = React.useState(suite.status !== "passed");
   const failures = suite.cases.filter(
@@ -218,6 +229,18 @@ function SuiteResultRow({ suite }: { suite: SuiteResult }) {
       </button>
       {open ? (
         <div className="flex flex-col gap-2 pl-6">
+          {onFix && suite.status !== "passed" ? (
+            <div>
+              <button
+                type="button"
+                data-testid={`testing-fix-suite-${suite.id}`}
+                onClick={() => onFix(suite)}
+                className="ame-btn-primary ame-btn-xs"
+              >
+                {t(I18nKey.TESTING$ASK_FIX)}
+              </button>
+            </div>
+          ) : null}
           {failures.length ? (
             <ul className="flex flex-col gap-1">
               {failures.slice(0, 50).map((c) => (
@@ -244,8 +267,55 @@ function SuiteResultRow({ suite }: { suite: SuiteResult }) {
   );
 }
 
-export function ResultsCard({ report }: { report: TestReport }) {
+export function ResultsCard({
+  report: latest,
+  runs = [],
+  projectName = "",
+  postResult,
+}: {
+  report: TestReport;
+  /** Every run, oldest first; the selector lets the user look back. */
+  runs?: TestRun[];
+  projectName?: string;
+  postResult?: PostResultFn;
+}) {
   const { t } = useTranslation("openhands");
+  const [selectedRunId, setSelectedRunId] = React.useState<string | null>(null);
+  const withReports = runs.filter((r) => r.report);
+  const report =
+    withReports.find((r) => r.id === selectedRunId)?.report ?? latest;
+  const onFix = postResult
+    ? (suite: SuiteResult) =>
+        postResult(
+          receipt({
+            status: "fix_requested",
+            suite_id: suite.id,
+            failures: suite.cases
+              .filter((c) => c.status === "failed" || c.status === "error")
+              .slice(0, 20)
+              .map((c) => ({
+                test: c.name,
+                file: c.file,
+                line: c.line,
+                message: c.message?.slice(0, 200),
+              })),
+            guidance:
+              "The user asked you to fix these failures in the application code (fix_app). Fix, run this suite again, prove the touched files, and record_finding for each bug with status fixed.",
+          }),
+        )
+    : undefined;
+  const exportMd = () =>
+    downloadFile({
+      path: `${report.runId}-REPORT.md`,
+      content: reportMarkdown(report, projectName),
+      mimeType: "text/markdown",
+    });
+  const exportJson = () =>
+    downloadFile({
+      path: `${report.runId}-report.json`,
+      content: JSON.stringify(report, null, 2),
+      mimeType: "application/json",
+    });
   const rate = passRate(report.counts);
   const p95 = report.perf.length
     ? Math.max(...report.perf.map((p) => p.p95Ms ?? 0))
@@ -262,9 +332,47 @@ export function ResultsCard({ report }: { report: TestReport }) {
       data-testid="testing-results"
       className="ame-card flex flex-col gap-3 p-4"
     >
-      <span className="ame-eyebrow flex items-center gap-1">
-        <Gauge size={12} aria-hidden /> {t(I18nKey.TESTING$RESULTS_TITLE)}
-      </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="ame-eyebrow flex items-center gap-1">
+          <Gauge size={12} aria-hidden /> {t(I18nKey.TESTING$RESULTS_TITLE)}
+        </span>
+        <div className="flex items-center gap-1">
+          {withReports.length > 1 ? (
+            <select
+              aria-label={t(I18nKey.TESTING$RUN_SELECT)}
+              data-testid="testing-run-select"
+              value={report.runId}
+              onChange={(e) => setSelectedRunId(e.target.value)}
+              className="ame-input rounded border border-[var(--border-color)] bg-transparent px-1 py-0.5 font-mono text-[11px]"
+            >
+              {[...withReports].reverse().map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.report!.finishedAt.slice(0, 16).replace("T", " ")} ·{" "}
+                  {r.report!.gates.verdict}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <button
+            type="button"
+            data-testid="testing-export-md"
+            onClick={exportMd}
+            aria-label={t(I18nKey.TESTING$EXPORT_MD)}
+            title={t(I18nKey.TESTING$EXPORT_MD)}
+            className="ame-btn-icon ame-btn-icon-sm"
+          >
+            <Download size={12} />
+          </button>
+          <button
+            type="button"
+            data-testid="testing-export-json"
+            onClick={exportJson}
+            className="ame-btn-ghost ame-btn-xs"
+          >
+            {t(I18nKey.TESTING$EXPORT_JSON)}
+          </button>
+        </div>
+      </div>
       <VerdictBanner report={report} />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat
@@ -316,7 +424,7 @@ export function ResultsCard({ report }: { report: TestReport }) {
       ) : null}
       <ul className="flex flex-col gap-1">
         {report.suites.map((s) => (
-          <SuiteResultRow key={s.id} suite={s} />
+          <SuiteResultRow key={s.id} suite={s} onFix={onFix} />
         ))}
       </ul>
       {report.perf.length ? (

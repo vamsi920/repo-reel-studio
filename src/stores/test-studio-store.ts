@@ -54,12 +54,21 @@ export interface ChoiceOption {
   label: string;
   description?: string;
   recommended?: boolean;
+  /** Studio-authored options carry i18n keys; `label` is the English fallback. */
+  labelKey?: string;
+  descriptionKey?: string;
 }
 
 export interface ChoiceQuestion {
   id: string;
   title: string;
   prompt?: string;
+  /** Who asked: the agent (default) or the studio (failure triage). */
+  askedBy?: "agent" | "studio";
+  titleKey?: string;
+  promptKey?: string;
+  /** Interpolation values for the studio's keys. */
+  values?: Record<string, string | number>;
   kind: "single" | "multi";
   options: ChoiceOption[];
   allowOther: boolean;
@@ -118,6 +127,27 @@ export interface Schedule {
   createdAt: string;
 }
 
+/** What Neo knows about the project's KT docs (see src/lib/testing/kt.ts). */
+export interface TestKtState {
+  status: "unknown" | "none" | "available" | "generating" | "error";
+  /** Where the docs came from when available. */
+  from?: "store" | "supabase" | "generated";
+  commitSha?: string;
+  generatedAt?: string;
+  title?: string;
+  pages?: {
+    id: string;
+    title: string;
+    path: string;
+    importance: "high" | "medium" | "low";
+  }[];
+  indexPath?: string;
+  /** Commit of the docs written into the workspace, when written. */
+  exportedCommit: string | null;
+  error?: string;
+  checkedAt: string;
+}
+
 export interface TestProject {
   id: string;
   name: string;
@@ -133,6 +163,7 @@ export interface TestProject {
   log: LogEntry[];
   report: TestSummary | null;
   schedule: Schedule | null;
+  kt: TestKtState;
   /** Ids of test_control actions already dispatched (replay protection). */
   handledActionIds: string[];
   createdAt: string;
@@ -190,6 +221,7 @@ interface TestStudioActions {
   appendLog: (projectId: string, entry: LogEntry) => void;
   setReport: (projectId: string, report: TestSummary | null) => void;
   setSchedule: (projectId: string, schedule: Schedule | null) => void;
+  setKt: (projectId: string, kt: Partial<TestKtState>) => void;
   markActionHandled: (projectId: string, actionId: string) => boolean;
   reset: () => void;
 }
@@ -231,6 +263,7 @@ export function emptyTestProject(input: {
     log: [],
     report: null,
     schedule: null,
+    kt: { status: "unknown", exportedCommit: null, checkedAt: at },
     handledActionIds: [],
     createdAt: at,
     updatedAt: at,
@@ -396,6 +429,12 @@ export const useTestStudioStore = create<TestStudioStore>()(
             status: report ? "done" : p.status,
           })),
 
+        setKt: (projectId, kt) =>
+          patchProject(projectId, (p) => ({
+            ...p,
+            kt: { ...p.kt, ...kt, checkedAt: now() },
+          })),
+
         setSchedule: (projectId, schedule) =>
           patchProject(projectId, (p) => ({ ...p, schedule })),
 
@@ -418,8 +457,22 @@ export const useTestStudioStore = create<TestStudioStore>()(
     },
     {
       name: "openhands-test-studio",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // v2: `kt` on every project.
+      migrate: (persisted, version) => {
+        const state = persisted as TestStudioState;
+        if (version < 2 && state?.projects) {
+          for (const project of Object.values(state.projects)) {
+            project.kt ??= {
+              status: "unknown",
+              exportedCommit: null,
+              checkedAt: project.updatedAt,
+            };
+          }
+        }
+        return state;
+      },
     },
   ),
 );

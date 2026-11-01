@@ -348,6 +348,7 @@ export function ChoiceCard({
         selected_labels: picked.map(
           (id) => question.options.find((o) => o.id === id)?.label ?? id,
         ),
+        asked_by: question.askedBy ?? "agent",
         other: otherText,
       }),
     );
@@ -356,6 +357,14 @@ export function ChoiceCard({
   const canConfirm =
     selected.some((id) => id !== OTHER) ||
     (selected.includes(OTHER) && other.trim().length > 0);
+  // Studio-authored cards (failure triage) carry i18n keys; the agent's
+  // cards carry its own words.
+  const tr = (key: string | undefined, fallback: string) =>
+    key ? t(key as I18nKey, question.values ?? {}) : fallback;
+  const title = tr(question.titleKey, question.title);
+  const prompt = question.promptKey
+    ? tr(question.promptKey, question.prompt ?? "")
+    : question.prompt;
 
   return (
     <section
@@ -369,14 +378,16 @@ export function ChoiceCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1">
           <span className="ame-eyebrow">
-            {t(I18nKey.TESTING$QUESTION_TITLE)}
+            {question.askedBy === "studio"
+              ? t(I18nKey.TESTING$STUDIO_ASKS)
+              : t(I18nKey.TESTING$QUESTION_TITLE)}
           </span>
           <h3 className="text-base font-semibold text-[var(--text-primary)]">
-            {question.title}
+            {title}
           </h3>
-          {question.prompt ? (
-            <p className="text-sm text-[var(--text-secondary)]">
-              {question.prompt}
+          {prompt ? (
+            <p className="whitespace-pre-wrap text-sm text-[var(--text-secondary)]">
+              {prompt}
             </p>
           ) : null}
         </div>
@@ -411,16 +422,16 @@ export function ChoiceCard({
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
-                  {option.label}
+                  {tr(option.labelKey, option.label)}
                   {option.recommended ? (
                     <span className="ame-badge ame-badge-primary">
                       {t(I18nKey.TESTING$RECOMMENDED)}
                     </span>
                   ) : null}
                 </span>
-                {option.description ? (
+                {option.description || option.descriptionKey ? (
                   <span className="text-xs text-[var(--text-tertiary)]">
-                    {option.description}
+                    {tr(option.descriptionKey, option.description ?? "")}
                   </span>
                 ) : null}
               </span>
@@ -497,9 +508,27 @@ const SEVERITY_ORDER: Finding["severity"][] = [
   "info",
 ];
 
-export function FindingsCard({ project }: { project: TestProject }) {
+export function FindingsCard({
+  project,
+  postResult,
+}: {
+  project: TestProject;
+  postResult?: PostResultFn;
+}) {
   const { t } = useTranslation("openhands");
   const setFindingStatus = useTestStudioStore((s) => s.setFindingStatus);
+  const requestFix = (f: Finding) =>
+    postResult?.(
+      receipt({
+        status: "fix_requested",
+        finding_id: f.id,
+        title: f.title,
+        file: f.file,
+        line: f.line,
+        guidance:
+          "The user asked you to fix this finding in the application code. Make the smallest correct change, run the relevant suite, prove the file, then record_finding with status fixed.",
+      }),
+    );
   const findings = [...project.findings].sort((a, b) => {
     const open = Number(b.status === "open") - Number(a.status === "open");
     return open !== 0
@@ -563,6 +592,16 @@ export function FindingsCard({ project }: { project: TestProject }) {
               <span className="flex-1" />
               {f.status === "open" ? (
                 <>
+                  {postResult ? (
+                    <button
+                      type="button"
+                      data-testid={`testing-finding-fix-${f.id}`}
+                      onClick={() => requestFix(f)}
+                      className="ame-btn-primary ame-btn-xs"
+                    >
+                      {t(I18nKey.TESTING$ASK_FIX)}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     data-testid={`testing-finding-fixed-${f.id}`}

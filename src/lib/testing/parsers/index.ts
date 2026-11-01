@@ -49,9 +49,39 @@ import {
   parsePytest,
 } from "./results";
 
+import {
+  looksLikeBackstop,
+  looksLikeBombardier,
+  looksLikeCargoAudit,
+  looksLikeCargoMutants,
+  looksLikeCtrf,
+  looksLikeGitleaks,
+  looksLikeGovulncheck,
+  looksLikeLighthouse,
+  looksLikeNuclei,
+  looksLikeOha,
+  looksLikeOsvScanner,
+  looksLikePa11y,
+  looksLikeVegeta,
+  parseBackstop,
+  parseBombardier,
+  parseCargoAudit,
+  parseCargoMutants,
+  parseCtrf,
+  parseGitleaks,
+  parseGovulncheck,
+  parseLighthouse,
+  parseNuclei,
+  parseOha,
+  parseOsvScanner,
+  parsePa11y,
+  parseVegeta,
+} from "./more";
+
 export * from "./results";
 export * from "./coverage";
 export * from "./quality";
+export * from "./more";
 
 function tryJson(text: string): unknown {
   const trimmed = text.trim();
@@ -83,6 +113,19 @@ export function formatFromName(path: string): ArtifactFormat | undefined {
   if (base.includes("stryker") || base === "mutation-report.json")
     return "stryker";
   if (base.includes("pytest") || base === "report.json") return "pytest";
+  if (base.includes("oha")) return "oha";
+  if (base.includes("vegeta")) return "vegeta";
+  if (base.includes("bombardier")) return "bombardier";
+  if (base.includes("lighthouse")) return "lighthouse";
+  if (base.includes("pa11y")) return "pa11y";
+  if (base.includes("gitleaks")) return "gitleaks";
+  if (base.includes("nuclei")) return "nuclei";
+  if (base.includes("cargo-audit")) return "cargo_audit";
+  if (base.includes("govulncheck")) return "govulncheck";
+  if (base.includes("osv")) return "osv_scanner";
+  if (base === "outcomes.json") return "cargo_mutants";
+  if (base === "jsonreport.json") return "backstop";
+  if (base.includes("ctrf")) return "ctrf";
   return undefined;
 }
 
@@ -110,11 +153,24 @@ export function detectFormat(
     if (looksLikeStryker(json)) return "stryker";
     if (looksLikeNeotestChecks(json)) return "neotest_checks";
     if (looksLikeGreatExpectations(json)) return "great_expectations";
+    if (looksLikeCtrf(json)) return "ctrf";
+    if (looksLikeOha(json)) return "oha";
+    if (looksLikeVegeta(json)) return "vegeta";
+    if (looksLikeBombardier(json)) return "bombardier";
+    if (looksLikeLighthouse(json)) return "lighthouse";
+    if (looksLikePa11y(json)) return "pa11y";
+    if (looksLikeGitleaks(json)) return "gitleaks";
+    if (looksLikeCargoAudit(json)) return "cargo_audit";
+    if (looksLikeOsvScanner(json)) return "osv_scanner";
+    if (looksLikeCargoMutants(json)) return "cargo_mutants";
+    if (looksLikeBackstop(json)) return "backstop";
   } else {
     if (looksLikeJunit(text)) return "junit";
     if (looksLikeCobertura(text)) return "cobertura";
     if (looksLikeLcov(text)) return "lcov";
     if (looksLikeGoTest(text)) return "gotest";
+    if (looksLikeNuclei(text)) return "nuclei";
+    if (looksLikeGovulncheck(text)) return "govulncheck";
   }
   return formatFromName(path);
 }
@@ -228,6 +284,69 @@ export function parseArtifact(
           throw new Error("not mutation.json");
         result.mutation = parseNeotestMutation(json);
         break;
+      case "oha":
+        if (!looksLikeOha(json)) throw new Error("not oha JSON");
+        result.perf = parseOha(json, path.split("/").pop());
+        break;
+      case "vegeta":
+        if (!looksLikeVegeta(json)) throw new Error("not a vegeta report");
+        result.perf = parseVegeta(json, path.split("/").pop());
+        break;
+      case "bombardier":
+        if (!looksLikeBombardier(json)) throw new Error("not bombardier JSON");
+        result.perf = parseBombardier(json);
+        break;
+      case "lighthouse": {
+        if (!looksLikeLighthouse(json))
+          throw new Error("not a Lighthouse report");
+        const lh = parseLighthouse(json);
+        result.accessibility = lh.accessibility;
+        result.perf = lh.perf;
+        break;
+      }
+      case "pa11y":
+        if (!looksLikePa11y(json)) throw new Error("not pa11y JSON");
+        result.accessibility = parsePa11y(json);
+        break;
+      case "gitleaks":
+        if (json === undefined || (Array.isArray(json) && json.length === 0)) {
+          result.security = [];
+          break;
+        }
+        if (!looksLikeGitleaks(json)) throw new Error("not a gitleaks report");
+        result.security = parseGitleaks(json);
+        break;
+      case "nuclei":
+        result.security = parseNuclei(text);
+        break;
+      case "cargo_audit":
+        if (!looksLikeCargoAudit(json)) throw new Error("not cargo-audit JSON");
+        result.security = parseCargoAudit(json);
+        break;
+      case "govulncheck":
+        result.security = parseGovulncheck(text);
+        break;
+      case "osv_scanner":
+        if (!looksLikeOsvScanner(json)) throw new Error("not osv-scanner JSON");
+        result.security = parseOsvScanner(json);
+        break;
+      case "cargo_mutants":
+        if (!looksLikeCargoMutants(json))
+          throw new Error("not cargo-mutants outcomes");
+        result.mutation = parseCargoMutants(json);
+        break;
+      case "backstop":
+        if (!looksLikeBackstop(json))
+          throw new Error("not a BackstopJS report");
+        result.cases = parseBackstop(json);
+        break;
+      case "ctrf": {
+        if (!looksLikeCtrf(json)) throw new Error("not a CTRF report");
+        const r = parseCtrf(json);
+        result.cases = r.cases;
+        result.warnings.push(...r.warnings);
+        break;
+      }
       default:
         result.warnings.push(`${path}: unsupported format ${format}`);
     }

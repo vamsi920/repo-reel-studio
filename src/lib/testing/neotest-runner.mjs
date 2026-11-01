@@ -39,9 +39,11 @@ import {
   readdirSync,
   readFileSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 export const STATUS_VERSION = 1;
 const DEFAULT_TIMEOUT_SEC = 1800;
@@ -100,9 +102,37 @@ function gitInfo(root) {
       return undefined;
     }
   };
+  // Hash of the WORKING TREE (tracked + untracked, minus ignored): two
+  // runs with the same treeHash ran the same code even when nothing was
+  // committed in between, which is what flaky detection needs to know.
+  let treeHash;
+  try {
+    const index = join(tmpdir(), `neotest-index-${process.pid}`);
+    const env = { ...process.env, GIT_INDEX_FILE: index };
+    execFileSync("git", ["add", "-A", "."], {
+      cwd: root,
+      env,
+      stdio: "ignore",
+    });
+    treeHash = execFileSync("git", ["write-tree"], {
+      cwd: root,
+      env,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    try {
+      unlinkSync(index);
+    } catch {
+      // temp index already gone
+    }
+  } catch {
+    treeHash = undefined;
+  }
   return {
     commit: run(["rev-parse", "HEAD"]),
     branch: run(["rev-parse", "--abbrev-ref", "HEAD"]),
+    treeHash,
   };
 }
 
