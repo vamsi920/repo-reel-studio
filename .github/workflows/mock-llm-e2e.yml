@@ -3,6 +3,28 @@ name: Mock-LLM E2E Tests
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  # Work lands directly on main, so main must run the suite too; otherwise a
+  # break goes unnoticed until the next PR. Paths mirror the PR change filter
+  # below (push has no required-check pending problem, so a filter is safe).
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "scripts/**"
+      - "bin/**"
+      - "config/**"
+      - "tests/e2e/mock-llm/**"
+      - "tests/e2e/support/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "tsconfig.json"
+      - "react-router.config.ts"
+      - "playwright.mock-llm.config.ts"
+      - "tailwind.config.js"
+      - "hero.ts"
+      - ".github/workflows/mock-llm-e2e.yml"
   workflow_dispatch:
 
 concurrency:
