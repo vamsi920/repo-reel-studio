@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-24.04
     # Full-suite runs can spend several minutes on dependency, browser, uv,
     # and frontend setup before Playwright starts. Keep Playwright's own
-    # 10-minute test deadline below, but give the job enough wall-clock room
+    # 25-minute test deadline below, but give the job enough wall-clock room
     # for setup plus reporting so GitHub does not terminate it mid-suite.
     timeout-minutes: 45
 
