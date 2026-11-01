@@ -52,6 +52,7 @@ import {
   userSkillExists,
   userSkillDirExists,
 } from "../utils/skill-test-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 /**
  * Register a workspace on the agent-server so it appears in the UI dropdown.
@@ -187,22 +188,20 @@ test.describe("skill loading: project, user, and deletion", () => {
     await activateTrajectory(request, "project-skill");
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
-    // Select the workspace through the UI
-    await test.step("select workspace from UI", async () => {
-      // Click "Open workspace" to open the dialog
-      await page.getByTestId("open-workspace-button").click();
-
-      // Click the workspace dropdown and select our workspace
-      const dropdown = page.getByTestId("workspace-dropdown");
-      await dropdown.click();
-      // The workspace name is "skill-test-repo" — click the matching option
-      await page.getByText("skill-test-repo").click();
-
-      // Click the Confirm button to set the workspace
-      await page.getByTestId("workspace-launch-button").click();
+    // Start the conversation in the workspace from the sidebar menu (local
+    // folders are picked there; the home launcher opens GitHub repos), then
+    // send the trigger message in the conversation itself.
+    await test.step("start a conversation in the workspace", async () => {
+      await page.getByTestId("conversation-panel-new-thread-picker").click();
+      const entry = page
+        .getByTestId("launch-workspace")
+        .filter({ hasText: "skill-test-repo" });
+      await expect(entry).toBeVisible({ timeout: 10_000 });
+      await entry.click();
+      await waitForPath(page, /\/conversations\/.+/, 30_000);
     });
 
     await test.step("send message with project skill trigger", async () => {
@@ -211,7 +210,6 @@ test.describe("skill loading: project, user, and deletion", () => {
         `Please help me with ${PROJECT_SKILL_TRIGGER} setup`,
       );
       await page.getByTestId("submit-button").click();
-      await waitForPath(page, /\/conversations\/.+/, 30_000);
     });
 
     const conversationId = getConversationIdFromURL(page);

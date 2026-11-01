@@ -17,6 +17,12 @@ interface ProfileNameInputProps {
   isOptional?: boolean;
   /** When true, empty values will show red validation styling (required field behavior). */
   isRequired?: boolean;
+  /**
+   * Set when the name is well-formed but unusable (e.g. another profile
+   * already has it). Shown in place of the naming rule, so a disabled Save
+   * button is never left unexplained.
+   */
+  errorMessage?: string | null;
 }
 
 export const ProfileNameInput = forwardRef<
@@ -33,11 +39,12 @@ export const ProfileNameInput = forwardRef<
     isDisabled,
     isOptional,
     isRequired = false,
+    errorMessage = null,
   },
   ref,
 ) {
   const { t } = useTranslation("openhands");
-  const isValid = isProfileNameValid(value, { isRequired });
+  const isValid = isProfileNameValid(value, { isRequired }) && !errorMessage;
   const label = isOptional
     ? `${t(I18nKey.SETTINGS$PROFILE_NAME_LABEL)} (${t(I18nKey.COMMON$OPTIONAL)})`
     : t(I18nKey.SETTINGS$PROFILE_NAME_LABEL);
@@ -72,7 +79,7 @@ export const ProfileNameInput = forwardRef<
           isValid ? "text-[var(--oh-muted)]" : "text-red-400",
         )}
       >
-        {t(I18nKey.SETTINGS$PROFILE_NAME_RULE)}
+        {errorMessage ?? t(I18nKey.SETTINGS$PROFILE_NAME_RULE)}
       </p>
     </div>
   );

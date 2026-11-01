@@ -42,6 +42,7 @@ import {
   ensureMockLLMProfile,
   setChatInput,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -100,16 +101,16 @@ test.describe("mock-LLM image upload", () => {
 
     await resetMockLLM(request); // clears request history too
     await registerTrajectory(request, TRAJECTORY_NAME, [
-      { text: "" },              // 0: padding — absorbs any internal skill-activation call
+      { text: "" }, // 0: padding — absorbs any internal skill-activation call
       { text: IMAGE_REPLY_TOKEN }, // 1: agent's actual reply
-      { text: "" },              // 2: safety buffer for any follow-up internal call
+      { text: "" }, // 2: safety buffer for any follow-up internal call
     ]);
     await activateTrajectory(request, TRAJECTORY_NAME);
 
     // ── 3. Navigate to the home page ──
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 

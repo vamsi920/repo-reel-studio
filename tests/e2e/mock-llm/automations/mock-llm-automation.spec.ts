@@ -42,6 +42,7 @@ import {
   ensureMockLLMProfile,
   getMockLLMRequests,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 // Token the test asserts on in the agent's text reply (step 2).
 // The terminal printf breadcrumbs below are NOT asserted — they exist
@@ -297,7 +298,11 @@ test.describe("mock-LLM automation lifecycle", () => {
       // Provide enough responses for any internal LLM calls + the agent's
       // turn so the conversation finishes and the completion callback fires.
       { text: "" }, // 4: possible internal/condenser call
-      { text: "Done. Hello world echoed successfully." }, // 5: agent reply
+      // 5: agent reply. Ends with the delivery contract's RESULT line, as a
+      // real run does; without it the run page shows "Unverified".
+      {
+        text: "Done. Hello world echoed successfully.\nRESULT: https://github.com/example/e2e/pull/1",
+      },
       { text: "" }, // 6: safety buffer for any follow-up internal call
     ]);
 
@@ -321,7 +326,7 @@ test.describe("mock-LLM automation lifecycle", () => {
     await routeSessionApiKey(page);
 
     // Navigate to the home page and type a prompt to create the automation.
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     await test.step("type prompt and submit", async () => {
@@ -445,7 +450,7 @@ test.describe("mock-LLM automation lifecycle", () => {
                 : Array.isArray(msg.content)
                   ? (msg.content as Array<{ type?: string; text?: string }>)
                       .filter((c) => c.type === "text" || typeof c === "string")
-                      .map((c) => (typeof c === "string" ? c : c.text ?? ""))
+                      .map((c) => (typeof c === "string" ? c : (c.text ?? "")))
                       .join("")
                   : "";
             if (text.includes("<RUNTIME_SERVICES>")) return text;
@@ -518,13 +523,15 @@ test.describe("mock-LLM automation lifecycle", () => {
     // The ConfigurationSection renders schedule_human (e.g. "Every day at 9:00 AM")
     // or falls back to the raw cron expression.
     await test.step("verify cron schedule displayed on detail page", async () => {
-      await expect(page.getByText(CRON_SCHEDULE)).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(CRON_SCHEDULE)).toBeVisible({
+        timeout: 10_000,
+      });
     });
 
     await test.step("verify run shows COMPLETED with conversation link", async () => {
-      // The activity log should show a COMPLETED badge (translated as "Successful")
-      const completedIcon = page.getByTestId("run-status-icon-completed");
-      await expect(completedIcon).toBeVisible({ timeout: 15_000 });
+      // A completed run that reported its RESULT shows as delivered.
+      const delivered = page.getByTestId("run-outcome-delivered");
+      await expect(delivered).toBeVisible({ timeout: 15_000 });
 
       // Verify step 2 populated runConversationId — without it the
       // click-through assertion below would silently pass.
@@ -559,5 +566,4 @@ test.describe("mock-LLM automation lifecycle", () => {
       }
     });
   });
-
 });

@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "حاول مرة أخرى",
   "MODULE$GO_TO_CONVERSATIONS": "الانتقال إلى المحادثات",
   "MODULE$GO_BACK": "رجوع",
-  "MODULE$DETAILS": "التفاصيل"
+  "MODULE$DETAILS": "التفاصيل",
+  "SETTINGS$PROFILE_NAME_TAKEN": "يوجد ملف تعريف باسم \"{{name}}\" بالفعل. اختر اسمًا آخر."
 }

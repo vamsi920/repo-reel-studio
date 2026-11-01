@@ -230,7 +230,7 @@ export function ChatInterface() {
     setHitBottom(true);
   }, [conversationId, setAutoScroll, setHitBottom]);
   const maybeLoadOlder = React.useCallback(
-    (target: HTMLElement) => {
+    (target: HTMLElement, { onlyIfNoOverflow = false } = {}) => {
       if (isProvisioningTask || isLoadingOlderEvents || !hasMoreOlderEvents) {
         return;
       }
@@ -238,7 +238,7 @@ export function ChatInterface() {
       const atTop = target.scrollTop <= SCROLL_TOP_THRESHOLD_PX;
       const noOverflow =
         target.scrollHeight <= target.clientHeight + SCROLL_TOP_THRESHOLD_PX;
-      if (!atTop && !noOverflow) return;
+      if (onlyIfNoOverflow ? !noOverflow : !atTop && !noOverflow) return;
 
       preserveScrollPosition.current = {
         scrollHeight: target.scrollHeight,
@@ -493,7 +493,11 @@ export function ChatInterface() {
   React.useEffect(() => {
     const target = scrollRef.current;
     if (!target) return;
-    maybeLoadOlderRef.current(target);
+    // Only the "nothing to scroll" case. A freshly rendered page sits at
+    // scrollTop 0 until the scroll-to-bottom runs, so treating "at the top"
+    // as a request here loaded the previous page, then the one before, until
+    // the whole history of a long conversation had been fetched on open.
+    maybeLoadOlderRef.current(target, { onlyIfNoOverflow: true });
   }, [renderableEvents.length, hasMoreOlderEvents]);
 
   // Create a ScrollProvider with the scroll hook values

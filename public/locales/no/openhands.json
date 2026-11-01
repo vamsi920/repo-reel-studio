@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "Prøv igjen",
   "MODULE$GO_TO_CONVERSATIONS": "Gå til samtaler",
   "MODULE$GO_BACK": "Gå tilbake",
-  "MODULE$DETAILS": "Detaljer"
+  "MODULE$DETAILS": "Detaljer",
+  "SETTINGS$PROFILE_NAME_TAKEN": "En profil med navnet «{{name}}» finnes allerede. Velg et annet navn."
 }

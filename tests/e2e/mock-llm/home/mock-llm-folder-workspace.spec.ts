@@ -31,8 +31,8 @@ import {
   getFolderBrowserPathSegments,
   getFolderBrowserRootPath,
   resolveFolderWorkspacePaths,
-  TEST_DIR_NAME,
 } from "../utils/folder-workspace-paths";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 /**
  * The folder-workspace test creates a directory that the agent-server's folder
@@ -128,23 +128,22 @@ test.describe("mock-LLM folder browser → workspace → conversation", () => {
     page.on("request", captureConversationPayload);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 
-    // ── Open the "Open Workspace" dialog ──
-    await test.step("open workspace dialog", async () => {
-      await page.getByTestId("open-workspace-button").click();
-      await expect(page.getByTestId("open-workspace-dialog-body")).toBeVisible({
-        timeout: 10_000,
-      });
+    // ── Open the sidebar's new-thread menu ──
+    // Local folders are picked from the sidebar; the home launcher only
+    // opens GitHub repositories.
+    await test.step("open the sidebar workspace menu", async () => {
+      await page.getByTestId("conversation-panel-new-thread-picker").click();
+      await expect(
+        page.getByTestId("conversation-panel-new-thread-popover"),
+      ).toBeVisible({ timeout: 10_000 });
     });
 
     // ── Browse to the test directory using the folder browser UI ──
     await test.step("open folder browser and navigate to test directory", async () => {
-      // The "Add Workspaces" button is inside the dropdown's sticky footer,
-      // so we must open the dropdown first.
-      await page.getByTestId("workspace-dropdown").click();
       await page.getByTestId("add-workspaces-button").click();
       await expect(page.getByTestId("folder-browser-modal")).toBeVisible({
         timeout: 10_000,
@@ -192,51 +191,13 @@ test.describe("mock-LLM folder browser → workspace → conversation", () => {
       });
     });
 
-    // ── Confirm the selected workspace ──
-    // The workspace dialog is still open after the folder browser closed.
-    // Adding the folder auto-selects the new workspace, so wait for that
-    // selection instead of reopening the dropdown and looking for an option
-    // that is only rendered while the menu is open.
-    await test.step("confirm the auto-selected workspace", async () => {
-      await expect(page.getByTestId("open-workspace-dialog-body")).toBeVisible({
-        timeout: 10_000,
-      });
-
-      const dropdown = page.getByTestId("workspace-dropdown");
-      await expect(dropdown).toBeVisible({ timeout: 10_000 });
-      await expect(dropdown).toHaveValue(TEST_DIR_NAME, { timeout: 10_000 });
-
-      const confirmBtn = page.getByRole("button", { name: /confirm/i });
-      await confirmBtn.click();
-
-      await expect(page.getByTestId("open-workspace-dialog-body")).toBeHidden({
-        timeout: 5_000,
-      });
-    });
-
-    // ── Type a message and submit to create a conversation ──
-    await test.step("submit a message to create a conversation", async () => {
-      // Type into the home-page chat input (contentEditable div)
-      const chatInput = page
-        .getByTestId("home-chat-launcher")
-        .locator('[contenteditable="true"]');
-      await expect(chatInput).toBeVisible({ timeout: 10_000 });
-      await chatInput.click();
-
-      await page.evaluate((msg: string) => {
-        const el = document.querySelector(
-          '[data-testid="home-chat-launcher"] [contenteditable="true"]',
-        );
-        if (el) {
-          el.textContent = msg;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }, "Hello from the workspace test");
-
-      // Submit with Enter
-      await chatInput.press("Enter");
-
-      // Wait for navigation to a conversation page
+    // ── Launch a conversation in the new workspace ──
+    await test.step("launch a conversation in the added workspace", async () => {
+      const entry = page.locator(
+        `[data-testid="launch-workspace"][data-workspace-path="${TEST_DIR}"]`,
+      );
+      await expect(entry).toBeVisible({ timeout: 10_000 });
+      await entry.click();
       await waitForPath(page, /\/conversations\/.+/, 30_000);
     });
 

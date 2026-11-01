@@ -16,11 +16,21 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { routeSessionApiKey, waitForPath } from "../utils/mock-llm-helpers";
+import {
+  routeSessionApiKey,
+  seedLocalStorage,
+  waitForPath,
+} from "../utils/mock-llm-helpers";
 
 test.beforeEach(async ({ page }) => {
+  // Past first-run onboarding, or its modal covers every page under test.
+  await seedLocalStorage(page);
   await routeSessionApiKey(page);
 });
+
+// The studio keeps company facts in Supabase. The mock-LLM stack is built
+// without it, and then the studio must say so instead of offering a chat.
+const UNCONFIGURED = "environment-setup-unconfigured";
 
 test("the studio is reachable and offers to start, rather than auto-starting", async ({
   page,
@@ -29,7 +39,11 @@ test("the studio is reachable and offers to start, rather than auto-starting", a
   await waitForPath(page, /^\/environment\/setup$/);
   // Opt-in: nobody is dropped into a conversation with an agent they did not
   // ask for.
-  await expect(page.getByTestId("environment-setup-begin")).toBeVisible();
+  await expect(
+    page
+      .getByTestId("environment-setup-begin")
+      .or(page.getByTestId(UNCONFIGURED)),
+  ).toBeVisible();
 });
 
 test("the dock routes to the studio instead of opening a second chat", async ({
@@ -57,5 +71,7 @@ test("a missing model is explained instead of showing a chat that never answers"
   // both are honest; a silent, non-responding chat box would not be.
   const start = page.getByTestId("environment-setup-begin");
   const needsLlm = page.getByTestId("environment-setup-needs-llm");
-  await expect(start.or(needsLlm)).toBeVisible();
+  await expect(
+    start.or(needsLlm).or(page.getByTestId(UNCONFIGURED)),
+  ).toBeVisible();
 });

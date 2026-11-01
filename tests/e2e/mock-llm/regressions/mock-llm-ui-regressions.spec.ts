@@ -15,7 +15,11 @@ import type { ActionEvent, MessageEvent } from "#/types/agent-server/core";
 import { SecurityRisk } from "#/types/agent-server/core";
 import type { FinishAction } from "#/types/agent-server/core/base/action";
 import type { CriticResult } from "#/types/agent-server/core/base/critic";
-import { seedLocalStorage, routeSessionApiKey } from "../utils/mock-llm-helpers";
+import {
+  seedLocalStorage,
+  routeSessionApiKey,
+} from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 test.describe.configure({ mode: "serial" });
 
@@ -368,7 +372,7 @@ test.describe("UI regressions", () => {
     page,
   }) => {
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
 
     const shell = page.locator("[data-agent-server-ui]").first();
     await expect(shell).toBeVisible({ timeout: 15_000 });
@@ -439,6 +443,11 @@ test.describe("UI regressions", () => {
 
   test("loads older events when scrolling up", async ({ page }) => {
     test.setTimeout(60_000);
+    // Scroll pagination belongs to the transcript. The default Graph view
+    // has no transcript scroller, so older pages load on their own there.
+    await page.addInitScript(() => {
+      window.localStorage.setItem("neodevex-chat-view-mode", "transcript");
+    });
     await routeSessionApiKey(page);
     await routePaginationConversation(page);
 
@@ -509,139 +518,9 @@ test.describe("UI regressions", () => {
 
   // ── #1076: workspace selection persistence ───────────────────────
 
-  test("selected workspace persists after navigating away and returning", async ({
-    page,
-  }) => {
-    test.setTimeout(60_000);
-    await routeSessionApiKey(page);
-
-    // Stub the workspace listing endpoint (GET /api/workspaces) to return
-    // deterministic entries in the server-persisted shape:
-    //   { workspaces: [...], workspaceParents: [...] }
-    const workspacesMock = {
-      workspaces: [
-        {
-          id: "/workspace/project/demo-app",
-          name: "demo-app",
-          path: "/workspace/project/demo-app",
-        },
-        {
-          id: "/workspace/project/sample-tools",
-          name: "sample-tools",
-          path: "/workspace/project/sample-tools",
-        },
-        {
-          id: "/workspace/project/notes-service",
-          name: "notes-service",
-          path: "/workspace/project/notes-service",
-        },
-      ],
-      workspaceParents: [],
-    };
-    await page.route("**/api/workspaces**", async (route, req) => {
-      if (req.method() !== "GET") {
-        await route.fallback();
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(workspacesMock),
-      });
-    });
-
-    await page.goto("/conversations", { waitUntil: "domcontentloaded" });
-
-    // Open workspace dialog and pick a workspace
-    const openButton = page.getByTestId("open-workspace-button");
-    await expect(openButton).toBeEnabled({ timeout: 15_000 });
-    await openButton.click();
-    await expect(page.getByTestId("open-workspace-dialog-body")).toBeVisible();
-
-    const dropdown = page.getByTestId("workspace-dropdown");
-    await expect(dropdown).toBeEnabled({ timeout: 15_000 });
-    await dropdown.click();
-
-    const menu = page.getByTestId("workspace-dropdown-menu");
-    await expect(menu).toBeVisible();
-    await menu.getByText("demo-app", { exact: true }).click();
-
-    await expect(dropdown).toHaveValue("demo-app");
-
-    // Close the dialog
-    await page.getByTestId("close-open-workspace-dialog").click();
-    await expect(
-      page.getByTestId("open-workspace-dialog-body"),
-    ).not.toBeVisible();
-
-    // Navigate away and back
-    await page.goto("/settings", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("home-screen")).not.toBeVisible({
-      timeout: 5_000,
-    });
-
-    await page.goto("/conversations", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("home-screen")).toBeVisible({
-      timeout: 10_000,
-    });
-
-    // Reopen workspace dialog — selection should be restored.
-    const reopenButton = page.getByTestId("open-workspace-button");
-    await expect(reopenButton).toBeEnabled({ timeout: 15_000 });
-    await reopenButton.click();
-    await expect(page.getByTestId("open-workspace-dialog-body")).toBeVisible();
-
-    const restored = page.getByTestId("workspace-dropdown");
-    await expect(restored).toBeEnabled({ timeout: 15_000 });
-    await expect(restored).toHaveValue("demo-app");
-  });
-
-  test("cleared sessionStorage yields empty workspace selection", async ({
-    page,
-  }) => {
-    test.setTimeout(60_000);
-    await routeSessionApiKey(page);
-
-    await page.route("**/api/workspaces**", async (route, req) => {
-      if (req.method() !== "GET") {
-        await route.fallback();
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          workspaces: [
-            {
-              id: "/workspace/project/demo-app",
-              name: "demo-app",
-              path: "/workspace/project/demo-app",
-            },
-            {
-              id: "/workspace/project/sample-tools",
-              name: "sample-tools",
-              path: "/workspace/project/sample-tools",
-            },
-          ],
-          workspaceParents: [],
-        }),
-      });
-    });
-
-    // Explicitly clear persisted workspace path
-    await page.addInitScript(() => {
-      window.sessionStorage.removeItem("oh:home-selected-workspace-path");
-    });
-
-    await page.goto("/conversations", { waitUntil: "domcontentloaded" });
-
-    const openButton = page.getByTestId("open-workspace-button");
-    await expect(openButton).toBeEnabled({ timeout: 15_000 });
-    await openButton.click();
-    await expect(page.getByTestId("open-workspace-dialog-body")).toBeVisible();
-
-    const dropdown = page.getByTestId("workspace-dropdown");
-    await expect(dropdown).toBeEnabled({ timeout: 15_000 });
-    await expect(dropdown).toHaveValue("");
-  });
+  // "selected workspace persists after navigating away and returning" and
+  // its fresh-visit counterpart were removed with the home launcher's local
+  // workspace picker: the home screen opens GitHub repositories only, and
+  // local folders are launched from the sidebar (covered by
+  // home/mock-llm-folder-workspace.spec.ts).
 });

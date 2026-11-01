@@ -39,7 +39,11 @@ import {
   resetMockLLM,
   setChatInput,
   ensureMockLLMAgentProfile,
+  registerTrajectory,
+  activateTrajectory,
+  BASH_COMMAND,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 const PROFILE_NAME = "mock-llm-e2e";
 const MOCK_MODEL = "openai/mock-test-model";
@@ -96,6 +100,13 @@ test.describe("mock-LLM agent-server conversation", () => {
 
     // Wait for the profiles list to load
     await waitForTestId(page, "add-llm-profile");
+    // A reused local stack may already hold this profile (a duplicate name
+    // disables Save, and the default profile cannot be deleted); then there
+    // is nothing to create.
+    const existing = page
+      .getByTestId("profile-row")
+      .filter({ has: page.locator(`span[title="${PROFILE_NAME}"]`) });
+    if ((await existing.count()) > 0) return;
 
     // Click "Add LLM Profile"
     await page.getByTestId("add-llm-profile").click();
@@ -140,10 +151,11 @@ test.describe("mock-LLM agent-server conversation", () => {
     // Verify the profile appears in the list
     const profileRows = page.getByTestId("profile-row");
     const profileTexts = await profileRows.allTextContents();
-    const hasProfile = profileTexts.some((text) =>
-      text.includes(PROFILE_NAME),
-    );
-    expect(hasProfile, `Profile "${PROFILE_NAME}" should appear in the list`).toBe(true);
+    const hasProfile = profileTexts.some((text) => text.includes(PROFILE_NAME));
+    expect(
+      hasProfile,
+      `Profile "${PROFILE_NAME}" should appear in the list`,
+    ).toBe(true);
   });
 
   // ── Step 2: Set the profile as active ───────────────────────────────
@@ -170,7 +182,10 @@ test.describe("mock-LLM agent-server conversation", () => {
         break;
       }
     }
-    expect(targetRow, `Could not find profile row for "${PROFILE_NAME}"`).not.toBeNull();
+    expect(
+      targetRow,
+      `Could not find profile row for "${PROFILE_NAME}"`,
+    ).not.toBeNull();
 
     // Open the actions menu for this profile
     await targetRow!.getByTestId("profile-menu-trigger").click();
@@ -205,9 +220,7 @@ test.describe("mock-LLM agent-server conversation", () => {
             const row = rows.nth(i);
             const text = await row.textContent();
             if (text?.includes(PROFILE_NAME)) {
-              if (
-                (await row.getByTestId("profile-active-badge").count()) > 0
-              ) {
+              if ((await row.getByTestId("profile-active-badge").count()) > 0) {
                 return true;
               }
               // Badge absent — re-attempt activation before the next poll.
@@ -240,7 +253,10 @@ test.describe("mock-LLM agent-server conversation", () => {
           "X-Expose-Secrets": "encrypted",
         },
       });
-      expect(settingsResp.ok(), `GET /api/settings returned ${settingsResp.status()}`).toBe(true);
+      expect(
+        settingsResp.ok(),
+        `GET /api/settings returned ${settingsResp.status()}`,
+      ).toBe(true);
       const settings = await settingsResp.json();
       const llmModel = settings?.agent_settings?.llm?.model;
       expect(
@@ -269,10 +285,17 @@ test.describe("mock-LLM agent-server conversation", () => {
     page,
     request,
   }) => {
-    // Reset the mock LLM to its default trajectory. Other test suites
-    // (e.g. automation tests) may have activated a different trajectory
-    // that wasn't fully consumed due to earlier failures.
+    // Reset the mock LLM, then script this conversation. Turn 0 answers the
+    // conversation-title request the app makes before the agent's first
+    // call (it has no tools); without it the title request consumed the
+    // terminal call and the agent answered without running anything.
     await resetMockLLM(request);
+    await registerTrajectory(request, "conversation-terminal", [
+      { text: "Terminal check" },
+      { tool_call: { name: "terminal", arguments: { command: BASH_COMMAND } } },
+      { text: REPLY_TOKEN },
+    ]);
+    await activateTrajectory(request, "conversation-terminal");
 
     // Steps 1+2 already configured and verified the profile via the UI
     // (including the "Active" badge check). No API pre-check needed.
@@ -282,7 +305,9 @@ test.describe("mock-LLM agent-server conversation", () => {
     // the routeSessionApiKey interceptor (Playwright routes are LIFO and only
     // one handler can call continue/fulfill per request).
     let capturedConversationPayload: Record<string, unknown> | null = null;
-    const captureConversationPayload = (req: import("@playwright/test").Request) => {
+    const captureConversationPayload = (
+      req: import("@playwright/test").Request,
+    ) => {
       if (
         req.method() === "POST" &&
         new URL(req.url()).pathname === "/api/conversations"
@@ -297,7 +322,7 @@ test.describe("mock-LLM agent-server conversation", () => {
     page.on("request", captureConversationPayload);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     // Wait for the home page chat launcher to appear
@@ -330,7 +355,7 @@ test.describe("mock-LLM agent-server conversation", () => {
       expect(
         capturedConversationPayload,
         "POST /api/conversations payload was not captured — " +
-        "the page.on('request') listener may have missed the request",
+          "the page.on('request') listener may have missed the request",
       ).not.toBeNull();
       expect(
         capturedConversationPayload?.worktree,
@@ -348,7 +373,10 @@ test.describe("mock-LLM agent-server conversation", () => {
 
     await test.step("verify agent reply via conversation events API", async () => {
       await waitForAgentMessageContaining(
-        request, conversationId, REPLY_TOKEN, 30_000,
+        request,
+        conversationId,
+        REPLY_TOKEN,
+        30_000,
       );
     });
 
@@ -370,7 +398,7 @@ test.describe("mock-LLM agent-server conversation", () => {
       expect(
         hasUserMessage,
         `User message "${USER_MESSAGE}" should be visible in a user-message element. ` +
-        `Found: ${allUserText.map((t) => t.slice(0, 80)).join(" | ")}`,
+          `Found: ${allUserText.map((t) => t.slice(0, 80)).join(" | ")}`,
       ).toBe(true);
     });
 
@@ -397,7 +425,6 @@ test.describe("mock-LLM agent-server conversation", () => {
       // No .catch() — if the banner IS visible, this step must fail the test.
       await expect(errorBanner).not.toBeVisible({ timeout: 2_000 });
     });
-
   });
 
   // ── Step 4: Resume the conversation from the sidebar ────────────────
@@ -412,7 +439,7 @@ test.describe("mock-LLM agent-server conversation", () => {
     await routeSessionApiKey(page);
 
     // Navigate away to the home page
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     // Wait for the sidebar to load conversation cards
@@ -438,7 +465,9 @@ test.describe("mock-LLM agent-server conversation", () => {
     // Verify the user's original message is still visible
     await test.step("verify user message is still visible after resume", async () => {
       await expect(
-        page.locator('[data-testid="user-message"]').filter({ hasText: USER_MESSAGE }),
+        page
+          .locator('[data-testid="user-message"]')
+          .filter({ hasText: USER_MESSAGE }),
       ).toBeVisible({ timeout: 10_000 });
     });
 

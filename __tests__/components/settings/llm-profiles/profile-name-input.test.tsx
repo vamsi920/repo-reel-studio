@@ -37,6 +37,26 @@ describe("ProfileNameInput", () => {
     );
   });
 
+  it("explains an unusable name in place of the rule", () => {
+    render(
+      <ProfileNameInput
+        testId="profile-name"
+        ruleTestId="rule-text"
+        value="mock-llm"
+        onChange={() => {}}
+        errorMessage='A profile named "mock-llm" already exists.'
+      />,
+    );
+
+    expect(screen.getByTestId("rule-text")).toHaveTextContent(
+      'A profile named "mock-llm" already exists.',
+    );
+    expect(screen.getByTestId("profile-name")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+  });
+
   it("calls onChange when typing", async () => {
     const handleChange = vi.fn();
     const user = userEvent.setup();

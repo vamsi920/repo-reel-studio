@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "再試行",
   "MODULE$GO_TO_CONVERSATIONS": "会話へ移動",
   "MODULE$GO_BACK": "戻る",
-  "MODULE$DETAILS": "詳細"
+  "MODULE$DETAILS": "詳細",
+  "SETTINGS$PROFILE_NAME_TAKEN": "「{{name}}」という名前のプロファイルは既に存在します。別の名前を選んでください。"
 }

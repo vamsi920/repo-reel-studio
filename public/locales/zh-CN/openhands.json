@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "重试",
   "MODULE$GO_TO_CONVERSATIONS": "前往对话",
   "MODULE$GO_BACK": "返回",
-  "MODULE$DETAILS": "详细信息"
+  "MODULE$DETAILS": "详细信息",
+  "SETTINGS$PROFILE_NAME_TAKEN": "名为“{{name}}”的配置文件已存在。请换一个名称。"
 }

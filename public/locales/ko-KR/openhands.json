@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "다시 시도",
   "MODULE$GO_TO_CONVERSATIONS": "대화로 이동",
   "MODULE$GO_BACK": "뒤로 가기",
-  "MODULE$DETAILS": "세부 정보"
+  "MODULE$DETAILS": "세부 정보",
+  "SETTINGS$PROFILE_NAME_TAKEN": "\"{{name}}\" 프로필이 이미 있습니다. 다른 이름을 선택하세요."
 }

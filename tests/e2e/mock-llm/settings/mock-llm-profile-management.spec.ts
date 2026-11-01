@@ -44,6 +44,7 @@ import {
   activateProfileViaUI,
   ensureMockLLMAgentProfile,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 const MOCK_MODEL = "openai/mock-test-model";
 
@@ -319,7 +320,7 @@ test.describe("same-model profile identity", () => {
 
     // ── Start a conversation ──
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 

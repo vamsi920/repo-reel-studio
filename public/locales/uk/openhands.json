@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "Спробувати ще раз",
   "MODULE$GO_TO_CONVERSATIONS": "До розмов",
   "MODULE$GO_BACK": "Назад",
-  "MODULE$DETAILS": "Подробиці"
+  "MODULE$DETAILS": "Подробиці",
+  "SETTINGS$PROFILE_NAME_TAKEN": "Профіль з назвою «{{name}}» уже існує. Виберіть іншу назву."
 }

@@ -187,6 +187,13 @@ export function LlmSettingsLocalView() {
     return true;
   }, [profileName, viewMode, existingNames, editingProfile?.profile.name]);
 
+  // Well-formed but already used by another profile: Save is disabled, so
+  // say why next to the field.
+  const isNameTaken =
+    profileName.length > 0 &&
+    existingNames.has(profileName) &&
+    !(viewMode === "edit" && profileName === editingProfile?.profile.name);
+
   const handleAddProfile = useCallback(() => {
     setProfileName("");
     setEditingProfile(null);
@@ -517,6 +524,11 @@ export function LlmSettingsLocalView() {
         value={profileName}
         onChange={setProfileName}
         isRequired
+        errorMessage={
+          isNameTaken
+            ? t(I18nKey.SETTINGS$PROFILE_NAME_TAKEN, { name: profileName })
+            : null
+        }
       />
 
       {/* Profile form - key ensures form remounts when switching profiles */}

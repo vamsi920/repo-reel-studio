@@ -15,9 +15,15 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { routeSessionApiKey, waitForPath } from "../utils/mock-llm-helpers";
+import {
+  routeSessionApiKey,
+  seedLocalStorage,
+  waitForPath,
+} from "../utils/mock-llm-helpers";
 
 test.beforeEach(async ({ page }) => {
+  // Past first-run onboarding, or its modal covers every page under test.
+  await seedLocalStorage(page);
   await routeSessionApiKey(page);
 });
 

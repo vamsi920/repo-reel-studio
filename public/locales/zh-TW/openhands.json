@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "重試",
   "MODULE$GO_TO_CONVERSATIONS": "前往對話",
   "MODULE$GO_BACK": "返回",
-  "MODULE$DETAILS": "詳細資訊"
+  "MODULE$DETAILS": "詳細資訊",
+  "SETTINGS$PROFILE_NAME_TAKEN": "名為「{{name}}」的設定檔已存在。請換一個名稱。"
 }

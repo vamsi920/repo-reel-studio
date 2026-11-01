@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "Réessayer",
   "MODULE$GO_TO_CONVERSATIONS": "Aller aux conversations",
   "MODULE$GO_BACK": "Retour",
-  "MODULE$DETAILS": "Détails"
+  "MODULE$DETAILS": "Détails",
+  "SETTINGS$PROFILE_NAME_TAKEN": "Un profil nommé « {{name}} » existe déjà. Choisissez un autre nom."
 }

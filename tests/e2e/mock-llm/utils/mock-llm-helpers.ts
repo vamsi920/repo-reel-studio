@@ -229,15 +229,17 @@ export async function waitForNonUserMessageText(
 }
 
 /**
- * Poll the bash events API for a BashOutput containing BASH_TOKEN.
+ * Wait until the conversation's own terminal observation shows the mock
+ * trajectory's command ran and printed BASH_TOKEN.
  *
- * The agent-server keeps tool executions in a separate bash event stream
- * (`/api/bash/bash_events/search`), not the conversation events API.
- * Conversation events only contain high-level MessageEvents.
+ * Reads the conversation's events, not the server-wide `/api/bash` log: that
+ * log is shared with the app's own probes (git remote, line counts) and does
+ * not carry the agent's terminal tool output, so the command was never found
+ * there.
  */
 export async function waitForSuccessfulBashObservation(
   request: APIRequestContext,
-  _conversationId: string,
+  conversationId: string,
   timeout = 30_000,
 ) {
   let lastDiag = "no polls yet";
@@ -245,26 +247,32 @@ export async function waitForSuccessfulBashObservation(
     .poll(
       async () => {
         const resp = await request.get(
-          `${BACKEND_URL}/api/bash/bash_events/search`,
+          `${BACKEND_URL}/api/conversations/${conversationId}/events/search`,
           {
             headers: { "X-Session-API-Key": SESSION_API_KEY },
-            params: { limit: "50", kind__eq: "BashOutput" },
+            params: { limit: "100" },
           },
         );
         if (!resp.ok()) {
-          lastDiag = `bash events API returned ${resp.status()}`;
+          lastDiag = `events API returned ${resp.status()}`;
           return false;
         }
-        const body = (await resp.json()) as { items?: unknown[] };
-        const items = body.items ?? [];
-        lastDiag = `${items.length} BashOutput events`;
-        // Success: any BashOutput with exit_code 0 proves our command ran.
-        // The agent-server may return stdout as null for the completion
-        // event, so we accept null stdout when exit_code is 0.
-        return items.some((e: any) => {
-          if (e.kind !== "BashOutput" || e.exit_code !== 0) return false;
-          const stdout = typeof e.stdout === "string" ? e.stdout : "";
-          return stdout.includes(BASH_TOKEN) || e.stdout === null;
+        const body = (await resp.json()) as {
+          items?: Array<Record<string, unknown>>;
+        };
+        const observations = (body.items ?? []).filter(
+          (e) => e.kind === "ObservationEvent",
+        );
+        lastDiag = `${observations.length} observation events`;
+        return observations.some((e) => {
+          const observation = (e.observation ?? {}) as Record<string, unknown>;
+          if (observation.is_error === true) return false;
+          if (
+            typeof observation.exit_code === "number" &&
+            observation.exit_code !== 0
+          )
+            return false;
+          return JSON.stringify(observation).includes(BASH_TOKEN);
         });
       },
       { timeout },

@@ -27,6 +27,7 @@ import {
   activateTrajectory,
   resetMockLLM,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 const USER_MESSAGE = "Hello, please respond.";
 const WORKSPACE_PATH = "/tmp/e2e-test-project/my-app";
@@ -144,7 +145,7 @@ test.describe("files tab, git control bar, and browser tab", () => {
     test.setTimeout(120_000);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 
@@ -345,7 +346,7 @@ test.describe("files tab, git control bar, and browser tab", () => {
     await resetMockLLM(request);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 

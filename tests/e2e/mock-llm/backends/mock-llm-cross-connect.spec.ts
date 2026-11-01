@@ -29,6 +29,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 // ── Paths ──────────────────────────────────────────────────────────────
 const PROJECT_ROOT = resolve(
@@ -90,6 +91,9 @@ function createIsolatedEnv(
       OH_CANVAS_SAFE_BACKEND_PORT: String(parseInt(ingressPort) + 1),
       OH_CANVAS_SAFE_AUTOMATION_PORT: String(parseInt(ingressPort) + 2),
       OH_CANVAS_SAFE_VITE_PORT: String(parseInt(ingressPort) + 3),
+      // The AgentOps collector is part of every stack; without its own port
+      // the second stack refuses to start ("agentops: port 18002" in use).
+      OH_CANVAS_SAFE_AGENTOPS_PORT: String(parseInt(ingressPort) + 4),
       OH_SESSION_API_KEY_PATH: join(stateDir, "session-key.txt"),
       ...extra,
     },
@@ -226,8 +230,7 @@ async function addBackendViaDropdown(
     timeout: 5_000,
   });
 
-  // The modal defaults to the Cloud tab; switch to the manual form.
-  await page.getByTestId("add-backend-option-agent-server").click();
+  // The modal opens on the agent-server connection form.
   await expect(page.getByTestId("add-backend-agent-server-panel")).toBeVisible({
     timeout: 5_000,
   });
@@ -289,31 +292,51 @@ async function readBackendIdByHost(
   }, host);
 }
 
-async function addBackendViaOnboarding(
+/**
+ * First run against a frontend with no reachable backend: the Manage backends
+ * recovery dialog is the screen the user gets, and adding one there connects
+ * the app. Afterwards the one-question onboarding may appear; skip it.
+ */
+async function addFirstBackendViaManageBackends(
   page: Page,
   opts: { name: string; host: string; apiKey: string },
 ) {
-  await expect(page.getByTestId("onboarding-step-check-backend")).toBeVisible({
+  await expect(page.getByTestId("manage-backends-modal")).toBeVisible({
     timeout: 15_000,
   });
+  await page.getByTestId("manage-backends-add").click();
+  await expect(page.getByTestId("add-backend-agent-server-panel")).toBeVisible({
+    timeout: 5_000,
+  });
 
-  const nameInput = page.getByTestId("onboarding-backend-name");
+  const nameInput = page.getByTestId("add-backend-name");
   await nameInput.click();
   await nameInput.fill(opts.name);
 
-  const hostInput = page.getByTestId("onboarding-backend-host");
+  const hostInput = page.getByTestId("add-backend-host");
   await hostInput.click();
   await hostInput.fill(opts.host);
 
-  const keyInput = page.getByTestId("onboarding-backend-api-key");
+  const keyInput = page.getByTestId("add-backend-api-key");
   await keyInput.click();
   await keyInput.fill(opts.apiKey);
 
-  await page.getByTestId("onboarding-backend-next").click();
+  await page.getByTestId("add-backend-submit").click();
+  await expect(page.getByTestId("add-backend-agent-server-panel")).toHaveCount(
+    0,
+    { timeout: 15_000 },
+  );
+}
 
-  await expect(page.getByTestId("onboarding-step-choose-agent")).toBeVisible({
-    timeout: 15_000,
-  });
+/** Dismiss the first-run "what are you building?" modal if it is showing. */
+async function skipOnboardingIfShown(page: Page) {
+  const skip = page.getByTestId("onboarding-project-skip");
+  // `isVisible` does not wait, so wait explicitly for the modal to mount.
+  const shown = await skip
+    .waitFor({ state: "visible", timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (shown) await skip.click();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -393,21 +416,17 @@ test.describe("cross-connect: frontend-only → backend-only", () => {
 
     // ── 4. Open browser to the frontend-only instance ─────────────────
     await suppressAnalytics(page);
-    await page.goto(feUrl, { waitUntil: "domcontentloaded" });
-
-    // First-run onboarding owns the initial backend collection before
-    // the Manage Backends recovery screen is allowed to appear.
-    await expect(page.getByTestId("manage-backends-modal")).not.toBeVisible({
-      timeout: 1_000,
+    await page.goto(`${feUrl}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
     });
 
-    // ── 5. Add the backend-only instance via onboarding ───────────────
-    await addBackendViaOnboarding(page, {
+    // ── 5. Add the backend-only instance from the recovery dialog ────
+    await addFirstBackendViaManageBackends(page, {
       name: "Remote Backend",
       host: beUrl,
       apiKey: beEnv.sessionKey,
     });
-    await page.getByTestId("onboarding-skip").click();
+    await skipOnboardingIfShown(page);
 
     // ── 6. Reload to pick up the new backend ──────────────────────────
     // After adding a backend while the root first-run gate is active,
@@ -417,23 +436,13 @@ test.describe("cross-connect: frontend-only → backend-only", () => {
     await dismissAnalyticsModal(page);
 
     // ── 7. Verify the app loads ───────────────────────────────────────
-    // The app should reach either the onboarding flow or the home page
-    // — crucially NOT the manage-backends modal or auth screen.
-    // Both can be visible at the same time (onboarding overlays the home
-    // launcher), so check each individually instead of using .or() which
-    // fails Playwright strict mode when both match.
-    const homeVisible = await page
-      .getByTestId("home-chat-launcher")
-      .isVisible({ timeout: 20_000 })
-      .catch(() => false);
-    const onboardingVisible = await page
-      .getByTestId("onboarding-step-choose-agent")
-      .isVisible({ timeout: 2_000 })
-      .catch(() => false);
-    expect(
-      homeVisible || onboardingVisible,
-      "Expected either home-chat-launcher or onboarding to be visible",
-    ).toBe(true);
+    // The app should reach the home page — crucially NOT the
+    // manage-backends modal or auth screen.
+    // The home launcher renders under the first-run modal too, so it is the
+    // signal that the app reached its shell.
+    await expect(page.getByTestId("home-chat-launcher")).toBeVisible({
+      timeout: 20_000,
+    });
 
     // The manage-backends modal and auth screen must NOT be showing.
     await expect(page.getByTestId("manage-backends-modal")).not.toBeVisible({
@@ -537,7 +546,9 @@ test.describe("cross-connect: frontend-only → multiple backends", () => {
 
     // ── 4. Open browser to the frontend-only instance ─────────────────
     await suppressAnalytics(page);
-    await page.goto(feUrl, { waitUntil: "domcontentloaded" });
+    await page.goto(`${feUrl}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
 
     // The first-run onboarding backend step should appear before the
     // Manage Backends recovery modal.
@@ -546,15 +557,16 @@ test.describe("cross-connect: frontend-only → multiple backends", () => {
     });
 
     // ── 5. Add Backend A through onboarding ──────────────────────────
-    await addBackendViaOnboarding(page, {
+    await addFirstBackendViaManageBackends(page, {
       name: "Backend A",
       host: beUrlA,
       apiKey: beEnvA.sessionKey,
     });
 
-    await page.getByTestId("onboarding-skip").click();
+    await skipOnboardingIfShown(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
+    await skipOnboardingIfShown(page);
     await expect(page.getByTestId("home-chat-launcher")).toBeVisible({
       timeout: 20_000,
     });
@@ -569,9 +581,7 @@ test.describe("cross-connect: frontend-only → multiple backends", () => {
       timeout: 5_000,
     });
 
-    // The modal defaults to the Cloud tab; switch to Agent-server to access
-    // the manual connection form.
-    await page.getByTestId("add-backend-option-agent-server").click();
+    // The modal opens on the agent-server connection form.
     await expect(
       page.getByTestId("add-backend-agent-server-panel"),
     ).toBeVisible({ timeout: 5_000 });
@@ -743,16 +753,19 @@ test.describe("cross-connect: sidebar links pin their backend", () => {
 
     // ── 3. Onboard the frontend onto backend A ────────────────────────
     await suppressAnalytics(page);
-    await page.goto(feUrl, { waitUntil: "domcontentloaded" });
+    await page.goto(`${feUrl}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
 
-    await addBackendViaOnboarding(page, {
+    await addFirstBackendViaManageBackends(page, {
       name: "Backend A",
       host: beUrlA,
       apiKey: beEnvA.sessionKey,
     });
-    await page.getByTestId("onboarding-skip").click();
+    await skipOnboardingIfShown(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
+    await skipOnboardingIfShown(page);
     await expect(page.getByTestId("home-chat-launcher")).toBeVisible({
       timeout: 20_000,
     });
@@ -785,7 +798,9 @@ test.describe("cross-connect: sidebar links pin their backend", () => {
     // boots from that localStorage fallback.
     const otherTab = await context.newPage();
     await suppressAnalytics(otherTab);
-    await otherTab.goto(feUrl, { waitUntil: "domcontentloaded" });
+    await otherTab.goto(`${feUrl}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
     await dismissAnalyticsModal(otherTab);
 
     await switchBackendViaSelector(otherTab, "Backend B");

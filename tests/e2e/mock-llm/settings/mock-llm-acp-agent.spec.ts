@@ -39,6 +39,7 @@ import {
   BACKEND_URL,
   SESSION_API_KEY,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 const USER_MESSAGE = "Hello ACP agent, please reply.";
 
@@ -217,7 +218,7 @@ test.describe("mock-LLM ACP agent conversation", () => {
     page.on("request", capturePayload);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     // Wait for the home page chat launcher
@@ -336,7 +337,7 @@ test.describe("mock-LLM ACP agent conversation", () => {
     test.skip(!conversationId, "step 3 must complete first");
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     // Wait for the sidebar to load conversation cards

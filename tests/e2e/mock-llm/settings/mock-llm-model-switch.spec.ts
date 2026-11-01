@@ -37,6 +37,7 @@ import {
   deleteProfileIfExists,
   setChatInput,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 /** Profile B is the switch target — created via the Settings UI. */
 const PROFILE_B_NAME = "model-switch-profile-b";
@@ -161,7 +162,7 @@ test.describe("mock-LLM /model slash command", () => {
     });
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
     await waitForTestId(page, "home-chat-launcher");
 

@@ -36,6 +36,7 @@ import {
   dismissAnalyticsModal,
   waitForTestId,
 } from "../utils/mock-llm-helpers";
+import { APP_HOME_PATH } from "../../support/app-paths";
 
 test.describe.configure({ mode: "serial" });
 
@@ -79,13 +80,16 @@ test.describe("auth mode: fresh install with runtime-injected key", () => {
     expect(consentResp.ok()).toBe(true);
 
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
 
     // The static-server injected the runtime key into
     // `window.__AGENT_CANVAS_SESSION_API_KEY__`; the React app reads it,
     // seeds the default-local backend, and lands on the home page where
-    // OnboardingHost mounts the first onboarding step.
-    await waitForTestId(page, "onboarding-step-choose-agent");
+    // OnboardingHost mounts the first onboarding step (project intake now
+    // comes first; agent choice follows it).
+    await expect(
+      page.getByTestId("onboarding-step-project-intake"),
+    ).toBeVisible({ timeout: 30_000 });
 
     // The Manage Backends "trap" modal must NOT be the screen the user
     // sees on first launch.
@@ -164,7 +168,7 @@ test.describe("auth mode: non-public key rotation", () => {
     // static-server's localStorage write overwrites the legacy stored
     // sessionApiKey so the next read produces the live key.
     await routeSessionApiKey(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto(APP_HOME_PATH, { waitUntil: "domcontentloaded" });
     await dismissAnalyticsModal(page);
 
     // Verify the app loads — the home chat launcher should be visible.
@@ -208,19 +212,17 @@ test.describe("auth mode: public gate", () => {
 
   async function openPublicAuthScreenFromFirstRun(page: Page) {
     // Navigate to the public-mode static server (--auth-required, no
-    // baked session key). The browser has a clean context (no localStorage)
-    // so first-run users should see onboarding before the auth fallback.
-    await page.goto(PUBLIC_MODE_URL, { waitUntil: "domcontentloaded" });
+    // baked session key). With a clean context there is no key to reach the
+    // server with, so the key entry screen comes first; onboarding (which
+    // starts a conversation) can only follow once the server is reachable.
+    await page.goto(`${PUBLIC_MODE_URL}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
 
-    await waitForTestId(page, "first-run-onboarding-screen");
-    await waitForTestId(page, "onboarding-modal");
-    await waitForTestId(page, "onboarding-step-check-backend");
-
-    await page.getByTestId("onboarding-skip").click();
     await waitForTestId(page, "api-key-entry-screen");
   }
 
-  test("shows first-run onboarding before the auth screen when no key is configured", async ({
+  test("asks for the server key first when no key is configured", async ({
     page,
   }) => {
     await openPublicAuthScreenFromFirstRun(page);
@@ -308,7 +310,9 @@ test.describe("auth mode: public gate", () => {
       { apiKey: SESSION_API_KEY, host: PUBLIC_MODE_URL },
     );
 
-    await page.goto(PUBLIC_MODE_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(`${PUBLIC_MODE_URL}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
 
     // The auth screen should NOT appear — the stored key is valid.
     const authScreen = page.getByTestId("api-key-entry-screen");
@@ -358,7 +362,9 @@ test.describe("auth mode: public gate", () => {
       { staleKey: STALE_KEY, host: PUBLIC_MODE_URL },
     );
 
-    await page.goto(PUBLIC_MODE_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(`${PUBLIC_MODE_URL}${APP_HOME_PATH}`, {
+      waitUntil: "domcontentloaded",
+    });
 
     // The app tries to probe with the stale key → 401 → auth screen.
     await waitForTestId(page, "api-key-entry-screen");

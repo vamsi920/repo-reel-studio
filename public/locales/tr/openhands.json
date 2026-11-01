@@ -4222,5 +4222,6 @@
   "MODULE$TRY_AGAIN": "Tekrar dene",
   "MODULE$GO_TO_CONVERSATIONS": "Sohbetlere git",
   "MODULE$GO_BACK": "Geri dön",
-  "MODULE$DETAILS": "Ayrıntılar"
+  "MODULE$DETAILS": "Ayrıntılar",
+  "SETTINGS$PROFILE_NAME_TAKEN": "\"{{name}}\" adlı bir profil zaten var. Başka bir ad seçin."
 }

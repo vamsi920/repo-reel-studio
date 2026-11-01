@@ -71806,5 +71806,22 @@
     "ca": "Detalls",
     "tr": "Ayrıntılar",
     "uk": "Подробиці"
+  },
+  "SETTINGS$PROFILE_NAME_TAKEN": {
+    "en": "A profile named \"{{name}}\" already exists. Pick another name.",
+    "ja": "「{{name}}」という名前のプロファイルは既に存在します。別の名前を選んでください。",
+    "zh-CN": "名为“{{name}}”的配置文件已存在。请换一个名称。",
+    "zh-TW": "名為「{{name}}」的設定檔已存在。請換一個名稱。",
+    "ko-KR": "\"{{name}}\" 프로필이 이미 있습니다. 다른 이름을 선택하세요.",
+    "no": "En profil med navnet «{{name}}» finnes allerede. Velg et annet navn.",
+    "ar": "يوجد ملف تعريف باسم \"{{name}}\" بالفعل. اختر اسمًا آخر.",
+    "de": "Ein Profil namens „{{name}}“ existiert bereits. Wähle einen anderen Namen.",
+    "fr": "Un profil nommé « {{name}} » existe déjà. Choisissez un autre nom.",
+    "it": "Esiste già un profilo chiamato \"{{name}}\". Scegli un altro nome.",
+    "pt": "Já existe um perfil chamado \"{{name}}\". Escolha outro nome.",
+    "es": "Ya existe un perfil llamado \"{{name}}\". Elige otro nombre.",
+    "ca": "Ja existeix un perfil anomenat \"{{name}}\". Tria un altre nom.",
+    "tr": "\"{{name}}\" adlı bir profil zaten var. Başka bir ad seçin.",
+    "uk": "Профіль з назвою «{{name}}» уже існує. Виберіть іншу назву."
   }
 }
