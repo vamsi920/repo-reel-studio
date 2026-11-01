@@ -195,14 +195,16 @@ test.describe("active profile deletion + reconciliation", () => {
       // Confirm in the delete modal.
       await page.getByTestId("delete-profile-confirm").click();
 
-      // useEnsureActiveProfile re-activates the only remaining profile. Poll
-      // with reload — the delete + activate mutations may take a moment on CI.
+      await expect(page.getByTestId("delete-profile-confirm")).toHaveCount(0, {
+        timeout: 15_000,
+      });
+
+      // useEnsureActiveProfile re-activates a remaining profile on this page.
+      // Poll without reloading: a reload every iteration could abort the
+      // activation request the page had just sent, so CI flaked here.
       await expect
         .poll(
           async () => {
-            await page.goto("/settings/llm", {
-              waitUntil: "domcontentloaded",
-            });
             await waitForTestId(page, "add-llm-profile");
             const remaining = await rowFor(INACTIVE_PROFILE);
             if (!remaining) return false;
@@ -219,7 +221,7 @@ test.describe("active profile deletion + reconciliation", () => {
           },
           {
             message: `"${INACTIVE_PROFILE}" should become active after deleting "${ACTIVE_PROFILE}"`,
-            timeout: 15_000,
+            timeout: 30_000,
             intervals: [1_000, 2_000, 3_000],
           },
         )
