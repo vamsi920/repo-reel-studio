@@ -1,0 +1,49 @@
+diff --git a/source/core/Ky.ts b/source/core/Ky.ts
+index b8d83d8..d1435dd 100644
+--- a/source/core/Ky.ts
++++ b/source/core/Ky.ts
+@@ -340,7 +340,7 @@ export class Ky {
+ 	static #normalizeSearchParams(searchParams: SearchParamsOption): SearchParamsOption {
+ 		// Filter out undefined values from plain objects
+ 		if (searchParams && typeof searchParams === 'object' && !Array.isArray(searchParams) && !(searchParams instanceof URLSearchParams)) {
+-			return Object.fromEntries(Object.entries(searchParams).filter(([, value]) => value !== undefined));
++			return Object.fromEntries(Object.entries(searchParams).filter(([, value]) => value !== undefined)) as any;
+ 		}
+ 
+ 		return searchParams;
+@@ -451,7 +451,21 @@ export class Ky {
+ 					url.search = url.search ? `${url.search}&${stringSearchParameters}` : `?${stringSearchParameters}`;
+ 				}
+ 			} else {
+-				const optionsSearchParameters = new URLSearchParams(Ky.#normalizeSearchParams(this.#options.searchParams) as unknown as SearchParamsInit);
++				const normalized = Ky.#normalizeSearchParams(this.#options.searchParams);
++				const optionsSearchParameters = new URLSearchParams();
++				if (normalized && typeof normalized === 'object' && !Array.isArray(normalized) && !(normalized instanceof URLSearchParams)) {
++					for (const [key, value] of Object.entries(normalized)) {
++						for (const item of (Array.isArray(value) ? value : [value])) {
++							if (item !== undefined) {
++								optionsSearchParameters.append(key, String(item));
++							}
++						}
++					}
++				} else {
++					for (const [key, value] of new URLSearchParams(normalized as unknown as SearchParamsInit)) {
++						optionsSearchParameters.append(key, value);
++					}
++				}
+ 
+ 				for (const [key, value] of optionsSearchParameters.entries()) {
+ 					url.searchParams.append(key, value);
+diff --git a/source/types/options.ts b/source/types/options.ts
+index 595ab90..e2daf4b 100644
+--- a/source/types/options.ts
++++ b/source/types/options.ts
+@@ -6,7 +6,7 @@ import type {RetryOptions} from './retry.js';
+ export type SearchParamsInit = string | string[][] | Record<string, string> | URLSearchParams | undefined;
+ 
+ // eslint-disable-next-line unicorn/prevent-abbreviations
+-export type SearchParamsOption = SearchParamsInit | Record<string, string | number | boolean | undefined> | Array<Array<string | number | boolean>>;
++export type SearchParamsOption = SearchParamsInit | Record<string, string | number | boolean | undefined | Array<string | number | boolean | undefined>> | Array<Array<string | number | boolean>>;
+ 
+ export type RequestHttpMethod = 'get' | 'post' | 'put' | 'patch' | 'head' | 'delete';
+ export type HttpMethod = LiteralUnion<RequestHttpMethod | 'options' | 'trace', string>;

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AgentServerConversationService from "#/api/conversation-service/agent-server-conversation-service.api";
 import { PluginSpec } from "#/api/conversation-service/agent-server-conversation-service.types";
+import type { StudioClientToolName } from "#/api/agent-server-adapter";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import { SuggestedTask } from "#/utils/types";
 import { Provider } from "#/types/settings";
@@ -119,6 +120,8 @@ export interface CreateConversationVariables {
    * cloud path, so a multi-paragraph brief becomes a multi-paragraph title.
    */
   extraSystemSuffix?: string;
+  /** The studio client tool this conversation drives, if any. */
+  studioTool?: StudioClientToolName;
   parentConversationId?: string;
   agentType?: "default" | "plan";
   plugins?: PluginSpec[];
@@ -165,6 +168,7 @@ export const useCreateConversation = () => {
         query,
         conversationInstructions,
         extraSystemSuffix,
+        studioTool,
         plugins,
         repository,
         workingDir,
@@ -418,6 +422,7 @@ export const useCreateConversation = () => {
           initialUserMsg: query,
           conversationInstructions: effectiveConversationInstructions,
           extraSystemSuffix,
+          studioTool,
           plugins,
           metadata: repository
             ? {

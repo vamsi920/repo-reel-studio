@@ -1,0 +1,148 @@
+{
+  "_comment": "Issue-resolution tasks (the work Devin is sold on): bug reports that give only the symptom, and small features with a precise spec. A task is resolved when the hidden tests pass AND the repository's own related tests still pass. 'plant' edits are committed into the clone before the agent starts, so git diff shows nothing. Hidden tests are copied in only after the agent finishes. 'docs' says what a complete pull request also updates (the project's changelog, its option docs or JSDoc); it is reported, not part of 'resolved'.",
+  "tasks": [
+    {
+      "id": "FX1",
+      "repo": "flask",
+      "kind": "fix",
+      "plant": [
+        [
+          "src/flask/config.py",
+          "*parts, tail = key.split(\"__\")",
+          "*parts, tail = key.split(\"__\", 1)"
+        ]
+      ],
+      "hidden": {
+        "tests/test_hidden_fx1.py": "hidden/FX1.py"
+      },
+      "regression": [
+        "tests/test_config.py"
+      ],
+      "prompt": "Bug report: with `FLASK_DATABASE__OPTIONS__TIMEOUT=5` in the environment, `app.config.from_prefixed_env()` produces `app.config['DATABASE'] == {'OPTIONS__TIMEOUT': 5}` instead of `{'OPTIONS': {'TIMEOUT': 5}}`. Two-level keys such as `FLASK_DATABASE__HOST` work. Find the cause, fix it, and add a regression test to the existing tests.",
+      "docs": {
+        "files": [
+          "^CHANGES\\.rst$"
+        ]
+      }
+    },
+    {
+      "id": "FX2",
+      "repo": "flask",
+      "kind": "fix",
+      "plant": [
+        [
+          "src/flask/helpers.py",
+          "out.extend(_split_blueprint_path(name.rpartition(\".\")[0]))",
+          "out.extend(_split_blueprint_path(name.partition(\".\")[2]))"
+        ]
+      ],
+      "hidden": {
+        "tests/test_hidden_fx2.py": "hidden/FX2.py"
+      },
+      "regression": [
+        "tests/test_blueprints.py",
+        "tests/test_basic.py"
+      ],
+      "docs": {
+        "files": [
+          "^CHANGES\\.rst$"
+        ]
+      },
+      "prompt": "Bug report: in an app with nested blueprints (`parent.register_blueprint(child)`), the parent blueprint's `before_request` functions, error handlers and context processors no longer apply to the child blueprint's routes. App-level ones and the child's own still run. Example: a `@parent.errorhandler(418)` is ignored when a child view calls `abort(418)`. Find the cause, fix it, and add a regression test to the existing tests."
+    },
+    {
+      "id": "FF1",
+      "repo": "flask",
+      "kind": "feature",
+      "plant": [],
+      "hidden": {
+        "tests/test_hidden_ff1.py": "hidden/FF1.py"
+      },
+      "regression": [
+        "tests/test_cli.py"
+      ],
+      "prompt": "Feature request: add a `--json` flag to the `flask routes` command. With it, the command prints only a JSON array (no table, no header). Each element is an object with exactly these keys: `endpoint` (string), `methods` (sorted list of strings; HEAD and OPTIONS are left out unless `--all-methods` is given, same as the table), `domain` (the rule's subdomain, or its host when host matching is on; `null` when it has none), and `rule` (string). Elements follow the same order `--sort` gives the table. When there are no routes it prints `[]`. Keep the existing table output unchanged, and add tests.",
+      "docs": {
+        "files": [
+          "^CHANGES\\.rst$",
+          "^docs/cli\\.rst$"
+        ]
+      }
+    },
+    {
+      "id": "HX1",
+      "repo": "hono",
+      "kind": "fix",
+      "plant": [
+        [
+          "src/utils/url.ts",
+          "      results[name] ??= value",
+          "      results[name] = value"
+        ]
+      ],
+      "hidden": {
+        "src/hidden-hx1.test.ts": "hidden/HX1.ts"
+      },
+      "regression": [
+        "src/utils/url.test.ts",
+        "src/request.test.ts"
+      ],
+      "prompt": "Bug report: `c.req.query()` called with no arguments is inconsistent for repeated keys. `/search?q=a&q=c` gives `{ q: 'a' }`, but `/search?q=a%20b&q=c` gives `{ q: 'c' }`. It should always return the first value, like the unencoded case. Find the cause, fix it, and add a regression test to the existing tests."
+    },
+    {
+      "id": "HF1",
+      "repo": "hono",
+      "kind": "feature",
+      "plant": [],
+      "hidden": {
+        "src/middleware/cors/hidden-hf1.test.ts": "hidden/HF1.ts"
+      },
+      "regression": [
+        "src/middleware/cors/index.test.ts"
+      ],
+      "prompt": "Feature request: add an `allowPrivateNetwork?: boolean` option (default false) to the CORS middleware (Private Network Access). When it is enabled and a preflight request (OPTIONS) carries the header `Access-Control-Request-Private-Network: true`, the preflight response must include `Access-Control-Allow-Private-Network: true`. The header must not be sent when the option is off, when the request header is absent, or on non-preflight requests. Document the option in the JSDoc like the others, and add tests.",
+      "docs": {
+        "diff": "^\\+\\s*\\*.*allowPrivateNetwork"
+      }
+    },
+    {
+      "id": "KX1",
+      "repo": "ky",
+      "kind": "fix",
+      "plant": [
+        [
+          "source/core/Ky.ts",
+          "Object.entries(searchParams).filter(([, value]) => value !== undefined)",
+          "Object.entries(searchParams).filter(([, value]) => Boolean(value))"
+        ]
+      ],
+      "hidden": {
+        "test/hidden-kx1.ts": "hidden/KX1.ts"
+      },
+      "regression": [
+        "test/main.ts",
+        "test/formdata-searchparams.ts"
+      ],
+      "prompt": "Bug report: `ky.get(url, {searchParams: {page: 0, active: false, q: ''}})` sends a request with no `page`, `active` or `q` parameter at all. Only `undefined` values are supposed to be skipped. Find the cause, fix it, and add a regression test to the existing tests."
+    },
+    {
+      "id": "KF1",
+      "repo": "ky",
+      "kind": "feature",
+      "plant": [],
+      "hidden": {
+        "test/hidden-kf1.ts": "hidden/KF1.ts"
+      },
+      "regression": [
+        "test/main.ts",
+        "test/formdata-searchparams.ts"
+      ],
+      "prompt": "Feature request: let `searchParams` objects take arrays. `{searchParams: {tag: ['a', 'b'], page: 1}}` must send `?tag=a&tag=b&page=1`. `undefined` entries inside an array are skipped, and an empty array sends nothing for that key. Update the `searchParams` TypeScript type so this compiles. Existing behaviour for strings, URLSearchParams, arrays of pairs and plain objects must not change. Add tests.",
+      "docs": {
+        "files": [
+          "^readme\\.md$"
+        ]
+      }
+    }
+  ]
+}

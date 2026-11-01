@@ -63,6 +63,9 @@ jobs:
 
       - name: Lint
         if: matrix.full_checks
+        # ESLint over all of src/ needs more than Node's default heap.
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run lint
 
       - name: Test

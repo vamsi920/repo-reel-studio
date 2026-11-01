@@ -1,0 +1,74 @@
+{
+  "variants": {
+    "v5": {
+      "runs": 14,
+      "resolved": 1.0,
+      "static_checks_pass": 0.857,
+      "tests_added": 1.0,
+      "docs_or_changelog": 0.2,
+      "cost_per_task": 0.287,
+      "calls_per_task": 15.857,
+      "seconds_per_task": 232.55,
+      "tokens_per_task": 650777.786
+    },
+    "v6": {
+      "runs": 14,
+      "resolved": 1.0,
+      "static_checks_pass": 1.0,
+      "tests_added": 1.0,
+      "docs_or_changelog": 0.6,
+      "cost_per_task": 0.375,
+      "calls_per_task": 19.071,
+      "seconds_per_task": 273.736,
+      "tokens_per_task": 947206.357
+    },
+    "v8": {
+      "runs": 14,
+      "resolved": 1.0,
+      "static_checks_pass": 1.0,
+      "tests_added": 1.0,
+      "docs_or_changelog": 0.9,
+      "cost_per_task": 0.357,
+      "calls_per_task": 18.071,
+      "seconds_per_task": 285.514,
+      "tokens_per_task": 805542.214
+    }
+  },
+  "per_task_resolved": {
+    "FF1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "FX1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "FX2": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "HF1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "HX1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "KF1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    },
+    "KX1": {
+      "v5": 1.0,
+      "v6": 1.0,
+      "v8": 1.0
+    }
+  }
+}

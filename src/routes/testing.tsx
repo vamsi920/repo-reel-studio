@@ -1,4 +1,5 @@
 import React from "react";
+import { TEST_CONTROL_TOOL_NAME } from "#/constants/test-control";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import {
@@ -454,6 +455,7 @@ function useLaunchTestConversation() {
         ...variablesForSource(project.source),
         query,
         extraSystemSuffix: NEOTEST_SYSTEM_BRIEF,
+        studioTool: TEST_CONTROL_TOOL_NAME,
         entryPoint: "testing_studio",
       });
       setConversationId(project.id, created.conversation_id);

@@ -18,7 +18,11 @@ jobs:
   # tag push is rejected with a pre-receive rule violation (the manual-re-run
   # problem). Non-release pushes skip the wait entirely: release-please only
   # upserts the release PR on those and never touches a tag.
+  #
+  # Both jobs need the OpenHands org's release App; this fork has no such App
+  # or secrets, so they only run upstream (they failed on every push here).
   await-required-checks:
+    if: github.repository == 'OpenHands/agent-canvas'
     runs-on: ubuntu-latest
     permissions:
       checks: read
@@ -77,6 +81,7 @@ jobs:
 
   release-please:
     needs: await-required-checks
+    if: github.repository == 'OpenHands/agent-canvas'
     permissions:
       contents: write
       pull-requests: write

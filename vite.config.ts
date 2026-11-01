@@ -480,7 +480,18 @@ export default defineConfig(({ mode }) => {
       // `legacy/` is a separate, accidentally-committed project (its own
       // package.json/lockfile) with no relation to this codebase; without
       // this it fails wholesale as part of `npm test`.
-      exclude: [...configDefaults.exclude, "tests", "legacy"],
+      // `.tmp/`, `case-studies/**/.work` and `.repo-workspaces` hold scratch
+      // clones of other projects (benchmarks, sample apps); their tests are
+      // not ours and need those projects' own runners.
+      exclude: [
+        ...configDefaults.exclude,
+        "tests",
+        "legacy",
+        ".tmp/**",
+        "case-studies/**/.work/**",
+        "case-studies/**/out/**",
+        "**/.repo-workspaces/**",
+      ],
       // The full suite runs many DOM-heavy tests in parallel, which can
       // push individual `userEvent`-driven tests past Vitest's 5000ms
       // default on busy machines (the skills-settings and i18n

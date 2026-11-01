@@ -44,12 +44,15 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   build-and-push-image:
     name: Build & Push (${{ matrix.arch }})
-    # Skip fork PRs — they cannot authenticate to GHCR.
+    # Skip fork PRs — they cannot authenticate to GHCR. The image is
+    # ghcr.io/openhands/agent-canvas, so only the upstream repository can push
+    # it; forks (this NeoDevEx repo) deploy through fly-deploy.yml instead.
     if: >
+      github.repository == 'OpenHands/agent-canvas' && (
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       !github.event.pull_request.head.repo.fork)
+       !github.event.pull_request.head.repo.fork))
     strategy:
       fail-fast: false
       matrix:

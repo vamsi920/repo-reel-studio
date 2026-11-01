@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CANVAS_UI_CLIENT_TOOL_NAME } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
-import { ONBOARDING_CONTROL_TOOL_NAME } from "#/constants/onboarding-control";
-import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
-import { SYNTH_CONTROL_TOOL_NAME } from "#/constants/synth-control";
 import { TEST_CONTROL_TOOL_NAME } from "#/constants/test-control";
 
 import {
@@ -822,9 +819,18 @@ describe("buildStartConversationRequest", () => {
       expect(payload.client_tools.map((tool) => tool.name)).toEqual([
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
-        ONBOARDING_CONTROL_TOOL_NAME,
-        MODERNIZATION_CONTROL_TOOL_NAME,
-        SYNTH_CONTROL_TOOL_NAME,
+      ]);
+    });
+
+    it("sends only the studio tool the conversation drives", () => {
+      const payload = buildStartConversationRequest({
+        settings: DEFAULT_SETTINGS,
+        studioTool: TEST_CONTROL_TOOL_NAME,
+      });
+
+      expect(payload.client_tools.map((tool) => tool.name)).toEqual([
+        CANVAS_UI_CLIENT_TOOL_NAME,
+        LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
         TEST_CONTROL_TOOL_NAME,
       ]);
     });
@@ -839,10 +845,6 @@ describe("buildStartConversationRequest", () => {
       expect(payload.client_tools.map((tool) => tool.name)).toEqual([
         CANVAS_UI_CLIENT_TOOL_NAME,
         LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
-        ONBOARDING_CONTROL_TOOL_NAME,
-        MODERNIZATION_CONTROL_TOOL_NAME,
-        SYNTH_CONTROL_TOOL_NAME,
-        TEST_CONTROL_TOOL_NAME,
       ]);
     });
 

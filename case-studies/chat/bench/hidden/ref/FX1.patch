@@ -1,0 +1,13 @@
+diff --git a/src/flask/config.py b/src/flask/config.py
+index d10f924c..34ef1a57 100644
+--- a/src/flask/config.py
++++ b/src/flask/config.py
+@@ -171,7 +171,7 @@ class Config(dict):  # type: ignore[type-arg]
+ 
+             # Traverse nested dictionaries with keys separated by "__".
+             current = self
+-            *parts, tail = key.split("__", 1)
++            *parts, tail = key.split("__")
+ 
+             for part in parts:
+                 # If an intermediate dict does not exist, create it.

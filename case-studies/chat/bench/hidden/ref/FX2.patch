@@ -1,0 +1,13 @@
+diff --git a/src/flask/helpers.py b/src/flask/helpers.py
+index fbee04e5..fb7f6eba 100644
+--- a/src/flask/helpers.py
++++ b/src/flask/helpers.py
+@@ -646,7 +646,7 @@ def _split_blueprint_path(name: str) -> list[str]:
+     out: list[str] = [name]
+ 
+     if "." in name:
+-        out.extend(_split_blueprint_path(name.partition(".")[2]))
++        out.extend(_split_blueprint_path(name.rpartition(".")[0]))
+ 
+     return out
+ 

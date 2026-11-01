@@ -76,6 +76,19 @@ import {
   LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
 } from "./launch-child-conversation-client-tool";
 
+export type StudioClientToolName =
+  | typeof ONBOARDING_CONTROL_TOOL_NAME
+  | typeof MODERNIZATION_CONTROL_TOOL_NAME
+  | typeof SYNTH_CONTROL_TOOL_NAME
+  | typeof TEST_CONTROL_TOOL_NAME;
+
+const STUDIO_CLIENT_TOOLS: Record<StudioClientToolName, ClientToolSpec> = {
+  [ONBOARDING_CONTROL_TOOL_NAME]: ONBOARDING_CONTROL_CLIENT_TOOL,
+  [MODERNIZATION_CONTROL_TOOL_NAME]: MODERNIZATION_CONTROL_CLIENT_TOOL,
+  [SYNTH_CONTROL_TOOL_NAME]: SYNTH_CONTROL_CLIENT_TOOL,
+  [TEST_CONTROL_TOOL_NAME]: TEST_CONTROL_CLIENT_TOOL,
+};
+
 export interface DirectConversationInfo {
   id: string;
   title?: string | null;
@@ -1205,6 +1218,13 @@ export interface StartConversationOptions {
    * user message and doubles as the conversation title on the cloud path.
    */
   extraSystemSuffix?: string;
+  /**
+   * The studio client tool this conversation drives (the Environment Setup,
+   * Neo ME, Neo Synth or Neo Test studio). Only that one is sent: each
+   * studio tool's schema rides on every model call, and a plain chat can't
+   * use any of them (~2.5k tokens per call when all four were sent).
+   */
+  studioTool?: StudioClientToolName;
   plugins?: PluginSpec[];
   conversationId?: string;
   // Links the new conversation to an existing one as its child. The
@@ -1315,10 +1335,9 @@ export function buildStartConversationRequest(
         ? [
             CANVAS_UI_CLIENT_TOOL,
             LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
-            ONBOARDING_CONTROL_CLIENT_TOOL,
-            MODERNIZATION_CONTROL_CLIENT_TOOL,
-            SYNTH_CONTROL_CLIENT_TOOL,
-            TEST_CONTROL_CLIENT_TOOL,
+            ...(options.studioTool
+              ? [STUDIO_CLIENT_TOOLS[options.studioTool]]
+              : []),
           ]
         : [],
     confirmation_policy:
@@ -1462,6 +1481,7 @@ export async function buildStartConversationRequestWithEncryptedSettings(options
    * user message and doubles as the conversation title on the cloud path.
    */
   extraSystemSuffix?: string;
+  studioTool?: StudioClientToolName;
   plugins?: PluginSpec[];
   conversationId?: string;
   parentConversationId?: string;

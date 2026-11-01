@@ -44,6 +44,7 @@ import {
 } from "../cloud/conversation-service.api";
 import {
   DirectConversationInfo,
+  type StudioClientToolName,
   assertSubscriptionAuthReady,
   buildStartConversationRequestWithEncryptedSettings,
   emptyHooksResponse,
@@ -384,6 +385,8 @@ export interface CreateConversationOptions {
    * reuses verbatim as the conversation title.
    */
   extraSystemSuffix?: string;
+  /** The studio client tool this conversation drives, if any. */
+  studioTool?: StudioClientToolName;
   plugins?: PluginSpec[];
   metadata?: ConversationMetadata | null;
   workingDirOverride?: string;
@@ -453,6 +456,7 @@ class AgentServerConversationService {
       initialUserMsg,
       conversationInstructions,
       extraSystemSuffix,
+      studioTool,
       plugins,
       metadata,
       workingDirOverride,
@@ -559,6 +563,7 @@ class AgentServerConversationService {
       query: initialUserMsg,
       conversationInstructions,
       extraSystemSuffix,
+      studioTool,
       plugins,
       conversationId,
       // The agent-server rejects a parent in a different workspace, so callers

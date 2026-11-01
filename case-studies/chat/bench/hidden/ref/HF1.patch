@@ -1,0 +1,23 @@
+diff --git a/src/middleware/cors/index.ts b/src/middleware/cors/index.ts
+index a2333e0d..d61a3841 100644
+--- a/src/middleware/cors/index.ts
++++ b/src/middleware/cors/index.ts
+@@ -19,6 +19,7 @@ type CORSOptions = {
+   maxAge?: number
+   credentials?: boolean
+   exposeHeaders?: string[]
++  allowPrivateNetwork?: boolean
+ }
+ 
+ /**
+@@ -137,6 +138,10 @@ export const cors = (options?: CORSOptions): MiddlewareHandler => {
+         c.res.headers.append('Vary', 'Access-Control-Request-Headers')
+       }
+ 
++      if (opts.allowPrivateNetwork && c.req.header('Access-Control-Request-Private-Network') === 'true') {
++        set('Access-Control-Allow-Private-Network', 'true')
++      }
++
+       c.res.headers.delete('Content-Length')
+       c.res.headers.delete('Content-Type')
+ 

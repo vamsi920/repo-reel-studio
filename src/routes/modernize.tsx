@@ -1,4 +1,5 @@
 import React from "react";
+import { MODERNIZATION_CONTROL_TOOL_NAME } from "#/constants/modernization-control";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { FolderOpen, GitBranch, Plus, Replace, Trash2 } from "lucide-react";
@@ -456,6 +457,7 @@ function useLaunchNeoMeConversation() {
         ...variablesForSource(project.source),
         query,
         extraSystemSuffix: NEOME_SYSTEM_BRIEF,
+        studioTool: MODERNIZATION_CONTROL_TOOL_NAME,
         entryPoint: "neome_studio",
       });
       setConversationId(project.id, created.conversation_id);

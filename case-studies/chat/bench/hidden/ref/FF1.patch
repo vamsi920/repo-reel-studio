@@ -1,0 +1,38 @@
+diff --git a/src/flask/cli.py b/src/flask/cli.py
+index 3fa65cfd..4c3131f8 100644
+--- a/src/flask/cli.py
++++ b/src/flask/cli.py
+@@ -1057,11 +1057,32 @@ def shell_command() -> None:
+     ),
+ )
+ @click.option("--all-methods", is_flag=True, help="Show HEAD and OPTIONS methods.")
++@click.option("--json", "as_json", is_flag=True, help="Output routes as JSON.")
+ @with_appcontext
+-def routes_command(sort: str, all_methods: bool) -> None:
++def routes_command(sort: str, all_methods: bool, as_json: bool = False) -> None:
+     """Show all registered routes with endpoints and methods."""
+     rules = list(current_app.url_map.iter_rules())
+ 
++    if as_json:
++        import json
++
++        ignored = set() if all_methods else {"HEAD", "OPTIONS"}
++        hm = current_app.url_map.host_matching
++        data = [
++            {
++                "endpoint": r.endpoint,
++                "methods": sorted((r.methods or set()) - ignored),
++                "domain": (r.host if hm else r.subdomain) or None,
++                "rule": r.rule,
++            }
++            for r in rules
++        ]
++        keys = {"endpoint": "endpoint", "methods": "methods", "domain": "domain", "rule": "rule"}
++        if sort in keys:
++            data.sort(key=lambda d: (", ".join(d["methods"]) if sort == "methods" else (d[sort] or "")))
++        click.echo(json.dumps(data))
++        return
++
+     if not rules:
+         click.echo("No routes were registered.")
+         return

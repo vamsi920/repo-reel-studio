@@ -1,0 +1,13 @@
+diff --git a/src/utils/url.ts b/src/utils/url.ts
+index 78941973..b4941663 100644
+--- a/src/utils/url.ts
++++ b/src/utils/url.ts
+@@ -292,7 +292,7 @@ const _getQueryParam = (
+       }
+       ;(results[name] as string[]).push(value)
+     } else {
+-      results[name] = value
++      results[name] ??= value
+     }
+   }
+ 

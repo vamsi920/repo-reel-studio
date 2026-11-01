@@ -1,0 +1,13 @@
+diff --git a/source/core/Ky.ts b/source/core/Ky.ts
+index 2f4cb38..b8d83d8 100644
+--- a/source/core/Ky.ts
++++ b/source/core/Ky.ts
+@@ -340,7 +340,7 @@ export class Ky {
+ 	static #normalizeSearchParams(searchParams: SearchParamsOption): SearchParamsOption {
+ 		// Filter out undefined values from plain objects
+ 		if (searchParams && typeof searchParams === 'object' && !Array.isArray(searchParams) && !(searchParams instanceof URLSearchParams)) {
+-			return Object.fromEntries(Object.entries(searchParams).filter(([, value]) => Boolean(value)));
++			return Object.fromEntries(Object.entries(searchParams).filter(([, value]) => value !== undefined));
+ 		}
+ 
+ 		return searchParams;

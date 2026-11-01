@@ -35,7 +35,10 @@ import { useEnvironmentReadiness } from "#/hooks/query/use-environment-readiness
 import { createConversationResultPoster } from "#/services/onboarding-control";
 import { invalidateConnectionCaches } from "#/lib/environment/invalidate-connection-caches";
 import { consumeOAuthReceiptOnce } from "#/lib/environment/oauth-receipt-guard";
-import { ONBOARDING_RESULT_PREFIX } from "#/constants/onboarding-control";
+import {
+  ONBOARDING_RESULT_PREFIX,
+  ONBOARDING_CONTROL_TOOL_NAME,
+} from "#/constants/onboarding-control";
 import { ONBOARDING_SYSTEM_BRIEF } from "#/components/features/environment/copilot/onboarding-brief";
 import { isSupabaseConfigured } from "#/lib/data-platform/client";
 import {
@@ -393,6 +396,7 @@ function EnvironmentSetupScreen() {
       {
         query: seed || t(I18nKey.ENVIRONMENT$STUDIO_START_PROMPT),
         extraSystemSuffix: ONBOARDING_SYSTEM_BRIEF,
+        studioTool: ONBOARDING_CONTROL_TOOL_NAME,
         entryPoint: "environment_setup_studio",
       },
       {

@@ -1,4 +1,5 @@
 import React from "react";
+import { SYNTH_CONTROL_TOOL_NAME } from "#/constants/synth-control";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import {
@@ -486,6 +487,7 @@ function useLaunchSynthConversation() {
         ...variablesForSource(project.source),
         query,
         extraSystemSuffix: SYNTH_SYSTEM_BRIEF,
+        studioTool: SYNTH_CONTROL_TOOL_NAME,
         entryPoint: "synth_studio",
       });
       setConversationId(project.id, created.conversation_id);
