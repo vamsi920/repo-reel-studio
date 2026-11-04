@@ -25,8 +25,33 @@ vi.mock("#/hooks/use-tracking", () => ({
   useTracking: () => ({ trackAutomationCreatedButton: vi.fn() }),
 }));
 
+const { importMutate, userProviders } = vi.hoisted(() => ({
+  importMutate: vi.fn(),
+  userProviders: { providers: [] as string[] },
+}));
+
 vi.mock("#/hooks/query/use-automations", () => ({
-  useImportAutomation: () => ({ mutate: vi.fn(), isPending: false }),
+  useImportAutomation: () => ({ mutate: importMutate, isPending: false }),
+}));
+
+vi.mock("#/hooks/use-user-providers", () => ({
+  useUserProviders: () => userProviders,
+}));
+
+// The real picker lists repositories through the GitHub connection; a stub
+// that offers one repository is enough to drive the modal.
+vi.mock("#/components/features/home/git-repo-dropdown", () => ({
+  GitRepoDropdown: ({
+    onChange,
+  }: {
+    onChange: (repo: { full_name: string }) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="git-repo-dropdown"
+      onClick={() => onChange({ full_name: "acme/app" })}
+    />
+  ),
 }));
 
 vi.mock("#/components/shared/modals/modal-backdrop", () => ({
@@ -61,6 +86,8 @@ const CAPABILITIES_WITHOUT_GITHUB: DeploymentCapabilities = {
 };
 
 beforeEach(() => {
+  importMutate.mockReset();
+  userProviders.providers = [];
   vi.spyOn(AutomationService, "getCapabilities").mockResolvedValue(
     CAPABILITIES_WITHOUT_GITHUB,
   );
@@ -90,6 +117,21 @@ describe("BugFixerConnectors", () => {
     expect(
       screen.queryByTestId("bug-fixer-unsupported-trigger-warning"),
     ).not.toBeInTheDocument();
+  });
+
+  it("picks the repository from the connected GitHub account", async () => {
+    userProviders.providers = ["github"];
+    const user = userEvent.setup();
+    renderWithQueryClient(<BugFixerConnectors />);
+
+    await user.click(screen.getByTestId("bug-fixer-connect-github"));
+    await user.click(screen.getByTestId("git-repo-dropdown"));
+    await user.click(screen.getByTestId("bug-fixer-repository-confirm"));
+
+    expect(
+      screen.queryByTestId("bug-fixer-repository-input"),
+    ).not.toBeInTheDocument();
+    expect(importMutate.mock.calls[0][0].repository).toBe("acme/app");
   });
 });
 

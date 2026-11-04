@@ -21,6 +21,10 @@ import type { AutomationSpec } from "#/types/automation";
 import { isUnsupportedEventTrigger } from "#/utils/automation-trigger";
 import { useSupportedEventSources } from "#/hooks/query/use-supported-event-sources";
 import { repoClause, repoSlug } from "#/utils/automation-event-trigger";
+import { useUserProviders } from "#/hooks/use-user-providers";
+import { GitRepoDropdown } from "#/components/features/home/git-repo-dropdown";
+import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
+import { useGithubRepositorySuggestions } from "#/hooks/query/use-github-repository-suggestions";
 
 type BugFixerSource = "github" | "jira";
 
@@ -150,6 +154,13 @@ function RepositoryPromptModal({
   const [repository, setRepository] = useState("");
   const [jiraProjectKey, setJiraProjectKey] = useState("");
   const importAutomation = useImportAutomation();
+  // The repository is picked from the user's own repositories: through the
+  // GitHub connection (same picker as Open Repository), else from the
+  // agent-server's GITHUB_TOKEN. Free text is only the fallback when neither
+  // can list them.
+  const { providers } = useUserProviders();
+  const canPickRepository = providers.includes("github");
+  const tokenRepositories = useGithubRepositorySuggestions();
 
   const placeholder = "owner/repo (e.g. neodevex/repo-reel-studio)";
   const jiraPlaceholder = "PROJ";
@@ -204,15 +215,37 @@ function RepositoryPromptModal({
           </p>
         </header>
         <div className="flex flex-col gap-3 px-6 py-5">
-          <input
-            type="text"
-            value={repository}
-            onChange={(e) => setRepository(e.target.value)}
-            placeholder={placeholder}
-            data-testid="bug-fixer-repository-input"
-            aria-label={t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_LABEL)}
-            className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-3 py-2 text-sm text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-400)]"
-          />
+          {canPickRepository ? (
+            <GitRepoDropdown
+              provider="github"
+              placeholder={placeholder}
+              onChange={(repo) => setRepository(repo?.full_name ?? "")}
+            />
+          ) : tokenRepositories.length > 0 ? (
+            <SettingsDropdownInput
+              testId="bug-fixer-repository-select"
+              name="repository"
+              placeholder={placeholder}
+              items={tokenRepositories.map((repo) => ({
+                key: repo,
+                label: repo,
+              }))}
+              selectedKey={repository || undefined}
+              onSelectionChange={(key) => setRepository(key ? String(key) : "")}
+              onInputChange={setRepository}
+              allowsCustomValue
+            />
+          ) : (
+            <input
+              type="text"
+              value={repository}
+              onChange={(e) => setRepository(e.target.value)}
+              placeholder={placeholder}
+              data-testid="bug-fixer-repository-input"
+              aria-label={t(I18nKey.AUTOMATIONS$CREATE_REPOSITORY_LABEL)}
+              className="w-full rounded-md border border-[var(--oh-border)] bg-[var(--oh-surface)] px-3 py-2 text-sm text-[var(--oh-foreground)] outline-none focus:border-[var(--primary-400)]"
+            />
+          )}
           {source === "jira" && (
             <input
               type="text"
