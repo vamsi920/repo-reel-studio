@@ -132,6 +132,42 @@ describe("neotest harness", () => {
     expect(log.some((l) => l.includes("timeout"))).toBe(true);
   });
 
+  // A suite whose setup starts the app (`node server.js`) waited for the
+  // server to exit and blocked until the suite timeout.
+  it("keeps a server setup running for its suite, stops it afterwards, and creates result folders", async () => {
+    const { root } = project();
+    writeFileSync(
+      join(root, "server.mjs"),
+      `import { createServer } from "node:http";
+createServer((_, res) => res.end("ok")).listen(Number(process.env.PORT));
+`,
+    );
+    const plan = {
+      suites: [
+        {
+          id: "api",
+          kind: "api",
+          setup: "node server.mjs",
+          env: { PORT: "38917" },
+          command:
+            "node -e \"fetch('http://127.0.0.1:38917').then(r => r.text()).then(t => require('fs').writeFileSync('.neotest/results/deep/api.txt', t))\"",
+          timeoutSec: 60,
+          results: [{ path: ".neotest/results/deep/api.txt", format: "text" }],
+        },
+      ],
+    };
+
+    const status = await runPlan({ plan, runId: "setup-run", root });
+
+    expect(status.suites[0].status).toBe("passed");
+    expect(status.suites[0].durationMs).toBeLessThan(10000);
+    expect(
+      readFileSync(join(root, ".neotest/results/deep/api.txt"), "utf8"),
+    ).toBe("ok");
+    await new Promise((r) => setTimeout(r, 300));
+    await expect(fetch("http://127.0.0.1:38917")).rejects.toThrow();
+  }, 30000);
+
   it("runs only the named suites", async () => {
     const { root, plan } = project();
     const status = await runPlan({ plan, runId: "r2", suites: ["unit"], root });

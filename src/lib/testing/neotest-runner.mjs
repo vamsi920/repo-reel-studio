@@ -197,6 +197,88 @@ export function runCommand(command, { cwd, env, timeoutSec, onOutput } = {}) {
   });
 }
 
+/**
+ * Runs a suite's setup. A setup that exits is a one-shot step (`npm ci`) and
+ * resolves with its result. One still running after SETUP_SETTLE_MS is a
+ * service (`node src/server.js`): it keeps running in its own process group,
+ * the harness waits until PORT (when set) accepts connections, and `stop()`
+ * kills the group after the suite. Waiting for a server to exit blocked
+ * every suite until the timeout.
+ */
+export const SETUP_SETTLE_MS = 2000;
+const SETUP_READY_TIMEOUT_MS = 30000;
+
+export function startSetup(command, { cwd, env, timeoutSec, onOutput } = {}) {
+  return new Promise((resolveSetup) => {
+    const startedAt = Date.now();
+    let output = "";
+    let settled = false;
+    const child = spawn(command, {
+      cwd,
+      env: { ...process.env, ...(env ?? {}) },
+      shell: true,
+      detached: process.platform !== "win32",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const capture = (d) => {
+      output = tail(output + d.toString());
+      onOutput?.(d.toString());
+    };
+    child.stdout.on("data", capture);
+    child.stderr.on("data", capture);
+    const stop = () => {
+      try {
+        if (process.platform !== "win32") process.kill(-child.pid, "SIGTERM");
+        else child.kill("SIGTERM");
+      } catch {
+        // already gone
+      }
+    };
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolveSetup(value);
+    };
+    child.on("error", (error) =>
+      finish({ exitCode: null, error: error.message, stderr: output }),
+    );
+    child.on("close", (code) =>
+      finish({
+        exitCode: code,
+        stdout: output,
+        stderr: output,
+        durationMs: Date.now() - startedAt,
+      }),
+    );
+    setTimeout(async () => {
+      if (settled) return;
+      const port = Number(env?.PORT ?? /\bPORT=(\d+)/.exec(command)?.[1]);
+      if (port) await waitForPort(port, SETUP_READY_TIMEOUT_MS);
+      finish({ background: true, stop });
+    }, SETUP_SETTLE_MS);
+    // A service setup still obeys the suite timeout.
+    setTimeout(stop, (timeoutSec ?? DEFAULT_TIMEOUT_SEC) * 1000).unref();
+  });
+}
+
+async function waitForPort(port, timeoutMs) {
+  const { connect } = await import("node:net");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const open = await new Promise((done) => {
+      const socket = connect(port, "127.0.0.1");
+      socket.once("connect", () => {
+        socket.destroy();
+        done(true);
+      });
+      socket.once("error", () => done(false));
+    });
+    if (open) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
+}
+
 /** Expands a simple `*` glob in the last path segment only (TEST-*.xml). */
 export function expandResultPath(root, path) {
   if (!path.includes("*")) return [path];
@@ -324,15 +406,23 @@ export async function runPlan({
         // best effort
       }
     };
+    // Result files may sit in folders that do not exist yet (lcov.info under
+    // coverage/); reporters fail instead of creating them.
+    for (const declared of suite.results ?? []) {
+      if (declared?.path && !declared.path.includes("*"))
+        mkdirSync(dirname(resolve(root, declared.path)), { recursive: true });
+    }
     let result;
+    let service = null;
     if (suite.setup) {
-      const setup = await runCommand(suite.setup, {
+      const setup = await startSetup(suite.setup, {
         cwd,
         env: suite.env,
         timeoutSec: suite.timeoutSec,
         onOutput,
       });
-      if (setup.exitCode !== 0) {
+      if (setup.background) service = setup;
+      else if (setup.exitCode !== 0) {
         result = {
           ...setup,
           error: `setup failed with exit code ${setup.exitCode}`,
@@ -355,6 +445,7 @@ export async function runPlan({
       } while (attempt <= retries);
       if (attempt > 1) entry.retries = attempt - 1;
     }
+    service?.stop();
     if (suite.teardown) {
       await runCommand(suite.teardown, {
         cwd,
