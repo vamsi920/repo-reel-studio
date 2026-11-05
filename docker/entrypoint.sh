@@ -61,6 +61,30 @@ if [ "$(id -u)" = "0" ]; then
   if [ "$(stat -c %u "${APP_HOME}/.openhands")" = "0" ]; then
     chown -R openhands:openhands "${APP_HOME}/.openhands"
   fi
+  # The user's work -- repository checkouts and every file the agent writes
+  # (relative working dirs resolve to ~/workspace/project or /workspace) --
+  # lived next to the volume, not on it, so a restart kept the chat list and
+  # lost the code behind it. When ~/.openhands is its own mount (a real
+  # volume), keep those folders on it and leave links at the old paths. A
+  # folder that is itself a mount (a Docker user's /projects) is left alone.
+  on_own_mount() {
+    [ "$(stat -c %d "$1")" != "$(stat -c %d "$(dirname "$1")")" ]
+  }
+  if on_own_mount "${APP_HOME}/.openhands"; then
+    for dir in "${APP_HOME}/workspace" /workspace /projects; do
+      [ -L "$dir" ] && continue
+      target="${APP_HOME}/.openhands/persisted${dir}"
+      mkdir -p "$target"
+      if [ -d "$dir" ]; then
+        on_own_mount "$dir" && continue
+        cp -a "$dir/." "$target/" && rm -rf -- "$dir"
+      fi
+      mkdir -p "$(dirname "$dir")"
+      ln -s "$target" "$dir"
+      chown -h openhands:openhands "$dir"
+      chown openhands:openhands "$target"
+    done
+  fi
   export HOME="${APP_HOME}" USER=openhands LOGNAME=openhands
   exec setpriv --reuid=openhands --regid=openhands --init-groups -- "$0" "$@"
 fi
