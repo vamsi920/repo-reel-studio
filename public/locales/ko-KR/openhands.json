@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "아직 작동하지 않음",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "이 배포는 아직 GitHub 웹훅 이벤트를 수신하지 않으므로, 설정이 완료될 때까지 이 자동화는 자동으로 실행되지 않습니다.",
   "SIDEBAR$KNOWLEDGE": "지식",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",

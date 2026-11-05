@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "غير فعّال بعد",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "لا تستقبل هذه البيئة أحداث webhook الخاصة بـ GitHub بعد، لذلك لن تعمل هذه الأتمتة تلقائيًا أبدًا حتى يتم إعداد ذلك.",
   "SIDEBAR$KNOWLEDGE": "المعرفة",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",

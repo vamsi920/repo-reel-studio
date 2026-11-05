@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "Ще не працює",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "Це середовище ще не отримує вебхуки GitHub, тому ця автоматизація ніколи не запуститься автоматично, доки це не буде налаштовано.",
   "SIDEBAR$KNOWLEDGE": "Знання",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",

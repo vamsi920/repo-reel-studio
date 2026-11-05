@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "Ainda não funcional",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "Esta implementação ainda não recebe eventos de webhook do GitHub, portanto esta automatização nunca será executada automaticamente até que isso seja configurado.",
   "SIDEBAR$KNOWLEDGE": "Conhecimento",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",

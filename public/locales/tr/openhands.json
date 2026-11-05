@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "Henüz çalışmıyor",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "Bu dağıtım henüz GitHub webhook olaylarını almıyor, bu nedenle bu ayarlanana kadar bu otomasyon hiçbir zaman otomatik olarak çalışmayacaktır.",
   "SIDEBAR$KNOWLEDGE": "Bilgi",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",

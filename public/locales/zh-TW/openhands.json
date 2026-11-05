@@ -2335,7 +2335,7 @@
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_BADGE": "尚未生效",
   "AUTOMATIONS$UNSUPPORTED_TRIGGER_WARNING": "此部署尚未接收 GitHub Webhook 事件，因此在設定完成之前，此自動化將永遠不會自動執行。",
   "SIDEBAR$KNOWLEDGE": "知識",
-  "SIDEBAR$AGENTOPS": "AgentOps",
+  "SIDEBAR$AGENTOPS": "Neo Trace",
   "KT$TITLE": "Knowledge",
   "KT$SUBTITLE": "Repository understanding, generated once and available to read or watch.",
   "KT$EMPTY": "No connected repositories yet. Open a conversation with a repo attached, then come back here.",
