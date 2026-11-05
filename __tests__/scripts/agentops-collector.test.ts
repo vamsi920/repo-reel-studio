@@ -2044,6 +2044,32 @@ describe("Collector orphaned-run close-out", () => {
     expect(store.upsertRun).toHaveBeenCalledTimes(1);
   });
 
+  // The Supabase store is shared by the laptop's and production's
+  // collectors; production cancelled the laptop's runs as "deleted".
+  it("leaves a run from another machine (workspace not on this one) alone", async () => {
+    const store = orphanStore();
+    const run = await store.getRun("run-1");
+    await store.upsertRun({
+      ...run,
+      workspaceId: "/Users/someone-else/projects/app",
+    });
+    store.upsertRun.mockClear();
+    const getConversation = vi.fn().mockRejectedValue(notFound);
+    const collector = new Collector({
+      client: makeClient({
+        searchConversations: vi.fn().mockResolvedValue({ items: [] }),
+        getConversation,
+      }),
+      store,
+      now: () => "2026-09-14T22:50:00.000Z",
+    });
+
+    await collector.tick();
+
+    expect(getConversation).not.toHaveBeenCalled();
+    expect(store.upsertRun).not.toHaveBeenCalled();
+  });
+
   it("closes out a run it was tracking once its conversation disappears", async () => {
     // The explorer's exact sequence: the collector had the run on its page
     // (paused), the conversation was deleted, the next tick's page is empty.

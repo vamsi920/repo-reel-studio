@@ -40,6 +40,7 @@ import {
   ToolAttributes,
   ToolStatus,
 } from "../../vendor/agentops/semconv/index.mjs";
+import { existsSync } from "node:fs";
 import { computeSpend, evaluateBudgets, monthStart } from "./policy.mjs";
 
 const ACTIVE_POLL_MS = 2000;
@@ -201,6 +202,16 @@ export class Collector {
    * at 50 — so each candidate is confirmed with a direct GET and only a
    * definite 404 closes it out; a runtime error leaves it for the next tick.
    */
+  /**
+   * Whether a stored run belongs to this machine's runtime: its workspace
+   * folder exists here. Runs without an absolute path keep the old behaviour.
+   */
+  #runsOnThisMachine(run) {
+    const path = run.workspaceId;
+    if (typeof path !== "string" || !path.startsWith("/")) return true;
+    return existsSync(path);
+  }
+
   async #closeOrphanedRuns(seen, observedAt) {
     if (typeof this.client.getConversation !== "function") return;
     const stored = await this.store.listRuns({
@@ -209,6 +220,11 @@ export class Collector {
     for (const run of stored) {
       if (typeof run?.runId !== "string" || !run.runId) continue;
       if (!isActiveStatus(run.status) || seen.has(run.runId)) continue;
+      // The Supabase store is shared by every collector the user runs (the
+      // laptop and production). A run from another machine is absent from
+      // this runtime by definition; closing it out here cancelled the
+      // laptop's live runs. Its workspace folder exists only where it ran.
+      if (!this.#runsOnThisMachine(run)) continue;
       try {
         await this.client.getConversation(run.runId);
         continue;
