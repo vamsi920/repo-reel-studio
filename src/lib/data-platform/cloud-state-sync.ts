@@ -334,6 +334,15 @@ export function startCloudStateSync(): () => void {
     pushCloudState().catch(() => {});
   };
   window.addEventListener("pagehide", flush);
+  // Zustand keeps one in-memory copy per tab: a tab opened before a project
+  // existed saved its stale, empty copy over the newer one on its next write
+  // (Neo Test and Synth projects vanished that way). Reload a store whenever
+  // another tab writes it.
+  const synced = new Set<string>(CLOUD_SYNCED_KEYS);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key && synced.has(event.key)) rehydrators.get(event.key)?.();
+  };
+  window.addEventListener("storage", onStorage);
   const { data } = supabase.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_IN") {
       lastPushed.clear();
@@ -343,6 +352,7 @@ export function startCloudStateSync(): () => void {
   return () => {
     clearInterval(timer);
     window.removeEventListener("pagehide", flush);
+    window.removeEventListener("storage", onStorage);
     data.subscription.unsubscribe();
   };
 }
