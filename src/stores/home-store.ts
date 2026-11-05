@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { GitRepository } from "#/types/git";
 import { Provider } from "#/types/settings";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 interface HomeState {
   recentRepositories: GitRepository[];
@@ -63,3 +64,9 @@ export const useHomeStore = create<HomeStore>()(
     },
   ),
 );
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore("home-store", () => {
+  useHomeStore.persist.rehydrate();
+});

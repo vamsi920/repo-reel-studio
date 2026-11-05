@@ -51,6 +51,7 @@ import { isDesktopApp } from "#/utils/utils";
 import { useOnboardingCompletion } from "#/components/features/onboarding/use-onboarding-completion";
 import { useSeedGeminiDefaultProfile } from "#/hooks/use-seed-gemini-default-profile";
 import { useModelRoutingSync } from "#/hooks/use-model-routing-sync";
+import { useCloudStateSync } from "#/hooks/use-cloud-state-sync";
 import { NavigationProvider } from "#/context/navigation-context";
 import {
   applyColorTheme,
@@ -370,6 +371,9 @@ export default function App() {
   // Model routing (Auto mode) reads profiles/preferences from a store
   // snapshot so the WebSocket fallback path and KT calls can route too.
   useModelRoutingSync();
+  // Studio projects, chat metadata and recent repos follow the user across
+  // browsers, localhost and production (Supabase user_app_state).
+  useCloudStateSync();
 
   // In locked-to-Cloud mode the `openhands-onboarded` localStorage flag is
   // not trustworthy: it may have been set during a previous non-locked

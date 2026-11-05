@@ -9,6 +9,7 @@ import type {
   TestReport,
 } from "#/lib/testing/model";
 import { DEFAULT_GATES } from "#/lib/testing/gates";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 /**
  * Neo Test studio state.
@@ -478,3 +479,9 @@ export const useTestStudioStore = create<TestStudioStore>()(
 );
 
 export { newId as newTestId };
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore("openhands-test-studio", () => {
+  useTestStudioStore.persist.rehydrate();
+});

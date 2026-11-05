@@ -6,6 +6,7 @@ import type {
   ProjectStatus,
   StepStatus,
 } from "#/constants/modernization-control";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 /**
  * Neo ME (modernization engine) studio state.
@@ -461,3 +462,9 @@ export const useModernizationStudioStore = create<ModernizationStudioStore>()(
 );
 
 export { newId as newModernizationId };
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore("openhands-modernization-studio", () => {
+  useModernizationStudioStore.persist.rehydrate();
+});

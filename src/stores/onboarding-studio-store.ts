@@ -7,6 +7,7 @@ import type {
   DiscoveryConfidence,
   DiscoverySection,
 } from "#/constants/onboarding-control";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 /**
  * The setup studio's right-hand workbench.
@@ -261,3 +262,9 @@ export const useOnboardingStudioStore = create<OnboardingStudioStore>()(
     },
   ),
 );
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore(STUDIO_STORAGE_KEY, () => {
+  useOnboardingStudioStore.persist.rehydrate();
+});

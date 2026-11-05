@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 interface PinnedConversationsState {
   pinsByBackendId: Record<string, string[]>;
@@ -93,3 +94,9 @@ export const usePinnedConversationsStore = create<PinnedConversationsStore>()(
     },
   ),
 );
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore("pinned-conversations", () => {
+  usePinnedConversationsStore.persist.rehydrate();
+});

@@ -17,6 +17,7 @@ import {
 import type { ExportFormat, ExportedFile } from "#/lib/synth/exporters";
 import type { ValidationReport } from "#/lib/synth/validate";
 import type { DocRequirement, DocumentFormat } from "#/lib/synth/documents";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 /**
  * Neo Synth studio state.
@@ -655,3 +656,9 @@ export function getCachedRun(runId: string): CachedRun | undefined {
 }
 
 export { newId as newSynthId };
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore("openhands-synth-studio", () => {
+  useSynthStudioStore.persist.rehydrate();
+});

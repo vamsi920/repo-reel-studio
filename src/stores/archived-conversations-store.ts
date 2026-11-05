@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { registerCloudSyncedStore } from "#/lib/data-platform/cloud-state-sync";
 
 export const ARCHIVED_CONVERSATIONS_STORAGE_KEY = "archived-conversations";
 
@@ -82,3 +83,9 @@ export const useArchivedConversationsStore =
       },
     ),
   );
+
+// A merged cloud copy (another browser, localhost or production) replaces
+// the in-memory state.
+registerCloudSyncedStore(ARCHIVED_CONVERSATIONS_STORAGE_KEY, () => {
+  useArchivedConversationsStore.persist.rehydrate();
+});
